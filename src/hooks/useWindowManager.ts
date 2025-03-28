@@ -12,6 +12,7 @@ import {
 } from "../utils/storage";
 import { useSound, Sounds } from "./useSound";
 import { getWindowConfig } from "@/config/appRegistry";
+import "ios-vibrator-pro-max";
 
 interface UseWindowManagerProps {
   appId: keyof typeof APP_STORAGE_KEYS;
@@ -158,6 +159,7 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
         if (isMobile) {
           // On mobile, only allow vertical dragging and keep window full width
           setWindowPosition({ x: 0, y: Math.max(menuBarHeight, newY) });
+          navigator.vibrate(1);
         } else {
           const maxX = window.innerWidth - windowSize.width;
           const maxY = window.innerHeight - windowSize.height;
