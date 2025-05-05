@@ -53,8 +53,9 @@ const CHAT_ROOM_USERS_PREFIX = 'chat:room:users:';
 // USER TTL (in seconds) – after this period of inactivity the user record expires automatically
 const USER_TTL_SECONDS = 60 * 30; // 30 minutes
 
-// Add constant for max message length
+// Add constants for max message and username length
 const MAX_MESSAGE_LENGTH = 280;
+const MAX_USERNAME_LENGTH = 20;
 
 /**
  * Helper to set (or update) a user record **with** an expiry so stale
@@ -157,6 +158,11 @@ async function ensureUserExists(username, requestId) {
   if (filter.isProfane(username)) {
       logInfo(requestId, `User check failed: Username contains inappropriate language: ${username}`);
       throw new Error('Username contains inappropriate language');
+  }
+  
+  if (username.length > MAX_USERNAME_LENGTH) {
+      logInfo(requestId, `User check failed: Username exceeds maximum length: ${username}`);
+      throw new Error(`Username cannot exceed ${MAX_USERNAME_LENGTH} characters`);
   }
 
   // Attempt to get existing user
@@ -532,6 +538,11 @@ async function handleCreateUser(data, requestId) {
   if (filter.isProfane(originalUsername)) {
     logInfo(requestId, `User creation failed: Username contains inappropriate language: ${originalUsername}`);
     return createErrorResponse('Username contains inappropriate language', 400);
+  }
+  
+  if (originalUsername.length > MAX_USERNAME_LENGTH) {
+    logInfo(requestId, `User creation failed: Username exceeds maximum length: ${originalUsername}`);
+    return createErrorResponse(`Username cannot exceed ${MAX_USERNAME_LENGTH} characters`, 400);
   }
 
   // Normalize username to lowercase
@@ -1034,4 +1045,4 @@ async function handleDeleteMessage(data, requestId) {
     logError(requestId, `Error deleting message ${messageId} from room ${roomId}:`, error);
     return createErrorResponse('Failed to delete message', 500);
   }
-} 
+}  
