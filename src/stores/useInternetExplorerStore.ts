@@ -310,7 +310,7 @@ export const DEFAULT_FAVORITES: Favorite[] = [
 ];
 
 // Define the current version for the store
-const CURRENT_IE_STORE_VERSION = 2;
+const CURRENT_IE_STORE_VERSION = 3; // Incremented to trigger migration for existing users
 
 // Helper function to classify year into navigation mode
 function classifyYear(year: string): NavigationMode {
@@ -874,7 +874,7 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
           const hostname = new URL(
             url.startsWith("http") ? url : `https://${url}`
           ).hostname;
-          return get().directPassthroughDomains.some(
+          return DEFAULT_DIRECT_PASSTHROUGH_DOMAINS.some(
             (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
           );
         } catch {
@@ -894,7 +894,7 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
         timelineSettings: state.timelineSettings,
         language: state.language,
         location: state.location,
-        directPassthroughDomains: state.directPassthroughDomains,
+        // directPassthroughDomains removed from persistence
       }),
       migrate: (persistedState: unknown, version: number) => {
         // Use Record<string, unknown> to allow safe property access with type checking
@@ -920,7 +920,7 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
           "timelineSettings",
           "language",
           "location",
-          "directPassthroughDomains",
+          // "directPassthroughDomains" removed from partializedKeys
         ];
         const finalState: Partial<InternetExplorerStore> = {};
 
@@ -948,11 +948,8 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
           typeof finalState.aiCache === "object" && finalState.aiCache !== null
             ? finalState.aiCache
             : {};
-        finalState.directPassthroughDomains = Array.isArray(
-          finalState.directPassthroughDomains
-        )
-          ? finalState.directPassthroughDomains
-          : DEFAULT_DIRECT_PASSTHROUGH_DOMAINS;
+        // directPassthroughDomains is no longer persisted, always use the constant
+        // finalState.directPassthroughDomains = DEFAULT_DIRECT_PASSTHROUGH_DOMAINS;
 
         return finalState as InternetExplorerStore;
       },
