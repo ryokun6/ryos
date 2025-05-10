@@ -194,16 +194,20 @@ export function useAiChat() {
       if (speechEnabled && message.role === "assistant") {
         setTimeout(() => {
           const processed = speechProgressRef.current[message.id] ?? 0;
-          if (processed >= message.content.length) return; // everything already spoken or skipped
-
+          
+          if (processed >= message.content.length) return;
+          
           const remaining = message.content.slice(processed).trim();
+          
           if (remaining && !/^[!！]$/.test(remaining)) {
-            speak(remaining);
+            if (remaining.length > 3) {
+              speak(remaining);
+            }
           }
 
           // Mark as fully spoken so no further attempts are made
           speechProgressRef.current[message.id] = message.content.length;
-        }, 30); // ~one frame delay
+        }, 50); // Slightly longer delay to ensure streaming updates are complete
       }
     },
     onError: (err) => {
@@ -256,17 +260,37 @@ export function useAiChat() {
     let match: RegExpMatchArray | null;
     const sentenceRegex = /[.!?。，！？；：](?:\s+|$)|\r?\n+/;
 
+    let sentences = "";
+    let totalChars = 0;
+    
     while ((match = buffer.match(sentenceRegex))) {
       const matchText = match[0];
       const idx = match.index! + matchText.length; // include punctuation and following spaces
       const sentence = buffer.slice(0, idx).trim();
+      
       if (sentence && !/^[!！]$/.test(sentence)) {
-        speak(sentence);
+        sentences += (sentences ? " " : "") + sentence;
+        totalChars += idx;
+        
+        // Speak accumulated sentences when we have enough content or hit a paragraph break
+        if (sentences.length > 100 || matchText.includes("\n")) {
+          speak(sentences);
+          sentences = "";
+        }
+      } else {
+        totalChars += idx;
       }
+      
       spokenChars += idx;
       buffer = buffer.slice(idx);
     }
+    
+    // Speak any remaining accumulated sentences
+    if (sentences) {
+      speak(sentences);
+    }
 
+    // Update progress with the exact number of characters processed
     speechProgressRef.current[lastMsg.id] = processed + spokenChars;
     // leftover buffer will be spoken in future ticks or onFinish
   }, [currentSdkMessages, speechEnabled, speak]);
