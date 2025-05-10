@@ -261,7 +261,7 @@ export function useAiChat() {
     const sentenceRegex = /[.!?。，！？；：](?:\s+|$)|\r?\n+/;
 
     let sentences = "";
-    let totalChars = 0;
+    let sentenceCount = 0;
     
     while ((match = buffer.match(sentenceRegex))) {
       const matchText = match[0];
@@ -270,15 +270,14 @@ export function useAiChat() {
       
       if (sentence && !/^[!！]$/.test(sentence)) {
         sentences += (sentences ? " " : "") + sentence;
-        totalChars += idx;
+        sentenceCount++;
         
-        // Speak accumulated sentences when we have enough content or hit a paragraph break
-        if (sentences.length > 100 || matchText.includes("\n")) {
+        // Speak accumulated sentences when we have 3 sentences or hit a paragraph break
+        if (sentenceCount >= 3 || matchText.includes("\n")) {
           speak(sentences);
           sentences = "";
+          sentenceCount = 0;
         }
-      } else {
-        totalChars += idx;
       }
       
       spokenChars += idx;
