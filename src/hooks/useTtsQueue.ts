@@ -14,6 +14,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const nextStartRef = useRef(0);
   // Keep track of in-flight requests so we can cancel them if needed
   const controllersRef = useRef<Set<AbortController>>(new Set());
+  const lastTextRef = useRef<string | null>(null);
 
   const ensureContext = () => {
     // Recreate if not exists or previously closed (e.g., due to HMR)
@@ -38,7 +39,11 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
    */
   const speak = useCallback(
     (text: string, onEnd?: () => void) => {
-      if (!text || !text.trim()) return;
+      const trimmedText = text.trim();
+      if (!trimmedText) return;
+      // Avoid duplicate identical utterances
+      if (trimmedText === lastTextRef.current) return;
+      lastTextRef.current = trimmedText;
 
       playChainRef.current = playChainRef.current.then(async () => {
         try {
@@ -47,7 +52,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text }),
+            body: JSON.stringify({ text: trimmedText }),
             signal: controller.signal,
           });
           controllersRef.current.delete(controller);
@@ -94,6 +99,8 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     if (ctxRef.current) {
       nextStartRef.current = ctxRef.current.currentTime;
     }
+    // Reset last spoken text so future chats start fresh
+    lastTextRef.current = null;
   }, []);
 
   // Clean up when the component using the hook unmounts
