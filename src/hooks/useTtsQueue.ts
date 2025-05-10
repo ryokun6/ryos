@@ -14,7 +14,6 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const nextStartRef = useRef(0);
   // Keep track of in-flight requests so we can cancel them if needed
   const controllersRef = useRef<Set<AbortController>>(new Set());
-  const lastTextRef = useRef<string | null>(null);
 
   const ensureContext = () => {
     // Recreate if not exists or previously closed (e.g., due to HMR)
@@ -33,17 +32,23 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   // Promise chain to guarantee ordering regardless of varied fetch latency
   const playChainRef = useRef<Promise<void>>(Promise.resolve());
 
+  // Keep track of the most recently queued phrase so we can avoid speaking
+  // the exact same words twice in a row (e.g., when the caller accidentally
+  // submits a duplicate chunk).
+  const lastTextRef = useRef<string>("");
+
   /**
    * Speak a chunk of text by fetching the TTS audio and scheduling it directly
    * after whatever is already queued.
    */
   const speak = useCallback(
     (text: string, onEnd?: () => void) => {
-      const trimmedText = text.trim();
-      if (!trimmedText) return;
-      // Avoid duplicate identical utterances
-      if (trimmedText === lastTextRef.current) return;
-      lastTextRef.current = trimmedText;
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      // Deduplication: skip if this exact chunk was the last thing queued.
+      if (trimmed === lastTextRef.current) return;
+      lastTextRef.current = trimmed;
 
       playChainRef.current = playChainRef.current.then(async () => {
         try {
@@ -52,7 +57,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: trimmedText }),
+            body: JSON.stringify({ text }),
             signal: controller.signal,
           });
           controllersRef.current.delete(controller);
@@ -99,8 +104,9 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     if (ctxRef.current) {
       nextStartRef.current = ctxRef.current.currentTime;
     }
-    // Reset last spoken text so future chats start fresh
-    lastTextRef.current = null;
+
+    // Reset last text so future calls are not skipped incorrectly
+    lastTextRef.current = "";
   }, []);
 
   // Clean up when the component using the hook unmounts

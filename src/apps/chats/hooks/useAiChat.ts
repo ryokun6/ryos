@@ -186,17 +186,24 @@ export function useAiChat() {
       );
       setAiMessages(finalMessages);
 
-      // Speak any remaining text that hasn't been read yet (e.g. last sentence without trailing punctuation)
+      // Speak any remaining text that hasn't been read yet (e.g. the final sentence
+      // without trailing punctuation). We defer this to the next task tick so that
+      // our incremental TTS effect has a chance to update `speechProgressRef`
+      // with any characters it may have just processed. This prevents us from
+      // re-speaking the tail end of the message.
       if (speechEnabled && message.role === "assistant") {
-        const processed = speechProgressRef.current[message.id] ?? 0;
-        if (processed >= message.content.length) return; // already fully spoken or skipped
+        setTimeout(() => {
+          const processed = speechProgressRef.current[message.id] ?? 0;
+          if (processed >= message.content.length) return; // everything already spoken or skipped
 
-        const remaining = message.content.slice(processed).trim();
-        if (remaining && !/^[!！]$/.test(remaining)) {
-          speak(remaining);
-        }
-        // mark as done to prevent any further attempts
-        speechProgressRef.current[message.id] = message.content.length;
+          const remaining = message.content.slice(processed).trim();
+          if (remaining && !/^[!！]$/.test(remaining)) {
+            speak(remaining);
+          }
+
+          // Mark as fully spoken so no further attempts are made
+          speechProgressRef.current[message.id] = message.content.length;
+        }, 30); // ~one frame delay
       }
     },
     onError: (err) => {
