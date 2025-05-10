@@ -161,7 +161,7 @@ function ChatMessagesContent({
 }: ChatMessagesContentProps) {
   const { playNote } = useChatSynth();
   const { playElevatorMusic, stopElevatorMusic, playDingSound } = useTerminalSounds();
-  const { playMessageAudio, hasMessageAudio, isIOSSafari } = useAiChat();
+  const { playMessageAudio, hasMessageAudio } = useAiChat();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [isInteractingWithPreview, setIsInteractingWithPreview] = useState(false);
