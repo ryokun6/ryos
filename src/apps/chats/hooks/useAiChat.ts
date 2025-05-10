@@ -198,10 +198,15 @@ export function useAiChat() {
 
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
-            audio.play().catch((err) => {
-              console.warn("Audio play blocked or failed", err);
-            });
+            
+            messageAudioUrlsRef.current.set(message.id, url);
+            
+            if (!isIOSSafariRef.current) {
+              const audio = new Audio(url);
+              audio.play().catch((err) => {
+                console.warn("Audio play blocked or failed", err);
+              });
+            }
           } catch (err) {
             console.error("Error fetching/playing TTS", err);
           }
@@ -382,6 +387,18 @@ export function useAiChat() {
   // --- Text-to-Speech (TTS) ---
   // Track which assistant messages have already been spoken to avoid duplicates
   const spokenMessageIdsRef = useRef<Set<string>>(new Set());
+  const messageAudioUrlsRef = useRef<Map<string, string>>(new Map());
+  const isIOSSafariRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (isIOSSafariRef.current === null) {
+      const ua = navigator.userAgent;
+      const isIOS = /iP(hone|od|ad)/.test(ua);
+      const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
+      isIOSSafariRef.current = isIOS && isSafari;
+      console.debug("iOS Safari detection:", isIOSSafariRef.current);
+    }
+  }, []);
 
   // On initial mount, mark any pre-loaded assistant messages as already spoken
   useEffect(() => {
@@ -391,6 +408,27 @@ export function useAiChat() {
     spokenMessageIdsRef.current = new Set(initialAssistantIds);
     // We only want this to run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const playMessageAudio = useCallback((messageId: string) => {
+    const audioUrl = messageAudioUrlsRef.current.get(messageId);
+    if (!audioUrl) {
+      console.warn("No audio available for message:", messageId);
+      return;
+    }
+
+    try {
+      const audio = new Audio(audioUrl);
+      audio.play().catch((err) => {
+        console.warn("Audio play failed on manual trigger:", err);
+      });
+    } catch (err) {
+      console.error("Error playing audio:", err);
+    }
+  }, []);
+
+  const hasMessageAudio = useCallback((messageId: string) => {
+    return messageAudioUrlsRef.current.has(messageId);
   }, []);
 
   return {
@@ -408,6 +446,10 @@ export function useAiChat() {
     handleNudge,
     clearChats, // Expose the action
     handleSaveTranscript, // Expose the action
+
+    playMessageAudio,
+    hasMessageAudio,
+    isIOSSafari: isIOSSafariRef.current,
 
     // Dialogs
     isClearDialogOpen,

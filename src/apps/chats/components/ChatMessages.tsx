@@ -1,10 +1,11 @@
 import { Message as VercelMessage } from "ai";
-import { Loader2, AlertCircle, MessageSquare, Copy, Check, ChevronDown, Trash } from "lucide-react";
+import { Loader2, AlertCircle, MessageSquare, Copy, Check, ChevronDown, Trash, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { useChatSynth } from "@/hooks/useChatSynth";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
+import { useAiChat } from "../hooks/useAiChat";
 import HtmlPreview, {
   isHtmlCodeBlock,
   extractHtmlContent,
@@ -160,6 +161,7 @@ function ChatMessagesContent({
 }: ChatMessagesContentProps) {
   const { playNote } = useChatSynth();
   const { playElevatorMusic, stopElevatorMusic, playDingSound } = useTerminalSounds();
+  const { playMessageAudio, hasMessageAudio, isIOSSafari } = useAiChat();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [isInteractingWithPreview, setIsInteractingWithPreview] = useState(false);
@@ -368,21 +370,38 @@ function ChatMessagesContent({
                 )}
               </span>
               {message.role === "assistant" && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{
-                    opacity: hoveredMessageId === messageKey ? 1 : 0,
-                    scale: 1,
-                  }}
-                  className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors"
-                  onClick={() => copyMessage(message)}
-                >
-                  {copiedMessageId === messageKey ? (
-                    <Check className="h-3 w-3" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
+                <>
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{
+                      opacity: hoveredMessageId === messageKey ? 1 : 0,
+                      scale: 1,
+                    }}
+                    className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors mr-1"
+                    onClick={() => copyMessage(message)}
+                    aria-label="Copy message"
+                  >
+                    {copiedMessageId === messageKey ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </motion.button>
+                  {hasMessageAudio(message.id) && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{
+                        opacity: hoveredMessageId === messageKey ? 1 : 0,
+                        scale: 1,
+                      }}
+                      className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
+                      onClick={() => playMessageAudio(message.id)}
+                      aria-label="Play message audio"
+                    >
+                      <Volume2 className="h-3 w-3" />
+                    </motion.button>
                   )}
-                </motion.button>
+                </>
               )}
               {isRoomView && message.role === 'human' && (
                 <motion.button
