@@ -89,14 +89,9 @@ export default async function handler(req: Request) {
     const { audio } = await generateSpeech({
       model: openai.speech("gpt-4o-mini-tts"),
       text: text.trim(),
-      voice: voice ?? "alloy",
+      voice: voice ?? "onyx",
       outputFormat: "mp3",
-      instructions: "Voice: Laid-back, mellow, and effortlessly cool, like a surfer who's never in a rush.\n\n" +
-        "Tone: Relaxed and reassuring, keeping things light even when the customer is frustrated.\n\n" +
-        "Speech Mannerisms: Uses casual, friendly phrasing with ryoisms like 'yo', 'it's the same thing', 'oh no', 'not horrible', 'nice', 'the idea is', 'the thing is', 'for real', 'wow', 'cool', 'not bad', 'great', 'love this'.\n\n" +
-        "Pronunciation: Soft and drawn-out, with slightly stretched vowels and a naturally wavy rhythm in speech.\n\n" +
-        "Tempo: Fast-paced and easygoing, with a natural flow that never feels rushed, creating a calming effect.",
-      speed: speed ?? 1.5,
+      speed: speed ?? 4,
     });
 
     logInfo(requestId, "Speech generated", { bytes: audio.uint8Array.length });
