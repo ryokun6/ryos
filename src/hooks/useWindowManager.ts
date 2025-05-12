@@ -344,12 +344,13 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
         
         // Check for snap zones (only in desktop mode)
         if (!isMobile) {
+          // Changed: Check cursor position instead of window position
           // Check top edge for full-screen snap
-          const isNearTopEdge = newY < 30 + SNAP_THRESHOLD;
+          const isNearTopEdge = clientY < SNAP_THRESHOLD + 30; // 30 is menuBarHeight
           // Check left edge for left-half snap
-          const isNearLeftEdge = newX < SNAP_THRESHOLD;
+          const isNearLeftEdge = clientX < SNAP_THRESHOLD;
           // Check right edge for right-half snap
-          const isNearRightEdge = newX + windowSize.width > window.innerWidth - SNAP_THRESHOLD;
+          const isNearRightEdge = clientX > window.innerWidth - SNAP_THRESHOLD;
 
           // Determine the snap zone based on proximity to screen edges
           let newSnapZone: SnapZone = "none";
@@ -364,8 +365,10 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
           
           // Update snap indicator
           if (newSnapZone !== snapZone) {
-            setSnapZone(newSnapZone);
-            setShowSnapIndicator(newSnapZone !== "none");
+            setTimeout(() => {
+              setSnapZone(newSnapZone);
+              setShowSnapIndicator(newSnapZone !== "none");
+            }, 500);
           }
         }
 
