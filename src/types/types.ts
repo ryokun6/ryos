@@ -45,3 +45,6 @@ export interface ResizeStart {
   left: number;
   top: number;
 }
+
+// 窗口吸附区域类型
+export type SnapZone = "none" | "top" | "left" | "right";

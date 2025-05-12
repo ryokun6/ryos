@@ -129,9 +129,7 @@
     --input: 0 0% 14.9%;
     --ring: 0 0% 100%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
     user-select: none;
@@ -146,6 +144,10 @@
     overflow: hidden;
     position: fixed;
     inset: 0;
+  }
+  /* 确保应用容器不限制窗口溢出 */
+  #root, #app {
+    overflow: visible !important;
   }
 }
 
