@@ -81,6 +81,8 @@ export function VolumeMixer({
             onValueChange={(v) => {
               setMasterVolume(v[0]);
               if (v[0] > 0) setPrevMasterVolume(v[0]);
+            }}
+            onValueCommit={() => {
               playVolumeChangeSound();
             }}
             className="h-18 w-5"
@@ -114,6 +116,8 @@ export function VolumeMixer({
             onValueChange={(v) => {
               setUiVolume(v[0]);
               if (v[0] > 0) setPrevUiVolume(v[0]);
+            }}
+            onValueCommit={() => {
               playVolumeChangeSound();
             }}
             className="h-18 w-5"
@@ -147,6 +151,8 @@ export function VolumeMixer({
             onValueChange={(v) => {
               setSpeechVolume(v[0]);
               if (v[0] > 0) setPrevSpeechVolume(v[0]);
+            }}
+            onValueCommit={() => {
               playVolumeChangeSound();
             }}
             className="h-18 w-5"
@@ -180,6 +186,8 @@ export function VolumeMixer({
             onValueChange={(v) => {
               setChatSynthVolume(v[0]);
               if (v[0] > 0) setPrevChatSynthVolume(v[0]);
+            }}
+            onValueCommit={() => {
               playVolumeChangeSound();
             }}
             className="h-18 w-5"
@@ -218,9 +226,11 @@ export function VolumeMixer({
                 : (v) => {
                     setIpodVolume(v[0]);
                     if (v[0] > 0) setPrevIpodVolume(v[0]);
-                    playVolumeChangeSound();
                   }
             }
+            onValueCommit={isIOS ? undefined : () => {
+              playVolumeChangeSound();
+            }}
             disabled={isIOS}
             className={`h-18 w-5 ${isIOS ? "opacity-40" : ""}`}
           />
