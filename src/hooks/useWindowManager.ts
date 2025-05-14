@@ -10,6 +10,7 @@ import { appIds, AppId } from "@/config/appIds";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSound, Sounds } from "./useSound";
 import { getWindowConfig } from "@/config/appRegistry";
+import { useLatest } from "./useLatest";
 
 interface UseWindowManagerProps {
   appId: AppId;
@@ -65,7 +66,7 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
     useState<WindowPosition>(adjustedPosition);
   const [windowSize, setWindowSize] = useState<WindowSize>(initialState.size);
   const [isDragging, setIsDragging] = useState(false);
-  const isDraggingRef = useRef(false);
+  const isDraggingRef = useLatest(isDragging);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
   const [resizeType, setResizeType] = useState<ResizeType>("");
@@ -288,10 +289,6 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
     
     preSnapStateRef.current = null;
   }, [appId, updateWindowState, playWindowCollapse]);
-
-  useEffect(() => {
-    isDraggingRef.current = isDragging;
-  }, [isDragging]);
 
   useEffect(() => {
     const handleMove = (e: React.MouseEvent<HTMLElement> | MouseEvent) => {

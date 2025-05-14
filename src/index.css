@@ -146,7 +146,7 @@
     position: fixed;
     inset: 0;
   }
-  /* 确保应用容器不限制窗口溢出 */
+  /* ensure the app container does not limit window overflow */
   #root, #app {
     overflow: visible !important;
   }
