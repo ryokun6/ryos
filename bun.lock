@@ -55,6 +55,7 @@
         "tailwindcss-animate": "^1.0.7",
         "three": "^0.176.0",
         "tippy.js": "^6.3.7",
+        "tiptap-annotation-magic": "^2.0.0",
         "tone": "^15.0.4",
         "use-stick-to-bottom": "^1.1.0",
         "vercel": "^41.4.1",
@@ -1779,6 +1780,8 @@
     "tinyglobby": ["tinyglobby@0.2.12", "", { "dependencies": { "fdir": "^6.4.3", "picomatch": "^4.0.2" } }, "sha512-qkf4trmKSIiMTs/E63cxH+ojC2unam7rJ0WrauAzpT3ECNTxGRMlaXxVbfxMUC/w0LaYk6jQ4y/nGR9uBO3tww=="],
 
     "tippy.js": ["tippy.js@6.3.7", "", { "dependencies": { "@popperjs/core": "^2.9.0" } }, "sha512-E1d3oP2emgJ9dRQZdf3Kkn0qJgI6ZLpyS5z6ZkY1DF3kaQaBsGZsndEpHwx+eC+tYM41HaSNvNtLx8tU57FzTQ=="],
+
+    "tiptap-annotation-magic": ["tiptap-annotation-magic@2.0.0", "", { "dependencies": { "@tiptap/core": "^2.1.7", "@tiptap/pm": "^2.1.7" } }, "sha512-ITkdwfqV95oTkmLjynxwOveZp4uVdYSfDeCmOcIUfWdj8UW+9UIjTw/m7tsmiAuNX5+elXZfX+54ZoziJtccqQ=="],
 
     "to-regex-range": ["to-regex-range@5.0.1", "", { "dependencies": { "is-number": "^7.0.0" } }, "sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ=="],
 

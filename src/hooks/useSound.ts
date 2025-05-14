@@ -1,83 +1,26 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAppStore } from "@/stores/useAppStore";
+import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 
 // Global audio context and cache
-let audioContext: AudioContext | null = null;
 const audioBufferCache = new Map<string, AudioBuffer>();
 const activeSources = new Set<AudioBufferSourceNode>();
 
-// Return a valid AudioContext instance, recreating it (and clearing caches) if the
-// previous one was closed – a common situation on iOS Safari when the page is
-// backgrounded for a while.
-const getAudioContext = () => {
-  // Re-create if it never existed or if the browser has closed it behind our back
-  if (!audioContext || audioContext.state === "closed") {
-    try {
-      audioContext = new AudioContext();
-      // When a fresh context is created the previously decoded buffers belong
-      // to the old (now closed) context – they will be invalid and may even
-      // throw. Clear the cache so we can lazily re-decode on demand.
-      audioBufferCache.clear();
-      console.debug("Created new AudioContext and cleared buffer cache");
-    } catch (err) {
-      console.error("Failed to create AudioContext:", err);
-    }
-  }
-  return audioContext!;
-};
-
-// Resume audio context - important for iOS
-const resumeAudioContext = async () => {
-  let ctx = getAudioContext();
-
-  // Safari may move the context into a non-standard "interrupted" state when the
-  // page loses the audio hardware (e.g. the user switches apps or receives a
-  // phone call). In that case we need to call resume() as well.
-  let state = ctx.state as AudioContextState | "interrupted";
-  if (state === "suspended" || state === "interrupted") {
-    try {
-      await ctx.resume();
-      console.debug("Audio context resumed");
-    } catch (error) {
-      console.error("Failed to resume audio context:", error);
-    }
-  }
-
-  // If for some reason the context is still not running (a situation observed on
-  // some iOS Safari versions after returning from background), fall back to
-  // recreating a brand-new AudioContext so that subsequent playback works.
-  state = ctx.state as AudioContextState | "interrupted";
-  if (state !== "running") {
-    try {
-      console.debug(
-        `AudioContext still in state "${state}" after resume – recreating`
-      );
-      await ctx.close();
-    } catch (_) {
-      /* ignored */
-    }
-
-    // Null-out so getAudioContext() makes a fresh one and clears caches.
-    audioContext = null;
-    ctx = getAudioContext();
-  }
-};
-
-// Add global event listeners for visibility and focus
-if (typeof document !== "undefined" && typeof window !== "undefined") {
-  // Handle page visibility change (when app is switched to/from background)
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      resumeAudioContext();
-    }
-  });
-
-  // Handle window focus (when app regains focus)
-  window.addEventListener("focus", resumeAudioContext);
-}
+// Track the AudioContext instance we last saw so we can invalidate caches if a
+// new one is created by the shared helper.
+let lastCtx: AudioContext | null = null;
 
 // Preload a single sound and add it to cache
 const preloadSound = async (soundPath: string): Promise<AudioBuffer> => {
+  // If a new AudioContext was created (e.g., after the old one was closed by
+  // iOS), invalidate the decoded buffer cache so that we don't feed AudioBuffers
+  // that belong to a defunct context back into the pipeline.
+  const currentCtx = getAudioContext();
+  if (currentCtx !== lastCtx) {
+    audioBufferCache.clear();
+    lastCtx = currentCtx;
+  }
+
   if (audioBufferCache.has(soundPath)) {
     return audioBufferCache.get(soundPath)!;
   }
@@ -101,11 +44,14 @@ export const preloadSounds = async (sounds: string[]) => {
 
 export function useSound(soundPath: string, volume: number = 0.3) {
   const gainNodeRef = useRef<GainNode | null>(null);
+  // Reactively track global UI volume
+  const uiVolume = useAppStore((s) => s.uiVolume);
+  const masterVolume = useAppStore((s) => s.masterVolume); // Get masterVolume
 
   useEffect(() => {
     // Create gain node for volume control
     gainNodeRef.current = getAudioContext().createGain();
-    gainNodeRef.current.gain.value = volume;
+    gainNodeRef.current.gain.value = volume * uiVolume * masterVolume; // Apply masterVolume
 
     // Connect to destination
     gainNodeRef.current.connect(getAudioContext().destination);
@@ -115,7 +61,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
         gainNodeRef.current.disconnect();
       }
     };
-  }, [volume]);
+  }, [volume, uiVolume, masterVolume]);
 
   const play = useCallback(async () => {
     // Check if UI sounds are enabled via global store
@@ -126,17 +72,22 @@ export function useSound(soundPath: string, volume: number = 0.3) {
     try {
       // Ensure audio context is running before playing
       await resumeAudioContext();
-      
+
       const audioBuffer = await preloadSound(soundPath);
       // If the gain node belongs to a stale AudioContext (closed), recreate it
-      if (!gainNodeRef.current || gainNodeRef.current.context.state === "closed") {
+      if (
+        !gainNodeRef.current ||
+        gainNodeRef.current.context.state === "closed"
+      ) {
         if (gainNodeRef.current) {
           try {
             gainNodeRef.current.disconnect();
-          } catch (_) {}
+          } catch {
+            console.error("Error disconnecting gain node");
+          }
         }
         gainNodeRef.current = getAudioContext().createGain();
-        gainNodeRef.current.gain.value = volume;
+        gainNodeRef.current.gain.value = volume * uiVolume * masterVolume; // Apply masterVolume
         gainNodeRef.current.connect(getAudioContext().destination);
       }
 
@@ -146,8 +97,8 @@ export function useSound(soundPath: string, volume: number = 0.3) {
       // Connect to (possibly re-created) gain node
       source.connect(gainNodeRef.current);
 
-      // Set volume
-      gainNodeRef.current.gain.value = volume;
+      // Set volume (apply global scaling)
+      gainNodeRef.current.gain.value = volume * uiVolume * masterVolume; // Apply masterVolume
 
       // If too many concurrent sources are active, skip to avoid audio congestion
       if (activeSources.size > 32) {
@@ -168,7 +119,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
     } catch (error) {
       console.error("Error playing sound:", error);
     }
-  }, [volume, soundPath]);
+  }, [volume, soundPath, uiVolume, masterVolume]);
 
   // Additional control methods
   const stop = useCallback(() => {
@@ -238,12 +189,13 @@ export const Sounds = {
   PHOTO_SHUTTER: "/sounds/PhotoShutter.mp3",
   // Boot sound
   BOOT: "/sounds/Boot.mp3",
+  VOLUME_CHANGE: "/sounds/Volume.mp3",
 } as const;
 
 // Lazily preload sounds after the first user interaction (click or touch)
 if (typeof document !== "undefined") {
   const handleFirstInteraction = () => {
-preloadSounds(Object.values(Sounds));
+    preloadSounds(Object.values(Sounds));
     // Remove listeners after first invocation to avoid repeated work
     document.removeEventListener("click", handleFirstInteraction);
     document.removeEventListener("touchstart", handleFirstInteraction);

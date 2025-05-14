@@ -25,6 +25,7 @@ import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useAppStore } from "@/stores/useAppStore";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { AIModel, AI_MODEL_METADATA } from "@/types/aiModels";
+import { VolumeMixer } from "./VolumeMixer";
 
 type PhotoCategory =
   | "3d_graphics"
@@ -175,20 +176,44 @@ export function ControlPanelsAppComponent({
     setTerminalSoundsEnabled,
     uiSoundsEnabled,
     setUiSoundsEnabled,
-    typingSynthEnabled,
-    setTypingSynthEnabled,
+    uiVolume,
+    setUiVolume,
     speechEnabled,
     setSpeechEnabled,
+    chatSynthVolume,
+    setChatSynthVolume,
+    speechVolume,
+    setSpeechVolume,
     synthPreset,
     setSynthPreset,
+    ipodVolume,
+    setIpodVolume,
+    masterVolume,
+    setMasterVolume,
   } = useAppStore();
+
+  // States for previous volume levels for mute/unmute functionality
+  const [prevMasterVolume, setPrevMasterVolume] = useState(
+    masterVolume > 0 ? masterVolume : 1
+  );
+  const [prevUiVolume, setPrevUiVolume] = useState(uiVolume > 0 ? uiVolume : 1);
+  const [prevSpeechVolume, setPrevSpeechVolume] = useState(
+    speechVolume > 0 ? speechVolume : 1
+  );
+  const [prevChatSynthVolume, setPrevChatSynthVolume] = useState(
+    chatSynthVolume > 0 ? chatSynthVolume : 1
+  );
+  const [prevIpodVolume, setPrevIpodVolume] = useState(
+    ipodVolume > 0 ? ipodVolume : 1
+  );
+
+  // Detect iOS Safari – volume API does not work for YouTube embeds there
+  const isIOS =
+    typeof navigator !== "undefined" &&
+    /iP(hone|od|ad)/.test(navigator.userAgent);
 
   const handleUISoundsChange = (enabled: boolean) => {
     setUiSoundsEnabled(enabled);
-  };
-
-  const handleTypingSynthChange = (enabled: boolean) => {
-    setTypingSynthEnabled(enabled);
   };
 
   const handleSpeechChange = (enabled: boolean) => {
@@ -196,8 +221,54 @@ export function ControlPanelsAppComponent({
   };
 
   const handleSynthPresetChange = (value: string) => {
-    // Apply the new synth preset immediately – no full reload necessary
     setSynthPreset(value);
+  };
+
+  // Mute toggle handlers
+  const handleMasterMuteToggle = () => {
+    if (masterVolume > 0) {
+      setPrevMasterVolume(masterVolume);
+      setMasterVolume(0);
+    } else {
+      setMasterVolume(prevMasterVolume);
+    }
+  };
+
+  const handleUiMuteToggle = () => {
+    if (uiVolume > 0) {
+      setPrevUiVolume(uiVolume);
+      setUiVolume(0);
+    } else {
+      setUiVolume(prevUiVolume);
+    }
+  };
+
+  const handleSpeechMuteToggle = () => {
+    if (speechVolume > 0) {
+      setPrevSpeechVolume(speechVolume);
+      setSpeechVolume(0);
+    } else {
+      setSpeechVolume(prevSpeechVolume);
+    }
+  };
+
+  const handleChatSynthMuteToggle = () => {
+    if (chatSynthVolume > 0) {
+      setPrevChatSynthVolume(chatSynthVolume);
+      setChatSynthVolume(0);
+    } else {
+      setChatSynthVolume(prevChatSynthVolume);
+    }
+  };
+
+  const handleIpodMuteToggle = () => {
+    if (isIOS) return;
+    if (ipodVolume > 0) {
+      setPrevIpodVolume(ipodVolume);
+      setIpodVolume(0);
+    } else {
+      setIpodVolume(prevIpodVolume);
+    }
   };
 
   const handleResetAll = () => {
@@ -538,21 +609,27 @@ export function ControlPanelsAppComponent({
               className="mt-0 bg-[#E3E3E3] border border-t-0 border-[#808080] h-[calc(100%-2rem)]"
             >
               <div className="space-y-4 h-full overflow-y-auto p-4">
-                <div className="flex items-center justify-between">
-                  <Label>UI Sounds</Label>
-                  <Switch
-                    checked={uiSoundsEnabled}
-                    onCheckedChange={handleUISoundsChange}
-                    className="data-[state=checked]:bg-[#000000]"
-                  />
+                {/* UI Sounds toggle + volume */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <Label>UI Sounds</Label>
+                    <Switch
+                      checked={uiSoundsEnabled}
+                      onCheckedChange={handleUISoundsChange}
+                      className="data-[state=checked]:bg-[#000000]"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <Label>Typing Synth</Label>
-                  <Switch
-                    checked={typingSynthEnabled}
-                    onCheckedChange={handleTypingSynthChange}
-                    className="data-[state=checked]:bg-[#000000]"
-                  />
+
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <Label>Speech</Label>
+                    <Switch
+                      checked={speechEnabled}
+                      onCheckedChange={handleSpeechChange}
+                      className="data-[state=checked]:bg-[#000000]"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -565,29 +642,56 @@ export function ControlPanelsAppComponent({
                     className="data-[state=checked]:bg-[#000000]"
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
+
+                {/* Chat Synth preset */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
                     <Label>Chat Synth</Label>
-                    <Label className="text-[11px] text-gray-600 font-geneva-12 pr-1">
-                      Sounds when streaming
-                    </Label>
+                    <Select
+                      value={synthPreset}
+                      onValueChange={handleSynthPresetChange}
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Select a preset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(SYNTH_PRESETS).map(([key, preset]) => (
+                          <SelectItem key={key} value={key}>
+                            {preset.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Select
-                    value={synthPreset}
-                    onValueChange={handleSynthPresetChange}
-                  >
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Select a preset" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(SYNTH_PRESETS).map(([key, preset]) => (
-                        <SelectItem key={key} value={key}>
-                          {preset.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
+
+                {/* Volume controls separator */}
+                <hr className="border-gray-400 my-3" />
+
+                {/* Vertical Volume Sliders - Mixer UI */}
+                <VolumeMixer
+                  masterVolume={masterVolume}
+                  setMasterVolume={setMasterVolume}
+                  setPrevMasterVolume={setPrevMasterVolume}
+                  handleMasterMuteToggle={handleMasterMuteToggle}
+                  uiVolume={uiVolume}
+                  setUiVolume={setUiVolume}
+                  setPrevUiVolume={setPrevUiVolume}
+                  handleUiMuteToggle={handleUiMuteToggle}
+                  speechVolume={speechVolume}
+                  setSpeechVolume={setSpeechVolume}
+                  setPrevSpeechVolume={setPrevSpeechVolume}
+                  handleSpeechMuteToggle={handleSpeechMuteToggle}
+                  chatSynthVolume={chatSynthVolume}
+                  setChatSynthVolume={setChatSynthVolume}
+                  setPrevChatSynthVolume={setPrevChatSynthVolume}
+                  handleChatSynthMuteToggle={handleChatSynthMuteToggle}
+                  ipodVolume={ipodVolume}
+                  setIpodVolume={setIpodVolume}
+                  setPrevIpodVolume={setPrevIpodVolume}
+                  handleIpodMuteToggle={handleIpodMuteToggle}
+                  isIOS={isIOS}
+                />
               </div>
             </TabsContent>
 
@@ -655,7 +759,7 @@ export function ControlPanelsAppComponent({
                   </p>
                 </div>
 
-                <hr className="border-gray-400"></hr>
+                <hr className="border-gray-400 my-4"></hr>
 
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
@@ -682,22 +786,6 @@ export function ControlPanelsAppComponent({
                     <Switch
                       checked={shaderEffectEnabled}
                       onCheckedChange={setShaderEffectEnabled}
-                      className="data-[state=checked]:bg-[#000000]"
-                    />
-                  </div>
-                )}
-
-                {debugMode && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <Label>Chat Speech</Label>
-                      <Label className="text-[11px] text-gray-600 font-geneva-12 pr-1">
-                        Voice replies in Chats
-                      </Label>
-                    </div>
-                    <Switch
-                      checked={speechEnabled}
-                      onCheckedChange={handleSpeechChange}
                       className="data-[state=checked]:bg-[#000000]"
                     />
                   </div>

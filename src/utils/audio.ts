@@ -1,6 +1,6 @@
 import WaveSurfer from "wavesurfer.js";
 
-export const createWaveform = async (
+export const createWaveform = (
   container: HTMLElement,
   base64Data: string
 ): Promise<WaveSurfer> => {
@@ -32,8 +32,24 @@ export const createWaveform = async (
     wavesurfer.setOptions({ cursorColor: "transparent" });
   });
 
-  await wavesurfer.loadBlob(blob);
-  return wavesurfer;
+  return new Promise((resolve, reject) => {
+    wavesurfer.on("ready", () => {
+      resolve(wavesurfer);
+    });
+    wavesurfer.on("error", (err) => {
+      console.error("WaveSurfer error:", err);
+      wavesurfer.destroy(); // Clean up on error
+      reject(err);
+    });
+
+    try {
+      wavesurfer.loadBlob(blob); // Start loading
+    } catch (error) {
+      console.error("Error calling wavesurfer.loadBlob:", error);
+      wavesurfer.destroy(); // Clean up on synchronous error
+      reject(error);
+    }
+  });
 };
 
 export const createAudioFromBase64 = (base64Data: string): HTMLAudioElement => {

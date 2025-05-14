@@ -65,7 +65,7 @@ export type LocationOption =
 
 // Default constants
 export const DEFAULT_URL = "https://apple.com";
-export const DEFAULT_YEAR = "2003";
+export const DEFAULT_YEAR = "2001";
 
 export const DEFAULT_TIMELINE: { [year: string]: string } = {
   "2030":
@@ -107,7 +107,7 @@ export const DEFAULT_FAVORITES: Favorite[] = [
     title: "Apple",
     url: "https://apple.com",
     favicon: "https://www.google.com/s2/favicons?domain=apple.com&sz=32",
-    year: "2003",
+    year: "2001",
     isDirectory: false,
   },
   {
@@ -376,7 +376,6 @@ interface InternetExplorerStore {
   prefetchedTitle: string | null; // New: Store prefetched title
   errorDetails: ErrorResponse | null; // New: Store detailed error info
 
-
   // Favorites and history
   favorites: Favorite[];
   history: HistoryEntry[];
@@ -512,12 +511,15 @@ const getHostname = (targetUrl: string): string => {
       const params = new URLSearchParams(query);
       const inner = params.get("url");
       if (inner) {
-        return new URL(inner.startsWith("http") ? inner : `https://${inner}`).hostname;
+        return new URL(inner.startsWith("http") ? inner : `https://${inner}`)
+          .hostname;
       }
       // Fallback to unknown for other internal paths
       return "unknown";
     }
-    return new URL(targetUrl.startsWith("http") ? targetUrl : `https://${targetUrl}`).hostname;
+    return new URL(
+      targetUrl.startsWith("http") ? targetUrl : `https://${targetUrl}`
+    ).hostname;
   } catch {
     return "unknown";
   }
@@ -955,7 +957,6 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
             ? finalState.aiCache
             : {};
 
-
         return finalState as InternetExplorerStore;
       },
     }
@@ -965,9 +966,8 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
 // Utility function to check if a URL should bypass the proxy
 export const isDirectPassthrough = (url: string): boolean => {
   try {
-    const hostname = new URL(
-      url.startsWith("http") ? url : `https://${url}`
-    ).hostname;
+    const hostname = new URL(url.startsWith("http") ? url : `https://${url}`)
+      .hostname;
     return DIRECT_PASSTHROUGH_DOMAINS.some(
       (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
     );

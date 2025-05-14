@@ -18,6 +18,8 @@ interface PaintCanvasProps {
   onContentChange?: () => void;
   canvasWidth?: number;
   canvasHeight?: number;
+  /** Whether the Paint window is currently foreground (active) */
+  isForeground?: boolean;
 }
 
 interface PaintCanvasRef {
@@ -56,6 +58,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       onContentChange,
       canvasWidth = 589,
       canvasHeight = 418,
+      isForeground = false,
     },
     ref
   ) => {
@@ -213,9 +216,10 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
     );
 
     useEffect(() => {
+      if (!isForeground) return; // Only register shortcuts when window is foreground
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [handleKeyDown]);
+    }, [isForeground, handleKeyDown]);
 
     // Animate selection dashes
     useEffect(() => {
@@ -604,6 +608,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
 
     // Add keyboard shortcuts for clipboard operations
     useEffect(() => {
+      if (!isForeground) return; // Only register clipboard shortcuts when foreground
       const handleClipboardShortcuts = (e: KeyboardEvent) => {
         const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
         const cmdKey = isMac ? e.metaKey : e.ctrlKey;
@@ -626,7 +631,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       window.addEventListener("keydown", handleClipboardShortcuts);
       return () =>
         window.removeEventListener("keydown", handleClipboardShortcuts);
-    }, [copySelectionToClipboard, clearSelection, handlePaste]);
+    }, [isForeground, copySelectionToClipboard, clearSelection, handlePaste]);
 
     const getCanvasPoint = (
       event:

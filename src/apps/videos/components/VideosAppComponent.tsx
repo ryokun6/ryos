@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,9 @@ import { helpItems, appMetadata } from "..";
 import { useVideoStore, DEFAULT_VIDEOS } from "@/stores/useVideoStore";
 import { Button } from "@/components/ui/button";
 import { useSound, Sounds } from "@/hooks/useSound";
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import { toast } from "sonner";
+import { useAppStore } from "@/stores/useAppStore";
 
 interface Video {
   id: string;
@@ -300,6 +303,7 @@ export function VideosAppComponent({
   onClose,
   isForeground,
   skipInitialSound,
+  initialData,
 }: AppProps) {
   const { play: playVideoTape } = useSound(Sounds.VIDEO_TAPE);
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
@@ -331,6 +335,11 @@ export function VideosAppComponent({
   const [elapsedTime, setElapsedTime] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout>();
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  // --- App Store hooks ---
+  const bringToForeground = useAppStore((state) => state.bringToForeground);
+  const clearVideosInitialData = useAppStore((state) => state.clearInitialData);
 
   // --- Prevent unwanted autoplay on Mobile Safari ---
   const hasAutoplayCheckedRef = useRef(false);
@@ -524,6 +533,94 @@ export function VideosAppComponent({
     }
   };
 
+  // --- NEW: Function to add and play video by ID ---
+  const handleAddAndPlayVideoById = async (videoId: string) => {
+    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    try {
+      await addVideo(youtubeUrl); // addVideo sets current index and plays
+      showStatus(`▶ Playing shared video`);
+    } catch (error) {
+      console.error(`[Videos] Error adding video for videoId ${videoId}:`, error);
+      showStatus(`❌ Error adding ${videoId}`);
+    }
+  };
+
+  // --- NEW: Function to process video ID (find or add/play) ---
+  const processVideoId = useCallback(async (videoId: string) => {
+    const currentVideos = useVideoStore.getState().videos;
+    const existingVideoIndex = currentVideos.findIndex(video => video.id === videoId);
+
+    // --- Check for mobile Safari BEFORE setting playing state ---
+    const ua = navigator.userAgent;
+    const isIOS = /iP(hone|od|ad)/.test(ua);
+    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
+    const shouldAutoplay = !(isIOS || isSafari);
+    // --- End check ---
+
+    if (existingVideoIndex !== -1) {
+      console.log(`[Videos] Video ID ${videoId} found in playlist. Playing.`);
+      setCurrentIndex(existingVideoIndex);
+      // --- Only set playing if allowed ---
+      if (shouldAutoplay) {
+        setIsPlaying(true);
+      }
+      // Optionally show status
+      showStatus(`▶ Playing ${currentVideos[existingVideoIndex].title}`);
+    } else {
+      console.log(`[Videos] Video ID ${videoId} not found. Adding and playing.`);
+      await handleAddAndPlayVideoById(videoId);
+       // --- Only set playing if allowed ---
+       if (shouldAutoplay) {
+         const newIndex = useVideoStore.getState().currentIndex;
+         const addedVideo = useVideoStore.getState().videos[newIndex];
+         if (addedVideo?.id === videoId) {
+            setIsPlaying(true);
+         } else {
+            console.warn("[Videos] Index mismatch after adding video, autoplay skipped.");
+         }
+       }
+    }
+  }, [setCurrentIndex, setIsPlaying, handleAddAndPlayVideoById, showStatus]);
+
+  // --- NEW: Effect for initial data on mount ---
+  useEffect(() => {
+    if (isWindowOpen && initialData?.videoId && typeof initialData.videoId === 'string') {
+      const videoIdToProcess = initialData.videoId;
+      console.log(`[Videos] Processing initialData.videoId on mount: ${videoIdToProcess}`);
+      toast.info("Opening shared video...");
+      setTimeout(() => {
+        processVideoId(videoIdToProcess).then(() => {
+          clearVideosInitialData('videos');
+          console.log(`[Videos] Cleared initialData after processing ${videoIdToProcess}`);
+        }).catch(error => {
+          console.error(`[Videos] Error processing initial videoId ${videoIdToProcess}:`, error);
+          toast.error("Failed to load shared video", { description: `Video ID: ${videoIdToProcess}` });
+        });
+      }, 100); 
+    }
+  }, [isWindowOpen, initialData, processVideoId, clearVideosInitialData]);
+
+  // --- NEW: Effect for updateApp event (when app is already open) ---
+  useEffect(() => {
+    const handleUpdateApp = (event: CustomEvent<{ appId: string; initialData?: { videoId?: string } }>) => {
+      if (event.detail.appId === 'videos' && event.detail.initialData?.videoId) {
+        const videoId = event.detail.initialData.videoId;
+        console.log(`[Videos] Received updateApp event with videoId: ${videoId}`);
+        bringToForeground('videos');
+        toast.info("Opening shared video...");
+        processVideoId(videoId).catch(error => {
+           console.error(`[Videos] Error processing videoId ${videoId} from updateApp event:`, error);
+           toast.error("Failed to load shared video", { description: `Video ID: ${videoId}` });
+        });
+      }
+    };
+
+    window.addEventListener('updateApp', handleUpdateApp as EventListener);
+    return () => {
+      window.removeEventListener('updateApp', handleUpdateApp as EventListener);
+    };
+  }, [processVideoId, bringToForeground]);
+
   const togglePlay = () => {
     togglePlayStore();
     showStatus(!isPlaying ? "PLAY ▶" : "PAUSED ❙❙");
@@ -601,6 +698,18 @@ export function VideosAppComponent({
     }
   };
 
+  // --- NEW: Handler to open share dialog ---
+  const handleShareVideo = () => {
+    if (videos.length > 0 && currentIndex >= 0) {
+      setIsShareDialogOpen(true);
+    }
+  };
+
+  // --- NEW: Generate share URL function ---
+  const videosGenerateShareUrl = (videoId: string): string => {
+    return `${window.location.origin}/videos/${videoId}`;
+  };
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -661,6 +770,7 @@ export function VideosAppComponent({
         isLoopCurrent={loopCurrent}
         isShuffled={isShuffled}
         onFullScreen={handleFullScreen}
+        onShareVideo={handleShareVideo}
       />
       <WindowFrame
         title="Videos"
@@ -956,6 +1066,16 @@ export function VideosAppComponent({
           value={urlInput}
           onChange={setUrlInput}
           isLoading={isAddingVideo}
+        />
+        {/* Add ShareItemDialog */}
+        <ShareItemDialog
+          isOpen={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
+          itemType="Video"
+          itemIdentifier={videos[currentIndex]?.id || ""}
+          title={videos[currentIndex]?.title}
+          details={videos[currentIndex]?.artist}
+          generateShareUrl={videosGenerateShareUrl}
         />
       </WindowFrame>
     </>

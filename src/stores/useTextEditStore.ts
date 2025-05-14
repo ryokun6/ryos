@@ -1,21 +1,29 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { markdownToHtml } from "@/utils/markdown";
+import { generateJSON } from "@tiptap/core";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
+import { JSONContent, AnyExtension } from "@tiptap/core";
 
 export interface TextEditStoreState {
   /** The absolute path of the currently open file, or null if the document is untitled. */
   lastFilePath: string | null;
   /** Raw ProseMirror JSON content for crash-recovery / hand-off to other apps. */
-  contentJson: any | null;
+  contentJson: JSONContent | null;
   /** Whether the in-memory document has edits that have not been saved to disk yet. */
   hasUnsavedChanges: boolean;
   // actions
   setLastFilePath: (path: string | null) => void;
-  setContentJson: (json: any | null) => void;
+  setContentJson: (json: JSONContent | null) => void;
   setHasUnsavedChanges: (val: boolean) => void;
   /** Clear the store back to its initial state. */
   reset: () => void;
   /** Apply an external update to the document (e.g. Chat GPT tool calls). */
-  applyExternalUpdate: (json: any) => void;
+  applyExternalUpdate: (json: JSONContent) => void;
   /**
    * Append (or prepend) a simple paragraph node containing plain text.
    * This helper is primarily used by AI tool calls so they can modify the
@@ -42,29 +50,37 @@ export const useTextEditStore = create<TextEditStoreState>()(
        */
       insertText: (text: string, position: "start" | "end" = "end") =>
         set((state) => {
-          // Build a ProseMirror paragraph node for the text snippet
-          const paragraphNode = {
-            type: "paragraph",
-            content: [{ type: "text", text }],
-          } as any;
+          // Step 1: Convert incoming markdown snippet to HTML
+          const htmlFragment = markdownToHtml(text);
 
-          let newDocJson: any;
+          // Step 2: Generate TipTap-compatible JSON from the HTML fragment
+          const parsedJson = generateJSON(htmlFragment, [
+            StarterKit,
+            Underline,
+            TextAlign.configure({ types: ["heading", "paragraph"] }),
+            TaskList,
+            TaskItem.configure({ nested: true }),
+          ] as AnyExtension[]);
+
+          // parsedJson is a full doc – we want just its content array
+          const nodesToInsert = Array.isArray(parsedJson.content)
+            ? parsedJson.content
+            : [];
+
+          let newDocJson: JSONContent;
 
           if (state.contentJson && Array.isArray(state.contentJson.content)) {
-            // Shallow-clone the existing document JSON (preserve other metadata)
+            // Clone existing document JSON to avoid direct mutation
             const cloned = JSON.parse(JSON.stringify(state.contentJson));
             if (position === "start") {
-              cloned.content.unshift(paragraphNode);
+              cloned.content = [...nodesToInsert, ...cloned.content];
             } else {
-              cloned.content.push(paragraphNode);
+              cloned.content = [...cloned.content, ...nodesToInsert];
             }
             newDocJson = cloned;
           } else {
-            // No existing doc – create a new one
-            newDocJson = {
-              type: "doc",
-              content: [paragraphNode],
-            };
+            // No existing document – use the parsed JSON directly
+            newDocJson = parsedJson;
           }
 
           return {
@@ -73,7 +89,11 @@ export const useTextEditStore = create<TextEditStoreState>()(
           } as Partial<TextEditStoreState>;
         }),
       reset: () =>
-        set({ lastFilePath: null, contentJson: null, hasUnsavedChanges: false }),
+        set({
+          lastFilePath: null,
+          contentJson: null,
+          hasUnsavedChanges: false,
+        }),
       applyExternalUpdate: (json) =>
         set({
           contentJson: json,
@@ -87,11 +107,15 @@ export const useTextEditStore = create<TextEditStoreState>()(
         // If no persisted state (first load) try to migrate from old localStorage keys
         if (!persistedState || version < CURRENT_TEXTEDIT_STORE_VERSION) {
           try {
-            const lastFilePath = localStorage.getItem("textedit:last-file-path");
+            const lastFilePath = localStorage.getItem(
+              "textedit:last-file-path"
+            );
             const rawJson = localStorage.getItem("textedit:content");
             const migratedState: TextEditStoreState = {
               lastFilePath: lastFilePath ?? null,
-              contentJson: rawJson ? JSON.parse(rawJson) : null,
+              contentJson: rawJson
+                ? (JSON.parse(rawJson) as JSONContent)
+                : null,
               hasUnsavedChanges: false,
               setLastFilePath: () => {},
               setContentJson: () => {},

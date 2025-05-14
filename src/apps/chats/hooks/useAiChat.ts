@@ -12,6 +12,14 @@ import { appRegistry } from "@/config/appRegistry";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
+import { generateHTML, generateJSON } from "@tiptap/core";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
+import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
+import { AnyExtension, JSONContent } from "@tiptap/core";
 
 // TODO: Move relevant state and logic from ChatsAppComponent here
 // - AI chat state (useChat hook)
@@ -124,6 +132,22 @@ export function useAiChat() {
   // Track how many characters of each assistant message have already been sent to TTS
   const speechProgressRef = useRef<Record<string, number>>({});
 
+  // Currently highlighted chunk for UI animation
+  const [highlightSegment, setHighlightSegment] = useState<{
+    messageId: string;
+    start: number;
+    end: number;
+  } | null>(null);
+
+  // Queue of upcoming highlight segments awaiting playback completion
+  const highlightQueueRef = useRef<
+    {
+      messageId: string;
+      start: number;
+      end: number;
+    }[]
+  >([]);
+
   // On first mount, mark any assistant messages already present as fully processed
   useEffect(() => {
     aiMessages.forEach((msg) => {
@@ -188,7 +212,7 @@ export function useAiChat() {
 
             launchApp(id as AppId, launchOptions);
 
-            let confirmationMessage = `Launched ${appName}`;
+            let confirmationMessage = `Launched ${appName}.`;
             if (id === "internet-explorer") {
               const urlPart = url ? ` to ${url}` : "";
               const yearPart = year && year !== "current" ? ` in ${year}` : "";
@@ -203,14 +227,26 @@ export function useAiChat() {
             closeApp(id as AppId);
             return `Closed ${appName}.`;
           }
-          case "searchReplace": {
+          case "textEditSearchReplace": {
             const { search, replace, isRegex } = toolCall.args as {
               search: string;
               replace: string;
               isRegex?: boolean;
             };
 
-            console.log("[ToolCall] searchReplace:", { search, replace, isRegex });
+            // Normalize line endings to avoid mismatches between CRLF / LF
+            const normalizedSearch = search.replace(/\r\n?/g, "\n");
+            const normalizedReplace = replace.replace(/\r\n?/g, "\n");
+
+            // Helper to escape special regex chars when doing literal replacement
+            const escapeRegExp = (str: string) =>
+              str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+            console.log("[ToolCall] searchReplace:", {
+              search: normalizedSearch,
+              replace: normalizedReplace,
+              isRegex,
+            });
 
             // Ensure TextEdit is open – launch if not already
             const appState = useAppStore.getState();
@@ -219,45 +255,65 @@ export function useAiChat() {
             }
 
             const textEditState = useTextEditStore.getState();
-            const { contentJson, applyExternalUpdate } = textEditState as any;
+            const { contentJson, applyExternalUpdate } = textEditState;
 
             if (!contentJson) {
-              return "No document is currently open in TextEdit.";
+              return "No file currently open in TextEdit.";
             }
 
-            const originalStr = JSON.stringify(contentJson);
-            let updatedStr: string;
-
             try {
-              if (isRegex) {
-                const regex = new RegExp(search, "g");
-                updatedStr = originalStr.replace(regex, replace);
-              } else {
-                updatedStr = originalStr.split(search).join(replace);
+              // 1. Convert current JSON document to HTML
+              const htmlStr = generateHTML(contentJson, [
+                StarterKit,
+                Underline,
+                TextAlign.configure({ types: ["heading", "paragraph"] }),
+                TaskList,
+                TaskItem.configure({ nested: true }),
+              ] as AnyExtension[]);
+
+              // 2. Convert HTML to Markdown for regex/text replacement
+              const markdownStr = htmlToMarkdown(htmlStr);
+
+              // 3. Perform the replacement on the markdown text
+              const updatedMarkdown = (() => {
+                try {
+                  const pattern = isRegex
+                    ? normalizedSearch
+                    : escapeRegExp(normalizedSearch);
+                  const regex = new RegExp(pattern, "gm");
+                  return markdownStr.replace(regex, normalizedReplace);
+                } catch (err) {
+                  console.error("Error while building/applying regex:", err);
+                  throw err;
+                }
+              })();
+
+              if (updatedMarkdown === markdownStr) {
+                return "Nothing found to replace.";
               }
+
+              // 4. Convert updated markdown back to HTML and then to JSON
+              const updatedHtml = markdownToHtml(updatedMarkdown);
+              const updatedJson = generateJSON(updatedHtml, [
+                StarterKit,
+                Underline,
+                TextAlign.configure({ types: ["heading", "paragraph"] }),
+                TaskList,
+                TaskItem.configure({ nested: true }),
+              ] as AnyExtension[]);
+
+              // 5. Apply the updated JSON to the store – TextEdit will react via subscription
+              applyExternalUpdate(updatedJson);
+
+              return `Replaced "${search}" with "${replace}".`;
             } catch (err) {
-              console.error("searchReplace error while processing regex:", err);
-              return `Failed to apply search/replace: ${(err as Error).message}`;
+              console.error("searchReplace error:", err);
+              return `Failed to apply search/replace: ${
+                err instanceof Error ? err.message : "Unknown error"
+              }`;
             }
-
-            if (updatedStr === originalStr) {
-              return "No occurrences found to replace.";
-            }
-
-            let updatedJson: any;
-            try {
-              updatedJson = JSON.parse(updatedStr);
-            } catch (err) {
-              console.error("searchReplace error while parsing updated JSON:", err);
-              return "Replacement produced invalid document data.";
-            }
-
-            // Update the store – TextEdit will react via subscription
-            applyExternalUpdate(updatedJson);
-
-            return `Replaced occurrences of \"${search}\" with \"${replace}\".`;
           }
-          case "insertText": {
+          case "textEditInsertText": {
             const { text, position } = toolCall.args as {
               text: string;
               position?: "start" | "end";
@@ -272,17 +328,21 @@ export function useAiChat() {
             }
 
             const textEditState = useTextEditStore.getState();
-            const { insertText } = textEditState as any;
+            const { insertText } = textEditState;
 
             // Use a small debounce so rapid successive insertText calls (if any)
             // don't overwhelm the store/UI. We reuse the same debounced helper by
             // passing in a thunk that performs the real insert when the debounce
             // interval elapses.
-            debouncedInsertTextUpdate(() => insertText(text, position || "end"));
+            debouncedInsertTextUpdate(() =>
+              insertText(text, position || "end")
+            );
 
-            return `Inserting text at ${position === "start" ? "start" : "end"} of document…`;
+            return `Inserted text at ${
+              position === "start" ? "start" : "end"
+            } of document…`;
           }
-          case "newFile": {
+          case "textEditNewFile": {
             console.log("[ToolCall] newFile");
             // Ensure TextEdit is open – launch if not already
             const appState = useAppStore.getState();
@@ -293,23 +353,216 @@ export function useAiChat() {
             const textEditState = useTextEditStore.getState();
             const {
               reset,
-              applyExternalUpdate,
+              applyExternalUpdate: applyUpdateForNewFile,
               setLastFilePath,
               setHasUnsavedChanges,
-            } = textEditState as any;
+            } = textEditState;
 
             // Clear existing document state
             reset();
 
             // Provide an explicit empty document so the editor clears its content
-            const blankDoc = { type: "doc", content: [] };
-            applyExternalUpdate(blankDoc);
+            const blankDoc: JSONContent = { type: "doc", content: [] };
+            applyUpdateForNewFile(blankDoc);
 
             // Ensure the new document is treated as untitled and saved state is clean
             setLastFilePath(null);
             setHasUnsavedChanges(false);
 
-            return "Started a new, untitled document in TextEdit.";
+            return "Created a new, untitled document in TextEdit.";
+          }
+          case "ipodPlayPause": {
+            const { action } = toolCall.args as {
+              action?: "play" | "pause" | "toggle";
+            };
+            console.log("[ToolCall] ipodPlayPause:", { action });
+
+            // Ensure iPod app is open
+            const appState = useAppStore.getState();
+            if (!appState.apps["ipod"]?.isOpen) {
+              launchApp("ipod");
+            }
+
+            const ipod = useIpodStore.getState();
+
+            switch (action) {
+              case "play":
+                if (!ipod.isPlaying) ipod.setIsPlaying(true);
+                break;
+              case "pause":
+                if (ipod.isPlaying) ipod.setIsPlaying(false);
+                break;
+              default:
+                ipod.togglePlay();
+                break;
+            }
+
+            const nowPlaying = useIpodStore.getState().isPlaying;
+            return nowPlaying ? "iPod is now playing." : "iPod is paused.";
+          }
+          case "ipodPlaySong": {
+            const { id, title, artist } = toolCall.args as {
+              id?: string;
+              title?: string;
+              artist?: string;
+            };
+            console.log("[ToolCall] ipodPlaySong:", { id, title, artist });
+
+            // Ensure iPod app is open
+            const appState = useAppStore.getState();
+            if (!appState.apps["ipod"]?.isOpen) {
+              launchApp("ipod");
+            }
+
+            const ipodState = useIpodStore.getState();
+            const { tracks } = ipodState;
+
+            // Helper for case-insensitive includes
+            const ciIncludes = (
+              source: string | undefined,
+              query: string | undefined
+            ): boolean => {
+              if (!source || !query) return false;
+              return source.toLowerCase().includes(query.toLowerCase());
+            };
+
+            let finalCandidateIndices: number[] = [];
+            const allTracksWithIndices = tracks.map((t, idx) => ({
+              track: t,
+              index: idx,
+            }));
+
+            // 1. Filter by ID first if provided
+            const idFilteredTracks = id
+              ? allTracksWithIndices.filter(({ track }) => track.id === id)
+              : allTracksWithIndices;
+
+            // 2. Primary filter: title in track.title, artist in track.artist
+            // Pass if the respective field (title/artist) is not queried
+            const primaryCandidates = idFilteredTracks.filter(({ track }) => {
+              const titleMatches = title
+                ? ciIncludes(track.title, title)
+                : true;
+              const artistMatches = artist
+                ? ciIncludes(track.artist, artist)
+                : true;
+              return titleMatches && artistMatches;
+            });
+
+            if (primaryCandidates.length > 0) {
+              finalCandidateIndices = primaryCandidates.map(
+                ({ index }) => index
+              );
+            } else if (title || artist) {
+              // 3. Secondary filter (cross-match) if primary failed AND title/artist was queried
+              const secondaryCandidates = idFilteredTracks.filter(
+                ({ track }) => {
+                  const titleInArtistMatches = title
+                    ? ciIncludes(track.artist, title)
+                    : false;
+                  const artistInTitleMatches = artist
+                    ? ciIncludes(track.title, artist)
+                    : false;
+
+                  if (title && artist) {
+                    // Both title and artist were in the original query
+                    return titleInArtistMatches || artistInTitleMatches;
+                  }
+                  if (title) {
+                    // Only title was in original query
+                    return titleInArtistMatches;
+                  }
+                  if (artist) {
+                    // Only artist was in original query
+                    return artistInTitleMatches;
+                  }
+                  return false;
+                }
+              );
+              finalCandidateIndices = secondaryCandidates.map(
+                ({ index }) => index
+              );
+            }
+            // If only ID was queried and it failed, primaryCandidates would be empty,
+            // and the `else if (title || artist)` block wouldn't run.
+            // finalCandidateIndices would remain empty.
+
+            if (finalCandidateIndices.length === 0) {
+              return "Song not found in iPod library.";
+            }
+
+            // If multiple matches, choose one at random
+            const randomIndexFromArray =
+              finalCandidateIndices[
+                Math.floor(Math.random() * finalCandidateIndices.length)
+              ];
+
+            const { setCurrentIndex, setIsPlaying } = useIpodStore.getState();
+            setCurrentIndex(randomIndexFromArray);
+            setIsPlaying(true);
+
+            const track = tracks[randomIndexFromArray];
+            const trackDesc = `${track.title}${
+              track.artist ? ` by ${track.artist}` : ""
+            }`;
+            return `Playing ${trackDesc}.`;
+          }
+          case "ipodNextTrack": {
+            console.log("[ToolCall] ipodNextTrack");
+            // Ensure iPod app is open
+            const appState = useAppStore.getState();
+            if (!appState.apps["ipod"]?.isOpen) {
+              launchApp("ipod");
+            }
+
+            const ipodState = useIpodStore.getState();
+            const { nextTrack } = ipodState;
+            if (typeof nextTrack === "function") {
+              nextTrack();
+            }
+
+            const updatedIpod = useIpodStore.getState();
+            const track = updatedIpod.tracks[updatedIpod.currentIndex];
+            if (track) {
+              const desc = `${track.title}${
+                track.artist ? ` by ${track.artist}` : ""
+              }`;
+              return `Skipped to ${desc}.`;
+            }
+            return "Skipped to next track.";
+          }
+          case "ipodPreviousTrack": {
+            console.log("[ToolCall] ipodPreviousTrack");
+            // Ensure iPod app is open
+            const appState = useAppStore.getState();
+            if (!appState.apps["ipod"]?.isOpen) {
+              launchApp("ipod");
+            }
+
+            const ipodState = useIpodStore.getState();
+            const { previousTrack } = ipodState;
+            if (typeof previousTrack === "function") {
+              previousTrack();
+            }
+
+            const updatedIpod = useIpodStore.getState();
+            const track = updatedIpod.tracks[updatedIpod.currentIndex];
+            if (track) {
+              const desc = `${track.title}${
+                track.artist ? ` by ${track.artist}` : ""
+              }`;
+              return `Went back to previous track: ${desc}.`;
+            }
+            return "Went back to previous track.";
+          }
+          case "generateHtml": {
+            const { html } = toolCall.args as { html: string };
+            console.log("[ToolCall] generateHtml:", {
+              htmlLength: html.length,
+            });
+
+            // Return the raw HTML string; ChatMessages will render it via HtmlPreview
+            return html.trim();
           }
           default:
             console.warn("Unhandled tool call:", toolCall.toolName);
@@ -320,7 +573,7 @@ export function useAiChat() {
         return `Failed to execute ${toolCall.toolName}`;
       }
     },
-    onFinish: (_: Message | { message: Message }) => {
+    onFinish: (/* _finishedMessage: Message | { message: Message } */) => {
       // Sync latest messages from ref to Zustand store
       const finalMessages = currentSdkMessagesRef.current;
       console.log(
@@ -402,7 +655,51 @@ export function useAiChat() {
       if (sentence && !/^[\s.!?。，！？；：]+$/.test(sentence)) {
         const cleaned = cleanTextForSpeech(sentence);
         if (cleaned && !/^[\s.!?。，！？；：]+$/.test(cleaned)) {
-          speak(cleaned);
+          // If this is an urgent message (starts with "!!!!"), the UI trims
+          // the first 4 exclamation marks *and* any following spaces before
+          // rendering. We need to offset our start/end indices so they align
+          // with the visible (trimmed) text.
+          let prefixOffset = 0;
+          if (lastMsg.content.startsWith("!!!!")) {
+            // Base 4 chars for the exclamation marks
+            prefixOffset = 4;
+            // Skip any whitespace that will be removed by trimStart()
+            let i = 4;
+            while (
+              i < lastMsg.content.length &&
+              /\s/.test(lastMsg.content[i])
+            ) {
+              prefixOffset++;
+              i++;
+            }
+          }
+
+          const chunkStart =
+            processed + newText.indexOf(sentence) + spokenChars - prefixOffset;
+          const chunkEnd = chunkStart + sentence.length;
+
+          // Push highlight info to queue
+          const seg = {
+            messageId: lastMsg.id,
+            start: chunkStart,
+            end: chunkEnd,
+          };
+          highlightQueueRef.current.push(seg);
+
+          // If no highlight active, set as current
+          if (!highlightSegment) {
+            setHighlightSegment(seg);
+          }
+
+          speak(cleaned, () => {
+            // On chunk end, shift queue
+            highlightQueueRef.current.shift();
+            if (highlightQueueRef.current.length > 0) {
+              setHighlightSegment(highlightQueueRef.current[0]);
+            } else {
+              setHighlightSegment(null);
+            }
+          });
         }
       }
       spokenChars += idx;
@@ -462,6 +759,18 @@ export function useAiChat() {
 
   const clearChats = useCallback(() => {
     console.log("Clearing AI chats");
+
+    // --- Reset speech & highlight state so the next reply starts clean ---
+    // Stop any ongoing TTS playback or pending requests
+    stopTts();
+
+    // Clear progress tracking so new messages are treated as fresh
+    speechProgressRef.current = {};
+
+    // Reset highlight queue & currently highlighted segment
+    highlightQueueRef.current = [];
+    setHighlightSegment(null);
+
     // Define the initial message
     const initialMessage: Message = {
       id: "1", // Ensure consistent ID for the initial message
@@ -472,7 +781,7 @@ export function useAiChat() {
     // Update both the Zustand store and the SDK state directly
     setAiMessages([initialMessage]);
     setSdkMessages([initialMessage]);
-  }, [setAiMessages, setSdkMessages]);
+  }, [setAiMessages, setSdkMessages, stopTts]);
 
   // --- Dialog States & Handlers ---
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
@@ -584,5 +893,7 @@ export function useAiChat() {
     handleSaveSubmit,
 
     isSpeaking,
+
+    highlightSegment,
   };
 }

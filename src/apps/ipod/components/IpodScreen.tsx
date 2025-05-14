@@ -3,6 +3,7 @@ import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Track } from "@/stores/useIpodStore";
+import { useAppStore } from "@/stores/useAppStore";
 
 // Helper component: MenuListItem
 function MenuListItem({
@@ -174,6 +175,7 @@ interface IpodScreenProps {
   statusMessage: string | null;
   onToggleVideo: () => void;
   lcdFilterOn: boolean;
+  ipodVolume: number;
 }
 
 // Main IpodScreen component
@@ -203,6 +205,7 @@ export function IpodScreen({
   statusMessage,
   onToggleVideo,
   lcdFilterOn,
+  ipodVolume,
 }: IpodScreenProps) {
   // Animation variants for menu transitions
   const menuVariants = {
@@ -230,6 +233,9 @@ export function IpodScreen({
 
   // Need scroll flag
   const needScrollRef = useRef(false);
+
+  const masterVolume = useAppStore((s) => s.masterVolume);
+  const finalIpodVolume = ipodVolume * masterVolume;
 
   // Reset refs when menu items change
   const resetItemRefs = (count: number) => {
@@ -342,7 +348,9 @@ export function IpodScreen({
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
           : "bg-[#8a9da9] contrast-65 saturate-50",
         // Add the soft blue glow when both LCD filter and backlight are on
-        lcdFilterOn && backlightOn && "shadow-[0_0_10px_2px_rgba(197,224,245,0.05)]"
+        lcdFilterOn &&
+          backlightOn &&
+          "shadow-[0_0_10px_2px_rgba(197,224,245,0.05)]"
       )}
     >
       {/* LCD screen overlay with scan lines - only show when LCD filter is on */}
@@ -378,6 +386,7 @@ export function IpodScreen({
               onPause={handlePause}
               onReady={handleReady}
               loop={loopCurrent}
+              volume={finalIpodVolume}
               playsinline={true}
               config={{
                 youtube: {
@@ -423,7 +432,9 @@ export function IpodScreen({
       {/* Title bar - not animated, immediately swaps */}
       <div className="border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex justify-between items-center sticky top-0 z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
         <div className="w-6 text-xs mt-0.5">{isPlaying ? "▶" : "❙❙"}</div>
-        <div className="truncate max-w-[80%] text-center">{currentMenuTitle}</div>
+        <div className="truncate max-w-[80%] text-center">
+          {currentMenuTitle}
+        </div>
         <div className="w-6 text-xs"></div>
       </div>
 
@@ -546,4 +557,4 @@ export function IpodScreen({
       </div>
     </div>
   );
-} 
+}

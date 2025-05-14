@@ -19,7 +19,8 @@ import { cn } from "@/lib/utils";
 // Import sound hook and paths
 import { useSound, Sounds } from "@/hooks/useSound";
 // Import ShareLinkDialog
-import { ShareLinkDialog } from "./ShareLinkDialog";
+// import { ShareLinkDialog } from "./ShareLinkDialog"; // Old import, to be removed
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog"; // New import
 // Import the new navigation controls
 import TimeNavigationControls from "./TimeNavigationControls";
 
@@ -658,6 +659,19 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   }, [activeYear]);
   // --- End Share handler ---
 
+  const timeMachineGenerateShareUrl = (identifier: string, secondary?: string): string => {
+    // Simple encoding function (client-side)
+    const encodeData = (urlToEncode: string, yearToEncode: string): string => {
+      const combined = `${urlToEncode}|${yearToEncode}`;
+      return btoa(combined)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    };
+    const code = encodeData(identifier, secondary || 'current');
+    return `${window.location.origin}/internet-explorer/${code}`;
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -1150,12 +1164,15 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Add ShareLinkDialog outside the main motion div but within the component's fragment */}
-      <ShareLinkDialog
+  
+      <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
-        url={currentUrl} // Pass the main URL
-        year={activeYear || currentSelectedYear} // Pass the currently selected year
+        itemType="Page"
+        itemIdentifier={currentUrl}
+        secondaryIdentifier={activeYear || currentSelectedYear}
+        title={getHostname(currentUrl)} // Using hostname as title
+        generateShareUrl={timeMachineGenerateShareUrl}
       />
     </>
   );

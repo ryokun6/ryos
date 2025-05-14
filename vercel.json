@@ -79,6 +79,8 @@
     }
   ],
   "rewrites": [
+    { "source": "/videos/:video", "destination": "/" },
+    { "source": "/ipod/:track", "destination": "/" },
     { "source": "/internet-explorer/:code", "destination": "/" },
     { "source": "/finder", "destination": "/" },
     { "source": "/soundboard", "destination": "/" },

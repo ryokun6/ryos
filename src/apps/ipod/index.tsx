@@ -4,7 +4,7 @@ import { IpodAppComponent } from "./components/IpodAppComponent";
 export const helpItems = [
   {
     icon: "🎵",
-    title: "Add Music",
+    title: "Add Songs",
     description: "Paste any YouTube URL to add to your iPod",
   },
   {

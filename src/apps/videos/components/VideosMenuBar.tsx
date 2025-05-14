@@ -43,6 +43,7 @@ interface VideosMenuBarProps {
   isPlaying: boolean;
   isShuffled: boolean;
   onFullScreen: () => void;
+  onShareVideo: () => void;
 }
 
 export function VideosMenuBar({
@@ -67,6 +68,7 @@ export function VideosMenuBar({
   isPlaying,
   isShuffled,
   onFullScreen,
+  onShareVideo,
 }: VideosMenuBarProps) {
   // Group videos by artist
   const videosByArtist = videos.reduce<Record<string, { video: Video; index: number }[]>>(
@@ -103,6 +105,13 @@ export function VideosMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             Open Video...
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={onShareVideo}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            disabled={videos.length === 0}
+          >
+            Share Video...
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -147,6 +156,7 @@ export function VideosMenuBar({
           >
             Next
           </DropdownMenuItem>
+          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onFullScreen}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"

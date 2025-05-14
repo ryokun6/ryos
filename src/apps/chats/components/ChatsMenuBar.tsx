@@ -52,7 +52,6 @@ export function ChatsMenuBar({
   onResetFontSize,
 }: ChatsMenuBarProps) {
   const {
-    debugMode,
     speechEnabled,
     setSpeechEnabled,
     typingSynthEnabled,
@@ -109,7 +108,11 @@ export function ChatsMenuBar({
             Rooms
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0 max-h-[300px] overflow-y-auto">
+        <DropdownMenuContent
+          align="start"
+          sideOffset={1}
+          className="px-0 max-h-[300px] overflow-y-auto"
+        >
           {isAdmin && (
             <DropdownMenuItem
               onClick={onAddRoom}
@@ -124,11 +127,11 @@ export function ChatsMenuBar({
           >
             Set Username...
           </DropdownMenuItem>
-          
+
           {rooms.length > 0 && (
             <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           )}
-          
+
           {/* Ryo Chat Option */}
           <DropdownMenuItem
             onClick={() => onRoomSelect(null)}
@@ -141,22 +144,25 @@ export function ChatsMenuBar({
               {currentRoom === null ? "✓ @ryo" : "@ryo"}
             </span>
           </DropdownMenuItem>
-          
+
           {/* Room List */}
-          {Array.isArray(rooms) && rooms.map(room => (
-            <DropdownMenuItem
-              key={room.id}
-              onClick={() => onRoomSelect(room)}
-              className={cn(
-                "text-md h-6 px-3 active:bg-gray-900 active:text-white",
-                currentRoom?.id === room.id && "bg-gray-200"
-              )}
-            >
-              <span className={cn(!(currentRoom?.id === room.id) && "pl-4")}>
-                {currentRoom?.id === room.id ? `✓ #${room.name}` : `#${room.name}`}
-              </span>
-            </DropdownMenuItem>
-          ))}
+          {Array.isArray(rooms) &&
+            rooms.map((room) => (
+              <DropdownMenuItem
+                key={room.id}
+                onClick={() => onRoomSelect(room)}
+                className={cn(
+                  "text-md h-6 px-3 active:bg-gray-900 active:text-white",
+                  currentRoom?.id === room.id && "bg-gray-200"
+                )}
+              >
+                <span className={cn(!(currentRoom?.id === room.id) && "pl-4")}>
+                  {currentRoom?.id === room.id
+                    ? `✓ #${room.name}`
+                    : `#${room.name}`}
+                </span>
+              </DropdownMenuItem>
+            ))}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -172,16 +178,29 @@ export function ChatsMenuBar({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          {debugMode && (
+          {Object.entries(SYNTH_PRESETS).map(([key, preset]) => (
             <DropdownMenuItem
-              onClick={() => setSpeechEnabled(!speechEnabled)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              key={key}
+              onClick={() => setSynthPreset(key)}
+              className={cn(
+                "text-md h-6 px-3 active:bg-gray-900 active:text-white",
+                synthPreset === key && "bg-gray-200"
+              )}
             >
-              <span className={cn(!speechEnabled && "pl-4")}>
-                {speechEnabled ? "✓ Chat Speech" : "Chat Speech"}
+              <span className={cn(!(synthPreset === key) && "pl-4")}>
+                {synthPreset === key ? `✓ ${preset.name}` : preset.name}
               </span>
             </DropdownMenuItem>
-          )}
+          ))}
+          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+          <DropdownMenuItem
+            onClick={() => setSpeechEnabled(!speechEnabled)}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
+            <span className={cn(!speechEnabled && "pl-4")}>
+              {speechEnabled ? "✓ Chat Speech" : "Chat Speech"}
+            </span>
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setTypingSynthEnabled(!typingSynthEnabled)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
@@ -190,21 +209,6 @@ export function ChatsMenuBar({
               {typingSynthEnabled ? "✓ Typing Synth" : "Typing Synth"}
             </span>
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          {Object.entries(SYNTH_PRESETS).map(([key, preset]) => (
-            <DropdownMenuItem
-              key={key}
-              onClick={() => setSynthPreset(key)}
-              className={cn(
-                "text-md h-6 px-3 active:bg-gray-900 active:text-white",
-                synthPreset === key && "bg-gray-200" 
-              )}
-            >
-              <span className={cn(!(synthPreset === key) && "pl-4")}>
-                {synthPreset === key ? `✓ ${preset.name}` : preset.name}
-              </span>
-            </DropdownMenuItem>
-          ))}
         </DropdownMenuContent>
       </DropdownMenu>
 

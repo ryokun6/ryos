@@ -69,7 +69,9 @@ export function SoundSlot({
             (slot.emoji ? (
               <span
                 className={`text-xl md:text-xl hover:opacity-80 ${
-                  slot.audioData && !isRecording ? 'cursor-pointer hover:bg-black/7 rounded px-0.5' : 'cursor-default'
+                  slot.audioData && !isRecording
+                    ? "cursor-pointer hover:bg-black/7 rounded px-0.5"
+                    : "cursor-default"
                 }`}
                 onClick={(e) => {
                   if (!slot.audioData || isRecording) return;
@@ -82,7 +84,9 @@ export function SoundSlot({
             ) : (
               <span
                 className={`invisible group-hover:visible transition-opacity text-xl md:text-xl hover:opacity-80 ${
-                  slot.audioData && !isRecording ? 'cursor-pointer hover:bg-black/7 rounded px-0.5' : 'cursor-default'
+                  slot.audioData && !isRecording
+                    ? "cursor-pointer hover:bg-black/7 rounded px-0.5"
+                    : "cursor-default"
                 }`}
                 onClick={(e) => {
                   if (!slot.audioData || isRecording) return;
@@ -95,14 +99,22 @@ export function SoundSlot({
             ))}
           <span
             className={`text-[12px] whitespace-nowrap overflow-hidden pr-5 text-left rounded select-text font-geneva-12 [mask-image:linear-gradient(to_right,black_80%,transparent)] ${
-              slot.audioData && !isRecording ? 'cursor-pointer hover:bg-black/7 rounded px-0.5 py-2' : 'cursor-default'
+              slot.audioData && !isRecording
+                ? "cursor-pointer hover:bg-black/7 rounded px-0.5 py-2"
+                : "cursor-default"
             }`}
             onClick={(e) => {
               if (!slot.audioData || isRecording) return;
               e.stopPropagation();
               onTitleClick();
             }}
-            title={slot.audioData && !isRecording ? (slot.title ? "Edit title" : "Add title") : ""}
+            title={
+              slot.audioData && !isRecording
+                ? slot.title
+                  ? "Edit title"
+                  : "Add title"
+                : ""
+            }
           >
             {isRecording
               ? "Recording..."

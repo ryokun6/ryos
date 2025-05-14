@@ -47,16 +47,24 @@ export function SoundboardAppComponent({
     stopSound,
   } = useSoundboard();
 
-  const storeSetSlotPlaybackState = useSoundboardStore((state) => state.setSlotPlaybackState);
+  const storeSetSlotPlaybackState = useSoundboardStore(
+    (state) => state.setSlotPlaybackState
+  );
   const storeResetPlaybackStates = () => {
     for (let i = 0; i < 9; i++) {
-        storeSetSlotPlaybackState(i, false, false);
+      storeSetSlotPlaybackState(i, false, false);
     }
   };
-  const storeSetBoards = useSoundboardStore((state) => state._setBoards_internal);
+  const storeSetBoards = useSoundboardStore(
+    (state) => state._setBoards_internal
+  );
   const storeDeleteBoard = useSoundboardStore((state) => state.deleteBoard);
-  const selectedDeviceId = useSoundboardStore((state) => state.selectedDeviceId);
-  const storeSetSelectedDeviceId = useSoundboardStore((state) => state.setSelectedDeviceId);
+  const selectedDeviceId = useSoundboardStore(
+    (state) => state.selectedDeviceId
+  );
+  const storeSetSelectedDeviceId = useSoundboardStore(
+    (state) => state.setSelectedDeviceId
+  );
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [dialogState, setDialogState] = useState<DialogState>({
@@ -92,7 +100,11 @@ export function SoundboardAppComponent({
       const activeSlot = activeSlotRef.current;
       if (activeSlot !== null) {
         const currentPlaybackState = playbackStates[activeSlot];
-        storeSetSlotPlaybackState(activeSlot, currentPlaybackState?.isPlaying || false, isRecording);
+        storeSetSlotPlaybackState(
+          activeSlot,
+          currentPlaybackState?.isPlaying || false,
+          isRecording
+        );
       }
     },
   });
@@ -113,11 +125,16 @@ export function SoundboardAppComponent({
             storeSetSelectedDeviceId(defaultDevice.deviceId);
           }
         } else if (audioInputs.length > 0) {
-            storeSetSelectedDeviceId(audioInputs[0].deviceId);
+          storeSetSelectedDeviceId(audioInputs[0].deviceId);
         }
       });
     }
-  }, [micPermissionGranted, selectedDeviceId, playbackStates, storeSetSelectedDeviceId]);
+  }, [
+    micPermissionGranted,
+    selectedDeviceId,
+    playbackStates,
+    storeSetSelectedDeviceId,
+  ]);
 
   useEffect(() => {
     playbackStates.forEach((state, index) => {
@@ -167,18 +184,24 @@ export function SoundboardAppComponent({
       try {
         const importedData = JSON.parse(e.target?.result as string);
         const importedBoardsRaw = importedData.boards || [importedData];
-        const newBoardsFromFile: Soundboard[] = importedBoardsRaw.map((board: ImportedBoard) => ({
-          id: board.id || Date.now().toString() + Math.random().toString(36).slice(2),
-          name: board.name || "Imported Soundboard",
-          slots: (board.slots || Array(9).fill(null)).map((slot: ImportedSlot) => ({
-            audioData: slot.audioData,
-            emoji: slot.emoji,
-            title: slot.title,
-          })),
-        }));
+        const newBoardsFromFile: Soundboard[] = importedBoardsRaw.map(
+          (board: ImportedBoard) => ({
+            id:
+              board.id ||
+              Date.now().toString() + Math.random().toString(36).slice(2),
+            name: board.name || "Imported Soundboard",
+            slots: (board.slots || Array(9).fill(null)).map(
+              (slot: ImportedSlot) => ({
+                audioData: slot.audioData,
+                emoji: slot.emoji,
+                title: slot.title,
+              })
+            ),
+          })
+        );
         storeSetBoards([...boards, ...newBoardsFromFile]);
         if (newBoardsFromFile.length > 0 && newBoardsFromFile[0].id) {
-            setActiveBoardId(newBoardsFromFile[0].id);
+          setActiveBoardId(newBoardsFromFile[0].id);
         }
       } catch (err) {
         console.error("Failed to import soundboards:", err);
@@ -189,9 +212,10 @@ export function SoundboardAppComponent({
 
   const exportBoard = () => {
     if (!activeBoard) return;
-    const boardToExport = boards.find(b => b.id === activeBoardId) || activeBoard;
+    const boardToExport =
+      boards.find((b) => b.id === activeBoardId) || activeBoard;
     const exportData = {
-      boards: [boardToExport].map(b => ({
+      boards: [boardToExport].map((b) => ({
         id: b.id,
         name: b.name,
         slots: b.slots.map((slot) => ({
@@ -199,7 +223,7 @@ export function SoundboardAppComponent({
           emoji: slot.emoji,
           title: slot.title,
         })),
-      }))
+      })),
     };
 
     const blob = new Blob([JSON.stringify(exportData)], {
@@ -208,7 +232,9 @@ export function SoundboardAppComponent({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${boardToExport.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_soundboard.json`;
+    a.download = `${boardToExport.name
+      .replace(/[^a-z0-9]/gi, "_")
+      .toLowerCase()}_soundboard.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -218,15 +244,21 @@ export function SoundboardAppComponent({
       const res = await fetch("/soundboards.json");
       const data = await res.json();
       const importedBoardsRaw = data.boards || [data];
-      const newBoards: Soundboard[] = importedBoardsRaw.map((board: ImportedBoard) => ({
-        id: board.id || Date.now().toString() + Math.random().toString(36).slice(2),
-        name: board.name || "Imported Soundboard",
-        slots: (board.slots || Array(9).fill(null)).map((slot: ImportedSlot) => ({
-          audioData: slot.audioData,
-          emoji: slot.emoji,
-          title: slot.title,
-        })),
-      }));
+      const newBoards: Soundboard[] = importedBoardsRaw.map(
+        (board: ImportedBoard) => ({
+          id:
+            board.id ||
+            Date.now().toString() + Math.random().toString(36).slice(2),
+          name: board.name || "Imported Soundboard",
+          slots: (board.slots || Array(9).fill(null)).map(
+            (slot: ImportedSlot) => ({
+              audioData: slot.audioData,
+              emoji: slot.emoji,
+              title: slot.title,
+            })
+          ),
+        })
+      );
       storeSetBoards(newBoards);
       if (newBoards.length > 0 && newBoards[0].id) {
         setActiveBoardId(newBoards[0].id);
@@ -241,15 +273,21 @@ export function SoundboardAppComponent({
       const res = await fetch("/all-sounds.json");
       const data = await res.json();
       const importedBoardsRaw = data.boards || [data];
-      const newBoards: Soundboard[] = importedBoardsRaw.map((board: ImportedBoard) => ({
-        id: board.id || Date.now().toString() + Math.random().toString(36).slice(2),
-        name: board.name || "Imported Soundboard",
-        slots: (board.slots || Array(9).fill(null)).map((slot: ImportedSlot) => ({
-          audioData: slot.audioData,
-          emoji: slot.emoji,
-          title: slot.title,
-        })),
-      }));
+      const newBoards: Soundboard[] = importedBoardsRaw.map(
+        (board: ImportedBoard) => ({
+          id:
+            board.id ||
+            Date.now().toString() + Math.random().toString(36).slice(2),
+          name: board.name || "Imported Soundboard",
+          slots: (board.slots || Array(9).fill(null)).map(
+            (slot: ImportedSlot) => ({
+              audioData: slot.audioData,
+              emoji: slot.emoji,
+              title: slot.title,
+            })
+          ),
+        })
+      );
       storeSetBoards(newBoards);
       if (newBoards.length > 0 && newBoards[0].id) {
         setActiveBoardId(newBoards[0].id);
@@ -288,8 +326,16 @@ export function SoundboardAppComponent({
 
   if (!activeBoard || !activeBoardId) {
     return (
-      <WindowFrame title="Soundboard" onClose={onClose} isForeground={isForeground} appId="soundboard" skipInitialSound={skipInitialSound}>
-        <div className="flex-1 flex items-center justify-center">Loading soundboard...</div>
+      <WindowFrame
+        title="Soundboard"
+        onClose={onClose}
+        isForeground={isForeground}
+        appId="soundboard"
+        skipInitialSound={skipInitialSound}
+      >
+        <div className="flex-1 flex items-center justify-center">
+          Loading soundboard...
+        </div>
       </WindowFrame>
     );
   }
@@ -392,7 +438,7 @@ export function SoundboardAppComponent({
           }
           onEmojiSelect={(emoji) => {
             if (activeBoardId) {
-                updateSlot(dialogState.slotIndex, { emoji });
+              updateSlot(dialogState.slotIndex, { emoji });
             }
             setDialogState((prev) => ({ ...prev, isOpen: false }));
           }}

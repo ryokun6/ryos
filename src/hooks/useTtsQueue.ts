@@ -1,4 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from "react";
+import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
+import { useAppStore } from "@/stores/useAppStore";
+import { useIpodStore } from "@/stores/useIpodStore";
 
 /**
  * Hook that turns short text chunks into speech and queues them in the same
@@ -18,23 +21,54 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const [isSpeaking, setIsSpeaking] = useState(false);
   // Track any sources currently playing so we can stop them
   const playingSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  // Promise chain that guarantees *scheduling* order while still allowing
+  // individual fetches to run in parallel.
+  const scheduleChainRef = useRef<Promise<void>>(Promise.resolve());
+  // Flag to signal stop across async boundaries
+  const isStoppedRef = useRef(false);
+
+  // Gain node for global speech volume
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const speechVolume = useAppStore((s) => s.speechVolume);
+  const masterVolume = useAppStore((s) => s.masterVolume);
+  const setIpodVolumeGlobal = useAppStore((s) => s.setIpodVolume);
+
+  // Keep track of iPod volume for duck/restore
+  const originalIpodVolumeRef = useRef<number | null>(null);
+
+  // Subscribe to iPod playing state so our effect reacts when playback starts/stops
+  const ipodIsPlaying = useIpodStore((s) => s.isPlaying);
+  const setIpodIsPlaying = useIpodStore((s) => s.setIsPlaying);
+
+  // Detect iOS (Safari) environment where programmatic volume control is restricted
+  const isIOS =
+    typeof navigator !== "undefined" &&
+    /iP(hone|od|ad)/.test(navigator.userAgent);
+
+  // Track whether we paused the iPod ourselves (to avoid resuming if user paused)
+  const didPauseIpodRef = useRef(false);
 
   const ensureContext = () => {
-    // Recreate if not exists or previously closed (e.g., due to HMR)
-    if (!ctxRef.current || ctxRef.current.state === "closed") {
-      const WebKitAudioCtx = (
-        window as unknown as {
-          webkitAudioContext?: typeof AudioContext;
+    // Always use the shared global context
+    ctxRef.current = getAudioContext();
+    // (Re)create gain node if needed or context changed
+    if (
+      !gainNodeRef.current ||
+      gainNodeRef.current.context !== ctxRef.current
+    ) {
+      if (gainNodeRef.current) {
+        try {
+          gainNodeRef.current.disconnect();
+        } catch {
+          console.error("Error disconnecting gain node");
         }
-      ).webkitAudioContext;
-
-      ctxRef.current = new ((window.AudioContext || WebKitAudioCtx) as typeof AudioContext)();
+      }
+      gainNodeRef.current = ctxRef.current.createGain();
+      gainNodeRef.current.gain.value = speechVolume * masterVolume;
+      gainNodeRef.current.connect(ctxRef.current.destination);
     }
     return ctxRef.current;
   };
-
-  // Promise chain to guarantee ordering regardless of varied fetch latency
-  const playChainRef = useRef<Promise<void>>(Promise.resolve());
 
   /**
    * Speak a chunk of text by fetching the TTS audio and scheduling it directly
@@ -44,10 +78,14 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     (text: string, onEnd?: () => void) => {
       if (!text || !text.trim()) return;
 
-      playChainRef.current = playChainRef.current.then(async () => {
+      // Signal that we are actively queueing again
+      isStoppedRef.current = false;
+
+      // Begin fetching immediately so the network request runs in parallel
+      const fetchPromise = (async () => {
+        const controller = new AbortController();
+        controllersRef.current.add(controller);
         try {
-          const controller = new AbortController();
-          controllersRef.current.add(controller);
           const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -57,34 +95,33 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           controllersRef.current.delete(controller);
           if (!res.ok) {
             console.error("TTS request failed", await res.text());
-            return;
+            return null;
           }
+          return await res.arrayBuffer();
+        } catch (err) {
+          controllersRef.current.delete(controller);
+          if ((err as DOMException)?.name !== "AbortError") {
+            console.error("TTS fetch error", err);
+          }
+          return null;
+        }
+      })();
 
-          const arrayBuf = await res.arrayBuffer();
-          let ctx = ensureContext();
-          // Resume if the context was suspended or Safari put it in the non-standard
-          // "interrupted" state (happens when the user switches apps or similar).
-          let state = ctx.state as AudioContextState | "interrupted";
-          if (state === "suspended" || state === "interrupted") {
-            await ctx.resume();
-          }
+      // Chain purely the *scheduling* to maintain correct order.
+      scheduleChainRef.current = scheduleChainRef.current.then(async () => {
+        // Check if stop was called while this chunk was waiting in the queue
+        if (isStoppedRef.current) {
+          console.debug("TTS queue stopped, skipping scheduled chunk.");
+          return;
+        }
 
-          // If the context still isn't running (observed on some iOS Safari
-          // versions after returning from background) recreate a fresh one so
-          // playback can proceed.
-          state = ctx.state as AudioContextState | "interrupted";
-          if (state !== "running") {
-            try {
-              console.debug(
-                `TTS AudioContext still in state "${state}" after resume – recreating`
-              );
-              await ctx.close();
-            } catch (_) {
-              /* ignore */
-            }
-            ctxRef.current = null;
-            ctx = ensureContext();
-          }
+        try {
+          const arrayBuf = await fetchPromise;
+          if (!arrayBuf) return;
+          // Ensure the shared context is ready
+          await resumeAudioContext();
+          const ctx = ensureContext();
+
           const audioBuf = await ctx.decodeAudioData(arrayBuf);
 
           const now = ctx.currentTime;
@@ -92,7 +129,11 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
           const src = ctx.createBufferSource();
           src.buffer = audioBuf;
-          src.connect(ctx.destination);
+          if (gainNodeRef.current) {
+            src.connect(gainNodeRef.current);
+          } else {
+            src.connect(ctx.destination);
+          }
 
           // Keep track of active sources so we can stop them later
           playingSourcesRef.current.add(src);
@@ -121,14 +162,17 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
   /** Cancel all in-flight requests and reset the queue so the next call starts immediately. */
   const stop = useCallback(() => {
+    console.debug("Stopping TTS queue...");
+    isStoppedRef.current = true; // Signal to pending operations to stop
+
     controllersRef.current.forEach((c) => c.abort());
     controllersRef.current.clear();
-    playChainRef.current = Promise.resolve();
+    scheduleChainRef.current = Promise.resolve();
     // Stop any sources that are currently playing
     playingSourcesRef.current.forEach((src) => {
       try {
         src.stop();
-      } catch (e) {
+      } catch {
         /* ignore */
       }
     });
@@ -150,17 +194,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   // Effect to handle AudioContext resumption on window focus
   useEffect(() => {
     const handleFocus = async () => {
-      if (ctxRef.current) {
-        const state = ctxRef.current.state as AudioContextState | "interrupted";
-        if (state === "suspended" || state === "interrupted") {
-          try {
-            await ctxRef.current.resume();
-            console.debug("TTS AudioContext resumed on window focus");
-          } catch (error) {
-            console.error("Failed to resume TTS AudioContext on window focus:", error);
-          }
-        }
-      }
+      await resumeAudioContext();
     };
 
     window.addEventListener("focus", handleFocus);
@@ -168,6 +202,49 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       window.removeEventListener("focus", handleFocus);
     };
   }, []);
+
+  // Update gain when speechVolume or masterVolume changes
+  useEffect(() => {
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = speechVolume * masterVolume;
+    }
+  }, [speechVolume, masterVolume]);
+
+  /**
+   * Duck iPod volume while TTS is speaking.
+   * We only duck when the iPod is actively playing and we have not already
+   * done so for the current speech session. When speech ends, we restore the
+   * previous volume.
+   */
+  useEffect(() => {
+    if (isSpeaking && ipodIsPlaying) {
+      // Activate ducking only once at the start of speech
+      if (originalIpodVolumeRef.current === null) {
+        if (isIOS) {
+          // iOS Safari does not allow programmatic volume changes. Pause playback instead.
+          didPauseIpodRef.current = true;
+          setIpodIsPlaying(false);
+        } else {
+          originalIpodVolumeRef.current = useAppStore.getState().ipodVolume;
+          const ducked = Math.max(0, originalIpodVolumeRef.current * 0.15);
+          setIpodVolumeGlobal(ducked);
+        }
+      }
+    } else if (!isSpeaking) {
+      // Restore after speech
+      if (isIOS) {
+        if (didPauseIpodRef.current) {
+          setIpodIsPlaying(true);
+        }
+        didPauseIpodRef.current = false;
+      }
+
+      if (originalIpodVolumeRef.current !== null) {
+        setIpodVolumeGlobal(originalIpodVolumeRef.current);
+        originalIpodVolumeRef.current = null;
+      }
+    }
+  }, [isSpeaking, ipodIsPlaying, setIpodVolumeGlobal, isIOS]);
 
   return { speak, stop, isSpeaking };
 }

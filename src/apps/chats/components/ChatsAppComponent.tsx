@@ -59,6 +59,7 @@ export function ChatsAppComponent({
     saveFileName,
     setSaveFileName,
     handleSaveSubmit,
+    highlightSegment,
   } = useAiChat();
 
   const {
@@ -116,7 +117,9 @@ export function ChatsAppComponent({
   const maxDisplayNames = 3;
   const displayNames = usersList.slice(0, maxDisplayNames);
   const remainingCount = usersList.length - displayNames.length;
-  const tooltipText = displayNames.join(', ') + (remainingCount > 0 ? `, ${remainingCount}+` : '');
+  const tooltipText =
+    displayNames.join(", ") +
+    (remainingCount > 0 ? `, ${remainingCount}+` : "");
 
   // Use the @ryo chat hook
   const { isRyoLoading, stopRyo, handleRyoMention, detectAndProcessMention } =
@@ -322,10 +325,7 @@ export function ChatsAppComponent({
         skipInitialSound={skipInitialSound}
         isShaking={isShaking}
       >
-        <div
-          ref={containerRef}
-          className="relative h-full w-full"
-        >
+        <div ref={containerRef} className="relative h-full w-full">
           {/* Mobile sidebar overlay with framer-motion 3D animations */}
           <AnimatePresence>
             {sidebarVisibleBool && isFrameNarrow && (
@@ -398,7 +398,9 @@ export function ChatsAppComponent({
           </AnimatePresence>
 
           {/* Layout based on WindowFrame width */}
-          <div className={`flex h-full ${isFrameNarrow ? "flex-col" : "flex-row"}` }>
+          <div
+            className={`flex h-full ${isFrameNarrow ? "flex-col" : "flex-row"}`}
+          >
             <div className={`${isFrameNarrow ? "hidden" : "block"} h-full`}>
               <ChatRoomSidebar
                 rooms={rooms}
@@ -426,7 +428,7 @@ export function ChatsAppComponent({
                     </h2>
                     <ChevronDown className="h-3 w-3 transform transition-transform duration-200 text-neutral-400" />
                   </Button>
-                 
+
                   {currentRoom && usersList.length > 0 && (
                     <span className="font-geneva-12 text-[11px] text-neutral-500">
                       {tooltipText}
@@ -465,6 +467,8 @@ export function ChatsAppComponent({
                     username={username || undefined}
                     fontSize={fontSize}
                     scrollToBottomTrigger={scrollToBottomTrigger}
+                    highlightSegment={highlightSegment}
+                    isSpeaking={isSpeaking}
                   />
                 </div>
                 {/* Input Area or Set Username Prompt */}

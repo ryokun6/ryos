@@ -11,7 +11,11 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { helpItems, appMetadata } from "..";
-import { useFileSystem, dbOperations, STORES } from "@/apps/finder/hooks/useFileSystem";
+import {
+  useFileSystem,
+  dbOperations,
+  STORES,
+} from "@/apps/finder/hooks/useFileSystem";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { usePaintStore } from "@/stores/usePaintStore";
 import { Filter } from "./PaintFiltersMenu";
@@ -59,6 +63,46 @@ export const PaintAppComponent: React.FC<AppProps> = ({
   const lastConsumedBlobUrl = useRef<string | null>(null);
   const [initialFileLoaded, setInitialFileLoaded] = useState(false);
 
+  const handleFileOpen = useCallback((path: string, blobUrl: string) => {
+    const img = new Image();
+    img.onload = () => {
+      let newWidth = img.width;
+      let newHeight = img.height;
+      if (newWidth > 589) {
+        const ratio = 589 / newWidth;
+        newWidth = 589;
+        newHeight = Math.round(img.height * ratio);
+      }
+      setCanvasWidth(newWidth);
+      setCanvasHeight(newHeight);
+      setIsLoadingFile(true);
+      canvasRef.current?.importImage(blobUrl);
+      setLastFilePath(path);
+      setHasUnsavedChanges(false);
+      setIsLoadingFile(false);
+      setError(null);
+
+      console.log("[Paint] Revoking Blob URL after successful load:", blobUrl);
+      URL.revokeObjectURL(blobUrl);
+      if (lastConsumedBlobUrl.current === blobUrl) {
+        lastConsumedBlobUrl.current = null;
+      }
+    };
+
+    img.onerror = (error) => {
+      console.error("Error loading image for import:", error, "URL:", blobUrl);
+      setError("Failed to load image content.");
+
+      console.log("[Paint] Revoking Blob URL after load error:", blobUrl);
+      URL.revokeObjectURL(blobUrl);
+      if (lastConsumedBlobUrl.current === blobUrl) {
+        lastConsumedBlobUrl.current = null;
+      }
+    };
+
+    img.src = blobUrl;
+  }, []);
+
   useEffect(() => {
     if (initialData?.path && initialData?.content && canvasRef.current) {
       const { path, content } = initialData;
@@ -75,11 +119,14 @@ export const PaintAppComponent: React.FC<AppProps> = ({
 
         handleFileOpen(path, blobUrl);
       } else {
-        console.error("[Paint] Received initialData content is not a Blob:", content);
+        console.error(
+          "[Paint] Received initialData content is not a Blob:",
+          content
+        );
       }
-      clearInitialData('paint');
+      clearInitialData("paint");
     }
-  }, [initialData]);
+  }, [initialData, handleFileOpen, clearInitialData]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -117,46 +164,6 @@ export const PaintAppComponent: React.FC<AppProps> = ({
     }
   }, [hasUnsavedChanges, currentFilePath, isLoadingFile]);
 
-  const handleFileOpen = (path: string, blobUrl: string) => {
-    const img = new Image();
-    img.onload = () => {
-      let newWidth = img.width;
-      let newHeight = img.height;
-      if (newWidth > 589) {
-        const ratio = 589 / newWidth;
-        newWidth = 589;
-        newHeight = Math.round(img.height * ratio);
-      }
-      setCanvasWidth(newWidth);
-      setCanvasHeight(newHeight);
-      setIsLoadingFile(true);
-      canvasRef.current?.importImage(blobUrl);
-      setLastFilePath(path);
-      setHasUnsavedChanges(false);
-      setIsLoadingFile(false);
-      setError(null);
-
-      console.log("[Paint] Revoking Blob URL after successful load:", blobUrl);
-      URL.revokeObjectURL(blobUrl);
-      if (lastConsumedBlobUrl.current === blobUrl) {
-          lastConsumedBlobUrl.current = null;
-      }
-    };
-
-    img.onerror = (error) => {
-      console.error("Error loading image for import:", error, "URL:", blobUrl);
-      setError("Failed to load image content.");
-
-      console.log("[Paint] Revoking Blob URL after load error:", blobUrl);
-      URL.revokeObjectURL(blobUrl);
-      if (lastConsumedBlobUrl.current === blobUrl) {
-          lastConsumedBlobUrl.current = null;
-      }
-    };
-
-    img.src = blobUrl;
-  };
-
   const handleUndo = () => {
     canvasRef.current?.undo();
   };
@@ -185,7 +192,7 @@ export const PaintAppComponent: React.FC<AppProps> = ({
 
   const handleSave = async () => {
     if (!canvasRef.current) return;
-    
+
     if (!currentFilePath) {
       // New file - prompt for filename first
       // Get first few pixels of canvas as suggestion for filename
@@ -197,14 +204,14 @@ export const PaintAppComponent: React.FC<AppProps> = ({
       try {
         const blob = await canvasRef.current.exportCanvas();
         const fileName = currentFilePath.split("/").pop() || "untitled.png";
-        
+
         await saveFile({
           name: fileName,
           path: currentFilePath,
           content: blob,
           type: "png",
         });
-        
+
         setHasUnsavedChanges(false);
         toast.success("Image saved successfully");
       } catch (err) {
@@ -339,7 +346,10 @@ export const PaintAppComponent: React.FC<AppProps> = ({
   useEffect(() => {
     return () => {
       if (lastConsumedBlobUrl.current) {
-        console.warn("[Paint] Revoking leftover Blob URL on unmount (should have been revoked earlier):", lastConsumedBlobUrl.current);
+        console.warn(
+          "[Paint] Revoking leftover Blob URL on unmount (should have been revoked earlier):",
+          lastConsumedBlobUrl.current
+        );
         URL.revokeObjectURL(lastConsumedBlobUrl.current);
         lastConsumedBlobUrl.current = null;
       }
@@ -369,7 +379,7 @@ export const PaintAppComponent: React.FC<AppProps> = ({
     };
 
     loadPersistedFile();
-  }, [currentFilePath, initialFileLoaded]);
+  }, [currentFilePath, initialFileLoaded, handleFileOpen]);
 
   if (!isWindowOpen) return null;
 
@@ -466,6 +476,7 @@ export const PaintAppComponent: React.FC<AppProps> = ({
                   onContentChange={handleContentChange}
                   canvasWidth={canvasWidth}
                   canvasHeight={canvasHeight}
+                  isForeground={isForeground}
                 />
               </div>
 

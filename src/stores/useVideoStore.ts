@@ -22,6 +22,12 @@ export const DEFAULT_VIDEOS: Video[] = [
     artist: "Jony Ive",
   },
   {
+    id: "wLb9g_8r-mE",
+    url: "https://youtu.be/wLb9g_8r-mE",
+    title: "A Conversation with Jony Ive",
+    artist: "Jony Ive",
+  },
+  {
     id: "3vq9p00T08I",
     url: "https://youtu.be/3vq9p00T08I",
     title: "Macintosh (1984)",
@@ -130,7 +136,7 @@ interface VideoStoreState {
   setIsPlaying: (val: boolean) => void;
 }
 
-const CURRENT_VIDEO_STORE_VERSION = 4; // Define the current version
+const CURRENT_VIDEO_STORE_VERSION = 5; // Define the current version
 
 const getInitialState = () => ({
   videos: DEFAULT_VIDEOS,
@@ -165,14 +171,6 @@ export const useVideoStore = create<VideoStoreState>()(
     {
       name: "ryos:videos",
       version: CURRENT_VIDEO_STORE_VERSION, // Set the current version
-      partialize: (state) => ({
-        // Keep videos here initially for migration
-        videos: state.videos,
-        currentIndex: state.currentIndex,
-        loopAll: state.loopAll,
-        loopCurrent: state.loopCurrent,
-        isShuffled: state.isShuffled,
-      }),
       migrate: (persistedState, version) => {
         let state = persistedState as Partial<VideoStoreState>; // Type assertion
 
@@ -202,12 +200,14 @@ export const useVideoStore = create<VideoStoreState>()(
       },
       // Optional: Re-add partialize here if you want to exclude videos AFTER migration
       // if they match defaults and you want to save space
-      // partialize: (state) => ({
-      //   currentIndex: state.currentIndex,
-      //   loopAll: state.loopAll,
-      //   loopCurrent: state.loopCurrent,
-      //   isShuffled: state.isShuffled,
-      // }),
+      partialize: (state) => ({
+        currentIndex: state.currentIndex,
+        loopAll: state.loopAll,
+        loopCurrent: state.loopCurrent,
+        isShuffled: state.isShuffled,
+        // Exclude videos if it matches defaults to save space,
+        // Requires a check or assume defaults are handled by initial state/migration
+      }),
     }
   )
 ); 

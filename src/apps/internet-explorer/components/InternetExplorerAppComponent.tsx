@@ -54,7 +54,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ShareLinkDialog } from "./ShareLinkDialog";
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { toast } from "sonner";
 
 // Analytics event namespace for Internet Explorer events
@@ -1931,6 +1931,55 @@ export function InternetExplorerAppComponent({
     }
   };
 
+  const ieGenerateShareUrl = (identifier: string, secondary?: string): string => {
+    // Simple encoding function (client-side)
+    const encodeData = (urlToEncode: string, yearToEncode: string): string => {
+      const combined = `${urlToEncode}|${yearToEncode}`;
+      return btoa(combined)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    };
+    const code = encodeData(identifier, secondary || 'current');
+    return `${window.location.origin}/internet-explorer/${code}`;
+  };
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (
+        event.data &&
+        event.data.type === "iframeNavigation" &&
+        typeof event.data.url === "string"
+      ) {
+        console.log(
+          `[IE] Received navigation request from iframe: ${event.data.url}`
+        );
+        handleNavigate(event.data.url, year);
+      } else if (event.data && event.data.type === "goBack") {
+        console.log(`[IE] Received back button request from iframe`);
+        handleGoBack();
+      } else if (
+        event.data &&
+        event.data.type === "aiHtmlNavigation" &&
+        typeof event.data.url === "string"
+      ) {
+        console.log(
+          `[IE] Received navigation request from AI HTML preview: ${event.data.url}`
+        );
+        // Fetch the most up-to-date HTML from the store in case the closure is stale
+        const latestAiHtml =
+          useInternetExplorerStore.getState().aiGeneratedHtml;
+        const contextHtml = generatedHtml || latestAiHtml;
+
+        handleNavigate(event.data.url, year, false, contextHtml);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [year, handleNavigate, handleGoBack]);
+
   return (
     <TooltipProvider delayDuration={100}>
       <InternetExplorerMenuBar
@@ -2575,11 +2624,14 @@ export function InternetExplorerAppComponent({
         />
       </WindowFrame>
 
-      <ShareLinkDialog
+      <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
-        url={url}
-        year={year}
+        itemType="Page"
+        itemIdentifier={url}
+        secondaryIdentifier={year}
+        title={currentPageTitle || url} // Use page title or URL as title
+        generateShareUrl={ieGenerateShareUrl}
       />
     </TooltipProvider>
   );

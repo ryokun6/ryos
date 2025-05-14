@@ -97,7 +97,8 @@ export function ChatInput({
   const modelDisplayName = aiModel ? AI_MODELS[aiModel]?.name : null;
 
   // Check if user is typing @ryo
-  const isTypingRyoMention = isInChatRoom && (input.startsWith('@ryo ') || input === '@ryo');
+  const isTypingRyoMention =
+    isInChatRoom && (input.startsWith("@ryo ") || input === "@ryo");
 
   useEffect(() => {
     // Check if device has touch capability
@@ -105,6 +106,7 @@ export function ChatInput({
   }, []);
 
   useEffect(() => {
+    if (!isForeground) return; // Only register hotkeys when window is foreground
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp" && previousMessages.length > 0) {
         e.preventDefault();
@@ -131,7 +133,7 @@ export function ChatInput({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [historyIndex, previousMessages, onInputChange]);
+  }, [isForeground, historyIndex, previousMessages, onInputChange]);
 
   // Reset history index when input changes manually
   useEffect(() => {
@@ -203,37 +205,43 @@ export function ChatInput({
 
   const handleMentionClick = () => {
     let newValue = input;
-    
-    if (input.startsWith('@ryo ')) {
+
+    if (input.startsWith("@ryo ")) {
       // Already properly mentioned, just focus
       inputRef.current?.focus();
       // Position cursor at the end
       setTimeout(() => {
         if (inputRef.current) {
-          inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+          inputRef.current.setSelectionRange(
+            inputRef.current.value.length,
+            inputRef.current.value.length
+          );
         }
       }, 0);
       return;
-    } else if (input.startsWith('@ryo')) {
+    } else if (input.startsWith("@ryo")) {
       // Has @ryo but missing space
-      newValue = input.replace('@ryo', '@ryo ');
+      newValue = input.replace("@ryo", "@ryo ");
     } else {
       // Add @ryo at the beginning
-      newValue = `@ryo ${input}`.trim() + (input.endsWith(' ') ? '' : ' ');
+      newValue = `@ryo ${input}`.trim() + (input.endsWith(" ") ? "" : " ");
     }
-    
+
     const event = {
       target: { value: newValue },
     } as React.ChangeEvent<HTMLInputElement>;
     onInputChange(event);
-    
+
     // Focus the input field after adding the mention
     inputRef.current?.focus();
-    
+
     // Position cursor at the end of the input
     setTimeout(() => {
       if (inputRef.current) {
-        inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+        inputRef.current.setSelectionRange(
+          inputRef.current.value.length,
+          inputRef.current.value.length
+        );
       }
     }, 0);
   };
@@ -337,25 +345,26 @@ export function ChatInput({
               </AnimatePresence>
               <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 {showNudgeButton && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={handleNudgeClick}
-                          className="w-[22px] h-[22px] flex items-center justify-center"
-                          disabled={isLoading}
-                        >
-                          <Hand className="h-4 w-4 -rotate-40" />
-                        </button>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Send a Nudge</p>
-                    </TooltipContent>
-                  </Tooltip>
-                            </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={handleNudgeClick}
+                            className="w-[22px] h-[22px] flex items-center justify-center"
+                            disabled={isLoading}
+                            aria-label="Send a Nudge"
+                          >
+                            <Hand className="h-4 w-4 -rotate-40" />
+                          </button>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Send a Nudge</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 {isInChatRoom && (
                   <TooltipProvider>
@@ -367,6 +376,7 @@ export function ChatInput({
                             onClick={handleMentionClick}
                             className="w-[22px] h-[22px] flex items-center justify-center"
                             disabled={isLoading}
+                            aria-label="Mention Ryo"
                           >
                             <AtSign className="h-4 w-4" />
                           </button>
@@ -398,10 +408,9 @@ export function ChatInput({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-
               </div>
             </motion.div>
-            {(isLoading || isSpeechPlaying) ? (
+            {isLoading || isSpeechPlaying ? (
               <motion.div
                 key="stop"
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -442,7 +451,8 @@ export function ChatInput({
           </AnimatePresence>
         </form>
         <AnimatePresence>
-          {(isTypingRyoMention || (!isInChatRoom && debugMode && modelDisplayName)) && (
+          {(isTypingRyoMention ||
+            (!isInChatRoom && debugMode && modelDisplayName)) && (
             <motion.div
               key="model-info"
               initial={{ opacity: 0, y: 10 }}
@@ -452,9 +462,12 @@ export function ChatInput({
               className="mt-2 px-1 text-xs text-neutral-700 font-geneva-12"
             >
               {isTypingRyoMention
-                ? `Ryo will respond to this message${debugMode && modelDisplayName ? ` (${modelDisplayName})` : ''}`
-                : `Using ${modelDisplayName}`
-              }
+                ? `Ryo will respond to this message${
+                    debugMode && modelDisplayName
+                      ? ` (${modelDisplayName})`
+                      : ""
+                  }`
+                : `Using ${modelDisplayName}`}
             </motion.div>
           )}
         </AnimatePresence>

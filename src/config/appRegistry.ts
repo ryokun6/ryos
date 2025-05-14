@@ -12,7 +12,7 @@ import { PhotoBoothApp } from "@/apps/photo-booth";
 import { SynthApp } from "@/apps/synth";
 import { IpodApp } from "@/apps/ipod";
 import { TerminalApp } from "@/apps/terminal";
-import { appIds } from './appIds';
+import { appIds } from "./appIds";
 
 export type AppId = (typeof appIds)[number];
 
@@ -67,8 +67,8 @@ export const appRegistry = {
   [TextEditApp.id]: {
     ...TextEditApp,
     windowConfig: {
-      defaultSize: { width: 368, height: 475 },
-      minSize: { width: 368, height: 200 },
+      defaultSize: { width: 388, height: 475 },
+      minSize: { width: 388, height: 200 },
     } as WindowConstraints,
   },
   [PaintApp.id]: {
@@ -134,8 +134,8 @@ export const appRegistry = {
   [ControlPanelsApp.id]: {
     ...ControlPanelsApp,
     windowConfig: {
-      defaultSize: { width: 365, height: 400 },
-      minSize: { width: 320, height: 400 },
+      defaultSize: { width: 365, height: 415 },
+      minSize: { width: 320, height: 415 },
       maxSize: { width: 365, height: 600 },
     } as WindowConstraints,
   },

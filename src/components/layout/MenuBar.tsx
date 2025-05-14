@@ -13,6 +13,10 @@ import {
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { useAppStore } from "@/stores/useAppStore";
+import { Slider } from "@/components/ui/slider";
+import { Volume1, Volume2, VolumeX } from "lucide-react";
+import { useSound, Sounds } from "@/hooks/useSound";
 
 const finderHelpItems = [
   {
@@ -75,40 +79,36 @@ function Clock() {
 
   // Format the display based on viewport width
   let displayTime;
-  
+
   if (viewportWidth < 420) {
     // For small screens: just time without AM/PM (e.g., "1:34")
-    const timeString = time.toLocaleTimeString([], { 
-      hour: "numeric", 
+    const timeString = time.toLocaleTimeString([], {
+      hour: "numeric",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
     });
-    displayTime = timeString.replace(/\s?(AM|PM)$/i, '');
+    displayTime = timeString.replace(/\s?(AM|PM)$/i, "");
   } else if (viewportWidth >= 420 && viewportWidth <= 768) {
     // For medium screens: time with AM/PM (e.g., "1:00 AM")
-    displayTime = time.toLocaleTimeString([], { 
-      hour: "numeric", 
+    displayTime = time.toLocaleTimeString([], {
+      hour: "numeric",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
     });
   } else {
     // For larger screens (> 768px): full date and time (e.g., "Wed May 7 1:34 AM")
-    const shortWeekday = time.toLocaleDateString([], { weekday: 'short' });
-    const month = time.toLocaleDateString([], { month: 'short' });
+    const shortWeekday = time.toLocaleDateString([], { weekday: "short" });
+    const month = time.toLocaleDateString([], { month: "short" });
     const day = time.getDate();
-    const timeString = time.toLocaleTimeString([], { 
-      hour: "numeric", 
+    const timeString = time.toLocaleTimeString([], {
+      hour: "numeric",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
     });
     displayTime = `${shortWeekday} ${month} ${day} ${timeString}`;
   }
 
-  return (
-    <div className="ml-auto mr-2">
-      {displayTime}
-    </div>
-  );
+  return <div className="ml-auto mr-2">{displayTime}</div>;
 }
 
 function DefaultMenuItems() {
@@ -425,6 +425,50 @@ function DefaultMenuItems() {
   );
 }
 
+function VolumeControl() {
+  const { masterVolume, setMasterVolume } = useAppStore();
+  const { play: playVolumeChangeSound } = useSound(Sounds.VOLUME_CHANGE);
+
+  const getVolumeIcon = () => {
+    if (masterVolume === 0) {
+      return <VolumeX className="h-5 w-5" />;
+    }
+    if (masterVolume < 0.5) {
+      return <Volume1 className="h-5 w-5" />;
+    }
+    return <Volume2 className="h-5 w-5" />;
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-md px-1 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0 mr-2"
+        >
+          {getVolumeIcon()}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="center"
+        sideOffset={1}
+        className="p-4 w-auto min-w-3 h-40 flex items-center justify-center"
+      >
+        <Slider
+          orientation="vertical"
+          min={0}
+          max={1}
+          step={0.05}
+          value={[masterVolume]}
+          onValueChange={(v) => setMasterVolume(v[0])}
+          onValueCommit={playVolumeChangeSound}
+        />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function MenuBar({ children }: MenuBarProps) {
   const { apps, appStates } = useAppContext();
   const hasActiveApp = Object.values(appStates).some(
@@ -435,7 +479,12 @@ export function MenuBar({ children }: MenuBarProps) {
     <div className="fixed top-0 left-0 right-0 flex bg-system7-menubar-bg border-b-[2px] border-black px-2 h-7 items-center">
       <AppleMenu apps={apps} />
       {hasActiveApp ? children : <DefaultMenuItems />}
-      <Clock />
+      <div className="ml-auto flex items-center">
+        <div className="hidden sm:flex">
+          <VolumeControl />
+        </div>
+        <Clock />
+      </div>
     </div>
   );
 }

@@ -101,7 +101,8 @@
     --radius: 0px;
     --sat-safe-area-bottom: env(safe-area-inset-bottom, 0px);
     --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
-    --font-apple-garamond: "AppleGaramond", "ArkPixel", "SerenityOS-Emoji", system-ui;
+    --font-apple-garamond: "AppleGaramond", "ArkPixel", "SerenityOS-Emoji",
+      system-ui;
     --font-mondwest: "Mondwest", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-neuebit: "NeueBit", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", system-ui;
@@ -294,27 +295,45 @@
   }
 
   .font-mondwest {
-    font-family: "Mondwest", "Yu Mincho", "Hiragino Mincho Pro", "Georgia", "Palatino", "Yu Mincho", "Hiragino Mincho Pro", serif;
+    font-family: "Mondwest", "Yu Mincho", "Hiragino Mincho Pro", "Georgia",
+      "Palatino", "Yu Mincho", "Hiragino Mincho Pro", serif;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
 
   .font-neuebit {
-    font-family: "NeueBit", "ArkPixel", "SerenityOS-Emoji", "Helvetica", "Arial", "Hiragino Sans", sans-serif;
+    font-family: "NeueBit", "ArkPixel", "SerenityOS-Emoji", "Helvetica", "Arial",
+      "Hiragino Sans", sans-serif;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
 
-  .font-monaco, .font-monaco-9 {
+  .font-monaco,
+  .font-monaco-9 {
     font-family: "Monaco", "ArkPixel", "SerenityOS-Emoji", monospace;
     letter-spacing: -0.02em;
     line-height: 1.3;
   }
 
   .font-jacquard {
-    font-family: "Jacquard", "Yu Mincho", "Hiragino Mincho Pro", "Georgia", "Palatino", serif;
+    font-family: "Jacquard", "Yu Mincho", "Hiragino Mincho Pro", "Georgia",
+      "Palatino", serif;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
+  }
+
+  .animate-highlight {
+    animation: highlight-bg-opacity 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes highlight-bg-opacity {
+  0%,
+  100% {
+    background-color: rgb(254 249 195 / 1); /* bg-yellow-200 */
+  }
+  50% {
+    background-color: rgb(254 249 195 / 0.5); /* bg-yellow-200/50 */
   }
 }
 

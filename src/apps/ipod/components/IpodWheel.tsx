@@ -52,12 +52,12 @@ export function IpodWheel({
 
   // Determine wheel section from angle
   const getWheelSection = (angleDeg: number): WheelArea => {
-    const angle = angleDeg * Math.PI / 180; // Convert degrees to radians
+    const angle = (angleDeg * Math.PI) / 180; // Convert degrees to radians
     if (angle >= -Math.PI / 4 && angle < Math.PI / 4) {
       return "right";
-    } else if (angle >= Math.PI / 4 && angle < 3 * Math.PI / 4) {
+    } else if (angle >= Math.PI / 4 && angle < (3 * Math.PI) / 4) {
       return "bottom";
-    } else if (angle >= 3 * Math.PI / 4 || angle < -3 * Math.PI / 4) {
+    } else if (angle >= (3 * Math.PI) / 4 || angle < (-3 * Math.PI) / 4) {
       return "left";
     } else {
       // Default to top, but this section is primarily for the menu button
@@ -67,6 +67,9 @@ export function IpodWheel({
 
   // Handle touch start
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Prevent the browser from interpreting this touch as a scroll/zoom gesture
+    e.preventDefault();
+
     const touch = e.touches[0];
     const angleRad = getAngleFromCenterRad(touch.clientX, touch.clientY);
     lastAngleRef.current = angleRad;
@@ -75,6 +78,9 @@ export function IpodWheel({
 
   // Handle touch move
   const handleTouchMove = (e: React.TouchEvent) => {
+    // Prevent default scrolling behaviour while interacting with the wheel
+    e.preventDefault();
+
     if (lastAngleRef.current === null) return;
 
     const touch = e.touches[0];
@@ -159,7 +165,7 @@ export function IpodWheel({
       {/* Wheel sections */}
       <div
         ref={wheelRef}
-        className="absolute w-full h-full rounded-full"
+        className="absolute w-full h-full rounded-full touch-none"
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -188,4 +194,4 @@ export function IpodWheel({
       </div>
     </div>
   );
-} 
+}

@@ -22,6 +22,7 @@ interface IpodMenuBarProps {
   onClearLibrary: () => void;
   onResetLibrary: () => void;
   onAddTrack: () => void;
+  onShareSong: () => void;
 }
 
 export function IpodMenuBar({
@@ -31,6 +32,7 @@ export function IpodMenuBar({
   onClearLibrary,
   onResetLibrary,
   onAddTrack,
+  onShareSong,
 }: IpodMenuBarProps) {
   const tracks = useIpodStore((s) => s.tracks);
   const currentIndex = useIpodStore((s) => s.currentIndex);
@@ -95,7 +97,14 @@ export function IpodMenuBar({
             onClick={onAddTrack}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Add Music...
+            Add Song...
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={onShareSong}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            disabled={tracks.length === 0 || currentIndex === -1}
+          >
+            Share Song...
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -256,7 +265,7 @@ export function IpodMenuBar({
                     <span className="truncate min-w-0">All Songs</span>
                   </div>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px]">
+                <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[400px] overflow-y-auto">
                   {tracks.map((track, index) => (
                     <DropdownMenuItem
                       key={`all-${track.id}`}
@@ -290,7 +299,7 @@ export function IpodMenuBar({
                       <span className="truncate min-w-0">{artist}</span>
                     </div>
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px]">
+                  <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[200px] overflow-y-auto">
                     {tracksByArtist[artist].map(({ track, index }) => (
                       <DropdownMenuItem
                         key={`${artist}-${track.id}`}

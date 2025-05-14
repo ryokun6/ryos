@@ -19,6 +19,36 @@ export const IPOD_DEFAULT_VIDEOS = [
     artist: "Jagged Edge",
   },
   {
+    id: "Y_AxRCNFT2g",
+    url: "https://www.youtube.com/watch?v=Y_AxRCNFT2g",
+    title: "Supernova (House Remix)",
+    artist: "aespa (에스파)",
+  },
+  {
+    id: "yP8nAoFi6JY",
+    url: "https://www.youtube.com/watch?v=yP8nAoFi6JY",
+    title: "Supernatural (Miami Bass Remix)",
+    artist: "NewJeans (뉴진스)",
+  },
+  {
+    id: "1FNI1i7H1Kc",
+    url: "https://www.youtube.com/watch?v=1FNI1i7H1Kc",
+    title: "The Chase (R&B Remix)",
+    artist: "Hearts2Hearts (하츠투하츠)",
+  },
+  {
+    id: "LVLOwwGVVZ0",
+    url: "https://www.youtube.com/watch?v=LVLOwwGVVZ0",
+    title: "Right Now (R&B Remix)",
+    artist: "NewJeans (뉴진스)",
+  },
+  {
+    id: "AGaTzDTnYGY",
+    url: "https://www.youtube.com/watch?v=AGaTzDTnYGY",
+    title: "How Sweet (UK Garage Remix)",
+    artist: "NewJeans (뉴진스)",
+  },
+  {
     id: "XJWqHmY-g9U",
     url: "https://www.youtube.com/watch?v=XJWqHmY-g9U",
     title: "Telephone Number",
@@ -73,30 +103,6 @@ export const IPOD_DEFAULT_VIDEOS = [
     artist: "NewJeans (뉴진스)",
   },
   {
-    id: "yP8nAoFi6JY",
-    url: "https://www.youtube.com/watch?v=yP8nAoFi6JY",
-    title: "Supernatural (Miami Bass Remix)",
-    artist: "NewJeans (뉴진스)",
-  },
-  {
-    id: "1FNI1i7H1Kc",
-    url: "https://www.youtube.com/watch?v=1FNI1i7H1Kc",
-    title: "The Chase (R&B Remix)",
-    artist: "Hearts2Hearts (하츠투하츠)",
-  },
-  {
-    id: "LVLOwwGVVZ0",
-    url: "https://www.youtube.com/watch?v=LVLOwwGVVZ0",
-    title: "Right Now (R&B Remix)",
-    artist: "NewJeans (뉴진스)",
-  },
-  {
-    id: "AGaTzDTnYGY",
-    url: "https://www.youtube.com/watch?v=AGaTzDTnYGY",
-    title: "How Sweet (UK Garage Remix)",
-    artist: "NewJeans (뉴진스)",
-  },
-  {
     id: "PO8",
     url: "https://www.youtube.com/watch?v=HB4Rp2KKeu4",
     title: "野子",
@@ -112,7 +118,7 @@ export const IPOD_DEFAULT_VIDEOS = [
     id: "aFrQIJ5cbRc",
     url: "https://www.youtube.com/watch?v=aFrQIJ5cbRc",
     title: "Know About Me",
-    artist: "NMIXX",
+    artist: "NMIXX (엔믹스)",
   },
   {
     id: "hJ9Wp3PO3c8",
@@ -240,7 +246,7 @@ interface IpodStoreState {
   previousTrack: () => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 5; // Define the current version
+const CURRENT_IPOD_STORE_VERSION = 6; // Define the current version
 
 export const useIpodStore = create<IpodStoreState>()(
   persist(
