@@ -383,16 +383,16 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
           // On mobile, only allow vertical dragging and keep window full width
           setWindowPosition({ x: 0, y: Math.max(30, newY) });
         } else {
-          // 允许窗口部分超出屏幕边界，但确保至少有20%的窗口在屏幕内
-          const minVisiblePortion = 0.2; // 至少20%的窗口必须可见
+          // allow window to be partially outside of screen bounds, but ensure at least 20% of the window is visible
+          const minVisiblePortion = 0.2; // at least 20% of the window must be visible
           
-          // 计算允许的最小/最大坐标，确保有足够的窗口区域可见
+          // calculate the minimum/maximum coordinates, ensuring enough window area is visible
           const minX = -windowSize.width * (1 - minVisiblePortion);
-          const minY = 30; // 保持标题栏永远可见
+          const minY = 30; // keep titlebar always visible
           const maxX = window.innerWidth - windowSize.width * minVisiblePortion;
           const maxY = window.innerHeight - windowSize.height * minVisiblePortion;
           
-          // 应用限制，但允许一定程度的超出
+          // apply the limits, but allow some degree of overshoot
           const x = Math.min(Math.max(minX, newX), maxX);
           const y = Math.min(Math.max(minY, newY), maxY);
           
@@ -412,9 +412,9 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
 
         const minWidth = config.minSize?.width || 260;
         const minHeight = config.minSize?.height || 200;
-        const maxWidth = window.innerWidth * 1.5; // 允许窗口宽度超出屏幕50%
+        const maxWidth = window.innerWidth * 1.5; // allow window width to exceed screen by 50%
         const safeAreaBottom = getSafeAreaBottomInset();
-        const maxHeight = window.innerHeight * 1.5 - safeAreaBottom; // 允许窗口高度超出屏幕50%
+        const maxHeight = window.innerHeight * 1.5 - safeAreaBottom; // allow window height to exceed screen by 50%
         const menuBarHeight = 30;
 
         let newWidth = resizeStart.width;
@@ -424,20 +424,20 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
 
         if (!isMobile) {
           if (resizeType.includes("e")) {
-            // 允许向右扩展超出屏幕
+            // allow window to be extended beyond screen bounds
             newWidth = Math.max(resizeStart.width + deltaX, minWidth);
-            // 限制最大宽度为屏幕宽度的1.5倍
+            // limit max width to 1.5 times screen width
             newWidth = Math.min(newWidth, maxWidth);
           } else if (resizeType.includes("w")) {
-            // 计算新宽度，但允许左边缘超出屏幕
+            // calculate new width, but allow left edge to exceed screen bounds
             const potentialWidth = Math.max(resizeStart.width - deltaX, minWidth);
-            // 限制最大宽度
+            // limit max width
             const limitedWidth = Math.min(potentialWidth, maxWidth);
             
             if (limitedWidth !== resizeStart.width) {
-              // 计算新的左侧位置，允许为负值（超出屏幕左侧）
+              // calculate new left position, allowing negative values (beyond screen left)
               newLeft = resizeStart.left + (resizeStart.width - limitedWidth);
-              // 但确保标题栏的部分仍然可见
+              // but ensure the titlebar portion is still visible
               if (newLeft + limitedWidth * 0.2 < 0) {
                 newLeft = -limitedWidth * 0.8;
               }
@@ -447,56 +447,56 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
         }
 
         if (resizeType.includes("s")) {
-          // 允许向下扩展超出屏幕
+          // allow window to be extended beyond screen bounds
           newHeight = Math.max(resizeStart.height + deltaY, minHeight);
-          // 限制最大高度
+          // limit max height
           newHeight = Math.min(newHeight, maxHeight);
         } else if (resizeType.includes("n") && !isMobile) {
-          // 计算新高度，但确保不小于最小高度
+          // calculate new height, but ensure not less than min height
           const potentialHeight = Math.max(resizeStart.height - deltaY, minHeight);
-          // 限制最大高度
+          // limit max height
           const limitedHeight = Math.min(potentialHeight, maxHeight);
           
           if (limitedHeight !== resizeStart.height) {
-            // 计算新的顶部位置
+            // calculate new top position
             newTop = resizeStart.top + (resizeStart.height - limitedHeight);
-            // 确保标题栏始终可见
+            // ensure titlebar always visible
             newTop = Math.max(menuBarHeight, newTop);
             newHeight = limitedHeight;
           }
         }
 
-        // 如果是nw类型（左上角），需要同时调整宽度和高度
+        // if resizeType is nw (top left corner), need to adjust both width and height
         if (resizeType === "nw" && !isMobile) {
-          // 处理宽度调整 (同w类型)
+          // handle width adjustment (same as w type)
           const potentialWidth = Math.max(resizeStart.width - deltaX, minWidth);
           const limitedWidth = Math.min(potentialWidth, maxWidth);
           
           if (limitedWidth !== resizeStart.width) {
-            // 计算新的左侧位置，允许为负值（超出屏幕左侧）
+            // calculate new left position, allowing negative values (beyond screen left)
             newLeft = resizeStart.left + (resizeStart.width - limitedWidth);
-            // 但确保标题栏的部分仍然可见
+            // but ensure the titlebar portion is still visible
             if (newLeft + limitedWidth * 0.2 < 0) {
               newLeft = -limitedWidth * 0.8;
             }
             newWidth = limitedWidth;
           }
 
-          // 处理高度调整 (同n类型)
+          // handle height adjustment (same as n type)
           const potentialHeight = Math.max(resizeStart.height - deltaY, minHeight);
           const limitedHeight = Math.min(potentialHeight, maxHeight);
           
           if (limitedHeight !== resizeStart.height) {
-            // 计算新的顶部位置
+            // calculate new top position
             newTop = resizeStart.top + (resizeStart.height - limitedHeight);
-            // 确保标题栏始终可见
+            // ensure titlebar always visible
             newTop = Math.max(menuBarHeight, newTop);
             newHeight = limitedHeight;
           }
         }
 
         if (isMobile) {
-          // Keep window full width on mobile
+          // keep window full width on mobile
           newWidth = window.innerWidth;
           newLeft = 0;
         }

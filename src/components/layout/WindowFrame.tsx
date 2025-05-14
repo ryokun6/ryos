@@ -573,7 +573,7 @@ export function WindowFrame({
               }
             />
 
-            {/* 左上角调整大小控件 */}
+            {/* left top corner resize handle */}
             <div
               className={cn(
                 "absolute cursor-nw-resize pointer-events-auto transition-all select-none",
