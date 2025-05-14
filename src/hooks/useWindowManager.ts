@@ -65,6 +65,7 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
     useState<WindowPosition>(adjustedPosition);
   const [windowSize, setWindowSize] = useState<WindowSize>(initialState.size);
   const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
   const [resizeType, setResizeType] = useState<ResizeType>("");
@@ -289,6 +290,10 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
   }, [appId, updateWindowState, playWindowCollapse]);
 
   useEffect(() => {
+    isDraggingRef.current = isDragging;
+  }, [isDragging]);
+
+  useEffect(() => {
     const handleMove = (e: React.MouseEvent<HTMLElement> | MouseEvent) => {
       if (isDragging && !isSnapAnimating) {
         const { clientX, clientY } = e;
@@ -366,8 +371,10 @@ export const useWindowManager = ({ appId }: UseWindowManagerProps) => {
           // Update snap indicator
           if (newSnapZone !== snapZone) {
             setTimeout(() => {
-              setSnapZone(newSnapZone);
-              setShowSnapIndicator(newSnapZone !== "none");
+              if (isDraggingRef.current) {
+                setSnapZone(newSnapZone);
+                setShowSnapIndicator(newSnapZone !== "none");
+              }
             }, 500);
           }
         }
