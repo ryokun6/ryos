@@ -130,6 +130,11 @@ export function WindowFrame({
     setWindowSize,
     setWindowPosition,
     getSafeAreaBottomInset,
+    snapZone,
+    showSnapIndicator,
+    isSnapping,
+    isSnapAnimating,
+    restoreFromSnap,
   } = useWindowManager({ appId });
 
   // No longer track maximized state based on window dimensions
@@ -390,238 +395,315 @@ export function WindowFrame({
     };
   };
 
+  // Render snap indicator based on the current snap zone
+  const renderSnapIndicator = () => {
+    if (!showSnapIndicator || snapZone === "none" || isMobile) return null;
+
+    const menuBarHeight = 30;
+    const safeAreaBottom = getSafeAreaBottomInset();
+    const maxHeight = window.innerHeight - menuBarHeight - safeAreaBottom;
+    let indicatorStyle = {};
+
+    switch (snapZone) {
+      case "top":
+        // Full screen indicator
+        indicatorStyle = {
+          left: 0,
+          top: menuBarHeight,
+          width: window.innerWidth,
+          height: maxHeight,
+        };
+        break;
+      case "left":
+        // Left half indicator
+        indicatorStyle = {
+          left: 0,
+          top: menuBarHeight,
+          width: Math.floor(window.innerWidth / 2),
+          height: maxHeight,
+        };
+        break;
+      case "right":
+        // Right half indicator
+        indicatorStyle = {
+          left: Math.floor(window.innerWidth / 2),
+          top: menuBarHeight,
+          width: Math.floor(window.innerWidth / 2),
+          height: maxHeight,
+        };
+        break;
+    }
+
+    return (
+      <div
+        className="fixed pointer-events-none z-[9999] shadow-lg transition-opacity duration-150 ease-in-out opacity-60"
+        style={{
+          ...indicatorStyle,
+          backgroundColor: "rgba(59, 130, 246, 0.2)",
+          border: "2px dashed rgba(59, 130, 246, 0.5)",
+          borderRadius: "8px",
+        }}
+      />
+    );
+  };
+
   return (
-    <div
-      className={cn(
-        "absolute p-2 md:p-0 w-full h-full md:mt-0 select-none",
-        "transition-all duration-200 ease-in-out",
-        isInitialMount && "animate-in fade-in-0 zoom-in-95 duration-200",
-        isShaking && "animate-shake",
-        // Disable all pointer events when window is closing
-        !isOpen && "pointer-events-none"
-      )}
-      onTransitionEnd={handleTransitionEnd}
-      style={{
-        left: windowPosition.x,
-        top: Math.max(0, windowPosition.y),
-        width: window.innerWidth >= 768 ? windowSize.width : "100%",
-        height: Math.max(windowSize.height, mergedConstraints.minHeight || 0),
-        minWidth:
-          window.innerWidth >= 768 ? mergedConstraints.minWidth : "100%",
-        minHeight: mergedConstraints.minHeight,
-        maxWidth: mergedConstraints.maxWidth || undefined,
-        maxHeight: mergedConstraints.maxHeight || undefined,
-        transition: isDragging || resizeType ? "none" : undefined,
-        transform: !isInitialMount && !isOpen ? "scale(0.95)" : undefined,
-        opacity: !isInitialMount && !isOpen ? 0 : undefined,
-        transformOrigin: "center",
-      }}
-    >
-      <div className="relative w-full h-full">
-        {/* Resize handles - positioned outside main content */}
-        <div className="absolute -top-2 -left-2 -right-2 -bottom-2 pointer-events-none z-50 select-none">
-          {/* Top resize handle */}
-          <div
-            className={cn(
-              "absolute left-1 right-0 cursor-n-resize pointer-events-auto transition-[top,height] select-none",
-              debugMode && "bg-red-500/50",
-              resizeType?.includes("n")
-                ? "top-[-100px] h-[200px]"
-                : "top-1 h-2"
-            )}
-            onMouseDown={(e) =>
-              handleResizeStartWithForeground(e, "n" as ResizeType)
-            }
-            onTouchStart={(e) =>
-              handleResizeStartWithForeground(e, "n" as ResizeType)
-            }
-            onDoubleClick={handleHeightOnlyMaximize}
-          />
-
-          {/* Bottom resize handle */}
-          <div
-            className={cn(
-              "absolute left-0 right-0 cursor-s-resize pointer-events-auto transition-[bottom,height] select-none",
-              debugMode && "bg-red-500/50",
-              resizeType?.includes("s")
-                ? "bottom-[-100px] h-[200px]"
-                : "bottom-1 h-2"
-            )}
-            onMouseDown={(e) =>
-              handleResizeStartWithForeground(e, "s" as ResizeType)
-            }
-            onTouchStart={(e) =>
-              handleResizeStartWithForeground(e, "s" as ResizeType)
-            }
-            onDoubleClick={handleHeightOnlyMaximize}
-          />
-
-          {/* Left resize handle */}
-          <div
-            className={cn(
-              "absolute top-3 cursor-w-resize pointer-events-auto transition-[left,width] select-none",
-              debugMode && "bg-red-500/50",
-              resizeType?.includes("w")
-                ? "left-[-100px] w-[200px]"
-                : "left-1 w-2"
-            )}
-            style={{ bottom: resizeType?.includes("s") ? "32px" : "24px" }}
-            onMouseDown={(e) =>
-              handleResizeStartWithForeground(e, "w" as ResizeType)
-            }
-            onTouchStart={(e) =>
-              handleResizeStartWithForeground(e, "w" as ResizeType)
-            }
-          />
-
-          {/* Right resize handle */}
-          <div
-            className={cn(
-              "absolute top-6 cursor-e-resize pointer-events-auto transition-[right,width] select-none",
-              debugMode && "bg-red-500/50",
-              resizeType?.includes("e")
-                ? "right-[-100px] w-[200px]"
-                : "right-1 w-2"
-            )}
-            style={{ bottom: resizeType?.includes("s") ? "32px" : "24px" }}
-            onMouseDown={(e) =>
-              handleResizeStartWithForeground(e, "e" as ResizeType)
-            }
-            onTouchStart={(e) =>
-              handleResizeStartWithForeground(e, "e" as ResizeType)
-            }
-          />
-
-          {/* Corner resize handles */}
-          <div
-            className={cn(
-              "absolute cursor-ne-resize pointer-events-auto transition-all select-none",
-              debugMode && "bg-red-500/50",
-              resizeType === "ne"
-                ? "top-[-100px] right-[-100px] w-[200px] h-[200px]"
-                : "top-0 right-0 w-6 h-6"
-            )}
-            onMouseDown={(e) =>
-              handleResizeStartWithForeground(e, "ne" as ResizeType)
-            }
-            onTouchStart={(e) =>
-              handleResizeStartWithForeground(e, "ne" as ResizeType)
-            }
-          />
-
-          <div
-            className={cn(
-              "absolute cursor-sw-resize pointer-events-auto transition-all select-none",
-              debugMode && "bg-red-500/50",
-              resizeType === "sw"
-                ? "bottom-[-100px] left-[-100px] w-[200px] h-[200px]"
-                : "bottom-0 left-0 w-6 h-6"
-            )}
-            onMouseDown={(e) =>
-              handleResizeStartWithForeground(e, "sw" as ResizeType)
-            }
-            onTouchStart={(e) =>
-              handleResizeStartWithForeground(e, "sw" as ResizeType)
-            }
-          />
-
-          <div
-            className={cn(
-              "absolute cursor-se-resize pointer-events-auto transition-all select-none",
-              debugMode && "bg-red-500/50",
-              resizeType === "se"
-                ? "bottom-[-100px] right-[-100px] w-[200px] h-[200px]"
-                : "bottom-0 right-0 w-6 h-6"
-            )}
-            onMouseDown={(e) =>
-              handleResizeStartWithForeground(e, "se" as ResizeType)
-            }
-            onTouchStart={(e) =>
-              handleResizeStartWithForeground(e, "se" as ResizeType)
-            }
-          />
-        </div>
-
-        <div
-          className={cn(
-            "w-full h-full flex flex-col border-[2px] border-black rounded-lg overflow-hidden",
-            !transparentBackground && "bg-system7-window-bg",
-            isForeground ? "shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]" : ""
-          )}
-          style={getSwipeStyle()}
-        >
-          {/* Title bar */}
-          <div
-            className={cn(
-              "flex items-center shrink-0 h-6 min-h-6 mx-0 my-[0.1rem] mb-0 px-[0.1rem] py-[0.2rem] select-none cursor-move border-b-[1.5px] user-select-none z-50",
-              transparentBackground && "mt-0 h-6.5",
-              isForeground
-                ? transparentBackground
-                  ? "bg-white/70 backdrop-blur-sm border-b-black"
-                  : "bg-white bg-[linear-gradient(#000_50%,transparent_0)] bg-clip-content bg-[length:6.6666666667%_13.3333333333%] border-b-black"
-                : transparentBackground
-                ? "bg-white/20 backdrop-blur-sm border-b-black"
-                : "bg-white border-b-gray-400"
-            )}
-            onMouseDown={handleMouseDownWithForeground}
-            onTouchStart={(e: React.TouchEvent<HTMLElement>) => {
-              handleMouseDownWithForeground(e);
-              if (isMobile) {
-                handleTouchStart(e);
-              }
-            }}
-            onTouchMove={(e: React.TouchEvent<HTMLElement>) => {
-              if (isMobile) {
-                handleTouchMove(e);
-              }
-            }}
-            onTouchEnd={() => {
-              if (isMobile) {
-                handleTouchEnd();
-              }
-            }}
-          >
+    <>
+      {/* Render snap zone indicator */}
+      {renderSnapIndicator()}
+    
+      <div
+        className={cn(
+          "absolute p-2 md:p-0 w-full h-full md:mt-0 select-none",
+          "transition-all duration-200 ease-in-out",
+          isInitialMount && "animate-in fade-in-0 zoom-in-95 duration-200",
+          isShaking && "animate-shake",
+          isSnapAnimating && "transition-all duration-250 ease-out",
+          // Disable all pointer events when window is closing
+          !isOpen && "pointer-events-none"
+        )}
+        onTransitionEnd={handleTransitionEnd}
+        style={{
+          left: windowPosition.x,
+          top: Math.max(0, windowPosition.y),
+          width: window.innerWidth >= 768 ? windowSize.width : "100%",
+          height: Math.max(windowSize.height, mergedConstraints.minHeight || 0),
+          minWidth:
+            window.innerWidth >= 768 ? mergedConstraints.minWidth : "100%",
+          minHeight: mergedConstraints.minHeight,
+          maxWidth: mergedConstraints.maxWidth || undefined,
+          maxHeight: mergedConstraints.maxHeight || undefined,
+          transition: isDragging || resizeType ? 
+            "none" : 
+            isSnapAnimating ? "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)" : undefined,
+          transform: !isInitialMount && !isOpen ? "scale(0.95)" : undefined,
+          opacity: !isInitialMount && !isOpen ? 0 : undefined,
+          transformOrigin: "center",
+        }}
+      >
+        <div className="relative w-full h-full">
+          {/* Resize handles - positioned outside main content */}
+          <div className="absolute -top-2 -right-2 -bottom-2 -left-2 z-50 pointer-events-none select-none">
+            {/* Top resize handle */}
             <div
-              onClick={handleClose}
-              onMouseDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
-              className="relative ml-2 w-4 h-4 cursor-default"
-            >
-              <div className="absolute inset-0 -m-2" />{" "}
-              {/* Larger click area */}
-              <div
-                className={`w-4 h-4 ${
-                  !transparentBackground && "bg-white shadow-[0_0_0_1px_white]"
-                } border-2 border-black hover:bg-gray-200 active:bg-gray-300 flex items-center justify-center ${
-                  !isForeground && "invisible"
-                }`}
-              />
-            </div>
-            <span
-              className={`select-none mx-auto ${
-                !transparentBackground && "bg-white"
-              } px-2 py-0 h-full flex items-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%] ${
-                !isForeground && "text-black/50"
-              }`}
-              onDoubleClick={handleFullMaximize}
-              onTouchStart={(e) => {
-                handleTitleBarTap(e);
-                // Allow the event to bubble up to the titlebar for drag handling
-                handleMouseDownWithForeground(e);
-              }}
-              onTouchMove={(e) => e.preventDefault()}
-            >
-              <span className="truncate">{title}</span>
-            </span>
-            <div className="mr-2 w-4 h-4" />
+              className={cn(
+                "absolute left-1 right-0 cursor-n-resize pointer-events-auto transition-[top,height] select-none",
+                debugMode && "bg-red-500/50",
+                resizeType?.includes("n")
+                  ? "top-[-100px] h-[200px]"
+                  : "top-1 h-2"
+              )}
+              onMouseDown={(e) =>
+                handleResizeStartWithForeground(e, "n" as ResizeType)
+              }
+              onTouchStart={(e) =>
+                handleResizeStartWithForeground(e, "n" as ResizeType)
+              }
+              onDoubleClick={handleHeightOnlyMaximize}
+            />
+
+            {/* Bottom resize handle */}
+            <div
+              className={cn(
+                "absolute left-0 right-0 cursor-s-resize pointer-events-auto transition-[bottom,height] select-none",
+                debugMode && "bg-red-500/50",
+                resizeType?.includes("s")
+                  ? "bottom-[-100px] h-[200px]"
+                  : "bottom-1 h-2"
+              )}
+              onMouseDown={(e) =>
+                handleResizeStartWithForeground(e, "s" as ResizeType)
+              }
+              onTouchStart={(e) =>
+                handleResizeStartWithForeground(e, "s" as ResizeType)
+              }
+              onDoubleClick={handleHeightOnlyMaximize}
+            />
+
+            {/* Left resize handle */}
+            <div
+              className={cn(
+                "absolute top-3 cursor-w-resize pointer-events-auto transition-[left,width] select-none",
+                debugMode && "bg-red-500/50",
+                resizeType?.includes("w")
+                  ? "left-[-100px] w-[200px]"
+                  : "left-1 w-2"
+              )}
+              style={{ bottom: resizeType?.includes("s") ? "32px" : "24px" }}
+              onMouseDown={(e) =>
+                handleResizeStartWithForeground(e, "w" as ResizeType)
+              }
+              onTouchStart={(e) =>
+                handleResizeStartWithForeground(e, "w" as ResizeType)
+              }
+            />
+
+            {/* Right resize handle */}
+            <div
+              className={cn(
+                "absolute top-6 cursor-e-resize pointer-events-auto transition-[right,width] select-none",
+                debugMode && "bg-red-500/50",
+                resizeType?.includes("e")
+                  ? "right-[-100px] w-[200px]"
+                  : "right-1 w-2"
+              )}
+              style={{ bottom: resizeType?.includes("s") ? "32px" : "24px" }}
+              onMouseDown={(e) =>
+                handleResizeStartWithForeground(e, "e" as ResizeType)
+              }
+              onTouchStart={(e) =>
+                handleResizeStartWithForeground(e, "e" as ResizeType)
+              }
+            />
+
+            {/* Corner resize handles */}
+            <div
+              className={cn(
+                "absolute cursor-ne-resize pointer-events-auto transition-all select-none",
+                debugMode && "bg-red-500/50",
+                resizeType === "ne"
+                  ? "top-[-100px] right-[-100px] w-[200px] h-[200px]"
+                  : "top-0 right-0 w-6 h-6"
+              )}
+              onMouseDown={(e) =>
+                handleResizeStartWithForeground(e, "ne" as ResizeType)
+              }
+              onTouchStart={(e) =>
+                handleResizeStartWithForeground(e, "ne" as ResizeType)
+              }
+            />
+
+            {/* left top corner resize handle */}
+            <div
+              className={cn(
+                "absolute cursor-nw-resize pointer-events-auto transition-all select-none",
+                debugMode && "bg-red-500/50",
+                resizeType === "nw"
+                  ? "top-[-100px] left-[-100px] w-[200px] h-[200px]"
+                  : "top-0 left-0 w-6 h-6"
+              )}
+              onMouseDown={(e) =>
+                handleResizeStartWithForeground(e, "nw" as ResizeType)
+              }
+              onTouchStart={(e) =>
+                handleResizeStartWithForeground(e, "nw" as ResizeType)
+              }
+            />
+
+            <div
+              className={cn(
+                "absolute cursor-sw-resize pointer-events-auto transition-all select-none",
+                debugMode && "bg-red-500/50",
+                resizeType === "sw"
+                  ? "bottom-[-100px] left-[-100px] w-[200px] h-[200px]"
+                  : "bottom-0 left-0 w-6 h-6"
+              )}
+              onMouseDown={(e) =>
+                handleResizeStartWithForeground(e, "sw" as ResizeType)
+              }
+              onTouchStart={(e) =>
+                handleResizeStartWithForeground(e, "sw" as ResizeType)
+              }
+            />
+
+            <div
+              className={cn(
+                "absolute cursor-se-resize pointer-events-auto transition-all select-none",
+                debugMode && "bg-red-500/50",
+                resizeType === "se"
+                  ? "bottom-[-100px] right-[-100px] w-[200px] h-[200px]"
+                  : "bottom-0 right-0 w-6 h-6"
+              )}
+              onMouseDown={(e) =>
+                handleResizeStartWithForeground(e, "se" as ResizeType)
+              }
+              onTouchStart={(e) =>
+                handleResizeStartWithForeground(e, "se" as ResizeType)
+              }
+            />
           </div>
 
-          {/* Content */}
-          <div className="flex flex-1 min-h-0 flex-col md:flex-row">
-            {children}
+          <div
+            className={cn(
+              "w-full h-full flex flex-col border-[2px] border-black rounded-lg overflow-hidden",
+              !transparentBackground && "bg-system7-window-bg",
+              isForeground ? "shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]" : ""
+            )}
+            style={getSwipeStyle()}
+          >
+            {/* Title bar */}
+            <div
+              className={cn(
+                "flex items-center shrink-0 h-6 min-h-6 mx-0 my-[0.1rem] mb-0 px-[0.1rem] py-[0.2rem] select-none cursor-move border-b-[1.5px] user-select-none z-50",
+                transparentBackground && "mt-0 h-6.5",
+                isForeground
+                  ? transparentBackground
+                    ? "bg-white/70 backdrop-blur-sm border-b-black"
+                    : "bg-white bg-[linear-gradient(#000_50%,transparent_0)] bg-clip-content bg-[length:6.6666666667%_13.3333333333%] border-b-black"
+                  : transparentBackground
+                  ? "bg-white/20 backdrop-blur-sm border-b-black"
+                  : "bg-white border-b-gray-400"
+              )}
+              onMouseDown={handleMouseDownWithForeground}
+              onTouchStart={(e: React.TouchEvent<HTMLElement>) => {
+                handleMouseDownWithForeground(e);
+                if (isMobile) {
+                  handleTouchStart(e);
+                }
+              }}
+              onTouchMove={(e: React.TouchEvent<HTMLElement>) => {
+                if (isMobile) {
+                  handleTouchMove(e);
+                }
+              }}
+              onTouchEnd={() => {
+                if (isMobile) {
+                  handleTouchEnd();
+                }
+              }}
+            >
+              <div
+                onClick={handleClose}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                className="relative ml-2 w-4 h-4 cursor-default"
+              >
+                <div className="absolute inset-0 -m-2" />{" "}
+                {/* Larger click area */}
+                <div
+                  className={`w-4 h-4 ${
+                    !transparentBackground && "bg-white shadow-[0_0_0_1px_white]"
+                  } border-2 border-black hover:bg-gray-200 active:bg-gray-300 flex items-center justify-center ${
+                    !isForeground && "invisible"
+                  }`}
+                />
+              </div>
+              <span
+                className={`select-none mx-auto ${
+                  !transparentBackground && "bg-white"
+                } px-2 py-0 h-full flex items-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%] ${
+                  !isForeground && "text-black/50"
+                }`}
+                onDoubleClick={handleFullMaximize}
+                onTouchStart={(e) => {
+                  handleTitleBarTap(e);
+                  // Allow the event to bubble up to the titlebar for drag handling
+                  handleMouseDownWithForeground(e);
+                }}
+                onTouchMove={(e) => e.preventDefault()}
+              >
+                <span className="truncate">{title}</span>
+              </span>
+              <div className="mr-2 w-4 h-4" />
+            </div>
+
+            {/* Content */}
+            <div className="flex flex-col flex-1 min-h-0 md:flex-row">
+              {children}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

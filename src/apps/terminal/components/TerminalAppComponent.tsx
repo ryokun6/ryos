@@ -2715,7 +2715,7 @@ assistant
         : 100;
 
     return (
-      <div className="vim-editor font-monaco text-white">
+      <div className="text-white vim-editor font-monaco">
         {visibleLines.map((line, i) => {
           const lineNumber = position + i;
           const isCursorLine = lineNumber === vimCursorLine;
@@ -2725,26 +2725,26 @@ assistant
               key={i}
               className={`vim-line flex ${isCursorLine ? "bg-white/10" : ""}`}
             >
-              <span className="text-gray-500 w-6 text-right mr-2">
+              <span className="mr-2 w-6 text-right text-gray-500">
                 {lineNumber + 1}
               </span>
               {isCursorLine ? (
                 // Render line with cursor
-                <span className="select-text flex-1">
+                <span className="flex-1 select-text">
                   {line.substring(0, vimCursorColumn)}
-                  <span className="bg-orange-300 text-black">
+                  <span className="text-black bg-orange-300">
                     {line.charAt(vimCursorColumn) || " "}
                   </span>
                   {line.substring(vimCursorColumn + 1)}
                 </span>
               ) : (
                 // Render line without cursor
-                <span className="select-text flex-1">{line}</span>
+                <span className="flex-1 select-text">{line}</span>
               )}
             </div>
           );
         })}
-        <div className="vim-status-bar flex text-white text-xs mt-2">
+        <div className="flex mt-2 text-xs text-white vim-status-bar">
           <div
             className={`px-2 py-1 font-bold ${
               vimMode === "insert" ? "bg-green-600/50" : "bg-blue-600/50"
@@ -2756,10 +2756,10 @@ assistant
               ? "INSERT"
               : "COMMAND"}
           </div>
-          <div className="flex-1 bg-white/10 px-2 py-1 flex items-center justify-between">
+          <div className="flex flex-1 justify-between items-center px-2 py-1 bg-white/10">
             <span className="flex-1 mx-2">[{file.name}]</span>
             <span>{percentage}%</span>
-            <span className="ml-4 mr-2">
+            <span className="mr-2 ml-4">
               {vimCursorLine + 1}:{vimCursorColumn + 1}
             </span>
           </div>
@@ -2775,7 +2775,7 @@ assistant
         <div className="mb-4">
           <VimEditor file={vimFile} position={vimPosition} />
           <div className="flex mt-1">
-            <span className="text-green-400 mr-1">
+            <span className="mr-1 text-green-400">
               {vimMode === "normal" ? "" : vimMode === "insert" ? "" : ":"}
             </span>
             <input
@@ -2791,8 +2791,7 @@ assistant
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
               className={`flex-1 bg-transparent text-white focus:outline-none ${
-                inputFocused ? "input--focused" : ""
-              }`}
+                inputFocused ? "input--focused" : ""}`}
               style={{ fontSize: `${fontSize}px` }}
               autoFocus
             />
@@ -2807,7 +2806,7 @@ assistant
           {commandHistory.map((item, index) => (
             <motion.div
               key={index}
-              className="mb-1 select-text cursor-text"
+              className="mb-1 cursor-text select-text"
               variants={lineVariants}
               initial="initial"
               animate={
@@ -2837,17 +2836,17 @@ assistant
               {item.command && (
                 <div className="flex select-text">
                   {item.path === "ai-user" ? (
-                    <span className="text-purple-400 mr-2 select-text cursor-text">
+                    <span className="mr-2 text-purple-400 cursor-text select-text">
                       <span className="inline-block w-2 text-center">→</span>{" "}
                       ryo
                     </span>
                   ) : (
-                    <span className="text-green-400 mr-2 select-text cursor-text">
+                    <span className="mr-2 text-green-400 cursor-text select-text">
                       <span className="inline-block w-2 text-center">→</span>{" "}
                       {item.path === "/" ? "/" : item.path}
                     </span>
                   )}
-                  <span className="select-text cursor-text">
+                  <span className="cursor-text select-text">
                     {item.command}
                   </span>
                 </div>
@@ -2884,7 +2883,7 @@ assistant
                         </span>{" "}
                         ryo
                       </span>
-                      <span className="text-gray-500 italic shimmer-subtle">
+                      <span className="italic text-gray-500 shimmer-subtle">
                         {" is thinking"}
                         <AnimatedEllipsis />
                       </span>
@@ -2892,7 +2891,7 @@ assistant
                   ) : item.path === "ai-assistant" ? (
                     <motion.div
                       layout="position"
-                      className="select-text cursor-text"
+                      className="cursor-text select-text"
                       transition={{
                         type: "spring",
                         duration: 0.3,
@@ -3004,7 +3003,7 @@ assistant
             className="flex transition-all duration-200 select-text"
           >
             {isInAiMode ? (
-              <span className="text-purple-400 mr-2 whitespace-nowrap select-text cursor-text">
+              <span className="mr-2 text-purple-400 whitespace-nowrap cursor-text select-text">
                 {isAiLoading ? (
                   <span>
                     <span className="gradient-spin">
@@ -3021,12 +3020,12 @@ assistant
                 )}
               </span>
             ) : (
-              <span className="text-green-400 mr-2 whitespace-nowrap select-text cursor-text">
+              <span className="mr-2 text-green-400 whitespace-nowrap cursor-text select-text">
                 <span className="inline-block w-2 text-center">→</span>{" "}
                 {currentPath === "/" ? "/" : currentPath}
               </span>
             )}
-            <div className="flex-1 relative">
+            <div className="relative flex-1">
               <input
                 ref={inputRef}
                 type="text"
@@ -3039,14 +3038,13 @@ assistant
                   e.preventDefault();
                 }}
                 className={`w-full text-white focus:outline-none bg-transparent ${
-                  inputFocused ? "input--focused" : ""
-                }`}
+                  inputFocused ? "input--focused" : ""}`}
                 style={{ fontSize: `${fontSize}px` }}
                 autoFocus
               />
               {isAiLoading && isInAiMode && (
-                <div className="absolute top-0 left-0 w-full h-full pointer-events-none flex items-center">
-                  <span className="text-gray-400/40 opacity-30 shimmer">
+                <div className="flex absolute top-0 left-0 items-center w-full h-full pointer-events-none">
+                  <span className="opacity-30 text-gray-400/40 shimmer">
                     is thinking
                     <AnimatedEllipsis />
                   </span>
@@ -3089,7 +3087,7 @@ assistant
         skipInitialSound={skipInitialSound}
       >
         <motion.div
-          className="flex flex-col h-full w-full bg-black/80 backdrop-blur-lg text-white antialiased font-monaco p-2 overflow-hidden select-text"
+          className="flex overflow-hidden flex-col p-2 w-full h-full antialiased text-white backdrop-blur-lg select-text bg-black/80 font-monaco"
           style={{
             fontSize: `${fontSize}px`,
             fontFamily:
@@ -3107,7 +3105,7 @@ assistant
         >
           <div
             ref={terminalRef}
-            className="flex-1 overflow-auto whitespace-pre-wrap select-text cursor-text"
+            className="overflow-auto flex-1 whitespace-pre-wrap cursor-text select-text"
             onClick={(e) => {
               // Only focus input if this isn't a text selection
               if (window.getSelection()?.toString() === "") {

@@ -45,3 +45,6 @@ export interface ResizeStart {
   left: number;
   top: number;
 }
+
+// window snap zone type
+export type SnapZone = "none" | "top" | "left" | "right";

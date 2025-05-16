@@ -130,9 +130,7 @@
     --input: 0 0% 14.9%;
     --ring: 0 0% 100%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
     user-select: none;
@@ -147,6 +145,10 @@
     overflow: hidden;
     position: fixed;
     inset: 0;
+  }
+  /* ensure the app container does not limit window overflow */
+  #root, #app {
+    overflow: visible !important;
   }
 }
 
