@@ -400,7 +400,17 @@ export function IpodScreen({
             showVideo ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
         >
-          <div className="w-full h-[calc(100%+120px)] mt-[-60px]">
+          <div className="w-full h-[calc(100%+120px)] mt-[-60px]"
+            onClick={(e) => {
+              // Ensure taps on the lyrics overlay also toggle play / video as expected
+              e.stopPropagation();
+              if (!isPlaying) {
+                handlePlay();
+              } else {
+                onToggleVideo();
+              }
+            }}
+          >
             <ReactPlayer
               ref={playerRef}
               url={currentTrack.url}
@@ -441,10 +451,12 @@ export function IpodScreen({
                 className="absolute inset-0 z-30"
                 onClick={(e) => {
                   e.stopPropagation();
+                  // If playback is paused, resume playback; otherwise, hide the video overlay
                   if (!isPlaying) {
                     handlePlay();
+                  } else {
+                    onToggleVideo();
                   }
-                  onToggleVideo();
                 }}
               />
             )}
