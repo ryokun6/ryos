@@ -1219,7 +1219,7 @@ export function IpodAppComponent({
                   <ReactPlayer
                     ref={playerRef}
                     url={tracks[currentIndex].url}
-                    playing={isPlaying && !isFullScreen}
+                    playing={isPlaying}
                     controls
                     width="100%"
                     height="100%"
