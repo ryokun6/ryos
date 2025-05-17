@@ -306,6 +306,13 @@ export function IpodAppComponent({
     setElapsedTime(0);
   }, [currentIndex]);
 
+  // Sync playback position when entering or exiting full screen
+  useEffect(() => {
+    if (playerRef.current) {
+      playerRef.current.seekTo(elapsedTime, "seconds");
+    }
+  }, [isFullScreen]);
+
   useEffect(() => {
     return () => {
       if (statusTimeoutRef.current) {
