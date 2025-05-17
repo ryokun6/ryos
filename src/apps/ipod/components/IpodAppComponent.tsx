@@ -1214,12 +1214,27 @@ export function IpodAppComponent({
         const currentTime = playerRef.current?.getCurrentTime() || elapsedTime;
         // Small delay to ensure the fullscreen player is mounted
         setTimeout(() => {
-          fullScreenPlayerRef.current?.seekTo(currentTime);
+          const player = fullScreenPlayerRef.current;
+          player?.seekTo(currentTime);
+          if (isPlaying) {
+            try {
+              const internal = player?.getInternalPlayer?.();
+              if (internal) {
+                if (typeof (internal as any).playVideo === "function") {
+                  (internal as any).playVideo();
+                } else if (typeof (internal as any).play === "function") {
+                  (internal as any).play();
+                }
+              }
+            } catch (e) {
+              console.warn("[iPod] Failed to resume playback in fullscreen", e);
+            }
+          }
         }, 100);
       }
       prevFullScreenRef.current = isFullScreen;
     }
-  }, [isFullScreen, elapsedTime]);
+  }, [isFullScreen, elapsedTime, isPlaying]);
 
   if (!isWindowOpen) return null;
 
