@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { useLyrics } from "@/hooks/useLyrics";
+import { useBacklight } from "../hooks/useBacklight";
 
 // Add this component definition before the IpodAppComponent
 interface FullScreenPortalProps {
@@ -118,8 +119,6 @@ export function IpodAppComponent({
   const nextTrack = useIpodStore((s) => s.nextTrack);
   const previousTrack = useIpodStore((s) => s.previousTrack);
 
-  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
-  const backlightTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -167,9 +166,12 @@ export function IpodAppComponent({
   // Separate ref for the full-screen player rendered in the portal
   const fullScreenPlayerRef = useRef<ReactPlayer>(null);
   const skipOperationRef = useRef(false);
-  const userHasInteractedRef = useRef(false);
 
-  const prevIsForeground = useRef(isForeground);
+  const {
+    registerActivity,
+    updateActivityTime,
+    userHasInteractedRef,
+  } = useBacklight(isForeground);
   const bringToForeground = useAppStore((state) => state.bringToForeground);
   const clearIpodInitialData = useAppStore((state) => state.clearInitialData);
 
@@ -188,13 +190,6 @@ export function IpodAppComponent({
     }, 2000);
   }, []);
 
-  const registerActivity = useCallback(() => {
-    setLastActivityTime(Date.now());
-    userHasInteractedRef.current = true;
-    if (!useIpodStore.getState().backlightOn) {
-      toggleBacklight();
-    }
-  }, [toggleBacklight]);
 
   const memoizedToggleShuffle = useCallback(() => {
     toggleShuffle();
@@ -214,11 +209,9 @@ export function IpodAppComponent({
     if (isOn) {
       registerActivity();
     } else {
-      // Mimic the parts of registerActivity that update activity tracking
-      setLastActivityTime(Date.now());
-      userHasInteractedRef.current = true;
+      updateActivityTime();
     }
-  }, [toggleBacklight, showStatus, registerActivity, setLastActivityTime]);
+  }, [toggleBacklight, showStatus, registerActivity, updateActivityTime]);
 
   const memoizedChangeTheme = useCallback(
     (newTheme: "classic" | "black") => {
@@ -265,45 +258,7 @@ export function IpodAppComponent({
     memoizedChangeTheme(nextTheme);
   }, [memoizedChangeTheme]);
 
-  useEffect(() => {
-    if (backlightTimerRef.current) {
-      clearTimeout(backlightTimerRef.current);
-    }
 
-    if (backlightOn) {
-      backlightTimerRef.current = setTimeout(() => {
-        const currentShowVideo = useIpodStore.getState().showVideo;
-        const currentIsPlaying = useIpodStore.getState().isPlaying;
-        if (
-          Date.now() - lastActivityTime >= 5000 &&
-          !(currentShowVideo && currentIsPlaying)
-        ) {
-          toggleBacklight();
-        }
-      }, 5000);
-    }
-
-    return () => {
-      if (backlightTimerRef.current) {
-        clearTimeout(backlightTimerRef.current);
-      }
-    };
-  }, [backlightOn, lastActivityTime, toggleBacklight]);
-
-  useEffect(() => {
-    if (isForeground && !prevIsForeground.current) {
-      if (!useIpodStore.getState().backlightOn) {
-        toggleBacklight();
-      }
-      registerActivity();
-    } else if (!isForeground && prevIsForeground.current) {
-      if (useIpodStore.getState().backlightOn) {
-        toggleBacklight();
-      }
-    }
-
-    prevIsForeground.current = isForeground;
-  }, [isForeground, toggleBacklight, registerActivity]);
 
   useEffect(() => {
     setElapsedTime(0);
