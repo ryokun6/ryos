@@ -122,7 +122,8 @@ export function IpodAppComponent({
   const backlightTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const elapsedTime = useIpodStore((s) => s.elapsedTime);
+  const setElapsedTime = useIpodStore((s) => s.setElapsedTime);
   const [totalTime, setTotalTime] = useState(0);
   const [urlInput, setUrlInput] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -162,7 +163,8 @@ export function IpodAppComponent({
   >([]);
   const [cameFromNowPlayingMenuItem, setCameFromNowPlayingMenuItem] =
     useState(false);
-  const playerRef = useRef<ReactPlayer>(null);
+  const screenPlayerRef = useRef<ReactPlayer>(null);
+  const fullScreenPlayerRef = useRef<ReactPlayer>(null);
   const skipOperationRef = useRef(false);
   const userHasInteractedRef = useRef(false);
 
@@ -305,6 +307,14 @@ export function IpodAppComponent({
   useEffect(() => {
     setElapsedTime(0);
   }, [currentIndex]);
+
+  // Sync playback position when entering or exiting full screen
+  useEffect(() => {
+    const target = isFullScreen ? fullScreenPlayerRef.current : screenPlayerRef.current;
+    if (target) {
+      target.seekTo(elapsedTime, "seconds");
+    }
+  }, [isFullScreen, elapsedTime]);
 
   useEffect(() => {
     return () => {
@@ -791,17 +801,21 @@ export function IpodAppComponent({
   }, [processVideoId, bringToForeground]);
 
   const handleTrackEnd = useCallback(() => {
+    const target = isFullScreen ? fullScreenPlayerRef.current : screenPlayerRef.current;
     if (loopCurrent) {
-      playerRef.current?.seekTo(0);
+      target?.seekTo(0);
       setIsPlaying(true);
     } else {
       nextTrack();
     }
-  }, [loopCurrent, nextTrack, setIsPlaying]);
+  }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen]);
 
-  const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    setElapsedTime(Math.floor(state.playedSeconds));
-  }, []);
+  const handleProgress = useCallback(
+    (state: { playedSeconds: number }) => {
+      setElapsedTime(Math.floor(state.playedSeconds));
+    },
+    [setElapsedTime]
+  );
 
   const handleDuration = useCallback((duration: number) => {
     setTotalTime(duration);
@@ -1111,14 +1125,14 @@ export function IpodAppComponent({
           });
         }
       } else {
-        const currentTime = playerRef.current?.getCurrentTime() || 0;
+        const currentTime = activeRef?.getCurrentTime() || 0;
         const seekAmount = 5;
         if (direction === "clockwise") {
-          playerRef.current?.seekTo(currentTime + seekAmount);
-          showStatus(`⏩︎`);
+          activeRef?.seekTo(currentTime + seekAmount);
+          showStatus("⏩");
         } else {
-          playerRef.current?.seekTo(Math.max(0, currentTime - seekAmount));
-          showStatus(`⏪︎`);
+          activeRef?.seekTo(Math.max(0, currentTime - seekAmount));
+          showStatus("⏪");
         }
       }
     },
@@ -1210,7 +1224,7 @@ export function IpodAppComponent({
               {tracks[currentIndex] && (
                 <>
                   <ReactPlayer
-                    ref={playerRef}
+                    ref={fullScreenPlayerRef}
                     url={tracks[currentIndex].url}
                     playing={isPlaying && !isFullScreen}
                     controls
@@ -1325,7 +1339,7 @@ export function IpodAppComponent({
               menuDirection={menuDirection}
               onMenuItemAction={handleMenuItemAction}
               showVideo={showVideo}
-              playerRef={playerRef}
+              playerRef={screenPlayerRef}
               handleTrackEnd={handleTrackEnd}
               handleProgress={handleProgress}
               handleDuration={handleDuration}

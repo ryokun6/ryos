@@ -331,6 +331,8 @@ interface IpodData {
   lyricsTranslationRequest: { language: string; songId: string } | null;
   currentLyrics: { lines: LyricLine[] } | null;
   isFullScreen: boolean;
+  /** Current playback position in seconds */
+  elapsedTime: number;
 }
 
 const initialIpodData: IpodData = {
@@ -351,6 +353,7 @@ const initialIpodData: IpodData = {
   lyricsTranslationRequest: null,
   currentLyrics: null,
   isFullScreen: false,
+  elapsedTime: 0,
 };
 
 export interface IpodState extends IpodData {
@@ -372,6 +375,8 @@ export interface IpodState extends IpodData {
   previousTrack: () => void;
   setShowVideo: (show: boolean) => void;
   toggleLyrics: () => void;
+  /** Update the current playback position in seconds */
+  setElapsedTime: (time: number) => void;
   /** Adjust the lyric offset (in ms) for the track at the given index. */
   adjustLyricOffset: (trackIndex: number, deltaMs: number) => void;
   /** Set lyrics alignment mode */
@@ -409,10 +414,11 @@ export const useIpodStore = create<IpodState>()(
       toggleVideo: () => set((state) => ({ showVideo: !state.showVideo })),
       toggleBacklight: () =>
         set((state) => ({ backlightOn: !state.backlightOn })),
-      toggleLcdFilter: () =>
+  toggleLcdFilter: () =>
         set((state) => ({ lcdFilterOn: !state.lcdFilterOn })),
       toggleFullScreen: () =>
         set((state) => ({ isFullScreen: !state.isFullScreen })),
+      setElapsedTime: (time) => set({ elapsedTime: time }),
       setTheme: (theme) => set({ theme }),
       addTrack: (track) =>
         set((state) => ({
