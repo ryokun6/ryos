@@ -1665,7 +1665,8 @@ export function IpodAppComponent({
                     <>
                       <div
                         className={`w-full h-full ${
-                          isPlaying && !isIOSSafari
+                          (isPlaying && !isIOSSafari) ||
+                          (!isPlaying && isIOSSafari)
                             ? "pointer-events-none"
                             : "pointer-events-auto"
                         }`}
@@ -1701,6 +1702,16 @@ export function IpodAppComponent({
                             },
                           }}
                         />
+                        {isIOSSafari && !isPlaying && (
+                          <div
+                            className="absolute inset-0 z-30"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              registerActivity();
+                              togglePlay();
+                            }}
+                          />
+                        )}
                       </div>
 
                       {/* Dark overlay when lyrics are shown */}
