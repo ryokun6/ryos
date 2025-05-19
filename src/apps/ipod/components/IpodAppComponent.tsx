@@ -15,6 +15,7 @@ import { useVibration } from "@/hooks/useVibration";
 import { IpodScreen } from "./IpodScreen";
 import { IpodWheel } from "./IpodWheel";
 import { useIpodStore, Track } from "@/stores/useIpodStore";
+import { shallow } from "zustand/shallow";
 import { useAppStore } from "@/stores/useAppStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { toast } from "sonner";
@@ -323,14 +324,28 @@ export function IpodAppComponent({
   const { play: playScrollSound } = useSound(Sounds.MENU_OPEN);
   const vibrate = useVibration(100, 50);
 
-  const tracks = useIpodStore((s) => s.tracks);
-  const currentIndex = useIpodStore((s) => s.currentIndex);
-  const loopCurrent = useIpodStore((s) => s.loopCurrent);
-  const loopAll = useIpodStore((s) => s.loopAll);
-  const isShuffled = useIpodStore((s) => s.isShuffled);
-  const isPlaying = useIpodStore((s) => s.isPlaying);
-  const showVideo = useIpodStore((s) => s.showVideo);
-  const backlightOn = useIpodStore((s) => s.backlightOn);
+  const {
+    tracks,
+    currentIndex,
+    loopCurrent,
+    loopAll,
+    isShuffled,
+    isPlaying,
+    showVideo,
+    backlightOn,
+  } = useIpodStore(
+    (s) => ({
+      tracks: s.tracks,
+      currentIndex: s.currentIndex,
+      loopCurrent: s.loopCurrent,
+      loopAll: s.loopAll,
+      isShuffled: s.isShuffled,
+      isPlaying: s.isPlaying,
+      showVideo: s.showVideo,
+      backlightOn: s.backlightOn,
+    }),
+    shallow
+  );
   const theme = useIpodStore((s) => s.theme);
   const lcdFilterOn = useIpodStore((s) => s.lcdFilterOn);
   const showLyrics = useIpodStore((s) => s.showLyrics);
