@@ -163,11 +163,12 @@ export function PhotoBoothComponent({
       }
     }
 
-    // Only clean up when window actually closes
+    // Always clean up the camera stream when the component unmounts or the
+    // effect re-runs. This guarantees that the webcam is released even if the
+    // component unmounts immediately after `isWindowOpen` becomes false,
+    // preventing lingering active streams on mobile browsers like iOS.
     return () => {
-      if (!isWindowOpen) {
-        stopCamera();
-      }
+      stopCamera();
     };
   }, [isWindowOpen, isForeground, stream]);
 
