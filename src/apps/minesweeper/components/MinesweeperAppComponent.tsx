@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { helpItems, appMetadata } from "..";
 import { useSound, Sounds } from "@/hooks/useSound";
+import { useVibration } from "@/hooks/useVibration";
 
 const BOARD_SIZE = 9;
 const MINES_COUNT = 10;
@@ -150,6 +151,7 @@ export function MinesweeperAppComponent({
   const { play: playMineHit } = useSound(Sounds.ALERT_BONK, 0.3);
   const { play: playGameWin } = useSound(Sounds.ALERT_INDIGO, 0.3);
   const { play: playFlag } = useSound(Sounds.BUTTON_CLICK, 0.3);
+  const vibrateFlag = useVibration(100, 50);
 
   function initializeBoard(): CellContent[][] {
     const board = Array(BOARD_SIZE)
@@ -298,11 +300,15 @@ export function MinesweeperAppComponent({
 
     playFlag();
     const newBoard = [...gameBoard.map((row) => [...row])];
-    newBoard[row][col].isFlagged = !newBoard[row][col].isFlagged;
+    const newFlagState = !newBoard[row][col].isFlagged;
+    newBoard[row][col].isFlagged = newFlagState;
     setGameBoard(newBoard);
     setRemainingMines((prev) =>
-      newBoard[row][col].isFlagged ? prev - 1 : prev + 1
+      newFlagState ? prev - 1 : prev + 1
     );
+    if (newFlagState) {
+      vibrateFlag();
+    }
   }
 
   function revealCell(board: CellContent[][], row: number, col: number) {
