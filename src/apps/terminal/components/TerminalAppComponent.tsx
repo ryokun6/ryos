@@ -20,6 +20,12 @@ import HtmlPreview, {
 } from "@/components/shared/HtmlPreview";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useAppStore } from "@/stores/useAppStore";
+import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
+import { useVideoStore } from "@/stores/useVideoStore";
+import { useIpodStore } from "@/stores/useIpodStore";
+import { useTextEditStore } from "@/stores/useTextEditStore";
+import { appRegistry } from "@/config/appRegistry";
 
 // Analytics event namespace for terminal AI events
 export const TERMINAL_ANALYTICS = {
@@ -420,6 +426,7 @@ export function TerminalAppComponent({
     stop: stopAiResponse,
     setMessages: setAiChatMessages,
   } = useChat({
+    api: "/api/chat",
     initialMessages: [
       {
         id: "system",
@@ -429,6 +436,55 @@ export function TerminalAppComponent({
       },
     ],
     experimental_throttle: 50,
+    body: {
+      systemState: getSystemState(),
+    },
+    async onToolCall({ toolCall }) {
+      try {
+        switch (toolCall.toolName) {
+          case "launchApp": {
+            const { id, url, year } = toolCall.args as {
+              id: string;
+              url?: string;
+              year?: string;
+            };
+            const appName = appRegistry[id as AppId]?.name || id;
+
+            const launchOptions: Record<string, unknown> = {};
+            if (id === "internet-explorer" && (url || year)) {
+              launchOptions.initialData = { url, year: year || "current" };
+            }
+
+            launchApp(id as AppId, launchOptions);
+
+            let confirmationMessage = `Launched ${appName}.`;
+            if (id === "internet-explorer") {
+              const urlPart = url ? ` to ${url}` : "";
+              const yearPart = year && year !== "current" ? ` in ${year}` : "";
+              confirmationMessage += `${urlPart}${yearPart}`;
+            }
+            return confirmationMessage;
+          }
+          case "closeApp": {
+            const { id } = toolCall.args as { id: string };
+            const appName = appRegistry[id as AppId]?.name || id;
+            useAppStore.getState().closeApp(id as AppId);
+            return `Closed ${appName}.`;
+          }
+          case "generateHtml": {
+            const { html } = toolCall.args as { html: string };
+            return html.trim();
+          }
+          default: {
+            console.warn("Unhandled tool call:", toolCall.toolName);
+            return "";
+          }
+        }
+      } catch (err) {
+        console.error("Error executing tool call:", err);
+        return `Failed to execute ${toolCall.toolName}`;
+      }
+    },
   });
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -2131,10 +2187,17 @@ assistant
           ]);
 
           // Send the initial prompt
-          appendAiMessage({
-            role: "user",
-            content: initialPrompt,
-          });
+          appendAiMessage(
+            {
+              role: "user",
+              content: initialPrompt,
+            },
+            {
+              body: {
+                systemState: getSystemState(),
+              },
+            }
+          );
 
           return {
             output: `ask ryo anything. type 'exit' to return to terminal.\n→ from your command: ${initialPrompt}`,
@@ -2412,10 +2475,17 @@ assistant
     ]);
 
     // Send the message using useChat hook
-    appendAiMessage({
-      role: "user",
-      content: command,
-    });
+    appendAiMessage(
+      {
+        role: "user",
+        content: command,
+      },
+      {
+        body: {
+          systemState: getSystemState(),
+        },
+      }
+    );
 
     // Clear current command
     setCurrentCommand("");
@@ -3149,3 +3219,99 @@ assistant
     </>
   );
 }
+
+// Helper to collect current system state for AI system prompts
+const getSystemState = () => {
+  const appStore = useAppStore.getState();
+  const ieStore = useInternetExplorerStore.getState();
+  const videoStore = useVideoStore.getState();
+  const ipodStore = useIpodStore.getState();
+  const textEditStore = useTextEditStore.getState();
+  const chatsStore = useChatsStore.getState();
+
+  const currentVideo = videoStore.videos[videoStore.currentIndex];
+  const currentTrack = ipodStore.tracks[ipodStore.currentIndex];
+
+  const runningApps = Object.entries(appStore.apps)
+    .filter(([, appState]) => appState.isOpen)
+    .map(([id, appState]) => ({
+      id,
+      isForeground: appState.isForeground || false,
+    }));
+
+  const foregroundApp = runningApps.find((a) => a.isForeground)?.id || null;
+  const backgroundApps = runningApps
+    .filter((a) => !a.isForeground)
+    .map((a) => a.id);
+
+  const nowClient = new Date();
+  const userTimeZone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
+  const userTimeString = nowClient.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  const userDateString = nowClient.toLocaleDateString([], {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return {
+    apps: appStore.apps,
+    username: chatsStore.username,
+    userLocalTime: {
+      timeString: userTimeString,
+      dateString: userDateString,
+      timeZone: userTimeZone,
+    },
+    runningApps: {
+      foreground: foregroundApp,
+      background: backgroundApps,
+      windowOrder: appStore.windowOrder,
+    },
+    internetExplorer: {
+      url: ieStore.url,
+      year: ieStore.year,
+      status: ieStore.status,
+      currentPageTitle: ieStore.currentPageTitle,
+      aiGeneratedHtml: ieStore.aiGeneratedHtml,
+    },
+    video: {
+      currentVideo: currentVideo
+        ? {
+            id: currentVideo.id,
+            url: currentVideo.url,
+            title: currentVideo.title,
+            artist: currentVideo.artist,
+          }
+        : null,
+      isPlaying: videoStore.isPlaying,
+      loopAll: videoStore.loopAll,
+      loopCurrent: videoStore.loopCurrent,
+      isShuffled: videoStore.isShuffled,
+    },
+    ipod: {
+      currentTrack: currentTrack
+        ? {
+            id: currentTrack.id,
+            url: currentTrack.url,
+            title: currentTrack.title,
+            artist: currentTrack.artist,
+          }
+        : null,
+      isPlaying: ipodStore.isPlaying,
+      loopAll: ipodStore.loopAll,
+      loopCurrent: ipodStore.loopCurrent,
+      isShuffled: ipodStore.isShuffled,
+      currentLyrics: ipodStore.currentLyrics,
+    },
+    textEdit: {
+      lastFilePath: textEditStore.lastFilePath,
+      contentJson: textEditStore.contentJson,
+      hasUnsavedChanges: textEditStore.hasUnsavedChanges,
+    },
+  };
+};
