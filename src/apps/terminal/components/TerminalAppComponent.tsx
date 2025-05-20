@@ -12,7 +12,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useChat } from "ai/react";
 import { useAppContext } from "@/contexts/AppContext";
 import { useAppStore } from "@/stores/useAppStore";
-import { AppId } from "@/config/appRegistry";
+import { AppId, appRegistry } from "@/config/appRegistry";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 import { track } from "@vercel/analytics";
 import HtmlPreview, {
@@ -59,6 +59,19 @@ const AVAILABLE_COMMANDS = [
   "date",
   "vim",
 ];
+
+// Helper: prettify tool names
+const formatToolName = (name: string): string =>
+  name
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (ch) => ch.toUpperCase())
+    .trim();
+
+const getAppName = (id?: string): string => {
+  if (!id) return "app";
+  const entry = (appRegistry as Record<string, { name?: string }>)[id];
+  return entry?.name || formatToolName(id);
+};
 
 // Minimal system state for AI chat requests
 const getSystemState = () => {
@@ -294,6 +307,54 @@ const parseSimpleMarkdown = (text: string): React.ReactNode[] => {
   return result;
 };
 
+interface ToolInvocation {
+  state: "partial-call" | "call" | "result";
+  step?: number;
+  toolCallId: string;
+  toolName: string;
+  args?: Record<string, any>;
+  result?: any;
+}
+
+const formatToolInvocation = (invocation: ToolInvocation): string | null => {
+  const { toolName, state, args, result } = invocation;
+  if (state === "call" || state === "partial-call") {
+    switch (toolName) {
+      case "textEditSearchReplace":
+        return "Replacing text…";
+      case "textEditInsertText":
+        return "Inserting text…";
+      case "launchApp":
+        return `Launching ${getAppName(args?.id)}…`;
+      case "closeApp":
+        return `Closing ${getAppName(args?.id)}…`;
+      case "textEditNewFile":
+        return "Creating new document…";
+      default:
+        return `Running ${formatToolName(toolName)}…`;
+    }
+  }
+
+  if (state === "result") {
+    if (toolName === "launchApp" && args?.id === "internet-explorer") {
+      const urlPart = args.url ? ` ${args.url}` : "";
+      const yearPart = args.year && args.year !== "" ? ` in ${args.year}` : "";
+      return `Launched${urlPart}${yearPart}`;
+    } else if (toolName === "launchApp") {
+      return `Launched ${getAppName(args?.id)}`;
+    } else if (toolName === "closeApp") {
+      return `Closed ${getAppName(args?.id)}`;
+    }
+    if (toolName === "generateHtml" && typeof result === "string" && result.trim().length > 0) {
+      return result.trim();
+    }
+    if (typeof result === "string") return result;
+    return formatToolName(toolName);
+  }
+
+  return null;
+};
+
 // TypewriterText component for terminal output
 function TypewriterText({
   text,
@@ -458,6 +519,37 @@ export function TerminalAppComponent({
   // Keep track of apps already launched in the current session
   const launchedAppsRef = useRef<Set<string>>(new Set());
 
+  const launchApp = useLaunchApp();
+  const { toggleApp, bringToForeground } = useAppContext();
+
+  // Execute side effects for tool invocations
+  const handleToolInvocation = useCallback(
+    (invocation: ToolInvocation) => {
+      if (invocation.state !== "call") return;
+
+      const { toolName, args } = invocation;
+
+      if (toolName === "launchApp") {
+        const id = args?.id as string | undefined;
+        if (id && !launchedAppsRef.current.has(id)) {
+          const options: { initialData?: any } = {};
+          if (id === "internet-explorer" && (args?.url || args?.year)) {
+            options.initialData = { url: args.url, year: args.year || "current" };
+          }
+          launchApp(id as AppId, options);
+          launchedAppsRef.current.add(id);
+        }
+      } else if (toolName === "closeApp") {
+        const id = args?.id as string | undefined;
+        if (id) {
+          toggleApp(id as AppId);
+          launchedAppsRef.current.delete(id);
+        }
+      }
+    },
+    [launchApp, toggleApp]
+  );
+
   // Add useChat hook
   const {
     messages: aiMessages,
@@ -477,6 +569,39 @@ export function TerminalAppComponent({
       },
     ],
     experimental_throttle: 50,
+    async onToolCall({ toolCall }) {
+      try {
+        handleToolInvocation(toolCall as ToolInvocation);
+
+        if (toolCall.toolName === "launchApp") {
+          const id = (toolCall.args as any)?.id as string | undefined;
+          const appName = getAppName(id);
+          if (id === "internet-explorer") {
+            const url = (toolCall.args as any)?.url;
+            const year = (toolCall.args as any)?.year;
+            const urlPart = url ? ` to ${url}` : "";
+            const yearPart = year && year !== "current" ? ` in ${year}` : "";
+            return `Launched ${appName}${urlPart}${yearPart}.`;
+          }
+          return `Launched ${appName}.`;
+        }
+
+        if (toolCall.toolName === "closeApp") {
+          const id = (toolCall.args as any)?.id as string | undefined;
+          return `Closed ${getAppName(id)}.`;
+        }
+
+        if (toolCall.toolName === "generateHtml") {
+          const html = (toolCall.args as any)?.html as string;
+          return html?.trim() || "";
+        }
+
+        return "";
+      } catch (err) {
+        console.error("Error executing tool call:", err);
+        return `Failed to execute ${toolCall.toolName}`;
+      }
+    },
   });
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -494,8 +619,6 @@ export function TerminalAppComponent({
     moveToTrash
   } = useFileSystem(storedPath);
 
-  const launchApp = useLaunchApp();
-  const { toggleApp, bringToForeground } = useAppContext();
 
   const {
     playCommandSound,
@@ -2237,6 +2360,7 @@ assistant
     [launchApp, toggleApp]
   );
 
+
   // Process message content: handle app controls and urgent prefixes
   const processMessageContent = useCallback(
     (messageContent: string) => {
@@ -2267,81 +2391,64 @@ assistant
   useEffect(() => {
     if (!isInAiMode || aiMessages.length <= 1) return;
 
-    // Get the most recent assistant message
     const lastMessage = aiMessages[aiMessages.length - 1];
+    if (lastMessage.role !== "assistant") return;
 
-    // Skip if this isn't an assistant message
-    if (lastMessage.role !== "assistant") {
-      return;
+    const messageKey = `${lastMessage.id}-${JSON.stringify((lastMessage as any).parts ?? lastMessage.content)}`;
+    if (messageKey === lastProcessedMessageIdRef.current) return;
+
+    const parts = (lastMessage as any).parts as any[] | undefined;
+    const lines: string[] = [];
+
+    if (parts && parts.length > 0) {
+      parts.forEach((part) => {
+        if (part.type === "text") {
+          const processed = processMessageContent(part.text);
+          if (processed) lines.push(processed);
+        } else if (part.type === "tool-invocation") {
+          const invocation = part.toolInvocation as ToolInvocation;
+          handleToolInvocation(invocation);
+          const txt = formatToolInvocation(invocation);
+          if (txt) lines.push(txt);
+        }
+      });
+    } else {
+      lines.push(processMessageContent(lastMessage.content));
     }
 
-    // Skip if we've already processed this exact message content
-    const messageKey = `${lastMessage.id}-${lastMessage.content}`;
-    if (messageKey === lastProcessedMessageIdRef.current) {
-      return;
-    }
-
-    // Process the message and handle app controls
-    const messageContent = lastMessage.content;
-    const cleanedContent = processMessageContent(messageContent);
-
-    // If we're clearing the terminal, don't update messages
+    const cleanedContent = lines.join("\n");
     if (isClearingTerminal) return;
 
-    // Update command history atomically
     setCommandHistory((prev) => {
-      // Remove any thinking messages first
-      const filteredHistory = prev.filter(
-        (item) => item.path !== "ai-thinking"
+      const filteredHistory = prev.filter((item) => item.path !== "ai-thinking");
+      const existingIndex = filteredHistory.findIndex(
+        (item) => item.path === "ai-assistant" && item.messageId === lastMessage.id
       );
 
-      // Check if this message already exists in the history
-      const existingMessageIndex = filteredHistory.findIndex(
-        (item) =>
-          item.path === "ai-assistant" && item.messageId === lastMessage.id
-      );
+      if (existingIndex !== -1) {
+        const existing = filteredHistory[existingIndex];
+        if (existing.output === cleanedContent) return prev;
 
-      // If message exists, update it only if content changed
-      if (existingMessageIndex !== -1) {
-        const existingMessage = filteredHistory[existingMessageIndex];
-        if (existingMessage.output === cleanedContent) {
-          return prev; // No change needed
-        }
-
-        const updatedHistory = [...filteredHistory];
-        updatedHistory[existingMessageIndex] = {
+        const updated = [...filteredHistory];
+        updated[existingIndex] = {
           command: "",
           output: cleanedContent,
           path: "ai-assistant",
           messageId: lastMessage.id,
         };
-        return updatedHistory;
+        return updated;
       }
 
-      // If it's a completely new message, play sound
       playAiResponseSoundMemoized();
 
-      // Append new message
       return [
         ...filteredHistory,
-        {
-          command: "",
-          output: cleanedContent,
-          path: "ai-assistant",
-          messageId: lastMessage.id,
-        },
+        { command: "", output: cleanedContent, path: "ai-assistant", messageId: lastMessage.id },
       ];
     });
 
-    // Store the current message key being processed
     lastProcessedMessageIdRef.current = messageKey;
-  }, [
-    aiMessages,
-    isInAiMode,
-    isClearingTerminal,
-    processMessageContent,
-    playAiResponseSoundMemoized,
-  ]);
+  }, [aiMessages, isInAiMode, isClearingTerminal, processMessageContent, playAiResponseSoundMemoized]);
 
   // Function to handle AI mode commands
   const handleAiCommand = (command: string) => {
