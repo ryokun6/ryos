@@ -494,9 +494,15 @@ export function IpodAppComponent({
   }, [toggleBacklight, showStatus, registerActivity, setLastActivityTime]);
 
   const memoizedChangeTheme = useCallback(
-    (newTheme: "classic" | "black") => {
+    (newTheme: "classic" | "black" | "u2") => {
       setTheme(newTheme);
-      showStatus(newTheme === "classic" ? "Theme: Classic" : "Theme: Black");
+      showStatus(
+        newTheme === "classic"
+          ? "Theme: Classic"
+          : newTheme === "black"
+          ? "Theme: Black"
+          : "Theme: U2"
+      );
       registerActivity();
     },
     [setTheme, showStatus, registerActivity]
@@ -534,7 +540,12 @@ export function IpodAppComponent({
 
   const memoizedHandleThemeChange = useCallback(() => {
     const currentTheme = useIpodStore.getState().theme;
-    const nextTheme = currentTheme === "classic" ? "black" : "classic";
+    const nextTheme =
+      currentTheme === "classic"
+        ? "black"
+        : currentTheme === "black"
+        ? "u2"
+        : "classic";
     memoizedChangeTheme(nextTheme);
   }, [memoizedChangeTheme]);
 
@@ -729,7 +740,12 @@ export function IpodAppComponent({
         label: "Theme",
         action: memoizedHandleThemeChange,
         showChevron: false,
-        value: currentTheme === "classic" ? "Classic" : "Black",
+        value:
+          currentTheme === "classic"
+            ? "Classic"
+            : currentTheme === "black"
+            ? "Black"
+            : "U2",
       },
     ];
   }, [

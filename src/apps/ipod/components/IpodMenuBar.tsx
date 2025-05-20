@@ -458,6 +458,14 @@ export function IpodMenuBar({
               {currentTheme === "black" ? "✓ Black" : "Black"}
             </span>
           </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setTheme("u2")}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
+            <span className={cn(currentTheme !== "u2" && "pl-4")}>
+              {currentTheme === "u2" ? "✓ U2" : "U2"}
+            </span>
+          </DropdownMenuItem>
 
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
 

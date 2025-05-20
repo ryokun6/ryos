@@ -225,7 +225,11 @@ export function IpodWheel({
     <div
       className={cn(
         "mt-6 relative w-[180px] h-[180px] rounded-full flex items-center justify-center select-none",
-        theme === "classic" ? "bg-gray-300/60" : "bg-neutral-800/50"
+        theme === "classic"
+          ? "bg-gray-300/60"
+          : theme === "u2"
+          ? "bg-red-700/60"
+          : "bg-neutral-800/50"
       )}
     >
       {/* Center button */}
@@ -233,7 +237,11 @@ export function IpodWheel({
         onClick={() => onWheelClick("center")}
         className={cn(
           "absolute w-16 h-16 rounded-full z-10 flex items-center justify-center",
-          theme === "classic" ? "bg-white/30" : "bg-black/40"
+          theme === "classic"
+            ? "bg-white/30"
+            : theme === "u2"
+            ? "bg-red-900/40"
+            : "bg-black/40"
         )}
       />
 

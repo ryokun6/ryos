@@ -328,7 +328,7 @@ interface IpodData {
   isPlaying: boolean;
   showVideo: boolean;
   backlightOn: boolean;
-  theme: "classic" | "black";
+  theme: "classic" | "black" | "u2";
   lcdFilterOn: boolean;
   showLyrics: boolean;
   lyricsAlignment: LyricsAlignment;
@@ -370,7 +370,7 @@ export interface IpodState extends IpodData {
   toggleBacklight: () => void;
   toggleLcdFilter: () => void;
   toggleFullScreen: () => void;
-  setTheme: (theme: "classic" | "black") => void;
+  setTheme: (theme: "classic" | "black" | "u2") => void;
   addTrack: (track: Track) => void;
   clearLibrary: () => void;
   resetLibrary: () => void;
