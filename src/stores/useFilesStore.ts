@@ -100,13 +100,13 @@ export const useFilesStore = create<FilesStoreState>()(
               state.items[parentPath].status === "trashed")
           ) {
             console.warn(
-              `[FilesStore] Cannot add item. Parent directory "${parentPath}" does not exist or is trashed.`
+              `[FilesStore] Cannot add item. Parent directory "${parentPath}" does not exist or is trashed.`,
             );
             return state;
           }
           if (state.items[newItem.path]) {
             console.warn(
-              `[FilesStore] Cannot add item. Path "${newItem.path}" already exists.`
+              `[FilesStore] Cannot add item. Path "${newItem.path}" already exists.`,
             );
             return state;
           }
@@ -122,7 +122,7 @@ export const useFilesStore = create<FilesStoreState>()(
             };
           }
           console.log(
-            `[FilesStore:addItem] Successfully added: ${newItem.path}`
+            `[FilesStore:addItem] Successfully added: ${newItem.path}`,
           ); // Log success
           return { items: updatedItems, libraryState: "loaded" };
         });
@@ -134,7 +134,7 @@ export const useFilesStore = create<FilesStoreState>()(
           const itemToRemove = state.items[path];
           if (!itemToRemove) {
             console.warn(
-              `[FilesStore] Cannot remove item. Path "${path}" does not exist.`
+              `[FilesStore] Cannot remove item. Path "${path}" does not exist.`,
             );
             return state; // Item doesn't exist
           }
@@ -179,7 +179,7 @@ export const useFilesStore = create<FilesStoreState>()(
 
           // Update trash icon state
           const trashIsEmpty = Object.values(newItems).every(
-            (item) => item.status !== "trashed"
+            (item) => item.status !== "trashed",
           );
           if (newItems["/Trash"]) {
             newItems["/Trash"] = {
@@ -200,7 +200,7 @@ export const useFilesStore = create<FilesStoreState>()(
           const itemToRestore = state.items[path];
           if (!itemToRestore || itemToRestore.status !== "trashed") {
             console.warn(
-              `[FilesStore] Cannot restore item. Path "${path}" not found or not in trash.`
+              `[FilesStore] Cannot restore item. Path "${path}" not found or not in trash.`,
             );
             return state;
           }
@@ -234,7 +234,7 @@ export const useFilesStore = create<FilesStoreState>()(
 
           // Update trash icon state
           const trashIsEmpty = Object.values(newItems).every(
-            (item) => item.status !== "trashed"
+            (item) => item.status !== "trashed",
           );
           if (newItems["/Trash"]) {
             newItems["/Trash"] = {
@@ -267,13 +267,13 @@ export const useFilesStore = create<FilesStoreState>()(
           // Only allow renaming active items
           if (!itemToRename || itemToRename.status !== "active") {
             console.warn(
-              `[FilesStore] Cannot rename item. Path "${oldPath}" not found or not active.`
+              `[FilesStore] Cannot rename item. Path "${oldPath}" not found or not active.`,
             );
             return state;
           }
           if (state.items[newPath]) {
             console.warn(
-              `[FilesStore] Cannot rename item. New path "${newPath}" already exists.`
+              `[FilesStore] Cannot rename item. New path "${newPath}" already exists.`,
             );
             return state;
           }
@@ -314,7 +314,7 @@ export const useFilesStore = create<FilesStoreState>()(
           const sourceItem = state.items[sourcePath];
           if (!sourceItem || sourceItem.status !== "active") {
             console.warn(
-              `[FilesStore] Cannot move item. Source path "${sourcePath}" not found or not active.`
+              `[FilesStore] Cannot move item. Source path "${sourcePath}" not found or not active.`,
             );
             return state;
           }
@@ -325,14 +325,14 @@ export const useFilesStore = create<FilesStoreState>()(
             !state.items[destinationParent].isDirectory
           ) {
             console.warn(
-              `[FilesStore] Cannot move item. Destination parent "${destinationParent}" not found or not a directory.`
+              `[FilesStore] Cannot move item. Destination parent "${destinationParent}" not found or not a directory.`,
             );
             return state;
           }
 
           if (state.items[destinationPath]) {
             console.warn(
-              `[FilesStore] Cannot move item. Destination path "${destinationPath}" already exists.`
+              `[FilesStore] Cannot move item. Destination path "${destinationPath}" already exists.`,
             );
             return state;
           }
@@ -343,7 +343,7 @@ export const useFilesStore = create<FilesStoreState>()(
             destinationPath.startsWith(sourcePath + "/")
           ) {
             console.warn(
-              `[FilesStore] Cannot move directory into its own subdirectory.`
+              `[FilesStore] Cannot move directory into its own subdirectory.`,
             );
             return state;
           }
@@ -391,7 +391,7 @@ export const useFilesStore = create<FilesStoreState>()(
             (item) =>
               item.status === "active" &&
               item.path !== "/" && // Exclude the root item itself
-              getParentPath(item.path) === "/" // Ensure it's a direct child of root
+              getParentPath(item.path) === "/", // Ensure it's a direct child of root
           );
         }
 
@@ -406,7 +406,7 @@ export const useFilesStore = create<FilesStoreState>()(
         // For regular paths, show only direct children that are active
         return allItems.filter(
           (item) =>
-            item.status === "active" && getParentPath(item.path) === path
+            item.status === "active" && getParentPath(item.path) === path,
         );
       },
 
@@ -414,7 +414,7 @@ export const useFilesStore = create<FilesStoreState>()(
 
       getTrashItems: () => {
         return Object.values(get().items).filter(
-          (item) => item.status === "trashed"
+          (item) => item.status === "trashed",
         );
       },
 
@@ -485,7 +485,15 @@ export const useFilesStore = create<FilesStoreState>()(
           items: getEmptyFileSystemState(),
           libraryState: "uninitialized",
         }),
-
+    }),
+    {
+      name: STORE_NAME,
+      version: STORE_VERSION,
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        items: state.items, // Persist the entire file structure
+        libraryState: state.libraryState,
+      }),
       // Migration for new initialization system
       migrate: (persistedState: unknown, version: number) => {
         if (version < 4) {
@@ -522,15 +530,6 @@ export const useFilesStore = create<FilesStoreState>()(
         }
         return persistedState as FilesStoreState;
       },
-    }),
-    {
-      name: STORE_NAME,
-      version: STORE_VERSION,
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        items: state.items, // Persist the entire file structure
-        libraryState: state.libraryState,
-      }),
       onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {
@@ -538,11 +537,11 @@ export const useFilesStore = create<FilesStoreState>()(
           } else if (state && state.libraryState === "uninitialized") {
             // Only auto-initialize if library state is uninitialized
             Promise.resolve(state.initializeLibrary()).catch((err) =>
-              console.error("Files initialization failed on rehydrate", err)
+              console.error("Files initialization failed on rehydrate", err),
             );
           }
         };
       },
-    }
-  )
+    },
+  ),
 );
