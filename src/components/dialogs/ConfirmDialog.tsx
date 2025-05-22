@@ -61,11 +61,10 @@ export function ConfirmDialog({
               {description}
             </p>
           </div>
-          <DialogFooter className="mt-4 flex flex-col gap-1 sm:flex-row">
+          <DialogFooter className="mt-4 gap-1">
             <Button
               variant="retro"
               onClick={() => onOpenChange(false)}
-              className="order-last sm:order-first"
             >
               Cancel
             </Button>
