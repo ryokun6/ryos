@@ -18,6 +18,7 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { FileItem } from "./FileList";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { cn } from "@/lib/utils";
 
 // Type for Finder initial data
 interface FinderInitialData {
@@ -887,7 +888,14 @@ export function FinderAppComponent({
               />
             </div>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div
+            className={cn(
+              "flex-1",
+              viewType === "list"
+                ? "overflow-auto touch-pan-x touch-pan-y"
+                : "overflow-y-auto overflow-x-hidden touch-pan-y"
+            )}
+          >
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 Loading...
