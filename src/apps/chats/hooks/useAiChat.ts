@@ -312,6 +312,18 @@ export function useAiChat() {
               launchOptions.initialData = { url, year: year || "current" };
             }
 
+            if (id === "textedit") {
+              const appStore = useAppStore.getState();
+              const existing = appStore
+                .getInstancesByAppId("textedit")
+                .find((inst) => inst.isOpen);
+
+              if (existing) {
+                appStore.bringInstanceToForeground(existing.instanceId);
+                return `${appName} is already open.`;
+              }
+            }
+
             launchApp(id as AppId, launchOptions);
 
             let confirmationMessage = `Launched ${appName}.`;

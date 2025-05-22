@@ -144,7 +144,7 @@ export const createHtmlRenderer = (content: TiptapJSON) => {
  * Saves editor content as markdown
  * Works with either a real Tiptap editor or JSON content
  */
-export const saveAsMarkdown = (
+export const saveAsMarkdown = async (
   editor: TiptapEditor | TiptapJSON,
   file: {
     name: string;
@@ -173,7 +173,7 @@ export const saveAsMarkdown = (
   
   // Call the saveFile hook directly
   console.log(`[saveAsMarkdown] Calling saveFile hook for: ${file.path}`);
-  saveFileHook({
+  await saveFileHook({
     name: file.name,
     path: file.path,
     content: markdownContent, // Save as Markdown

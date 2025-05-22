@@ -572,7 +572,7 @@ export function TextEditAppComponent({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editor) return;
 
     if (!currentFilePath) {
@@ -596,7 +596,7 @@ export function TextEditAppComponent({
       setSaveFileName(`${firstLine || "Untitled"}.md`);
     } else {
       // Use shared utility to save as markdown, passing the saveFile hook
-      const { jsonContent } = saveAsMarkdown(
+      const { jsonContent } = await saveAsMarkdown(
         editor,
         {
           name: currentFilePath.split("/").pop() || "Untitled",
@@ -615,7 +615,7 @@ export function TextEditAppComponent({
     }
   };
 
-  const handleSaveSubmit = (fileName: string) => {
+  const handleSaveSubmit = async (fileName: string) => {
     if (!editor) return;
 
     const filePath = `/Documents/${fileName}${
@@ -623,7 +623,7 @@ export function TextEditAppComponent({
     }`;
 
     // Use shared utility to save as markdown, passing the saveFile hook
-    const { jsonContent } = saveAsMarkdown(
+    const { jsonContent } = await saveAsMarkdown(
       editor,
       {
         name: fileName,
@@ -801,7 +801,7 @@ export function TextEditAppComponent({
     );
   };
 
-  const handleCloseSave = (fileName: string) => {
+  const handleCloseSave = async (fileName: string) => {
     if (!editor) return;
 
     const filePath = `/Documents/${fileName}${
@@ -809,7 +809,7 @@ export function TextEditAppComponent({
     }`;
 
     // Use shared utility to save as markdown
-    const { jsonContent } = saveAsMarkdown(
+    const { jsonContent } = await saveAsMarkdown(
       editor,
       {
         name: fileName,
