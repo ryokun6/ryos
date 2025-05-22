@@ -228,7 +228,7 @@ export function FileList({
         onDragLeave={handleContainerDragLeave}
         onDrop={handleContainerDrop}
       >
-        <Table>
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="text-[10px] border-none font-normal">
               <TableHead className="font-normal bg-gray-100/50 h-[28px]">
@@ -237,10 +237,10 @@ export function FileList({
               <TableHead className="font-normal bg-gray-100/50 h-[28px]">
                 Type
               </TableHead>
-              <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+              <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
                 Size
               </TableHead>
-              <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+              <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
                 Modified
               </TableHead>
             </TableRow>
@@ -288,7 +288,7 @@ export function FileList({
                   {file.name}
                 </TableCell>
                 <TableCell>{getFileType(file)}</TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap">
                   {file.size
                     ? file.size < 1024
                       ? `${file.size} B`
@@ -297,7 +297,7 @@ export function FileList({
                       : `${(file.size / (1024 * 1024)).toFixed(1)} MB`
                     : "--"}
                 </TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap">
                   {file.modifiedAt
                     ? new Date(file.modifiedAt).toLocaleDateString()
                     : "--"}
