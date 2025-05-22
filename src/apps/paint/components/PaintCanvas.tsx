@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { motion } from "framer-motion";
 import { Filter } from "./PaintFiltersMenu";
+import { useSpraySound } from "./PaintToolbar";
 
 interface PaintCanvasProps {
   selectedTool: string;
@@ -82,7 +83,10 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
     const animationFrameRef = useRef<number>();
     const touchStartRef = useRef<Point | null>(null);
     const [isLoadingFile] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
+        const containerRef = useRef<HTMLDivElement>(null);
+    
+    // Get spray sound functions from context
+    const { playSpraySound, stopSpraySound } = useSpraySound();
 
     // Handle canvas resize
     useEffect(() => {
@@ -886,6 +890,11 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
 
         // Don't handle panning here anymore, let Framer Motion handle it
         if (selectedTool === "hand") return;
+        
+        // If using spray tool, start playing the spray sound continuously
+        if (selectedTool === "spray") {
+          playSpraySound();
+        }
 
         // Store touch start position for tap detection
         if ("touches" in event) {
@@ -1000,6 +1009,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         setSelection,
         setTextPosition,
         setIsTyping,
+        playSpraySound,
       ]
     );
 
@@ -1116,7 +1126,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
           contextRef.current.stroke();
         }
       },
-      [selectedTool, isDraggingSelection, selection, setSelection]
+      [selectedTool, isDraggingSelection, selection, setSelection, playSpraySound]
     );
 
     const stopDrawing = useCallback(
@@ -1129,6 +1139,11 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         if (!canvas || !contextRef.current) return;
 
         if (selectedTool === "hand") return;
+
+        // If using spray tool, stop the spray sound
+        if (selectedTool === "spray") {
+          stopSpraySound();
+        }
 
         const point = getCanvasPoint(event);
 
@@ -1205,6 +1220,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         setSelection,
         setIsDraggingSelection,
         saveToHistory,
+        stopSpraySound,
       ]
     );
 
@@ -1339,10 +1355,6 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
                   left: `${textPosition.x}px`,
                   top: `${textPosition.y}px`,
                   fontSize: `16px`,
-                  minWidth: "100px",
-                  padding: 0,
-                  margin: 0,
-                  transform: "translateZ(0)",
                 }}
                 onKeyDown={handleTextInput}
                 onBlur={handleTextBlur}

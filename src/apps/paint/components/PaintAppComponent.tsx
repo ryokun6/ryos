@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { PaintToolbar } from "./PaintToolbar";
+import { PaintToolbar, SpraySoundProvider } from "./PaintToolbar";
 import { PaintCanvas } from "./PaintCanvas";
 import { PaintMenuBar } from "./PaintMenuBar";
 import { PaintPatternPalette } from "./PaintPatternPalette";
@@ -384,7 +384,7 @@ export const PaintAppComponent: React.FC<AppProps> = ({
   if (!isWindowOpen) return null;
 
   return (
-    <>
+    <SpraySoundProvider>
       <PaintMenuBar
         isWindowOpen={isWindowOpen}
         isForeground={isForeground}
@@ -535,6 +535,6 @@ export const PaintAppComponent: React.FC<AppProps> = ({
         title="Discard Changes"
         description="You have unsaved changes. Create new file anyway?"
       />
-    </>
+    </SpraySoundProvider>
   );
 };
