@@ -585,20 +585,23 @@ export default async function handler(req: Request) {
     const approxTokens = staticSystemPrompt.length / 4; // rough estimate
     log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
 
-    const systemMessages = [
-      {
-        role: "system",
-        content: staticSystemPrompt,
-        ...CACHE_CONTROL_OPTIONS,
-      },
-      {
-        role: "system",
-        content: generateDynamicSystemPrompt(systemState),
-        ...CACHE_CONTROL_OPTIONS,
-      },
-    ];
+    const staticPromptMessage = {
+      role: "system",
+      content: staticSystemPrompt,
+      ...CACHE_CONTROL_OPTIONS,
+    };
 
-    const enrichedMessages = [...systemMessages, ...messages];
+    const dynamicStateMessage = {
+      role: "system",
+      content: generateDynamicSystemPrompt(systemState),
+      ...CACHE_CONTROL_OPTIONS,
+    };
+
+    const enrichedMessages = [
+      staticPromptMessage,
+      ...messages,
+      dynamicStateMessage,
+    ];
 
     // Log all messages right before model call (as per user preference)
     enrichedMessages.forEach((msg, index) => {
