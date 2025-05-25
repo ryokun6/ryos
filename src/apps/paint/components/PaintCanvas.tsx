@@ -344,6 +344,24 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       }
     }, [strokeWidth]);
 
+    const sprayAtPoint = useCallback(
+      (point: Point) => {
+        if (!contextRef.current) return;
+
+        const radius = strokeWidth * 2;
+        const density = radius * 2;
+
+        for (let i = 0; i < density; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = Math.random() * radius;
+          const x = point.x + r * Math.cos(angle);
+          const y = point.y + r * Math.sin(angle);
+          contextRef.current.fillRect(x, y, 1, 1);
+        }
+      },
+      [strokeWidth]
+    );
+
     const saveToHistory = useCallback(() => {
       const canvas = canvasRef.current;
       if (!canvas || !contextRef.current) return;
@@ -981,12 +999,17 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
               );
               if (pattern) {
                 contextRef.current.strokeStyle = pattern;
+                contextRef.current.fillStyle = pattern;
               }
             }
           }
 
           contextRef.current.beginPath();
-          contextRef.current.moveTo(point.x, point.y);
+          if (selectedTool !== "spray") {
+            contextRef.current.moveTo(point.x, point.y);
+          } else {
+            sprayAtPoint(point);
+          }
         }
 
         isDrawing.current = true;
@@ -1112,8 +1135,12 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
 
           contextRef.current.stroke();
         } else if (!["line", "rectangle", "oval"].includes(selectedTool)) {
-          contextRef.current.lineTo(point.x, point.y);
-          contextRef.current.stroke();
+          if (selectedTool === "spray") {
+            sprayAtPoint(point);
+          } else {
+            contextRef.current.lineTo(point.x, point.y);
+            contextRef.current.stroke();
+          }
         }
       },
       [selectedTool, isDraggingSelection, selection, setSelection]
