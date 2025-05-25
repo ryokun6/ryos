@@ -79,6 +79,8 @@ export function FinderAppComponent({
   skipInitialSound,
   instanceId,
   initialData,
+  onNavigateNext,
+  onNavigatePrevious,
 }: AppProps) {
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
@@ -715,6 +717,8 @@ export function FinderAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         skipInitialSound={skipInitialSound}
+        onNavigateNext={onNavigateNext}
+        onNavigatePrevious={onNavigatePrevious}
       >
         <div
           className={`flex flex-col h-full w-full bg-white relative ${

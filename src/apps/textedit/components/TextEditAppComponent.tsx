@@ -116,6 +116,8 @@ export function TextEditAppComponent({
   initialData,
   instanceId,
   title: customTitle,
+  onNavigateNext,
+  onNavigatePrevious,
 }: AppProps) {
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
@@ -1092,6 +1094,8 @@ export function TextEditAppComponent({
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         interceptClose={true}
+        onNavigateNext={onNavigateNext}
+        onNavigatePrevious={onNavigatePrevious}
       >
         <div className="flex flex-col h-full w-full">
           <div
