@@ -9,9 +9,17 @@ import React, {
 import { motion } from "framer-motion";
 import { Filter } from "./PaintFiltersMenu";
 
+const hexToRgb = (hex: string): [number, number, number] => {
+  const normalized = hex.replace('#', '');
+  const bigint = parseInt(normalized, 16);
+  return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+};
+
 interface PaintCanvasProps {
   selectedTool: string;
   selectedPattern: string;
+  /** Currently selected drawing color */
+  selectedColor: string;
   strokeWidth: number;
   onCanUndoChange: (canUndo: boolean) => void;
   onCanRedoChange: (canRedo: boolean) => void;
@@ -52,6 +60,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
     {
       selectedTool,
       selectedPattern,
+      selectedColor,
       strokeWidth,
       onCanUndoChange,
       onCanRedoChange,
@@ -317,14 +326,32 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         // Draw the pattern onto the temporary canvas
         patternContext.drawImage(img, 0, 0);
 
+        // Tint pattern with selected color and make white pixels transparent
+        const imageData = patternContext.getImageData(
+          0,
+          0,
+          patternCanvas.width,
+          patternCanvas.height
+        );
+        const data = imageData.data;
+        const [r, g, b] = hexToRgb(selectedColor);
+        for (let i = 0; i < data.length; i += 4) {
+          const isBlack = data[i] < 128 && data[i + 1] < 128 && data[i + 2] < 128;
+          if (isBlack) {
+            data[i] = r;
+            data[i + 1] = g;
+            data[i + 2] = b;
+          } else {
+            data[i + 3] = 0; // make non-black transparent
+          }
+        }
+        patternContext.putImageData(imageData, 0, 0);
+
         // Store the pattern canvas instead of the image
         patternRef.current = patternCanvas;
 
         // Create pattern from the temporary canvas
-        const pattern = contextRef.current.createPattern(
-          patternCanvas,
-          "repeat"
-        );
+        const pattern = contextRef.current.createPattern(patternCanvas, "repeat");
         if (pattern) {
           contextRef.current.strokeStyle = pattern;
           contextRef.current.fillStyle = pattern;
@@ -336,7 +363,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       };
 
       img.src = `/patterns/Property 1=${patternNum}.svg`;
-    }, [selectedPattern]);
+    }, [selectedPattern, selectedColor]);
 
     useEffect(() => {
       if (contextRef.current) {

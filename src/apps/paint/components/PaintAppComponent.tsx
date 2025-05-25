@@ -3,6 +3,7 @@ import { PaintToolbar } from "./PaintToolbar";
 import { PaintCanvas } from "./PaintCanvas";
 import { PaintMenuBar } from "./PaintMenuBar";
 import { PaintPatternPalette } from "./PaintPatternPalette";
+import { PaintColorPalette } from "./PaintColorPalette";
 import { PaintStrokeSettings } from "./PaintStrokeSettings";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { AppProps, PaintInitialData } from "../../base/types";
@@ -34,6 +35,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
 }) => {
   const [selectedTool, setSelectedTool] = useState<string>("pencil");
   const [selectedPattern, setSelectedPattern] = useState<string>("pattern-1");
+  const [selectedColor, setSelectedColor] = useState<string>("#000000");
   const [strokeWidth, setStrokeWidth] = useState<number>(1);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -464,6 +466,12 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
                   onStrokeWidthChange={setStrokeWidth}
                 />
               </div>
+              <div className="bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] overflow-auto flex-1">
+                <PaintColorPalette
+                  selectedColor={selectedColor}
+                  onColorSelect={setSelectedColor}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col flex-1 gap-2 min-h-0 min-w-0">
@@ -491,6 +499,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
                   }}
                   selectedTool={selectedTool}
                   selectedPattern={selectedPattern}
+                  selectedColor={selectedColor}
                   strokeWidth={strokeWidth}
                   onCanUndoChange={setCanUndo}
                   onCanRedoChange={setCanRedo}
