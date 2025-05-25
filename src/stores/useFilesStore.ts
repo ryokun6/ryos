@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
+import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 
 // Define the structure for a file system item (metadata)
 export interface FileSystemItem {
@@ -27,6 +28,12 @@ export interface FileSystemItem {
 interface FileSystemItemData extends Omit<FileSystemItem, "status"> {
   content?: string; // For documents
   assetPath?: string; // For images
+}
+
+// Structure for content stored in IndexedDB
+interface StoredContent {
+  name: string;
+  content: string | Blob;
 }
 
 // Define the JSON structure
@@ -76,6 +83,64 @@ const getParentPath = (path: string): string => {
   if (parts.length <= 1) return "/"; // Parent of /Documents is /
   return "/" + parts.slice(0, -1).join("/");
 };
+
+// Save default file contents into IndexedDB using generated UUIDs
+async function saveDefaultContents(
+  files: FileSystemItemData[],
+  items: Record<string, FileSystemItem>
+) {
+  try {
+    const db = await ensureIndexedDBInitialized();
+    for (const file of files) {
+      const meta = items[file.path];
+      if (!meta?.uuid) continue;
+
+      const storeName = file.path.startsWith("/Documents/")
+        ? STORES.DOCUMENTS
+        : file.path.startsWith("/Images/")
+        ? STORES.IMAGES
+        : null;
+      if (!storeName) continue;
+
+      const existing = await new Promise<StoredContent | undefined>((resolve) => {
+        const tx = db.transaction(storeName, "readonly");
+        const store = tx.objectStore(storeName);
+        const req = store.get(meta.uuid);
+        req.onsuccess = () => resolve(req.result as StoredContent | undefined);
+        req.onerror = () => resolve(undefined);
+      });
+      if (existing) continue;
+
+      let content: string | Blob | null = null;
+      if (file.content) {
+        content = file.content;
+      } else if (file.assetPath) {
+        try {
+          const resp = await fetch(file.assetPath);
+          if (resp.ok) content = await resp.blob();
+        } catch (err) {
+          console.error(
+            `[FilesStore] Failed fetching asset for ${file.path}:`,
+            err
+          );
+        }
+      }
+
+      if (content != null) {
+        await new Promise<void>((resolve, reject) => {
+          const tx = db.transaction(storeName, "readwrite");
+          const store = tx.objectStore(storeName);
+          const putReq = store.put({ name: file.name, content } as StoredContent, meta.uuid);
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = () => reject(putReq.error);
+        });
+      }
+    }
+    db.close();
+  } catch (err) {
+    console.error("[FilesStore] Error saving default contents:", err);
+  }
+}
 
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
@@ -489,6 +554,8 @@ export const useFilesStore = create<FilesStoreState>()(
           items: newItems,
           libraryState: "loaded",
         });
+
+        await saveDefaultContents(data.files, newItems);
       },
 
       initializeLibrary: async () => {
@@ -525,6 +592,8 @@ export const useFilesStore = create<FilesStoreState>()(
             items: newItems,
             libraryState: "loaded",
           });
+
+          await saveDefaultContents(data.files, newItems);
         }
       },
 
