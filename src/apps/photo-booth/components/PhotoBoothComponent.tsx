@@ -131,6 +131,20 @@ export function PhotoBoothComponent({
   const [mainStream, setMainStream] = useState<MediaStream | null>(null);
   const { saveFile, files } = useFileSystem("/Images");
 
+  // Track whether the component is still mounted and whether the window is open
+  const isMountedRef = useRef(true);
+  const isWindowOpenRef = useRef(isWindowOpen);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    isWindowOpenRef.current = isWindowOpen;
+  }, [isWindowOpen]);
+
   // Add a small delay before showing photo strip to prevent flickering
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   useEffect(() => {
@@ -477,6 +491,14 @@ export function PhotoBoothComponent({
         } catch (e) {
           console.warn("Couldn't read track settings:", e);
         }
+      }
+
+      // It's possible that the window was closed while the permission dialog
+      // was open or while `getUserMedia` was resolving. In that case we should
+      // immediately stop the acquired stream and avoid updating state.
+      if (!isMountedRef.current || !isWindowOpenRef.current) {
+        mediaStream.getTracks().forEach((t) => t.stop());
+        return;
       }
 
       setStream(mediaStream);

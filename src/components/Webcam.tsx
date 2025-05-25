@@ -22,6 +22,7 @@ export function Webcam({
   sharedStream,
   selectedCameraId,
 }: WebcamProps) {
+  const isMountedRef = useRef(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -29,6 +30,12 @@ export function Webcam({
   const [error, setError] = useState<string | null>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastRenderTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Detect if the current filter string requires WebGL preview (distortion keywords)
   const needsWebGLPreview = useMemo(() => {
@@ -199,6 +206,12 @@ export function Webcam({
       const mediaStream = await navigator.mediaDevices.getUserMedia(
         constraints
       );
+
+      if (!isMountedRef.current) {
+        mediaStream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+
       setStream(mediaStream);
 
       if (videoRef.current) {
