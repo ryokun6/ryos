@@ -27,6 +27,8 @@ interface IpodData {
   backlightOn: boolean;
   theme: "classic" | "black" | "u2";
   lcdFilterOn: boolean;
+  /** Elapsed playback time in seconds */
+  elapsedTime: number;
   showLyrics: boolean;
   lyricsAlignment: LyricsAlignment;
   chineseVariant: ChineseVariant;
@@ -70,6 +72,7 @@ const initialIpodData: IpodData = {
   backlightOn: true,
   theme: "classic",
   lcdFilterOn: true,
+  elapsedTime: 0,
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.FocusThree,
   chineseVariant: ChineseVariant.Traditional,
@@ -87,6 +90,7 @@ export interface IpodState extends IpodData {
   toggleShuffle: () => void;
   togglePlay: () => void;
   setIsPlaying: (playing: boolean) => void;
+  setElapsedTime: (time: number) => void;
   toggleVideo: () => void;
   toggleBacklight: () => void;
   toggleLcdFilter: () => void;
@@ -122,7 +126,7 @@ export interface IpodState extends IpodData {
   initializeLibrary: () => Promise<void>;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 17; // Incremented version for new state
+const CURRENT_IPOD_STORE_VERSION = 18; // Incremented version for new state
 
 export const useIpodStore = create<IpodState>()(
   persist(
@@ -137,6 +141,7 @@ export const useIpodStore = create<IpodState>()(
       toggleShuffle: () => set((state) => ({ isShuffled: !state.isShuffled })),
       togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
       setIsPlaying: (playing) => set({ isPlaying: playing }),
+      setElapsedTime: (time) => set({ elapsedTime: time }),
       toggleVideo: () => set((state) => ({ showVideo: !state.showVideo })),
       toggleBacklight: () =>
         set((state) => ({ backlightOn: !state.backlightOn })),
@@ -416,6 +421,7 @@ export const useIpodStore = create<IpodState>()(
         isShuffled: state.isShuffled,
         theme: state.theme,
         lcdFilterOn: state.lcdFilterOn,
+        elapsedTime: state.elapsedTime,
         showLyrics: state.showLyrics, // Persist lyrics visibility
         lyricsAlignment: state.lyricsAlignment,
         chineseVariant: state.chineseVariant,
@@ -443,6 +449,7 @@ export const useIpodStore = create<IpodState>()(
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             lyricsTranslationRequest: null, // Ensure this is not carried from old persisted state
+            elapsedTime: 0,
             libraryState: "uninitialized" as LibraryState, // Reset to uninitialized on migration
           };
         }
@@ -459,6 +466,7 @@ export const useIpodStore = create<IpodState>()(
           isShuffled: state.isShuffled,
           theme: state.theme,
           lcdFilterOn: state.lcdFilterOn,
+          elapsedTime: state.elapsedTime,
           showLyrics: state.showLyrics, // Persist lyrics visibility
           lyricsAlignment: state.lyricsAlignment,
           chineseVariant: state.chineseVariant,

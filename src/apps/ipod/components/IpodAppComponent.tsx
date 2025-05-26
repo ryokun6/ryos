@@ -418,7 +418,9 @@ export function IpodAppComponent({
   const backlightTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(() =>
+    useIpodStore.getState().elapsedTime
+  );
   const [totalTime, setTotalTime] = useState(0);
   const [urlInput, setUrlInput] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -610,6 +612,7 @@ export function IpodAppComponent({
 
   useEffect(() => {
     setElapsedTime(0);
+    useIpodStore.getState().setElapsedTime(0);
     // Clear any previously fetched lyrics immediately when the track changes
     // so the AI chat doesn't use lyrics from the previous song as context
     useIpodStore.setState({ currentLyrics: null });
@@ -1168,15 +1171,22 @@ export function IpodAppComponent({
         ? fullScreenPlayerRef.current
         : playerRef.current;
       activePlayer?.seekTo(0);
+      setElapsedTime(0);
+      useIpodStore.getState().setElapsedTime(0);
       setIsPlaying(true);
     } else {
       nextTrack();
     }
   }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen]);
 
-  const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    setElapsedTime(Math.floor(state.playedSeconds));
-  }, []);
+  const handleProgress = useCallback(
+    (state: { playedSeconds: number }) => {
+      const time = Math.floor(state.playedSeconds);
+      setElapsedTime(time);
+      useIpodStore.getState().setElapsedTime(time);
+    },
+    []
+  );
 
   const handleDuration = useCallback((duration: number) => {
     setTotalTime(duration);
@@ -1200,10 +1210,12 @@ export function IpodAppComponent({
   }, [setIsPlaying, showStatus]);
 
   const handleReady = useCallback(() => {
-    // Optional: Can perform actions when player is ready
-    // if (isPlaying) {
-    // }
-  }, []);
+    // Seek to persisted elapsed time when the player becomes ready
+    if (elapsedTime > 0) {
+      const player = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      player?.seekTo(elapsedTime, "seconds");
+    }
+  }, [elapsedTime, isFullScreen]);
 
   // Add a watchdog effect to revert play state if playback never starts
   // (e.g., blocked by Mobile Safari's autoplay restrictions).
@@ -1620,6 +1632,7 @@ export function IpodAppComponent({
       if (isFullScreen) {
         // Entering fullscreen - sync from small player to fullscreen player
         const currentTime = playerRef.current?.getCurrentTime() || elapsedTime;
+        useIpodStore.getState().setElapsedTime(Math.floor(currentTime));
         // Small delay to ensure the fullscreen player is mounted
         setTimeout(() => {
           fullScreenPlayerRef.current?.seekTo(currentTime);
@@ -1628,6 +1641,7 @@ export function IpodAppComponent({
         // Exiting fullscreen - sync from fullscreen player back to small player
         const currentTime =
           fullScreenPlayerRef.current?.getCurrentTime() || elapsedTime;
+        useIpodStore.getState().setElapsedTime(Math.floor(currentTime));
         const wasPlaying = isPlaying;
 
         // Longer delay to ensure the regular player is properly mounted after fullscreen exit
@@ -1654,6 +1668,8 @@ export function IpodAppComponent({
         const currentTime = fullScreenPlayerRef.current.getCurrentTime() || 0;
         const newTime = Math.max(0, currentTime + delta);
         fullScreenPlayerRef.current.seekTo(newTime);
+        setElapsedTime(Math.floor(newTime));
+        useIpodStore.getState().setElapsedTime(Math.floor(newTime));
         showStatus(
           `${delta > 0 ? "⏩︎" : "⏪︎"} ${Math.floor(newTime / 60)}:${String(
             Math.floor(newTime % 60)
