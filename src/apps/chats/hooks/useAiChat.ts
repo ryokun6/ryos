@@ -235,7 +235,13 @@ const getAssistantVisibleText = (message: Message): string => {
 };
 
 export function useAiChat(onPromptSetUsername?: () => void) {
-  const { aiMessages, setAiMessages, username } = useChatsStore();
+  const {
+    aiMessages,
+    setAiMessages,
+    username,
+    authToken,
+    ensureAuthToken,
+  } = useChatsStore();
   const launchApp = useLaunchApp();
   const closeApp = useAppStore((state) => state.closeApp);
   const aiModel = useAppStore((state) => state.aiModel);
@@ -273,6 +279,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
     });
   }, [aiMessages]);
+
+  // Ensure auth token exists when username is present
+  useEffect(() => {
+    if (username && !authToken) {
+      ensureAuthToken().catch((err) => {
+        console.error("[useAiChat] Failed to generate auth token", err);
+      });
+    }
+  }, [username, authToken, ensureAuthToken]);
 
   // Queue-based TTS – speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
