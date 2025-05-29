@@ -14,11 +14,6 @@ interface IpodWheelProps {
 // How many degrees of wheel rotation should equal one scroll step
 const rotationStepDeg = 15; // increase this value to reduce sensitivity
 
-// New constants for tap/drag detection
-const MAX_TAP_DURATION = 250; // milliseconds
-const DRAG_LINEAR_THRESHOLD = 3; // pixels
-const DRAG_ROTATION_THRESHOLD = (rotationStepDeg / 2 * Math.PI) / 180; // radians for ~7.5 degrees
-
 export function IpodWheel({
   theme,
   onWheelClick,
@@ -46,10 +41,6 @@ export function IpodWheel({
   const fromMenuLabelRef = useRef(false);
 
   // Refs for tap/drag distinction
-  const touchStartTimeRef = useRef<number | null>(null);
-  const mouseStartTimeRef = useRef<number | null>(null);
-  const dragOccurredOnLastTouchRef = useRef<boolean>(false); // To be phased out
-  const dragOccurredOnLastMouseRef = useRef<boolean>(false); // To be phased out
   const rotationOccurredInCurrentInteractionRef = useRef<boolean>(false);
   const buttonAreaInteractionStartedRef = useRef<WheelArea | "menu" | null>(null);
 
@@ -158,21 +149,6 @@ export function IpodWheel({
     // Update lastAngleRef *after* using it for delta with current accumulator state.
     // This was previously before the accumulator update, now it's after.
     lastAngleRef.current = currentAngleRad; 
-
-    // Check for drag initiation if not already dragging
-    if (!isTouchDraggingRef.current) {
-      const dx = touch.clientX - touchStartPosRef.current.x;
-      const dy = touch.clientY - touchStartPosRef.current.y;
-      const distanceMoved = Math.sqrt(dx * dx + dy * dy);
-
-      // Use the new DRAG_ROTATION_THRESHOLD for initiating drag based on rotation
-      if (distanceMoved > DRAG_LINEAR_THRESHOLD || Math.abs(rotationAccumulatorRef.current) > DRAG_ROTATION_THRESHOLD) {
-        isTouchDraggingRef.current = true;
-        // Once dragging is confirmed, also mark dragOccurredOnLastTouchRef.
-        // This is important for handleTouchEnd to know if a drag happened.
-        dragOccurredOnLastTouchRef.current = true; 
-      }
-    }
 
     // Trigger rotation events (using the original rotationStepDeg for sensitivity of wheel steps)
     // This part remains the same.
@@ -294,19 +270,6 @@ export function IpodWheel({
       rotationAccumulatorRef.current += delta;
       lastAngleRef.current = currentAngleRad;
 
-      // Check for drag initiation if not already dragging
-      if (!isDraggingRef.current) {
-        const dx = moveEvent.clientX - mouseStartPosRef.current.x;
-        const dy = moveEvent.clientY - mouseStartPosRef.current.y;
-        const distanceMoved = Math.sqrt(dx * dx + dy * dy);
-
-        if (distanceMoved > DRAG_LINEAR_THRESHOLD || Math.abs(rotationAccumulatorRef.current) > DRAG_ROTATION_THRESHOLD) {
-          isDraggingRef.current = true;
-          // Once dragging is confirmed, also mark dragOccurredOnLastMouseRef.
-          dragOccurredOnLastMouseRef.current = true;
-        }
-      }
-      
       // Emit rotation events whenever accumulated rotation crosses threshold
       const rotationEventThreshold = (rotationStepDeg * Math.PI) / 180; // Use original threshold for step sensitivity
       while (rotationAccumulatorRef.current > rotationEventThreshold) {
