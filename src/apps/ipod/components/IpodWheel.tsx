@@ -34,6 +34,7 @@ export function IpodWheel({
   // Refs for tracking touch state
   const isTouchDraggingRef = useRef(false); // Whether significant touch rotation occurred
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null); // Starting touch position
+  const mouseStartPosRef = useRef<{ x: number; y: number } | null>(null); // Starting mouse position
   const recentTouchRef = useRef(false); // Track if we just handled a touch event to prevent double firing
 
   // Track if the current interaction started on the "MENU" label so we can suppress duplicate click handling
@@ -113,12 +114,26 @@ export function IpodWheel({
     // Prevent default scrolling behaviour while interacting with the wheel
     e.preventDefault();
 
-    if (lastAngleRef.current === null) return;
+    // Ensure touchStartPosRef and lastAngleRef are initialized
+    if (lastAngleRef.current === null || !touchStartPosRef.current) return;
 
     const touch = e.touches[0];
     const currentAngleRad = getAngleFromCenterRad(touch.clientX, touch.clientY);
 
-    // Calculate shortest angular difference (-π, π]
+    // --- Start of new linear movement check ---
+    if (!isTouchDraggingRef.current) { // Only check if not already considered dragging
+      const dx = touch.clientX - touchStartPosRef.current.x;
+      const dy = touch.clientY - touchStartPosRef.current.y;
+      const distanceMoved = Math.sqrt(dx * dx + dy * dy);
+      const linearDragThreshold = 7; // pixels
+
+      if (distanceMoved > linearDragThreshold) {
+        isTouchDraggingRef.current = true;
+      }
+    }
+    // --- End of new linear movement check ---
+
+    // Calculate shortest angular difference (-π, π] for rotation
     let delta = currentAngleRad - lastAngleRef.current;
     if (delta > Math.PI) delta -= 2 * Math.PI;
     if (delta < -Math.PI) delta += 2 * Math.PI;
@@ -126,25 +141,27 @@ export function IpodWheel({
     rotationAccumulatorRef.current += delta;
     lastAngleRef.current = currentAngleRad;
 
-    const threshold = (rotationStepDeg * Math.PI) / 180; // convert step to radians
-
-    // Once movement exceeds threshold, treat interaction as a drag (not a simple tap)
-    if (
-      !isTouchDraggingRef.current &&
-      Math.abs(rotationAccumulatorRef.current) > threshold
-    ) {
-      isTouchDraggingRef.current = true;
+    // Rotational movement check (existing logic, but ensure it only runs if not already dragging)
+    if (!isTouchDraggingRef.current) {
+      const rotationDragThreshold = (rotationStepDeg * Math.PI) / 180; // convert step to radians
+      if (Math.abs(rotationAccumulatorRef.current) > rotationDragThreshold) {
+        isTouchDraggingRef.current = true;
+      }
     }
 
-    // Trigger rotation events when threshold exceeded
-    while (rotationAccumulatorRef.current > threshold) {
+    // Trigger rotation events when threshold exceeded (only if dragging)
+    // This part might also need isTouchDraggingRef.current check if onWheelRotation should only happen after drag confirmed.
+    // However, the original issue is about clicks, so let's focus on setting isTouchDraggingRef correctly.
+    // The original code implies rotation events can happen as soon as threshold is passed, which might be fine.
+    const rotationTriggerThreshold = (rotationStepDeg * Math.PI) / 180;
+    while (rotationAccumulatorRef.current > rotationTriggerThreshold) {
       onWheelRotation("clockwise");
-      rotationAccumulatorRef.current -= threshold;
+      rotationAccumulatorRef.current -= rotationTriggerThreshold;
     }
 
-    while (rotationAccumulatorRef.current < -threshold) {
+    while (rotationAccumulatorRef.current < -rotationTriggerThreshold) {
       onWheelRotation("counterclockwise");
-      rotationAccumulatorRef.current += threshold;
+      rotationAccumulatorRef.current += rotationTriggerThreshold;
     }
   };
 
@@ -206,16 +223,30 @@ export function IpodWheel({
     e.preventDefault();
 
     // Initialise rotation tracking
+    mouseStartPosRef.current = { x: e.clientX, y: e.clientY }; // ADD THIS
     const startAngleRad = getAngleFromCenterRad(e.clientX, e.clientY);
     lastAngleRef.current = startAngleRad;
     rotationAccumulatorRef.current = 0;
     isDraggingRef.current = false;
 
-    const threshold = (rotationStepDeg * Math.PI) / 180; // rad
+    // const rotationDragThreshold = (rotationStepDeg * Math.PI) / 180; // Renamed for clarity if used directly
 
     // Mouse move handler (attached to window so it continues even if we leave the wheel)
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (lastAngleRef.current === null) return;
+      if (lastAngleRef.current === null || !mouseStartPosRef.current) return; // ADD null check for mouseStartPosRef
+
+      // --- Start of new linear movement check for mouse ---
+      if (!isDraggingRef.current) {
+        const dx = moveEvent.clientX - mouseStartPosRef.current.x;
+        const dy = moveEvent.clientY - mouseStartPosRef.current.y;
+        const distanceMoved = Math.sqrt(dx * dx + dy * dy);
+        const linearDragThreshold = 7; // pixels
+
+        if (distanceMoved > linearDragThreshold) {
+          isDraggingRef.current = true;
+        }
+      }
+      // --- End of new linear movement check for mouse ---
 
       const currentAngleRad = getAngleFromCenterRad(
         moveEvent.clientX,
@@ -230,23 +261,24 @@ export function IpodWheel({
       rotationAccumulatorRef.current += delta;
       lastAngleRef.current = currentAngleRad;
 
-      // Once movement exceeds threshold, treat interaction as a drag (not a simple click)
-      if (
-        !isDraggingRef.current &&
-        Math.abs(rotationAccumulatorRef.current) > threshold
-      ) {
-        isDraggingRef.current = true;
+      // Rotational movement check, conditioned if not already dragging
+      if (!isDraggingRef.current) {
+        const rotationDragThreshold = (rotationStepDeg * Math.PI) / 180;
+        if (Math.abs(rotationAccumulatorRef.current) > rotationDragThreshold) {
+          isDraggingRef.current = true;
+        }
       }
-
+      
       // Emit rotation events whenever accumulated rotation crosses threshold
-      while (rotationAccumulatorRef.current > threshold) {
+      const rotationTriggerThreshold = (rotationStepDeg * Math.PI) / 180;
+      while (rotationAccumulatorRef.current > rotationTriggerThreshold) {
         onWheelRotation("clockwise");
-        rotationAccumulatorRef.current -= threshold;
+        rotationAccumulatorRef.current -= rotationTriggerThreshold;
       }
 
-      while (rotationAccumulatorRef.current < -threshold) {
+      while (rotationAccumulatorRef.current < -rotationTriggerThreshold) {
         onWheelRotation("counterclockwise");
-        rotationAccumulatorRef.current += threshold;
+        rotationAccumulatorRef.current += rotationTriggerThreshold;
       }
     };
 
@@ -273,6 +305,7 @@ export function IpodWheel({
       rotationAccumulatorRef.current = 0;
       isDraggingRef.current = false;
       fromMenuLabelRef.current = false;
+      mouseStartPosRef.current = null; // ADD THIS to reset
     };
 
     // Attach listeners to the window so the interaction continues smoothly outside the wheel bounds
