@@ -321,7 +321,7 @@ export function IpodWheel({
         <div
           className="absolute top-1.5 text-center left-1/2 transform -translate-x-1/2 font-chicago text-xs text-white menu-button cursor-default select-none"
           onClick={(e) => {
-            if (recentTouchRef.current) return;
+            if (recentTouchRef.current || isTouchDraggingRef.current) return; // Added isTouchDraggingRef.current
             e.stopPropagation(); // Prevent triggering wheel mousedown
             onMenuButton();
           }}
