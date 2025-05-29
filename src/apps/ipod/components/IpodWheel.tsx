@@ -125,7 +125,7 @@ export function IpodWheel({
       const dx = touch.clientX - touchStartPosRef.current.x;
       const dy = touch.clientY - touchStartPosRef.current.y;
       const distanceMoved = Math.sqrt(dx * dx + dy * dy);
-      const linearDragThreshold = 7; // pixels
+      const linearDragThreshold = 2; // pixels
 
       if (distanceMoved > linearDragThreshold) {
         isTouchDraggingRef.current = true;
@@ -240,7 +240,7 @@ export function IpodWheel({
         const dx = moveEvent.clientX - mouseStartPosRef.current.x;
         const dy = moveEvent.clientY - mouseStartPosRef.current.y;
         const distanceMoved = Math.sqrt(dx * dx + dy * dy);
-        const linearDragThreshold = 7; // pixels
+        const linearDragThreshold = 2; // pixels
 
         if (distanceMoved > linearDragThreshold) {
           isDraggingRef.current = true;
