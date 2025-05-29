@@ -14,6 +14,11 @@ interface IpodWheelProps {
 // How many degrees of wheel rotation should equal one scroll step
 const rotationStepDeg = 15; // increase this value to reduce sensitivity
 
+// New constants for tap/drag detection
+const MAX_TAP_DURATION = 250; // milliseconds
+const DRAG_LINEAR_THRESHOLD = 3; // pixels
+const DRAG_ROTATION_THRESHOLD = (rotationStepDeg / 2 * Math.PI) / 180; // radians for ~7.5 degrees
+
 export function IpodWheel({
   theme,
   onWheelClick,
@@ -39,6 +44,14 @@ export function IpodWheel({
 
   // Track if the current interaction started on the "MENU" label so we can suppress duplicate click handling
   const fromMenuLabelRef = useRef(false);
+
+  // Refs for tap/drag distinction
+  const touchStartTimeRef = useRef<number | null>(null);
+  const mouseStartTimeRef = useRef<number | null>(null);
+  const dragOccurredOnLastTouchRef = useRef<boolean>(false); // To be phased out
+  const dragOccurredOnLastMouseRef = useRef<boolean>(false); // To be phased out
+  const rotationOccurredInCurrentInteractionRef = useRef<boolean>(false);
+  const buttonAreaInteractionStartedRef = useRef<WheelArea | "menu" | null>(null);
 
   // Calculate angle (in degrees) from the center of the wheel – used for click areas
   const getAngleFromCenterDeg = (x: number, y: number): number => {
@@ -92,90 +105,107 @@ export function IpodWheel({
 
   // Handle touch start
   const handleTouchStart = (e: React.TouchEvent) => {
-    // Prevent the browser from interpreting this touch as a scroll/zoom gesture
     e.preventDefault();
-
     const touch = e.touches[0];
 
-    // Skip processing if touch is in center button area
-    if (isTouchInCenter(touch.clientX, touch.clientY)) {
-      return;
-    }
+    // Reset rotation flag for the new interaction
+    rotationOccurredInCurrentInteractionRef.current = false; // NEW
 
+    // Determine if touch started on a button area
+    if (isTouchInCenter(touch.clientX, touch.clientY)) {
+      buttonAreaInteractionStartedRef.current = "center"; 
+    } else {
+      // Check if it's the MENU label first, as it's a specific target
+      // The MENU label has a class 'menu-button'
+      const targetElement = e.target as HTMLElement;
+      if (targetElement && targetElement.classList && targetElement.classList.contains("menu-button")) {
+        buttonAreaInteractionStartedRef.current = "menu";
+      } else {
+        // Otherwise, it's one of the wheel sections
+        const angleDeg = getAngleFromCenterDeg(touch.clientX, touch.clientY);
+        buttonAreaInteractionStartedRef.current = getWheelSection(angleDeg);
+      }
+    }
+    
+    // Existing logic for setting up rotation
     const angleRad = getAngleFromCenterRad(touch.clientX, touch.clientY);
     lastAngleRef.current = angleRad;
     rotationAccumulatorRef.current = 0;
-    isTouchDraggingRef.current = false;
+    isTouchDraggingRef.current = false; // Still useful for visual drag state or other subtle effects
     touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    
+    // Discarded time-based refs from previous plan (ensure they are removed if present)
+    // touchStartTimeRef.current = Date.now(); 
+    // dragOccurredOnLastTouchRef.current = false;
   };
 
   // Handle touch move
   const handleTouchMove = (e: React.TouchEvent) => {
-    // Prevent default scrolling behaviour while interacting with the wheel
     e.preventDefault();
 
-    // Ensure touchStartPosRef and lastAngleRef are initialized
     if (lastAngleRef.current === null || !touchStartPosRef.current) return;
 
     const touch = e.touches[0];
     const currentAngleRad = getAngleFromCenterRad(touch.clientX, touch.clientY);
 
-    // --- Start of new linear movement check ---
-    if (!isTouchDraggingRef.current) { // Only check if not already considered dragging
-      const dx = touch.clientX - touchStartPosRef.current.x;
-      const dy = touch.clientY - touchStartPosRef.current.y;
-      const distanceMoved = Math.sqrt(dx * dx + dy * dy);
-      const linearDragThreshold = 2; // pixels
-
-      if (distanceMoved > linearDragThreshold) {
-        isTouchDraggingRef.current = true;
-      }
-    }
-    // --- End of new linear movement check ---
-
-    // Calculate shortest angular difference (-π, π] for rotation
+    // Calculate rotational delta first, as it's needed for both drag detection and wheel steps.
     let delta = currentAngleRad - lastAngleRef.current;
     if (delta > Math.PI) delta -= 2 * Math.PI;
     if (delta < -Math.PI) delta += 2 * Math.PI;
-
+    
+    // Accumulate rotation before checking drag, so current move's rotation contributes to drag check.
     rotationAccumulatorRef.current += delta;
-    lastAngleRef.current = currentAngleRad;
+    // Update lastAngleRef *after* using it for delta with current accumulator state.
+    // This was previously before the accumulator update, now it's after.
+    lastAngleRef.current = currentAngleRad; 
 
-    // Rotational movement check (existing logic, but ensure it only runs if not already dragging)
+    // Check for drag initiation if not already dragging
     if (!isTouchDraggingRef.current) {
-      const rotationDragThreshold = (rotationStepDeg * Math.PI) / 180; // convert step to radians
-      if (Math.abs(rotationAccumulatorRef.current) > rotationDragThreshold) {
+      const dx = touch.clientX - touchStartPosRef.current.x;
+      const dy = touch.clientY - touchStartPosRef.current.y;
+      const distanceMoved = Math.sqrt(dx * dx + dy * dy);
+
+      // Use the new DRAG_ROTATION_THRESHOLD for initiating drag based on rotation
+      if (distanceMoved > DRAG_LINEAR_THRESHOLD || Math.abs(rotationAccumulatorRef.current) > DRAG_ROTATION_THRESHOLD) {
         isTouchDraggingRef.current = true;
+        // Once dragging is confirmed, also mark dragOccurredOnLastTouchRef.
+        // This is important for handleTouchEnd to know if a drag happened.
+        dragOccurredOnLastTouchRef.current = true; 
       }
     }
 
-    // Trigger rotation events when threshold exceeded (only if dragging)
-    // This part might also need isTouchDraggingRef.current check if onWheelRotation should only happen after drag confirmed.
-    // However, the original issue is about clicks, so let's focus on setting isTouchDraggingRef correctly.
-    // The original code implies rotation events can happen as soon as threshold is passed, which might be fine.
-    const rotationTriggerThreshold = (rotationStepDeg * Math.PI) / 180;
-    while (rotationAccumulatorRef.current > rotationTriggerThreshold) {
+    // Trigger rotation events (using the original rotationStepDeg for sensitivity of wheel steps)
+    // This part remains the same.
+    const rotationEventThreshold = (rotationStepDeg * Math.PI) / 180;
+    while (rotationAccumulatorRef.current > rotationEventThreshold) {
+      rotationOccurredInCurrentInteractionRef.current = true; // NEW
       onWheelRotation("clockwise");
-      rotationAccumulatorRef.current -= rotationTriggerThreshold;
+      rotationAccumulatorRef.current -= rotationEventThreshold;
     }
 
-    while (rotationAccumulatorRef.current < -rotationTriggerThreshold) {
+    while (rotationAccumulatorRef.current < -rotationEventThreshold) {
+      rotationOccurredInCurrentInteractionRef.current = true; // NEW
       onWheelRotation("counterclockwise");
-      rotationAccumulatorRef.current += rotationTriggerThreshold;
+      rotationAccumulatorRef.current += rotationEventThreshold;
     }
   };
 
   // Handle touch end
   const handleTouchEnd = (_e: React.TouchEvent) => {
-    // If the user didn't drag beyond the threshold, treat as a tap on a wheel section
-    if (!isTouchDraggingRef.current && touchStartPosRef.current) {
-      // Use the starting touch position to determine which section was tapped
-      const angleDeg = getAngleFromCenterDeg(
-        touchStartPosRef.current.x,
-        touchStartPosRef.current.y
-      );
-      const section = getWheelSection(angleDeg);
-      onWheelClick(section);
+    const interactionStartedOn = buttonAreaInteractionStartedRef.current;
+    const rotationOccurred = rotationOccurredInCurrentInteractionRef.current;
+
+    // Check if the interaction started on a wheel section (not 'menu' or 'center')
+    // and no rotation occurred.
+    if (
+      interactionStartedOn &&
+      interactionStartedOn !== "menu" &&
+      interactionStartedOn !== "center" &&
+      !rotationOccurred &&
+      touchStartPosRef.current // Ensure interaction was initialized (touchStartPosRef is set in handleTouchStart)
+    ) {
+      // It's a tap on a wheel section (top, bottom, left, right)
+      onWheelClick(interactionStartedOn as WheelArea); // Type assertion
 
       // Mark that we just handled a touch event to prevent mouse event double firing
       recentTouchRef.current = true;
@@ -184,11 +214,14 @@ export function IpodWheel({
       }, 500);
     }
 
-    // Reset all touch tracking refs
+    // Reset refs for the next interaction
     lastAngleRef.current = null;
     rotationAccumulatorRef.current = 0;
-    isTouchDraggingRef.current = false;
-    touchStartPosRef.current = null;
+    touchStartPosRef.current = null; // Resetting the start position
+    buttonAreaInteractionStartedRef.current = null; 
+    // rotationOccurredInCurrentInteractionRef is reset in handleTouchStart
+    // isTouchDraggingRef is reset in handleTouchStart
+    // Obsolete refs like touchStartTimeRef, dragOccurredOnLastTouchRef are no longer used here.
   };
 
   // Handle mouse wheel scroll for rotation
@@ -222,38 +255,38 @@ export function IpodWheel({
     // Prevent default text selection behaviour while dragging
     e.preventDefault();
 
-    // Initialise rotation tracking
-    mouseStartPosRef.current = { x: e.clientX, y: e.clientY }; // ADD THIS
+    // Reset rotation flag for the new interaction
+    rotationOccurredInCurrentInteractionRef.current = false; // NEW
+
+    // Determine if mouse down started on a button area
+    if (isTouchInCenter(e.clientX, e.clientY)) { // Using isTouchInCenter for mouse too
+      buttonAreaInteractionStartedRef.current = "center";
+    } else {
+      fromMenuLabelRef.current = e.target && (e.target as HTMLElement).classList.contains("menu-button");
+      if (fromMenuLabelRef.current) {
+        buttonAreaInteractionStartedRef.current = "menu";
+      } else {
+        const angleDeg = getAngleFromCenterDeg(e.clientX, e.clientY);
+        buttonAreaInteractionStartedRef.current = getWheelSection(angleDeg);
+      }
+    }
+
+    // Existing logic for setting up rotation
     const startAngleRad = getAngleFromCenterRad(e.clientX, e.clientY);
     lastAngleRef.current = startAngleRad;
     rotationAccumulatorRef.current = 0;
-    isDraggingRef.current = false;
+    isDraggingRef.current = false; // Still useful
+    mouseStartPosRef.current = { x: e.clientX, y: e.clientY };
 
-    // const rotationDragThreshold = (rotationStepDeg * Math.PI) / 180; // Renamed for clarity if used directly
+    // Discarded time-based refs from previous plan (ensure they are removed if present)
+    // mouseStartTimeRef.current = Date.now();
+    // dragOccurredOnLastMouseRef.current = false;
 
     // Mouse move handler (attached to window so it continues even if we leave the wheel)
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (lastAngleRef.current === null || !mouseStartPosRef.current) return; // ADD null check for mouseStartPosRef
+      if (lastAngleRef.current === null || !mouseStartPosRef.current) return;
 
-      // --- Start of new linear movement check for mouse ---
-      if (!isDraggingRef.current) {
-        const dx = moveEvent.clientX - mouseStartPosRef.current.x;
-        const dy = moveEvent.clientY - mouseStartPosRef.current.y;
-        const distanceMoved = Math.sqrt(dx * dx + dy * dy);
-        const linearDragThreshold = 2; // pixels
-
-        if (distanceMoved > linearDragThreshold) {
-          isDraggingRef.current = true;
-        }
-      }
-      // --- End of new linear movement check for mouse ---
-
-      const currentAngleRad = getAngleFromCenterRad(
-        moveEvent.clientX,
-        moveEvent.clientY
-      );
-
-      // Shortest angular difference
+      const currentAngleRad = getAngleFromCenterRad(moveEvent.clientX, moveEvent.clientY);
       let delta = currentAngleRad - lastAngleRef.current;
       if (delta > Math.PI) delta -= 2 * Math.PI;
       if (delta < -Math.PI) delta += 2 * Math.PI;
@@ -261,51 +294,64 @@ export function IpodWheel({
       rotationAccumulatorRef.current += delta;
       lastAngleRef.current = currentAngleRad;
 
-      // Rotational movement check, conditioned if not already dragging
+      // Check for drag initiation if not already dragging
       if (!isDraggingRef.current) {
-        const rotationDragThreshold = (rotationStepDeg * Math.PI) / 180;
-        if (Math.abs(rotationAccumulatorRef.current) > rotationDragThreshold) {
+        const dx = moveEvent.clientX - mouseStartPosRef.current.x;
+        const dy = moveEvent.clientY - mouseStartPosRef.current.y;
+        const distanceMoved = Math.sqrt(dx * dx + dy * dy);
+
+        if (distanceMoved > DRAG_LINEAR_THRESHOLD || Math.abs(rotationAccumulatorRef.current) > DRAG_ROTATION_THRESHOLD) {
           isDraggingRef.current = true;
+          // Once dragging is confirmed, also mark dragOccurredOnLastMouseRef.
+          dragOccurredOnLastMouseRef.current = true;
         }
       }
       
       // Emit rotation events whenever accumulated rotation crosses threshold
-      const rotationTriggerThreshold = (rotationStepDeg * Math.PI) / 180;
-      while (rotationAccumulatorRef.current > rotationTriggerThreshold) {
+      const rotationEventThreshold = (rotationStepDeg * Math.PI) / 180; // Use original threshold for step sensitivity
+      while (rotationAccumulatorRef.current > rotationEventThreshold) {
+        rotationOccurredInCurrentInteractionRef.current = true; // NEW
         onWheelRotation("clockwise");
-        rotationAccumulatorRef.current -= rotationTriggerThreshold;
+        rotationAccumulatorRef.current -= rotationEventThreshold;
       }
 
-      while (rotationAccumulatorRef.current < -rotationTriggerThreshold) {
+      while (rotationAccumulatorRef.current < -rotationEventThreshold) {
+        rotationOccurredInCurrentInteractionRef.current = true; // NEW
         onWheelRotation("counterclockwise");
-        rotationAccumulatorRef.current += rotationTriggerThreshold;
+        rotationAccumulatorRef.current += rotationEventThreshold;
       }
     };
 
     // Mouse up handler – determine if it was a click or a drag
-    const handleMouseUp = (upEvent: MouseEvent) => {
+    const handleMouseUp = (_upEvent: MouseEvent) => { // upEvent might not be needed if using interactionStartedOn
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
 
-      // If the user didn't drag beyond the threshold, treat as a click on a wheel section
-      if (!isDraggingRef.current) {
-        // Only trigger wheel click if the interaction did NOT originate from the MENU label
-        if (!fromMenuLabelRef.current) {
-          const angleDeg = getAngleFromCenterDeg(
-            upEvent.clientX,
-            upEvent.clientY
-          );
-          const section = getWheelSection(angleDeg);
-          onWheelClick(section);
-        }
+      const interactionStartedOn = buttonAreaInteractionStartedRef.current;
+      const rotationOccurred = rotationOccurredInCurrentInteractionRef.current;
+
+      // Check if interaction started on a wheel section (not 'menu' or 'center'),
+      // no rotation occurred, and it wasn't a click that started on the MENU label.
+      if (
+        interactionStartedOn &&
+        interactionStartedOn !== "menu" &&
+        interactionStartedOn !== "center" &&
+        !rotationOccurred &&
+        !fromMenuLabelRef.current // Crucial for mouse events to respect MENU label's own onClick
+      ) {
+        // It's a tap on a wheel section (top, bottom, left, right)
+        onWheelClick(interactionStartedOn as WheelArea); // Type assertion
       }
 
       // Reset refs
       lastAngleRef.current = null;
       rotationAccumulatorRef.current = 0;
-      isDraggingRef.current = false;
-      fromMenuLabelRef.current = false;
-      mouseStartPosRef.current = null; // ADD THIS to reset
+      fromMenuLabelRef.current = false; // Reset this as it's specific to mouse down on menu
+      mouseStartPosRef.current = null;
+      buttonAreaInteractionStartedRef.current = null;
+      // rotationOccurredInCurrentInteractionRef is reset in handleMouseDown
+      // isDraggingRef is reset in handleMouseDown
+      // Obsolete refs like mouseStartTimeRef, dragOccurredOnLastMouseRef are no longer used here.
     };
 
     // Attach listeners to the window so the interaction continues smoothly outside the wheel bounds
@@ -327,7 +373,7 @@ export function IpodWheel({
       {/* Center button */}
       <button
         onClick={() => {
-          if (recentTouchRef.current) return;
+          if (recentTouchRef.current || rotationOccurredInCurrentInteractionRef.current) return;
           onWheelClick("center");
         }}
         className={cn(
@@ -354,9 +400,20 @@ export function IpodWheel({
         <div
           className="absolute top-1.5 text-center left-1/2 transform -translate-x-1/2 font-chicago text-xs text-white menu-button cursor-default select-none"
           onClick={(e) => {
-            if (recentTouchRef.current || isTouchDraggingRef.current) return; // Added isTouchDraggingRef.current
-            e.stopPropagation(); // Prevent triggering wheel mousedown
+            // If a rotation occurred during the interaction that led to this click event,
+            // or if it's a rapid succession from a wheel touch event, do not fire.
+            if (recentTouchRef.current || rotationOccurredInCurrentInteractionRef.current) {
+              // rotationOccurredInCurrentInteractionRef is reset by handle(Touch|Mouse)Start.
+              // recentTouchRef is managed by its own setTimeout.
+              return;
+            }
+
+            // If we've reached here, it's a valid click for the MENU button.
+            e.stopPropagation(); // Prevent triggering wheel mousedown/touchstart from this specific MENU click.
             onMenuButton();
+            
+            // No need to reset rotationOccurredInCurrentInteractionRef here, 
+            // as it's reset at the start of the next interaction.
           }}
         >
           MENU
