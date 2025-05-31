@@ -38,6 +38,7 @@ import { htmlToMarkdown } from "@/utils/markdown";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useFilesStore } from "@/stores/useFilesStore";
+import { type Message } from "ai/react";
 
 // Analytics event namespace for terminal AI events
 export const TERMINAL_ANALYTICS = {
@@ -605,6 +606,8 @@ export function TerminalAppComponent({
 
   // Keep track of the last processed message ID to avoid duplicates
   const lastProcessedMessageIdRef = useRef<string | null>(null);
+  // Store the user's regular chat history so we can restore it after leaving AI mode
+  const previousAiMessagesRef = useRef<Message[] | null>(null);
   // Keep track of apps already launched in the current session
   const launchedAppsRef = useRef<Set<string>>(new Set());
   // Shared AI chat hook
@@ -2346,7 +2349,12 @@ assistant
         // Track chat start
         track(TERMINAL_ANALYTICS.CHAT_START);
 
-        // Reset AI messages to just the system message
+        // Preserve existing global AI conversation so we can restore it later
+        if (!previousAiMessagesRef.current) {
+          previousAiMessagesRef.current = aiMessages;
+        }
+
+        // Reset AI messages to a fresh system prompt for the terminal session
         setAiChatMessages([
           {
             id: "system",
@@ -2530,14 +2538,12 @@ assistant
       track(TERMINAL_ANALYTICS.CHAT_EXIT);
       setIsInAiMode(false);
       stopAiResponse();
-      setAiChatMessages([
-        {
-          id: "system",
-          role: "system",
-          content:
-            "You are a coding assistant running in the terminal app on ryOS.",
-        },
-      ]);
+
+      // Restore the previous global AI conversation if we had saved one
+      if (previousAiMessagesRef.current) {
+        setAiChatMessages(previousAiMessagesRef.current);
+        previousAiMessagesRef.current = null;
+      }
 
       // Reset tracking refs
       lastProcessedMessageIdRef.current = null;

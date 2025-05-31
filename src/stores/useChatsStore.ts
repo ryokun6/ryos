@@ -28,6 +28,9 @@ const decodeUsername = (encoded: string): string | null => decode(encoded);
 const saveUsernameToRecovery = (username: string | null) => {
   if (username) {
     localStorage.setItem(USERNAME_RECOVERY_KEY, encodeUsername(username));
+  } else {
+    // Remove key when username is cleared to avoid stale recovery data
+    localStorage.removeItem(USERNAME_RECOVERY_KEY);
   }
 };
 
@@ -113,7 +116,6 @@ const initialAiMessage: Message = {
 
 const getInitialState = (): Omit<
   ChatsStoreState,
-  | "isAdmin"
   | "reset"
   | "setAiMessages"
   | "setUsername"
@@ -161,9 +163,16 @@ export const useChatsStore = create<ChatsStoreState>()(
         // --- Actions ---
         setAiMessages: (messages) => set({ aiMessages: messages }),
         setUsername: (username) => {
-          // Save username to recovery storage when it's set
+          // Persist or clear username in recovery storage
           saveUsernameToRecovery(username);
-          set({ username });
+
+          if (username === null) {
+            // Clear auth token when username is removed to prevent leakage
+            saveAuthTokenToRecovery(null);
+            set({ username: null, authToken: null });
+          } else {
+            set({ username });
+          }
         },
         setAuthToken: (token) => {
           // Save auth token to recovery storage when it's set
@@ -390,7 +399,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
         }
 
-        if (version < STORE_VERSION && !persistedState) {
+        // Run legacy-data migration whenever the stored version is outdated,
+        // even if a persistedState object already exists.
+        if (version < STORE_VERSION) {
           console.log(
             `[ChatsStore] Migrating from old localStorage keys to version ${STORE_VERSION}...`
           );
