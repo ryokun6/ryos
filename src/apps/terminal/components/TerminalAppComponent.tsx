@@ -530,21 +530,15 @@ function TypewriterText({
 
 // Animated ellipsis component for thinking indicator
 function AnimatedEllipsis() {
-  const [dots, setDots] = useState("");
-
-  useEffect(() => {
-    const patterns = [".", "..", "...", "..", ".", ".", "..", "..."];
-    let index = 0;
-
-    const interval = setInterval(() => {
-      setDots(patterns[index]);
-      index = (index + 1) % patterns.length;
-    }, 200);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return <span>{dots}</span>;
+  // CSS-only animation – no intervals → no memory leak
+  return (
+    <span
+      className="inline-block w-4 overflow-hidden align-baseline animate-ellipsis"
+      aria-label="loading"
+    >
+      …
+    </span>
+  );
 }
 
 // Helper function to convert Blob content to string
@@ -608,6 +602,8 @@ export function TerminalAppComponent({
   const lastProcessedMessageIdRef = useRef<string | null>(null);
   // Store the user's regular chat history so we can restore it after leaving AI mode
   const previousAiMessagesRef = useRef<Message[] | null>(null);
+  // Track last assistant message id+content to avoid duplicate renders without heavy JSON stringify
+  const lastAssistantSignatureRef = useRef<string | null>(null);
   // Keep track of apps already launched in the current session
   const launchedAppsRef = useRef<Set<string>>(new Set());
   // Shared AI chat hook
@@ -646,11 +642,11 @@ export function TerminalAppComponent({
 
   const { username } = useChatsStore();
 
-  // Load command history from store
+  // Subscribe to global terminal store so historyCommands stay in sync even across tabs
+  const globalCommandHistory = useTerminalStore((state) => state.commandHistory);
   useEffect(() => {
-    const { commandHistory } = useTerminalStore.getState();
-    setHistoryCommands(commandHistory.map((cmd) => cmd.command));
-  }, []);
+    setHistoryCommands(globalCommandHistory.map((cmd) => cmd.command));
+  }, [globalCommandHistory]);
 
   // Initialize with welcome message
   useEffect(() => {
@@ -2437,11 +2433,7 @@ assistant
     const lastMessage = aiMessages[aiMessages.length - 1];
     if (lastMessage.role !== "assistant") return;
 
-    const messageKey = `${lastMessage.id}-${JSON.stringify(
-      (lastMessage as { parts?: unknown[] }).parts ?? lastMessage.content
-    )}`;
-    if (messageKey === lastProcessedMessageIdRef.current) return;
-
+    // Build visible text first to create lightweight signature
     const parts = (lastMessage as { parts?: unknown[] }).parts as
       | unknown[]
       | undefined;
@@ -2466,6 +2458,10 @@ assistant
     }
 
     const cleanedContent = lines.join("\n");
+
+    const signature = `${lastMessage.id}-${cleanedContent}`;
+    if (signature === lastAssistantSignatureRef.current) return;
+
     if (isClearingTerminal) return;
 
     setCommandHistory((prev) => {
@@ -2504,7 +2500,8 @@ assistant
       ];
     });
 
-    lastProcessedMessageIdRef.current = messageKey;
+    lastProcessedMessageIdRef.current = lastMessage.id;
+    lastAssistantSignatureRef.current = signature;
   }, [
     aiMessages,
     isInAiMode,
