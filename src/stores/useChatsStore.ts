@@ -25,7 +25,11 @@ const decode = (encoded: string): string | null => {
 const encodeUsername = (username: string): string => encode(username);
 const decodeUsername = (encoded: string): string | null => decode(encoded);
 
+// Detect SSR / non-browser environment once
+const isBrowser = typeof window !== "undefined" && typeof localStorage !== "undefined";
+
 const saveUsernameToRecovery = (username: string | null) => {
+  if (!isBrowser) return; // Skip during SSR
   if (username) {
     localStorage.setItem(USERNAME_RECOVERY_KEY, encodeUsername(username));
   } else {
@@ -35,6 +39,7 @@ const saveUsernameToRecovery = (username: string | null) => {
 };
 
 const getUsernameFromRecovery = (): string | null => {
+  if (!isBrowser) return null;
   const encoded = localStorage.getItem(USERNAME_RECOVERY_KEY);
   if (encoded) {
     return decodeUsername(encoded);
@@ -44,6 +49,7 @@ const getUsernameFromRecovery = (): string | null => {
 
 // Auth token recovery functions
 const saveAuthTokenToRecovery = (token: string | null) => {
+  if (!isBrowser) return;
   if (token) {
     localStorage.setItem(AUTH_TOKEN_RECOVERY_KEY, encode(token));
   } else {
@@ -52,6 +58,7 @@ const saveAuthTokenToRecovery = (token: string | null) => {
 };
 
 const getAuthTokenFromRecovery = (): string | null => {
+  if (!isBrowser) return null;
   const encoded = localStorage.getItem(AUTH_TOKEN_RECOVERY_KEY);
   if (encoded) {
     return decode(encoded);
@@ -64,6 +71,7 @@ const ensureRecoveryKeysAreSet = (
   username: string | null,
   authToken: string | null
 ) => {
+  if (!isBrowser) return;
   if (username && !localStorage.getItem(USERNAME_RECOVERY_KEY)) {
     console.log(
       "[ChatsStore] Setting recovery key for existing username:",
@@ -189,9 +197,23 @@ export const useChatsStore = create<ChatsStoreState>()(
             return; // Ignore non-array updates
           }
 
-          // Deep comparison to prevent unnecessary updates
+          // Lightweight equality check: compare lengths then IDs & names
           const currentRooms = get().rooms;
-          if (JSON.stringify(currentRooms) === JSON.stringify(newRooms)) {
+          const roomsEqual = (
+            a: ChatRoom[] | undefined,
+            b: ChatRoom[] | undefined
+          ): boolean => {
+            if (!a || !b) return false;
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+              const r1 = a[i];
+              const r2 = b[i];
+              if (r1.id !== r2.id || r1.name !== r2.name) return false;
+            }
+            return true;
+          };
+
+          if (roomsEqual(currentRooms, newRooms)) {
             console.log(
               "[ChatsStore] setRooms skipped: newRooms are identical to current rooms."
             );
@@ -398,6 +420,8 @@ export const useChatsStore = create<ChatsStoreState>()(
             Array.isArray((persistedState as ChatsStoreState).rooms)
           );
         }
+
+        if (!isBrowser) return persistedState as ChatsStoreState | undefined;
 
         // Run legacy-data migration whenever the stored version is outdated,
         // even if a persistedState object already exists.
