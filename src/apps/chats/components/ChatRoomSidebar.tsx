@@ -10,7 +10,7 @@ interface ChatRoomSidebarProps {
   rooms: ChatRoom[];
   currentRoom: ChatRoom | null;
   onRoomSelect: (room: ChatRoom | null) => void;
-  onAddRoom: () => void;
+  onAddRoom?: () => void;
   onDeleteRoom?: (room: ChatRoom) => void;
   isVisible: boolean;
   isAdmin: boolean;
@@ -46,7 +46,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
           <div className="flex items-baseline gap-1.5">
             <h2 className="text-[14px] pl-1">Chats</h2>
           </div>
-          {isAdmin && (
+          {onAddRoom && (
             <Button
               variant="ghost"
               size="sm"

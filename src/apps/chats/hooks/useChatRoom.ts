@@ -90,15 +90,7 @@ export function useChatRoom(isWindowOpen: boolean, isForeground: boolean) {
       };
 
       // Actions that require authentication
-      const protectedActions = [
-        "createRoom",
-        "deleteRoom",
-        "sendMessage",
-        "deleteMessage",
-      ];
-
-      // Add authentication headers for protected actions
-      if (username && authToken && protectedActions.includes(action)) {
+      if (username && authToken) {
         headers["Authorization"] = `Bearer ${authToken}`;
         headers["X-Username"] = username;
       }
@@ -339,20 +331,21 @@ export function useChatRoom(isWindowOpen: boolean, isForeground: boolean) {
   );
 
   const handleAddRoom = useCallback(
-    async (roomName: string) => {
+    async (roomName: string, users: string[]) => {
       const trimmedRoomName = roomName.trim();
-      if (!trimmedRoomName)
+      if (!trimmedRoomName && isAdmin)
         return { ok: false, error: "Room name cannot be empty." };
       if (!username) return { ok: false, error: "Set a username first." };
-      if (!isAdmin)
-        return {
-          ok: false,
-          error: "Permission denied. Admin access required.",
-        };
 
-      const result = await callRoomAction("createRoom", {
-        name: trimmedRoomName,
-      });
+      const payload: any = { name: trimmedRoomName };
+      if (isAdmin) {
+        payload.type = "public";
+      } else {
+        payload.type = "private";
+        payload.members = [username, ...users.map((u) => u.toLowerCase())];
+      }
+
+      const result = await callRoomAction("createRoom", payload);
 
       if (result.ok && result.data?.room) {
         const newRoom = result.data.room;
@@ -698,6 +691,7 @@ export function useChatRoom(isWindowOpen: boolean, isForeground: boolean) {
 
   const [isNewRoomDialogOpen, setIsNewRoomDialogOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
+  const [newRoomUsers, setNewRoomUsers] = useState("");
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [roomError, setRoomError] = useState<string | null>(null);
 
@@ -735,28 +729,28 @@ export function useChatRoom(isWindowOpen: boolean, isForeground: boolean) {
       });
       return;
     }
-    if (!isAdmin) {
-      toast("Permission Denied", {
-        description: "Only administrators can create rooms.",
-      });
-      return;
-    }
     setNewRoomName("");
+    setNewRoomUsers("");
     setRoomError(null);
     setIsNewRoomDialogOpen(true);
-  }, [username, isAdmin, promptSetUsername]);
+  }, [username, promptSetUsername]);
 
   const submitNewRoomDialog = useCallback(async () => {
     setIsCreatingRoom(true);
     setRoomError(null);
-    const result = await handleAddRoom(newRoomName);
+    const users = newRoomUsers
+      .split(",")
+      .map((u) => u.trim())
+      .filter((u) => u.length > 0);
+    const result = await handleAddRoom(newRoomName, users);
     setIsCreatingRoom(false);
     if (result.ok) {
       setIsNewRoomDialogOpen(false);
+      setNewRoomUsers("");
     } else {
       setRoomError(result.error);
     }
-  }, [handleAddRoom, newRoomName]);
+  }, [handleAddRoom, newRoomName, newRoomUsers]);
 
   const promptDeleteRoom = useCallback((room: ChatRoom) => {
     setRoomToDelete(room);
@@ -807,6 +801,8 @@ export function useChatRoom(isWindowOpen: boolean, isForeground: boolean) {
     setIsNewRoomDialogOpen,
     newRoomName,
     setNewRoomName,
+    newRoomUsers,
+    setNewRoomUsers,
     isCreatingRoom,
     roomError,
     submitNewRoomDialog,

@@ -333,15 +333,30 @@ export async function GET(request) {
     }
 
     switch (action) {
-      case "getRooms":
-        return await handleGetRooms(requestId);
+      case "getRooms": {
+        const { username, token } = extractAuth(request);
+        let validatedUser = null;
+        if (username && token) {
+          if (await validateAuth(username, token, requestId)) {
+            validatedUser = username.toLowerCase();
+          }
+        }
+        return await handleGetRooms(requestId, validatedUser);
+      }
       case "getRoom": {
         const roomId = url.searchParams.get("roomId");
         if (!roomId) {
           logInfo(requestId, "Missing roomId parameter");
           return createErrorResponse("roomId query parameter is required", 400);
         }
-        return await handleGetRoom(roomId, requestId);
+        const { username, token } = extractAuth(request);
+        let validatedUser = null;
+        if (username && token) {
+          if (await validateAuth(username, token, requestId)) {
+            validatedUser = username.toLowerCase();
+          }
+        }
+        return await handleGetRoom(roomId, requestId, validatedUser);
       }
       case "getMessages": {
         const roomId = url.searchParams.get("roomId");
@@ -542,11 +557,19 @@ export async function DELETE(request) {
 }
 
 // Room functions
-async function handleGetRooms(requestId) {
-  logInfo(requestId, "Fetching all rooms");
+async function handleGetRooms(requestId, username) {
+  logInfo(requestId, `Fetching rooms for user: ${username || "public"}`);
   try {
     const rooms = await getDetailedRooms();
-    return new Response(JSON.stringify({ rooms }), {
+    const filtered = rooms.filter((room) => {
+      if (room.type === "private") {
+        if (!username) return false;
+        const members = room.members || [];
+        return members.includes(username.toLowerCase());
+      }
+      return true;
+    });
+    return new Response(JSON.stringify({ rooms: filtered }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
@@ -555,7 +578,7 @@ async function handleGetRooms(requestId) {
   }
 }
 
-async function handleGetRoom(roomId, requestId) {
+async function handleGetRoom(roomId, requestId, username) {
   logInfo(requestId, `Fetching room: ${roomId}`);
   try {
     const roomRaw = await redis.get(`${CHAT_ROOM_PREFIX}${roomId}`);
@@ -575,6 +598,14 @@ async function handleGetRoom(roomId, requestId) {
       return createErrorResponse("Room not found", 404);
     }
 
+    if (roomObj.type === "private") {
+      const members = roomObj.members || [];
+      if (!username || !members.includes(username.toLowerCase())) {
+        logInfo(requestId, `Unauthorized access to private room ${roomId}`);
+        return createErrorResponse("Forbidden", 403);
+      }
+    }
+
     // Refresh user count before returning
     const userCount = await refreshRoomUserCount(roomId);
     const room = { ...roomObj, userCount };
@@ -589,42 +620,54 @@ async function handleGetRoom(roomId, requestId) {
 }
 
 async function handleCreateRoom(data, username, requestId) {
-  const { name: originalName } = data;
+  const { name: originalName, type = "public", members = [] } = data;
 
-  if (!originalName) {
-    logInfo(requestId, "Room creation failed: Name is required");
-    return createErrorResponse("Room name is required", 400);
+  if (type === "public") {
+    if (!originalName) {
+      logInfo(requestId, "Room creation failed: Name is required");
+      return createErrorResponse("Room name is required", 400);
+    }
+
+    // Only admin can create public rooms
+    if (username?.toLowerCase() !== "ryo") {
+      logInfo(requestId, `Unauthorized: User ${username} is not the admin`);
+      return createErrorResponse("Forbidden - Admin access required", 403);
+    }
+
+    // Check for profanity in room name
+    if (filter.isProfane(originalName)) {
+      logInfo(
+        requestId,
+        `Room creation failed: Name contains inappropriate language: ${originalName}`
+      );
+      return createErrorResponse(
+        "Room name contains inappropriate language",
+        400
+      );
+    }
   }
 
-  // Check if the user is the admin ("ryo")
-  if (username?.toLowerCase() !== "ryo") {
-    logInfo(requestId, `Unauthorized: User ${username} is not the admin`);
-    return createErrorResponse("Forbidden - Admin access required", 403);
-  }
+  const name =
+    (originalName || "private-room")
+      .toLowerCase()
+      .replace(/ /g, "-");
 
-  // Check for profanity in room name
-  if (filter.isProfane(originalName)) {
-    logInfo(
-      requestId,
-      `Room creation failed: Name contains inappropriate language: ${originalName}`
-    );
-    return createErrorResponse(
-      "Room name contains inappropriate language",
-      400
-    );
-  }
-
-  const name = originalName.toLowerCase().replace(/ /g, "-");
-
-  logInfo(requestId, `Creating room: ${name} by admin ${username}`);
+  logInfo(requestId, `Creating ${type} room: ${name} by ${username}`);
   try {
     const roomId = generateId();
     const room = {
       id: roomId,
       name,
+      type,
+      members: type === "private" ? [username.toLowerCase(), ...members.map((u) => u.toLowerCase())] : undefined,
       createdAt: getCurrentTimestamp(),
       userCount: 0,
     };
+
+    if (room.members) {
+      // Ensure unique members
+      room.members = Array.from(new Set(room.members));
+    }
 
     await redis.set(`${CHAT_ROOM_PREFIX}${roomId}`, room);
     logInfo(requestId, `Room created: ${roomId}`);
@@ -870,6 +913,14 @@ async function handleJoinRoom(data, requestId) {
     if (!userData) {
       logInfo(requestId, `User not found: ${username}`);
       return createErrorResponse("User not found", 404);
+    }
+
+    if (roomData.type === "private") {
+      const members = roomData.members || [];
+      if (!members.includes(username)) {
+        logInfo(requestId, `User ${username} not allowed in private room ${roomId}`);
+        return createErrorResponse("Forbidden", 403);
+      }
     }
 
     // Add user to room set
@@ -1188,10 +1239,20 @@ async function handleSendMessage(data, requestId) {
 
   try {
     // Check if room exists
-    const roomExists = await redis.exists(`${CHAT_ROOM_PREFIX}${roomId}`);
-    if (!roomExists) {
+    const roomDataRaw = await redis.get(`${CHAT_ROOM_PREFIX}${roomId}`);
+    if (!roomDataRaw) {
       logInfo(requestId, `Room not found: ${roomId}`);
       return createErrorResponse("Room not found", 404);
+    }
+    const roomData =
+      typeof roomDataRaw === "string" ? JSON.parse(roomDataRaw) : roomDataRaw;
+
+    if (roomData.type === "private") {
+      const members = roomData.members || [];
+      if (!members.includes(username)) {
+        logInfo(requestId, `User ${username} not allowed to message private room ${roomId}`);
+        return createErrorResponse("Forbidden", 403);
+      }
     }
 
     // Ensure user exists (or create if not) - This now handles profanity check for username
@@ -1480,14 +1541,23 @@ async function handleSwitchRoom(data, requestId) {
         return createErrorResponse("Next room not found", 404);
       }
 
+      const roomData =
+        typeof roomDataRaw === "string" ? JSON.parse(roomDataRaw) : roomDataRaw;
+
+      if (roomData.type === "private") {
+        const members = roomData.members || [];
+        if (!members.includes(username)) {
+          logInfo(requestId, `User ${username} not allowed in private room ${nextRoomId}`);
+          return createErrorResponse("Forbidden", 403);
+        }
+      }
+
       await redis.sadd(`${CHAT_ROOM_USERS_PREFIX}${nextRoomId}`, username);
       const userCount = await redis.scard(
         `${CHAT_ROOM_USERS_PREFIX}${nextRoomId}`
       );
 
       // Update room object with new count
-      const roomData =
-        typeof roomDataRaw === "string" ? JSON.parse(roomDataRaw) : roomDataRaw;
       await redis.set(roomKey, { ...roomData, userCount });
 
       // Update user's last active timestamp
