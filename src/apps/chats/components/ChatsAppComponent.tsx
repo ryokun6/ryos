@@ -6,6 +6,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
+import { PrivateRoomDialog } from "@/components/dialogs/PrivateRoomDialog";
 import { helpItems, appMetadata } from "..";
 import { useChatRoom } from "../hooks/useChatRoom";
 import { useAiChat } from "../hooks/useAiChat";
@@ -101,6 +102,8 @@ export function ChatsAppComponent({
     setIsNewRoomDialogOpen,
     newRoomName,
     setNewRoomName,
+    newRoomUsers,
+    setNewRoomUsers,
     isCreatingRoom,
     roomError,
     submitNewRoomDialog,
@@ -598,19 +601,33 @@ export function ChatsAppComponent({
           isLoading={isSettingUsername}
           errorMessage={usernameError}
         />
-        <InputDialog
-          isOpen={isNewRoomDialogOpen}
-          onOpenChange={setIsNewRoomDialogOpen}
-          onSubmit={submitNewRoomDialog}
-          title="Create New Room"
-          description="Enter a name for the new chat room"
-          value={newRoomName}
-          onChange={(value) => {
-            setNewRoomName(value);
-          }}
-          isLoading={isCreatingRoom}
-          errorMessage={roomError}
-        />
+        {isAdmin ? (
+          <InputDialog
+            isOpen={isNewRoomDialogOpen}
+            onOpenChange={setIsNewRoomDialogOpen}
+            onSubmit={submitNewRoomDialog}
+            title="Create New Room"
+            description="Enter a name for the new chat room"
+            value={newRoomName}
+            onChange={(value) => {
+              setNewRoomName(value);
+            }}
+            isLoading={isCreatingRoom}
+            errorMessage={roomError}
+          />
+        ) : (
+          <PrivateRoomDialog
+            isOpen={isNewRoomDialogOpen}
+            onOpenChange={setIsNewRoomDialogOpen}
+            onSubmit={submitNewRoomDialog}
+            roomName={newRoomName}
+            onRoomNameChange={setNewRoomName}
+            users={newRoomUsers}
+            onUsersChange={setNewRoomUsers}
+            isLoading={isCreatingRoom}
+            errorMessage={roomError}
+          />
+        )}
         <ConfirmDialog
           isOpen={isDeleteRoomDialogOpen}
           onOpenChange={setIsDeleteRoomDialogOpen}

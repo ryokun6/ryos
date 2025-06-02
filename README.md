@@ -72,6 +72,7 @@ A modern web-based desktop environment inspired by classic macOS, built with a c
 - **Chats**: AI-powered chat with speech & tool calling
   - Natural conversation with Ryo AI
   - Join public chat rooms with @ryo mentions
+  - Start private chats with selected users
   - Push-to-talk voice messages with real-time transcription
   - Text-to-speech for AI responses with word highlighting
   - Control apps and edit documents via chat commands
