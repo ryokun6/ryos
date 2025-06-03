@@ -567,7 +567,7 @@ export default async function handler(req: Request) {
       ...CACHE_CONTROL_OPTIONS,
     };
 
-    const enrichedMessages = [dynamicSystemMessage, ...messages];
+    const enrichedMessages = [...messages, dynamicSystemMessage];
 
     // Log all messages right before model call (as per user preference)
     enrichedMessages.forEach((msg, index) => {
