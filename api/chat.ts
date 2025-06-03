@@ -570,7 +570,6 @@ export default async function handler(req: Request) {
       {
         role: "system",
         content: generateDynamicSystemPrompt(systemState),
-        ...CACHE_CONTROL_OPTIONS,
       },
     ];
 
