@@ -117,6 +117,12 @@ export const DEFAULT_VIDEOS: Video[] = [
     title: "iPhone 4 Introduction (2010)",
     artist: "Steve Jobs",
   },
+  {
+    id: "ZmWOtf4Ziso",
+    url: "https://youtu.be/ZmWOtf4Ziso",
+    title: "Computer Chronicles - Macintosh Demo (1984)",
+    artist: "Computer Chronicles",
+  },
 ];
 
 interface VideoStoreState {
