@@ -41,6 +41,12 @@ export interface FinderMenuBarProps {
   canCreateFolder?: boolean;
   rootFolders?: FileItem[];
   onNewWindow?: () => void;
+  onCut?: () => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  canCut?: boolean;
+  canCopy?: boolean;
+  canPaste?: boolean;
 }
 
 export function FinderMenuBar({
@@ -69,6 +75,12 @@ export function FinderMenuBar({
   canCreateFolder = false,
   rootFolders,
   onNewWindow,
+  onCut,
+  onCopy,
+  onPaste,
+  canCut = false,
+  canCopy = false,
+  canPaste = false,
 }: FinderMenuBarProps) {
   const canMoveToTrash =
     selectedFile &&
@@ -181,13 +193,25 @@ export function FinderMenuBar({
             Undo
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            onClick={onCut}
+            disabled={!canCut}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Cut
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            onClick={onCopy}
+            disabled={!canCopy}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Copy
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            onClick={onPaste}
+            disabled={!canPaste}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Paste
           </DropdownMenuItem>
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">

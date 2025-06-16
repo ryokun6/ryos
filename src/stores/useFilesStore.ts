@@ -48,6 +48,9 @@ type LibraryState = "uninitialized" | "loaded" | "cleared";
 interface FilesStoreState {
   items: Record<string, FileSystemItem>; // path -> item map
   libraryState: LibraryState;
+  clipboard: { items: string[]; operation: "copy" | "cut" } | null;
+  setClipboard: (operation: "copy" | "cut", items: string[]) => void;
+  clearClipboard: () => void;
   // Actions
   addItem: (item: Omit<FileSystemItem, "status">) => void; // Status defaults to active
   removeItem: (path: string, permanent?: boolean) => void; // Add flag for permanent deletion
@@ -146,12 +149,13 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 8; // Increment to trigger fresh sync for sizes and timestamps
+const STORE_VERSION = 9; // Bumped due to addition of clipboard state
 const STORE_NAME = "ryos:files";
 
 const initialFilesData: FilesStoreState = {
   items: getEmptyFileSystemState(),
   libraryState: "uninitialized",
+  clipboard: null,
   // ... actions will be defined below
 } as FilesStoreState;
 
@@ -603,6 +607,19 @@ export const useFilesStore = create<FilesStoreState>()(
           items: getEmptyFileSystemState(),
           libraryState: "uninitialized",
         }),
+
+      setClipboard: (operation: "copy" | "cut", items: string[]) => {
+        set(() => ({
+          clipboard: {
+            items,
+            operation,
+          },
+        }));
+      },
+
+      clearClipboard: () => {
+        set(() => ({ clipboard: null }));
+      },
     }),
     {
       name: STORE_NAME,
@@ -611,12 +628,14 @@ export const useFilesStore = create<FilesStoreState>()(
       partialize: (state) => ({
         items: state.items, // Persist the entire file structure
         libraryState: state.libraryState,
+        clipboard: state.clipboard,
       }),
       migrate: (persistedState: unknown, version: number) => {
         if (version < 5) {
           const oldState = persistedState as {
             items: Record<string, FileSystemItem>;
             libraryState?: LibraryState;
+            clipboard?: { items: string[]; operation: "copy" | "cut" } | null;
           };
           const newState: Record<string, FileSystemItem> = {};
 
@@ -652,6 +671,7 @@ export const useFilesStore = create<FilesStoreState>()(
             items: newState,
             libraryState: (oldState.libraryState ||
               (hasAnyItems ? "loaded" : "uninitialized")) as LibraryState,
+            clipboard: oldState.clipboard || null,
           };
         }
 
@@ -659,6 +679,7 @@ export const useFilesStore = create<FilesStoreState>()(
           const oldState = persistedState as {
             items: Record<string, FileSystemItem>;
             libraryState?: LibraryState;
+            clipboard?: { items: string[]; operation: "copy" | "cut" } | null;
           };
           const newState: Record<string, FileSystemItem> = {};
           const now = Date.now();
@@ -676,6 +697,7 @@ export const useFilesStore = create<FilesStoreState>()(
           return {
             items: newState,
             libraryState: oldState.libraryState || "loaded",
+            clipboard: oldState.clipboard || null,
           };
         }
 
@@ -683,6 +705,7 @@ export const useFilesStore = create<FilesStoreState>()(
           const oldState = persistedState as {
             items: Record<string, FileSystemItem>;
             libraryState?: LibraryState;
+            clipboard?: { items: string[]; operation: "copy" | "cut" } | null;
           };
           const newState: Record<string, FileSystemItem> = {};
 
@@ -698,6 +721,7 @@ export const useFilesStore = create<FilesStoreState>()(
           return {
             items: newState,
             libraryState: oldState.libraryState || "loaded",
+            clipboard: oldState.clipboard || null,
           };
         }
 

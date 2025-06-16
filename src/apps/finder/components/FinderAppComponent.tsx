@@ -23,6 +23,8 @@ import { FileItem } from "./FileList";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
+import { v4 as uuidv4 } from "uuid";
+import type { FileSystemItem } from "@/stores/useFilesStore";
 
 // Type for Finder initial data
 interface FinderInitialData {
@@ -717,6 +719,152 @@ export function FinderAppComponent({
     },
   ];
 
+  // -------------- CUT / COPY / PASTE ---------------- //
+  const fileStoreClipboard = useFilesStore();
+
+  const isEditable = (file: FileItem | undefined): boolean => {
+    if (!file) return false;
+    // Reuse the same rules we use for moving to trash / rename
+    if (
+      file.path === "/Trash" ||
+      file.path.startsWith("/Trash/") ||
+      file.path === "/Applications" ||
+      file.path.startsWith("/Applications/")
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const handleCut = () => {
+    if (!selectedFile || !isEditable(selectedFile)) return;
+    fileStoreClipboard.setClipboard("cut", [selectedFile.path]);
+  };
+
+  const handleCopy = () => {
+    if (!selectedFile || !isEditable(selectedFile)) return;
+    fileStoreClipboard.setClipboard("copy", [selectedFile.path]);
+  };
+
+  const handlePaste = async () => {
+    const clipboard = fileStoreClipboard.clipboard;
+    if (!clipboard || clipboard.items.length === 0) return;
+
+    // Prevent pasting into locations that cannot accept files
+    if (!canCreateFolder) return;
+
+    for (const srcPath of clipboard.items) {
+      const srcItem = fileStore.getItem(srcPath);
+      if (!srcItem) continue;
+
+      const destinationBase = currentPath === "/" ? "" : currentPath;
+      let targetPath = `${destinationBase}/${srcItem.name}`;
+
+      // Ensure unique name if destination already exists
+      if (fileStore.getItem(targetPath)) {
+        const ext = srcItem.name.includes(".") ? `.${srcItem.name.split(".").pop()}` : "";
+        const baseName = srcItem.name.replace(ext, "");
+        let index = 1;
+        let newName = `${baseName} copy${ext}`;
+        targetPath = `${destinationBase}/${newName}`;
+        while (fileStore.getItem(targetPath)) {
+          index++;
+          newName = `${baseName} copy ${index}${ext}`;
+          targetPath = `${destinationBase}/${newName}`;
+        }
+      }
+
+      if (clipboard.operation === "cut") {
+        // Use moveFile helper which moves content as well
+        if (!srcItem) continue;
+        await moveFile(srcItem, currentPath);
+      } else {
+        // COPY operation
+        if (srcItem.isDirectory) {
+          // Create new root directory first
+          createFolder({ path: targetPath, name: srcItem.name });
+
+          // Recursively copy all nested items
+          const allItems = Object.values(useFilesStore.getState().items);
+          for (const childItem of allItems as FileSystemItem[]) {
+            if (childItem.path.startsWith(srcPath + "/")) {
+              const relative = childItem.path.substring(srcPath.length);
+              const newChildPath = targetPath + relative;
+
+              if (childItem.isDirectory) {
+                createFolder({ path: newChildPath, name: childItem.name });
+              } else {
+                // Duplicate file content
+                const storeName = childItem.path.startsWith("/Documents/")
+                  ? STORES.DOCUMENTS
+                  : childItem.path.startsWith("/Images/")
+                  ? STORES.IMAGES
+                  : null;
+
+                let contentToCopy: string | Blob | undefined;
+                if (storeName && childItem.uuid) {
+                  contentToCopy = (await dbOperations.get<{
+                    content: string | Blob;
+                  }>(
+                    storeName,
+                    childItem.uuid
+                  ))?.content;
+                }
+
+                const newUuid = uuidv4();
+                const newName = childItem.name;
+                const newMeta: Omit<FileSystemItem, "status"> = {
+                  ...childItem,
+                  path: newChildPath,
+                  name: newName,
+                  uuid: newUuid,
+                } as Omit<FileSystemItem, "status">;
+
+                fileStore.addItem(newMeta);
+
+                if (storeName && contentToCopy !== undefined) {
+                  await dbOperations.put(storeName, { name: newName, content: contentToCopy }, newUuid);
+                }
+              }
+            }
+          }
+        } else {
+          // File copy
+          let contentToCopy: string | Blob | undefined;
+          const storeName = srcItem.path.startsWith("/Documents/")
+            ? STORES.DOCUMENTS
+            : srcItem.path.startsWith("/Images/")
+            ? STORES.IMAGES
+            : null;
+
+          if (storeName && srcItem.uuid) {
+            contentToCopy = (await dbOperations.get<{
+              content: string | Blob;
+            }>(
+              storeName,
+              srcItem.uuid
+            ))?.content;
+          }
+
+          await saveFile({
+            name: targetPath.split("/").pop() || srcItem.name,
+            path: targetPath,
+            content: contentToCopy || "",
+            type: srcItem.type,
+          });
+        }
+      }
+    }
+
+    if (clipboard.operation === "cut") {
+      fileStoreClipboard.clearClipboard();
+    }
+  };
+
+  const canCut = isEditable(selectedFile);
+  const canCopy = isEditable(selectedFile);
+  const canPaste = Boolean(fileStoreClipboard.clipboard && canCreateFolder);
+
   if (!isWindowOpen) return null;
 
   return (
@@ -747,6 +895,12 @@ export function FinderAppComponent({
         canCreateFolder={canCreateFolder}
         rootFolders={rootFolders}
         onNewWindow={handleNewWindow}
+        onCut={handleCut}
+        onCopy={handleCopy}
+        onPaste={handlePaste}
+        canCut={canCut}
+        canCopy={canCopy}
+        canPaste={canPaste}
       />
       <input
         type="file"
