@@ -14,7 +14,7 @@ import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
-import { LoginDialog } from "@/components/dialogs/LoginDialog";
+import { AuthDialog } from "@/components/dialogs/AuthDialog";
 
 interface ChatsMenuBarProps {
   onClose: () => void;
@@ -37,11 +37,11 @@ interface ChatsMenuBarProps {
   onVerifyToken: () => void;
   isVerifyDialogOpen: boolean;
   setVerifyDialogOpen: (open: boolean) => void;
-  verifyTokenInput: string;
-  setVerifyTokenInput: (input: string) => void;
-  verifyPasswordInput: string;
-  setVerifyPasswordInput: (input: string) => void;
-  verifyUsernameInput: string;
+
+  loginFormUsername: string;
+  setLoginFormUsername: (input: string) => void;
+  loginFormPassword: string;
+  setLoginFormPassword: (input: string) => void;
   setVerifyUsernameInput: (input: string) => void;
   isVerifyingToken: boolean;
   verifyError: string | null;
@@ -73,11 +73,11 @@ export function ChatsMenuBar({
   onVerifyToken,
   isVerifyDialogOpen,
   setVerifyDialogOpen,
-  verifyTokenInput,
-  setVerifyTokenInput,
-  verifyPasswordInput,
-  setVerifyPasswordInput,
-  verifyUsernameInput,
+
+  loginFormUsername,
+  setLoginFormUsername,
+  loginFormPassword,
+  setLoginFormPassword,
   setVerifyUsernameInput,
   isVerifyingToken,
   verifyError,
@@ -397,27 +397,33 @@ export function ChatsMenuBar({
         </DropdownMenu>
       </MenuBar>
 
-      {/* Log In Dialog */}
-      <LoginDialog
+      {/* Auth Dialog */}
+      <AuthDialog
         isOpen={isVerifyDialogOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open: boolean) => {
           setVerifyDialogOpen(open);
         }}
-        onSubmit={handleVerifyTokenSubmit}
-        tokenInput={verifyTokenInput}
-        onTokenInputChange={setVerifyTokenInput}
-        passwordInput={verifyPasswordInput}
-        onPasswordInputChange={setVerifyPasswordInput}
-        usernameInput={verifyUsernameInput}
-        onUsernameInputChange={setVerifyUsernameInput}
+        // Login props - use dedicated login form states to prevent re-renders
+        onLogin={async (username: string, password: string) => {
+          // Set the verification username to the entered username for login
+          setVerifyUsernameInput(username);
+          await handleVerifyTokenSubmit(password, true);
+        }}
+        loginUsernameInput={loginFormUsername}
+        onLoginUsernameInputChange={setLoginFormUsername}
+        loginPasswordInput={loginFormPassword}
+        onLoginPasswordInputChange={setLoginFormPassword}
+        // Sign up props (not used in this component since ChatsAppComponent handles sign up)
+        onSignUp={async () => {}}
+        signUpUsername=""
+        onSignUpUsernameChange={() => {}}
+        signUpPassword=""
+        onSignUpPasswordChange={() => {}}
+        // Common props
         isLoading={isVerifyingToken}
         error={verifyError}
-        username={username}
-        debugMode={debugMode}
-        onSwitchToSignUp={() => {
-          setVerifyDialogOpen(false);
-          onSetUsername();
-        }}
+        onErrorChange={() => {}}
+        initialTab="login"
       />
     </>
   );

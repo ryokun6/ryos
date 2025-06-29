@@ -6,7 +6,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
-import { SetUsernameDialog } from "@/components/dialogs/SetUsernameDialog";
+import { AuthDialog } from "@/components/dialogs/AuthDialog";
 import { CreateRoomDialog } from "./CreateRoomDialog";
 import { helpItems, appMetadata } from "..";
 import { useChatRoom } from "../hooks/useChatRoom";
@@ -101,11 +101,11 @@ export function ChatsAppComponent({
     promptVerifyToken,
     isVerifyDialogOpen,
     setVerifyDialogOpen,
-    verifyTokenInput,
-    setVerifyTokenInput,
-    verifyPasswordInput,
-    setVerifyPasswordInput,
-    verifyUsernameInput,
+
+    loginFormUsername,
+    setLoginFormUsername,
+    loginFormPassword,
+    setLoginFormPassword,
     setVerifyUsernameInput,
     isVerifyingToken,
     verifyError,
@@ -377,11 +377,11 @@ export function ChatsAppComponent({
         onVerifyToken={promptVerifyToken}
         isVerifyDialogOpen={isVerifyDialogOpen}
         setVerifyDialogOpen={setVerifyDialogOpen}
-        verifyTokenInput={verifyTokenInput}
-        setVerifyTokenInput={setVerifyTokenInput}
-        verifyPasswordInput={verifyPasswordInput}
-        setVerifyPasswordInput={setVerifyPasswordInput}
-        verifyUsernameInput={verifyUsernameInput}
+
+        loginFormUsername={loginFormUsername}
+        setLoginFormUsername={setLoginFormUsername}
+        loginFormPassword={loginFormPassword}
+        setLoginFormPassword={setLoginFormPassword}
         setVerifyUsernameInput={setVerifyUsernameInput}
         isVerifyingToken={isVerifyingToken}
         verifyError={verifyError}
@@ -666,26 +666,31 @@ export function ChatsAppComponent({
           value={saveFileName}
           onChange={setSaveFileName}
         />
-        <SetUsernameDialog
+        <AuthDialog
           isOpen={isUsernameDialogOpen}
-          onOpenChange={(open) => {
+          onOpenChange={(open: boolean) => {
             console.log(
-              `[ChatApp Debug] Username SetUsernameDialog onOpenChange called with: ${open}`
+              `[ChatApp Debug] Username AuthDialog onOpenChange called with: ${open}`
             );
             setIsUsernameDialogOpen(open);
           }}
-          onSubmit={submitUsernameDialog}
-          username={newUsername}
-          onUsernameChange={setNewUsername}
-          password={newPassword}
-          onPasswordChange={setNewPassword}
+          // Login props (not used in this component since ChatsMenuBar handles login)
+          onLogin={async () => {}}
+          loginUsernameInput=""
+          onLoginUsernameInputChange={() => {}}
+          loginPasswordInput=""
+          onLoginPasswordInputChange={() => {}}
+          // Sign up props
+          onSignUp={submitUsernameDialog}
+          signUpUsername={newUsername}
+          onSignUpUsernameChange={setNewUsername}
+          signUpPassword={newPassword}
+          onSignUpPasswordChange={setNewPassword}
+          // Common props
           isLoading={isSettingUsername}
           error={usernameError}
           onErrorChange={setUsernameError}
-          onSwitchToLogin={() => {
-            setIsUsernameDialogOpen(false);
-            promptVerifyToken();
-          }}
+          initialTab="signup"
         />
         <CreateRoomDialog
           isOpen={isNewRoomDialogOpen}
