@@ -76,9 +76,9 @@ export function CreateRoomDialog({
     }
   };
 
-  // Filter users based on search term (only show after 2 characters)
+  // Filter users based on search term (show suggestions after at least 1 character)
   const filteredUsers =
-    searchTerm.length >= 2
+    searchTerm.length > 0
       ? users.filter((user) =>
           user.username.toLowerCase().includes(searchTerm.toLowerCase())
         )
@@ -220,7 +220,7 @@ export function CreateRoomDialog({
                   )}
                 </div>
 
-                {searchTerm.length >= 2 && filteredUsers.length > 0 && (
+                {searchTerm.length > 0 && filteredUsers.length > 0 && (
                   <div className="border border-gray-300 rounded max-h-[180px] overflow-y-auto bg-white">
                     <div className="p-1">
                       {filteredUsers.map((user) => (

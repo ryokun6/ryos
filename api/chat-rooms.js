@@ -1722,7 +1722,22 @@ async function handleGetUsers(requestId) {
     }
 
     const usersData = await redis.mget(...keys);
-    const users = usersData.map((user) => user).filter(Boolean);
+    // Safely parse each user entry; skip any malformed records
+    const users = usersData
+      .map((record) => {
+        if (!record) return null;
+        if (typeof record === "string") {
+          try {
+            return JSON.parse(record);
+          } catch {
+            // Skip malformed JSON strings
+            return null;
+          }
+        }
+        // Already an object
+        return record;
+      })
+      .filter(Boolean);
 
     return new Response(JSON.stringify({ users }), {
       headers: { "Content-Type": "application/json" },
