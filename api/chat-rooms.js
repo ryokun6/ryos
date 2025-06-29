@@ -1710,20 +1710,49 @@ async function handleResetUserCounts(username, requestId) {
 
 // User functions
 async function handleGetUsers(requestId) {
-  logInfo(requestId, "Fetching all users");
+  logInfo(requestId, "Fetching all users using SCAN");
   try {
-    const keys = await redis.keys(`${CHAT_USERS_PREFIX}*`);
-    logInfo(requestId, `Found ${keys.length} users`);
+    const users = [];
+    let cursor = 0;
+    let totalKeys = 0;
 
-    if (keys.length === 0) {
-      return new Response(JSON.stringify({ users: [] }), {
-        headers: { "Content-Type": "application/json" },
+    do {
+      // Use SCAN instead of KEYS to avoid "too many keys" error
+      const result = await redis.scan(cursor, {
+        match: `${CHAT_USERS_PREFIX}*`,
+        count: 100, // Process in batches of 100
       });
-    }
+      
+      cursor = result[0];
+      const keys = result[1];
+      totalKeys += keys.length;
+      
+      logInfo(requestId, `SCAN batch: cursor=${cursor}, found ${keys.length} keys`);
 
-    const usersData = await redis.mget(...keys);
-    const users = usersData.map((user) => user).filter(Boolean);
+      if (keys.length > 0) {
+        // Fetch user data for this batch
+        const usersData = await redis.mget(...keys);
+        
+        for (let i = 0; i < usersData.length; i++) {
+          const userData = usersData[i];
+          if (!userData) {
+            continue;
+          }
+          
+          try {
+            const parsedUser = parseUserData(userData);
+            if (parsedUser && parsedUser.username) {
+              users.push(parsedUser);
+            }
+          } catch (parseError) {
+            logError(requestId, `Error parsing user data for key ${keys[i]}:`, parseError);
+          }
+        }
+      }
+    } while (cursor !== 0);
 
+    logInfo(requestId, `SCAN completed: processed ${totalKeys} keys, returning ${users.length} valid users`);
+    
     return new Response(JSON.stringify({ users }), {
       headers: { "Content-Type": "application/json" },
     });
@@ -2314,16 +2343,30 @@ async function broadcastRoomsUpdated() {
       }
     );
 
-    // 2. Per-user channels - parallelize these for better performance
-    const userKeys = await redis.keys(`${CHAT_USERS_PREFIX}*`);
-    const userChannelPromises = userKeys.map((key) => {
-      const username = key.substring(CHAT_USERS_PREFIX.length);
-      const safeUsername = sanitizeForChannel(username);
-      const userRooms = filterRoomsForUser(allRooms, username);
-      return pusher.trigger(`chats-${safeUsername}`, "rooms-updated", {
-        rooms: userRooms,
+    // 2. Per-user channels - use SCAN to avoid "too many keys" error
+    const userChannelPromises = [];
+    let cursor = 0;
+
+    do {
+      const result = await redis.scan(cursor, {
+        match: `${CHAT_USERS_PREFIX}*`,
+        count: 100,
       });
-    });
+      
+      cursor = result[0];
+      const userKeys = result[1];
+
+      const batchPromises = userKeys.map((key) => {
+        const username = key.substring(CHAT_USERS_PREFIX.length);
+        const safeUsername = sanitizeForChannel(username);
+        const userRooms = filterRoomsForUser(allRooms, username);
+        return pusher.trigger(`chats-${safeUsername}`, "rooms-updated", {
+          rooms: userRooms,
+        });
+      });
+
+      userChannelPromises.push(...batchPromises);
+    } while (cursor !== 0);
 
     // Wait for all Pusher calls to complete in parallel
     await Promise.all([publicChannelPromise, ...userChannelPromises]);
