@@ -38,6 +38,11 @@ async function checkAndIncrementAIMessageCount(
   // Allow ryo to bypass rate limits
   const isRyo = identifier === "ryo";
 
+  // Skip all rate limiting for ryo
+  if (isRyo) {
+    return { allowed: true, count, limit };
+  }
+
   // If authenticated, validate the token
   if (isAuthenticated && authToken) {
     const AUTH_TOKEN_PREFIX = "chat:token:";
