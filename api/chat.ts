@@ -575,10 +575,11 @@ export default async function handler(req: Request) {
       (m: { role: string }) => m.role === "user"
     );
     if (userMessages.length > 0) {
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       const rateLimitResult = await checkAndIncrementAIMessageCount(
         identifier,
         isAuthenticated,
-        authToken
+        authToken as any // cast to satisfy type checker – rate-limit util is JS
       );
 
       if (!rateLimitResult.allowed) {
