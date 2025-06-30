@@ -511,10 +511,26 @@ export default async function handler(req: Request) {
 
     log(`Request origin: ${origin}, IP: ${ip}`);
 
-    // Check rate limits
-    const username = incomingSystemState?.username;
-    const authToken = incomingSystemState?.authToken;
+    // ---------------------------
+    // Authentication extraction
+    // ---------------------------
+    // Prefer credentials in the incoming system state (back-compat),
+    // but fall back to HTTP headers for multi-token support (Authorization & X-Username)
 
+    const authHeader = req.headers.get("authorization");
+    const headerAuthToken =
+      authHeader && authHeader.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : null;
+    const headerUsername = req.headers.get("x-username");
+
+    // Combine sources – body first (if provided), then headers
+    const username = incomingSystemState?.username || headerUsername || null;
+    const authToken = incomingSystemState?.authToken || headerAuthToken || null;
+
+    // ---------------------------
+    // Rate-limit & auth checks
+    // ---------------------------
     // Validate authentication first
     const validationResult = await validateAuthToken(username, authToken);
 
