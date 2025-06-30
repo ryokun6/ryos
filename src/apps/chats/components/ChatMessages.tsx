@@ -60,6 +60,15 @@ const getUserColorClass = (username?: string): string => {
 };
 // --- End Color Hashing ---
 
+// Helper function to decode HTML entities so we don\'t display raw &amp;, &lt;, etc.
+const decodeHtmlEntities = (str: string): string => {
+  if (!str) return str;
+  if (typeof window === "undefined") return str; // SSR safeguard
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = str;
+  return textarea.value;
+};
+
 // Helper function to parse markdown and segment text
 const parseMarkdown = (
   text: string
@@ -74,26 +83,26 @@ const parseMarkdown = (
   while ((match = regex.exec(text)) !== null) {
     if (match[1]) {
       // Markdown link: [text](url)
-      tokens.push({ type: "link", content: match[2], url: match[3] });
+      tokens.push({ type: "link", content: decodeHtmlEntities(match[2]), url: match[3] });
     } else if (match[4]) {
       // Bold: **text**
-      tokens.push({ type: "bold", content: match[5] });
+      tokens.push({ type: "bold", content: decodeHtmlEntities(match[5]) });
     } else if (match[6]) {
       // Italic: *text*
-      tokens.push({ type: "italic", content: match[7] });
+      tokens.push({ type: "italic", content: decodeHtmlEntities(match[7]) });
     } else if (match[8]) {
       // Plain URL
-      tokens.push({ type: "link", content: match[8], url: match[8] });
+      tokens.push({ type: "link", content: decodeHtmlEntities(match[8]), url: match[8] });
     } else if (match[9]) {
       // Other text (CJK, emoji, word, space, etc.)
-      tokens.push({ type: "text", content: match[9] });
+      tokens.push({ type: "text", content: decodeHtmlEntities(match[9]) });
     }
     currentIndex = regex.lastIndex;
   }
 
   // Capture any remaining text (shouldn't happen with the current regex, but good practice)
   if (currentIndex < text.length) {
-    tokens.push({ type: "text", content: text.slice(currentIndex) });
+    tokens.push({ type: "text", content: decodeHtmlEntities(text.slice(currentIndex)) });
   }
 
   return tokens;
