@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,34 @@ export function CreateRoomDialog({
     }
   }, [isOpen, initialUsers]);
 
-  // Search for users when search term changes (with debouncing)
+  // Memoised user search to keep a stable reference across renders so the
+  // debounced effect below can safely include it in its dependency array.
+  const searchUsers = useCallback(
+    async (query: string) => {
+      setIsSearching(true);
+      try {
+        const response = await fetch(
+          `/api/chat-rooms?action=getUsers&search=${encodeURIComponent(query)}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const usersList = data.users || [];
+          // Filter out current user
+          const filteredUsers = usersList.filter(
+            (u: User) => u.username !== currentUsername?.toLowerCase()
+          );
+          setUsers(filteredUsers);
+        }
+      } catch (error) {
+        console.error("Failed to search users:", error);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [currentUsername]
+  );
+
+  // Search for users when the search term changes (with debouncing)
   useEffect(() => {
     if (searchTerm.length < 2) {
       setUsers([]);
@@ -72,29 +99,7 @@ export function CreateRoomDialog({
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
-
-  const searchUsers = async (query: string) => {
-    setIsSearching(true);
-    try {
-      const response = await fetch(
-        `/api/chat-rooms?action=getUsers&search=${encodeURIComponent(query)}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const usersList = data.users || [];
-        // Filter out current user
-        const filteredUsers = usersList.filter(
-          (u: User) => u.username !== currentUsername?.toLowerCase()
-        );
-        setUsers(filteredUsers);
-      }
-    } catch (error) {
-      console.error("Failed to search users:", error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+  }, [searchTerm, searchUsers]);
 
   const handleSubmit = async () => {
     setIsLoading(true);
