@@ -110,6 +110,8 @@ interface AppStoreState extends AppManagerState {
   navigateToPreviousApp: (currentAppId: AppId) => void;
   clearInitialData: (appId: AppId) => void;
   clearInstanceInitialData: (instanceId: string) => void;
+  clearCorruptedStates: () => void;
+  recoverFromCrash: () => void;
   launchOrFocusApp: (appId: AppId, initialData?: unknown) => void;
   currentWallpaper: string;
   setCurrentWallpaper: (wallpaperPath: string) => void;
@@ -552,23 +554,107 @@ export const useAppStore = create<AppStoreState>()(
         });
       },
 
-      clearInstanceInitialData: (instanceId: string) => {
+      clearInstanceInitialData: (instanceId) => {
         set((state) => {
-          if (state.instances[instanceId]?.initialData) {
-            console.log(
-              `[AppStore] Clearing initialData for instance ${instanceId}`
-            );
-            return {
-              instances: {
-                ...state.instances,
-                [instanceId]: {
-                  ...state.instances[instanceId],
-                  initialData: undefined,
-                },
-              },
-            };
+          if (!state.instances[instanceId]) {
+            console.warn(`[AppStore] Attempted to clear initialData for non-existent instance: ${instanceId}`);
+            return state;
           }
-          return state; // No change needed
+          
+          return {
+            instances: {
+              ...state.instances,
+              [instanceId]: {
+                ...state.instances[instanceId],
+                initialData: undefined,
+              },
+            },
+          };
+        });
+      },
+
+      // New method to clear corrupted states
+      clearCorruptedStates: () => {
+        set((state) => {
+          const cleanedInstances: Record<string, AppInstance> = {};
+          const cleanedInstanceWindowOrder: string[] = [];
+          
+          // Clean up instances
+          Object.entries(state.instances).forEach(([instanceId, instance]) => {
+            try {
+              // Validate instance structure
+              if (!instance || typeof instance !== 'object') {
+                console.warn(`[AppStore] Removing corrupted instance: ${instanceId}`);
+                return;
+              }
+              
+              // Validate required fields
+              if (!instance.instanceId || !instance.appId) {
+                console.warn(`[AppStore] Removing instance with missing required fields: ${instanceId}`);
+                return;
+              }
+              
+              // Sanitize initialData if present
+              let sanitizedInitialData = instance.initialData;
+              if (instance.initialData !== undefined && instance.initialData !== null) {
+                try {
+                  if (instance.appId === 'videos' && typeof instance.initialData === 'object') {
+                    const videoData = instance.initialData as { videoId?: string };
+                    if (videoData.videoId && typeof videoData.videoId !== 'string') {
+                      console.warn(`[AppStore] Sanitizing corrupted videoId in instance ${instanceId}:`, videoData.videoId);
+                      sanitizedInitialData = { videoId: String(videoData.videoId) };
+                    }
+                  }
+                  // Deep clone to prevent reference issues
+                  sanitizedInitialData = JSON.parse(JSON.stringify(sanitizedInitialData));
+                } catch (error) {
+                  console.warn(`[AppStore] Clearing corrupted initialData in instance ${instanceId}:`, error);
+                  sanitizedInitialData = undefined;
+                }
+              }
+              
+              cleanedInstances[instanceId] = {
+                ...instance,
+                initialData: sanitizedInitialData,
+              };
+              
+              // Only add to window order if instance is open
+              if (instance.isOpen) {
+                cleanedInstanceWindowOrder.push(instanceId);
+              }
+            } catch (error) {
+              console.error(`[AppStore] Error processing instance ${instanceId}:`, error);
+            }
+          });
+          
+          return {
+            instances: cleanedInstances,
+            instanceWindowOrder: cleanedInstanceWindowOrder,
+          };
+        });
+      },
+
+      // Recovery method for app crashes
+      recoverFromCrash: () => {
+        console.log('[AppStore] Recovering from crash...');
+        set((state) => {
+          // Close all instances to prevent further issues
+          const closedInstances: Record<string, AppInstance> = {};
+          Object.entries(state.instances).forEach(([instanceId, instance]) => {
+            if (instance && typeof instance === 'object') {
+              closedInstances[instanceId] = {
+                ...instance,
+                isOpen: false,
+                isForeground: false,
+                initialData: undefined, // Clear all initial data
+              };
+            }
+          });
+          
+          return {
+            instances: closedInstances,
+            instanceWindowOrder: [],
+          };
         });
       },
 
@@ -588,6 +674,33 @@ export const useAppStore = create<AppStoreState>()(
 
       // Instance management methods
       createAppInstance: (appId, initialData, title) => {
+        // Validate inputs
+        if (!appId || typeof appId !== 'string') {
+          console.error('[AppStore] Invalid appId provided to createAppInstance:', appId);
+          return '';
+        }
+
+        // Sanitize initialData
+        let sanitizedInitialData = initialData;
+        if (initialData !== undefined && initialData !== null) {
+          try {
+            // For video links, ensure the data structure is valid
+            if (appId === 'videos' && typeof initialData === 'object') {
+              const videoData = initialData as { videoId?: string };
+              if (videoData.videoId && typeof videoData.videoId !== 'string') {
+                console.warn('[AppStore] Invalid videoId type in createAppInstance, sanitizing:', videoData.videoId);
+                sanitizedInitialData = { videoId: String(videoData.videoId) };
+              }
+            }
+            
+            // Deep clone to prevent reference issues
+            sanitizedInitialData = JSON.parse(JSON.stringify(sanitizedInitialData));
+          } catch (error) {
+            console.error('[AppStore] Error sanitizing initialData in createAppInstance:', error);
+            sanitizedInitialData = undefined;
+          }
+        }
+
         const instanceId = (++get().nextInstanceId).toString();
 
         // Calculate position with offset for multiple windows
@@ -613,38 +726,43 @@ export const useAppStore = create<AppStoreState>()(
             }
           : config.defaultSize;
 
-        set((state) => ({
-          instances: {
-            ...state.instances,
-            [instanceId]: {
-              instanceId,
-              appId,
-              isOpen: true,
-              isForeground: true,
-              initialData,
-              title,
-              position,
-              size,
+        try {
+          set((state) => ({
+            instances: {
+              ...state.instances,
+              [instanceId]: {
+                instanceId,
+                appId,
+                isOpen: true,
+                isForeground: true,
+                initialData: sanitizedInitialData,
+                title,
+                position,
+                size,
+              },
             },
-          },
-          instanceWindowOrder: [...state.instanceWindowOrder, instanceId],
-        }));
+            instanceWindowOrder: [...state.instanceWindowOrder, instanceId],
+          }));
 
-        // Bring all other instances to background
-        set((state) => {
-          const updatedInstances = { ...state.instances };
-          Object.keys(updatedInstances).forEach((id) => {
-            if (id !== instanceId) {
-              updatedInstances[id] = {
-                ...updatedInstances[id],
-                isForeground: false,
-              };
-            }
+          // Bring all other instances to background
+          set((state) => {
+            const updatedInstances = { ...state.instances };
+            Object.keys(updatedInstances).forEach((id) => {
+              if (id !== instanceId) {
+                updatedInstances[id] = {
+                  ...updatedInstances[id],
+                  isForeground: false,
+                };
+              }
+            });
+            return { instances: updatedInstances };
           });
-          return { instances: updatedInstances };
-        });
 
-        return instanceId;
+          return instanceId;
+        } catch (error) {
+          console.error('[AppStore] Error creating app instance:', error);
+          return '';
+        }
       },
       closeAppInstance: (instanceId) => {
         set((state) => {
@@ -840,6 +958,33 @@ export const useAppStore = create<AppStoreState>()(
       launchApp: (appId, initialData, title, multiWindow = false) => {
         const state = get();
 
+        // Validate appId
+        if (!appId || typeof appId !== 'string') {
+          console.error('[AppStore] Invalid appId provided to launchApp:', appId);
+          return '';
+        }
+
+        // Validate and sanitize initialData
+        let sanitizedInitialData = initialData;
+        if (initialData !== undefined && initialData !== null) {
+          try {
+            // For video links, ensure the data structure is valid
+            if (appId === 'videos' && typeof initialData === 'object') {
+              const videoData = initialData as { videoId?: string };
+              if (videoData.videoId && typeof videoData.videoId !== 'string') {
+                console.warn('[AppStore] Invalid videoId type, sanitizing:', videoData.videoId);
+                sanitizedInitialData = { videoId: String(videoData.videoId) };
+              }
+            }
+            
+            // Deep clone to prevent reference issues
+            sanitizedInitialData = JSON.parse(JSON.stringify(sanitizedInitialData));
+          } catch (error) {
+            console.error('[AppStore] Error sanitizing initialData:', error);
+            sanitizedInitialData = undefined;
+          }
+        }
+
         // Check if multi-window is supported for this app
         const supportsMultiWindow =
           multiWindow || appId === "textedit" || appId === "finder"; // TextEdit and Finder support multi-window
@@ -854,13 +999,13 @@ export const useAppStore = create<AppStoreState>()(
             // Focus existing instance
             state.bringInstanceToForeground(existingInstance.instanceId);
             // Update initialData if provided
-            if (initialData) {
+            if (sanitizedInitialData) {
               set((s) => ({
                 instances: {
                   ...s.instances,
                   [existingInstance.instanceId]: {
                     ...s.instances[existingInstance.instanceId],
-                    initialData,
+                    initialData: sanitizedInitialData,
                   },
                 },
               }));
@@ -869,8 +1014,8 @@ export const useAppStore = create<AppStoreState>()(
           }
         }
 
-        // Create new instance
-        return state.createAppInstance(appId, initialData, title);
+        // Create new instance with sanitized data
+        return state.createAppInstance(appId, sanitizedInitialData, title);
       },
     }),
     {
@@ -944,6 +1089,11 @@ export const useAppStore = create<AppStoreState>()(
       },
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // Clear corrupted states first
+          if (state.clearCorruptedStates) {
+            state.clearCorruptedStates();
+          }
+
           // Clean up instanceWindowOrder to remove any non-existent instance IDs
           if (state.instanceWindowOrder && state.instances) {
             state.instanceWindowOrder = state.instanceWindowOrder.filter(
@@ -968,31 +1118,62 @@ export const useAppStore = create<AppStoreState>()(
           if (state.instances) {
             Object.keys(state.instances).forEach((instanceId) => {
               const instance = state.instances[instanceId];
-              // Ensure instances have position and size
-              if (!instance.position || !instance.size) {
-                console.log(
-                  `[AppStore] Instance ${instanceId} missing position/size, applying defaults`
-                );
-                const config = getWindowConfig(instance.appId);
-                const isMobile = window.innerWidth < 768;
-
-                // Apply default position if missing
-                if (!instance.position) {
-                  instance.position = {
-                    x: isMobile ? 0 : 16,
-                    y: isMobile ? 28 : 40,
-                  };
+              try {
+                // Validate instance structure
+                if (!instance || typeof instance !== 'object') {
+                  console.warn(`[AppStore] Removing corrupted instance during rehydration: ${instanceId}`);
+                  delete state.instances[instanceId];
+                  return;
                 }
 
-                // Apply default size if missing
-                if (!instance.size) {
-                  instance.size = isMobile
-                    ? {
-                        width: window.innerWidth,
-                        height: config.defaultSize.height,
+                // Sanitize initialData if present
+                if (instance.initialData !== undefined && instance.initialData !== null) {
+                  try {
+                    if (instance.appId === 'videos' && typeof instance.initialData === 'object') {
+                      const videoData = instance.initialData as { videoId?: string };
+                      if (videoData.videoId && typeof videoData.videoId !== 'string') {
+                        console.warn(`[AppStore] Sanitizing corrupted videoId during rehydration in instance ${instanceId}:`, videoData.videoId);
+                        instance.initialData = { videoId: String(videoData.videoId) };
                       }
-                    : config.defaultSize;
+                    }
+                    // Deep clone to prevent reference issues
+                    instance.initialData = JSON.parse(JSON.stringify(instance.initialData));
+                  } catch (error) {
+                    console.warn(`[AppStore] Clearing corrupted initialData during rehydration in instance ${instanceId}:`, error);
+                    instance.initialData = undefined;
+                  }
                 }
+
+                // Ensure instances have position and size
+                if (!instance.position || !instance.size) {
+                  console.log(
+                    `[AppStore] Instance ${instanceId} missing position/size, applying defaults`
+                  );
+                  const config = getWindowConfig(instance.appId);
+                  const isMobile = window.innerWidth < 768;
+
+                  // Apply default position if missing
+                  if (!instance.position) {
+                    instance.position = {
+                      x: isMobile ? 0 : 16,
+                      y: isMobile ? 28 : 40,
+                    };
+                  }
+
+                  // Apply default size if missing
+                  if (!instance.size) {
+                    instance.size = isMobile
+                      ? {
+                          width: window.innerWidth,
+                          height: config.defaultSize.height,
+                        }
+                      : config.defaultSize;
+                  }
+                }
+              } catch (error) {
+                console.error(`[AppStore] Error processing instance ${instanceId} during rehydration:`, error);
+                // Remove corrupted instance
+                delete state.instances[instanceId];
               }
             });
           }
@@ -1013,33 +1194,46 @@ export const useAppStore = create<AppStoreState>()(
             state.windowOrder.forEach((appId) => {
               const appState = state.apps[appId];
               if (appState?.isOpen) {
-                const instanceId = (++instanceIdCounter).toString();
-                newInstances[instanceId] = {
-                  instanceId,
-                  appId: appId as AppId,
-                  isOpen: true,
-                  isForeground: appState.isForeground,
-                  position: appState.position,
-                  size: appState.size,
-                  initialData: appState.initialData,
-                };
-                newInstanceWindowOrder.push(instanceId);
+                try {
+                  const instanceId = (++instanceIdCounter).toString();
+                  
+                  // Sanitize initialData during migration
+                  let sanitizedInitialData = appState.initialData;
+                  if (appState.initialData !== undefined && appState.initialData !== null) {
+                    try {
+                      if (appId === 'videos' && typeof appState.initialData === 'object') {
+                        const videoData = appState.initialData as { videoId?: string };
+                        if (videoData.videoId && typeof videoData.videoId !== 'string') {
+                          console.warn(`[AppStore] Sanitizing corrupted videoId during migration:`, videoData.videoId);
+                          sanitizedInitialData = { videoId: String(videoData.videoId) };
+                        }
+                      }
+                      sanitizedInitialData = JSON.parse(JSON.stringify(sanitizedInitialData));
+                    } catch (error) {
+                      console.warn(`[AppStore] Clearing corrupted initialData during migration:`, error);
+                      sanitizedInitialData = undefined;
+                    }
+                  }
+
+                  newInstances[instanceId] = {
+                    instanceId,
+                    appId: appId as AppId,
+                    isOpen: true,
+                    isForeground: appState.isForeground,
+                    position: appState.position,
+                    size: appState.size,
+                    initialData: sanitizedInitialData,
+                  };
+                  newInstanceWindowOrder.push(instanceId);
+                } catch (error) {
+                  console.error(`[AppStore] Error migrating app ${appId}:`, error);
+                }
               }
             });
 
-            // Update state with migrated instances
             state.instances = newInstances;
             state.instanceWindowOrder = newInstanceWindowOrder;
-            state.nextInstanceId = instanceIdCounter;
-
-            // Clear old app states to prevent confusion
-            Object.keys(state.apps).forEach((appId) => {
-              state.apps[appId] = {
-                isOpen: false,
-                isForeground: false,
-              };
-            });
-            state.windowOrder = [];
+            state.nextInstanceId = instanceIdCounter + 1;
           }
         }
       },
@@ -1114,11 +1308,38 @@ const saveCustomWallpaper = async (file: File): Promise<string> => {
 
 // Global utility: clearAllAppStates – used by Control Panels "Reset All" button.
 export const clearAllAppStates = (): void => {
-  try {
-    localStorage.clear();
-  } catch (err) {
-    console.error("[clearAllAppStates] Failed to clear localStorage", err);
-  }
+  useAppStore.setState({
+    instances: {},
+    instanceWindowOrder: [],
+    nextInstanceId: 0,
+  });
+};
+
+// Utility function to debug and clear corrupted states
+export const debugAndClearCorruptedStates = (): void => {
+  const state = useAppStore.getState();
+  console.log('[AppStore] Current state before cleanup:', {
+    instancesCount: Object.keys(state.instances).length,
+    instanceWindowOrderLength: state.instanceWindowOrder.length,
+    nextInstanceId: state.nextInstanceId,
+  });
+  
+  // Log any corrupted instances
+  Object.entries(state.instances).forEach(([instanceId, instance]) => {
+    if (!instance || typeof instance !== 'object') {
+      console.warn(`[AppStore] Found corrupted instance: ${instanceId}`, instance);
+    } else if (!instance.instanceId || !instance.appId) {
+      console.warn(`[AppStore] Found instance with missing required fields: ${instanceId}`, instance);
+    }
+  });
+  
+  // Clear corrupted states
+  state.clearCorruptedStates();
+  
+  console.log('[AppStore] State after cleanup:', {
+    instancesCount: Object.keys(useAppStore.getState().instances).length,
+    instanceWindowOrderLength: useAppStore.getState().instanceWindowOrder.length,
+  });
 };
 
 // HTML Preview split helpers that rely on the store state

@@ -622,7 +622,19 @@ export function VideosAppComponent({
     ) {
       // Skip if this initialData has already been processed
       if (lastProcessedInitialDataRef.current === initialData) return;
+      
       const videoIdToProcess = initialData.videoId;
+      
+      // Validate videoId format
+      if (!videoIdToProcess || videoIdToProcess.length !== 11) {
+        console.error(`[Videos] Invalid videoId format: ${videoIdToProcess}`);
+        toast.error("Invalid video ID format");
+        if (instanceId) {
+          clearInstanceInitialData(instanceId);
+        }
+        return;
+      }
+      
       console.log(
         `[Videos] Processing initialData.videoId on mount: ${videoIdToProcess}`
       );
@@ -646,6 +658,10 @@ export function VideosAppComponent({
             toast.error("Failed to load shared video", {
               description: `Video ID: ${videoIdToProcess}`,
             });
+            // Clear the corrupted initial data even on error
+            if (instanceId) {
+              clearInstanceInitialData(instanceId);
+            }
           });
       }, 100);
       // Mark this initialData as processed
@@ -671,7 +687,16 @@ export function VideosAppComponent({
         // Skip if this initialData has already been processed
         if (lastProcessedInitialDataRef.current === event.detail.initialData)
           return;
+        
         const videoId = event.detail.initialData.videoId;
+        
+        // Validate videoId format
+        if (!videoId || typeof videoId !== 'string' || videoId.length !== 11) {
+          console.error(`[Videos] Invalid videoId format in updateApp event: ${videoId}`);
+          toast.error("Invalid video ID format");
+          return;
+        }
+        
         console.log(
           `[Videos] Received updateApp event with videoId: ${videoId}`
         );
