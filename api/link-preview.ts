@@ -2,10 +2,6 @@ export const config = {
   runtime: "edge",
 };
 
-interface LinkPreviewRequest {
-  url: string;
-}
-
 interface LinkMetadata {
   title?: string;
   description?: string;
@@ -74,7 +70,7 @@ export default async function handler(req: Request) {
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(url);
-    } catch (error) {
+    } catch {
       return new Response(JSON.stringify({ error: "Invalid URL format" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },

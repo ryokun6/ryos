@@ -10,7 +10,10 @@ export function isMobileDevice(): boolean {
   const isMobileScreen = window.innerWidth < 768;
   
   // User agent check for mobile devices
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const userAgent =
+    navigator.userAgent ||
+    navigator.vendor ||
+    (window as unknown as { opera?: string }).opera || "";
   const isMobileUserAgent = /android|blackberry|iemobile|ipad|iphone|ipod|opera mini|webos/i.test(userAgent);
   
   // Touch capability check
@@ -32,7 +35,10 @@ export function isTouchDevice(): boolean {
  */
 export function isTabletDevice(): boolean {
   const isLargeScreen = window.innerWidth >= 768 && window.innerWidth <= 1024;
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const userAgent =
+    navigator.userAgent ||
+    navigator.vendor ||
+    (window as unknown as { opera?: string }).opera || "";
   const isTabletUserAgent = /ipad|tablet|playbook|silk/i.test(userAgent);
   
   return (isLargeScreen && isTouchDevice()) || isTabletUserAgent;

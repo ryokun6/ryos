@@ -35,32 +35,35 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
   // Helper function to extract YouTube video ID
   const extractYouTubeVideoId = (url: string): string | null => {
     try {
+      const validateId = (id: string | null) =>
+        id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+
       // Handle youtu.be links
-      if (url.includes('youtu.be/')) {
+      if (url.includes("youtu.be/")) {
         const match = url.match(/youtu\.be\/([^&\n?#]+)/);
-        return match ? match[1] : null;
+        return validateId(match ? match[1] : null);
       }
-      
+
       // Handle youtube.com links
-      if (url.includes('youtube.com/')) {
+      if (url.includes("youtube.com/")) {
         const urlObj = new URL(url);
-        
+
         // Handle /watch?v= format
-        if (urlObj.pathname === '/watch') {
-          const videoId = urlObj.searchParams.get('v');
-          return videoId;
+        if (urlObj.pathname === "/watch") {
+          const videoId = urlObj.searchParams.get("v");
+          return validateId(videoId);
         }
-        
+
         // Handle /embed/ format
-        if (urlObj.pathname.startsWith('/embed/')) {
+        if (urlObj.pathname.startsWith("/embed/")) {
           const match = urlObj.pathname.match(/\/embed\/([^&\n?#]+)/);
-          return match ? match[1] : null;
+          return validateId(match ? match[1] : null);
         }
       }
-      
+
       return null;
     } catch (error) {
-      console.error('Error extracting YouTube video ID:', error);
+      console.error("Error extracting YouTube video ID:", error);
       return null;
     }
   };

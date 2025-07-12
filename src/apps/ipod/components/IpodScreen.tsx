@@ -18,8 +18,10 @@ function BatteryIndicator({ backlightOn }: { backlightOn: boolean }) {
     // Try to get battery information (deprecated API, may not work in all browsers)
     const getBattery = async () => {
       try {
-        if ("getBattery" in navigator) {
-          const battery = await (navigator as any).getBattery();
+          if ("getBattery" in navigator) {
+            const battery = await (
+              navigator as unknown as { getBattery: () => Promise<BatteryManager> }
+            ).getBattery();
           setBatteryLevel(battery.level);
           setIsCharging(battery.charging);
 
