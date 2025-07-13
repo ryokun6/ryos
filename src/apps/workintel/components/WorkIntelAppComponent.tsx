@@ -434,7 +434,12 @@ export function WorkIntelAppComponent({
         saveContent = content;
       }
       
-      await saveFile(currentFilePath, saveContent);
+      await saveFile({
+        path: currentFilePath,
+        name: currentFilePath.split("/").pop() || "document",
+        content: saveContent,
+        type: currentFilePath.endsWith('.md') || currentFilePath.endsWith('.markdown') ? 'markdown' : 'text'
+      });
       setCurrentHasUnsavedChanges(false);
     } else {
       // Show save dialog for new file
@@ -458,7 +463,12 @@ export function WorkIntelAppComponent({
     }
     
     const filePath = `/Documents/${fileName}`;
-    await saveFile(filePath, saveContent);
+    await saveFile({
+      path: filePath,
+      name: fileName,
+      content: saveContent,
+      type: fileName.endsWith('.md') || fileName.endsWith('.markdown') ? 'markdown' : 'text'
+    });
     setCurrentFilePath(filePath);
     setCurrentHasUnsavedChanges(false);
     setIsSaveDialogOpen(false);

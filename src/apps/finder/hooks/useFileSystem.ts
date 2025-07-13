@@ -182,6 +182,7 @@ export const dbOperations = {
 
 // Get specific type from extension
 function getFileTypeFromExtension(fileName: string): string {
+  if (!fileName) return "unknown";
   const ext = fileName.split(".").pop()?.toLowerCase() || "unknown";
   switch (ext) {
     case "md":
@@ -1026,6 +1027,14 @@ export function useFileSystem(
       icon?: string;
     }) => {
       const { path, name, content } = fileData;
+      
+      // Validate required parameters
+      if (!path || !name) {
+        console.error("[useFileSystem:saveFile] Missing required parameters:", { path, name });
+        setError("Missing required file information");
+        return;
+      }
+      
       console.log(`[useFileSystem:saveFile] Attempting to save: ${path}`);
       setError(undefined);
 
