@@ -288,7 +288,7 @@ function hasTracksAfterCurrentPosition(
   playbackHistory: string[],
   historyPosition: number
 ): boolean {
-  return historyPosition < playbackHistory.length - 1;
+  return historyPosition !== -1 && historyPosition < playbackHistory.length - 1;
 }
 
 export const useIpodStore = create<IpodState>()(
@@ -309,7 +309,7 @@ export const useIpodStore = create<IpodState>()(
               currentIndex: index, 
               lyricsTranslationRequest: null,
               playbackHistory: newPlaybackHistory,
-              historyPosition: newPlaybackHistory.length - 1,
+              historyPosition: -1,
             };
           }
           
@@ -451,7 +451,7 @@ export const useIpodStore = create<IpodState>()(
             const currentTrackId = state.tracks[state.currentIndex]?.id;
             if (currentTrackId) {
               newPlaybackHistory = updatePlaybackHistory(state.playbackHistory, currentTrackId);
-              newHistoryPosition = newPlaybackHistory.length - 1;
+              newHistoryPosition = -1;
             }
           }
           
@@ -518,7 +518,7 @@ export const useIpodStore = create<IpodState>()(
             const currentTrackId = state.tracks[state.currentIndex]?.id;
             if (currentTrackId) {
               newPlaybackHistory = updatePlaybackHistory(state.playbackHistory, currentTrackId);
-              newHistoryPosition = newPlaybackHistory.length - 1;
+              newHistoryPosition = -1;
             }
           }
           
