@@ -377,10 +377,16 @@ export function ChatsAppComponent({
   }, []);
 
   // Function to handle send message button click
-  const handleSendMessage = useCallback((username: string) => {
-    setPrefilledUser(username);
-    setIsNewRoomDialogOpen(true);
-  }, []);
+  // Open the "New Room" dialog pre-filled with the selected username.
+  // Include state setters in the dependency list so the latest versions are
+  // always captured and to satisfy React-Hooks exhaustive-deps.
+  const handleSendMessage = useCallback(
+    (username: string) => {
+      setPrefilledUser(username);
+      setIsNewRoomDialogOpen(true);
+    },
+    [setPrefilledUser, setIsNewRoomDialogOpen]
+  );
 
   if (!isWindowOpen) return null;
 
