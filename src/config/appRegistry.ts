@@ -1,5 +1,4 @@
 import { TextEditApp } from "@/apps/textedit";
-import { WorkIntelApp } from "@/apps/workintel";
 import { InternetExplorerApp } from "@/apps/internet-explorer";
 import { ChatsApp } from "@/apps/chats";
 import ControlPanelsApp from "@/apps/control-panels";
@@ -80,13 +79,7 @@ export const appRegistry = {
       minSize: { width: 388, height: 200 },
     } as WindowConstraints,
   },
-  [WorkIntelApp.id]: {
-    ...WorkIntelApp,
-    windowConfig: {
-      defaultSize: { width: 600, height: 500 },
-      minSize: { width: 400, height: 300 },
-    } as WindowConstraints,
-  },
+
   [PaintApp.id]: {
     ...(PaintApp as BaseApp<PaintInitialData>),
     windowConfig: {
