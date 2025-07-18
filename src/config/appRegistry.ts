@@ -12,6 +12,7 @@ import { PhotoBoothApp } from "@/apps/photo-booth";
 import { SynthApp } from "@/apps/synth";
 import { IpodApp } from "@/apps/ipod";
 import { TerminalApp } from "@/apps/terminal";
+import { ResEditApp } from "@/apps/resedit";
 import { appIds } from "./appIds";
 import type {
   BaseApp,
@@ -146,6 +147,13 @@ export const appRegistry = {
       defaultSize: { width: 365, height: 415 },
       minSize: { width: 320, height: 415 },
       maxSize: { width: 365, height: 600 },
+    } as WindowConstraints,
+  },
+  [ResEditApp.id]: {
+    ...ResEditApp,
+    windowConfig: {
+      defaultSize: { width: 800, height: 600 },
+      minSize: { width: 600, height: 400 },
     } as WindowConstraints,
   },
 } as const;
