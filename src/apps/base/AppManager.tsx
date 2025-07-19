@@ -7,6 +7,7 @@ import { AppId, getAppComponent, appRegistry } from "@/config/appRegistry";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { extractCodeFromPath } from "@/utils/sharedUrl";
 import { toast } from "sonner";
+import { markUserInteraction, ensureSafariAudioPlayback } from "@/utils/safariAudio";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -105,6 +106,20 @@ export function AppManager({ apps }: AppManagerProps) {
   useEffect(() => {
     const timer = setTimeout(() => setIsInitialMount(false), 500);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Initialize Safari audio compatibility
+  useEffect(() => {
+    const initializeSafariAudio = async () => {
+      // Mark initial user interaction for Safari audio policies
+      markUserInteraction();
+      
+      // Ensure Safari audio playback is ready
+      await ensureSafariAudioPlayback();
+    };
+
+    // Initialize on mount
+    void initializeSafariAudio();
   }, []);
 
   // Process shared URLs and direct app launch paths

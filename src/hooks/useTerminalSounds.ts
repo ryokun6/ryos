@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { useAppStore } from "@/stores/useAppStore";
+import { ensureSafariAudioPlayback, handleSafariVisibilityChange } from "@/utils/safariAudio";
 
 type SoundType = "command" | "error" | "aiResponse";
 type TimeMode = "past" | "future" | "now";
@@ -743,6 +744,12 @@ export function useTerminalSounds() {
 
   // New shared function to initialize Tone.js once
   const initializeToneOnce = async () => {
+    // For Safari, ensure audio playback is allowed
+    if (!(await ensureSafariAudioPlayback())) {
+      console.debug("[useTerminalSounds] Safari audio playback not allowed");
+      return false;
+    }
+
     // If the underlying AudioContext has been closed (can happen on iOS when the
     // page is backgrounded for a while) we need to reset Tone with a fresh
     // context and dispose of any stale synth instances that belong to the old
@@ -807,12 +814,14 @@ export function useTerminalSounds() {
     // Handle page visibility change (when app is switched to/from background)
     const handleVisibilityChange = async () => {
       if (document.visibilityState === "visible") {
+        await handleSafariVisibilityChange();
         await resumeAudioContext();
       }
     };
 
     // Handle window focus (when app regains focus)
     const handleFocus = async () => {
+      await handleSafariVisibilityChange();
       await resumeAudioContext();
     };
 
