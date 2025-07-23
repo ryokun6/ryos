@@ -556,6 +556,139 @@
 
 /* Yosemite-style traffic lights - clean and simple */
 
+/* macOS Traffic Light Aqua Styling */
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Close"],
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Minimize"],
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Maximize"] {
+  position: relative;
+  overflow: hidden;
+  border-radius: 50% !important;
+  border: none !important;
+  transition: all 0.15s ease;
+}
+
+/* Close button (Red) - Aqua style */
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Close"] {
+  background: linear-gradient(
+    rgba(255, 96, 87, 0.8),
+    rgba(225, 70, 64, 0.8),
+    rgba(200, 50, 44, 0.8)
+  ) !important;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 
+              0 1px 1px rgba(225, 70, 64, 0.5),
+              inset 0 1px 3px rgba(100, 20, 20, 0.6),
+              inset 0 2px 3px 1px rgba(255, 120, 110, 0.6) !important;
+}
+
+/* Minimize button (Yellow) - Aqua style */
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Minimize"] {
+  background: linear-gradient(
+    rgba(255, 189, 46, 0.8),
+    rgba(223, 161, 35, 0.8),
+    rgba(200, 140, 20, 0.8)
+  ) !important;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 
+              0 1px 1px rgba(223, 161, 35, 0.5),
+              inset 0 1px 3px rgba(120, 80, 10, 0.6),
+              inset 0 2px 3px 1px rgba(255, 210, 80, 0.6) !important;
+}
+
+/* Maximize button (Green) - Aqua style */
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Maximize"] {
+  background: linear-gradient(
+    rgba(39, 201, 63, 0.8),
+    rgba(29, 173, 43, 0.8),
+    rgba(20, 150, 30, 0.8)
+  ) !important;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 
+              0 1px 1px rgba(29, 173, 43, 0.5),
+              inset 0 1px 3px rgba(10, 80, 20, 0.6),
+              inset 0 2px 3px 1px rgba(80, 220, 100, 0.6) !important;
+}
+
+/* Top shine effect for traffic lights */
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Close"]:before,
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Minimize"]:before,
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Maximize"]:before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 33%;
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.3)
+  );
+  width: calc(100% - 2px);
+  border-radius: 50% 50% 20% 20%;
+  top: 1px;
+  filter: blur(0.5px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Bottom glow effect for traffic lights */
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Close"]:after,
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Minimize"]:after,
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Maximize"]:after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 33%;
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.5)
+  );
+  width: calc(100% - 3px);
+  border-radius: 50%;
+  bottom: 1px;
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+/* Hover effects for traffic lights */
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Close"]:hover {
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 
+              0 1px 1px rgba(225, 70, 64, 0.5),
+              inset 0 1px 3px rgba(100, 20, 20, 0.6),
+              inset 0 2px 3px 1px rgba(255, 120, 110, 0.6),
+              0 0 3px rgba(255, 96, 87, 0.5) !important;
+}
+
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Minimize"]:hover {
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 
+              0 1px 1px rgba(223, 161, 35, 0.5),
+              inset 0 1px 3px rgba(120, 80, 10, 0.6),
+              inset 0 2px 3px 1px rgba(255, 210, 80, 0.6),
+              0 0 3px rgba(255, 189, 46, 0.5) !important;
+}
+
+:root[data-os-theme="macosx"] .title-bar button[aria-label="Maximize"]:hover {
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 
+              0 1px 1px rgba(29, 173, 43, 0.5),
+              inset 0 1px 3px rgba(10, 80, 20, 0.6),
+              inset 0 2px 3px 1px rgba(80, 220, 100, 0.6),
+              0 0 3px rgba(39, 201, 63, 0.5) !important;
+}
+
+/* Inactive window traffic lights */
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar button[aria-label="Close"],
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar button[aria-label="Minimize"],
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar button[aria-label="Maximize"] {
+  background: rgba(0, 0, 0, 0.14) !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) !important;
+}
+
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar button[aria-label="Close"]:before,
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar button[aria-label="Minimize"]:before,
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar button[aria-label="Maximize"]:before,
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar button[aria-label="Close"]:after,
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar button[aria-label="Minimize"]:after,
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar button[aria-label="Maximize"]:after {
+  display: none;
+}
+
 /* macOS Titlebar Border Styling */
 :root[data-os-theme="macosx"] .title-bar {
   border: var(--os-metrics-titlebar-border-width) solid

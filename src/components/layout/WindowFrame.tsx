@@ -858,18 +858,22 @@ export function WindowFrame({
                   onMouseDown={(e) => e.stopPropagation()}
                   onTouchStart={(e) => e.stopPropagation()}
                   className="w-3 h-3 rounded-full relative transition-all duration-150"
-                  style={{
-                    background: isForeground
-                      ? theme.colors.trafficLights?.close ||
-                        "rgba(255, 96, 87, 1)"
-                      : "rgba(0, 0, 0, 0.14)",
-                    border: `1px solid ${
-                      isForeground
-                        ? theme.colors.trafficLights?.closeHover ||
-                          "rgba(225, 70, 64, 1)"
-                        : "rgba(0, 0, 0, 0.2)"
-                    }`,
-                  }}
+                  style={
+                    theme.id === "macosx"
+                      ? undefined
+                      : {
+                          background: isForeground
+                            ? theme.colors.trafficLights?.close ||
+                              "rgba(255, 96, 87, 1)"
+                            : "rgba(0, 0, 0, 0.14)",
+                          border: `1px solid ${
+                            isForeground
+                              ? theme.colors.trafficLights?.closeHover ||
+                                "rgba(225, 70, 64, 1)"
+                              : "rgba(0, 0, 0, 0.2)"
+                          }`,
+                        }
+                  }
                   aria-label="Close"
                 />
                 {/* Minimize Button (Yellow) */}
@@ -881,18 +885,22 @@ export function WindowFrame({
                   onMouseDown={(e) => e.stopPropagation()}
                   onTouchStart={(e) => e.stopPropagation()}
                   className="w-3 h-3 rounded-full relative transition-all duration-150"
-                  style={{
-                    background: isForeground
-                      ? theme.colors.trafficLights?.minimize ||
-                        "rgba(255, 189, 46, 1)"
-                      : "rgba(0, 0, 0, 0.14)",
-                    border: `1px solid ${
-                      isForeground
-                        ? theme.colors.trafficLights?.minimizeHover ||
-                          "rgba(223, 161, 35, 1)"
-                        : "rgba(0, 0, 0, 0.2)"
-                    }`,
-                  }}
+                  style={
+                    theme.id === "macosx"
+                      ? undefined
+                      : {
+                          background: isForeground
+                            ? theme.colors.trafficLights?.minimize ||
+                              "rgba(255, 189, 46, 1)"
+                            : "rgba(0, 0, 0, 0.14)",
+                          border: `1px solid ${
+                            isForeground
+                              ? theme.colors.trafficLights?.minimizeHover ||
+                                "rgba(223, 161, 35, 1)"
+                              : "rgba(0, 0, 0, 0.2)"
+                          }`,
+                        }
+                  }
                   aria-label="Minimize"
                 />
                 {/* Maximize Button (Green) */}
@@ -904,18 +912,22 @@ export function WindowFrame({
                   onMouseDown={(e) => e.stopPropagation()}
                   onTouchStart={(e) => e.stopPropagation()}
                   className="w-3 h-3 rounded-full relative transition-all duration-150"
-                  style={{
-                    background: isForeground
-                      ? theme.colors.trafficLights?.maximize ||
-                        "rgba(39, 201, 63, 1)"
-                      : "rgba(0, 0, 0, 0.14)",
-                    border: `1px solid ${
-                      isForeground
-                        ? theme.colors.trafficLights?.maximizeHover ||
-                          "rgba(29, 173, 43, 1)"
-                        : "rgba(0, 0, 0, 0.2)"
-                    }`,
-                  }}
+                  style={
+                    theme.id === "macosx"
+                      ? undefined
+                      : {
+                          background: isForeground
+                            ? theme.colors.trafficLights?.maximize ||
+                              "rgba(39, 201, 63, 1)"
+                            : "rgba(0, 0, 0, 0.14)",
+                          border: `1px solid ${
+                            isForeground
+                              ? theme.colors.trafficLights?.maximizeHover ||
+                                "rgba(29, 173, 43, 1)"
+                              : "rgba(0, 0, 0, 0.2)"
+                          }`,
+                        }
+                  }
                   aria-label="Maximize"
                 />
               </div>
