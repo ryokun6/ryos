@@ -102,11 +102,12 @@ const DialogContent = React.forwardRef<
         ref={ref}
         className={getDialogContentClasses()}
         style={
-          isMacOsxTheme
-            ? {
-                backgroundImage: `var(--os-pinstripe-window), var(--os-color-window-bg)`,
+           isMacOsxTheme
+             ? {
+                backgroundColor: "var(--os-color-window-bg)",
+                backgroundImage: "var(--os-pinstripe-window)",
               }
-            : undefined
+             : undefined
         }
         onEscapeKeyDown={cleanupPointerEvents}
         onPointerDownOutside={cleanupPointerEvents}
@@ -158,42 +159,138 @@ const DialogHeader = ({
           className
         )}
         style={{
-          background: theme.colors.titleBar.activeBg,
+          // Use pin-stripe pattern to match new window frame design
+          backgroundImage: "var(--os-pinstripe-titlebar)",
           borderBottom: `1px solid ${theme.colors.titleBar.borderBottom || theme.colors.titleBar.border || "rgba(0, 0, 0, 0.1)"}`,
         }}
         {...props}
       >
-        {/* Traffic Light Buttons */}
-        <div className="flex items-center gap-1.5 ml-1.5">
+        {/* Traffic Light Buttons with gloss */}
+        <div className="flex items-center gap-2 ml-1.5">
           {/* Close Button (Red) */}
           <DialogPrimitive.Close asChild>
             <button
-              className="w-3 h-3 rounded-full relative transition-all duration-150 hover:brightness-110 active:brightness-90"
+              className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
               style={{
-                background: theme.colors.trafficLights?.close || "rgba(255, 96, 87, 1)",
-                border: `1px solid ${theme.colors.trafficLights?.closeHover || "rgba(225, 70, 64, 1)"}`,
+                width: "13px",
+                height: "13px",
+                background: "linear-gradient(rgb(193, 58, 45), rgb(205, 73, 52))",
+                boxShadow:
+                  "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(225, 70, 64, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgba(150, 40, 30, 0.8) 0px 1px 3px inset, rgba(225, 70, 64, 0.75) 0px 2px 3px 1px inset",
               }}
               aria-label="Close"
-            />
+            >
+              {/* Top shine */}
+              <div
+                className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+                style={{
+                  height: "33%",
+                  background:
+                    "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
+                  width: "calc(100% - 6px)",
+                  borderRadius: "6px 6px 0 0",
+                  top: "1px",
+                  filter: "blur(0.2px)",
+                  zIndex: 2,
+                }}
+              />
+              {/* Bottom glow */}
+              <div
+                className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+                style={{
+                  height: "33%",
+                  background:
+                    "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
+                  width: "calc(100% - 3px)",
+                  borderRadius: "0 0 6px 6px",
+                  bottom: "1px",
+                  filter: "blur(0.3px)",
+                }}
+              />
+            </button>
           </DialogPrimitive.Close>
+
           {/* Minimize Button (Yellow) */}
           <button
-            className="w-3 h-3 rounded-full relative transition-all duration-150 hover:brightness-110 active:brightness-90"
+            className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
             style={{
-              background: theme.colors.trafficLights?.minimize || "rgba(255, 189, 46, 1)",
-              border: `1px solid ${theme.colors.trafficLights?.minimizeHover || "rgba(223, 161, 35, 1)"}`,
+              width: "13px",
+              height: "13px",
+              background: "linear-gradient(rgb(202, 130, 13), rgb(253, 253, 149))",
+              boxShadow:
+                "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(223, 161, 35, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgb(155, 78, 21) 0px 1px 3px inset, rgb(241, 157, 20) 0px 2px 3px 1px inset",
             }}
             aria-label="Minimize"
-          />
+          >
+            {/* Top shine */}
+            <div
+              className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+              style={{
+                height: "33%",
+                background:
+                  "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
+                width: "calc(100% - 6px)",
+                borderRadius: "6px 6px 0 0",
+                top: "1px",
+                filter: "blur(0.2px)",
+                zIndex: 2,
+              }}
+            />
+            {/* Bottom glow */}
+            <div
+              className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+              style={{
+                height: "33%",
+                background:
+                  "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
+                width: "calc(100% - 3px)",
+                borderRadius: "0 0 6px 6px",
+                bottom: "1px",
+                filter: "blur(0.3px)",
+              }}
+            />
+          </button>
+
           {/* Maximize Button (Green) */}
           <button
-            className="w-3 h-3 rounded-full relative transition-all duration-150 hover:brightness-110 active:brightness-90"
+            className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
             style={{
-              background: theme.colors.trafficLights?.maximize || "rgba(39, 201, 63, 1)",
-              border: `1px solid ${theme.colors.trafficLights?.maximizeHover || "rgba(29, 173, 43, 1)"}`,
+              width: "13px",
+              height: "13px",
+              background: "linear-gradient(rgb(111, 174, 58), rgb(138, 192, 50))",
+              boxShadow:
+                "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgb(59, 173, 29, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgb(53, 91, 17) 0px 1px 3px inset, rgb(98, 187, 19) 0px 2px 3px 1px inset",
             }}
             aria-label="Maximize"
-          />
+          >
+            {/* Top shine */}
+            <div
+              className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+              style={{
+                height: "33%",
+                background:
+                  "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
+                width: "calc(100% - 6px)",
+                borderRadius: "6px 6px 0 0",
+                top: "1px",
+                filter: "blur(0.2px)",
+                zIndex: 2,
+              }}
+            />
+            {/* Bottom glow */}
+            <div
+              className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+              style={{
+                height: "33%",
+                background:
+                  "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
+                width: "calc(100% - 3px)",
+                borderRadius: "0 0 6px 6px",
+                bottom: "1px",
+                filter: "blur(0.3px)",
+              }}
+            />
+          </button>
         </div>
 
         {/* Title */}
