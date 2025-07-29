@@ -10,7 +10,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       style={
         {
-            fontFamily: "var(--font-geneva-12)",
+            fontFamily: "var(--os-font-ui)",
             WebkitFontSmoothing: "antialiased",
             fontSmooth: "always",
         } as React.CSSProperties
