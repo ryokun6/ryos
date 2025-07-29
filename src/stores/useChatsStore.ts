@@ -470,11 +470,44 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
 
             // Look for a matching optimistic (temp) message to replace
+            // Use multiple criteria for better matching robustness
             const tempIndex = existingMessages.findIndex(
-              (m) =>
-                m.id.startsWith("temp_") &&
-                m.content === message.content &&
-                m.username === message.username
+              (m) => {
+                // Must be a temporary message
+                if (!m.id.startsWith("temp_")) return false;
+                
+                // Must be from the same user
+                if (m.username !== message.username) return false;
+                
+                // Check if timestamps are close (within 10 seconds)
+                const timeDiff = Math.abs(m.timestamp - message.timestamp);
+                if (timeDiff > 10000) return false; // 10 seconds tolerance
+                
+                // For additional safety, check if content is similar
+                // (allows for server-side processing differences)
+                const clientContent = m.content.trim().toLowerCase();
+                const serverContent = message.content.trim().toLowerCase();
+                
+                // Either exact match or similar length and shared substring
+                if (clientContent === serverContent) return true;
+                
+                // If lengths are similar and there's significant overlap
+                const lengthDiff = Math.abs(clientContent.length - serverContent.length);
+                if (lengthDiff <= 10 && clientContent.length > 5) {
+                  // Check if one contains most of the other (handles HTML escaping, etc.)
+                  const shorterContent = clientContent.length < serverContent.length ? clientContent : serverContent;
+                  const longerContent = clientContent.length >= serverContent.length ? clientContent : serverContent;
+                  
+                  // Remove common HTML entities and spaces for comparison
+                  const normalizeForComparison = (str) => str.replace(/[&<>"'\s]/g, '').toLowerCase();
+                  const normalizedShorter = normalizeForComparison(shorterContent);
+                  const normalizedLonger = normalizeForComparison(longerContent);
+                  
+                  return normalizedLonger.includes(normalizedShorter) && normalizedShorter.length > 3;
+                }
+                
+                return false;
+              }
             );
 
             if (tempIndex !== -1) {
