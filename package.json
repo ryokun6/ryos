@@ -81,6 +81,7 @@
   "devDependencies": {
     "@eslint/js": "^9.29.0",
     "@tailwindcss/typography": "^0.5.16",
+    "@types/bad-words": "^3.0.3",
     "@types/dotenv": "^8.2.3",
     "@types/node": "^22.15.31",
     "@types/node-fetch": "^2.6.12",
