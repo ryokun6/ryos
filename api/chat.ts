@@ -1,3 +1,9 @@
+function escapeHTML(str = "") {
+  return str.replace(/[&<>"']/g, (ch) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])
+  );
+}
+
 import { streamText, smoothStream } from "ai";
 import { geolocation } from "@vercel/functions";
 import {
