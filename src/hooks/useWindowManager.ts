@@ -375,9 +375,11 @@ export const useWindowManager = ({
       // Clean up any ongoing sound loops
       if (moveAudioRef.current) {
         clearInterval(moveAudioRef.current);
+        moveAudioRef.current = null;
       }
       if (resizeAudioRef.current) {
         clearInterval(resizeAudioRef.current);
+        resizeAudioRef.current = null;
       }
     };
   }, [
@@ -398,6 +400,20 @@ export const useWindowManager = ({
     instanceId,
     isXpTheme,
   ]);
+
+  // Additional cleanup effect to ensure intervals are cleared on unmount
+  useEffect(() => {
+    return () => {
+      if (moveAudioRef.current) {
+        clearInterval(moveAudioRef.current);
+        moveAudioRef.current = null;
+      }
+      if (resizeAudioRef.current) {
+        clearInterval(resizeAudioRef.current);
+        resizeAudioRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     windowPosition,
