@@ -1,8 +1,36 @@
 import { useRef, useCallback } from "react";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
-import { createAudioFromBase64 } from "@/utils/audio";
+import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 // WaveSurfer import will be removed as it's moving to SoundGrid
 // import type WaveSurfer from "wavesurfer.js";
+
+// Helper function to decode base64 audio data
+const decodeBase64Audio = async (base64Data: string): Promise<AudioBuffer | null> => {
+  try {
+    // Check for Safari and large data
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari && base64Data.length > 100000) {
+      console.warn('Large audio data detected on Safari, skipping to prevent crash');
+      return null;
+    }
+    
+    const binary = atob(base64Data);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    
+    const audioContext = getAudioContext();
+    const arrayBuffer = bytes.buffer;
+    
+    // Decode audio data
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    return audioBuffer;
+  } catch (error) {
+    console.error("Error decoding audio data:", error);
+    return null;
+  }
+};
 
 export const useSoundboard = () => {
   // Selectors from Zustand store
@@ -23,7 +51,7 @@ export const useSoundboard = () => {
     (state) => state.setSlotPlaybackState
   );
 
-  const audioRefs = useRef<(HTMLAudioElement | null)[]>(Array(9).fill(null));
+  const audioSourcesRef = useRef<(AudioBufferSourceNode | null)[]>(Array(9).fill(null));
 
   // Removed automatic initialization - now handled by the app component
 
@@ -77,43 +105,66 @@ export const useSoundboard = () => {
   );
 
   const playSound = useCallback(
-    (index: number) => {
+    async (index: number) => {
       if (!activeBoard) return;
       const slot = activeBoard.slots[index];
       if (!slot || !slot.audioData) return;
 
-      // Stop any currently playing sound in the same slot or other slots if needed
-      if (audioRefs.current[index]) {
-        audioRefs.current[index]?.pause();
-        audioRefs.current[index] = null;
+      // Stop any currently playing sound in the same slot
+      if (audioSourcesRef.current[index]) {
+        audioSourcesRef.current[index]?.stop();
+        audioSourcesRef.current[index] = null;
       }
-      // Optionally stop other sounds if only one can play at a time
-      // audioRefs.current.forEach((audio, i) => { ... });
 
-      const audio = createAudioFromBase64(slot.audioData);
-      audioRefs.current[index] = audio;
-      updateSlotState(index, true, false); // isPlaying: true, isRecording: false
+      try {
+        // Ensure audio context is running (important for Safari)
+        await resumeAudioContext();
+        
+        const audioContext = getAudioContext();
+        const audioBuffer = await decodeBase64Audio(slot.audioData);
+        
+        if (!audioBuffer) {
+          console.error("Failed to decode audio data");
+          updateSlotState(index, false, false);
+          return;
+        }
 
-      audio.play().catch((error) => {
+        // Create a source node
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContext.destination);
+        
+        // Store the source node reference
+        audioSourcesRef.current[index] = source;
+        updateSlotState(index, true, false); // isPlaying: true, isRecording: false
+
+        // Handle playback end
+        source.onended = () => {
+          updateSlotState(index, false, false);
+          audioSourcesRef.current[index] = null;
+        };
+
+        // Start playback
+        source.start(0);
+      } catch (error) {
         console.error("Error playing sound:", error);
         updateSlotState(index, false, false);
-      });
-
-      audio.onended = () => {
-        updateSlotState(index, false, false);
-        audioRefs.current[index] = null;
-      };
+      }
     },
     [activeBoard, updateSlotState]
   );
 
   const stopSound = useCallback(
     (index: number) => {
-      const audio = audioRefs.current[index];
-      if (audio) {
-        audio.pause();
-        audio.currentTime = 0;
-        audioRefs.current[index] = null;
+      const source = audioSourcesRef.current[index];
+      if (source) {
+        try {
+          source.stop();
+        } catch (error) {
+          // Source may have already stopped
+          console.debug("Source already stopped:", error);
+        }
+        audioSourcesRef.current[index] = null;
         updateSlotState(index, false, false);
       }
     },
