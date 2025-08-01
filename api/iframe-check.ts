@@ -31,6 +31,14 @@ const logError = (id: string, message: string, error: unknown) => {
 const generateRequestId = (): string =>
   Math.random().toString(36).substring(2, 10);
 
+// Helper function to ensure CORS headers are always included
+const corsHeaders = (additionalHeaders: Record<string, string> = {}) => {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    ...additionalHeaders,
+  };
+};
+
 // --- Utility Functions ----------------------------------------------------
 
 /**
@@ -156,6 +164,18 @@ const WAYBACK_CACHE_PREFIX = "wayback:cache:";
  */
 
 export default async function handler(req: Request) {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    });
+  }
+
   const { searchParams } = new URL(req.url);
   const urlParam = searchParams.get("url");
   let mode = searchParams.get("mode") || "proxy"; // "check" | "proxy" | "ai" | "list-cache"
@@ -163,9 +183,60 @@ export default async function handler(req: Request) {
   const month = searchParams.get("month");
   const requestId = generateRequestId(); // Generate request ID
   const origin = req.headers.get("origin");
-  const ALLOWED_ORIGINS = new Set(["https://os.ryo.lu", "http://localhost:3000"]);
-  if (!origin || !ALLOWED_ORIGINS.has(origin)) {
-    return new Response("Unauthorized", { status: 403 });
+  const referer = req.headers.get("referer");
+  
+  // Log headers for debugging
+  logInfo(requestId, `Request headers - Origin: ${origin}, Referer: ${referer}, Host: ${req.headers.get('host')}`);
+  
+  // Check both origin and referer for more flexibility
+  const ALLOWED_ORIGINS = new Set([
+    "https://os.ryo.lu", 
+    "https://ryo.lu", 
+    "http://os.ryo.lu", 
+    "http://ryo.lu", 
+    "http://localhost:3000"
+  ]);
+  const ALLOWED_DOMAINS = ["os.ryo.lu", "ryo.lu", "localhost"];
+  
+  let isAllowed = false;
+  
+  // Check origin header
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    isAllowed = true;
+    logInfo(requestId, `Allowed by origin: ${origin}`);
+  }
+  
+  // Check referer as fallback
+  if (!isAllowed && referer) {
+    try {
+      const refererUrl = new URL(referer);
+      if (ALLOWED_DOMAINS.some(domain => refererUrl.hostname === domain || refererUrl.hostname.endsWith(`.${domain}`))) {
+        isAllowed = true;
+        logInfo(requestId, `Allowed by referer: ${referer}`);
+      }
+    } catch (e) {
+      logError(requestId, `Invalid referer URL: ${referer}`, e);
+    }
+  }
+  
+  // Check host header as another fallback (for same-origin requests)
+  if (!isAllowed) {
+    const host = req.headers.get('host');
+    if (host && ALLOWED_DOMAINS.some(domain => host === domain || host.startsWith(`${domain}:`))) {
+      isAllowed = true;
+      logInfo(requestId, `Allowed by host header: ${host}`);
+    }
+  }
+  
+  if (!isAllowed) {
+    logError(requestId, `Unauthorized request - Origin: ${origin}, Referer: ${referer}`, null);
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+      status: 403,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*", // Still send CORS headers for proper error handling
+      }
+    });
   }
 
   // Generate a fresh, randomized browser header set for this request
@@ -180,7 +251,10 @@ export default async function handler(req: Request) {
       JSON.stringify({ error: "Missing 'url' query parameter" }),
       {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        },
       }
     );
   }
@@ -212,7 +286,7 @@ export default async function handler(req: Request) {
       if (!global.allowed) {
         return new Response(
           JSON.stringify({ error: "rate_limit_exceeded", scope: "global", mode }),
-          { status: 429, headers: { "Retry-After": String(global.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json" } }
+          { status: 429, headers: corsHeaders({ "Retry-After": String(global.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json" }) }
         );
       }
 
@@ -228,7 +302,7 @@ export default async function handler(req: Request) {
         if (!host.allowed) {
           return new Response(
             JSON.stringify({ error: "rate_limit_exceeded", scope: "host", host: hostname, mode }),
-            { status: 429, headers: { "Retry-After": String(host.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json" } }
+            { status: 429, headers: corsHeaders({ "Retry-After": String(host.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json" }) }
           );
         }
       } catch (e) {
@@ -245,7 +319,7 @@ export default async function handler(req: Request) {
       if (!res.allowed) {
         return new Response(
           JSON.stringify({ error: "rate_limit_exceeded", scope: mode }),
-          { status: 429, headers: { "Retry-After": String(res.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json" } }
+          { status: 429, headers: corsHeaders({ "Retry-After": String(res.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json" }) }
         );
       }
     }
@@ -260,7 +334,7 @@ export default async function handler(req: Request) {
       logError(requestId, "Missing year for AI cache mode", { year });
       return new Response(JSON.stringify({ error: "Missing year parameter" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: corsHeaders({ "Content-Type": "application/json" }),
       });
     }
 
@@ -274,7 +348,7 @@ export default async function handler(req: Request) {
       logError(requestId, "Invalid year format for AI cache mode", { year });
       return new Response(JSON.stringify({ error: "Invalid year format" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: corsHeaders({ "Content-Type": "application/json" }),
       });
     }
 
@@ -290,7 +364,7 @@ export default async function handler(req: Request) {
       logError(requestId, "URL normalization failed for AI cache key", null);
       return new Response(
         JSON.stringify({ error: "URL normalization failed" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        { status: 500, headers: corsHeaders({ "Content-Type": "application/json" }) }
       );
     }
 
@@ -326,7 +400,7 @@ export default async function handler(req: Request) {
       logError(requestId, "Error checking AI cache", e);
       return new Response(JSON.stringify({ error: (e as Error).message }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: corsHeaders({ "Content-Type": "application/json" }),
       });
     }
   }
@@ -345,7 +419,7 @@ export default async function handler(req: Request) {
       logError(requestId, "URL normalization failed for list-cache key", null);
       return new Response(
         JSON.stringify({ error: "URL normalization failed" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        { status: 500, headers: corsHeaders({ "Content-Type": "application/json" }) }
       );
     }
 
@@ -457,7 +531,7 @@ export default async function handler(req: Request) {
       logError(requestId, "Error listing combined cache keys", e);
       return new Response(JSON.stringify({ error: (e as Error).message }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: corsHeaders({ "Content-Type": "application/json" }),
       });
     }
   }
@@ -485,7 +559,7 @@ export default async function handler(req: Request) {
         reason: "Auto-proxied domain",
       }),
       {
-        headers: { "Content-Type": "application/json" },
+        headers: corsHeaders({ "Content-Type": "application/json" }),
       }
     );
   }
@@ -516,7 +590,7 @@ export default async function handler(req: Request) {
         JSON.stringify({
           error: "Invalid year/month format for Wayback proxy",
         }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: corsHeaders({ "Content-Type": "application/json" }) }
       );
     }
   }
@@ -695,7 +769,7 @@ export default async function handler(req: Request) {
       logInfo(requestId, "Executing in 'check' mode");
       const result = await checkSiteEmbeddingAllowed();
       return new Response(JSON.stringify(result), {
-        headers: { "Content-Type": "application/json" },
+        headers: corsHeaders({ "Content-Type": "application/json" }),
       });
     }
 
@@ -966,7 +1040,7 @@ export default async function handler(req: Request) {
     logError(requestId, "General handler error", error);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: corsHeaders({ "Content-Type": "application/json" }),
     });
   }
 }
