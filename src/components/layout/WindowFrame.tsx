@@ -867,7 +867,7 @@ export function WindowFrame({
               }}
             >
               {/* Traffic Light Buttons */}
-              <div className="flex items-center gap-2 ml-1.5 relative">
+              <div className="flex items-center gap-2 ml-1.5 relative [--icon-opacity:0] hover:[--icon-opacity:1]">
                 {/* Close Button (Red) */}
                 <div
                   className="relative"
@@ -914,6 +914,10 @@ export function WindowFrame({
                         filter: "blur(0.3px)",
                       }}
                     />
+                    {/* Close icon */}
+                    <svg className="absolute inset-0 pointer-events-none" style={{ opacity: "var(--icon-opacity)" }} viewBox="0 0 13 13">
+                      <path d="M3.75 3.75L9.25 9.25M9.25 3.75L3.75 9.25" stroke={isForeground ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.4)"} strokeWidth="1.45" strokeLinecap="round"/>
+                    </svg>
                   </div>
                   <button
                     aria-label="Close"
@@ -978,6 +982,10 @@ export function WindowFrame({
                       filter: "blur(0.3px)",
                     }}
                   />
+                  {/* Minimize icon */}
+                  <svg className="absolute inset-0 pointer-events-none" style={{ opacity: "var(--icon-opacity)" }} viewBox="0 0 13 13">
+                    <path d="M3.5 6.5H9.5" stroke={isForeground ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.4)"} strokeWidth="1.45" strokeLinecap="round"/>
+                  </svg>
                 </button>
 
                 {/* Maximize Button (Green) */}
@@ -1026,6 +1034,10 @@ export function WindowFrame({
                         filter: "blur(0.3px)",
                       }}
                     />
+                    {/* Maximize icon */}
+                    <svg className="absolute inset-0 pointer-events-none" style={{ opacity: "var(--icon-opacity)" }} viewBox="0 0 13 13">
+                      <path d="M3 6.5H10M6.5 3V10" stroke={isForeground ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.4)"} strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
                   </div>
                   <button
                     aria-label="Maximize"
