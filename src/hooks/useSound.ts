@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAppStore } from "@/stores/useAppStore";
-import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
+import { getAudioContext, resumeAudioContext, markUserInteraction, hasUserInteractedWithPage } from "@/lib/audioContext";
 
 // Global audio context and cache
 const audioBufferCache = new Map<string, AudioBuffer>();
@@ -9,6 +9,9 @@ const activeSources = new Set<AudioBufferSourceNode>();
 // Track the AudioContext instance we last saw so we can invalidate caches if a
 // new one is created by the shared helper.
 let lastCtx: AudioContext | null = null;
+
+// Safari detection
+const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) && !/CriOS/.test(navigator.userAgent);
 
 // Preload a single sound and add it to cache
 const preloadSound = async (soundPath: string): Promise<AudioBuffer> => {
@@ -66,6 +69,12 @@ export function useSound(soundPath: string, volume: number = 0.3) {
   const play = useCallback(async () => {
     // Check if UI sounds are enabled via global store
     if (!useAppStore.getState().uiSoundsEnabled) {
+      return;
+    }
+
+    // For Safari, ensure user has interacted before playing sounds
+    if (isSafari && !hasUserInteractedWithPage()) {
+      console.debug("[useSound] Safari detected - cannot play sound without user interaction");
       return;
     }
 
@@ -197,7 +206,12 @@ export const Sounds = {
 // Lazily preload sounds after the first user interaction (click or touch)
 if (typeof document !== "undefined") {
   const handleFirstInteraction = () => {
+    // Mark user interaction for Safari compatibility
+    markUserInteraction();
+    
+    // Preload sounds after user interaction
     preloadSounds(Object.values(Sounds));
+    
     // Remove listeners after first invocation to avoid repeated work
     document.removeEventListener("click", handleFirstInteraction);
     document.removeEventListener("touchstart", handleFirstInteraction);
