@@ -128,23 +128,34 @@ function MacDock() {
   }) => {
     const scale = getScaleForIndex(index);
     const isNew = hasMounted && !seenIdsRef.current.has(idKey);
-    const baseButtonSize = 48; // px (w-12)
     const baseIconSize = 40; // px (w-10)
-    const wrapperWidth = Math.max(baseButtonSize, Math.round(baseButtonSize * scale));
     return (
       <motion.div
         layout
-        initial={isNew ? { scale: 0.85, opacity: 0 } : { opacity: 1 }}
-        animate={isNew ? { scale: 1, opacity: 1 } : { opacity: 1 }}
-        exit={{ scale: 0.85, opacity: 0 }}
+        layoutId={`dock-icon-${idKey}`}
+        initial={isNew ? { scale: 0, opacity: 0 } : false}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ 
+          scale: 0, 
+          opacity: 0,
+        }}
         transition={{
           type: "spring",
           stiffness: 300,
-          damping: 20,
-          mass: 0.6,
-          layout: { type: "spring", stiffness: 500, damping: 34 },
+          damping: 30,
+          mass: 0.8,
+          layout: { 
+            type: "spring", 
+            stiffness: 300, 
+            damping: 30,
+            mass: 0.8,
+          },
         }}
-        style={{ transformOrigin: "bottom center", width: `${wrapperWidth}px` }}
+        style={{ 
+          transformOrigin: "bottom center",
+          willChange: "transform",
+        }}
+        className="flex-shrink-0"
       >
         <button
           aria-label={label}
@@ -153,8 +164,10 @@ function MacDock() {
           ref={(el) => {
             if (el) iconRefs.current[index] = el;
           }}
-          className="relative flex items-center justify-center w-12 h-12 mx-1"
-          style={{ willChange: "width" }}
+          className="relative flex items-center justify-center w-12 h-12 px-1"
+          style={{ 
+            willChange: "transform",
+          }}
         >
           <ThemedIcon
             name={icon}
@@ -183,11 +196,13 @@ function MacDock() {
       <div
         className="flex w-full items-end justify-center"
         style={{
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
         }}
       >
-        <div
-          className="flex items-center px-2 py-1"
+        <motion.div
+          layout
+          layoutRoot
+          className="inline-flex items-center px-2 py-1"
           style={{
             pointerEvents: "auto",
             backdropFilter: "blur(20px)",
@@ -198,6 +213,15 @@ function MacDock() {
             boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
             height: 56,
             maxWidth: "min(92vw, 980px)",
+            transformOrigin: "center bottom",
+            borderRadius: "16px",
+          }}
+          transition={{
+            layout: {
+              type: "spring",
+              stiffness: 400,
+              damping: 30,
+            },
           }}
           onPointerMove={(e) => {
             // Only enable magnification for mouse pointers
@@ -209,73 +233,74 @@ function MacDock() {
           onTouchStart={() => setMouseX(null)}
           onTouchEnd={() => setMouseX(null)}
         >
-          <LayoutGroup id="dock-layout">
-          {/* Left pinned */}
-          {pinnedLeft.map((appId) => {
-            const icon = getAppIconPath(appId);
-            const idx = runningIndex++;
-            return (
-              <IconButton
-                key={appId}
-                index={idx}
-                label={appId}
-                icon={icon}
-                idKey={appId}
-                onClick={() => {
-                  if (appId === "finder") {
-                    focusOrLaunchFinder("/");
-                  } else {
-                    focusMostRecentInstanceOfApp(appId);
-                  }
-                }}
-              />
-            );
-          })}
-          
-          {/* Open apps dynamically (excluding pinned) */}
-          <AnimatePresence initial={false}>
-            {openAppIds.map((appId) => {
-              const icon = getAppIconPath(appId);
-              const idx = runningIndex++;
-              return (
-                <IconButton
-                  key={appId}
-                  index={idx}
-                  label={appId}
-                  icon={icon}
-                  idKey={appId}
-                  onClick={() => focusMostRecentInstanceOfApp(appId)}
-                />
-              );
-            })}
-          </AnimatePresence>
-          
-          {/* Trash (right side) */}
-          {(() => {
-            const idx = runningIndex++;
-            return (
-              <IconButton
-                index={idx}
-                label="Trash"
-                icon="trash-empty.png"
-                idKey="__trash__"
-                onClick={() => {
-                  // Bring existing Finder to foreground if any; otherwise launch at Trash
-                  for (let i = instanceOrder.length - 1; i >= 0; i--) {
-                    const id = instanceOrder[i];
-                    const inst = instances[id];
-                    if (inst && inst.appId === "finder" && inst.isOpen) {
-                      bringInstanceToForeground(id);
-                      return;
-                    }
-                  }
-                  launchApp("finder", { initialPath: "/Trash" });
-                }}
-              />
-            );
-          })()}
+          <LayoutGroup>
+            <AnimatePresence initial={false}>
+              {/* Left pinned */}
+              {pinnedLeft.map((appId) => {
+                const icon = getAppIconPath(appId);
+                const idx = runningIndex++;
+                return (
+                  <IconButton
+                    key={appId}
+                    index={idx}
+                    label={appId}
+                    icon={icon}
+                    idKey={appId}
+                    onClick={() => {
+                      if (appId === "finder") {
+                        focusOrLaunchFinder("/");
+                      } else {
+                        focusMostRecentInstanceOfApp(appId);
+                      }
+                    }}
+                  />
+                );
+              })}
+              
+              {/* Open apps dynamically (excluding pinned) */}
+              {openAppIds.map((appId) => {
+                const icon = getAppIconPath(appId);
+                const idx = runningIndex++;
+                return (
+                  <IconButton
+                    key={appId}
+                    index={idx}
+                    label={appId}
+                    icon={icon}
+                    idKey={appId}
+                    onClick={() => focusMostRecentInstanceOfApp(appId)}
+                  />
+                );
+              })}
+              
+              {/* Trash (right side) */}
+              {(() => {
+                const idx = runningIndex++;
+                return (
+                  <IconButton
+                    key="__trash__"
+                    index={idx}
+                    label="Trash"
+                    icon="trash-empty.png"
+                    idKey="__trash__"
+                    onClick={() => {
+                      // Bring existing Finder to foreground if any; otherwise launch at Trash
+                      for (let i = instanceOrder.length - 1; i >= 0; i--) {
+                        const id = instanceOrder[i];
+                        const inst = instances[id];
+                        if (inst && inst.appId === "finder" && inst.isOpen) {
+                          bringInstanceToForeground(id);
+                          return;
+                        }
+                      }
+                      launchApp("finder", { initialPath: "/Trash" });
+                    }}
+                  />
+                );
+              })()}
+            </AnimatePresence>
           </LayoutGroup>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
