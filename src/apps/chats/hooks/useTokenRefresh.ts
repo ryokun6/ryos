@@ -12,38 +12,56 @@ export function useTokenRefresh() {
   const authToken = useChatsStore((state) => state.authToken);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isCheckingRef = useRef<boolean>(false);
 
   useEffect(() => {
+    // Clear any existing interval first to prevent race conditions
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
     // Only run if we have both username and token
     if (!username || !authToken) {
       return;
     }
 
-    // Check immediately on mount
-    console.log("[useTokenRefresh] Checking token on mount...");
-    checkAndRefreshTokenIfNeeded().then((result) => {
-      if (result.refreshed) {
-        console.log("[useTokenRefresh] Token was automatically refreshed");
+    // Wrapped token check function with race condition protection
+    const performTokenCheck = async (context: string) => {
+      if (isCheckingRef.current) {
+        console.log(`[useTokenRefresh] Skipping ${context} - check already in progress`);
+        return;
       }
-    });
+
+      isCheckingRef.current = true;
+      try {
+        console.log(`[useTokenRefresh] ${context}...`);
+        const result = await checkAndRefreshTokenIfNeeded();
+        if (result.refreshed) {
+          console.log(`[useTokenRefresh] Token was automatically refreshed during ${context}`);
+        }
+      } catch (error) {
+        console.error(`[useTokenRefresh] Error during ${context}:`, error);
+      } finally {
+        isCheckingRef.current = false;
+      }
+    };
+
+    // Check immediately on mount
+    performTokenCheck("Checking token on mount");
 
     // Set up periodic check (every hour)
     intervalRef.current = setInterval(() => {
-      console.log("[useTokenRefresh] Hourly token check...");
-      checkAndRefreshTokenIfNeeded().then((result) => {
-        if (result.refreshed) {
-          console.log(
-            "[useTokenRefresh] Token was automatically refreshed during hourly check"
-          );
-        }
-      });
+      performTokenCheck("Hourly token check");
     }, CHECK_INTERVAL);
 
     // Cleanup
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
+      isCheckingRef.current = false;
     };
   }, [username, authToken, checkAndRefreshTokenIfNeeded]);
 }
