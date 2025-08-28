@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Blend, Share } from "lucide-react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
@@ -652,7 +653,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   return (
     <>
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && createPortal(
           <motion.div
             className={`fixed inset-0 z-[10000] ${
               shaderEffectEnabled
@@ -1138,8 +1139,8 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                 </DropdownMenu>
               </div>
             </div>
-          </motion.div>
-        )}
+          </motion.div>, document.body)
+        }
       </AnimatePresence>
 
       <ShareItemDialog
