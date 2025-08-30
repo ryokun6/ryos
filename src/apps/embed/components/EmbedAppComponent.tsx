@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
-import { useThemeStore } from "@/stores/useThemeStore";
+// Theme is no longer read here; WindowFrame handles theme-specific layout
 
 type EmbedInitialData = {
   url?: string;
@@ -20,8 +20,7 @@ export const EmbedAppComponent: React.FC<AppProps<EmbedInitialData>> = ({
   const [current, setCurrent] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  // Address bar will be rendered inside WindowFrame for all themes
 
   useEffect(() => {
     if (isWindowOpen && inputRef.current && !initialData?.url) {
@@ -82,8 +81,6 @@ export const EmbedAppComponent: React.FC<AppProps<EmbedInitialData>> = ({
 
   return (
     <>
-      {/* Non-XP/98 themes render menu bar above the window */}
-      {!isXpTheme && addressBar}
       <WindowFrame
         title={title}
         appId={"embed" as any}
@@ -91,8 +88,9 @@ export const EmbedAppComponent: React.FC<AppProps<EmbedInitialData>> = ({
         isForeground={isForeground}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
-        // XP/98 themes expect menuBar via prop on the WindowFrame
-        menuBar={isXpTheme ? addressBar : undefined}
+        // Render the address bar inside the WindowFrame for all themes so the
+        // embed search bar is integrated into the window chrome consistently.
+        menuBar={addressBar}
       >
         <div className="w-full h-full flex flex-col bg-white">
           {/* For mac-like themes, toolbar is outside; for XP/98 it’s in menuBar */}

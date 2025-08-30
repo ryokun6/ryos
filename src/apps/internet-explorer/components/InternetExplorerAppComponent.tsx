@@ -1983,7 +1983,6 @@ export function InternetExplorerAppComponent({
 
   return (
     <>
-      {!isXpTheme && isForeground && menuBar}
       <TooltipProvider>
         <WindowFrame
           title={displayTitle}
@@ -1994,7 +1993,7 @@ export function InternetExplorerAppComponent({
           instanceId={instanceId}
           onNavigateNext={onNavigateNext}
           onNavigatePrevious={onNavigatePrevious}
-          menuBar={isXpTheme ? menuBar : undefined}
+          menuBar={menuBar}
         >
           <div className="flex flex-col h-full w-full relative">
             <div

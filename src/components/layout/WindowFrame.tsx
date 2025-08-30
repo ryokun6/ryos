@@ -1176,8 +1176,8 @@ export function WindowFrame({
             </div>
           )}
 
-          {/* For XP/98 themes, render the menuBar inside the window */}
-          {isXpTheme && menuBar && (
+          {/* If a menuBar prop is provided, render it inside the window for consistent layout across themes */}
+          {menuBar && (
             <div
               className="menubar-container"
               style={{

@@ -42,7 +42,6 @@ function TextEditContent({
   const launchAppInstance = useAppStore((state) => state.launchApp);
   const currentTheme = useThemeStore((state) => state.current);
   const speechEnabled = useAppStore((state) => state.speechEnabled);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   // Local UI-only state for Save dialog filename
   const [saveFileName, setSaveFileName] = useState("");
   const [closeSaveFileName, setCloseSaveFileName] = useState("");
@@ -523,7 +522,6 @@ function TextEditContent({
         accept=".txt,.html,.md,.rtf,.doc,.docx"
         className="hidden"
       />
-      {!isXpTheme && isForeground && menuBar}
 
       <WindowFrame
         title={
@@ -542,7 +540,7 @@ function TextEditContent({
         interceptClose={true}
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
+  menuBar={menuBar}
       >
         <div className="flex flex-col h-full w-full">
           <div

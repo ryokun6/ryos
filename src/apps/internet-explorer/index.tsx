@@ -1,5 +1,5 @@
 import { BaseApp, InternetExplorerInitialData } from "../base/types";
-import { InternetExplorerAppComponent } from "./components/InternetExplorerAppComponent";
+import { InternetExplorerBrowser as InternetExplorerAppComponent } from "./components/InternetExplorerBrowser";
 
 export const helpItems = [
   {
@@ -8,30 +8,14 @@ export const helpItems = [
     description:
       "Enter URLs and use navigation buttons (Back, Forward, Refresh, Stop).",
   },
-  {
-    icon: "🌌",
-    title: "Travel Through Time",
-    description:
-      "Select a year from the dropdown to view websites from the past or future.",
-  },
-  {
-    icon: "✨",
-    title: "History Reimagined",
-    description:
-      "AI reconstructs very old sites (pre-1996) and imagines future web experiences.",
-  },
+  // Time-travel features removed: this app is now a standard web browser.
   {
     icon: "⭐",
     title: "Save Favorites",
     description:
       "Add sites and specific years to your Favorites bar for easy access.",
   },
-  {
-    icon: "🔮",
-    title: "Explore Time Nodes",
-    description:
-      "Click the clock icon in the address bar to see available snapshots of the current site across time.",
-  },
+  // Removed time node / sharing descriptions.
   {
     icon: "🔗",
     title: "Share Your Journey",

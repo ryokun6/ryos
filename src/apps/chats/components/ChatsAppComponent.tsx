@@ -505,8 +505,7 @@ export function ChatsAppComponent({
 
   return (
     <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
+  <WindowFrame
         title={
           currentRoom
             ? currentRoom.type === "private"
@@ -522,7 +521,7 @@ export function ChatsAppComponent({
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
         isShaking={isShaking}
-        menuBar={isXpTheme ? menuBar : undefined}
+  menuBar={menuBar}
       >
         <div
           ref={containerRef}

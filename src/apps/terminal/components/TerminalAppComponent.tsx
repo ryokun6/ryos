@@ -38,7 +38,6 @@ import { htmlToMarkdown } from "@/utils/markdown";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { useThemeStore } from "@/stores/useThemeStore";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
 
 // Import new components and utilities
@@ -2774,9 +2773,6 @@ export function TerminalAppComponent({
     );
   };
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-
   const menuBar = (
     <TerminalMenuBar
       onClose={onClose}
@@ -2801,7 +2797,6 @@ export function TerminalAppComponent({
 
   return (
     <>
-      {!isXpTheme && isForeground && menuBar}
       <WindowFrame
         appId="terminal"
         title="Terminal"
@@ -2812,7 +2807,7 @@ export function TerminalAppComponent({
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
+  menuBar={menuBar}
       >
         <motion.div
           className="flex flex-col h-full w-full bg-black/80 backdrop-blur-lg text-white antialiased font-monaco overflow-hidden select-text"

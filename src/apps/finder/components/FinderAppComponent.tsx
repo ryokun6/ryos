@@ -785,8 +785,7 @@ export function FinderAppComponent({
 
   return (
     <>
-      {!isXpTheme && isForeground && menuBar}
-      <input
+  <input
         type="file"
         ref={fileInputRef}
         className="hidden"
@@ -815,7 +814,7 @@ export function FinderAppComponent({
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
+  menuBar={menuBar}
       >
         <div
           className={`flex flex-col h-full w-full relative ${

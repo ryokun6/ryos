@@ -21,7 +21,6 @@ import { usePaintStore } from "@/stores/usePaintStore";
 import { Filter } from "./PaintFiltersMenu";
 import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
-import { useThemeStore } from "@/stores/useThemeStore";
 
 export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
   isWindowOpen,
@@ -415,9 +414,6 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     canvasRef.current?.applyFilter(filter);
   }, []);
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-
   const menuBar = (
     <PaintMenuBar
       isWindowOpen={isWindowOpen}
@@ -448,7 +444,6 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
 
   return (
     <>
-      {!isXpTheme && isForeground && menuBar}
       <WindowFrame
         title={
           currentFilePath
@@ -462,7 +457,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
-        menuBar={isXpTheme ? menuBar : undefined}
+  menuBar={menuBar}
       >
         <div
           className="flex flex-col h-full w-full min-h-0 p-2"
