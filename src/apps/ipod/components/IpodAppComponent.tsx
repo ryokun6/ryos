@@ -2583,6 +2583,8 @@ export function IpodAppComponent({
                                   ? "translateY(0)"
                                   : "translateY(clamp(2rem, 8dvh, 10rem))",
                                 transition: "transform 200ms ease",
+                                paddingLeft: "max(env(safe-area-inset-left), 0.5rem)",
+                                paddingRight: "max(env(safe-area-inset-right), 0.5rem)",
                               }}
                             >
                               <div

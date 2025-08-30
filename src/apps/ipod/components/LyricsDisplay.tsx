@@ -69,6 +69,10 @@ const LoadingState = ({
 }) => (
   <div
     className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
+    style={{
+      paddingLeft: "max(env(safe-area-inset-left), 0.5rem)",
+      paddingRight: "max(env(safe-area-inset-right), 0.5rem)",
+    }}
   >
     <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
       Loading lyrics…
@@ -87,6 +91,10 @@ const TranslatingState = ({
 }) => (
   <div
     className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
+    style={{
+      paddingLeft: "max(env(safe-area-inset-left), 0.5rem)",
+      paddingRight: "max(env(safe-area-inset-right), 0.5rem)",
+    }}
   >
     <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
       Translating lyrics…
@@ -105,6 +113,10 @@ const ErrorState = ({
 }) => (
   <div
     className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
+    style={{
+      paddingLeft: "max(env(safe-area-inset-left), 0.5rem)",
+      paddingRight: "max(env(safe-area-inset-right), 0.5rem)",
+    }}
   >
     <div className={`text-white/70 ${textSizeClass} ${fontClassName}`}></div>
   </div>
@@ -370,10 +382,12 @@ export function LyricsDisplay({
     <motion.div
       layout={alignment === LyricsAlignment.Alternating}
       transition={ANIMATION_CONFIG.spring}
-      className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none px-0 ${bottomPaddingClass}`}
+      className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none ${bottomPaddingClass}`}
       style={{
         ...(containerStyle || {}),
         pointerEvents: interactive ? "auto" : "none",
+        paddingLeft: "max(env(safe-area-inset-left), 0.5rem)",
+        paddingRight: "max(env(safe-area-inset-right), 0.5rem)",
       }}
       onWheel={handleWheel}
       onTouchStart={handleTouchStart}
@@ -419,7 +433,7 @@ export function LyricsDisplay({
               exit="exit"
               variants={variants}
               transition={dynamicTransition}
-              className={`px-2 md:px-6 ${textSizeClass} ${fontClassName} ${lineHeightClass} whitespace-pre-wrap break-words max-w-full text-white`}
+              className={`${textSizeClass} ${fontClassName} ${lineHeightClass} whitespace-pre-wrap break-words max-w-full text-white`}
               style={{
                 textAlign: lineTextAlign as CanvasTextAlign,
                 width: "100%",
