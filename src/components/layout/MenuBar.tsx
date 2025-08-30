@@ -521,12 +521,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     instances,
 
     bringInstanceToForeground,
+    toggleMinimizeInstance,
     foregroundInstanceId, // Add this to get the foreground instance ID
   } = useAppStoreShallow((s) => ({
     getForegroundInstance: s.getForegroundInstance,
     instances: s.instances,
 
     bringInstanceToForeground: s.bringInstanceToForeground,
+    toggleMinimizeInstance: s.toggleMinimizeInstance,
     foregroundInstanceId: s.foregroundInstanceId, // Add this
   }));
 
@@ -662,7 +664,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                   <button
                     key={instanceId}
                     className="px-2 gap-1 border-t border-y rounded-sm flex items-center justify-start"
-                    onClick={() => bringInstanceToForeground(instanceId)}
+                    onClick={() => {
+                      // XP/98 behavior: clicking the active taskbar button toggles minimize
+                      if (instanceId === foregroundInstanceId) {
+                        toggleMinimizeInstance(instanceId);
+                      } else {
+                        bringInstanceToForeground(instanceId);
+                      }
+                    }}
                     style={{
                       height: "85%",
                       flex: "0 1 160px",
