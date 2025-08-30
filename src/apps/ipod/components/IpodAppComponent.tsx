@@ -2514,7 +2514,7 @@ export function IpodAppComponent({
                         {/* Lyrics Overlay */}
                         {showLyrics && (
                           <div
-                            className="absolute bottom-0 inset-0 pointer-events-none z-20"
+                            className="absolute bottom-0 inset-0 pointer-events-none z-20 pl-safe pr-safe"
                             style={{
                               transform: controlsVisible
                                 ? "translateY(-3rem)"
