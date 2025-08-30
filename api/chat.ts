@@ -694,7 +694,7 @@ export default async function handler(req: Request) {
       tools: {
         launchApp: {
           description:
-            "Launch an application in the ryOS interface when the user explicitly requests it. If the id is 'internet-explorer', you must provide BOTH a real 'url' and a 'year' for time-travel; otherwise provide neither.",
+            "Launch an application in the auxOS interface when the user explicitly requests it. If the id is 'internet-explorer', you must provide BOTH a real 'url' and a 'year' for time-travel; otherwise provide neither.",
           parameters: z
             .object({
               id: z.enum(appIds).describe("The app id to launch"),
@@ -767,14 +767,14 @@ export default async function handler(req: Request) {
         },
         closeApp: {
           description:
-            "Close an application in the ryOS interface—but only when the user explicitly asks you to close that specific app.",
+            "Close an application in the auxOS interface—but only when the user explicitly asks you to close that specific app.",
           parameters: z.object({
             id: z.enum(appIds).describe("The app id to close"),
           }),
         },
         switchTheme: {
           description:
-            "Switch the ryOS UI theme to a specific OS style when the user explicitly requests it.",
+            "Switch the auxOS UI theme to a specific OS style when the user explicitly requests it.",
           parameters: z.object({
             theme: z
               .enum(themeIds)

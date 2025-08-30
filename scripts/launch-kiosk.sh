@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# ryOS Kiosk Mode Launcher
-# Launches ryOS in full-screen kiosk mode using Chromium browser
+# auxOS Kiosk Mode Launcher
+# Launches auxOS in full-screen kiosk mode using Chromium browser
 
 
 # Launch Chromium in kiosk mode with proper flags for Raspberry Pi

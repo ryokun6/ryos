@@ -140,7 +140,7 @@ export const extractHtmlContent = (
   };
 };
 
-// Component to render ryOS Code Previews
+// Component to render auxOS Code Previews
 interface HtmlPreviewProps {
   htmlContent: string;
   onInteractionChange?: (isInteracting: boolean) => void;
@@ -603,7 +603,7 @@ export default function HtmlPreview({
       .replace(/[:.]/g, "-")
       .substring(0, 19);
     a.href = url;
-    a.download = `ryOS-generated-${timestamp}.html`;
+    a.download = `auxOS-generated-${timestamp}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -965,7 +965,7 @@ export default function HtmlPreview({
             id={iframeId}
             // srcDoc is now set by useEffect after streaming finishes
             // srcDoc={processedHtmlContent()}
-            title="ryOS Code Preview"
+            title="auxOS Code Preview"
             className="w-full h-full border-0"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
             style={{
@@ -1098,7 +1098,7 @@ export default function HtmlPreview({
                         id={`fullscreen-${iframeId}`}
                         // srcDoc is now set by useEffect after streaming finishes
                         // srcDoc={processedHtmlContent()}
-                        title="ryOS Code Preview Fullscreen"
+                        title="auxOS Code Preview Fullscreen"
                         className="border-0 bg-white w-full h-full"
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                         onClick={(e) => e.stopPropagation()}

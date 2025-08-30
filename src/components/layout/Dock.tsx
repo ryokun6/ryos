@@ -34,7 +34,7 @@ function MacDock() {
 
   // Pinned apps on the left side (in order)
   const pinnedLeft: AppId[] = useMemo(
-    () => ["finder", "chats", "internet-explorer"] as AppId[],
+    () => ["finder", "chats", "internet-explorer", "embed"] as AppId[],
     []
   );
 

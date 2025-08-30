@@ -2083,7 +2083,7 @@ export function TerminalAppComponent({
           id: "system",
           role: "system",
           content:
-            "You are a coding assistant running in the terminal app on ryOS.",
+            "You are a coding assistant running in the terminal app on auxOS.",
         },
       ]);
 
@@ -2117,7 +2117,7 @@ export function TerminalAppComponent({
           id: "system",
           role: "system",
           content:
-            "You are a coding assistant running in the terminal app on ryOS.",
+            "You are a coding assistant running in the terminal app on auxOS.",
         },
       ]);
 

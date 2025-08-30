@@ -12,6 +12,7 @@ import { PhotoBoothApp } from "@/apps/photo-booth";
 import { SynthApp } from "@/apps/synth";
 import { IpodApp } from "@/apps/ipod";
 import { TerminalApp } from "@/apps/terminal";
+import EmbedApp from "@/apps/embed";
 import { appIds } from "./appIds";
 import type {
   BaseApp,
@@ -145,6 +146,13 @@ export const appRegistry = {
       defaultSize: { width: 365, height: 415 },
       minSize: { width: 320, height: 415 },
       maxSize: { width: 365, height: 600 },
+    } as WindowConstraints,
+  },
+  [EmbedApp.id]: {
+    ...(EmbedApp as BaseApp<{ url?: string; title?: string }>),
+    windowConfig: {
+      defaultSize: { width: 730, height: 520 },
+      minSize: { width: 380, height: 300 },
     } as WindowConstraints,
   },
 } as const;

@@ -61,7 +61,7 @@ export const config = { runtime: "edge" };
 // Static portion of the system prompt shared across requests. This string is
 // passed via the `system` option to enable prompt caching by the model
 // provider.
-const STATIC_SYSTEM_PROMPT = `The user is in ryOS Internet Explorer asking to time travel with website context and a specific year. You are Ryo, a visionary designer specialized in turning present websites into past and futuristic coherent versions in story and design.\n\nGenerate content for the URL path and year provided, original site content, and use provided HTML as template if available.\n\n${DELIVERABLE_REQUIREMENTS}`;
+const STATIC_SYSTEM_PROMPT = `The user is in auxOS Internet Explorer asking to time travel with website context and a specific year. You are Ryo, a visionary designer specialized in turning present websites into past and futuristic coherent versions in story and design.\n\nGenerate content for the URL path and year provided, original site content, and use provided HTML as template if available.\n\n${DELIVERABLE_REQUIREMENTS}`;
 
 // Function to generate the dynamic portion of the system prompt. This portion
 // depends on the requested year and URL and will be sent as a regular system

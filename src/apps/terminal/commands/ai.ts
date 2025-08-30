@@ -31,7 +31,7 @@ export const aiCommand: Command = {
       {
         id: "system",
         role: "system",
-        content: "You are a coding assistant running in the terminal app on ryOS.",
+        content: "You are a coding assistant running in the terminal app on auxOS.",
       },
     ]);
     
