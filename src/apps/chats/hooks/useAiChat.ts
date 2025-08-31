@@ -1270,6 +1270,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const handleSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
+
+      // Prevent submission if not authenticated
+      if (!authToken) {
+        if (onPromptSetUsername) {
+          onPromptSetUsername();
+          toast.error("Login Required", {
+            description: "Please login to continue chatting.",
+            duration: 3000,
+          });
+        }
+        return;
+      }
+
       const messageContent = input; // Capture input before clearing
       if (!messageContent.trim()) return; // Don't submit empty messages
 
@@ -1303,6 +1316,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const handleDirectMessageSubmit = useCallback(
     (message: string) => {
       if (!message.trim()) return; // Don't submit empty messages
+
+      // Prevent submission if not authenticated
+      if (!authToken) {
+        if (onPromptSetUsername) {
+          onPromptSetUsername();
+          toast.error("Login Required", {
+            description: "Please login to continue chatting.",
+            duration: 3000,
+          });
+        }
+        return;
+      }
 
       // Check if user needs to set username before submitting
       if (needsUsername && !username) {
