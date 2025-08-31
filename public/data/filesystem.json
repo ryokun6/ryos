@@ -66,17 +66,17 @@
   ],
   "files": [
     {
-      "path": "/Documents/README.md",
-      "name": "README.md",
+      "path": "/Documents/auxe_intel.md",
+      "name": "auxe_intel.md",
       "isDirectory": false,
       "type": "markdown",
       "icon": "/icons/default/file-text.png",
       "status": "active",
-      "content": "# auxOS 8.2\n\nA web-based operating system experience inspired by classic Mac OS System 7. Built using modern web technologies including React, Vite, TailwindCSS, and shadcn/ui components.\n\n## Features\n- Classic System 7 UI with authentic typography\n- Multi-instance window management (drag, resize, maximize)\n- File system with Documents, Applications, and Trash\n- Multiple built-in applications with advanced features\n- Local storage persistence\n- Modern audio features with WaveSurfer.js and Tone.js\n- Responsive design for all screen sizes\n- System-wide sound effects and themes\n- Backup and restore functionality\n- Virtual PC with classic games\n- AI-powered chat with speech synthesis and tool calling\n\n## Built-in Applications\n- **Finder**: Browse and manage your files\n- **TextEdit**: Create and edit documents with markdown (now supports multiple windows)\n- **MacPaint**: Classic bitmap graphics editor with image support\n- **Soundboard**: Create and play custom soundboards\n- **Synth**: Virtual synthesizer with retro aesthetics\n- **Photo Booth**: Camera app with effects and filters\n- **Control Panels**: Customize auxOS system settings\n- **Minesweeper**: Classic puzzle game\n- **Internet Explorer**: Time Machine with AI reimagined sites\n- **Chats**: Chat with Ryo AI assistant (now with voice messages and speech synthesis)\n- **Videos**: VCR-style video playlist player\n- **Virtual PC**: Play classic DOS games\n- **iPod**: 1st-generation iPod with time-synced lyrics and translation\n\n## Getting Started\n- Double-click on any app icon to launch it\n- Use the **Apple menu (🍎)** in the top-left to access system functions\n- Files are automatically saved to your browser's storage\n- Drag windows to move them, click and drag window edges to resize\n- Use Control Panels to customize your experience\n- Launch Virtual PC from Applications folder to play classic games\n\n## Technical Details\n- Built with React 18 and TypeScript\n- Vite for fast development and bundling\n- TailwindCSS for styling\n- shadcn/ui components\n- Bun as package manager\n- WaveSurfer.js for audio visualization\n- Tone.js for audio synthesis\n- Virtual PC Emulator powered by DOSBox\n- Multi-instance window management system\n- Advanced speech synthesis with text highlighting\n\nVisit https://github.com/ryokun6/ryos for more information."
+      "content": "# Welcome to auxOS\\n\\nA modern desktop environment that bridges classic computing with AI.\\n\\n## Getting Started\\n\\n- **Finder**: Browse your files and applications\\n- **TextEdit**: Create and edit documents with rich formatting\\n- **Chats with Ryo**: Your AI assistant for productivity\\n- **Internet Explorer**: Browse the web with time-travel capabilities\\n- **Control Panels**: Customize your desktop experience\\n\\n## Features\\n\\n- Multi-window application management\\n- Persistent file system with IndexedDB\\n- AI-powered chat assistant\\n- Classic Mac-inspired interface\\n- Modern web technologies\\n\\nExplore the Applications folder to discover more tools and utilities.\\n\\nFor detailed help, check out auxe_services.md or ask Ryo in the chat!"
     },
     {
-      "path": "/Documents/Quick Tips.md",
-      "name": "Quick Tips.md",
+      "path": "/Documents/auxe_services.md",
+      "name": "auxe_services.md",
       "isDirectory": false,
       "type": "markdown",
       "icon": "/icons/default/file-text.png",

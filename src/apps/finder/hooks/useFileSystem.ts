@@ -1533,8 +1533,8 @@ export function useFileSystem(
               const now = Date.now();
               // For default files, use a date in the past
               const isDefaultFile = [
-                "/Documents/README.md",
-                "/Documents/Quick Tips.md",
+                "/Documents/auxe_intel.md",
+                "/Documents/auxe_services.md",
                 "/Images/steve-jobs.png",
                 "/Images/susan-kare.png",
               ].includes(item.path);
