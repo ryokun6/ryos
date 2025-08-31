@@ -27,3 +27,4 @@ dist-ssr
 .vercel
 .env*.local
 package-lock.json
+.local.env

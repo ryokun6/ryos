@@ -68,3 +68,36 @@ These are custom implementations (not shadcn):
 - `audio-input-button`
 - `audio-bars`
 - `volume-bar`
+
+## Operational Doctrine Updates (Agent Lessons)
+
+These are durable, actionable rules distilled from recent agent sessions. They are intended to be applied by automated agents and human reviewers working in this repository.
+
+1. Agent Execution Environment
+- When the repository declares a preferred `packageManager` (for example `bun` in this project), verify the runtime has that tool installed before using it.
+- If the preferred tool is absent, choose a documented, minimally-invasive fallback (for example `npm install`), record the substitution, and continue. Do not assume the fallback is identical; note any behavioural differences in session logs.
+
+2. Read-Before-Write / Read-After-Write
+- Always read a target file immediately before editing it. Record the pre-edit intent and the exact lines (or region) you will modify.
+- After applying any edit, re-read the file and verify the change was applied and that syntax/formatting remains valid. If verification fails, revert or create a corrective patch.
+
+3. Safe Command Execution
+- All shell commands executed by an agent must use a timeout wrapper and non-interactive flags where applicable (timeout 120s bash -lc "..."). Capture stdout and stderr for diagnostics.
+
+4. Reconnaissance Discipline
+- Reconnaissance phases must be read-only. Do not mutate files, configuration, or external services during reconnaissance. Any mutations must be explicitly part of a further, authorized remediation phase.
+
+5. System-Wide Ownership when Fixing Shared Components
+- If a fix touches a shared library or component, enumerate and audit all known consumers. Run targeted tests and lints for each affected consumer and apply follow-up fixes where necessary.
+
+6. Reporting and TODO Ledger
+- Maintain an inline TODO ledger in major reports with ✅ (done), ⚠️ (warning/needs attention), and 🚧 (blocker) markers. Include the ledger in the session's final report.
+
+7. Doctrine Evolution Protocol
+- Agents must proactively add durable lessons to project doctrine files when they meet the quality filter: universal & reusable, abstracted, and high-impact. Prefer improving existing rules over appending duplicates.
+
+Integration Procedure (how to apply doctrine updates safely):
+- Search for existing rule file(s) under `.cursor/` and similar locations.
+- Read the file, find the most logical section, and either refine an existing rule or add a new, well-scoped rule.
+- After editing, re-open the edited file, run relevant linters or simple builds if applicable, and record the diff in the session report.
+

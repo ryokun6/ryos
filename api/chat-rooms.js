@@ -4,8 +4,10 @@ import Pusher from "pusher";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import leoProfanity from "leo-profanity";
+import { getModelInstance } from "./utils/aiModels";
 // Inlined minimal Ryo prompt to avoid importing TS from JS during dev
 
 // Legacy bad-words usage removed in favor of leo-profanity
@@ -2721,6 +2723,12 @@ async function handleSendMessage(data, requestId) {
 
 // Generate a Ryo reply server-side and append as a message
 async function handleGenerateRyoReply(data, authUsername, requestId) {
+  // Check if OPENAI_API_KEY is set - required for OpenAI models
+  if (!process.env.OPENAI_API_KEY) {
+    logError(requestId, "OpenAI API key is not configured");
+    return createErrorResponse("OpenAI API key is not configured. Please set OPENAI_API_KEY in your environment.", 503);
+  }
+
   const { roomId, prompt, systemState, model } = data || {};
   const username = authUsername?.toLowerCase();
 
@@ -2782,11 +2790,14 @@ when user asks for an aquarium, fish tank, fishes, or sam's aquarium, include th
     { role: "user", content: prompt },
   ].filter(Boolean);
 
-  // Use Gemini 2.5 Flash directly
+  // Use OpenAI model (gpt-4o) for Ryo replies
   let replyText = "";
   try {
+    const selectedModel = model || "gpt-4o"; // Default to gpt-4o if not specified
+    const modelInstance = getModelInstance(selectedModel);
+    
     const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: modelInstance,
       messages,
       temperature: 0.6,
     });
