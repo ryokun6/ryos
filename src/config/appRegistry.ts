@@ -157,7 +157,7 @@ export const appRegistry = {
     } as WindowConstraints,
   },
   [DeloreanApp.id]: {
-    ...(DeloreanApp as BaseApp<{}>),
+    ...(DeloreanApp as BaseApp<{ url?: string }>),
     windowConfig: {
       defaultSize: { width: 1000, height: 700 },
       minSize: { width: 800, height: 600 },

@@ -180,3 +180,33 @@ This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE)
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Preventing Vercel basename conflicts
+
+Vercel requires that all file basenames (path without extension) be unique. When you have TypeScript sources next to generated JavaScript (for example, `api/utils/aiModels.ts` and `api/utils/aiModels.js`), you’ll get build errors. To avoid this:
+
+1. Remove tracked `.js` files that collide with your `.ts` sources:
+   ```bash
+   git rm api/utils/aiModels.js api/utils/aiPrompts.js
+   ```
+
+2. Ignore compiled JS files in both Vercel and git
+   - In `.vercelignore` (create if missing):
+     ```text
+     api/**/*.js
+     ```
+   - In `.gitignore` (or top-level `.gitignore`):
+     ```text
+     api/**/*.js
+     ```
+
+3. (Optional) Automate detection and removal of collisions with the helper script:
+   ```bash
+   chmod +x scripts/fix-vercel-conflict.sh
+   scripts/fix-vercel-conflict.sh
+   ```
+
+4. Re-run the build to verify no conflicts:
+   ```bash
+   bunx vercel build
+   ```

@@ -93,7 +93,27 @@ These are durable, actionable rules distilled from recent agent sessions. They a
 6. Reporting and TODO Ledger
 - Maintain an inline TODO ledger in major reports with ✅ (done), ⚠️ (warning/needs attention), and 🚧 (blocker) markers. Include the ledger in the session's final report.
 
-7. Doctrine Evolution Protocol
+7. Investigation-First Protocol
+- Always understand current system state before proposing solutions. Search the codebase, read existing implementations, and identify root causes before making changes.
+- This prevents unnecessary work, wrong assumptions, and ensures fixes address underlying issues rather than symptoms.
+
+8. Template-Driven Development
+- When improving or creating patterns, immediately consider reusability and create comprehensive documentation with clear customization points.
+- Use visual markers (🔧) to highlight adaptation points in templates and provide step-by-step instructions for replication.
+
+9. Error Resilience by Default
+- Build comprehensive error handling into all user-facing components: loading states, retry logic, fallback mechanisms, and user-friendly error messages.
+- Never leave users with blank screens or cryptic errors; always provide recovery options.
+
+10. TypeScript Type Safety (auxOS Specific)
+- Remove `as any` workarounds and implement proper interfaces for app components. Define clear InitialData interfaces for all apps.
+- Ensure app IDs are properly typed and consistent across appIds.ts, appRegistry.ts, and component files.
+
+11. Iframe App Pattern (auxOS Specific)
+- All iframe-based apps must include: loading states, error handling with retry logic, fallback URLs, external link options, and proper sandbox permissions.
+- Use the DeLorean app pattern as the standard template for new iframe-based applications.
+
+12. Doctrine Evolution Protocol
 - Agents must proactively add durable lessons to project doctrine files when they meet the quality filter: universal & reusable, abstracted, and high-impact. Prefer improving existing rules over appending duplicates.
 
 Integration Procedure (how to apply doctrine updates safely):
