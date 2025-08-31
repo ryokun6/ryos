@@ -65,7 +65,7 @@ export type LocationOption =
   | "russia";
 
 // Default constants
-export const DEFAULT_URL = "https://apple.com";
+export const DEFAULT_URL = "https://auxe.framer.website/";
 export const DEFAULT_YEAR = "2001";
 
 export const DEFAULT_TIMELINE: { [year: string]: string } = {
