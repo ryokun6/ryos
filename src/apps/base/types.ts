@@ -36,7 +36,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "ipod"
     | "terminal"
     | "embed"
-    | "delorean";
+  | "delorean"
+  | "picflix";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;

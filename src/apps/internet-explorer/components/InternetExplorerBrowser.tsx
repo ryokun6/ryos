@@ -2,19 +2,23 @@ import React, { useEffect, useRef, useMemo, useState } from "react";
 import type { AppProps, InternetExplorerInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { ArrowLeft, ArrowRight, RefreshCw, ExternalLink } from "lucide-react";
+import { DEFAULT_URL } from "@/stores/useInternetExplorerStore";
 
 export const InternetExplorerBrowser: React.FC<
   AppProps<InternetExplorerInitialData>
 > = ({ initialData, isWindowOpen, onClose, isForeground, skipInitialSound, instanceId }) => {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [address, setAddress] = useState<string>(initialData?.url || "");
-  const [currentUrl, setCurrentUrl] = useState<string>(initialData?.url || "");
-  const [historyStack, setHistoryStack] = useState<string[]>(initialData?.url ? [initialData.url] : []);
-  const [historyIndex, setHistoryIndex] = useState<number>(initialData?.url ? 0 : -1);
+  // Use shared default URL from the Internet Explorer store
+  const initialUrl = initialData?.url || DEFAULT_URL;
+  const [address, setAddress] = useState<string>(initialUrl);
+  const [currentUrl, setCurrentUrl] = useState<string>(initialUrl);
+  const [historyStack, setHistoryStack] = useState<string[]>(initialData?.url ? [initialData.url] : [initialUrl]);
+  const [historyIndex, setHistoryIndex] = useState<number>(initialData?.url ? 0 : 0);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    // If initialData provides a URL, navigate to it (this updates history properly).
     if (initialData?.url) navigate(initialData.url);
     if (isWindowOpen && inputRef.current) inputRef.current.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps

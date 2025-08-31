@@ -14,6 +14,7 @@ export const appIds = [
   "terminal",
   "control-panels",
   "embed",
+  "picflix",
   "delorean",
 ] as const;
 
