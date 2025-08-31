@@ -89,6 +89,10 @@ Works on all devices—including mobile, tablet, and desktop.
   - Tool calling capabilities for system integration
   - Save transcript to Markdown
   - Speech synthesis with volume controls
+- **Login & Authentication**: Secure user accounts
+ - Create an account to save your data and access more features
+ - JWT-based authentication with secure tokens
+ - Rate limiting for both anonymous and authenticated users
 - **Control Panels**: System preferences & power tools
   - Appearance & shader selection (CRT, Galaxy, Aurora)
   - UI / typing / Terminal sound toggles

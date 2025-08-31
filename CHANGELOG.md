@@ -2,7 +2,15 @@
 
 All notable changes to this repository.
 
-## Unreleased - 2025-08-30
+## Unreleased - 2025-08-31
+
+- **Authentication & AI Chat**
+  - Implemented a fix to prompt users to log in before using AI chat features, preventing the "AI Error".
+  - Corrected all instances of "ryOS" to "auxOS" in the UI, including the Login Dialog.
+- **Deployment**
+  - Deployed the latest version of the application to Vercel.
+
+## 2025-08-30
 
 - Added `Embed` app
   - Files: `src/apps/embed/index.tsx`, `src/apps/embed/components/EmbedAppComponent.tsx`
