@@ -1468,7 +1468,7 @@ export function useFileSystem(
   useEffect(() => {
     const syncFileSizesAndTimestamps = async () => {
       // Check if we've already done this sync
-      const syncKey = "ryos:file-size-timestamp-sync-v1";
+      const syncKey = "ryos:file-size-timestamp-sync-v2"; // Updated to v2 to force refresh with new file names
       if (localStorage.getItem(syncKey)) {
         return;
       }
