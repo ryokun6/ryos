@@ -9,6 +9,12 @@ This guide captures the concrete patterns that make this repo tick so you can sh
 - Launching apps: use the hook `src/hooks/useLaunchApp.ts` to call `launchApp(appId, { initialData, multiWindow })`. Multi-window is supported by Finder/TextEdit by default; others are single-window unless you pass `multiWindow: true`.
 - Dock/menu integration: The Dock at `src/components/layout/Dock.tsx` and MenuBar/AppleMenu read from the store and `appRegistry`. The Dock pins Finder, Chats, and Internet Explorer by default and shows open apps uniquely by first-open time.
 
+## Theme system and UI components
+- Theme management: `src/stores/useThemeStore.ts` manages the current theme with theme definitions in `src/themes/`.
+- Available themes: `macosx`, `system7`, `win98`, and `xp` with implementation in respective files under `src/themes/`.
+- Theme-specific components: `WindowFrame` (`src/components/layout/WindowFrame.tsx`) handles rendering theme-appropriate chrome around app contents.
+- Theme switching: Control panels app provides theme switching; themes affect window appearance, Dock style, and app menu layout.
+
 ## How Internet Explorer (IE) app works (embedded URLs)
 - Component entry: `src/apps/internet-explorer/index.tsx` exports `InternetExplorerApp` with help items and `InternetExplorerAppComponent`.
 - Window behavior: IE supports `initialData` with `{ url?: string; year?: string; shareCode?: string }`. It handles:
@@ -36,14 +42,22 @@ This guide captures the concrete patterns that make this repo tick so you can sh
 - If re-launching with new data and app is single-window, `AppManager` will dispatch `updateApp` and your component can listen or just read `initialData` changes via props.
 
 ## Data flow and cross-component patterns
-- URL routing to apps: `AppManager` inspects `window.location.pathname` on boot to support IE share codes (`/internet-explorer/:code`), iPod (`/ipod/:id`), and Videos (`/videos/:id`); it then cleans the URL.
+- URL routing to apps: `AppManager` inspects `window.location.pathname` on boot to support IE share codes (`/internet-explorer/:code`), iPod (`/ipod/:id`), Videos (`/videos/:id`), and cleans the URL afterward.
 - Persisted windowing: `useAppStore` is persisted (Zustand `persist`). Migrations ensure `instanceOrder` consistency and legacy app states are migrated to instance-based windows on load.
 - IndexedDB-backed file system: Finder uses hooks and stores in `src/apps/finder` + `src/utils/indexedDB*` to simulate a desktop.
+- Audio and media capabilities: Various hooks like `useSound` (`src/hooks/useSound.ts`), `useSoundboard` (`src/hooks/useSoundboard.ts`), and `useAudioRecorder` (`src/hooks/useAudioRecorder.ts`) provide audio functionality. Media playback in iPod, Videos apps showcases integration patterns.
+
+## API integration
+- API endpoints: The `api/` directory contains serverless endpoints for chat, audio transcription, lyrics, etc.
+- AI integration: Chats app uses API endpoints to interact with AI models, with configuration in `api/utils/aiModels.ts`.
+- CORS and rate limiting: API endpoints use `api/utils/cors.js` and `api/utils/rate-limit.js` for protection.
 
 ## Dev workflows (what actually works here)
 - Package manager: Bun (see `package.json` with `packageManager: "bun@..."`).
    - Install: `bun install`
    - Dev server: `PORT=5173 bun run dev` (the `dev` script assumes PORT is provided)
+   - API server: `bun run dev:api` (runs API endpoints locally)
+   - Full dev setup: `bun run dev:all` (concurrently runs front-end and API server)
    - Build: `bun run build` (runs `tsc -b` then `vite build`)
 - Static assets: under `public/` (icons, wallpapers, fonts). Scripts: `scripts/generate-icon-manifest.ts`, `scripts/generate-wallpaper-manifest.ts` (run via `bun run generate:icons`/`generate:wallpapers`).
 
@@ -104,3 +118,8 @@ Follow these steps to add a new app that behaves like `Embed` (or `Internet Expl
    - Optional: styles, test harness, hooks under `src/apps/<your-app>/`
 
 If you'd like, I can add a small template `index.tsx` + component file for you to copy into a new app folder so you can scaffold new apps quickly.
+### Injecting a Reload button
+To add a native “Reload” icon in the window chrome for any embed-like app:
+1. Add `const iframeRef = useRef<HTMLIFrameElement>(null)` in your component.
+2. Create a `menuBar` ReactNode with a `<Button>` that calls `iframeRef.current?.contentWindow?.location.reload()`.
+3. Pass `menuBar={menuBar}` to your `<WindowFrame>` invocation.
