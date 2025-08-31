@@ -14,6 +14,8 @@ interface UseLyricsParams {
   currentTime: number;
   /** Target language for translation (e.g., "en", "es", "ja"). If null or undefined, no translation. */
   translateTo?: string | null;
+  /** Persistent translation language preference. Used when translateTo is null/undefined. */
+  persistentTranslationLanguage?: string | null;
 }
 
 interface LyricsState {
@@ -36,6 +38,7 @@ export function useLyrics({
   album = "",
   currentTime,
   translateTo,
+  persistentTranslationLanguage,
 }: UseLyricsParams): LyricsState {
   const [originalLines, setOriginalLines] = useState<LyricLine[]>([]);
   const [translatedLines, setTranslatedLines] = useState<LyricLine[] | null>(
@@ -141,12 +144,15 @@ export function useLyrics({
 
   // Effect for translating lyrics
   useEffect(() => {
-    if (!translateTo || originalLines.length === 0) {
+    // Determine the target language: use translateTo if available, otherwise use persistent preference
+    const targetLanguage = translateTo || persistentTranslationLanguage;
+    
+    if (!targetLanguage || originalLines.length === 0) {
       setTranslatedLines(null);
       setIsTranslating(false);
-      if (translateTo && originalLines.length > 0) {
+      if (targetLanguage && originalLines.length > 0) {
         // This case should be handled by originalLines fetch completing first.
-        // If originalLines is empty and translateTo is set, it means we are waiting for original fetch or original fetch failed.
+        // If originalLines is empty and targetLanguage is set, it means we are waiting for original fetch or original fetch failed.
       }
       return;
     }
@@ -172,7 +178,7 @@ export function useLyrics({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         lines: originalLines,
-        targetLanguage: translateTo,
+        targetLanguage: targetLanguage,
       }),
       signal: controller.signal,
     })
@@ -228,7 +234,7 @@ export function useLyrics({
       controller.abort();
       clearTimeout(translationTimeoutId);
     };
-  }, [originalLines, translateTo, isFetchingOriginal, title, artist]);
+  }, [originalLines, translateTo, persistentTranslationLanguage, isFetchingOriginal, title, artist]);
 
   const displayLines = translatedLines || originalLines;
 
