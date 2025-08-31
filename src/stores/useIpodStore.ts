@@ -32,6 +32,7 @@ interface IpodData {
   chineseVariant: ChineseVariant;
   koreanDisplay: KoreanDisplay;
   lyricsTranslationRequest: { language: string; songId: string } | null;
+  persistentTranslationLanguage: string | null; // Persistent translation language preference
   currentLyrics: { lines: LyricLine[] } | null;
   isFullScreen: boolean;
   libraryState: LibraryState;
@@ -83,6 +84,7 @@ const initialIpodData: IpodData = {
   chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
   lyricsTranslationRequest: null,
+  persistentTranslationLanguage: null,
   currentLyrics: null,
   isFullScreen: false,
   libraryState: "uninitialized",
@@ -123,6 +125,8 @@ export interface IpodState extends IpodData {
     language: string | null,
     songId: string | null
   ) => void;
+  /** Set the persistent translation language preference. Pass null to disable persistent translation. */
+  setPersistentTranslationLanguage: (language: string | null) => void;
   /** Import library from JSON string */
   importLibrary: (json: string) => void;
   /** Export library to JSON string */
@@ -441,6 +445,8 @@ export const useIpodStore = create<IpodState>()(
             ? { lyricsTranslationRequest: { language, songId } }
             : { lyricsTranslationRequest: null }
         ),
+      setPersistentTranslationLanguage: (language) =>
+        set({ persistentTranslationLanguage: language }),
       importLibrary: (json: string) => {
         try {
           const importedTracks = JSON.parse(json) as Track[];
@@ -714,6 +720,7 @@ export const useIpodStore = create<IpodState>()(
         lyricsAlignment: state.lyricsAlignment,
         chineseVariant: state.chineseVariant,
         koreanDisplay: state.koreanDisplay,
+        persistentTranslationLanguage: state.persistentTranslationLanguage,
         isFullScreen: state.isFullScreen,
         libraryState: state.libraryState,
         lastKnownVersion: state.lastKnownVersion,
@@ -738,6 +745,7 @@ export const useIpodStore = create<IpodState>()(
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             lyricsTranslationRequest: null, // Ensure this is not carried from old persisted state
+            persistentTranslationLanguage: state.persistentTranslationLanguage ?? null,
             libraryState: "uninitialized" as LibraryState, // Reset to uninitialized on migration
             lastKnownVersion: state.lastKnownVersion ?? 0,
           };
@@ -759,6 +767,7 @@ export const useIpodStore = create<IpodState>()(
           lyricsAlignment: state.lyricsAlignment,
           chineseVariant: state.chineseVariant,
           koreanDisplay: state.koreanDisplay,
+          persistentTranslationLanguage: state.persistentTranslationLanguage,
           isFullScreen: state.isFullScreen,
           libraryState: state.libraryState,
         };

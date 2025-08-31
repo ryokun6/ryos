@@ -85,6 +85,7 @@ export function IpodMenuBar({
     setChineseVariant,
     setKoreanDisplay,
     setLyricsTranslationRequest,
+    setPersistentTranslationLanguage,
     importLibrary,
     exportLibrary,
   } = useIpodStoreShallow((s) => ({
@@ -123,6 +124,7 @@ export function IpodMenuBar({
     setChineseVariant: s.setChineseVariant,
     setKoreanDisplay: s.setKoreanDisplay,
     setLyricsTranslationRequest: s.setLyricsTranslationRequest,
+    setPersistentTranslationLanguage: s.setPersistentTranslationLanguage,
     importLibrary: s.importLibrary,
     exportLibrary: s.exportLibrary,
   }));
@@ -436,6 +438,10 @@ export function IpodMenuBar({
                 <DropdownMenuItem
                   key={lang.code || "off"}
                   onClick={() => {
+                    // Set persistent translation language preference
+                    setPersistentTranslationLanguage(lang.code);
+                    
+                    // Also set the current song's translation request for immediate effect
                     const currentTrackId = tracks[currentIndex]?.id;
                     if (currentTrackId && lang.code) {
                       setLyricsTranslationRequest(lang.code, currentTrackId);
