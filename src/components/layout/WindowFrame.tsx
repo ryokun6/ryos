@@ -1181,8 +1181,16 @@ export function WindowFrame({
             <div
               className="menubar-container"
               style={{
-                background: "var(--button-face)",
-                borderBottom: "1px solid var(--button-shadow)",
+                background: currentTheme === "system7"
+                  ? "#FFFFFF"
+                  : currentTheme === "macosx"
+                    ? "linear-gradient(to bottom, #f6f6f6 0%, #dadada 100%)"
+                    : "var(--button-face)",
+                borderBottom: currentTheme === "system7"
+                  ? "1px solid #000000"
+                  : currentTheme === "macosx"
+                    ? "1px solid rgba(0, 0, 0, 0.2)"
+                    : "1px solid var(--button-shadow)",
               }}
             >
               {menuBar}

@@ -271,12 +271,12 @@ export function AppManager({ apps }: AppManagerProps) {
         navigateToPreviousApp: navigateToPreviousInstance,
       }}
     >
-      {(() => {
-        const hasForeground = Boolean(getForegroundInstance());
-        // XP/Win98: always render global MenuBar (taskbar)
-        // Mac/System7: render placeholder MenuBar only when no app is foreground
-        return isXpTheme || !hasForeground ? <MenuBar /> : null;
-      })()}
+      {isXpTheme ||
+      currentTheme === "system7" ||
+      currentTheme === "macosx" ||
+      !getForegroundInstance() ? (
+        <MenuBar />
+      ) : null}
       {/* macOS Dock */}
       <Dock />
       {/* App Instances */}
