@@ -560,7 +560,21 @@ function ChatMessagesContent({
           )}
         </motion.div>
       )}
-      {messages.map((message) => {
+      {messages
+        .filter((message) => {
+          // Filter out messages with empty content
+          const rawContent = isUrgentMessage(message.content)
+            ? message.content.slice(4).trimStart()
+            : message.content;
+          const displayContent = decodeHtmlEntities(rawContent);
+          
+          // Check if message has meaningful content or parts
+          const hasContent = displayContent.trim().length > 0;
+          const hasParts = message.parts && message.parts.length > 0;
+          
+          return hasContent || hasParts;
+        })
+        .map((message) => {
         const messageKey =
           message.id || `${message.role}-${message.content.substring(0, 10)}`;
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
