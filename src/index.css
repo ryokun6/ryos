@@ -444,6 +444,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Safe area padding utilities */
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
   .font-monaco,
   .font-monaco-9 {
     font-family: "Monaco", "ArkPixel", "SerenityOS-Emoji", monospace;
