@@ -551,7 +551,7 @@ function FullScreenPortal({
                 </div>
                 <div
                   className="font-chicago text-black text-[min(5vw,5vh)] absolute inset-0"
-                  style={{ WebkitTextStroke: "5px black", textShadow: "none" }}
+                  style={{ textShadow: "none" }}
                 >
                   {statusMessage}
                 </div>
