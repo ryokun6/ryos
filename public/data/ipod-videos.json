@@ -1,6 +1,20 @@
 {
   "videos": [
     {
+      "id": "WXS-o57VJ5w",
+      "url": "https://www.youtube.com/watch?v=WXS-o57VJ5w",
+      "title": "GO!",
+      "artist": "CORTIS",
+      "lyricOffset": -3400
+    },
+    {
+      "id": "rdB7ip3zQqg",
+      "url": "https://www.youtube.com/watch?v=rdB7ip3zQqg",
+      "title": "FaSHioN",
+      "artist": "CORTIS",
+      "lyricOffset": -1700
+    },
+    {
       "id": "GYCD2KUB3WQ",
       "url": "https://www.youtube.com/watch?v=GYCD2KUB3WQ",
       "title": "FOREVER WITH U",
