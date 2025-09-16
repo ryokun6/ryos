@@ -141,23 +141,24 @@ export default async function handler(req: Request) {
     });
 
     // --------------------------
-    // 1. Attempt cache lookup (skip if bypassCache is true)
+    // 1. Generate cache key (always needed for storage)
     // --------------------------
-    let transCacheKey: string | null = null;
-    
+    const linesFingerprintSrc = JSON.stringify(
+      lines.map((l) => ({ w: l.words, t: l.startTimeMs }))
+    );
+    const transCacheKey = buildTranslationCacheKey(
+      linesFingerprintSrc,
+      targetLanguage
+    );
+
+    // --------------------------
+    // 2. Attempt cache lookup (skip if bypassCache is true)
+    // --------------------------
     if (!bypassCache) {
       const redis = new Redis({
         url: process.env.REDIS_KV_REST_API_URL as string,
         token: process.env.REDIS_KV_REST_API_TOKEN as string,
       });
-
-      const linesFingerprintSrc = JSON.stringify(
-        lines.map((l) => ({ w: l.words, t: l.startTimeMs }))
-      );
-      transCacheKey = buildTranslationCacheKey(
-        linesFingerprintSrc,
-        targetLanguage
-      );
 
       try {
         const cached = (await redis.get(transCacheKey)) as string | null;
@@ -204,20 +205,20 @@ Do not include timestamps or any other formatting in your output strings; just t
 
     const lrcResult = lrcOutputLines.join("\n");
 
-    // Store in cache (TTL 30 days) - only if not bypassing and we have a cache key
-    if (!bypassCache && transCacheKey) {
-      try {
-        const redis = new Redis({
-          url: process.env.REDIS_KV_REST_API_URL as string,
-          token: process.env.REDIS_KV_REST_API_TOKEN as string,
-        });
-        await redis.set(transCacheKey, lrcResult);
+    // Store in cache (TTL 30 days) - always store the result
+    try {
+      const redis = new Redis({
+        url: process.env.REDIS_KV_REST_API_URL as string,
+        token: process.env.REDIS_KV_REST_API_TOKEN as string,
+      });
+      await redis.set(transCacheKey, lrcResult);
+      if (bypassCache) {
+        logInfo(requestId, "Stored refreshed translation in cache", { transCacheKey, bypassCache });
+      } else {
         logInfo(requestId, "Stored translation in cache", { transCacheKey });
-      } catch (e) {
-        logError(requestId, "Redis cache write failed (lyrics translation)", e);
       }
-    } else if (bypassCache) {
-      logInfo(requestId, "Translation not cached (bypass requested)", { bypassCache });
+    } catch (e) {
+      logError(requestId, "Redis cache write failed (lyrics translation)", e);
     }
 
     return new Response(lrcResult, {
