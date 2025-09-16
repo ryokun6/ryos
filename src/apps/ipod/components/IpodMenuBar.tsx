@@ -446,8 +446,8 @@ export function IpodMenuBar({
             <DropdownMenuSubContent className="px-0 max-h-[400px] overflow-y-auto">
               {translationLanguages.map((lang) => {
                 const currentTrackId = tracks[currentIndex]?.id;
-                const isActive = lyricsTranslationRequest?.songId === currentTrackId && 
-                  lyricsTranslationRequest?.language === lang.code;
+                // Show checkmark if this language will be applied to the current track
+                const willBeApplied = lyricsTranslationRequest?.language === lang.code;
                 const isOriginal = !lang.code && !lyricsTranslationRequest;
                 
                 return (
@@ -462,8 +462,8 @@ export function IpodMenuBar({
                     }}
                     className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
                   >
-                    <span className={cn((!isActive && !isOriginal) && "pl-4")}>
-                      {(isActive || isOriginal) ? "✓ " : ""}{lang.label}
+                    <span className={cn((!willBeApplied && !isOriginal) && "pl-4")}>
+                      {(willBeApplied || isOriginal) ? "✓ " : ""}{lang.label}
                     </span>
                   </DropdownMenuItem>
                 );
