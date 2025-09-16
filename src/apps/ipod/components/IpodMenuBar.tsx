@@ -82,6 +82,7 @@ export function IpodMenuBar({
     setTheme,
     toggleLyrics,
     setLyricsAlignment,
+    refreshLyrics,
     setChineseVariant,
     setKoreanDisplay,
     setLyricsTranslationRequest,
@@ -120,6 +121,7 @@ export function IpodMenuBar({
     setTheme: s.setTheme,
     toggleLyrics: s.toggleLyrics,
     setLyricsAlignment: s.setLyricsAlignment,
+    refreshLyrics: s.refreshLyrics,
     setChineseVariant: s.setChineseVariant,
     setKoreanDisplay: s.setKoreanDisplay,
     setLyricsTranslationRequest: s.setLyricsTranslationRequest,
@@ -332,6 +334,14 @@ export function IpodMenuBar({
                 <span className={cn(!showLyrics && "pl-4")}>
                   {showLyrics ? "✓ Show Lyrics" : "Show Lyrics"}
                 </span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={refreshLyrics}
+                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                disabled={tracks.length === 0 || currentIndex === -1}
+              >
+                Refresh Lyrics
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
