@@ -66,6 +66,7 @@ export function IpodMenuBar({
     lyricsAlignment,
     chineseVariant,
     koreanDisplay,
+    lyricsTranslationRequest,
     // Actions
     setCurrentIndex,
     setIsPlaying,
@@ -105,6 +106,7 @@ export function IpodMenuBar({
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
     chineseVariant: s.chineseVariant ?? ChineseVariant.Traditional,
     koreanDisplay: s.koreanDisplay ?? KoreanDisplay.Original,
+    lyricsTranslationRequest: s.lyricsTranslationRequest,
     // Actions
     setCurrentIndex: s.setCurrentIndex,
     setIsPlaying: s.setIsPlaying,
@@ -442,22 +444,30 @@ export function IpodMenuBar({
               Translate
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="px-0 max-h-[400px] overflow-y-auto">
-              {translationLanguages.map((lang) => (
-                <DropdownMenuItem
-                  key={lang.code || "off"}
-                  onClick={() => {
-                    const currentTrackId = tracks[currentIndex]?.id;
-                    if (currentTrackId && lang.code) {
-                      setLyricsTranslationRequest(lang.code, currentTrackId);
-                    } else if (!lang.code) {
-                      setLyricsTranslationRequest(null, null);
-                    }
-                  }}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
-                >
-                  <span>{lang.label}</span>
-                </DropdownMenuItem>
-              ))}
+              {translationLanguages.map((lang) => {
+                const currentTrackId = tracks[currentIndex]?.id;
+                // Show checkmark if this language will be applied to the current track
+                const willBeApplied = lyricsTranslationRequest?.language === lang.code;
+                const isOriginal = !lang.code && !lyricsTranslationRequest;
+                
+                return (
+                  <DropdownMenuItem
+                    key={lang.code || "off"}
+                    onClick={() => {
+                      if (currentTrackId && lang.code) {
+                        setLyricsTranslationRequest(lang.code, currentTrackId);
+                      } else if (!lang.code) {
+                        setLyricsTranslationRequest(null, null);
+                      }
+                    }}
+                    className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  >
+                    <span className={cn((!willBeApplied && !isOriginal) && "pl-4")}>
+                      {(willBeApplied || isOriginal) ? "✓ " : ""}{lang.label}
+                    </span>
+                  </DropdownMenuItem>
+                );
+              })}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
 
