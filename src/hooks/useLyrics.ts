@@ -171,7 +171,7 @@ export function useLyrics({
     const translationTimeoutId = setTimeout(() => {
       controller.abort();
       console.warn("Lyrics translation timed out");
-    }, 40000);
+    }, 120000);
 
     fetch("/api/translate-lyrics", {
       method: "POST",
