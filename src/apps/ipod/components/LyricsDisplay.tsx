@@ -266,13 +266,30 @@ export function LyricsDisplay({
     computeAltVisibleLines(lines, currentLine)
   );
 
-  // Update alternating lines with a short delay when currentLine changes
+  // Update alternating lines using a percentage of the new line's duration
   useEffect(() => {
     if (alignment !== LyricsAlignment.Alternating) return;
 
+    // Determine the duration of the new current line
+    const clampedIdx = Math.min(Math.max(0, currentLine), lines.length - 1);
+    const currentStart =
+      clampedIdx >= 0 && lines[clampedIdx]
+        ? parseInt(lines[clampedIdx].startTimeMs)
+        : null;
+    const nextStart =
+      clampedIdx + 1 < lines.length && lines[clampedIdx + 1]
+        ? parseInt(lines[clampedIdx + 1].startTimeMs)
+        : null;
+
+    const rawDuration =
+      currentStart !== null && nextStart !== null ? nextStart - currentStart : 0;
+
+    // Use 20% of the line duration; clamp to a reasonable range to avoid extremes
+    const delayMs = Math.max(20, Math.floor(rawDuration * 0.2));
+
     const timer = setTimeout(() => {
       setAltLines(computeAltVisibleLines(lines, currentLine));
-    }, 250); // 250 ms delay before replacing finished line
+    }, delayMs);
 
     return () => clearTimeout(timer);
   }, [alignment, lines, currentLine]);
