@@ -16,6 +16,7 @@ const LyricLineSchema = z.object({
 const TranslateLyricsRequestSchema = z.object({
   lines: z.array(LyricLineSchema),
   targetLanguage: z.string(),
+  bypassCache: z.boolean().optional(),
 });
 
 // New simplified schema for the AI response object
@@ -125,7 +126,7 @@ export default async function handler(req: Request) {
       );
     }
 
-    const { lines, targetLanguage } = validation.data;
+    const { lines, targetLanguage, bypassCache } = validation.data;
 
     if (!lines || lines.length === 0) {
       return new Response("", {
@@ -140,35 +141,41 @@ export default async function handler(req: Request) {
     });
 
     // --------------------------
-    // 1. Attempt cache lookup
+    // 1. Attempt cache lookup (skip if bypassCache is true)
     // --------------------------
-    const redis = new Redis({
-      url: process.env.REDIS_KV_REST_API_URL as string,
-      token: process.env.REDIS_KV_REST_API_TOKEN as string,
-    });
+    let transCacheKey: string | null = null;
+    
+    if (!bypassCache) {
+      const redis = new Redis({
+        url: process.env.REDIS_KV_REST_API_URL as string,
+        token: process.env.REDIS_KV_REST_API_TOKEN as string,
+      });
 
-    const linesFingerprintSrc = JSON.stringify(
-      lines.map((l) => ({ w: l.words, t: l.startTimeMs }))
-    );
-    const transCacheKey = buildTranslationCacheKey(
-      linesFingerprintSrc,
-      targetLanguage
-    );
+      const linesFingerprintSrc = JSON.stringify(
+        lines.map((l) => ({ w: l.words, t: l.startTimeMs }))
+      );
+      transCacheKey = buildTranslationCacheKey(
+        linesFingerprintSrc,
+        targetLanguage
+      );
 
-    try {
-      const cached = (await redis.get(transCacheKey)) as string | null;
-      if (cached) {
-        logInfo(requestId, "Translation cache HIT", { transCacheKey });
-        return new Response(cached, {
-          headers: {
-            "Content-Type": "text/plain; charset=utf-8",
-            "X-Lyrics-Translation-Cache": "HIT",
-          },
-        });
+      try {
+        const cached = (await redis.get(transCacheKey)) as string | null;
+        if (cached) {
+          logInfo(requestId, "Translation cache HIT", { transCacheKey });
+          return new Response(cached, {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "X-Lyrics-Translation-Cache": "HIT",
+            },
+          });
+        }
+        logInfo(requestId, "Translation cache MISS", { transCacheKey });
+      } catch (e) {
+        logError(requestId, "Redis cache lookup failed (lyrics translation)", e);
       }
-      logInfo(requestId, "Translation cache MISS", { transCacheKey });
-    } catch (e) {
-      logError(requestId, "Redis cache lookup failed (lyrics translation)", e);
+    } else {
+      logInfo(requestId, "Translation cache BYPASSED", { bypassCache });
     }
 
     // Simplified system prompt for the AI
@@ -197,12 +204,20 @@ Do not include timestamps or any other formatting in your output strings; just t
 
     const lrcResult = lrcOutputLines.join("\n");
 
-    // Store in cache (TTL 30 days)
-    try {
-      await redis.set(transCacheKey, lrcResult);
-      logInfo(requestId, "Stored translation in cache", { transCacheKey });
-    } catch (e) {
-      logError(requestId, "Redis cache write failed (lyrics translation)", e);
+    // Store in cache (TTL 30 days) - only if not bypassing and we have a cache key
+    if (!bypassCache && transCacheKey) {
+      try {
+        const redis = new Redis({
+          url: process.env.REDIS_KV_REST_API_URL as string,
+          token: process.env.REDIS_KV_REST_API_TOKEN as string,
+        });
+        await redis.set(transCacheKey, lrcResult);
+        logInfo(requestId, "Stored translation in cache", { transCacheKey });
+      } catch (e) {
+        logError(requestId, "Redis cache write failed (lyrics translation)", e);
+      }
+    } else if (bypassCache) {
+      logInfo(requestId, "Translation not cached (bypass requested)", { bypassCache });
     }
 
     return new Response(lrcResult, {

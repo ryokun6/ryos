@@ -173,12 +173,16 @@ export function useLyrics({
       console.warn("Lyrics translation timed out");
     }, 120000);
 
+    // Check if this translation is triggered by a refresh (refreshNonce changed)
+    const isRefreshTriggered = lastRefreshNonceRef.current !== refreshNonce;
+    
     fetch("/api/translate-lyrics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         lines: originalLines,
         targetLanguage: translateTo,
+        bypassCache: isRefreshTriggered,
       }),
       signal: controller.signal,
     })
@@ -208,6 +212,8 @@ export function useLyrics({
           // If translation returns empty we still keep original in the store.
           setTranslatedLines([]);
         }
+        // Update the refresh nonce reference so subsequent translations use cache
+        lastRefreshNonceRef.current = refreshNonce;
       })
       .catch((err: unknown) => {
         if (cancelled) return;
