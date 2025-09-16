@@ -724,6 +724,7 @@ export const useIpodStore = create<IpodState>()(
         lyricsAlignment: state.lyricsAlignment,
         chineseVariant: state.chineseVariant,
         koreanDisplay: state.koreanDisplay,
+        lyricsTranslationRequest: state.lyricsTranslationRequest, // Persist translation state
         isFullScreen: state.isFullScreen,
         libraryState: state.libraryState,
         lastKnownVersion: state.lastKnownVersion,
@@ -747,7 +748,7 @@ export const useIpodStore = create<IpodState>()(
               state.lyricsAlignment ?? LyricsAlignment.FocusThree,
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
-            lyricsTranslationRequest: null, // Ensure this is not carried from old persisted state
+            lyricsTranslationRequest: state.lyricsTranslationRequest ?? null, // Preserve existing translation state
             libraryState: "uninitialized" as LibraryState, // Reset to uninitialized on migration
             lastKnownVersion: state.lastKnownVersion ?? 0,
           };
@@ -769,6 +770,7 @@ export const useIpodStore = create<IpodState>()(
           lyricsAlignment: state.lyricsAlignment,
           chineseVariant: state.chineseVariant,
           koreanDisplay: state.koreanDisplay,
+          lyricsTranslationRequest: state.lyricsTranslationRequest, // Persist translation state
           isFullScreen: state.isFullScreen,
           libraryState: state.libraryState,
         };
