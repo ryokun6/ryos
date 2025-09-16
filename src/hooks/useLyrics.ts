@@ -234,7 +234,7 @@ export function useLyrics({
       controller.abort();
       clearTimeout(translationTimeoutId);
     };
-  }, [originalLines, translateTo, isFetchingOriginal, title, artist]);
+  }, [originalLines, translateTo, isFetchingOriginal, title, artist, refreshNonce]);
 
   const displayLines = translatedLines || originalLines;
 
