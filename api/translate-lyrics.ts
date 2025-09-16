@@ -2,7 +2,6 @@ import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { Redis } from "@upstash/redis";
-import * as RateLimit from "./utils/rate-limit";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./utils/cors.js";
 
 export const config = {
@@ -107,35 +106,7 @@ export default async function handler(req: Request) {
       return new Response("Unauthorized", { status: 403 });
     }
 
-    // Rate limits: burst 5/min/IP + daily 100/IP
-    try {
-      const ip = RateLimit.getClientIp(req);
-      const BURST_WINDOW = 60;
-      const BURST_LIMIT = 5;
-      const DAILY_WINDOW = 60 * 60 * 24;
-      const DAILY_LIMIT = 100;
-
-      const burstKey = RateLimit.makeKey(["rl", "lyrics", "translate", "burst", "ip", ip]);
-      const dailyKey = RateLimit.makeKey(["rl", "lyrics", "translate", "daily", "ip", ip]);
-
-      const burst = await RateLimit.checkCounterLimit({ key: burstKey, windowSeconds: BURST_WINDOW, limit: BURST_LIMIT });
-      if (!burst.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: "burst" }),
-          { status: 429, headers: { "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW), "Content-Type": "text/plain; charset=utf-8", "Access-Control-Allow-Origin": effectiveOrigin! } }
-        );
-      }
-
-      const daily = await RateLimit.checkCounterLimit({ key: dailyKey, windowSeconds: DAILY_WINDOW, limit: DAILY_LIMIT });
-      if (!daily.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: "daily" }),
-          { status: 429, headers: { "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW), "Content-Type": "text/plain; charset=utf-8", "Access-Control-Allow-Origin": effectiveOrigin! } }
-        );
-      }
-    } catch (e) {
-      logError(requestId, "Rate limit check failed (translate-lyrics)", e);
-    }
+    // Rate limiting removed - no longer limiting lyrics translation requests
 
     const body = (await req.json()) as TranslateLyricsRequest;
     const validation = TranslateLyricsRequestSchema.safeParse(body);
