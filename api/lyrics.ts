@@ -13,6 +13,8 @@ export const config = {
 const LyricsRequestSchema = z.object({
   title: z.string().optional(),
   artist: z.string().optional(),
+  album: z.string().optional(),
+  force: z.boolean().optional(),
 });
 
 type LyricsRequest = z.infer<typeof LyricsRequestSchema>;
@@ -172,8 +174,7 @@ export default async function handler(req: Request) {
     });
   }
 
-  const { title = "", artist = "" } = body;
-  const album = ""; // Album is not part of the request schema
+  const { title = "", artist = "", album = "", force = false } = body;
   if (!title && !artist) {
     return new Response(
       JSON.stringify({
@@ -186,7 +187,7 @@ export default async function handler(req: Request) {
   logInfo(requestId, "Received lyrics request", { title, artist });
 
   // --------------------------
-  // 1. Attempt cache lookup
+  // 1. Attempt cache lookup (skip if force refresh requested)
   // --------------------------
   const redis = new Redis({
     url: process.env.REDIS_KV_REST_API_URL as string,
@@ -194,25 +195,29 @@ export default async function handler(req: Request) {
   });
 
   const cacheKey = buildLyricsCacheKey(title, artist);
-  try {
-    const cachedRaw = await redis.get(cacheKey);
-    if (cachedRaw) {
-      const cachedStr =
-        typeof cachedRaw === "string" ? cachedRaw : JSON.stringify(cachedRaw);
-      logInfo(requestId, "Lyrics cache HIT", { cacheKey });
-      return new Response(cachedStr, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-Lyrics-Cache": "HIT",
-          "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
-        },
-      });
+  if (!force) {
+    try {
+      const cachedRaw = await redis.get(cacheKey);
+      if (cachedRaw) {
+        const cachedStr =
+          typeof cachedRaw === "string" ? cachedRaw : JSON.stringify(cachedRaw);
+        logInfo(requestId, "Lyrics cache HIT", { cacheKey });
+        return new Response(cachedStr, {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Lyrics-Cache": "HIT",
+            "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+          },
+        });
+      }
+      logInfo(requestId, "Lyrics cache MISS", { cacheKey });
+    } catch (e) {
+      logError(requestId, "Redis cache lookup failed (lyrics)", e);
+      console.error("Redis cache lookup failed (lyrics)", e);
+      // continue without cache
     }
-    logInfo(requestId, "Lyrics cache MISS", { cacheKey });
-  } catch (e) {
-    logError(requestId, "Redis cache lookup failed (lyrics)", e);
-    console.error("Redis cache lookup failed (lyrics)", e);
-    // continue without cache
+  } else {
+    logInfo(requestId, "Bypassing lyrics cache due to force flag", { cacheKey });
   }
 
   try {
@@ -324,7 +329,11 @@ export default async function handler(req: Request) {
       }
 
     return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": getEffectiveOrigin(req)! },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+        "X-Lyrics-Cache": force ? "BYPASS" : "MISS",
+      },
     });
     }
 

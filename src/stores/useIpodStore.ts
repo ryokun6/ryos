@@ -33,6 +33,8 @@ interface IpodData {
   koreanDisplay: KoreanDisplay;
   lyricsTranslationRequest: { language: string; songId: string } | null;
   currentLyrics: { lines: LyricLine[] } | null;
+  /** Incrementing nonce to force-refresh lyrics fetching */
+  lyricsRefreshNonce: number;
   isFullScreen: boolean;
   libraryState: LibraryState;
   lastKnownVersion: number;
@@ -84,6 +86,7 @@ const initialIpodData: IpodData = {
   koreanDisplay: KoreanDisplay.Original,
   lyricsTranslationRequest: null,
   currentLyrics: null,
+  lyricsRefreshNonce: 0,
   isFullScreen: false,
   libraryState: "uninitialized",
   lastKnownVersion: 0,
@@ -110,6 +113,8 @@ export interface IpodState extends IpodData {
   previousTrack: () => void;
   setShowVideo: (show: boolean) => void;
   toggleLyrics: () => void;
+  /** Force refresh lyrics for current track */
+  refreshLyrics: () => void;
   /** Adjust the lyric offset (in ms) for the track at the given index. */
   adjustLyricOffset: (trackIndex: number, deltaMs: number) => void;
   /** Set lyrics alignment mode */
@@ -411,6 +416,11 @@ export const useIpodStore = create<IpodState>()(
         }),
       setShowVideo: (show) => set({ showVideo: show }),
       toggleLyrics: () => set((state) => ({ showLyrics: !state.showLyrics })),
+      refreshLyrics: () =>
+        set((state) => ({
+          lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
+          currentLyrics: null,
+        })),
       adjustLyricOffset: (trackIndex, deltaMs) =>
         set((state) => {
           if (

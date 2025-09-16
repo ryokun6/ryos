@@ -49,6 +49,9 @@ export function useLyrics({
   const cachedKeyRef = useRef<string | null>(null);
   // Add a ref to store the last computed time for manual updates
   const lastTimeRef = useRef<number>(currentTime);
+  // Track refresh nonce from the iPod store to force re-fetching
+  const refreshNonce = useIpodStore((s) => s.lyricsRefreshNonce);
+  const lastRefreshNonceRef = useRef<number>(0);
 
   // Effect for fetching original lyrics
   useEffect(() => {
@@ -65,10 +68,12 @@ export function useLyrics({
     }
 
     const cacheKey = `${title}__${artist}__${album}`;
-    if (cacheKey === cachedKeyRef.current) {
+    const isForced = lastRefreshNonceRef.current !== refreshNonce;
+    if (!isForced && cacheKey === cachedKeyRef.current) {
       // If original lyrics are cached, we might still need to translate if translateTo changed.
       // The translation effect will handle this.
       setIsFetchingOriginal(false); // Not fetching if original is cached
+      lastRefreshNonceRef.current = refreshNonce;
       return;
     }
 
@@ -82,7 +87,7 @@ export function useLyrics({
     fetch("/api/lyrics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, artist, album }),
+      body: JSON.stringify({ title, artist, album, force: isForced }),
       signal: controller.signal,
     })
       .then(async (res) => {
@@ -129,6 +134,7 @@ export function useLyrics({
       })
       .finally(() => {
         if (!cancelled) setIsFetchingOriginal(false);
+        lastRefreshNonceRef.current = refreshNonce;
         clearTimeout(timeoutId);
       });
 
@@ -137,7 +143,7 @@ export function useLyrics({
       controller.abort();
       clearTimeout(timeoutId);
     };
-  }, [title, artist, album]);
+  }, [title, artist, album, refreshNonce]);
 
   // Effect for translating lyrics
   useEffect(() => {
