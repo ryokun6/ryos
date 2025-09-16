@@ -885,7 +885,7 @@ export function IpodAppComponent({
     lyricsAlignment,
     chineseVariant,
     koreanDisplay,
-    lyricsTranslationRequest,
+    lyricsTranslationLanguage,
     isFullScreen,
     toggleFullScreen,
     setCurrentIndex,
@@ -907,7 +907,7 @@ export function IpodAppComponent({
     lyricsAlignment: s.lyricsAlignment,
     chineseVariant: s.chineseVariant,
     koreanDisplay: s.koreanDisplay,
-    lyricsTranslationRequest: s.lyricsTranslationRequest,
+    lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     isFullScreen: s.isFullScreen,
     toggleFullScreen: s.toggleFullScreen,
     setCurrentIndex: s.setCurrentIndex,
@@ -2157,10 +2157,7 @@ export function IpodAppComponent({
     artist: tracks[currentIndex]?.artist ?? "",
     album: tracks[currentIndex]?.album ?? "",
     currentTime: elapsedTime + (tracks[currentIndex]?.lyricOffset ?? 0) / 1000,
-    translateTo:
-      lyricsTranslationRequest?.songId === tracks[currentIndex]?.id
-        ? lyricsTranslationRequest?.language
-        : null,
+    translateTo: lyricsTranslationLanguage,
   });
 
   // Add a ref to track the previous fullscreen state
@@ -2233,19 +2230,14 @@ export function IpodAppComponent({
     [showStatus]
   );
 
-  const currentTranslationCode =
-    lyricsTranslationRequest?.songId === tracks[currentIndex]?.id
-      ? lyricsTranslationRequest?.language ?? null
-      : null;
+  const currentTranslationCode = lyricsTranslationLanguage;
 
   const handleSelectTranslation = useCallback(
     (code: string | null) => {
-      const songId = tracks[currentIndex]?.id;
-      const setReq = useIpodStore.getState().setLyricsTranslationRequest;
-      if (code && songId) setReq(code, songId);
-      else setReq(null, null);
+      const setLang = useIpodStore.getState().setLyricsTranslationLanguage;
+      setLang(code);
     },
-    [tracks, currentIndex]
+    []
   );
 
   const cycleAlignment = useCallback(() => {
