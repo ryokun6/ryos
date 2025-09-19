@@ -128,9 +128,24 @@ export default async function handler(req: Request) {
     const { lines, targetLanguage } = validation.data;
 
     if (!lines || lines.length === 0) {
+      logInfo(requestId, "Empty lines array provided", { linesCount: 0 });
       return new Response("", {
         // Return empty string for empty LRC
-        headers: { "Content-Type": "text/plain" },
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      });
+    }
+
+    // Validate that we have meaningful content to translate
+    const hasContent = lines.some(line => 
+      line.words && 
+      line.words.trim().length > 0 && 
+      !line.words.match(/^[\s\-_\.]+$/) // Not just whitespace, dashes, underscores, or dots
+    );
+
+    if (!hasContent) {
+      logInfo(requestId, "No meaningful content to translate", { linesCount: lines.length });
+      return new Response("", {
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
       });
     }
 
@@ -185,14 +200,36 @@ Do not include timestamps or any other formatting in your output strings; just t
       prompt: JSON.stringify(lines.map((line) => ({ words: line.words }))), // Send only words to AI for translation context
       system: systemPrompt,
       temperature: 0.3,
+      maxRetries: 2, // Add retry mechanism
     });
+
+    // Validate AI response
+    if (!aiResponse || !aiResponse.translatedTexts || !Array.isArray(aiResponse.translatedTexts)) {
+      logError(requestId, "Invalid AI response structure", aiResponse);
+      throw new Error("AI returned invalid response structure");
+    }
+
+    // Check if we have the expected number of translations
+    if (aiResponse.translatedTexts.length !== lines.length) {
+      logError(requestId, "AI response length mismatch", {
+        expected: lines.length,
+        received: aiResponse.translatedTexts.length
+      });
+      // If we have fewer translations than expected, pad with original text
+      while (aiResponse.translatedTexts.length < lines.length) {
+        aiResponse.translatedTexts.push("");
+      }
+    }
 
     // Combine AI translations with original timestamps and format as LRC
     const lrcOutputLines = lines.map((originalLine, index) => {
-      const translatedText =
-        aiResponse.translatedTexts[index] || originalLine.words; // Fallback to original if AI misses one
+      const translatedText = aiResponse.translatedTexts[index]?.trim();
+      // Use original text if translation is empty, null, or undefined
+      const finalText = translatedText && translatedText.length > 0 
+        ? translatedText 
+        : originalLine.words;
       const lrcTimestamp = msToLrcTime(originalLine.startTimeMs);
-      return `${lrcTimestamp}${translatedText}`;
+      return `${lrcTimestamp}${finalText}`;
     });
 
     const lrcResult = lrcOutputLines.join("\n");
@@ -211,17 +248,36 @@ Do not include timestamps or any other formatting in your output strings; just t
   } catch (error: unknown) {
     logError(requestId, "Error translating lyrics", error);
     let errorMessage = "Error translating lyrics";
+    let statusCode = 500;
+    
     if (error instanceof Error) {
       errorMessage = error.message;
+      
+      // Provide more specific error messages
+      if (error.message.includes("timeout") || error.message.includes("timed out")) {
+        errorMessage = "Translation request timed out. Please try again.";
+        statusCode = 408;
+      } else if (error.message.includes("rate limit") || error.message.includes("quota")) {
+        errorMessage = "Translation service is temporarily unavailable. Please try again later.";
+        statusCode = 429;
+      } else if (error.message.includes("invalid response")) {
+        errorMessage = "Translation service returned invalid data. Please try again.";
+        statusCode = 502;
+      }
+      
       // Add more details if it's an AI SDK error
       if ("cause" in error && error.cause) {
         errorMessage += ` - Cause: ${JSON.stringify(error.cause)}`;
       }
     }
+    
     // Return error as plain text if API is expected to be text/plain
     return new Response(`Error: ${errorMessage}`, {
-      status: 500,
-      headers: { "Content-Type": "text/plain; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+      status: statusCode,
+      headers: { 
+        "Content-Type": "text/plain; charset=utf-8", 
+        "Access-Control-Allow-Origin": "*" 
+      },
     });
   }
 }
