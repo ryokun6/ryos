@@ -313,7 +313,6 @@ function StatusDisplay({ message }: { message: string }) {
         <div
           className="font-chicago text-black text-xl absolute inset-0"
           style={{
-            WebkitTextStroke: "3px black",
             textShadow: "none",
           }}
         >
