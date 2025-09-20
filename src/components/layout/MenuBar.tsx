@@ -516,18 +516,21 @@ function VolumeControl() {
 
 export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   const { apps } = useAppContext();
+  const { play: playWindowExpand } = useSound(Sounds.WINDOW_EXPAND);
   const {
     getForegroundInstance,
     instances,
 
     bringInstanceToForeground,
     foregroundInstanceId, // Add this to get the foreground instance ID
+    restoreInstance,
   } = useAppStoreShallow((s) => ({
     getForegroundInstance: s.getForegroundInstance,
     instances: s.instances,
 
     bringInstanceToForeground: s.bringInstanceToForeground,
     foregroundInstanceId: s.foregroundInstanceId, // Add this
+    restoreInstance: s.restoreInstance,
   }));
 
   const foregroundInstance = getForegroundInstance();
@@ -662,14 +665,25 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                   <button
                     key={instanceId}
                     className="px-2 gap-1 border-t border-y rounded-sm flex items-center justify-start"
-                    onClick={() => bringInstanceToForeground(instanceId)}
+                    onClick={() => {
+                      if (instance.isMinimized) {
+                        playWindowExpand();
+                        restoreInstance(instanceId);
+                      } else {
+                        bringInstanceToForeground(instanceId);
+                      }
+                    }}
                     style={{
                       height: "85%",
                       flex: "0 1 160px",
                       minWidth: "110px",
                       marginTop: "2px",
                       marginRight: "2px",
-                      background: isForeground
+                      background: instance.isMinimized
+                        ? currentTheme === "xp"
+                          ? "#0e48c7"
+                          : "#a0a0a0"
+                        : isForeground
                         ? currentTheme === "xp"
                           ? "#3980f4"
                           : "#c0c0c0"
@@ -811,7 +825,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                     return (
                       <DropdownMenuItem
                         key={instanceId}
-                        onClick={() => bringInstanceToForeground(instanceId)}
+                        onClick={() => {
+                      if (instance.isMinimized) {
+                        playWindowExpand();
+                        restoreInstance(instanceId);
+                      } else {
+                        bringInstanceToForeground(instanceId);
+                      }
+                    }}
                         className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
                       >
                         <ThemedIcon
