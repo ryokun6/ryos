@@ -164,27 +164,35 @@ export function useLyrics({
     }
 
     let cancelled = false;
-    setIsTranslating(true);
-    setError(undefined); // Clear previous errors
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    const attemptTranslation = async () => {
+      if (cancelled) return;
+      
+      setIsTranslating(true);
+      setError(undefined); // Clear previous errors
 
-    const controller = new AbortController();
-    const translationTimeoutId = setTimeout(() => {
-      controller.abort();
-      console.warn("Lyrics translation timed out");
-    }, 120000);
+      const controller = new AbortController();
+      const translationTimeoutId = setTimeout(() => {
+        controller.abort();
+        console.warn("Lyrics translation timed out");
+      }, 60000); // Reduced from 120s to 60s for better UX
 
-    fetch("/api/translate-lyrics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        lines: originalLines,
-        targetLanguage: translateTo,
-      }),
-      signal: controller.signal,
-    })
-      .then(async (res) => {
+      try {
+        const res = await fetch("/api/translate-lyrics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lines: originalLines,
+            targetLanguage: translateTo,
+          }),
+          signal: controller.signal,
+        });
+
         clearTimeout(translationTimeoutId);
         const responseText = await res.text();
+        
         if (!res.ok) {
           const errorMessage = responseText.startsWith("Error: ")
             ? responseText.substring(7)
@@ -194,24 +202,48 @@ export function useLyrics({
               `Translation request failed with status ${res.status}`
           );
         }
-        return responseText;
-      })
-      .then((lrcText) => {
+
         if (cancelled) return;
-        if (lrcText) {
-          const parsedTranslatedLines = parseLRC(lrcText, title, artist);
-          setTranslatedLines(parsedTranslatedLines);
-          // Do NOT overwrite currentLyrics in the store so that it continues
-          // to hold the original (untranslated) lyrics. This ensures that
-          // other features such as AI chat receive the unmodified lyrics.
+
+        if (responseText && responseText.trim().length > 0) {
+          const parsedTranslatedLines = parseLRC(responseText, title, artist);
+          // Validate that we got meaningful translations
+          if (parsedTranslatedLines.length > 0) {
+            setTranslatedLines(parsedTranslatedLines);
+            // Do NOT overwrite currentLyrics in the store so that it continues
+            // to hold the original (untranslated) lyrics. This ensures that
+            // other features such as AI chat receive the unmodified lyrics.
+            return; // Success, no need to retry
+          } else {
+            console.warn("Translation returned empty or invalid LRC format");
+            throw new Error("Invalid response format");
+          }
         } else {
-          // If translation returns empty we still keep original in the store.
-          setTranslatedLines([]);
+          console.warn("Translation returned empty response");
+          throw new Error("Empty response");
         }
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
         if (cancelled) return;
+        
         console.error("useLyrics translation error", err);
+        
+        // Check if we should retry
+        const shouldRetry = retryCount < maxRetries && 
+          !(err instanceof DOMException && err.name === "AbortError");
+        
+        if (shouldRetry) {
+          retryCount++;
+          console.log(`Translation attempt ${retryCount} failed, retrying...`);
+          // Wait a bit before retrying (exponential backoff)
+          setTimeout(() => {
+            if (!cancelled) {
+              attemptTranslation();
+            }
+          }, Math.pow(2, retryCount) * 1000); // 2s, 4s delays
+          return;
+        }
+        
+        // Final failure - set error state
         if (err instanceof DOMException && err.name === "AbortError") {
           setError("Lyrics translation timed out.");
         } else {
@@ -223,16 +255,17 @@ export function useLyrics({
         }
         setTranslatedLines(null);
         // Keep original lyrics in iPod store on translation error
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setIsTranslating(false);
         clearTimeout(translationTimeoutId);
-      });
+      }
+    };
+
+    // Start the translation attempt
+    attemptTranslation();
 
     return () => {
       cancelled = true;
-      controller.abort();
-      clearTimeout(translationTimeoutId);
     };
   }, [originalLines, translateTo, isFetchingOriginal, title, artist]);
 
