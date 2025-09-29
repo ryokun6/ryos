@@ -1,6 +1,10 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { Redis } from "@upstash/redis";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./utils/cors.js";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+} from "./utils/cors.js";
 
 // Vercel Edge Function configuration
 export const config = {
@@ -217,7 +221,9 @@ export default async function handler(req: Request) {
       // continue without cache
     }
   } else {
-    logInfo(requestId, "Bypassing lyrics cache due to force flag", { cacheKey });
+    logInfo(requestId, "Bypassing lyrics cache due to force flag", {
+      cacheKey,
+    });
   }
 
   try {
@@ -328,26 +334,35 @@ export default async function handler(req: Request) {
         console.error("Redis cache write failed (lyrics)", err);
       }
 
-    return new Response(JSON.stringify(result), {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
-        "X-Lyrics-Cache": force ? "BYPASS" : "MISS",
-      },
-    });
+      return new Response(JSON.stringify(result), {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+          "X-Lyrics-Cache": force ? "BYPASS" : "MISS",
+        },
+      });
     }
 
     // If loop completes without returning, we failed to fetch lyrics
     return new Response(
       JSON.stringify({ error: "Lyrics not found for given query" }),
-      { status: 404, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": getEffectiveOrigin(req)! } }
+      {
+        status: 404,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+        },
+      }
     );
   } catch (error: unknown) {
     logError(requestId, "Error fetching lyrics", error);
     console.error("Error fetching lyrics:", error);
     return new Response(JSON.stringify({ error: "Unexpected server error" }), {
       status: 500,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": getEffectiveOrigin(req)! },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+      },
     });
   }
 }

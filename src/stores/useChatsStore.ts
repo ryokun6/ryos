@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { type Message } from "ai/react";
-import { type ChatRoom, type ChatMessage } from "@/types/chat";
+import {
+  type ChatRoom,
+  type ChatMessage,
+  type AIChatMessage,
+} from "@/types/chat";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -158,7 +161,7 @@ const ensureRecoveryKeysAreSet = (
 // Define the state structure
 export interface ChatsStoreState {
   // AI Chat State
-  aiMessages: Message[];
+  aiMessages: AIChatMessage[];
   // Room State
   username: string | null;
   authToken: string | null; // Authentication token
@@ -177,7 +180,7 @@ export interface ChatsStoreState {
   messageRenderLimit: number; // Max messages to render per room initially
 
   // Actions
-  setAiMessages: (messages: Message[]) => void;
+  setAiMessages: (messages: AIChatMessage[]) => void;
   setUsername: (username: string | null) => void;
   setAuthToken: (token: string | null) => void; // Set auth token
   setHasPassword: (hasPassword: boolean | null) => void; // Set password status
@@ -238,11 +241,13 @@ export interface ChatsStoreState {
   logout: () => Promise<void>; // Logout and clear all user data
 }
 
-const initialAiMessage: Message = {
+const initialAiMessage: AIChatMessage = {
   id: "1",
   role: "assistant",
-  content: "👋 hey! i'm ryo. ask me anything!",
-  createdAt: new Date(),
+  parts: [{ type: "text" as const, text: "👋 hey! i'm ryo. ask me anything!" }],
+  metadata: {
+    createdAt: new Date(),
+  },
 };
 
 const getInitialState = (): Omit<

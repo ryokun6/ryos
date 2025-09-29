@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useChat, type Message } from "ai/react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useChat, type UIMessage } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useChatsStore } from "../../../stores/useChatsStore";
+import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
@@ -217,7 +219,7 @@ function createDebouncedAction(delay = 150) {
 const debouncedInsertTextUpdate = createDebouncedAction(150);
 
 // Helper function to extract visible text from message parts
-const getAssistantVisibleText = (message: Message): string => {
+const getAssistantVisibleText = (message: UIMessage): string => {
   // Define type for message parts
   type MessagePart = {
     type: string;
@@ -236,25 +238,31 @@ const getAssistantVisibleText = (message: Message): string => {
       .join("");
   }
 
-  // Fallback to content if no parts
-  const text = message.content || "";
-  return text.startsWith("!!!!") ? text.slice(4).trimStart() : text;
+  // Fallback - no content property in v5, return empty string
+  return "";
 };
 
 export function useAiChat(onPromptSetUsername?: () => void) {
-  const {
-    aiMessages,
-    setAiMessages,
-    username,
-    authToken,
-    ensureAuthToken,
-    setAuthToken,
-  } = useChatsStore();
+  const { aiMessages, setAiMessages, username, authToken, ensureAuthToken } =
+    useChatsStore();
   const launchApp = useLaunchApp();
   const closeApp = useAppStore((state) => state.closeApp);
   const aiModel = useAppStore((state) => state.aiModel);
   const speechEnabled = useAppStore((state) => state.speechEnabled);
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
+
+  // Local input state (SDK v5 no longer provides this)
+  const [input, setInput] = useState("");
+  const handleInputChange = useCallback(
+    (
+      e:
+        | React.ChangeEvent<HTMLInputElement>
+        | React.ChangeEvent<HTMLTextAreaElement>
+    ) => {
+      setInput(e.target.value);
+    },
+    []
+  );
 
   // Track how many characters of each assistant message have already been sent to TTS
   const speechProgressRef = useRef<Record<string, number>>({});
@@ -328,80 +336,84 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
     : undefined;
 
-  // --- AI Chat Hook (Vercel AI SDK) ---
+  // --- AI Chat Hook (Vercel AI SDK v5) ---
   // Store reference to setHighlightSegment for use in callbacks
   const setHighlightSegmentRef = useRef(setHighlightSegment);
-  useEffect(() => {
-    setHighlightSegmentRef.current = setHighlightSegment;
-  }, [setHighlightSegment]);
+  setHighlightSegmentRef.current = setHighlightSegment;
 
   const {
     messages: currentSdkMessages,
-    input,
-    handleInputChange,
-    handleSubmit: originalHandleSubmit,
-    isLoading,
-    reload,
+    status,
     error,
     stop: sdkStop,
     setMessages: setSdkMessages,
-    append,
+    sendMessage,
+    regenerate,
+    addToolResult,
   } = useChat({
-    api: "/api/chat",
-    initialMessages: aiMessages, // Initialize from store
-    experimental_throttle: 50,
-    headers: apiHeaders,
-    body: {
-      systemState: getSystemState(), // Initial system state
-      model: aiModel, // Pass the selected AI model
-    },
-    maxSteps: 25,
-    onResponse: (response) => {
-      // Check for refreshed token in response headers
-      const newToken = response.headers.get("X-New-Auth-Token");
-      if (newToken) {
-        console.log("[useAiChat] Received refreshed auth token from server");
-        setAuthToken(newToken);
+    // Initialize from store
+    messages: aiMessages,
 
-        // Also update the token refresh time in localStorage
-        if (username) {
-          const key = `_token_refresh_time_${username}`;
-          localStorage.setItem(key, Date.now().toString());
-        }
-      }
-    },
+    experimental_throttle: 50,
+
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      headers: apiHeaders,
+      body: {
+        systemState: getSystemState(), // Initial system state
+        model: aiModel, // Pass the selected AI model
+      },
+    }),
+
     async onToolCall({ toolCall }) {
-      // Short delay to allow the UI to render the "call" state with a spinner before executing the tool logic.
-      // Without this, fast-executing tool calls can jump straight to the "result" state, so users never see the loading indicator.
+      // In AI SDK 5, client-side tool execution requires calling addToolResult
+      // Short delay to allow the UI to render the "call" state
       await new Promise<void>((resolve) => setTimeout(resolve, 120));
 
+      console.log(
+        `[onToolCall] Executing client-side tool: ${toolCall.toolName}`,
+        toolCall
+      );
+
       try {
+        // Default result message
+        let result: string = "Tool executed successfully";
+
         switch (toolCall.toolName) {
           case "aquarium": {
             // Visual renders in the message bubble; nothing to do here.
-            return "Aquarium ready";
+            result = "Aquarium displayed";
+            break;
           }
           case "switchTheme": {
-            const { theme } = toolCall.args as { theme?: OsThemeId };
+            const { theme } = toolCall.input as { theme?: OsThemeId };
             if (!theme) {
               console.error(
                 "[ToolCall] switchTheme: Missing required 'theme' parameter"
               );
-              return "Failed to switch theme: No theme provided.";
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No theme provided",
+              });
+              break;
             }
 
             const { current, setTheme } = useThemeStore.getState();
             if (current === theme) {
               const name = themes[theme]?.name || theme;
-              return `${name} theme is already active.`;
+              result = `${name} theme is already active`;
+            } else {
+              setTheme(theme);
+              const name = themes[theme]?.name || theme;
+              result = `Switched theme to ${name}`;
             }
-            setTheme(theme);
-            const name = themes[theme]?.name || theme;
-            console.log("[ToolCall] switchTheme:", theme, name);
-            return `Switched theme to ${name}.`;
+            console.log("[ToolCall] switchTheme:", theme, result);
+            break;
           }
           case "launchApp": {
-            const { id, url, year } = toolCall.args as {
+            const { id, url, year } = toolCall.input as {
               id: string;
               url?: string;
               year?: string;
@@ -412,7 +424,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               console.error(
                 "[ToolCall] launchApp: Missing required 'id' parameter"
               );
-              return "Failed to launch app: No app ID provided.";
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No app ID provided",
+              });
+              break;
             }
 
             const appName = appRegistry[id as AppId]?.name || id;
@@ -425,23 +443,24 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             launchApp(id as AppId, launchOptions);
 
-            let confirmationMessage = `Launched ${appName}.`;
+            result = `Launched ${appName}`;
             if (id === "internet-explorer") {
               const urlPart = url ? ` to ${url}` : "";
               const yearPart = year && year !== "current" ? ` in ${year}` : "";
-              confirmationMessage += `${urlPart}${yearPart}`;
+              result += `${urlPart}${yearPart}`;
             }
-            return confirmationMessage + ".";
+            console.log(`[ToolCall] ${result}`);
+            break;
           }
           case "closeApp": {
-            const { id } = toolCall.args as { id: string };
+            const { id } = toolCall.input as { id: string };
 
             // Validate required parameter
             if (!id) {
               console.error(
                 "[ToolCall] closeApp: Missing required 'id' parameter"
               );
-              return "Failed to close app: No app ID provided.";
+              break;
             }
 
             const appName = appRegistry[id as AppId]?.name || id;
@@ -453,7 +472,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const openInstances = appInstances.filter((inst) => inst.isOpen);
 
             if (openInstances.length === 0) {
-              return `${appName} is not currently running.`;
+              console.log(`[ToolCall] ${appName} is not currently running.`);
+              break;
             }
 
             // Close all open instances of this app
@@ -464,12 +484,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Also close the legacy app state for backward compatibility
             closeApp(id as AppId);
 
-            return `Closed ${appName} (${openInstances.length} window${
-              openInstances.length === 1 ? "" : "s"
-            }).`;
+            console.log(
+              `[ToolCall] Closed ${appName} (${openInstances.length} window${
+                openInstances.length === 1 ? "" : "s"
+              }).`
+            );
+            break;
           }
           case "textEditSearchReplace": {
-            const { search, replace, isRegex, instanceId } = toolCall.args as {
+            const { search, replace, isRegex, instanceId } = toolCall.input as {
               search: string;
               replace: string;
               isRegex?: boolean;
@@ -481,19 +504,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               console.error(
                 "[ToolCall] textEditSearchReplace: Missing required 'search' parameter"
               );
-              return "Failed to search/replace: No search text provided.";
+              break;
             }
             if (typeof replace !== "string") {
               console.error(
                 "[ToolCall] textEditSearchReplace: Missing required 'replace' parameter"
               );
-              return "Failed to search/replace: No replacement text provided.";
+              break;
             }
             if (!instanceId) {
               console.error(
                 "[ToolCall] textEditSearchReplace: Missing required 'instanceId' parameter"
               );
-              return "Failed to search/replace: No instanceId provided. Check system state for available TextEdit instances.";
+              break;
             }
 
             // Normalize line endings to avoid mismatches between CRLF / LF
@@ -516,9 +539,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Use specific instance
             const targetInstance = textEditState.instances[instanceId];
             if (!targetInstance) {
-              return `TextEdit instance ${instanceId} not found. Available instances: ${
-                Object.keys(textEditState.instances).join(", ") || "none"
-              }.`;
+              console.error(
+                `[ToolCall] TextEdit instance ${instanceId} not found. Available instances: ${
+                  Object.keys(textEditState.instances).join(", ") || "none"
+                }.`
+              );
+              break;
             }
 
             const { updateInstance } = textEditState;
@@ -557,7 +583,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               })();
 
               if (updatedMarkdown === markdownStr) {
-                return "Nothing found to replace.";
+                console.log("[ToolCall] Nothing found to replace.");
+                break;
               }
 
               // 4. Convert updated markdown back to HTML and then to JSON
@@ -584,16 +611,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const appInstance = appStore.instances[targetInstance.instanceId];
               const displayName = appInstance?.title || "Untitled";
 
-              return `Replaced "${search}" with "${replace}" in ${displayName}.`;
+              console.log(
+                `[ToolCall] Replaced "${search}" with "${replace}" in ${displayName}.`
+              );
+              break;
             } catch (err) {
               console.error("searchReplace error:", err);
-              return `Failed to apply search/replace: ${
-                err instanceof Error ? err.message : "Unknown error"
-              }`;
+              break;
             }
           }
           case "textEditInsertText": {
-            const { text, position, instanceId } = toolCall.args as {
+            const { text, position, instanceId } = toolCall.input as {
               text: string;
               position?: "start" | "end";
               instanceId?: string;
@@ -604,13 +632,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               console.error(
                 "[ToolCall] textEditInsertText: Missing required 'text' parameter"
               );
-              return "Failed to insert text: No text content provided.";
+              break;
             }
             if (!instanceId) {
               console.error(
                 "[ToolCall] textEditInsertText: Missing required 'instanceId' parameter"
               );
-              return "Failed to insert text: No instanceId provided. Check system state for available TextEdit instances.";
+              break;
             }
 
             console.log("[ToolCall] insertText:", {
@@ -624,9 +652,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Use specific instance
             const targetInstance = textEditState.instances[instanceId];
             if (!targetInstance) {
-              return `TextEdit instance ${instanceId} not found. Available instances: ${
-                Object.keys(textEditState.instances).join(", ") || "none"
-              }.`;
+              console.error(
+                `[ToolCall] TextEdit instance ${instanceId} not found. Available instances: ${
+                  Object.keys(textEditState.instances).join(", ") || "none"
+                }.`
+              );
+              break;
             }
 
             try {
@@ -689,18 +720,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const appInstance = appStore.instances[targetInstanceId];
               const displayName = appInstance?.title || "Untitled";
 
-              return `Inserted text at ${
-                position === "start" ? "start" : "end"
-              } of ${displayName}.`;
+              console.log(
+                `[ToolCall] Inserted text at ${
+                  position === "start" ? "start" : "end"
+                } of ${displayName}.`
+              );
+              break;
             } catch (err) {
               console.error("textEditInsertText error:", err);
-              return `Failed to insert text: ${
-                err instanceof Error ? err.message : "Unknown error"
-              }`;
+              break;
             }
           }
           case "textEditNewFile": {
-            const { title } = toolCall.args as {
+            const { title } = toolCall.input as {
               title?: string;
             };
 
@@ -721,12 +753,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Bring the new instance to foreground so user can see it
             appStore.bringInstanceToForeground(instanceId);
 
-            return `Created a new, untitled document in TextEdit${
-              title ? ` (${title})` : ""
-            }.`;
+            console.log(
+              `[ToolCall] Created a new, untitled document in TextEdit${
+                title ? ` (${title})` : ""
+              }.`
+            );
+            break;
           }
           case "ipodPlayPause": {
-            const { action } = toolCall.args as {
+            const { action } = toolCall.input as {
               action?: "play" | "pause" | "toggle";
             };
             console.log("[ToolCall] ipodPlayPause:", { action });
@@ -757,10 +792,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
 
             const nowPlaying = useIpodStore.getState().isPlaying;
-            return nowPlaying ? "iPod is now playing." : "iPod is paused.";
+            console.log(
+              `[ToolCall] iPod is now ${nowPlaying ? "playing" : "paused"}.`
+            );
+            break;
           }
           case "ipodPlaySong": {
-            const { id, title, artist } = toolCall.args as {
+            const { id, title, artist } = toolCall.input as {
               id?: string;
               title?: string;
               artist?: string;
@@ -852,7 +890,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // finalCandidateIndices would remain empty.
 
             if (finalCandidateIndices.length === 0) {
-              return "Song not found in iPod library.";
+              console.log("[ToolCall] Song not found in iPod library.");
+              break;
             }
 
             // If multiple matches, choose one at random
@@ -869,17 +908,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const trackDesc = `${track.title}${
               track.artist ? ` by ${track.artist}` : ""
             }`;
-            return `Playing ${trackDesc}.`;
+            console.log(`[ToolCall] Playing ${trackDesc}.`);
+            break;
           }
           case "ipodAddAndPlaySong": {
-            const { id } = toolCall.args as { id: string };
+            const { id } = toolCall.input as { id: string };
 
             // Validate required parameter
             if (!id) {
               console.error(
                 "[ToolCall] ipodAddAndPlaySong: Missing required 'id' parameter"
               );
-              return "Failed to add song: No video ID provided.";
+              break;
             }
 
             console.log("[ToolCall] ipodAddAndPlaySong:", { id });
@@ -901,9 +941,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 .addTrackFromVideoId(id);
 
               if (addedTrack) {
-                return `Added '${addedTrack.title}' to iPod and started playing.`;
+                console.log(
+                  `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`
+                );
+                break;
               } else {
-                return `Failed to add ${id} to iPod.`;
+                console.error(`[ToolCall] Failed to add ${id} to iPod.`);
+                break;
               }
             } catch (error) {
               // Handle oEmbed failures and other errors
@@ -913,10 +957,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
               // Provide a specific response for oEmbed failures
               if (errorMessage.includes("Failed to fetch video info")) {
-                return `Cannot add ${id}: Video unavailable or invalid.`;
+                console.error(
+                  `[ToolCall] Cannot add ${id}: Video unavailable or invalid.`
+                );
+                break;
               }
 
-              return `Failed to add ${id}: ${errorMessage}`;
+              console.error(`[ToolCall] Failed to add ${id}: ${errorMessage}`);
+              break;
             }
           }
           case "ipodNextTrack": {
@@ -944,9 +992,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const desc = `${track.title}${
                 track.artist ? ` by ${track.artist}` : ""
               }`;
-              return `Skipped to ${desc}.`;
+              console.log(`[ToolCall] Skipped to ${desc}.`);
+              break;
             }
-            return "Skipped to next track.";
+            console.log("[ToolCall] Skipped to next track.");
+            break;
           }
           case "ipodPreviousTrack": {
             console.log("[ToolCall] ipodPreviousTrack");
@@ -973,44 +1023,81 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const desc = `${track.title}${
                 track.artist ? ` by ${track.artist}` : ""
               }`;
-              return `Went back to previous track: ${desc}.`;
+              console.log(`[ToolCall] Went back to previous track: ${desc}.`);
+              break;
             }
-            return "Went back to previous track.";
+            console.log("[ToolCall] Went back to previous track.");
+            break;
           }
           case "generateHtml": {
-            const { html } = toolCall.args as { html: string };
+            const { html } = toolCall.input as { html: string };
 
             // Validate required parameter
             if (!html) {
               console.error(
                 "[ToolCall] generateHtml: Missing required 'html' parameter"
               );
-              return "Failed to generate HTML: No HTML content provided.";
+              break;
             }
 
             console.log("[ToolCall] generateHtml:", {
               htmlLength: html.length,
             });
 
-            // Return the raw HTML string; ChatMessages will render it via HtmlPreview
-            return html.trim();
+            // HTML will be handled by ChatMessages via HtmlPreview
+            console.log(
+              "[ToolCall] Generated HTML:",
+              html.substring(0, 100) + "..."
+            );
+            break;
           }
           default:
             console.warn("Unhandled tool call:", toolCall.toolName);
-            return "";
+            result = "Tool executed";
+            break;
+        }
+
+        // Send the result back to the chat
+        if (result) {
+          console.log(
+            `[onToolCall] Adding result for ${toolCall.toolName}:`,
+            result
+          );
+          addToolResult({
+            tool: toolCall.toolName,
+            toolCallId: toolCall.toolCallId,
+            output: result,
+          });
         }
       } catch (err) {
         console.error("Error executing tool call:", err);
-        return `Failed to execute ${toolCall.toolName}`;
+        // Send error result
+        addToolResult({
+          tool: toolCall.toolName,
+          toolCallId: toolCall.toolCallId,
+          state: "output-error",
+          errorText: err instanceof Error ? err.message : "Unknown error",
+        });
       }
     },
-    onFinish: () => {
-      const finalMessages = currentSdkMessagesRef.current;
+
+    onFinish: ({ messages }) => {
+      // Ensure all messages have metadata with createdAt
+      const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
+        (msg) =>
+          ({
+            ...msg,
+            metadata: {
+              createdAt:
+                (msg as AIChatMessage).metadata?.createdAt || new Date(),
+            },
+          } as AIChatMessage)
+      );
       console.log(
         `AI finished, syncing ${finalMessages.length} final messages to store.`
       );
       setAiMessages(finalMessages);
-      
+
       // Ensure any final content that wasn't processed is spoken
       if (!speechEnabled) return;
       const lastMsg = finalMessages.at(-1);
@@ -1018,15 +1105,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       const progress = speechProgressRef.current[lastMsg.id] ?? 0;
       const content = getAssistantVisibleText(lastMsg);
-      
-      console.log(`[onFinish] Progress: ${progress}, Content length: ${content.length}`);
-      
+
+      console.log(
+        `[onFinish] Progress: ${progress}, Content length: ${content.length}`
+      );
+
       // If there's unprocessed content, speak it now
       if (progress < content.length) {
         const remainingRaw = content.slice(progress);
         const cleaned = cleanTextForSpeech(remainingRaw);
         console.log(`[onFinish] Speaking final content: "${cleaned}"`);
-        
+
         if (cleaned) {
           const seg = {
             messageId: lastMsg.id,
@@ -1034,7 +1123,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             end: content.length,
           };
           highlightQueueRef.current.push(seg);
-          
+
           // Use ref to get current setHighlightSegment function
           if (highlightQueueRef.current.length === 1) {
             setTimeout(() => {
@@ -1046,14 +1135,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
           speak(cleaned, () => {
             highlightQueueRef.current.shift();
-            setHighlightSegmentRef.current(highlightQueueRef.current[0] || null);
+            setHighlightSegmentRef.current(
+              highlightQueueRef.current[0] || null
+            );
           });
-          
+
           // Mark as fully processed
           speechProgressRef.current[lastMsg.id] = content.length;
         }
       }
     },
+
     onError: (err) => {
       console.error("AI Chat Error:", err);
 
@@ -1163,11 +1255,27 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     },
   });
 
+  // Ensure all messages have metadata with timestamps (runs synchronously during render)
+  const messagesWithTimestamps = useMemo<AIChatMessage[]>(() => {
+    return (currentSdkMessages as UIMessage[]).map((msg) => {
+      // Check if this message already has a timestamp in the store
+      const existingMsg = aiMessages.find((m) => m.id === msg.id);
+      const currentMsg = msg as AIChatMessage;
+      return {
+        ...msg,
+        metadata: {
+          createdAt:
+            currentMsg.metadata?.createdAt ||
+            existingMsg?.metadata?.createdAt ||
+            new Date(),
+        },
+      } as AIChatMessage;
+    });
+  }, [currentSdkMessages, aiMessages]);
+
   // Ref to hold the latest SDK messages for use in callbacks
-  const currentSdkMessagesRef = useRef<Message[]>([]);
-  useEffect(() => {
-    currentSdkMessagesRef.current = currentSdkMessages;
-  }, [currentSdkMessages]);
+  const currentSdkMessagesRef = useRef<AIChatMessage[]>([]);
+  currentSdkMessagesRef.current = messagesWithTimestamps;
 
   // --- State Synchronization & Message Processing ---
   // Sync store to SDK ONLY on initial load or external store changes
@@ -1178,10 +1286,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     if (
       aiMessages.length !== currentSdkMessages.length ||
       (aiMessages.length > 0 &&
-        (aiMessages[aiMessages.length - 1].id !==
-          currentSdkMessages[currentSdkMessages.length - 1]?.id ||
-          aiMessages[aiMessages.length - 1].content !==
-            currentSdkMessages[currentSdkMessages.length - 1]?.content))
+        aiMessages[aiMessages.length - 1].id !==
+          currentSdkMessages[currentSdkMessages.length - 1]?.id)
     ) {
       console.log("Syncing Zustand store messages to SDK.");
       setSdkMessages(aiMessages);
@@ -1190,9 +1296,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, [aiMessages, setSdkMessages]); // Only run when aiMessages changes
 
   // --- Incremental TTS while assistant reply is streaming ---
+  const isLoading = status === "streaming" || status === "submitted";
+
   useEffect(() => {
     if (!speechEnabled) return;
-    
+
     // Only process while streaming is active
     if (!isLoading) return;
 
@@ -1285,19 +1393,26 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Clear any previous rate limit errors on new submission attempt
       setRateLimitError(null);
 
-      // Proceed with the actual submission using useChat
-      // useChat's handleSubmit will add the user message to its internal state
+      // Proceed with the actual submission using useChat v5
       const freshSystemState = getSystemState();
       console.log("Submitting AI chat with system state:", freshSystemState);
-      originalHandleSubmit(e, {
-        // Pass options correctly - body is a direct property
-        body: {
-          systemState: freshSystemState,
-          model: aiModel, // Pass the selected AI model
+      sendMessage(
+        {
+          text: messageContent,
+          metadata: {
+            createdAt: new Date(),
+          },
         },
-      });
+        {
+          body: {
+            systemState: freshSystemState,
+            model: aiModel,
+          },
+        }
+      );
+      setInput(""); // Clear input after sending
     },
-    [originalHandleSubmit, input, needsUsername, username, aiModel] // Updated deps
+    [sendMessage, input, needsUsername, username, aiModel, setInput] // Updated deps
   );
 
   const handleDirectMessageSubmit = useCallback(
@@ -1316,20 +1431,24 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Clear any previous rate limit errors on new submission attempt
       setRateLimitError(null);
 
-      // Proceed with the actual submission using useChat
-      // useChat's append will add the user message to its internal state
-      console.log("Appending direct message to AI chat");
-      append(
-        { content: message, role: "user" }, // append only needs content/role
+      // Proceed with the actual submission using useChat v5
+      console.log("Sending direct message to AI chat");
+      sendMessage(
+        {
+          text: message,
+          metadata: {
+            createdAt: new Date(),
+          },
+        },
         {
           body: {
             systemState: getSystemState(),
-            model: aiModel, // Pass the selected AI model
+            model: aiModel,
           },
-        } // Pass options correctly - body is direct property
+        }
       );
     },
-    [append, needsUsername, username, aiModel] // Updated deps
+    [sendMessage, needsUsername, username, aiModel] // Updated deps
   );
 
   const handleNudge = useCallback(() => {
@@ -1352,14 +1471,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     setHighlightSegment(null);
 
     // Define the initial message and mark it as fully processed so it is never spoken
-    const initialMessage: Message = {
+    const initialMessage: AIChatMessage = {
       id: "1", // Ensure consistent ID for the initial message
       role: "assistant",
-      content: "👋 hey! i'm ryo. ask me anything!",
-      createdAt: new Date(),
+      parts: [{ type: "text", text: "👋 hey! i'm ryo. ask me anything!" }],
+      metadata: {
+        createdAt: new Date(),
+      },
     };
-    speechProgressRef.current[initialMessage.id] =
-      initialMessage.content.length;
+    const initialText = getAssistantVisibleText(initialMessage);
+    speechProgressRef.current[initialMessage.id] = initialText.length;
 
     // Update both the Zustand store and the SDK state directly
     setAiMessages([initialMessage]);
@@ -1376,11 +1497,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // Add small delay for dialog close animation
     setTimeout(() => {
       clearChats();
-      handleInputChange({
-        target: { value: "" },
-      } as React.ChangeEvent<HTMLInputElement>); // Clear input field
+      setInput(""); // Clear input field
     }, 100);
-  }, [clearChats, handleInputChange]);
+  }, [clearChats, setInput]);
 
   const handleSaveTranscript = useCallback(() => {
     const now = new Date();
@@ -1401,15 +1520,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const handleSaveSubmit = useCallback(
     async (fileName: string) => {
       const transcript = aiMessages // Use messages from store
-        .map((msg: Message) => {
-          const time = msg.createdAt
-            ? new Date(msg.createdAt).toLocaleTimeString([], {
-                hour: "numeric",
-                minute: "2-digit",
-              })
-            : "";
+        .map((msg: UIMessage) => {
+          const time = ""; // v5 UIMessage doesn't have createdAt
           const sender = msg.role === "user" ? username || "You" : "Ryo";
-          return `**${sender}** (${time}):\n${msg.content}`;
+          const content = getAssistantVisibleText(msg);
+          return `**${sender}** (${time}):\n${content}`;
         })
         .join("\n\n");
 
@@ -1450,15 +1565,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   return {
     // AI Chat State & Actions
-    messages: currentSdkMessages, // <-- Return messages from useChat directly
+    messages: messagesWithTimestamps, // Return messages with timestamps
     input,
     handleInputChange,
     handleSubmit,
     isLoading,
-    reload,
+    reload: regenerate, // Map v5 regenerate to v4 reload
     error,
     stop,
-    append,
+    append: sendMessage, // Map v5 sendMessage to v4 append (for compatibility)
     handleDirectMessageSubmit,
     handleNudge,
     clearChats, // Expose the action

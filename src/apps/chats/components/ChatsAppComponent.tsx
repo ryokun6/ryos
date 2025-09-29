@@ -17,7 +17,7 @@ import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
 import { ChatRoomSidebar } from "./ChatRoomSidebar";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { type Message as UIMessage } from "ai/react";
+import type { AIChatMessage } from "@/types/chat";
 import {
   type ChatMessage as AppChatMessage,
   type ChatRoom,
@@ -32,10 +32,9 @@ import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 
 // Define the expected message structure locally, matching ChatMessages internal type
-interface DisplayMessage extends Omit<UIMessage, "role"> {
+interface DisplayMessage extends Omit<AIChatMessage, "role"> {
   username?: string;
-  role: UIMessage["role"] | "human";
-  createdAt?: Date; // Ensure createdAt is optional Date
+  role: AIChatMessage["role"] | "human";
   serverId?: string; // Real server ID for room messages
 }
 
@@ -492,14 +491,15 @@ export function ChatsAppComponent({
         id: msg.clientId || msg.id,
         serverId: msg.id,
         role: msg.username === username ? "user" : "human",
-        content: msg.content,
-        createdAt: new Date(msg.timestamp), // Ensure this is a Date object
+        parts: [{ type: "text" as const, text: msg.content }], // Convert to v5 parts format
+        metadata: {
+          createdAt: new Date(msg.timestamp),
+        },
         username: msg.username,
       }))
-    : messages.map((msg: UIMessage) => ({
+    : messages.map((msg: AIChatMessage) => ({
         ...msg,
-        // Ensure createdAt is a Date object if it exists, otherwise undefined
-        createdAt: msg.createdAt ? new Date(msg.createdAt) : undefined,
+        // metadata with createdAt is already present from AIChatMessage
         username: msg.role === "user" ? username || "You" : "Ryo",
       }));
 
@@ -783,11 +783,26 @@ export function ChatsAppComponent({
                     // AI Chat or in a room with username set
                     (() => {
                       const userMessages = aiMessages.filter(
-                        (msg: UIMessage) => msg.role === "user"
+                        (msg: AIChatMessage) => msg.role === "user"
                       );
+                      // Extract text from parts for suggestions
                       const prevMessagesContent = Array.from(
-                        new Set(userMessages.map((msg) => msg.content))
-                      ).reverse() as string[];
+                        new Set(
+                          userMessages.map((msg) => {
+                            if (!msg.parts) return "";
+                            return msg.parts
+                              .filter((p) => p.type === "text")
+                              .map(
+                                (p) =>
+                                  (p as { type: string; text?: string }).text ||
+                                  ""
+                              )
+                              .join("");
+                          })
+                        )
+                      )
+                        .filter(Boolean)
+                        .reverse() as string[];
 
                       return (
                         <ChatInput

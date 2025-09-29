@@ -1,16 +1,19 @@
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
-import { LanguageModelV1 } from "ai";
-import { SupportedModel as ImportedSupportedModel, DEFAULT_AI_MODEL } from "../../src/types/aiModels";
+import { LanguageModelV2 } from "@ai-sdk/provider";
+import {
+  SupportedModel as ImportedSupportedModel,
+  DEFAULT_AI_MODEL,
+} from "../../src/types/aiModels";
 
 // Re-export the type
 export type SupportedModel = ImportedSupportedModel;
 
 export const DEFAULT_MODEL = DEFAULT_AI_MODEL;
 
-// Factory that returns a LanguageModelV1 instance for the requested model
-export const getModelInstance = (model: SupportedModel): LanguageModelV1 => {
+// Factory that returns a LanguageModelV2 instance for the requested model
+export const getModelInstance = (model: SupportedModel): LanguageModelV2 => {
   const modelToUse: SupportedModel = model ?? DEFAULT_MODEL;
 
   switch (modelToUse) {
@@ -34,4 +37,4 @@ export const getModelInstance = (model: SupportedModel): LanguageModelV1 => {
       // Fallback – should never happen due to exhaustive switch
       return openai("gpt-4.1");
   }
-}; 
+};

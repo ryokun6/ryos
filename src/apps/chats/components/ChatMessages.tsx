@@ -1,4 +1,4 @@
-import { Message as VercelMessage } from "ai";
+import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import {
   Loader2,
   AlertCircle,
@@ -209,6 +209,18 @@ const getAppName = (id?: string): string => {
   return entry?.name || formatToolName(id);
 };
 
+// Helper to extract text content from v5 UIMessage parts
+const getMessageText = (message: {
+  parts?: Array<{ type: string; text?: string }>;
+}): string => {
+  if (!message.parts) return "";
+
+  return message.parts
+    .filter((p) => p.type === "text")
+    .map((p) => (p as { type: string; text?: string }).text || "")
+    .join("");
+};
+
 // Define an extended message type that includes username
 // Extend VercelMessage and add username and the 'human' role
 interface ChatMessage extends Omit<VercelMessage, "role"> {
@@ -217,6 +229,10 @@ interface ChatMessage extends Omit<VercelMessage, "role"> {
   role: VercelMessage["role"] | "human"; // Allow original roles plus 'human'
   isPending?: boolean; // Add isPending flag
   serverId?: string; // Real server ID when id is a clientId
+  metadata?: {
+    createdAt?: Date;
+    [key: string]: unknown;
+  };
 }
 
 interface ChatMessagesProps {
@@ -394,14 +410,17 @@ function ChatMessagesContent({
     ) {
       const previousIds = new Set(
         previousMessagesRef.current.map(
-          (m) => m.id || `${m.role}-${m.content.substring(0, 10)}`
+          (m) => m.id || `${m.role}-${getMessageText(m).substring(0, 10)}`
         )
       );
       const newMessages = messages.filter(
         (currentMsg) =>
           !previousIds.has(
             currentMsg.id ||
-              `${currentMsg.role}-${currentMsg.content.substring(0, 10)}`
+              `${currentMsg.role}-${getMessageText(currentMsg).substring(
+                0,
+                10
+              )}`
           )
       );
       const newHumanMessage = newMessages.find((msg) => msg.role === "human");
@@ -421,7 +440,9 @@ function ChatMessagesContent({
       hasInitializedRef.current = true;
       previousMessagesRef.current = messages;
       initialMessageIdsRef.current = new Set(
-        messages.map((m) => m.id || `${m.role}-${m.content.substring(0, 10)}`)
+        messages.map(
+          (m) => m.id || `${m.role}-${getMessageText(m).substring(0, 10)}`
+        )
       );
     } else if (messages.length === 0) {
       hasInitializedRef.current = false;
@@ -446,10 +467,11 @@ function ChatMessagesContent({
   }, [localTtsSpeaking, speechLoadingId]);
 
   const copyMessage = async (message: ChatMessage) => {
+    const messageText = getMessageText(message);
     try {
-      await navigator.clipboard.writeText(message.content);
+      await navigator.clipboard.writeText(messageText);
       setCopiedMessageId(
-        message.id || `${message.role}-${message.content.substring(0, 10)}`
+        message.id || `${message.role}-${messageText.substring(0, 10)}`
       );
       setTimeout(() => setCopiedMessageId(null), 2000);
     } catch (err) {
@@ -457,13 +479,13 @@ function ChatMessagesContent({
       // Fallback
       try {
         const textarea = document.createElement("textarea");
-        textarea.value = message.content;
+        textarea.value = messageText;
         document.body.appendChild(textarea);
         textarea.select();
         document.execCommand("copy");
         document.body.removeChild(textarea);
         setCopiedMessageId(
-          message.id || `${message.role}-${message.content.substring(0, 10)}`
+          message.id || `${message.role}-${messageText.substring(0, 10)}`
         );
         setTimeout(() => setCopiedMessageId(null), 2000);
       } catch (fallbackErr) {
@@ -561,12 +583,13 @@ function ChatMessagesContent({
         </motion.div>
       )}
       {messages.map((message) => {
+        const messageText = getMessageText(message);
         const messageKey =
-          message.id || `${message.role}-${message.content.substring(0, 10)}`;
+          message.id || `${message.role}-${messageText.substring(0, 10)}`;
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
 
         const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
-        const isUrgent = isUrgentMessage(message.content);
+        const isUrgent = isUrgentMessage(messageText);
         let bgColorClass = "";
         if (isUrgent) {
           // Urgent bubbles will be driven by inline animation; avoid bg-* and text-* so theme overrides don't interfere
@@ -581,32 +604,38 @@ function ChatMessagesContent({
 
         // Trim leading "!!!!" for urgent messages and decode HTML entities
         const rawContent = isUrgent
-          ? message.content.slice(4).trimStart()
-          : message.content;
+          ? messageText.slice(4).trimStart()
+          : messageText;
         const decodedContent = decodeHtmlEntities(rawContent);
-        
+
         // Check for [[AQUARIUM]] token in the content
         const hasAquariumToken = decodedContent.includes("[[AQUARIUM]]");
-        
+
         // Remove [[AQUARIUM]] token from display content
-        const displayContent = decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim();
+        const displayContent = decodedContent
+          .replace(/\[\[AQUARIUM\]\]/g, "")
+          .trim();
 
         // Detect aquarium tool calls for this assistant message or chat room message
         let hasAquarium = false;
-        
+
         // Check for aquarium in AI assistant messages (using parts)
+        // In AI SDK v5, tool parts have type like "tool-aquarium"
         if (message.role === "assistant" && message.parts) {
-          const aquariumParts = message.parts.filter((p) => {
-            if (p.type !== "tool-invocation") return false;
-            const ti = (p as ToolInvocationPart).toolInvocation;
-            return ti?.toolName === "aquarium";
-          });
+          const aquariumParts = message.parts.filter(
+            (p: ToolInvocationPart | { type: string }) => {
+              return p.type === "tool-aquarium";
+            }
+          );
           hasAquarium = aquariumParts.length > 0;
         }
-        
+
         // Check for aquarium token in chat room messages
         // In chat rooms, messages from ryo don't have a role, just a username
-        if ((message.role === "human" || message.username === "ryo") && hasAquariumToken) {
+        if (
+          (message.role === "human" || message.username === "ryo") &&
+          hasAquariumToken
+        ) {
           hasAquarium = true;
         }
 
@@ -715,9 +744,9 @@ function ChatMessagesContent({
                 {message.username || (message.role === "user" ? "You" : "Ryo")}
               </span>{" "}
               <span className="text-gray-400 select-text">
-                {message.createdAt ? (
+                {message.metadata?.createdAt ? (
                   (() => {
-                    const messageDate = new Date(message.createdAt);
+                    const messageDate = new Date(message.metadata.createdAt);
                     const today = new Date();
                     const isBeforeToday =
                       messageDate.getDate() !== today.getDate() ||
@@ -976,185 +1005,200 @@ function ChatMessagesContent({
               >
                 {message.role === "assistant" ? (
                   <motion.div className="select-text flex flex-col gap-1">
-                    {message.parts?.map((part, partIndex) => {
-                      const partKey = `${messageKey}-part-${partIndex}`;
-                      switch (part.type) {
-                        case "text": {
-                          const hasXmlTags =
-                            /<textedit:(insert|replace|delete)/i.test(
-                              part.text
+                    {message.parts?.map(
+                      (
+                        part:
+                          | ToolInvocationPart
+                          | { type: string; text?: string },
+                        partIndex: number
+                      ) => {
+                        const partKey = `${messageKey}-part-${partIndex}`;
+                        switch (part.type) {
+                          case "text": {
+                            const partText =
+                              (part as { type: string; text?: string }).text ||
+                              "";
+                            const hasXmlTags =
+                              /<textedit:(insert|replace|delete)/i.test(
+                                partText
+                              );
+                            if (hasXmlTags) {
+                              const openTags = (
+                                partText.match(
+                                  /<textedit:(insert|replace|delete)/g
+                                ) || []
+                              ).length;
+                              const closeTags = (
+                                partText.match(
+                                  /<\/textedit:(insert|replace)>|<textedit:delete[^>]*\/>/g
+                                ) || []
+                              ).length;
+                              if (openTags !== closeTags) {
+                                return (
+                                  <motion.span
+                                    key={partKey}
+                                    initial={{ opacity: 1 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ duration: 0 }}
+                                    className="select-text italic"
+                                  >
+                                    editing...
+                                  </motion.span>
+                                );
+                              }
+                            }
+
+                            const rawPartContent = isUrgentMessage(partText)
+                              ? partText.slice(4).trimStart()
+                              : partText;
+                            const displayContent =
+                              decodeHtmlEntities(rawPartContent);
+                            const textContent = displayContent;
+
+                            return (
+                              <div key={partKey} className="w-full">
+                                <div className="whitespace-pre-wrap">
+                                  {textContent &&
+                                    (() => {
+                                      const tokens = segmentText(
+                                        textContent.trim()
+                                      );
+                                      let charPos = 0;
+                                      return tokens.map((segment, idx) => {
+                                        const start = charPos;
+                                        const end =
+                                          charPos + segment.content.length;
+                                        charPos = end;
+                                        return (
+                                          <motion.span
+                                            key={`${partKey}-segment-${idx}`}
+                                            initial={
+                                              isInitialMessage
+                                                ? { opacity: 1, y: 0 }
+                                                : { opacity: 0, y: 12 }
+                                            }
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className={`select-text ${
+                                              isEmojiOnly(textContent)
+                                                ? "text-[24px]"
+                                                : ""
+                                            } ${
+                                              segment.type === "bold"
+                                                ? "font-bold"
+                                                : segment.type === "italic"
+                                                ? "italic"
+                                                : ""
+                                            }`}
+                                            style={{
+                                              userSelect: "text",
+                                              fontSize: isEmojiOnly(textContent)
+                                                ? undefined
+                                                : `${fontSize}px`,
+                                            }}
+                                            transition={{
+                                              duration: 0.08,
+                                              delay: idx * 0.02,
+                                              ease: "easeOut",
+                                              onComplete: () => {
+                                                if (idx % 2 === 0) {
+                                                  playNote();
+                                                }
+                                              },
+                                            }}
+                                          >
+                                            {/* Apply highlight */}
+                                            {highlightActive &&
+                                            start <
+                                              (combinedHighlightSeg?.end ??
+                                                0) &&
+                                            end >
+                                              (combinedHighlightSeg?.start ??
+                                                0) ? (
+                                              <span className="animate-highlight">
+                                                {segment.type === "link" &&
+                                                segment.url ? (
+                                                  <a
+                                                    href={segment.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-600 hover:underline"
+                                                    style={{
+                                                      color: isUrgent
+                                                        ? "inherit"
+                                                        : undefined,
+                                                    }}
+                                                    onClick={(e) =>
+                                                      e.stopPropagation()
+                                                    }
+                                                  >
+                                                    {segment.content}
+                                                  </a>
+                                                ) : (
+                                                  segment.content
+                                                )}
+                                              </span>
+                                            ) : segment.type === "link" &&
+                                              segment.url ? (
+                                              <a
+                                                href={segment.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:underline"
+                                                style={{
+                                                  color: isUrgent
+                                                    ? "inherit"
+                                                    : undefined,
+                                                }}
+                                                onClick={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                              >
+                                                {segment.content}
+                                              </a>
+                                            ) : (
+                                              segment.content
+                                            )}
+                                          </motion.span>
+                                        );
+                                      });
+                                    })()}
+                                </div>
+                              </div>
                             );
-                          if (hasXmlTags) {
-                            const openTags = (
-                              part.text.match(
-                                /<textedit:(insert|replace|delete)/g
-                              ) || []
-                            ).length;
-                            const closeTags = (
-                              part.text.match(
-                                /<\/textedit:(insert|replace)>|<textedit:delete[^>]*\/>/g
-                              ) || []
-                            ).length;
-                            if (openTags !== closeTags) {
+                          }
+                          default: {
+                            // AI SDK v5 tool parts have type like "tool-launchApp", "tool-switchTheme", etc.
+                            if (part.type.startsWith("tool-")) {
+                              const toolPart = part as ToolInvocationPart;
+                              const toolName = part.type.slice(5); // Remove "tool-" prefix
+
+                              // Skip aquarium tool - it's rendered separately below the bubble
+                              if (toolName === "aquarium") {
+                                return null;
+                              }
+
                               return (
-                                <motion.span
+                                <ToolInvocationMessage
                                   key={partKey}
-                                  initial={{ opacity: 1 }}
-                                  animate={{ opacity: 1 }}
-                                  transition={{ duration: 0 }}
-                                  className="select-text italic"
-                                >
-                                  editing...
-                                </motion.span>
+                                  part={toolPart}
+                                  partKey={partKey}
+                                  isLoading={isLoading}
+                                  getAppName={getAppName}
+                                  formatToolName={formatToolName}
+                                  setIsInteractingWithPreview={
+                                    setIsInteractingWithPreview
+                                  }
+                                  playElevatorMusic={playElevatorMusic}
+                                  stopElevatorMusic={stopElevatorMusic}
+                                  playDingSound={playDingSound}
+                                />
                               );
                             }
-                          }
-
-                          const rawPartContent = isUrgentMessage(part.text)
-                            ? part.text.slice(4).trimStart()
-                            : part.text;
-                          const displayContent =
-                            decodeHtmlEntities(rawPartContent);
-                          const textContent = displayContent;
-
-                          return (
-                            <div key={partKey} className="w-full">
-                              <div className="whitespace-pre-wrap">
-                                {textContent &&
-                                  (() => {
-                                    const tokens = segmentText(
-                                      textContent.trim()
-                                    );
-                                    let charPos = 0;
-                                    return tokens.map((segment, idx) => {
-                                      const start = charPos;
-                                      const end =
-                                        charPos + segment.content.length;
-                                      charPos = end;
-                                      return (
-                                        <motion.span
-                                          key={`${partKey}-segment-${idx}`}
-                                          initial={
-                                            isInitialMessage
-                                              ? { opacity: 1, y: 0 }
-                                              : { opacity: 0, y: 12 }
-                                          }
-                                          animate={{ opacity: 1, y: 0 }}
-                                          className={`select-text ${
-                                            isEmojiOnly(textContent)
-                                              ? "text-[24px]"
-                                              : ""
-                                          } ${
-                                            segment.type === "bold"
-                                              ? "font-bold"
-                                              : segment.type === "italic"
-                                              ? "italic"
-                                              : ""
-                                          }`}
-                                          style={{
-                                            userSelect: "text",
-                                            fontSize: isEmojiOnly(textContent)
-                                              ? undefined
-                                              : `${fontSize}px`,
-                                          }}
-                                          transition={{
-                                            duration: 0.08,
-                                            delay: idx * 0.02,
-                                            ease: "easeOut",
-                                            onComplete: () => {
-                                              if (idx % 2 === 0) {
-                                                playNote();
-                                              }
-                                            },
-                                          }}
-                                        >
-                                          {/* Apply highlight */}
-                                          {highlightActive &&
-                                          start <
-                                            (combinedHighlightSeg?.end ?? 0) &&
-                                          end >
-                                            (combinedHighlightSeg?.start ??
-                                              0) ? (
-                                            <span className="animate-highlight">
-                                              {segment.type === "link" &&
-                                              segment.url ? (
-                                                <a
-                                                  href={segment.url}
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                  className="text-blue-600 hover:underline"
-                                                  style={{
-                                                    color: isUrgent
-                                                      ? "inherit"
-                                                      : undefined,
-                                                  }}
-                                                  onClick={(e) =>
-                                                    e.stopPropagation()
-                                                  }
-                                                >
-                                                  {segment.content}
-                                                </a>
-                                              ) : (
-                                                segment.content
-                                              )}
-                                            </span>
-                                          ) : segment.type === "link" &&
-                                            segment.url ? (
-                                            <a
-                                              href={segment.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-blue-600 hover:underline"
-                                              style={{
-                                                color: isUrgent
-                                                  ? "inherit"
-                                                  : undefined,
-                                              }}
-                                              onClick={(e) =>
-                                                e.stopPropagation()
-                                              }
-                                            >
-                                              {segment.content}
-                                            </a>
-                                          ) : (
-                                            segment.content
-                                          )}
-                                        </motion.span>
-                                      );
-                                    });
-                                  })()}
-                              </div>
-                            </div>
-                          );
-                        }
-                        case "tool-invocation": {
-                          const ti = (part as ToolInvocationPart)
-                            .toolInvocation;
-                          if (ti?.toolName === "aquarium") {
-                            // Render aquarium below the bubble separately; skip here to avoid duplicate text
                             return null;
                           }
-                          return (
-                            <ToolInvocationMessage
-                              key={partKey}
-                              part={part as ToolInvocationPart}
-                              partKey={partKey}
-                              isLoading={isLoading}
-                              getAppName={getAppName}
-                              formatToolName={formatToolName}
-                              setIsInteractingWithPreview={
-                                setIsInteractingWithPreview
-                              }
-                              playElevatorMusic={playElevatorMusic}
-                              stopElevatorMusic={stopElevatorMusic}
-                              playDingSound={playDingSound}
-                            />
-                          );
                         }
-                        default:
-                          return null;
                       }
-                    })}
+                    )}
                   </motion.div>
                 ) : (
                   <>
@@ -1231,17 +1275,23 @@ function ChatMessagesContent({
 
               if (message.role === "assistant") {
                 // Extract URLs from assistant message parts
-                message.parts?.forEach((part) => {
-                  if (part.type === "text") {
-                    const partContent = isUrgentMessage(part.text)
-                      ? part.text.slice(4).trimStart()
-                      : part.text;
-                    const decodedContent = decodeHtmlEntities(partContent);
-                    extractUrls(decodedContent).forEach((url) =>
-                      allUrls.add(url)
-                    );
+                message.parts?.forEach(
+                  (
+                    part: ToolInvocationPart | { type: string; text?: string }
+                  ) => {
+                    if (part.type === "text") {
+                      const partText =
+                        (part as { type: string; text?: string }).text || "";
+                      const partContent = isUrgentMessage(partText)
+                        ? partText.slice(4).trimStart()
+                        : partText;
+                      const decodedContent = decodeHtmlEntities(partContent);
+                      extractUrls(decodedContent).forEach((url) =>
+                        allUrls.add(url)
+                      );
+                    }
                   }
-                });
+                );
               } else {
                 // Extract URLs from user/human message content
                 extractUrls(displayContent).forEach((url) => allUrls.add(url));

@@ -1,8 +1,12 @@
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { Redis } from "@upstash/redis";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./utils/cors.js";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+} from "./utils/cors.js";
 
 export const config = {
   runtime: "edge",
@@ -206,7 +210,10 @@ Do not include timestamps or any other formatting in your output strings; just t
     }
 
     return new Response(lrcResult, {
-      headers: { "Content-Type": "text/plain; charset=utf-8", "Access-Control-Allow-Origin": effectiveOrigin! },
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Access-Control-Allow-Origin": effectiveOrigin!,
+      },
     });
   } catch (error: unknown) {
     logError(requestId, "Error translating lyrics", error);
@@ -221,7 +228,10 @@ Do not include timestamps or any other formatting in your output strings; just t
     // Return error as plain text if API is expected to be text/plain
     return new Response(`Error: ${errorMessage}`, {
       status: 500,
-      headers: { "Content-Type": "text/plain; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      },
     });
   }
 }

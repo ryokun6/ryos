@@ -1,4 +1,5 @@
-import { useChat, type Message } from "ai/react";
+import { useChat, type UIMessage } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   useInternetExplorerStore,
@@ -127,12 +128,18 @@ export function useAiGeneration({
   };
 
   // Handler for when AI stream finishes
-  const handleAiFinish = (message: Message) => {
+  const handleAiFinish = ({ message }: { message: UIMessage }) => {
     // Ensure this finish corresponds to the current generation request
     if (!currentGenerationId.current || isGenerationComplete.current) return;
 
-    // Extract HTML content from the final message
-    const htmlContent = message.content
+    // Extract HTML content from the final message (use parts in v5)
+    const textContent =
+      message.parts
+        ?.filter((p) => p.type === "text")
+        .map((p) => (p as { type: string; text: string }).text)
+        .join("") || "";
+
+    const htmlContent = textContent
       .replace(/^\s*```(?:html)?\s*\n?|\n?\s*```\s*$/g, "")
       .trim();
 
@@ -192,18 +199,22 @@ export function useAiGeneration({
 
   const {
     messages: aiMessages,
-    append: appendAiMessage,
-    isLoading: isAiLoading,
+    sendMessage: appendAiMessage,
+    status,
     setMessages: resetAiMessages,
     stop,
   } = useChat({
-    initialMessages: [],
+    messages: [],
     onFinish: handleAiFinish,
-    body: {
-      model: aiModel, // Pass the selected model to the API
-    },
-    api: "/api/ie-generate", // Point to dedicated IE generation endpoint
+    transport: new DefaultChatTransport({
+      api: "/api/ie-generate",
+      body: {
+        model: aiModel, // Pass the selected model to the API
+      },
+    }),
   });
+
+  const isAiLoading = status === "streaming" || status === "submitted";
 
   // Helper to fetch existing website content (readability text via jina.ai)
   const fetchExistingWebsiteContent = async (
@@ -420,7 +431,7 @@ IMPORTANT NAVIGATION CONTEXT:
 
       // Send message to AI - the response will be handled by the useEffect
       await appendAiMessage(
-        { role: "user", content: prompt },
+        { text: prompt },
         {
           body: {
             url: normalizedTargetUrl,
@@ -453,7 +464,13 @@ IMPORTANT NAVIGATION CONTEXT:
     if (aiMessages.length > 1) {
       const lastMessage = aiMessages[aiMessages.length - 1];
       if (lastMessage.role === "assistant") {
-        const htmlContent = lastMessage.content
+        const textContent =
+          lastMessage.parts
+            ?.filter((p) => p.type === "text")
+            .map((p) => (p as { type: string; text: string }).text)
+            .join("") || "";
+
+        const htmlContent = textContent
           .replace(/^\s*```(?:html)?\s*\n?|\n?\s*```\s*$/g, "")
           .trim();
         // Remove title comment for preview

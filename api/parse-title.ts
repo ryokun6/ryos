@@ -1,8 +1,12 @@
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import * as RateLimit from "./utils/rate-limit";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./utils/cors.js";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+} from "./utils/cors.js";
 
 export const config = {
   runtime: "edge",
@@ -45,23 +49,57 @@ export default async function handler(req: Request) {
       const DAILY_WINDOW = 60 * 60 * 24;
       const DAILY_LIMIT = 500;
 
-      const burstKey = RateLimit.makeKey(["rl", "parse-title", "burst", "ip", ip]);
-      const dailyKey = RateLimit.makeKey(["rl", "parse-title", "daily", "ip", ip]);
+      const burstKey = RateLimit.makeKey([
+        "rl",
+        "parse-title",
+        "burst",
+        "ip",
+        ip,
+      ]);
+      const dailyKey = RateLimit.makeKey([
+        "rl",
+        "parse-title",
+        "daily",
+        "ip",
+        ip,
+      ]);
 
-      const burst = await RateLimit.checkCounterLimit({ key: burstKey, windowSeconds: BURST_WINDOW, limit: BURST_LIMIT });
+      const burst = await RateLimit.checkCounterLimit({
+        key: burstKey,
+        windowSeconds: BURST_WINDOW,
+        limit: BURST_LIMIT,
+      });
       if (!burst.allowed) {
-        return new Response(JSON.stringify({ error: "rate_limit_exceeded", scope: "burst" }), {
-          status: 429,
-          headers: { "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json", "Access-Control-Allow-Origin": effectiveOrigin! },
-        });
+        return new Response(
+          JSON.stringify({ error: "rate_limit_exceeded", scope: "burst" }),
+          {
+            status: 429,
+            headers: {
+              "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
       }
 
-      const daily = await RateLimit.checkCounterLimit({ key: dailyKey, windowSeconds: DAILY_WINDOW, limit: DAILY_LIMIT });
+      const daily = await RateLimit.checkCounterLimit({
+        key: dailyKey,
+        windowSeconds: DAILY_WINDOW,
+        limit: DAILY_LIMIT,
+      });
       if (!daily.allowed) {
-        return new Response(JSON.stringify({ error: "rate_limit_exceeded", scope: "daily" }), {
-          status: 429,
-          headers: { "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW), "Content-Type": "application/json", "Access-Control-Allow-Origin": effectiveOrigin! },
-        });
+        return new Response(
+          JSON.stringify({ error: "rate_limit_exceeded", scope: "daily" }),
+          {
+            status: 429,
+            headers: {
+              "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW),
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
       }
     } catch (e) {
       // Fail open but log
@@ -100,7 +138,10 @@ export default async function handler(req: Request) {
     };
 
     return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": effectiveOrigin! },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": effectiveOrigin!,
+      },
     });
   } catch (error: unknown) {
     console.error("Error parsing title:", error);
@@ -127,9 +168,15 @@ export default async function handler(req: Request) {
       status = error.status;
     }
 
-    return new Response(JSON.stringify({ error: errorMessage, details: errorDetails }), {
-      status,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-    });
+    return new Response(
+      JSON.stringify({ error: errorMessage, details: errorDetails }),
+      {
+        status,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
+    );
   }
 }

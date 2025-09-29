@@ -1,7 +1,20 @@
-import { streamText, smoothStream, type Message, CoreMessage } from "ai";
+import {
+  streamText,
+  smoothStream,
+  convertToModelMessages,
+  type ModelMessage,
+} from "ai";
 import * as RateLimit from "./utils/rate-limit";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./utils/cors.js";
-import { SupportedModel, DEFAULT_MODEL, getModelInstance } from "./utils/aiModels";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+} from "./utils/cors.js";
+import {
+  SupportedModel,
+  DEFAULT_MODEL,
+  getModelInstance,
+} from "./utils/aiModels";
 import { Redis } from "@upstash/redis";
 import { normalizeUrlForCacheKey } from "./utils/url";
 import {
@@ -23,30 +36,37 @@ const IE_CACHE_PREFIX = "ie:cache:"; // Key prefix for stored generated pages
 
 // --- Logging Utilities ---------------------------------------------------
 
-const logRequest = (method: string, url: string, action: string | null, id: string) => {
-  console.log(`[${id}] ${method} ${url} - Action: ${action || 'none'}`);
+const logRequest = (
+  method: string,
+  url: string,
+  action: string | null,
+  id: string
+) => {
+  console.log(`[${id}] ${method} ${url} - Action: ${action || "none"}`);
 };
 
 const logInfo = (id: string, message: string, data?: unknown) => {
-  console.log(`[${id}] INFO: ${message}`, data ?? '');
+  console.log(`[${id}] INFO: ${message}`, data ?? "");
 };
 
 const logError = (id: string, message: string, error: unknown) => {
   console.error(`[${id}] ERROR: ${message}`, error);
 };
 
-const generateRequestId = (): string => Math.random().toString(36).substring(2, 10);
+const generateRequestId = (): string =>
+  Math.random().toString(36).substring(2, 10);
 
 interface IEGenerateRequestBody {
   url?: string;
   year?: string;
-  messages?: Message[];
+  messages?: ModelMessage[];
   model?: SupportedModel;
 }
 
 // --- Utility Functions ----------------------------------------------------
 
-const isValidOrigin = (origin: string | null): boolean => isAllowedOrigin(origin);
+const isValidOrigin = (origin: string | null): boolean =>
+  isAllowedOrigin(origin);
 
 // --- Edge Runtime Config --------------------------------------------------
 
@@ -75,7 +95,7 @@ const getDynamicSystemPrompt = (
   // --- Prompt Sections ---
 
   const INTRO_LINE = `Generate content for the URL path, the year provided (${
-    year ?? 'current'
+    year ?? "current"
   }), original site content, and use provided HTML as template if provided.`;
 
   const FUTURE_YEAR_INSTRUCTIONS = `For the future year ${year}:
@@ -111,7 +131,8 @@ ${RYO_PERSONA_INSTRUCTIONS}`;
     yearSpecificInstructions = FUTURE_YEAR_INSTRUCTIONS;
   } else if (year < currentYear) {
     yearSpecificInstructions = PAST_YEAR_INSTRUCTIONS;
-  } else { // year === currentYear
+  } else {
+    // year === currentYear
     yearSpecificInstructions = CURRENT_YEAR_INSTRUCTIONS;
   }
 
@@ -120,7 +141,13 @@ ${RYO_PERSONA_INSTRUCTIONS}`;
   let finalPrompt = `${INTRO_LINE}\n\n${yearSpecificInstructions}`;
 
   // Conditionally add Ryo's persona instructions
-  if (rawUrl && (rawUrl.includes('ryo.lu') || rawUrl.includes('x.com') || rawUrl.includes('notion') || rawUrl.includes('cursor'))) {
+  if (
+    rawUrl &&
+    (rawUrl.includes("ryo.lu") ||
+      rawUrl.includes("x.com") ||
+      rawUrl.includes("notion") ||
+      rawUrl.includes("cursor"))
+  ) {
     finalPrompt += `\n\n${PERSONA_INSTRUCTIONS_BLOCK}`;
   }
 
@@ -209,10 +236,13 @@ export default async function handler(req: Request) {
     }
 
     const requestId = generateRequestId();
-    const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const startTime =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
     const urlObj = new URL(req.url);
 
-    const queryModel = urlObj.searchParams.get("model") as SupportedModel | null;
+    const queryModel = urlObj.searchParams.get(
+      "model"
+    ) as SupportedModel | null;
     // Extract caching parameters from query string
     const targetUrl = urlObj.searchParams.get("url");
     const targetYear = urlObj.searchParams.get("year");
@@ -224,22 +254,33 @@ export default async function handler(req: Request) {
 
     const bodyUrl = bodyData.url;
     const bodyYear = bodyData.year;
-    
+
     // Build a safe cache key using url/year present in query string or body
     const rawUrl = targetUrl || bodyUrl; // Get the url before normalization
     const effectiveYearStr = targetYear || bodyYear;
-    const effectiveYear = effectiveYearStr ? parseInt(effectiveYearStr, 10) : null; // Parse year to number
+    const effectiveYear = effectiveYearStr
+      ? parseInt(effectiveYearStr, 10)
+      : null; // Parse year to number
 
     // Normalize the URL for the cache key
     const normalizedUrlForKey = normalizeUrlForCacheKey(rawUrl);
 
-    logRequest(req.method, req.url, `${rawUrl} (${effectiveYearStr || 'N/A'})`, requestId); // Log original requested URL
+    logRequest(
+      req.method,
+      req.url,
+      `${rawUrl} (${effectiveYearStr || "N/A"})`,
+      requestId
+    ); // Log original requested URL
 
     const { messages = [], model: bodyModel = DEFAULT_MODEL } = bodyData;
 
     // Use normalized URL for the cache key
-    const cacheKey = normalizedUrlForKey && effectiveYearStr ?
-      `${IE_CACHE_PREFIX}${encodeURIComponent(normalizedUrlForKey)}:${effectiveYearStr}` : null;
+    const cacheKey =
+      normalizedUrlForKey && effectiveYearStr
+        ? `${IE_CACHE_PREFIX}${encodeURIComponent(
+            normalizedUrlForKey
+          )}:${effectiveYearStr}`
+        : null;
 
     // Removed cache read to avoid duplicate generation; cache handled through iframe-check AI mode
 
@@ -249,10 +290,7 @@ export default async function handler(req: Request) {
       return new Response("Invalid messages format", { status: 400 });
     }
 
-    if (
-      model !== null &&
-      !SUPPORTED_AI_MODELS.includes(model)
-    ) {
+    if (model !== null && !SUPPORTED_AI_MODELS.includes(model)) {
       return new Response(`Unsupported model: ${model}`, { status: 400 });
     }
 
@@ -261,23 +299,36 @@ export default async function handler(req: Request) {
     // Generate dynamic portion of the system prompt, passing the rawUrl
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
 
-    // Prepend the dynamic prompt as a system message
-    const enrichedMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages,
+    // Build system messages similar to chat.ts approach
+    const staticSystemMessage = {
+      role: "system" as const,
+      content: STATIC_SYSTEM_PROMPT,
+    };
+
+    const dynamicSystemMessage = {
+      role: "system" as const,
+      content: systemPrompt,
+    };
+
+    // Convert UIMessages to ModelMessages for the AI model (AI SDK v5)
+    const modelMessages = convertToModelMessages(messages);
+
+    const enrichedMessages: ModelMessage[] = [
+      staticSystemMessage,
+      dynamicSystemMessage,
+      ...modelMessages,
     ];
 
     const result = streamText({
       model: selectedModel,
-      system: STATIC_SYSTEM_PROMPT,
-      messages: enrichedMessages as CoreMessage[],
+      messages: enrichedMessages,
       // We assume prompt/messages already include necessary system/user details
       temperature: 0.7,
-      maxTokens: 4000,
+      maxOutputTokens: 4000,
       experimental_transform: smoothStream(),
       onFinish: async ({ text }) => {
         if (!cacheKey) {
-          logInfo(requestId, 'No cacheKey available, skipping cache save');
+          logInfo(requestId, "No cacheKey available, skipping cache save");
           return;
         }
         try {
@@ -288,28 +339,41 @@ export default async function handler(req: Request) {
             cleaned = blockMatch[1].trim();
           } else {
             // Remove any stray fences if present
-            cleaned = cleaned.replace(/```(?:html)?\s*/g, "").replace(/```/g, "").trim();
+            cleaned = cleaned
+              .replace(/```(?:html)?\s*/g, "")
+              .replace(/```/g, "")
+              .trim();
           }
           // Remove duplicate TITLE comments beyond first
           const titleCommentMatch = cleaned.match(/<!--\s*TITLE:[\s\S]*?-->/);
           if (titleCommentMatch) {
             const titleComment = titleCommentMatch[0];
             // Remove any additional copies of title comment
-            cleaned = titleComment + cleaned.replace(new RegExp(titleComment, "g"), "");
+            cleaned =
+              titleComment + cleaned.replace(new RegExp(titleComment, "g"), "");
           }
           await redis.lpush(cacheKey, cleaned);
           await redis.ltrim(cacheKey, 0, 4);
-          logInfo(requestId, `Cached result for ${cacheKey} (length=${cleaned.length})`);
-          const duration = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startTime;
-          logInfo(requestId, `Request completed in ${duration.toFixed(2)}ms (generated)`);
+          logInfo(
+            requestId,
+            `Cached result for ${cacheKey} (length=${cleaned.length})`
+          );
+          const duration =
+            (typeof performance !== "undefined"
+              ? performance.now()
+              : Date.now()) - startTime;
+          logInfo(
+            requestId,
+            `Request completed in ${duration.toFixed(2)}ms (generated)`
+          );
         } catch (cacheErr) {
-          logError(requestId, 'Cache write error', cacheErr);
-          logInfo(requestId, 'Failed to cache HTML, length', text?.length);
+          logError(requestId, "Cache write error", cacheErr);
+          logInfo(requestId, "Failed to cache HTML, length", text?.length);
         }
       },
     });
 
-    const response = result.toDataStreamResponse();
+    const response = result.toUIMessageStreamResponse();
 
     const headers = new Headers(response.headers);
     headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
@@ -322,7 +386,7 @@ export default async function handler(req: Request) {
     return resp;
   } catch (error) {
     const requestId = generateRequestId(); // fallback id
-    logError(requestId, 'IE Generate API error', error);
+    logError(requestId, "IE Generate API error", error);
 
     if (error instanceof SyntaxError) {
       return new Response(`Bad Request: Invalid JSON - ${error.message}`, {
@@ -332,4 +396,4 @@ export default async function handler(req: Request) {
 
     return new Response("Internal Server Error", { status: 500 });
   }
-}    
+}

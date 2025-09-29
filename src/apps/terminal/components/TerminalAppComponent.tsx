@@ -1453,7 +1453,7 @@ export function TerminalAppComponent({
     // Check if command exists in registry
     if (commands[cmd]) {
       const result = await commands[cmd].handler(args, context);
-      
+
       // Special handling for clear command
       if (cmd === "clear") {
         // Trigger clearing animation
@@ -1469,13 +1469,12 @@ export function TerminalAppComponent({
           lastProcessedMessageIdRef.current = null;
         }, 500); // Animation duration
       }
-      
+
       return result;
     }
 
     // Handle commands that are not yet in the registry
     switch (cmd) {
-
       case "cat": {
         if (args.length === 0) {
           return {
@@ -1611,8 +1610,6 @@ export function TerminalAppComponent({
         };
       }
 
-
-
       case "edit": {
         if (args.length === 0) {
           return {
@@ -1720,8 +1717,6 @@ export function TerminalAppComponent({
         };
       }
 
-
-
       case "history": {
         const cmdHistory = useTerminalStore.getState().commandHistory;
         if (cmdHistory.length === 0) {
@@ -1775,8 +1770,6 @@ export function TerminalAppComponent({
           isError: false,
         };
       }
-
-
 
       case "su": {
         if (args.length === 0) {
@@ -1835,7 +1828,9 @@ export function TerminalAppComponent({
 
               // Attempt to create user; password is required by server
               if (!passwordArg) {
-                this.updateOutput("su failed: password required for new user creation");
+                this.updateOutput(
+                  "su failed: password required for new user creation"
+                );
                 return;
               }
 
@@ -1914,12 +1909,6 @@ export function TerminalAppComponent({
         return { output: tempOutput, isError: false };
       }
 
-
-
-
-
-
-
       default:
         return {
           output: `command not found: ${cmd}. type 'help' for a list of available commands.`,
@@ -1946,10 +1935,10 @@ export function TerminalAppComponent({
     if (isInAiMode && initialAiPrompt) {
       // Send the initial prompt
       appendAiMessage(
-        { role: "user", content: initialAiPrompt },
+        { text: initialAiPrompt },
         { body: { systemState: getSystemState() } }
       );
-      
+
       // Clear the initial prompt after using it
       setInitialAiPrompt(undefined);
     }
@@ -1968,7 +1957,8 @@ export function TerminalAppComponent({
     if (lastMessage.role !== "assistant") return;
 
     const messageKey = `${lastMessage.id}-${JSON.stringify(
-      (lastMessage as { parts?: unknown[] }).parts ?? lastMessage.content
+      (lastMessage as { parts?: unknown[] }).parts ??
+        (lastMessage as { text?: string }).text
     )}`;
     if (messageKey === lastProcessedMessageIdRef.current) return;
 
@@ -1996,7 +1986,9 @@ export function TerminalAppComponent({
         }
       });
     } else {
-      lines.push(processMessageContent(lastMessage.content));
+      lines.push(
+        processMessageContent((lastMessage as { text?: string }).text || "")
+      );
     }
 
     const cleanedContent = lines.join("\n");
@@ -2078,14 +2070,8 @@ export function TerminalAppComponent({
       track(TERMINAL_ANALYTICS.CHAT_EXIT);
       setIsInAiMode(false);
       stopAiResponse();
-      setAiChatMessages([
-        {
-          id: "system",
-          role: "system",
-          content:
-            "You are a coding assistant running in the terminal app on ryOS.",
-        },
-      ]);
+      // Reset to empty (system message handled on backend)
+      setAiChatMessages([]);
 
       // Reset tracking refs
       lastProcessedMessageIdRef.current = null;
@@ -2111,15 +2097,8 @@ export function TerminalAppComponent({
       // Stop any ongoing AI response
       stopAiResponse();
 
-      // Reset AI messages to just the system message
-      setAiChatMessages([
-        {
-          id: "system",
-          role: "system",
-          content:
-            "You are a coding assistant running in the terminal app on ryOS.",
-        },
-      ]);
+      // Reset AI messages (system message handled on backend)
+      setAiChatMessages([]);
 
       // Trigger clearing animation
       setIsClearingTerminal(true);
@@ -2171,7 +2150,7 @@ export function TerminalAppComponent({
 
     // Send the message using useAiChat hook
     appendAiMessage(
-      { role: "user", content: command },
+      { text: command },
       { body: { systemState: getSystemState() } }
     );
 
@@ -2451,9 +2430,9 @@ export function TerminalAppComponent({
     if (isInVimMode && vimFile) {
       return (
         <div className="mb-4">
-          <VimEditor 
-            file={vimFile} 
-            position={vimPosition} 
+          <VimEditor
+            file={vimFile}
+            position={vimPosition}
             vimCursorLine={vimCursorLine}
             vimCursorColumn={vimCursorColumn}
             vimMode={vimMode}

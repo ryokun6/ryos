@@ -18,39 +18,33 @@ export const aiCommand: Command = {
   handler: (args: string[]): CommandResult => {
     // Get terminal store instance
     const terminalStore = useTerminalStore.getState();
-    
+
     // Enter AI chat mode
     terminalStore.setIsInAiMode(true);
-    
+
     // Track chat start
     track(TERMINAL_ANALYTICS.CHAT_START);
-    
-    // Reset AI messages to just the system message
+
+    // Reset AI messages (system message is handled on backend)
     const chatsStore = useChatsStore.getState();
-    chatsStore.setAiMessages([
-      {
-        id: "system",
-        role: "system",
-        content: "You are a coding assistant running in the terminal app on ryOS.",
-      },
-    ]);
-    
+    chatsStore.setAiMessages([]);
+
     // If there's an initial prompt, we'll need to handle it in the component
     if (args.length > 0) {
       const initialPrompt = args.join(" ");
-      
+
       // Track AI command
       track(TERMINAL_ANALYTICS.AI_COMMAND, { prompt: initialPrompt });
-      
+
       // Store the initial prompt for the component to process
       terminalStore.setInitialAiPrompt(initialPrompt);
-      
+
       return {
         output: `ask ryo anything. type 'exit' to return to terminal.\n→ from your command: ${initialPrompt}`,
         isError: false,
       };
     }
-    
+
     return {
       output: `ask ryo anything. type 'exit' to return to terminal.`,
       isError: false,
