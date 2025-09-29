@@ -1,6 +1,13 @@
 {
   "videos": [
     {
+      "id": "8QZeXvOjgGE",
+      "url": "https://www.youtube.com/watch?v=8QZeXvOjgGE",
+      "title": "JoyRide",
+      "artist": "CORTIS",
+      "lyricOffset": 1400
+    },
+    {
       "id": "WXS-o57VJ5w",
       "url": "https://www.youtube.com/watch?v=WXS-o57VJ5w",
       "title": "GO!",
