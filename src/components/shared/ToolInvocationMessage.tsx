@@ -120,10 +120,27 @@ export function ToolInvocationMessage({
           : "Paused"
       } iPod`;
     } else if (toolName === "ipodPlaySong") {
-      const title = input?.title || "song";
-      displayResultMessage = `Playing "${title}"`;
+      const { title, artist, id } = input || {};
+      let songDescription = "song";
+      
+      if (title && artist) {
+        songDescription = `"${title}" by ${artist}`;
+      } else if (title) {
+        songDescription = `"${title}"`;
+      } else if (artist) {
+        songDescription = `song by ${artist}`;
+      } else if (id) {
+        songDescription = `song (ID: ${id})`;
+      }
+      
+      displayResultMessage = `Playing ${songDescription}`;
     } else if (toolName === "ipodAddAndPlaySong") {
-      displayResultMessage = `Added and playing new song`;
+      const id = input?.id;
+      if (id) {
+        displayResultMessage = `Added and playing song (ID: ${id})`;
+      } else {
+        displayResultMessage = `Added and playing new song`;
+      }
     } else if (toolName === "ipodNextTrack") {
       displayResultMessage = `Skipped to next track`;
     } else if (toolName === "ipodPreviousTrack") {
