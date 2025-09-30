@@ -641,6 +641,15 @@ export default async function handler(req: Request) {
       ? { ...incomingSystemState, requestGeo: geo }
       : ({ requestGeo: geo } as SystemState);
 
+    // Log system state for multi-step debugging
+    log(
+      `System state summary - Running apps: ${JSON.stringify(
+        systemState?.runningApps?.foreground
+      )}, iPod: ${systemState?.ipod?.currentTrack?.title || "none"}, IE: ${
+        systemState?.internetExplorer?.url || "none"
+      }`
+    );
+
     const selectedModel = getModelInstance(model as SupportedModel);
 
     // Build unified static prompts
@@ -772,6 +781,31 @@ export default async function handler(req: Request) {
                   "For 'internet-explorer', provide both 'url' and 'year', or neither. For other apps, do not provide 'url' or 'year'.",
               }
             ),
+          execute: async ({ id, url, year }) => {
+            const actions: Array<{
+              type: string;
+              appId: string;
+              url?: string;
+              year?: string;
+            }> = [{ type: "launchApp", appId: id }];
+
+            // Add URL and year for Internet Explorer
+            if (id === "internet-explorer" && url && year) {
+              actions[0].url = url;
+              actions[0].year = year;
+            }
+
+            const displayMessage =
+              id === "internet-explorer" && url && year
+                ? `Launched ${url} in ${year}`
+                : `Launched ${id}`;
+
+            return {
+              success: true,
+              message: displayMessage,
+              clientActions: actions,
+            };
+          },
         },
         closeApp: {
           description:
@@ -779,6 +813,13 @@ export default async function handler(req: Request) {
           inputSchema: z.object({
             id: z.enum(appIds).describe("The app id to close"),
           }),
+          execute: async ({ id }) => {
+            return {
+              success: true,
+              message: `Closed ${id}`,
+              clientActions: [{ type: "closeApp", appId: id }],
+            };
+          },
         },
         switchTheme: {
           description:
@@ -790,6 +831,13 @@ export default async function handler(req: Request) {
                 'The theme to switch to. One of "system7", "macosx", "xp", "win98".'
               ),
           }),
+          execute: async ({ theme }) => {
+            return {
+              success: true,
+              message: `Switched to ${theme} theme`,
+              clientActions: [{ type: "switchTheme", theme }],
+            };
+          },
         },
         textEditSearchReplace: {
           description:
@@ -817,6 +865,39 @@ export default async function handler(req: Request) {
                 "REQUIRED: The specific TextEdit instance ID to modify (e.g., '15'). Get this from the system state TextEdit Windows list."
               ),
           }),
+          execute: async ({ search, replace, isRegex, instanceId }) => {
+            // Validate instanceId exists in system state
+            const textEditInstances = systemState?.textEdit?.instances || [];
+            const targetInstance = textEditInstances.find(
+              (inst: { instanceId: string }) => inst.instanceId === instanceId
+            );
+
+            if (!targetInstance) {
+              throw new Error(
+                `TextEdit instance ${instanceId} not found. Available instances: ${
+                  textEditInstances
+                    .map((i: { instanceId: string }) => i.instanceId)
+                    .join(", ") || "none"
+                }`
+              );
+            }
+
+            return {
+              success: true,
+              message: `Replaced "${search}" with "${replace}" in ${
+                targetInstance.title || "document"
+              }`,
+              clientActions: [
+                {
+                  type: "textEditSearchReplace",
+                  instanceId,
+                  search,
+                  replace,
+                  isRegex: isRegex || false,
+                },
+              ],
+            };
+          },
         },
         textEditInsertText: {
           description:
@@ -835,6 +916,38 @@ export default async function handler(req: Request) {
                 "REQUIRED: The specific TextEdit instance ID to modify (e.g., '15'). Get this from the system state TextEdit Windows list."
               ),
           }),
+          execute: async ({ text, position, instanceId }) => {
+            // Validate instanceId exists in system state
+            const textEditInstances = systemState?.textEdit?.instances || [];
+            const targetInstance = textEditInstances.find(
+              (inst: { instanceId: string }) => inst.instanceId === instanceId
+            );
+
+            if (!targetInstance) {
+              throw new Error(
+                `TextEdit instance ${instanceId} not found. Available instances: ${
+                  textEditInstances
+                    .map((i: { instanceId: string }) => i.instanceId)
+                    .join(", ") || "none"
+                }`
+              );
+            }
+
+            return {
+              success: true,
+              message: `Inserted text at ${
+                position === "start" ? "start" : "end"
+              } of ${targetInstance.title || "document"}`,
+              clientActions: [
+                {
+                  type: "textEditInsertText",
+                  instanceId,
+                  text,
+                  position: position || "end",
+                },
+              ],
+            };
+          },
         },
         textEditNewFile: {
           description:
@@ -847,6 +960,29 @@ export default async function handler(req: Request) {
                 "Optional title for the new TextEdit window. If not provided, defaults to 'Untitled'."
               ),
           }),
+          execute: async ({ title }) => {
+            // Generate a unique instance ID for the new TextEdit document
+            const instanceId = `textedit-${Date.now()}-${Math.random()
+              .toString(36)
+              .substring(2, 9)}`;
+
+            // Return client actions to create and open the instance
+            return {
+              success: true,
+              message: `Created new TextEdit document${
+                title ? ` titled "${title}"` : ""
+              }`,
+              instanceId,
+              clientActions: [
+                {
+                  type: "launchApp",
+                  appId: "textedit",
+                  instanceId,
+                  title: title || "Untitled",
+                },
+              ],
+            };
+          },
         },
         // Add iPod control tools
         ipodPlayPause: {
@@ -860,6 +996,34 @@ export default async function handler(req: Request) {
                 "Playback action to perform. Defaults to 'toggle' if omitted."
               ),
           }),
+          execute: async ({ action }) => {
+            const actionType = action || "toggle";
+
+            // Check if iPod is open, launch it if not
+            const isIpodOpen =
+              systemState?.runningApps?.foreground?.appId === "ipod" ||
+              systemState?.runningApps?.background?.some(
+                (app) => app.appId === "ipod"
+              );
+
+            const actions = [];
+            if (!isIpodOpen) {
+              actions.push({ type: "launchApp", appId: "ipod" });
+            }
+            actions.push({ type: "ipodPlayPause", action: actionType });
+
+            return {
+              success: true,
+              message: `${
+                actionType === "play"
+                  ? "Playing"
+                  : actionType === "pause"
+                  ? "Paused"
+                  : "Toggled"
+              } iPod`,
+              clientActions: actions,
+            };
+          },
         },
         ipodPlaySong: {
           description:
@@ -885,6 +1049,18 @@ export default async function handler(req: Request) {
               message:
                 "Provide at least one of 'id', 'title', or 'artist' to identify the song.",
             }),
+          execute: async ({ id, title, artist }) => {
+            const displayParts = [title, artist].filter(Boolean);
+            const displayText = displayParts.length
+              ? displayParts.join(" ")
+              : id || "song";
+
+            return {
+              success: true,
+              message: `Playing ${displayText}`,
+              clientActions: [{ type: "ipodPlaySong", id, title, artist }],
+            };
+          },
         },
         ipodAddAndPlaySong: {
           description:
@@ -896,16 +1072,37 @@ export default async function handler(req: Request) {
                 "The YouTube video ID or any supported URL format (YouTube URL, os.ryo.lu/ipod/:id, etc.) of the song to add and play."
               ),
           }),
+          execute: async ({ id }) => {
+            return {
+              success: true,
+              message: "Added and playing new song",
+              clientActions: [{ type: "ipodAddAndPlaySong", id }],
+            };
+          },
         },
         ipodNextTrack: {
           description:
             "Skip to the next track in the iPod app playlist. If the iPod app is not open, it will be launched automatically.",
           inputSchema: z.object({}),
+          execute: async () => {
+            return {
+              success: true,
+              message: "Skipped to next track",
+              clientActions: [{ type: "ipodNextTrack" }],
+            };
+          },
         },
         ipodPreviousTrack: {
           description:
             "Skip to the previous track in the iPod app playlist. If the iPod app is not open, it will be launched automatically.",
           inputSchema: z.object({}),
+          execute: async () => {
+            return {
+              success: true,
+              message: "Skipped to previous track",
+              clientActions: [{ type: "ipodPreviousTrack" }],
+            };
+          },
         },
         // --- HTML generation & preview ---
         generateHtml: {
@@ -935,6 +1132,13 @@ export default async function handler(req: Request) {
           description:
             "Render a playful emoji aquarium inside the chat bubble. Use when the user asks for an aquarium / fish tank / fishes / sam's aquarium.",
           inputSchema: z.object({}),
+          execute: async () => {
+            return {
+              success: true,
+              message: "Aquarium displayed",
+              clientActions: [{ type: "aquarium" }],
+            };
+          },
         },
       },
       temperature: 0.7,

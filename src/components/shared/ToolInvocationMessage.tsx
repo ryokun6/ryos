@@ -120,8 +120,16 @@ export function ToolInvocationMessage({
           : "Paused"
       } iPod`;
     } else if (toolName === "ipodPlaySong") {
-      const title = input?.title || "song";
-      displayResultMessage = `Playing "${title}"`;
+      if (input?.title) {
+        displayResultMessage = `Playing ${input.title}`;
+      } else if (input) {
+        const values = Object.values(input)
+          .filter((v) => v)
+          .join(" ");
+        displayResultMessage = `Playing ${values}`;
+      } else {
+        displayResultMessage = "Playing song";
+      }
     } else if (toolName === "ipodAddAndPlaySong") {
       displayResultMessage = `Added and playing new song`;
     } else if (toolName === "ipodNextTrack") {

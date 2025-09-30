@@ -359,28 +359,31 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     transport: new DefaultChatTransport({
       api: "/api/chat",
       headers: apiHeaders,
-      body: {
-        systemState: getSystemState(), // Initial system state
-        model: aiModel, // Pass the selected AI model
-      },
+      body: () => ({
+        // Function ensures fresh system state with every request (multi-step agentic workflows)
+        systemState: getSystemState(),
+        model: aiModel,
+      }),
     }),
 
-    async onToolCall({ toolCall }) {
-      // In AI SDK 5, client-side tool execution requires calling addToolResult
-      // Short delay to allow the UI to render the "call" state
-      await new Promise<void>((resolve) => setTimeout(resolve, 120));
+    // Server-side tool execution: Tools execute on server, return clientActions
 
-      console.log(
-        `[onToolCall] Executing client-side tool: ${toolCall.toolName}`,
-        toolCall
-      );
+    async onFinish({ messages }) {
+      // First, process tool results and execute client actions
+      for (const msg of messages) {
+        const parts = (msg as any).parts;
+        if (parts && Array.isArray(parts)) {
+          for (const part of parts) {
+            if (part.type === "tool-result" && part.result?.clientActions) {
+              const { executeClientActions } = await import("../utils/clientActionHandler");
+              await executeClientActions(part.result.clientActions);
+            }
+          }
+        }
+      }
 
-      try {
-        // Default result message
-        let result: string = "Tool executed successfully";
-
-        switch (toolCall.toolName) {
-          case "aquarium": {
+      // Then handle normal message processing (existing logic)
+      // Ensure all messages have metadata with createdAt
             // Visual renders in the message bubble; nothing to do here.
             result = "Aquarium displayed";
             break;
