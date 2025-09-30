@@ -792,7 +792,7 @@ export default async function handler(req: Request) {
         },
         textEditSearchReplace: {
           description:
-            "Search and replace text in a specific TextEdit document. You MUST always provide 'search', 'replace', and 'instanceId'. Set 'isRegex: true' ONLY if the user explicitly mentions using a regular expression. Use the instanceId from the system state (e.g., '15') to target a specific window.",
+            "Search and replace text in a specific TextEdit document. You MUST always provide 'search', 'replace', and 'instanceId'. Set 'isRegex: true' ONLY if the user explicitly mentions using a regular expression. Use the instanceId from the system state (e.g., '15') to target a specific window. If you just created a new file with textEditNewFile, use the instanceId from that tool call result.",
           inputSchema: z.object({
             search: z
               .string()
@@ -813,13 +813,13 @@ export default async function handler(req: Request) {
             instanceId: z
               .string()
               .describe(
-                "REQUIRED: The specific TextEdit instance ID to modify (e.g., '15'). Get this from the system state TextEdit Windows list."
+                "REQUIRED: The specific TextEdit instance ID to modify (e.g., '15'). Get this from the system state TextEdit Windows list or from a previous textEditNewFile result."
               ),
           }),
         },
         textEditInsertText: {
           description:
-            "Insert plain text into a specific TextEdit document. You MUST always provide 'text' and 'instanceId'. Appends to the end by default; use position 'start' to prepend. Use the instanceId from the system state (e.g., '15') to target a specific window.",
+            "Insert plain text into a specific TextEdit document. You MUST always provide 'text' and 'instanceId'. Appends to the end by default; use position 'start' to prepend. Use the instanceId from the system state (e.g., '15') to target a specific window. If you just created a new file with textEditNewFile, use the instanceId from that tool call result.",
           inputSchema: z.object({
             text: z.string().describe("REQUIRED: The text to insert"),
             position: z
@@ -831,13 +831,13 @@ export default async function handler(req: Request) {
             instanceId: z
               .string()
               .describe(
-                "REQUIRED: The specific TextEdit instance ID to modify (e.g., '15'). Get this from the system state TextEdit Windows list."
+                "REQUIRED: The specific TextEdit instance ID to modify (e.g., '15'). Get this from the system state TextEdit Windows list or from a previous textEditNewFile result."
               ),
           }),
         },
         textEditNewFile: {
           description:
-            "Create a new blank document in a new TextEdit instance. Use when the user explicitly requests a new or untitled file.",
+            "Create a new blank document in a new TextEdit instance. Use when the user explicitly requests a new or untitled file. The result will include the new instanceId that you MUST use for any subsequent textEditInsertText or textEditSearchReplace calls on this document.",
           inputSchema: z.object({
             title: z
               .string()

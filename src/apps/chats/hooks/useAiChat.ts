@@ -550,6 +550,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   Object.keys(textEditState.instances).join(", ") || "none"
                 }.`
               );
+              console.log("[ToolCall] Current TextEdit instances:", textEditState.instances);
               break;
             }
 
@@ -678,6 +679,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   Object.keys(textEditState.instances).join(", ") || "none"
                 }.`
               );
+              console.log("[ToolCall] Current TextEdit instances:", textEditState.instances);
               break;
             }
 
@@ -781,19 +783,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               true
             );
 
-            // Wait a bit for the app to initialize
-            await new Promise((resolve) => setTimeout(resolve, 200));
+            // Wait a bit for the app to initialize and TextEdit store to be updated
+            await new Promise((resolve) => setTimeout(resolve, 300));
 
             // Bring the new instance to foreground so user can see it
             appStore.bringInstanceToForeground(instanceId);
 
             const resultMessage = `Created new document${
               title ? ` "${title}"` : ""
-            } (instanceId: ${instanceId})`;
+            } with instanceId: ${instanceId}`;
             console.log(
               `[ToolCall] Created a new, untitled document in TextEdit${
                 title ? ` (${title})` : ""
-              }.`
+              } with instanceId: ${instanceId}.`
             );
 
             // Add tool result back to messages
