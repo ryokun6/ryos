@@ -76,7 +76,7 @@
     "vercel": "^41.7.8",
     "wavesurfer.js": "^7.9.5",
     "xp.css": "^0.2.6",
-    "zod": "3.24.1",
+    "zod": "^3.25.76",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
