@@ -16,6 +16,7 @@
     "@ai-sdk/anthropic": "^2.0.0",
     "@ai-sdk/google": "^2.0.0",
     "@ai-sdk/openai": "^2.0.0",
+    "@ai-sdk/react": "^2.0.0",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-dropdown-menu": "^2.1.15",
@@ -46,7 +47,6 @@
     "@vercel/analytics": "^1.5.0",
     "@vercel/functions": "^2.2.0",
     "ai": "^5.0.0",
-    "@ai-sdk/react": "^2.0.0",
     "audio-buffer-utils": "^5.1.2",
     "bcryptjs": "^2.4.3",
     "budoux": "^0.7.0",
@@ -76,7 +76,7 @@
     "vercel": "^41.7.8",
     "wavesurfer.js": "^7.9.5",
     "xp.css": "^0.2.6",
-    "zod": "^4.1.8",
+    "zod": "3.24.1",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

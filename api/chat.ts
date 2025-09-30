@@ -18,7 +18,7 @@ import {
   TOOL_USAGE_INSTRUCTIONS,
   DELIVERABLE_REQUIREMENTS,
 } from "./utils/aiPrompts";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { SUPPORTED_AI_MODELS } from "../src/types/aiModels";
 import { appIds } from "../src/config/appIds";
 import type { OsThemeId } from "../src/themes/types";
@@ -492,8 +492,8 @@ export default async function handler(req: Request) {
       model: bodyModel = DEFAULT_MODEL,
     } = await req.json();
 
-    // Use query parameter if available, otherwise use body parameter
-    const model = queryModel || bodyModel;
+    // Use query parameter if available, otherwise use body parameter, otherwise use default
+    const model = queryModel || bodyModel || DEFAULT_MODEL;
 
     // ---------------------------
     // Extract auth headers FIRST so we can use username for logging
@@ -688,12 +688,11 @@ export default async function handler(req: Request) {
 
     // Log all messages right before model call (as per user preference)
     enrichedMessages.forEach((msg, index) => {
-      log(
-        `Message ${index} [${msg.role}]: ${String(msg.content).substring(
-          0,
-          100
-        )}...`
-      );
+      const contentStr =
+        typeof msg.content === "string"
+          ? msg.content
+          : JSON.stringify(msg.content);
+      log(`Message ${index} [${msg.role}]: ${contentStr.substring(0, 100)}...`);
     });
 
     const result = streamText({
@@ -943,6 +942,11 @@ export default async function handler(req: Request) {
       experimental_transform: smoothStream({
         chunking: /[\u4E00-\u9FFF]|\S+\s+/,
       }),
+      providerOptions: {
+        openai: {
+          reasoningEffort: "minimal", // Turn off reasoning for GPT-5 and other reasoning models
+        },
+      },
     });
 
     const response = result.toUIMessageStreamResponse();

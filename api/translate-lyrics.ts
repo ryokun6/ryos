@@ -1,6 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { Redis } from "@upstash/redis";
 import {
   getEffectiveOrigin,

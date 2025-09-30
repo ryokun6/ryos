@@ -1,4 +1,4 @@
-import { z } from "zod/v3";
+import { z } from "zod";
 import { Redis } from "@upstash/redis";
 import {
   getEffectiveOrigin,

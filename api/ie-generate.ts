@@ -284,7 +284,8 @@ export default async function handler(req: Request) {
 
     // Removed cache read to avoid duplicate generation; cache handled through iframe-check AI mode
 
-    const model = queryModel || bodyModel;
+    // Use query parameter if available, otherwise use body parameter, otherwise use default
+    const model = queryModel || bodyModel || DEFAULT_MODEL;
 
     if (!messages || !Array.isArray(messages)) {
       return new Response("Invalid messages format", { status: 400 });
@@ -326,6 +327,11 @@ export default async function handler(req: Request) {
       temperature: 0.7,
       maxOutputTokens: 4000,
       experimental_transform: smoothStream(),
+      providerOptions: {
+        openai: {
+          reasoningEffort: "minimal", // Turn off reasoning for GPT-5 and other reasoning models
+        },
+      },
       onFinish: async ({ text }) => {
         if (!cacheKey) {
           logInfo(requestId, "No cacheKey available, skipping cache save");
