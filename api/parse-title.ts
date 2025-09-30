@@ -116,14 +116,22 @@ export default async function handler(req: Request) {
       });
     }
 
-    // Use generateObject from the AI SDK
+    // Use generateObject from the AI SDK v5
     const { object: parsedData } = await generateObject({
       model: openai("gpt-4.1-mini"),
       schema: ParsedTitleSchema, // Provide the Zod schema
-      system: `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist. If possible, also extract the album name. Use the channel name as additional context for identifying the artist, especially when the artist name is not clear from the title alone. Respond ONLY with a valid JSON object matching the provided schema. If you cannot determine a field, omit it or set it to null. Prefer Chinese, then English, then Korean, then Japanese, then other languages name. Only include preferred language names and omit names for other languages. Example input: title="NewJeans (뉴진스) 'How Sweet' Official MV", author_name="HYBE LABELS". Example output: {"title": "How Sweet", "artist": "NewJeans"}. Example input: title="Lofi Hip Hop Radio - Beats to Relax/Study to", author_name="ChillHop Music". Example output: {"title": "Lofi Hip Hop Radio - Beats to Relax/Study to", "artist": null}.`,
-      prompt: `Title: ${rawTitle}${
-        author_name ? `\nChannel: ${author_name}` : ""
-      }`,
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist. If possible, also extract the album name. Use the channel name as additional context for identifying the artist, especially when the artist name is not clear from the title alone. Respond ONLY with a valid JSON object matching the provided schema. If you cannot determine a field, omit it or set it to null. Prefer Chinese, then English, then Korean, then Japanese, then other languages name. Only include preferred language names and omit names for other languages. Example input: title="NewJeans (뉴진스) 'How Sweet' Official MV", author_name="HYBE LABELS". Example output: {"title": "How Sweet", "artist": "NewJeans"}. Example input: title="Lofi Hip Hop Radio - Beats to Relax/Study to", author_name="ChillHop Music". Example output: {"title": "Lofi Hip Hop Radio - Beats to Relax/Study to", "artist": null}.`,
+        },
+        {
+          role: "user",
+          content: `Title: ${rawTitle}${
+            author_name ? `\nChannel: ${author_name}` : ""
+          }`,
+        },
+      ],
       temperature: 0.2,
     });
 

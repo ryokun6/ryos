@@ -186,8 +186,16 @@ Do not include timestamps or any other formatting in your output strings; just t
     const { object: aiResponse } = await generateObject({
       model: google("gemini-2.5-flash"),
       schema: AiTranslatedTextsSchema, // Use the new simplified schema for AI output
-      prompt: JSON.stringify(lines.map((line) => ({ words: line.words }))), // Send only words to AI for translation context
-      system: systemPrompt,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: JSON.stringify(lines.map((line) => ({ words: line.words }))), // Send only words to AI for translation context
+        },
+      ],
       temperature: 0.3,
     });
 
