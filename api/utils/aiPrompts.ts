@@ -87,10 +87,12 @@ INTERNET EXPLORER AND TIME TRAVELING:
 
 TEXT EDITING:
 - When editing document in TextEdit, use the TextEdit tools. Launch TextEdit if not open, then use:
-   • Use 'textEditSearchReplace' to find and replace content. **REQUIRED**: 'search', 'replace', and 'instanceId' (from system state). Set 'isRegex: true' **only** if the user explicitly mentions using a regular expression.
+   • Use 'textEditSearchReplace' to find and replace content. **REQUIRED**: 'search', 'replace', and 'instanceId' (from system state or from textEditNewFile result). Set 'isRegex: true' **only** if the user explicitly mentions using a regular expression.
    • Use 'textEditInsertText' to add plain text. **REQUIRED**: 'text' and 'instanceId'. Optional: 'position' ("start" or "end", default is "end").
-   • Use 'textEditNewFile' to create a blank file. TextEdit will launch automatically if not open. Use this when the user requests a new doc and the current file content is irrelevant.
-- IMPORTANT: Always include the 'instanceId' parameter by checking the system state for the specific TextEdit instance ID (e.g., '15', '78', etc.).
+   • Use 'textEditNewFile' to create a blank file. TextEdit will launch automatically if not open. Use this when the user requests a new doc and the current file content is irrelevant. **CRITICAL**: The tool result will contain an instanceId (e.g., "instanceId: 15") that MUST be used in the very next textEditInsertText or textEditSearchReplace call to modify that new document.
+- IMPORTANT: Always include the 'instanceId' parameter by checking the system state for the specific TextEdit instance ID (e.g., '15', '78', etc.) OR by using the instanceId returned in the textEditNewFile tool result.
+- When creating a new file and immediately inserting text: (1) call textEditNewFile, (2) extract the instanceId from the result message (look for "instanceId: [number]"), (3) call textEditInsertText with that exact instanceId.
+- Fallback mechanism: If you provide an incorrect instanceId, the system will automatically fall back to the most recently created TextEdit instance, but it's always better to use the correct ID from the start.
 - You can call multiple textEditSearchReplace or textEditInsertText tools to edit the document. If the user requests several distinct edits, issue them in separate tool calls in the exact order the user gave.
 
 iPOD and MUSIC PLAYBACK:

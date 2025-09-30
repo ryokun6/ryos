@@ -35,6 +35,38 @@ import type { OsThemeId } from "@/themes/types";
 // - System state generation
 // - Dialog states (clear, save)
 
+// Track newly created TextEdit instances for fallback mechanism
+const recentlyCreatedTextEditInstances = new Map<
+  string,
+  { instanceId: string; timestamp: number }
+>();
+
+// Helper to add a newly created instance to tracking
+const trackNewTextEditInstance = (instanceId: string) => {
+  recentlyCreatedTextEditInstances.set(instanceId, {
+    instanceId,
+    timestamp: Date.now(),
+  });
+  // Clean up old entries (older than 5 minutes)
+  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+  for (const [id, data] of recentlyCreatedTextEditInstances.entries()) {
+    if (data.timestamp < fiveMinutesAgo) {
+      recentlyCreatedTextEditInstances.delete(id);
+    }
+  }
+};
+
+// Helper to get the most recently created TextEdit instance
+const getMostRecentTextEditInstance = (): string | null => {
+  let mostRecent: { instanceId: string; timestamp: number } | null = null;
+  for (const data of recentlyCreatedTextEditInstances.values()) {
+    if (!mostRecent || data.timestamp > mostRecent.timestamp) {
+      mostRecent = data;
+    }
+  }
+  return mostRecent?.instanceId || null;
+};
+
 // Replace or update the getSystemState function to use stores
 const getSystemState = () => {
   const appStore = useAppStore.getState();
@@ -510,18 +542,22 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               console.error(
                 "[ToolCall] textEditSearchReplace: Missing required 'search' parameter"
               );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: "Error: Missing required 'search' parameter",
+              });
               break;
             }
             if (typeof replace !== "string") {
               console.error(
                 "[ToolCall] textEditSearchReplace: Missing required 'replace' parameter"
               );
-              break;
-            }
-            if (!instanceId) {
-              console.error(
-                "[ToolCall] textEditSearchReplace: Missing required 'instanceId' parameter"
-              );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: "Error: Missing required 'replace' parameter",
+              });
               break;
             }
 
@@ -542,14 +578,62 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             const textEditState = useTextEditStore.getState();
 
-            // Use specific instance
-            const targetInstance = textEditState.instances[instanceId];
-            if (!targetInstance) {
-              console.error(
-                `[ToolCall] TextEdit instance ${instanceId} not found. Available instances: ${
+            // Determine the target instance ID with fallback mechanism
+            let targetInstanceId = instanceId;
+            let usedFallback = false;
+
+            // If no instanceId provided or instance doesn't exist, try fallback
+            if (
+              !targetInstanceId ||
+              !textEditState.instances[targetInstanceId]
+            ) {
+              console.warn(
+                `[ToolCall] TextEdit instance ${
+                  targetInstanceId || "(not provided)"
+                } not found. Available instances: ${
                   Object.keys(textEditState.instances).join(", ") || "none"
                 }.`
               );
+
+              // Fallback: Try to use the most recently created TextEdit instance
+              const recentInstanceId = getMostRecentTextEditInstance();
+              if (
+                recentInstanceId &&
+                textEditState.instances[recentInstanceId]
+              ) {
+                targetInstanceId = recentInstanceId;
+                usedFallback = true;
+                console.log(
+                  `[ToolCall] Using fallback: most recently created TextEdit instance ${targetInstanceId}`
+                );
+              } else {
+                console.error(
+                  "[ToolCall] No valid TextEdit instance found for search/replace"
+                );
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Error: TextEdit instance ${
+                    instanceId || "(not provided)"
+                  } not found and no fallback instance available. Available instances: ${
+                    Object.keys(textEditState.instances).join(", ") || "none"
+                  }`,
+                });
+                break;
+              }
+            }
+
+            // Use specific instance
+            const targetInstance = textEditState.instances[targetInstanceId];
+            if (!targetInstance) {
+              console.error(
+                `[ToolCall] TextEdit instance ${targetInstanceId} not found after fallback attempt.`
+              );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: `Error: TextEdit instance ${targetInstanceId} not found`,
+              });
               break;
             }
 
@@ -604,22 +688,28 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               ] as AnyExtension[]);
 
               // 5. Apply the updated JSON to the specific instance
-              updateInstance(targetInstance.instanceId, {
+              updateInstance(targetInstanceId, {
                 contentJson: updatedJson,
                 hasUnsavedChanges: true,
               });
 
               // Bring the target instance to foreground so user can see the changes
               const appStore = useAppStore.getState();
-              appStore.bringInstanceToForeground(targetInstance.instanceId);
+              appStore.bringInstanceToForeground(targetInstanceId);
 
               // Get the display title from the app store instance
-              const appInstance = appStore.instances[targetInstance.instanceId];
+              const appInstance = appStore.instances[targetInstanceId];
               const displayName = appInstance?.title || "Untitled";
 
-              const resultMessage = `Replaced text in ${displayName} (instanceId: ${instanceId})`;
+              const resultMessage = `Successfully replaced text in "${displayName}" (instanceId: ${targetInstanceId})${
+                usedFallback
+                  ? ` [Note: Used fallback to most recent instance as specified instance ${instanceId} was not found]`
+                  : ""
+              }`;
               console.log(
-                `[ToolCall] Replaced "${search}" with "${replace}" in ${displayName}.`
+                `[ToolCall] Replaced "${search}" with "${replace}" in ${displayName}${
+                  usedFallback ? " using fallback mechanism" : ""
+                }.`
               );
 
               // Add tool result back to messages
@@ -653,12 +743,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               console.error(
                 "[ToolCall] textEditInsertText: Missing required 'text' parameter"
               );
-              break;
-            }
-            if (!instanceId) {
-              console.error(
-                "[ToolCall] textEditInsertText: Missing required 'instanceId' parameter"
-              );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: "Error: Missing required 'text' parameter",
+              });
               break;
             }
 
@@ -670,21 +759,68 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             const textEditState = useTextEditStore.getState();
 
-            // Use specific instance
-            const targetInstance = textEditState.instances[instanceId];
-            if (!targetInstance) {
-              console.error(
-                `[ToolCall] TextEdit instance ${instanceId} not found. Available instances: ${
+            // Determine the target instance ID with fallback mechanism
+            let targetInstanceId = instanceId;
+            let usedFallback = false;
+
+            // If no instanceId provided or instance doesn't exist, try fallback
+            if (
+              !targetInstanceId ||
+              !textEditState.instances[targetInstanceId]
+            ) {
+              console.warn(
+                `[ToolCall] TextEdit instance ${
+                  targetInstanceId || "(not provided)"
+                } not found. Available instances: ${
                   Object.keys(textEditState.instances).join(", ") || "none"
                 }.`
               );
+
+              // Fallback: Try to use the most recently created TextEdit instance
+              const recentInstanceId = getMostRecentTextEditInstance();
+              if (
+                recentInstanceId &&
+                textEditState.instances[recentInstanceId]
+              ) {
+                targetInstanceId = recentInstanceId;
+                usedFallback = true;
+                console.log(
+                  `[ToolCall] Using fallback: most recently created TextEdit instance ${targetInstanceId}`
+                );
+              } else {
+                console.error(
+                  "[ToolCall] No valid TextEdit instance found for insertion"
+                );
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Error: TextEdit instance ${
+                    instanceId || "(not provided)"
+                  } not found and no fallback instance available. Available instances: ${
+                    Object.keys(textEditState.instances).join(", ") || "none"
+                  }`,
+                });
+                break;
+              }
+            }
+
+            // Use specific instance
+            const targetInstance = textEditState.instances[targetInstanceId];
+            if (!targetInstance) {
+              console.error(
+                `[ToolCall] TextEdit instance ${targetInstanceId} not found after fallback attempt.`
+              );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: `Error: TextEdit instance ${targetInstanceId} not found`,
+              });
               break;
             }
 
             try {
               // Insert text into the specific instance
               const { updateInstance } = textEditState;
-              const targetInstanceId = targetInstance.instanceId; // Capture the instanceId
 
               // Step 1: Convert incoming markdown snippet to HTML
               const htmlFragment = markdownToHtml(text);
@@ -741,10 +877,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const appInstance = appStore.instances[targetInstanceId];
               const displayName = appInstance?.title || "Untitled";
 
-              const resultMessage = `Inserted text at ${
+              const resultMessage = `Successfully inserted text at ${
                 position === "start" ? "start" : "end"
-              } of ${displayName} (instanceId: ${instanceId})`;
-              console.log(`[ToolCall] ${resultMessage}.`);
+              } of "${displayName}" (instanceId: ${targetInstanceId})${
+                usedFallback
+                  ? ` [Note: Used fallback to most recent instance as specified instance ${instanceId} was not found]`
+                  : ""
+              }`;
+              console.log(
+                `[ToolCall] Successfully inserted text into TextEdit instance ${targetInstanceId} (${displayName})${
+                  usedFallback ? " using fallback mechanism" : ""
+                }`
+              );
 
               // Add tool result back to messages
               addToolResult({
@@ -781,18 +925,26 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               true
             );
 
+            // Track this newly created instance for fallback mechanism
+            trackNewTextEditInstance(instanceId);
+
             // Wait a bit for the app to initialize
             await new Promise((resolve) => setTimeout(resolve, 200));
 
             // Bring the new instance to foreground so user can see it
             appStore.bringInstanceToForeground(instanceId);
 
-            const resultMessage = `Created new document${
-              title ? ` "${title}"` : ""
-            } (instanceId: ${instanceId})`;
+            // Return structured data for easier parsing by AI
+            const resultData = {
+              success: true,
+              instanceId: instanceId,
+              title: title || "Untitled",
+            };
+            const resultMessage = `Successfully created new TextEdit document "${resultData.title}" with instanceId: ${instanceId}. Use this instanceId for any subsequent insertText or searchReplace operations.`;
+
             console.log(
-              `[ToolCall] Created a new, untitled document in TextEdit${
-                title ? ` (${title})` : ""
+              `[ToolCall] Created a new TextEdit document (instanceId: ${instanceId})${
+                title ? ` titled "${title}"` : ""
               }.`
             );
 

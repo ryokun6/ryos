@@ -792,7 +792,7 @@ export default async function handler(req: Request) {
         },
         textEditSearchReplace: {
           description:
-            "Search and replace text in a specific TextEdit document. You MUST always provide 'search', 'replace', and 'instanceId'. Set 'isRegex: true' ONLY if the user explicitly mentions using a regular expression. Use the instanceId from the system state (e.g., '15') to target a specific window.",
+            "Search and replace text in a specific TextEdit document. You MUST always provide 'search', 'replace', and 'instanceId'. Set 'isRegex: true' ONLY if the user explicitly mentions using a regular expression. Use the instanceId from the tool result of textEditNewFile or from the system state TextEdit Windows list. If the specified instanceId doesn't exist, the system will fall back to the most recently created TextEdit instance.",
           inputSchema: z.object({
             search: z
               .string()
@@ -819,7 +819,7 @@ export default async function handler(req: Request) {
         },
         textEditInsertText: {
           description:
-            "Insert plain text into a specific TextEdit document. You MUST always provide 'text' and 'instanceId'. Appends to the end by default; use position 'start' to prepend. Use the instanceId from the system state (e.g., '15') to target a specific window.",
+            "Insert plain text into a specific TextEdit document. You MUST always provide 'text' and 'instanceId'. Appends to the end by default; use position 'start' to prepend. Use the instanceId from the tool result of textEditNewFile or from the system state TextEdit Windows list. If the specified instanceId doesn't exist, the system will fall back to the most recently created TextEdit instance.",
           inputSchema: z.object({
             text: z.string().describe("REQUIRED: The text to insert"),
             position: z
@@ -837,7 +837,7 @@ export default async function handler(req: Request) {
         },
         textEditNewFile: {
           description:
-            "Create a new blank document in a new TextEdit instance. Use when the user explicitly requests a new or untitled file.",
+            "Create a new blank document in a new TextEdit instance. Returns an instanceId that MUST be used in subsequent textEditInsertText or textEditSearchReplace calls to modify this document. Use when the user explicitly requests a new or untitled file.",
           inputSchema: z.object({
             title: z
               .string()
