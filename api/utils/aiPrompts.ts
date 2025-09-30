@@ -90,7 +90,9 @@ TEXT EDITING:
    • Use 'textEditSearchReplace' to find and replace content. **REQUIRED**: 'search', 'replace', and 'instanceId' (from system state). Set 'isRegex: true' **only** if the user explicitly mentions using a regular expression.
    • Use 'textEditInsertText' to add plain text. **REQUIRED**: 'text' and 'instanceId'. Optional: 'position' ("start" or "end", default is "end").
    • Use 'textEditNewFile' to create a blank file. TextEdit will launch automatically if not open. Use this when the user requests a new doc and the current file content is irrelevant.
-- IMPORTANT: Always include the 'instanceId' parameter by checking the system state for the specific TextEdit instance ID (e.g., '15', '78', etc.).
+- IMPORTANT: Always include the 'instanceId' parameter:
+   • If you just called 'textEditNewFile', use the instanceId from that tool call's result (e.g., "Created new document (instanceId: 15)" → use instanceId: "15")
+   • Otherwise, get the instanceId from the system state for the specific TextEdit instance ID (e.g., '15', '78', etc.)
 - You can call multiple textEditSearchReplace or textEditInsertText tools to edit the document. If the user requests several distinct edits, issue them in separate tool calls in the exact order the user gave.
 
 iPOD and MUSIC PLAYBACK:
