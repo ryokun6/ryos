@@ -1,5 +1,6 @@
 import { Loader2, Check } from "lucide-react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
+import { useIpodStore } from "@/stores/useIpodStore";
 
 // AI SDK v5 tool invocation structure
 export interface ToolInvocationPart {
@@ -53,6 +54,7 @@ export function ToolInvocationMessage({
 }: ToolInvocationMessageProps) {
   const toolName = getToolName(part);
   const { state, input, output, errorText } = part;
+  const { tracks, currentIndex } = useIpodStore();
 
   // Friendly display strings
   let displayCallMessage: string | null = null;
@@ -120,10 +122,34 @@ export function ToolInvocationMessage({
           : "Paused"
       } iPod`;
     } else if (toolName === "ipodPlaySong") {
-      const title = input?.title || "song";
-      displayResultMessage = `Playing "${title}"`;
+      // Show any available parameter in priority order: artist, title
+      const artist = input?.artist;
+      const title = input?.title;
+      
+      if (artist) {
+        displayResultMessage = `Playing ${artist}`;
+      } else if (title) {
+        displayResultMessage = `Playing "${title}"`;
+      } else {
+        displayResultMessage = `Playing song`;
+      }
     } else if (toolName === "ipodAddAndPlaySong") {
-      displayResultMessage = `Added and playing new song`;
+      // Show the current track information if available
+      const currentTrack = tracks[currentIndex];
+      if (currentTrack) {
+        // Show any available parameter in priority order: artist, album, title
+        if (currentTrack.artist) {
+          displayResultMessage = `Added and playing ${currentTrack.artist}`;
+        } else if (currentTrack.album) {
+          displayResultMessage = `Added and playing ${currentTrack.album}`;
+        } else if (currentTrack.title) {
+          displayResultMessage = `Added and playing "${currentTrack.title}"`;
+        } else {
+          displayResultMessage = `Added and playing new song`;
+        }
+      } else {
+        displayResultMessage = `Added and playing new song`;
+      }
     } else if (toolName === "ipodNextTrack") {
       displayResultMessage = `Skipped to next track`;
     } else if (toolName === "ipodPreviousTrack") {
