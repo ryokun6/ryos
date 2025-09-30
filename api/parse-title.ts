@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
 import * as RateLimit from "./utils/rate-limit";
@@ -118,7 +118,7 @@ export default async function handler(req: Request) {
 
     // Use generateObject from the AI SDK v5
     const { object: parsedData } = await generateObject({
-      model: google("gemini-2.5-flash"),
+      model: openai("gpt-4.1-mini"),
       schema: ParsedTitleSchema, // Provide the Zod schema
       messages: [
         {
