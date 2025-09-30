@@ -70,4 +70,4 @@ export const AI_MODEL_METADATA: AIModelInfo[] = Object.entries(AI_MODELS).map(
 );
 
 // Default model
-export const DEFAULT_AI_MODEL: SupportedModel = "gpt-5-mini";
+export const DEFAULT_AI_MODEL: SupportedModel = "gpt-5";
