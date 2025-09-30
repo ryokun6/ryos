@@ -177,6 +177,14 @@
     { "source": "/terminal", "destination": "/" },
     { "source": "/control-panels", "destination": "/" }
   ],
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "edge"
+    },
+    "api/**/*.js": {
+      "runtime": "edge"
+    }
+  },
   "redirects": [
     { "source": "/404", "destination": "/", "permanent": false }
   ]
