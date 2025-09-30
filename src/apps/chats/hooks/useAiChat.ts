@@ -269,6 +269,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   // Track how many characters of each assistant message have already been sent to TTS
   const speechProgressRef = useRef<Record<string, number>>({});
+  // Track the most recently created TextEdit instance id during tool calls
+  // Used as a fallback when a subsequent insert/replace omits or mis-references instanceId
+  const lastCreatedTextEditInstanceIdRef = useRef<string | null>(null);
 
   // Currently highlighted chunk for UI animation
   const [highlightSegment, setHighlightSegment] = useState<{
@@ -518,9 +521,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               );
               break;
             }
-            if (!instanceId) {
+            if (!instanceId && !lastCreatedTextEditInstanceIdRef.current) {
               console.error(
-                "[ToolCall] textEditSearchReplace: Missing required 'instanceId' parameter"
+                "[ToolCall] textEditSearchReplace: Missing required 'instanceId' parameter and no recent new document to infer from"
               );
               break;
             }
@@ -542,11 +545,32 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             const textEditState = useTextEditStore.getState();
 
-            // Use specific instance
-            const targetInstance = textEditState.instances[instanceId];
+            // Resolve instanceId: prefer the most recent new file's instanceId when available
+            let resolvedInstanceId: string | null =
+              lastCreatedTextEditInstanceIdRef.current || instanceId || null;
+            let targetInstance =
+              (resolvedInstanceId &&
+                textEditState.instances[resolvedInstanceId]) ||
+              null;
+            if (!targetInstance && lastCreatedTextEditInstanceIdRef.current) {
+              const fallbackId = lastCreatedTextEditInstanceIdRef.current;
+              const fallbackInst = textEditState.instances[fallbackId];
+              if (fallbackInst) {
+                console.warn(
+                  `[ToolCall] textEditSearchReplace: Provided instanceId ${String(
+                    instanceId
+                  )} not found; using newly created instance ${fallbackId}.`
+                );
+                resolvedInstanceId = fallbackId;
+                targetInstance = fallbackInst;
+              }
+            }
+
             if (!targetInstance) {
               console.error(
-                `[ToolCall] TextEdit instance ${instanceId} not found. Available instances: ${
+                `[ToolCall] TextEdit instance ${String(
+                  instanceId
+                )} not found and no recent new document to fallback. Available instances: ${
                   Object.keys(textEditState.instances).join(", ") || "none"
                 }.`
               );
@@ -617,7 +641,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const appInstance = appStore.instances[targetInstance.instanceId];
               const displayName = appInstance?.title || "Untitled";
 
-              const resultMessage = `Replaced text in ${displayName} (instanceId: ${instanceId})`;
+              const resultMessage = `Replaced text in ${displayName} (instanceId: ${
+                resolvedInstanceId || targetInstance.instanceId
+              })`;
               console.log(
                 `[ToolCall] Replaced "${search}" with "${replace}" in ${displayName}.`
               );
@@ -655,9 +681,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               );
               break;
             }
-            if (!instanceId) {
+            if (!instanceId && !lastCreatedTextEditInstanceIdRef.current) {
               console.error(
-                "[ToolCall] textEditInsertText: Missing required 'instanceId' parameter"
+                "[ToolCall] textEditInsertText: Missing required 'instanceId' parameter and no recent new document to infer from"
               );
               break;
             }
@@ -670,11 +696,32 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             const textEditState = useTextEditStore.getState();
 
-            // Use specific instance
-            const targetInstance = textEditState.instances[instanceId];
+            // Resolve instanceId: prefer the most recent new file's instanceId when available
+            let resolvedInstanceId: string | null =
+              lastCreatedTextEditInstanceIdRef.current || instanceId || null;
+            let targetInstance =
+              (resolvedInstanceId &&
+                textEditState.instances[resolvedInstanceId]) ||
+              null;
+            if (!targetInstance && lastCreatedTextEditInstanceIdRef.current) {
+              const fallbackId = lastCreatedTextEditInstanceIdRef.current;
+              const fallbackInst = textEditState.instances[fallbackId];
+              if (fallbackInst) {
+                console.warn(
+                  `[ToolCall] textEditInsertText: Provided instanceId ${String(
+                    instanceId
+                  )} not found; using newly created instance ${fallbackId}.`
+                );
+                resolvedInstanceId = fallbackId;
+                targetInstance = fallbackInst;
+              }
+            }
+
             if (!targetInstance) {
               console.error(
-                `[ToolCall] TextEdit instance ${instanceId} not found. Available instances: ${
+                `[ToolCall] TextEdit instance ${String(
+                  instanceId
+                )} not found and no recent new document to fallback. Available instances: ${
                   Object.keys(textEditState.instances).join(", ") || "none"
                 }.`
               );
@@ -684,7 +731,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             try {
               // Insert text into the specific instance
               const { updateInstance } = textEditState;
-              const targetInstanceId = targetInstance.instanceId; // Capture the instanceId
+              const targetInstanceId = targetInstance.instanceId; // Capture the instanceId actually used
 
               // Step 1: Convert incoming markdown snippet to HTML
               const htmlFragment = markdownToHtml(text);
@@ -743,7 +790,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
               const resultMessage = `Inserted text at ${
                 position === "start" ? "start" : "end"
-              } of ${displayName} (instanceId: ${instanceId})`;
+              } of ${displayName} (instanceId: ${
+                resolvedInstanceId || targetInstanceId
+              })`;
               console.log(`[ToolCall] ${resultMessage}.`);
 
               // Add tool result back to messages
@@ -780,6 +829,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               title,
               true
             );
+
+            // Record this so follow-up insert/replace calls can resolve the correct instance
+            lastCreatedTextEditInstanceIdRef.current = instanceId;
 
             // Wait a bit for the app to initialize
             await new Promise((resolve) => setTimeout(resolve, 200));
@@ -1126,6 +1178,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     },
 
     onFinish: ({ messages }) => {
+      // Clear any transient instance tracking after this assistant turn
+      lastCreatedTextEditInstanceIdRef.current = null;
       // Ensure all messages have metadata with createdAt
       const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
         (msg) =>
@@ -1191,6 +1245,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     },
 
     onError: (err) => {
+      // Reset transient instance tracking on error as well
+      lastCreatedTextEditInstanceIdRef.current = null;
       console.error("AI Chat Error:", err);
 
       // Helper function to handle authentication errors consistently
