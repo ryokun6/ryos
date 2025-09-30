@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from "ai";
 import { useChatsStore } from "../../../stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
@@ -356,6 +359,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
     experimental_throttle: 50,
 
+    // Automatically submit when all tool results are available
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+
     transport: new DefaultChatTransport({
       api: "/api/chat",
       headers: apiHeaders,
@@ -611,12 +617,27 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const appInstance = appStore.instances[targetInstance.instanceId];
               const displayName = appInstance?.title || "Untitled";
 
+              const resultMessage = `Replaced text in ${displayName} (instanceId: ${instanceId})`;
               console.log(
                 `[ToolCall] Replaced "${search}" with "${replace}" in ${displayName}.`
               );
+
+              // Add tool result back to messages
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
               break;
             } catch (err) {
               console.error("searchReplace error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  err instanceof Error ? err.message : "Failed to replace text",
+              });
               break;
             }
           }
@@ -720,14 +741,27 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const appInstance = appStore.instances[targetInstanceId];
               const displayName = appInstance?.title || "Untitled";
 
-              console.log(
-                `[ToolCall] Inserted text at ${
-                  position === "start" ? "start" : "end"
-                } of ${displayName}.`
-              );
+              const resultMessage = `Inserted text at ${
+                position === "start" ? "start" : "end"
+              } of ${displayName} (instanceId: ${instanceId})`;
+              console.log(`[ToolCall] ${resultMessage}.`);
+
+              // Add tool result back to messages
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
               break;
             } catch (err) {
               console.error("textEditInsertText error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  err instanceof Error ? err.message : "Failed to insert text",
+              });
               break;
             }
           }
@@ -753,11 +787,21 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Bring the new instance to foreground so user can see it
             appStore.bringInstanceToForeground(instanceId);
 
+            const resultMessage = `Created new document${
+              title ? ` "${title}"` : ""
+            } (instanceId: ${instanceId})`;
             console.log(
               `[ToolCall] Created a new, untitled document in TextEdit${
                 title ? ` (${title})` : ""
               }.`
             );
+
+            // Add tool result back to messages
+            addToolResult({
+              tool: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              output: resultMessage,
+            });
             break;
           }
           case "ipodPlayPause": {
