@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Soundboard, SoundSlot, PlaybackState } from "@/types/types";
+import { getLocalStorageUsage } from "@/utils/localStorageErrorHandler";
+
 
 // Helper to create a default soundboard
 const createDefaultBoard = (): Soundboard => ({
@@ -73,6 +75,12 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
         }
 
         try {
+          // Check localStorage usage before loading data
+          const usage = getLocalStorageUsage();
+          if (usage.percentUsed > 90) {
+            console.warn(`[Soundboard] Storage usage is high (${usage.percentUsed}%). Loading minimal data.`);
+          }
+
           const response = await fetch("/data/soundboards.json");
           if (!response.ok)
             throw new Error(
@@ -220,6 +228,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
     {
       name: SOUNDBOARD_STORE_NAME,
       version: SOUNDBOARD_STORE_VERSION,
+
       partialize: (state) => ({
         boards: state.boards,
         activeBoardId: state.activeBoardId,
@@ -228,38 +237,43 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
       }),
       onRehydrateStorage: () => {
         return (state, error) => {
-          if (error) {
-            console.error("Error rehydrating soundboard store:", error);
-          } else if (state) {
-            // Don't auto-initialize - wait for the app to open
-            // Just fix any data inconsistencies
-            if (state.boards && state.boards.length > 0) {
+          try {
+            if (error) {
+              console.error("Error rehydrating soundboard store:", error);
+            } else if (state) {
+              // Don't auto-initialize - wait for the app to open
+              // Just fix any data inconsistencies
+              if (state.boards && state.boards.length > 0) {
+                if (
+                  state.activeBoardId &&
+                  !state.boards.find((b) => b.id === state.activeBoardId)
+                ) {
+                  state.activeBoardId = state.boards[0].id;
+                } else if (!state.activeBoardId) {
+                  state.activeBoardId = state.boards[0].id;
+                }
+              }
+
+              // Ensure playbackStates are properly initialized
               if (
-                state.activeBoardId &&
-                !state.boards.find((b) => b.id === state.activeBoardId)
+                !state.playbackStates ||
+                state.playbackStates.length !== 9 ||
+                !state.playbackStates.every(
+                  (ps) =>
+                    typeof ps === "object" &&
+                    "isPlaying" in ps &&
+                    "isRecording" in ps
+                )
               ) {
-                state.activeBoardId = state.boards[0].id;
-              } else if (!state.activeBoardId) {
-                state.activeBoardId = state.boards[0].id;
+                state.playbackStates = Array(9).fill({
+                  isRecording: false,
+                  isPlaying: false,
+                });
               }
             }
-
-            // Ensure playbackStates are properly initialized
-            if (
-              !state.playbackStates ||
-              state.playbackStates.length !== 9 ||
-              !state.playbackStates.every(
-                (ps) =>
-                  typeof ps === "object" &&
-                  "isPlaying" in ps &&
-                  "isRecording" in ps
-              )
-            ) {
-              state.playbackStates = Array(9).fill({
-                isRecording: false,
-                isPlaying: false,
-              });
-            }
+          } catch (storageError) {
+            console.error("Storage error during rehydration:", storageError);
+            // Continue without persistence if storage fails
           }
         };
       },
