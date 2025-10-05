@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { LyricsAlignment, ChineseVariant, KoreanDisplay } from "@/types/lyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { track } from "@vercel/analytics";
+import { IPOD_ANALYTICS } from "./IpodAppComponent";
 
 interface IpodMenuBarProps {
   onClose: () => void;
@@ -263,21 +265,36 @@ export function IpodMenuBar({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem
-            onClick={togglePlay}
+            onClick={() => {
+              track(isPlaying ? IPOD_ANALYTICS.PAUSE : IPOD_ANALYTICS.PLAY, {
+                title: tracks[currentIndex]?.title,
+              });
+              togglePlay();
+            }}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={tracks.length === 0}
           >
             {isPlaying ? "Pause" : "Play"}
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={previousTrack}
+            onClick={() => {
+              track(IPOD_ANALYTICS.PREVIOUS_TRACK, {
+                title: tracks[currentIndex]?.title,
+              });
+              previousTrack();
+            }}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={tracks.length === 0}
           >
             Previous
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={nextTrack}
+            onClick={() => {
+              track(IPOD_ANALYTICS.NEXT_TRACK, {
+                title: tracks[currentIndex]?.title,
+              });
+              nextTrack();
+            }}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={tracks.length === 0}
           >
@@ -285,7 +302,10 @@ export function IpodMenuBar({
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
-            onClick={toggleShuffle}
+            onClick={() => {
+              toggleShuffle();
+              track(IPOD_ANALYTICS.SHUFFLE_TOGGLE, { enabled: !isShuffled });
+            }}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isShuffled && "pl-4")}>
@@ -486,7 +506,10 @@ export function IpodMenuBar({
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={toggleVideo}
+            onClick={() => {
+              track(IPOD_ANALYTICS.VIDEO_TOGGLE, { enabled: !isVideoOn });
+              toggleVideo();
+            }}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={!isPlaying}
           >
@@ -524,7 +547,10 @@ export function IpodMenuBar({
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
 
           <DropdownMenuItem
-            onClick={toggleFullScreen}
+            onClick={() => {
+              track(IPOD_ANALYTICS.FULLSCREEN_TOGGLE, { enabled: !isFullScreen });
+              toggleFullScreen();
+            }}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isFullScreen && "pl-4")}>

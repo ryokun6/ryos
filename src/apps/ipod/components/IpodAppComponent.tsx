@@ -27,7 +27,21 @@ import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, KoreanDisplay } from "@/types/lyrics";
 import { isMobileSafari } from "@/utils/device";
+import { track } from "@vercel/analytics";
 // Globe icon removed; using text label "Aあ" for translate
+
+// Analytics event namespace for iPod events
+export const IPOD_ANALYTICS = {
+  PLAY: "ipod:play",
+  PAUSE: "ipod:pause",
+  NEXT_TRACK: "ipod:next_track",
+  PREVIOUS_TRACK: "ipod:previous_track",
+  SHUFFLE_TOGGLE: "ipod:shuffle_toggle",
+  REPEAT_TOGGLE: "ipod:repeat_toggle",
+  FULLSCREEN_TOGGLE: "ipod:fullscreen_toggle",
+  VIDEO_TOGGLE: "ipod:video_toggle",
+  SHARE: "ipod:share",
+};
 
 // Add this component definition before the IpodAppComponent
 interface FullScreenPortalProps {
@@ -1021,8 +1035,10 @@ export function IpodAppComponent({
 
   const memoizedToggleShuffle = useCallback(() => {
     toggleShuffle();
+    const isShuffled = useIpodStore.getState().isShuffled;
+    track(IPOD_ANALYTICS.SHUFFLE_TOGGLE, { enabled: isShuffled });
     showStatus(
-      useIpodStore.getState().isShuffled ? "Shuffle ON" : "Shuffle OFF"
+      isShuffled ? "Shuffle ON" : "Shuffle OFF"
     );
     registerActivity();
   }, [toggleShuffle, showStatus, registerActivity]);
@@ -1077,13 +1093,16 @@ export function IpodAppComponent({
 
     if (currentLoopCurrent) {
       toggleLoopCurrent();
+      track(IPOD_ANALYTICS.REPEAT_TOGGLE, { mode: "off" });
       showStatus("Repeat OFF");
     } else if (currentLoopAll) {
       toggleLoopAll();
       toggleLoopCurrent();
+      track(IPOD_ANALYTICS.REPEAT_TOGGLE, { mode: "one" });
       showStatus("Repeat ONE");
     } else {
       toggleLoopAll();
+      track(IPOD_ANALYTICS.REPEAT_TOGGLE, { mode: "all" });
       showStatus("Repeat ALL");
     }
   }, [registerActivity, toggleLoopAll, toggleLoopCurrent, showStatus]);
@@ -1952,15 +1971,26 @@ export function IpodAppComponent({
           break;
         case "right":
           skipOperationRef.current = true;
+          track(IPOD_ANALYTICS.NEXT_TRACK, {
+            title: tracks[currentIndex]?.title,
+          });
           nextTrack();
           showStatus("⏭");
           break;
-        case "bottom":
+        case "bottom": {
+          const willPlay = !useIpodStore.getState().isPlaying;
+          track(willPlay ? IPOD_ANALYTICS.PLAY : IPOD_ANALYTICS.PAUSE, {
+            title: tracks[currentIndex]?.title,
+          });
           togglePlay();
           showStatus(useIpodStore.getState().isPlaying ? "▶" : "⏸");
           break;
+        }
         case "left":
           skipOperationRef.current = true;
+          track(IPOD_ANALYTICS.PREVIOUS_TRACK, {
+            title: tracks[currentIndex]?.title,
+          });
           previousTrack();
           showStatus("⏮");
           break;
@@ -1973,14 +2003,20 @@ export function IpodAppComponent({
           } else {
             if (tracks[currentIndex]) {
               if (!isPlaying) {
+                track(IPOD_ANALYTICS.PLAY, {
+                  title: tracks[currentIndex]?.title,
+                });
                 togglePlay();
                 showStatus("▶");
                 setTimeout(() => {
                   if (!useIpodStore.getState().showVideo) {
+                    track(IPOD_ANALYTICS.VIDEO_TOGGLE, { enabled: true });
                     toggleVideo();
                   }
                 }, 200);
               } else {
+                const willShowVideo = !useIpodStore.getState().showVideo;
+                track(IPOD_ANALYTICS.VIDEO_TOGGLE, { enabled: willShowVideo });
                 toggleVideo();
               }
             }
@@ -2138,6 +2174,10 @@ export function IpodAppComponent({
 
   const handleShareSong = useCallback(() => {
     if (tracks.length > 0 && currentIndex >= 0) {
+      track(IPOD_ANALYTICS.SHARE, {
+        title: tracks[currentIndex]?.title,
+        artist: tracks[currentIndex]?.artist,
+      });
       setIsShareDialogOpen(true);
     }
   }, [tracks, currentIndex]);
@@ -2403,11 +2443,21 @@ export function IpodAppComponent({
           <FullScreenPortal
             onClose={() => {
               // Just toggle fullscreen state - synchronization is handled in useEffect
+              track(IPOD_ANALYTICS.FULLSCREEN_TOGGLE, { enabled: false });
               toggleFullScreen();
             }}
-            togglePlay={togglePlay}
+            togglePlay={() => {
+              const willPlay = !useIpodStore.getState().isPlaying;
+              track(willPlay ? IPOD_ANALYTICS.PLAY : IPOD_ANALYTICS.PAUSE, {
+                title: tracks[currentIndex]?.title,
+              });
+              togglePlay();
+            }}
             nextTrack={() => {
               skipOperationRef.current = true;
+              track(IPOD_ANALYTICS.NEXT_TRACK, {
+                title: tracks[currentIndex]?.title,
+              });
               nextTrack();
 
               // Show track info with symbol after small delay to allow state update
@@ -2423,6 +2473,9 @@ export function IpodAppComponent({
             }}
             previousTrack={() => {
               skipOperationRef.current = true;
+              track(IPOD_ANALYTICS.PREVIOUS_TRACK, {
+                title: tracks[currentIndex]?.title,
+              });
               previousTrack();
 
               // Show track info with symbol after small delay to allow state update
