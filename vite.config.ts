@@ -14,6 +14,9 @@ export default defineConfig({
   server: {
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
     cors: { origin: ["*"] },
+    watch: {
+      ignored: ["**/.terminals/**"],
+    },
   },
   plugins: [react(), tailwindcss(), vercel()],
   resolve: {
