@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { OsThemeId } from "@/themes/types";
 import { invalidateIconCache } from "@/utils/icons";
+import { useAppStore } from "./useAppStore";
 
 interface ThemeState {
   current: OsThemeId;
@@ -57,6 +58,12 @@ export const useThemeStore = create<ThemeState>((set) => ({
     ensureLegacyCss(theme);
     // Force-refresh icon URLs so newly themed assets fetch fresh, bypassing any stale cache.
     invalidateIconCache(`theme-${theme}`);
+    // If switching away from XP/Win98, unminimize all windows to make them visible
+    if (theme === "macosx" || theme === "system7") {
+      try {
+        useAppStore.getState().unminimizeAllInstances();
+      } catch {}
+    }
   },
   hydrate: () => {
     const saved = localStorage.getItem("os_theme") as OsThemeId | null;
