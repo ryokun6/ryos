@@ -62,6 +62,9 @@ interface AppStoreState extends AppManagerState {
     title?: string,
     multiWindow?: boolean
   ) => string;
+  minimizeInstance: (instanceId: string) => void;
+  restoreInstance: (instanceId: string) => void;
+  restoreAllInstances: () => void;
 
   // Legacy app‑level window APIs (kept as wrappers)
   bringToForeground: (appId: AppId | "") => void;
@@ -641,6 +644,43 @@ export const useAppStore = create<AppStoreState>()(
           }
         }
         return state.createAppInstance(appId, initialData, title);
+      },
+
+      minimizeInstance: (instanceId) => {
+        set((state) => ({
+          instances: {
+            ...state.instances,
+            [instanceId]: {
+              ...state.instances[instanceId],
+              isMinimized: true,
+            },
+          },
+        }));
+      },
+
+      restoreInstance: (instanceId) => {
+        set((state) => ({
+          instances: {
+            ...state.instances,
+            [instanceId]: {
+              ...state.instances[instanceId],
+              isMinimized: false,
+            },
+          },
+        }));
+        // Bring the restored window to foreground
+        get().bringInstanceToForeground(instanceId);
+      },
+
+      restoreAllInstances: () => {
+        set((state) => ({
+          instances: Object.fromEntries(
+            Object.entries(state.instances).map(([id, inst]) => [
+              id,
+              { ...inst, isMinimized: false },
+            ])
+          ),
+        }));
       },
 
       _debugCheckInstanceIntegrity: () => {
