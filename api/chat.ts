@@ -11,6 +11,7 @@ import {
   getModelInstance,
 } from "./utils/aiModels";
 import {
+  CORE_PRIORITY_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
   ANSWER_STYLE_INSTRUCTIONS,
   CODE_GENERATION_INSTRUCTIONS,
@@ -153,6 +154,7 @@ export const config = {
 
 // Unified static prompt with all instructions
 const STATIC_SYSTEM_PROMPT = [
+  CORE_PRIORITY_INSTRUCTIONS,
   ANSWER_STYLE_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
   CHAT_INSTRUCTIONS,
