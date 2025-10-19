@@ -16,6 +16,7 @@ export interface AppInstance extends AppState {
   appId: AppId;
   title?: string;
   createdAt: number; // stable ordering for taskbar (creation time)
+  isMinimized?: boolean; // minimized to taskbar
 }
 
 const getInitialState = (): AppManagerState => {
@@ -47,6 +48,9 @@ interface AppStoreState extends AppManagerState {
   ) => string;
   closeAppInstance: (instanceId: string) => void;
   bringInstanceToForeground: (instanceId: string) => void;
+  minimizeInstance: (instanceId: string) => void;
+  unminimizeInstance: (instanceId: string) => void;
+  unminimizeAllInstances: () => void;
   updateInstanceWindowState: (
     instanceId: string,
     position: { x: number; y: number },
@@ -467,6 +471,7 @@ export const useAppStore = create<AppStoreState>()(
               appId,
               isOpen: true,
               isForeground: true,
+              isMinimized: false,
               initialData,
               title,
               position,
@@ -564,6 +569,9 @@ export const useAppStore = create<AppStoreState>()(
               instances[id] = {
                 ...instances[id],
                 isForeground: id === instanceId,
+                // Restoring focus should unminimize the window
+                isMinimized:
+                  id === instanceId ? false : instances[id].isMinimized,
               };
             });
             order = [...order.filter((id) => id !== instanceId), instanceId];
@@ -583,6 +591,63 @@ export const useAppStore = create<AppStoreState>()(
             instanceOrder: order,
             foregroundInstanceId: foreground,
           };
+        });
+      },
+
+      minimizeInstance: (instanceId) => {
+        set((state) => {
+          const target = state.instances[instanceId];
+          if (!target) return state;
+          const instances = { ...state.instances };
+          instances[instanceId] = {
+            ...instances[instanceId],
+            isMinimized: true,
+            isForeground: false,
+          };
+          // Determine next foreground: last non-minimized open instance
+          let nextForeground: string | null = null;
+          for (let i = state.instanceOrder.length - 1; i >= 0; i--) {
+            const id = state.instanceOrder[i];
+            const inst = instances[id];
+            if (id !== instanceId && inst?.isOpen && !inst.isMinimized) {
+              nextForeground = id;
+              break;
+            }
+          }
+          Object.keys(instances).forEach((id) => {
+            instances[id] = {
+              ...instances[id],
+              isForeground: id === nextForeground,
+            };
+          });
+          return {
+            instances,
+            foregroundInstanceId: nextForeground,
+          };
+        });
+      },
+
+      unminimizeInstance: (instanceId) => {
+        set((state) => {
+          if (!state.instances[instanceId]) return state;
+          const instances = { ...state.instances };
+          instances[instanceId] = {
+            ...instances[instanceId],
+            isMinimized: false,
+          };
+          return { instances };
+        });
+        // After unminimizing, bring to foreground
+        get().bringInstanceToForeground(instanceId);
+      },
+
+      unminimizeAllInstances: () => {
+        set((state) => {
+          const instances = { ...state.instances };
+          Object.keys(instances).forEach((id) => {
+            instances[id] = { ...instances[id], isMinimized: false };
+          });
+          return { instances };
         });
       },
 

@@ -188,12 +188,6 @@ export function AppManager({ apps }: AppManagerProps) {
             window.history.replaceState({}, "", "/"); // Clean URL
           }, 100); // Small delay might help robustness
         } else {
-          // Optional: Handle invalid app paths if necessary, or just ignore
-          // console.log(`Path ${path} does not correspond to a known app.`);
-          // Maybe redirect to root or show a 404 within the app context
-          // For now, just clean the URL if it wasn't a valid app path or IE code
-          // Update condition: Only clean if it's not an IE path (we handle cleaning IE path above)
-          // Update condition: Also check for ipod and videos paths
           if (
             !path.startsWith("/internet-explorer/") &&
             !path.startsWith("/ipod/") &&
@@ -281,7 +275,7 @@ export function AppManager({ apps }: AppManagerProps) {
       <Dock />
       {/* App Instances */}
       {Object.values(instances).map((instance) => {
-        if (!instance.isOpen) return null;
+        if (!instance.isOpen || instance.isMinimized) return null;
 
         const appId = instance.appId as AppId;
         const zIndex = getZIndexForInstance(instance.instanceId);

@@ -521,12 +521,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     instances,
 
     bringInstanceToForeground,
+    minimizeInstance,
     foregroundInstanceId, // Add this to get the foreground instance ID
   } = useAppStoreShallow((s) => ({
     getForegroundInstance: s.getForegroundInstance,
     instances: s.instances,
 
     bringInstanceToForeground: s.bringInstanceToForeground,
+    minimizeInstance: s.minimizeInstance,
     foregroundInstanceId: s.foregroundInstanceId, // Add this
   }));
 
@@ -656,20 +658,32 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                 if (!instance || !instance.isOpen) return null;
 
                 const isForeground = instanceId === foregroundInstanceId;
+                const isMinimized = !!instance.isMinimized;
                 const appIconPath = getAppIconPath(instance.appId);
 
                 return (
                   <button
                     key={instanceId}
+                    data-taskbar-instance-id={instanceId}
                     className="px-2 gap-1 border-t border-y rounded-sm flex items-center justify-start"
-                    onClick={() => bringInstanceToForeground(instanceId)}
+                    onClick={() => {
+                      if (isMinimized) {
+                        // Restore and focus
+                        bringInstanceToForeground(instanceId);
+                      } else if (!isForeground) {
+                        bringInstanceToForeground(instanceId);
+                      } else {
+                        // Minimize if already foreground
+                        minimizeInstance(instanceId);
+                      }
+                    }}
                     style={{
                       height: "85%",
                       flex: "0 1 160px",
                       minWidth: "110px",
                       marginTop: "2px",
                       marginRight: "2px",
-                      background: isForeground
+                      background: isForeground && !isMinimized
                         ? currentTheme === "xp"
                           ? "#3980f4"
                           : "#c0c0c0"
@@ -678,7 +692,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                         : "#c0c0c0",
                       border:
                         currentTheme === "xp"
-                          ? isForeground
+                          ? isForeground && !isMinimized
                             ? "1px solid #255be1"
                             : "1px solid #255be1"
                           : "none",
@@ -687,35 +701,35 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       boxShadow:
                         currentTheme === "xp"
                           ? "2px 2px 5px rgba(255, 255, 255, 0.267) inset"
-                          : isForeground
+                          : isForeground && !isMinimized
                           ? "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey"
                           : "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf",
                       transition: "all 0.1s ease",
                     }}
                     onMouseEnter={(e) => {
                       if (currentTheme === "xp") {
-                        if (isForeground) {
+                        if (isForeground && !isMinimized) {
                           e.currentTarget.style.background = "#4a92f9";
                           e.currentTarget.style.borderColor = "#2c64e3";
                         } else {
                           e.currentTarget.style.background = "#2a6ef1";
                           e.currentTarget.style.borderColor = "#1e56c9";
                         }
-                      } else if (currentTheme === "win98" && !isForeground) {
+                      } else if (currentTheme === "win98" && (!isForeground || isMinimized)) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentTheme === "xp") {
-                        if (isForeground) {
+                        if (isForeground && !isMinimized) {
                           e.currentTarget.style.background = "#3980f4";
                           e.currentTarget.style.borderColor = "#255be1";
                         } else {
                           e.currentTarget.style.background = "#1658dd";
                           e.currentTarget.style.borderColor = "#255be1";
                         }
-                      } else if (currentTheme === "win98" && !isForeground) {
+                      } else if (currentTheme === "win98" && (!isForeground || isMinimized)) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
                       }
@@ -726,7 +740,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       alt=""
                       className="w-4 h-4 flex-shrink-0 [image-rendering:pixelated]"
                     />
-                    <span className="truncate text-xs">
+                    <span className="truncate text-xs" style={{ opacity: isMinimized ? 0.8 : 1 }}>
                       {instance.title || getAppName(instance.appId)}
                     </span>
                   </button>
