@@ -227,6 +227,15 @@ export function FinderAppComponent({
     moveFile,
   } = useFileSystem(initialFileSystemPath, { instanceId });
 
+  // Keep view layout stable while loading to avoid flicker
+  const [lastStableViewType, setLastStableViewType] = useState<ViewType>(viewType);
+  useEffect(() => {
+    if (!isLoading) {
+      setLastStableViewType(viewType);
+    }
+  }, [viewType, isLoading]);
+  const effectiveViewType = isLoading ? lastStableViewType : viewType;
+
   const setViewType = useCallback(
     (type: ViewType) => {
       // Persist per-path preference
@@ -972,30 +981,25 @@ export function FinderAppComponent({
               />
             </div>
           </div>
-          <div className={`flex-1 bg-white ${viewType === "list" ? "overflow-auto" : "overflow-y-auto overflow-x-hidden"}`}>
-            {isLoading ? (
-              <div className="flex items-center justify-center h-full">
-                Loading...
+          <div className={`relative flex-1 bg-white ${effectiveViewType === "list" ? "overflow-auto" : "overflow-y-auto overflow-x-hidden"}`}>
+            <FileList
+              files={sortedFiles}
+              onFileOpen={handleFileOpen}
+              onFileSelect={handleFileSelect}
+              selectedFile={selectedFile}
+              viewType={effectiveViewType}
+              getFileType={getFileType}
+              onFileDrop={handleFileMoved}
+              onDropToCurrentDirectory={handleDropToCurrentDirectory}
+              canDropFiles={canCreateFolder}
+              currentPath={currentPath}
+              onRenameRequest={handleRenameRequest}
+              onItemContextMenu={handleItemContextMenu}
+            />
+            {error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-[1px] z-10 pointer-events-auto">
+                <div className="text-red-500">{error}</div>
               </div>
-            ) : error ? (
-              <div className="flex items-center justify-center h-full text-red-500">
-                {error}
-              </div>
-            ) : (
-              <FileList
-                files={sortedFiles}
-                onFileOpen={handleFileOpen}
-                onFileSelect={handleFileSelect}
-                selectedFile={selectedFile}
-                viewType={viewType}
-                getFileType={getFileType}
-                onFileDrop={handleFileMoved}
-                onDropToCurrentDirectory={handleDropToCurrentDirectory}
-                canDropFiles={canCreateFolder}
-                currentPath={currentPath}
-                onRenameRequest={handleRenameRequest}
-                onItemContextMenu={handleItemContextMenu}
-              />
             )}
           </div>
           <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-gray-100 border-t border-gray-300">
