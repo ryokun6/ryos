@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { zustandIndexedDBStorage } from "@/utils/zustandIndexedDBStorage";
 import { Soundboard, SoundSlot, PlaybackState } from "@/types/types";
 
 // Helper to create a default soundboard
@@ -220,8 +221,18 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
     {
       name: SOUNDBOARD_STORE_NAME,
       version: SOUNDBOARD_STORE_VERSION,
+      storage: createJSONStorage(() => zustandIndexedDBStorage),
+      // Persist lightweight metadata only; exclude raw audio blobs which can
+      // consume tens of MB and cause Mobile Safari to crash on
+      // initialization/rehydration.
       partialize: (state) => ({
-        boards: state.boards,
+        boards: state.boards.map((board) => ({
+          ...board,
+          slots: board.slots.map((slot) => ({
+            ...slot,
+            audioData: null, // strip large base-64 payloads
+          })),
+        })),
         activeBoardId: state.activeBoardId,
         selectedDeviceId: state.selectedDeviceId,
         hasInitialized: state.hasInitialized,

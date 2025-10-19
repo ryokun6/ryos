@@ -1,13 +1,14 @@
 // Utility helpers for IndexedDB operations used across ryOS
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 5; // Increment version for UUID migration
+const DB_VERSION = 6; // v6: add SOUND_BOARDS store for soundboard persistence
 
 export const STORES = {
   DOCUMENTS: "documents",
   IMAGES: "images",
   TRASH: "trash",
   CUSTOM_WALLPAPERS: "custom_wallpapers",
+  SOUND_BOARDS: "sound_boards", // Persisted Zustand soundboard state
 } as const;
 
 /**
