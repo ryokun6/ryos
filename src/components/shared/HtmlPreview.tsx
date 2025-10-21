@@ -351,6 +351,7 @@ export default function HtmlPreview({
   <style>
     * {
       box-sizing: border-box;
+      ${isMacOsXTheme ? "font-family: inherit !important;" : ""}
     }
     html, body {
       margin: 0;
@@ -363,6 +364,16 @@ export default function HtmlPreview({
           ? 'font-family: "LucidaGrande", "Lucida Grande", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Noto Color Emoji", sans-serif !important;'
           : ""
       }
+    }
+    ${
+      isMacOsXTheme
+        ? `
+    /* Ensure headings and common text elements use Lucida Grande */
+    h1,h2,h3,h4,h5,h6,p,div,span,a,li,ul,ol,button,input,select,textarea,label,code,pre,blockquote,small,strong,em,table,th,td {
+      font-family: "LucidaGrande", "Lucida Grande", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Noto Color Emoji", sans-serif !important;
+    }
+    `
+        : ""
     }
     /* Ensure pre doesn't break layout */
     pre {
