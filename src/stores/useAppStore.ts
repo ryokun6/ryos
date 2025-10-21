@@ -75,6 +75,7 @@ interface AppStoreState extends AppManagerState {
   // Misc state & helpers
   clearInitialData: (appId: AppId) => void;
   clearInstanceInitialData: (instanceId: string) => void;
+  updateInstanceInitialData: (instanceId: string, initialData: unknown) => void;
   debugMode: boolean;
   setDebugMode: (v: boolean) => void;
   shaderEffectEnabled: boolean;
@@ -425,6 +426,20 @@ export const useAppStore = create<AppStoreState>()(
           };
         }),
 
+      updateInstanceInitialData: (instanceId: string, initialData: unknown) =>
+        set((state) => {
+          if (!state.instances[instanceId]) return state;
+          return {
+            instances: {
+              ...state.instances,
+              [instanceId]: {
+                ...state.instances[instanceId],
+                initialData,
+              },
+            },
+          };
+        }),
+
       htmlPreviewSplit: true,
       setHtmlPreviewSplit: (v) => set({ htmlPreviewSplit: v }),
       uiVolume: 1,
@@ -472,7 +487,7 @@ export const useAppStore = create<AppStoreState>()(
                   .getAppletWindowSize(path);
                 if (saved) size = saved;
               }
-            } catch (_) {
+            } catch {
               // ignore and fall back to default size
             }
           }
