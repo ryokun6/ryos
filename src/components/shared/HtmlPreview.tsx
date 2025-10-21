@@ -148,6 +148,7 @@ export const extractHtmlContent = (
 interface HtmlPreviewProps {
   htmlContent: string;
   appletTitle?: string;
+  appletIcon?: string;
   onInteractionChange?: (isInteracting: boolean) => void;
   isStreaming?: boolean;
   maxHeight?: number | string;
@@ -167,6 +168,7 @@ interface HtmlPreviewProps {
 export default function HtmlPreview({
   htmlContent,
   appletTitle = "",
+  appletIcon = "",
   onInteractionChange,
   isStreaming = false,
   maxHeight = "800px",
@@ -655,7 +657,7 @@ export default function HtmlPreview({
         name: nameWithExtension,
         content: processedHtmlContent,
         type: "html",
-        icon: "/icons/default/app.png",
+        icon: appletIcon || "/icons/default/app.png",
       });
 
       // Notify that file was saved

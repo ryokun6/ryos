@@ -152,9 +152,10 @@ export function ToolInvocationMessage({
 
   // Special handling for generateHtml
   if (state === "output-available" && toolName === "generateHtml") {
-    // Handle both old format (string) and new format (object with html and title)
+    // Handle both old format (string) and new format (object with html, title, and icon)
     let htmlContent = "";
     let appletTitle = "";
+    let appletIcon = "";
     
     if (typeof output === "string" && output.trim().length > 0) {
       htmlContent = output;
@@ -163,8 +164,9 @@ export function ToolInvocationMessage({
       output !== null &&
       "html" in output
     ) {
-      htmlContent = (output as { html: string; title?: string }).html;
-      appletTitle = (output as { html: string; title?: string }).title || "";
+      htmlContent = (output as { html: string; title?: string; icon?: string }).html;
+      appletTitle = (output as { html: string; title?: string; icon?: string }).title || "";
+      appletIcon = (output as { html: string; title?: string; icon?: string }).icon || "";
     }
 
     if (htmlContent.trim().length > 0) {
@@ -173,6 +175,7 @@ export function ToolInvocationMessage({
           key={partKey}
           htmlContent={htmlContent}
           appletTitle={appletTitle}
+          appletIcon={appletIcon}
           onInteractionChange={setIsInteractingWithPreview}
           playElevatorMusic={playElevatorMusic}
           stopElevatorMusic={stopElevatorMusic}
@@ -197,12 +200,14 @@ export function ToolInvocationMessage({
     } else if (state === "input-available") {
       const htmlContent = typeof input?.html === "string" ? input.html : "";
       const appletTitle = typeof input?.title === "string" ? input.title : "";
+      const appletIcon = typeof input?.icon === "string" ? input.icon : "";
       if (htmlContent) {
         return (
           <HtmlPreview
             key={partKey}
             htmlContent={htmlContent}
             appletTitle={appletTitle}
+            appletIcon={appletIcon}
             isStreaming={false}
             onInteractionChange={setIsInteractingWithPreview}
             playElevatorMusic={playElevatorMusic}

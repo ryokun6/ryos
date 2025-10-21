@@ -122,6 +122,7 @@ HTML GENERATION:
 - When asked to create HTML, apps, websites, or any code output, ALWAYS use the 'generateHtml' tool.
 - DO NOT stream HTML code blocks in your regular message response.
 - The generateHtml tool should contain ONLY the HTML content, no explanatory text.
+- ALWAYS provide an 'icon' parameter with a single emoji character that represents the applet (e.g., '🧮' for calculator, '📝' for notes, '🎨' for paint). This emoji will be displayed as the applet's icon in the Finder.
 
 </tool_usage_instructions>
 `;

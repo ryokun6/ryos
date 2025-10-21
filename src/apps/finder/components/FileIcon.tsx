@@ -115,6 +115,15 @@ export function FileIcon({
     return "/icons/file.png";
   };
 
+  // Check if the icon is an emoji (doesn't start with / or http and is short)
+  const isEmojiIcon = (iconPath: string): boolean => {
+    if (!iconPath) return false;
+    // Check if it's not a file path or URL
+    if (iconPath.startsWith("/") || iconPath.startsWith("http")) return false;
+    // Check if it's a short string (emojis are typically 1-4 characters including multi-byte)
+    return iconPath.length <= 10;
+  };
+
   const sizeClasses = {
     small: {
       container: "w-[80px]",
@@ -193,9 +202,25 @@ export function FileIcon({
       );
     }
 
+    const iconPath = getIconPath();
+    
+    // Render emoji as text if it's an emoji icon
+    if (icon && isEmojiIcon(icon)) {
+      return (
+        <div
+          className={`relative ${sizes.icon} flex items-center justify-center text-3xl ${
+            size === "large" ? "text-5xl" : "text-3xl"
+          }`}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {icon}
+        </div>
+      );
+    }
+
     return (
       <ThemedIcon
-        name={getIconPath()}
+        name={iconPath}
         alt={isDirectory ? "Directory" : "File"}
         className={`no-touch-callout object-contain ${sizes.image} ${
           isDirectory && isDropTarget ? "invert" : ""

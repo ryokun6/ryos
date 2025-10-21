@@ -911,7 +911,7 @@ export default async function handler(req: Request) {
         // --- HTML generation & preview ---
         generateHtml: {
           description:
-            "Generate an HTML snippet for an ryOS Applet: a small windowed app (default ~320px wide) that runs inside ryOS, not the full page. Design mobile-first for ~320px width but keep layouts responsive to expand gracefully. Provide markup in 'html' and a short 'title'. DO NOT wrap it in markdown fences; the client will handle scaffolding.",
+            "Generate an HTML snippet for an ryOS Applet: a small windowed app (default ~320px wide) that runs inside ryOS, not the full page. Design mobile-first for ~320px width but keep layouts responsive to expand gracefully. Provide markup in 'html', a short 'title', and an 'icon' (emoji). DO NOT wrap it in markdown fences; the client will handle scaffolding.",
           inputSchema: z.object({
             html: z
               .string()
@@ -924,21 +924,27 @@ export default async function handler(req: Request) {
               .describe(
                 "A short, descriptive title for this HTML applet (e.g., 'Calculator', 'Todo List', 'Color Picker'). This will be used as the default filename when the user saves the applet. Omit file extensions."
               ),
+            icon: z
+              .string()
+              .optional()
+              .describe(
+                "A single emoji character to use as the applet icon (e.g., '🧮', '📝', '🎨'). This emoji will be displayed in the Finder and as the app icon."
+              ),
           }),
-          execute: async ({ html, title }) => {
-            // Server-side execution: validate and return the HTML and title
+          execute: async ({ html, title, icon }) => {
+            // Server-side execution: validate and return the HTML, title, and icon
             log(
               `[generateHtml] Received HTML (${html.length} chars), title: ${
                 title || "none"
-              }`
+              }, icon: ${icon || "none"}`
             );
 
             if (!html || html.trim().length === 0) {
               throw new Error("HTML content cannot be empty");
             }
 
-            // Return object with both html and title
-            return { html, title: title || "Applet" };
+            // Return object with html, title, and icon
+            return { html, title: title || "Applet", icon: icon || "📦" };
           },
         },
         // --- Emoji Aquarium ---
