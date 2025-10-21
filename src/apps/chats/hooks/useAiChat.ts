@@ -15,9 +15,15 @@ import { toast } from "@/hooks/useToast";
 import { useLaunchApp, type LaunchAppOptions } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
 import { appRegistry } from "@/config/appRegistry";
-import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import {
+  useFileSystem,
+  dbOperations,
+  STORES,
+  type DocumentContent,
+} from "@/apps/finder/hooks/useFileSystem";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
+import { useFilesStore } from "@/stores/useFilesStore";
 import { generateHTML, generateJSON } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -169,8 +175,6 @@ const getSystemState = () => {
   }
 
   return {
-    // Keep legacy apps for backward compatibility, but mark that instances are preferred
-    apps: appStore.apps,
     username: chatsStore.username,
     authToken: chatsStore.authToken, // Include auth token for API validation
     userLocalTime: {
@@ -219,11 +223,6 @@ const getSystemState = () => {
       loopCurrent: ipodStore.loopCurrent,
       isShuffled: ipodStore.isShuffled,
       currentLyrics: ipodStore.currentLyrics,
-      library: ipodStore.tracks.map((t) => ({
-        id: t.id,
-        title: t.title,
-        artist: t.artist,
-      })),
     },
     textEdit: {
       instances: textEditInstancesData,
@@ -1247,6 +1246,323 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             );
             break;
           }
+          case "listFiles": {
+            const { directory } = toolCall.input as {
+              directory: "/Applets" | "/Documents" | "/Applications";
+            };
+
+            // Validate required parameter
+            if (!directory) {
+              console.error(
+                "[ToolCall] listFiles: Missing required 'directory' parameter"
+              );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No directory provided",
+              });
+              result = ""; // Clear result to prevent duplicate
+              break;
+            }
+
+            console.log("[ToolCall] listFiles:", { directory });
+
+            try {
+              let fileList: Array<{
+                path: string;
+                name: string;
+                type?: string;
+              }> = [];
+              let fileType = "";
+
+              if (directory === "/Applications") {
+                // List installed applications from appRegistry
+                const apps = Object.entries(appRegistry)
+                  .filter(([id]) => id !== "finder") // Exclude Finder from list
+                  .map(([id, app]) => ({
+                    path: `/Applications/${id}`,
+                    name: app.name,
+                  }));
+                
+                fileList = apps;
+                fileType = "application";
+              } else {
+                // List files from file system
+                const filesStore = useFilesStore.getState();
+                const allItems = Object.values(filesStore.items);
+
+                // Filter for active items in specified directory that are not directories
+                const files = allItems.filter(
+                  (item) =>
+                    item.status === "active" &&
+                    item.path.startsWith(`${directory}/`) &&
+                    !item.isDirectory &&
+                    item.path !== `${directory}/` // Exclude the directory itself
+                );
+
+                // Map to return relevant metadata
+                fileList = files.map((file) => ({
+                  path: file.path,
+                  name: file.name,
+                  type: file.type,
+                }));
+
+                fileType = directory === "/Applets" ? "applet" : "document";
+              }
+
+              const resultMessage =
+                fileList.length > 0
+                  ? `Found ${fileList.length} ${fileType}${
+                      fileList.length === 1 ? "" : "s"
+                    }:\n${JSON.stringify(fileList, null, 2)}`
+                  : `No ${fileType}s found in ${directory} directory`;
+
+              console.log(`[ToolCall] ${resultMessage}`);
+
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+              result = ""; // Clear result to prevent duplicate
+            } catch (err) {
+              console.error("listFiles error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  err instanceof Error ? err.message : "Failed to list files",
+              });
+              result = ""; // Clear result to prevent duplicate
+            }
+            break;
+          }
+          case "listIpodLibrary": {
+            console.log("[ToolCall] listIpodLibrary");
+
+            try {
+              const ipodStore = useIpodStore.getState();
+              const library = ipodStore.tracks.map((track) => ({
+                id: track.id,
+                title: track.title,
+                artist: track.artist,
+              }));
+
+              const resultMessage =
+                library.length > 0
+                  ? `Found ${library.length} song${
+                      library.length === 1 ? "" : "s"
+                    } in iPod library:\n${JSON.stringify(library, null, 2)}`
+                  : "iPod library is empty";
+
+              console.log(`[ToolCall] ${resultMessage}`);
+
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+              result = ""; // Clear result to prevent duplicate
+            } catch (err) {
+              console.error("listIpodLibrary error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  err instanceof Error
+                    ? err.message
+                    : "Failed to list iPod library",
+              });
+              result = ""; // Clear result to prevent duplicate
+            }
+            break;
+          }
+          case "openFile": {
+            const { path } = toolCall.input as { path: string };
+
+            // Validate required parameter
+            if (!path) {
+              console.error(
+                "[ToolCall] openFile: Missing required 'path' parameter"
+              );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No path provided",
+              });
+              result = ""; // Clear result to prevent duplicate
+              break;
+            }
+
+            console.log("[ToolCall] openFile:", { path });
+
+            try {
+              // Validate path is in supported directories
+              const isApplet = path.startsWith("/Applets/");
+              const isDocument = path.startsWith("/Documents/");
+              const isApplication = path.startsWith("/Applications/");
+
+              if (!isApplet && !isDocument && !isApplication) {
+                throw new Error(
+                  "Invalid path: Must be in /Applets, /Documents, or /Applications directory"
+                );
+              }
+
+              // Check if file exists in the files store
+              const filesStore = useFilesStore.getState();
+              const fileItem = filesStore.items[path];
+
+              if (!fileItem) {
+                throw new Error(`File not found: ${path}`);
+              }
+
+              if (fileItem.status !== "active") {
+                throw new Error(`File is not active: ${path}`);
+              }
+
+              if (fileItem.isDirectory) {
+                throw new Error(`Path is a directory, not a file: ${path}`);
+              }
+
+              if (isApplet) {
+                // Handle applet opening
+                if (!fileItem.uuid) {
+                  throw new Error(
+                    `Applet missing UUID for content lookup: ${path}`
+                  );
+                }
+
+                const contentData = await dbOperations.get<DocumentContent>(
+                  STORES.APPLETS,
+                  fileItem.uuid
+                );
+
+                if (!contentData || !contentData.content) {
+                  throw new Error(`Failed to read applet content: ${path}`);
+                }
+
+                // Convert content to string if it's a Blob
+                let content: string;
+                if (contentData.content instanceof Blob) {
+                  content = await contentData.content.text();
+                } else {
+                  content = contentData.content;
+                }
+
+                // Launch applet-viewer with the content
+                launchApp("applet-viewer", {
+                  initialData: {
+                    path: path,
+                    content: content,
+                  },
+                });
+
+                const resultMessage = `Successfully opened applet: ${fileItem.name}`;
+                console.log(`[ToolCall] ${resultMessage}`);
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: resultMessage,
+                });
+              } else if (isDocument) {
+                // Handle document opening
+                if (!fileItem.uuid) {
+                  throw new Error(
+                    `Document missing UUID for content lookup: ${path}`
+                  );
+                }
+
+                const contentData = await dbOperations.get<DocumentContent>(
+                  STORES.DOCUMENTS,
+                  fileItem.uuid
+                );
+
+                if (!contentData || !contentData.content) {
+                  throw new Error(`Failed to read document content: ${path}`);
+                }
+
+                // Convert content to string if it's a Blob
+                let content: string;
+                if (contentData.content instanceof Blob) {
+                  content = await contentData.content.text();
+                } else {
+                  content = contentData.content;
+                }
+
+                // Parse markdown content to JSON for TextEdit
+                const htmlContent = markdownToHtml(content);
+                const contentJson = generateJSON(htmlContent, [
+                  StarterKit,
+                  Underline,
+                  TextAlign.configure({ types: ["heading", "paragraph"] }),
+                  TaskList,
+                  TaskItem.configure({ nested: true }),
+                ] as AnyExtension[]);
+
+                // Launch TextEdit with the document
+                const instanceId = launchApp("textedit", { multiWindow: true });
+
+                // Wait for the instance to be created
+                await new Promise((resolve) => setTimeout(resolve, 100));
+
+                // Set the document content
+                const textEditStore = useTextEditStore.getState();
+                textEditStore.updateInstance(instanceId, {
+                  filePath: path,
+                  contentJson: contentJson,
+                  hasUnsavedChanges: false,
+                });
+
+                const resultMessage = `Successfully opened document: ${fileItem.name}`;
+                console.log(`[ToolCall] ${resultMessage}`);
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: resultMessage,
+                });
+              } else if (isApplication) {
+                // Handle application launching
+                const appId = path.replace("/Applications/", "") as AppId;
+
+                // Validate app exists in registry
+                if (!appRegistry[appId]) {
+                  throw new Error(`Application not found: ${appId}`);
+                }
+
+                // Launch the application
+                launchApp(appId);
+
+                const appName = appRegistry[appId].name;
+                const resultMessage = `Successfully launched application: ${appName}`;
+                console.log(`[ToolCall] ${resultMessage}`);
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: resultMessage,
+                });
+              }
+
+              result = ""; // Clear result to prevent duplicate
+            } catch (err) {
+              console.error("openFile error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  err instanceof Error ? err.message : "Failed to open file",
+              });
+              result = ""; // Clear result to prevent duplicate
+            }
+            break;
+          }
           default:
             console.warn("Unhandled tool call:", toolCall.toolName);
             result = "Tool executed";
@@ -1572,7 +1888,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   // --- Action Handlers ---
   const handleSubmit = useCallback(
-    (e: React.FormEvent<HTMLFormElement>) => {
+    async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       const messageContent = input; // Capture input before clearing
       if (!messageContent.trim()) return; // Don't submit empty messages
@@ -1584,6 +1900,22 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           duration: 3000,
         });
         return;
+      }
+
+      // Ensure auth token exists before submitting (wait for it if needed)
+      if (username && !authToken) {
+        console.log(
+          "[useAiChat] Waiting for auth token generation before sending message..."
+        );
+        const tokenResult = await ensureAuthToken();
+        if (!tokenResult.ok) {
+          toast.error("Authentication Error", {
+            description:
+              "Failed to generate authentication token. Please try logging in again.",
+            duration: 3000,
+          });
+          return;
+        }
       }
 
       // Clear any previous rate limit errors on new submission attempt
@@ -1608,11 +1940,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       );
       setInput(""); // Clear input after sending
     },
-    [sendMessage, input, needsUsername, username, aiModel, setInput] // Updated deps
+    [sendMessage, input, needsUsername, username, authToken, ensureAuthToken, aiModel, setInput] // Updated deps
   );
 
   const handleDirectMessageSubmit = useCallback(
-    (message: string) => {
+    async (message: string) => {
       if (!message.trim()) return; // Don't submit empty messages
 
       // Check if user needs to set username before submitting
@@ -1622,6 +1954,22 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           duration: 3000,
         });
         return;
+      }
+
+      // Ensure auth token exists before submitting (wait for it if needed)
+      if (username && !authToken) {
+        console.log(
+          "[useAiChat] Waiting for auth token generation before sending message..."
+        );
+        const tokenResult = await ensureAuthToken();
+        if (!tokenResult.ok) {
+          toast.error("Authentication Error", {
+            description:
+              "Failed to generate authentication token. Please try logging in again.",
+            duration: 3000,
+          });
+          return;
+        }
       }
 
       // Clear any previous rate limit errors on new submission attempt
@@ -1644,7 +1992,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         }
       );
     },
-    [sendMessage, needsUsername, username, aiModel] // Updated deps
+    [sendMessage, needsUsername, username, authToken, ensureAuthToken, aiModel] // Updated deps
   );
 
   const handleNudge = useCallback(() => {

@@ -20,6 +20,9 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getAppIconPath, appRegistry } from "@/config/appRegistry";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { useFilesStore } from "@/stores/useFilesStore";
+import type { AppInstance } from "@/stores/useAppStore";
+import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 
 // Helper function to get app name
 const getAppName = (appId: string): string => {
@@ -537,6 +540,39 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
+  // Get file system items for applet icons
+  const files = useFilesStore((s) => s.items);
+
+  // Helper to get applet info (icon and name) from instance
+  const getAppletInfo = (instance: AppInstance) => {
+    const initialData = instance.initialData as
+      | AppletViewerInitialData
+      | undefined;
+    const path = initialData?.path || "";
+    const file = files[path];
+
+    // Get filename from path for label
+    const getFileName = (path: string): string => {
+      const parts = path.split("/");
+      const fileName = parts[parts.length - 1];
+      return fileName.replace(/\.(html|app)$/i, "");
+    };
+
+    const label = path ? getFileName(path) : "Applet";
+
+    // Check if the file icon is an emoji (not a file path)
+    const fileIcon = file?.icon;
+    const isEmojiIcon =
+      fileIcon &&
+      !fileIcon.startsWith("/") &&
+      !fileIcon.startsWith("http") &&
+      fileIcon.length <= 10;
+
+    const icon = isEmojiIcon ? fileIcon : "📦";
+
+    return { icon, label, isEmoji: true };
+  };
+
   // Taskbar overflow handling (used for XP taskbar rendering)
   const runningAreaRef = useRef<HTMLDivElement>(null);
   const [visibleTaskbarIds, setVisibleTaskbarIds] = useState<string[]>([]);
@@ -656,7 +692,13 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                 if (!instance || !instance.isOpen) return null;
 
                 const isForeground = instanceId === foregroundInstanceId;
-                const appIconPath = getAppIconPath(instance.appId);
+                const isApplet = instance.appId === "applet-viewer";
+                
+                // Get icon and label based on app type
+                const appletInfo = isApplet ? getAppletInfo(instance) : null;
+                const displayIcon = appletInfo?.icon || getAppIconPath(instance.appId);
+                const displayLabel = appletInfo?.label || instance.title || getAppName(instance.appId);
+                const isEmoji = appletInfo?.isEmoji || false;
 
                 return (
                   <button
@@ -721,13 +763,26 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       }
                     }}
                   >
-                    <ThemedIcon
-                      name={appIconPath}
-                      alt=""
-                      className="w-4 h-4 flex-shrink-0 [image-rendering:pixelated]"
-                    />
+                    {isEmoji ? (
+                      <span
+                        className="flex-shrink-0 flex items-center justify-center"
+                        style={{
+                          fontSize: "14px",
+                          width: "16px",
+                          height: "16px",
+                        }}
+                      >
+                        {displayIcon}
+                      </span>
+                    ) : (
+                      <ThemedIcon
+                        name={displayIcon}
+                        alt=""
+                        className="w-4 h-4 flex-shrink-0 [image-rendering:pixelated]"
+                      />
+                    )}
                     <span className="truncate text-xs">
-                      {instance.title || getAppName(instance.appId)}
+                      {displayLabel}
                     </span>
                   </button>
                 );
@@ -807,20 +862,39 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                   {overflowTaskbarIds.map((instanceId) => {
                     const instance = instances[instanceId];
                     if (!instance || !instance.isOpen) return null;
-                    const appIconPath = getAppIconPath(instance.appId);
+                    
+                    const isApplet = instance.appId === "applet-viewer";
+                    const appletInfo = isApplet ? getAppletInfo(instance) : null;
+                    const displayIcon = appletInfo?.icon || getAppIconPath(instance.appId);
+                    const displayLabel = appletInfo?.label || instance.title || getAppName(instance.appId);
+                    const isEmoji = appletInfo?.isEmoji || false;
+                    
                     return (
                       <DropdownMenuItem
                         key={instanceId}
                         onClick={() => bringInstanceToForeground(instanceId)}
                         className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
                       >
-                        <ThemedIcon
-                          name={appIconPath}
-                          alt=""
-                          className="w-4 h-4 [image-rendering:pixelated]"
-                        />
+                        {isEmoji ? (
+                          <span
+                            className="flex-shrink-0 flex items-center justify-center"
+                            style={{
+                              fontSize: "14px",
+                              width: "16px",
+                              height: "16px",
+                            }}
+                          >
+                            {displayIcon}
+                          </span>
+                        ) : (
+                          <ThemedIcon
+                            name={displayIcon}
+                            alt=""
+                            className="w-4 h-4 [image-rendering:pixelated]"
+                          />
+                        )}
                         <span className="truncate text-xs">
-                          {instance.title || getAppName(instance.appId)}
+                          {displayLabel}
                         </span>
                       </DropdownMenuItem>
                     );

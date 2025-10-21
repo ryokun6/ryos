@@ -94,6 +94,15 @@ export function ToolInvocationMessage({
       case "switchTheme":
         displayCallMessage = "Switching theme…";
         break;
+      case "listFiles":
+        displayCallMessage = "Finding files…";
+        break;
+      case "listIpodLibrary":
+        displayCallMessage = "Loading iPod library…";
+        break;
+      case "openFile":
+        displayCallMessage = "Opening file…";
+        break;
       default:
         displayCallMessage = `Running ${formatToolName(toolName)}…`;
     }
@@ -120,12 +129,18 @@ export function ToolInvocationMessage({
           : "Paused"
       } iPod`;
     } else if (toolName === "ipodPlaySong") {
-      const parts: string[] = [];
-      if (input?.title) parts.push(String(input.title));
-      if (input?.artist) parts.push(String(input.artist));
-      if (input?.id) parts.push(`(ID: ${String(input.id)})`);
-      displayResultMessage =
-        parts.length > 0 ? `Playing ${parts.join(" ")}` : `Playing song`;
+      const title = input?.title ? String(input.title) : null;
+      const artist = input?.artist ? String(input.artist) : null;
+      
+      if (title && artist) {
+        displayResultMessage = `Playing ${title} by ${artist}`;
+      } else if (title) {
+        displayResultMessage = `Playing ${title}`;
+      } else if (artist) {
+        displayResultMessage = `Playing song by ${artist}`;
+      } else {
+        displayResultMessage = `Playing song`;
+      }
     } else if (toolName === "ipodAddAndPlaySong") {
       displayResultMessage = `Added and playing new song`;
     } else if (toolName === "ipodNextTrack") {
@@ -142,6 +157,62 @@ export function ToolInvocationMessage({
     } else if (toolName === "textEditNewFile") {
       const title = input?.title || "new document";
       displayResultMessage = `Created "${title}"`;
+    } else if (toolName === "listFiles") {
+      // Parse the output to extract file count and type
+      if (typeof output === "string") {
+        const appletMatch = output.match(/Found (\d+) applets?/);
+        const documentMatch = output.match(/Found (\d+) documents?/);
+        const applicationMatch = output.match(/Found (\d+) applications?/);
+        
+        if (appletMatch) {
+          const count = parseInt(appletMatch[1], 10);
+          displayResultMessage = `Found ${count} applet${count === 1 ? "" : "s"}`;
+        } else if (documentMatch) {
+          const count = parseInt(documentMatch[1], 10);
+          displayResultMessage = `Found ${count} document${count === 1 ? "" : "s"}`;
+        } else if (applicationMatch) {
+          const count = parseInt(applicationMatch[1], 10);
+          displayResultMessage = `Found ${count} application${count === 1 ? "" : "s"}`;
+        } else if (output.includes("No applets found")) {
+          displayResultMessage = "No applets found";
+        } else if (output.includes("No documents found")) {
+          displayResultMessage = "No documents found";
+        } else if (output.includes("No applications found")) {
+          displayResultMessage = "No applications found";
+        } else {
+          displayResultMessage = "Listed files";
+        }
+      }
+    } else if (toolName === "listIpodLibrary") {
+      // Parse the output to extract song count
+      if (typeof output === "string") {
+        const match = output.match(/Found (\d+) songs?/);
+        if (match) {
+          const count = parseInt(match[1], 10);
+          displayResultMessage = `Found ${count} song${count === 1 ? "" : "s"}`;
+        } else if (output.includes("iPod library is empty")) {
+          displayResultMessage = "iPod library is empty";
+        } else {
+          displayResultMessage = "Listed iPod library";
+        }
+      }
+    } else if (toolName === "openFile") {
+      // Extract file name from output message
+      if (typeof output === "string") {
+        const appletMatch = output.match(/Successfully opened applet: (.+)/);
+        const documentMatch = output.match(/Successfully opened document: (.+)/);
+        const applicationMatch = output.match(/Successfully launched application: (.+)/);
+        
+        if (appletMatch) {
+          displayResultMessage = `Opened ${appletMatch[1]}`;
+        } else if (documentMatch) {
+          displayResultMessage = `Opened ${documentMatch[1]}`;
+        } else if (applicationMatch) {
+          displayResultMessage = `Launched ${applicationMatch[1]}`;
+        } else {
+          displayResultMessage = "Opened file";
+        }
+      }
     }
   }
 

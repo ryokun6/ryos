@@ -34,12 +34,6 @@ const themeIds = ["system7", "macosx", "xp", "win98"] as const;
 
 // Update SystemState type to match new store structure
 interface SystemState {
-  apps: {
-    [appId: string]: {
-      isOpen: boolean;
-      isForeground?: boolean;
-    };
-  };
   username?: string | null;
   internetExplorer: {
     url: string;
@@ -79,12 +73,6 @@ interface SystemState {
         words: string;
       }>;
     } | null;
-    /** Full library of tracks available in the iPod app */
-    library?: Array<{
-      id: string;
-      title: string;
-      artist?: string;
-    }>;
   };
   textEdit?: {
     instances: Array<{
@@ -278,23 +266,6 @@ iPod: ${systemState.ipod.currentTrack.title}${trackArtist} (${playingStatus})`;
 Current Lyrics:
 ${systemState.ipod.currentLyrics.lines.map((line) => line.words).join("\n")}`;
     }
-  }
-
-  // iPod Library (only if app is open)
-  if (
-    hasOpenIpod &&
-    systemState.ipod?.library &&
-    systemState.ipod.library.length > 0
-  ) {
-    const songList = systemState.ipod.library
-      .slice(0, 100) // limit to first 100 songs to avoid overly long prompts
-      .map((t) => `${t.title}${t.artist ? ` - ${t.artist}` : ""}`)
-      .join("; ");
-    prompt += `\n\n## IPOD LIBRARY
-Available Songs (${Math.min(systemState.ipod.library.length, 100)} of ${
-      systemState.ipod.library.length
-    } shown):
-${songList}`;
   }
 
   // Browser Section
@@ -952,6 +923,34 @@ export default async function handler(req: Request) {
           description:
             "Render a playful emoji aquarium inside the chat bubble. Use when the user asks for an aquarium / fish tank / fishes / sam's aquarium.",
           inputSchema: z.object({}),
+        },
+        // --- File Management ---
+        listFiles: {
+          description:
+            "List files from a specific directory (/Applets, /Documents, or /Applications). Returns a JSON array with metadata for each item. CRITICAL: You MUST ONLY reference items that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate items that are not in the returned list. If the list is empty or contains only one item, you must acknowledge that reality - do not make up additional items.",
+          inputSchema: z.object({
+            directory: z
+              .enum(["/Applets", "/Documents", "/Applications"])
+              .describe(
+                "The directory to list files from. Use '/Applets' for applets, '/Documents' for documents, or '/Applications' for installed applications."
+              ),
+          }),
+        },
+        listIpodLibrary: {
+          description:
+            "List all songs in the iPod library. Returns a JSON array with each song's id, title, and artist. CRITICAL: You MUST ONLY reference songs that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate songs that are not in the returned list. If the library is empty, acknowledge that reality.",
+          inputSchema: z.object({}),
+        },
+        openFile: {
+          description:
+            "Open a specific file or application. Applets open in applet-viewer, documents open in TextEdit, applications launch as apps. CRITICAL: You MUST use the exact path returned from listFiles - do not modify or guess paths. Always call listFiles first to get the exact available items.",
+          inputSchema: z.object({
+            path: z
+              .string()
+              .describe(
+                "The EXACT full path from the listFiles result (e.g., '/Applets/Calculator.app', '/Documents/notes.md', or '/Applications/internet-explorer'). Must be copied exactly as returned by listFiles."
+              ),
+          }),
         },
       },
       temperature: 0.7,

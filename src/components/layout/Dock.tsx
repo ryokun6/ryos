@@ -15,6 +15,8 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
+import type { AppInstance } from "@/stores/useAppStore";
+import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import {
   AnimatePresence,
   motion,
@@ -35,10 +37,44 @@ function MacDock() {
     }));
 
   const launchApp = useLaunchApp();
+  const files = useFilesStore((s) => s.items);
   const trashIcon = useFilesStore(
     (s) => s.items["/Trash"]?.icon || "/icons/trash-empty.png"
   );
   const finderInstances = useFinderStore((s) => s.instances);
+
+  // Helper to get applet info (icon and name) from instance
+  const getAppletInfo = useCallback(
+    (instance: AppInstance) => {
+      const initialData = instance.initialData as
+        | AppletViewerInitialData
+        | undefined;
+      const path = initialData?.path || "";
+      const file = files[path];
+
+      // Get filename from path for label
+      const getFileName = (path: string): string => {
+        const parts = path.split("/");
+        const fileName = parts[parts.length - 1];
+        return fileName.replace(/\.(html|app)$/i, "");
+      };
+
+      const label = path ? getFileName(path) : "Applet";
+
+      // Check if the file icon is an emoji (not a file path)
+      const fileIcon = file?.icon;
+      const isEmojiIcon =
+        fileIcon &&
+        !fileIcon.startsWith("/") &&
+        !fileIcon.startsWith("http") &&
+        fileIcon.length <= 10;
+
+      const icon = isEmojiIcon ? fileIcon : "📦";
+
+      return { icon, label };
+    },
+    [files]
+  );
 
   // Pinned apps on the left side (in order)
   const pinnedLeft: AppId[] = useMemo(
@@ -46,30 +82,51 @@ function MacDock() {
     []
   );
 
-  // Compute unique open apps (excluding pinned to avoid duplicates)
-  const openAppIds = useMemo(() => {
-    const openByApp: Record<
-      string,
-      { appId: AppId; firstCreatedAt: number }[]
-    > = {};
+  // Compute open apps and individual applet instances
+  const openItems = useMemo(() => {
+    const items: Array<{
+      type: "app" | "applet";
+      appId: AppId;
+      instanceId?: string;
+      sortKey: number;
+    }> = [];
+
+    // Group instances by appId
+    const openByApp: Record<string, AppInstance[]> = {};
     Object.values(instances)
       .filter((i) => i.isOpen)
       .forEach((i) => {
         if (!openByApp[i.appId]) openByApp[i.appId] = [];
-        openByApp[i.appId].push({
-          appId: i.appId as AppId,
-          firstCreatedAt: i.createdAt || 0,
-        });
+        openByApp[i.appId].push(i);
       });
-    const unique: { appId: AppId; sortKey: number }[] = Object.entries(
-      openByApp
-    ).map(([appId, arr]) => ({
-      appId: appId as AppId,
-      sortKey: arr[0]?.firstCreatedAt ?? 0,
-    }));
-    // Sort by first created time to keep a stable order
-    unique.sort((a, b) => a.sortKey - b.sortKey);
-    return unique.map((u) => u.appId).filter((id) => !pinnedLeft.includes(id));
+
+    // For each app, either add individual applet instances or a single app entry
+    Object.entries(openByApp).forEach(([appId, instancesList]) => {
+      if (appId === "applet-viewer") {
+        // Add each applet instance separately
+        instancesList.forEach((inst) => {
+          items.push({
+            type: "applet",
+            appId: inst.appId as AppId,
+            instanceId: inst.instanceId,
+            sortKey: inst.createdAt || 0,
+          });
+        });
+      } else {
+        // Add a single entry for this app
+        items.push({
+          type: "app",
+          appId: appId as AppId,
+          sortKey: instancesList[0]?.createdAt ?? 0,
+        });
+      }
+    });
+
+    // Sort by creation time to keep a stable order
+    items.sort((a, b) => a.sortKey - b.sortKey);
+    
+    // Filter out pinned apps
+    return items.filter((item) => !pinnedLeft.includes(item.appId));
   }, [instances, pinnedLeft]);
 
   const openAppsAllSet = useMemo(() => {
@@ -230,10 +287,17 @@ function MacDock() {
   const seenIdsRef = useRef<Set<string>>(new Set());
   const [hasMounted, setHasMounted] = useState(false);
   // Mark all currently visible ids as seen whenever the set changes
-  const allVisibleIds = useMemo(
-    () => [...pinnedLeft, ...openAppIds, "__applications__", "__trash__"],
-    [pinnedLeft, openAppIds]
-  );
+  const allVisibleIds = useMemo(() => {
+    const ids = [
+      ...pinnedLeft,
+      ...openItems.map((item) =>
+        item.type === "applet" ? item.instanceId! : item.appId
+      ),
+      "__applications__",
+      "__trash__",
+    ];
+    return ids;
+  }, [pinnedLeft, openItems]);
   // After first paint, mark everything present as seen and mark mounted
   // Also update seen set whenever visible ids change
   useEffect(() => {
@@ -253,121 +317,140 @@ function MacDock() {
       icon: string;
       idKey: string;
       showIndicator?: boolean;
+      isEmoji?: boolean;
     }
-  >(({ label, onClick, icon, idKey, showIndicator = false }, forwardedRef) => {
-    const isNew = hasMounted && !seenIdsRef.current.has(idKey);
-    const baseButtonSize = 48; // px (w-12)
-    const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
-    const wrapperRef = useRef<HTMLDivElement | null>(null);
-    const isPresent = useIsPresent();
-    const distanceCalc = useTransform(mouseX, (val) => {
-      const bounds = wrapperRef.current?.getBoundingClientRect();
-      if (!bounds || !Number.isFinite(val)) return Infinity;
-      return val - (bounds.left + bounds.width / 2);
-    });
-    const sizeTransform = useTransform(
-      distanceCalc,
-      [-DISTANCE, 0, DISTANCE],
-      [baseButtonSize, maxButtonSize, baseButtonSize]
-    );
-    const sizeSpring = useSpring(sizeTransform, {
-      mass: 0.15,
-      stiffness: 160,
-      damping: 18,
-    });
-    const widthValue = isPresent
-      ? magnifyEnabled
-        ? (sizeSpring as unknown as number)
-        : baseButtonSize
-      : 0;
-    const setCombinedRef = useCallback(
-      (node: HTMLDivElement | null) => {
-        wrapperRef.current = node;
-        if (typeof forwardedRef === "function") {
-          forwardedRef(node);
-        } else if (forwardedRef && "current" in (forwardedRef as object)) {
-          (
-            forwardedRef as React.MutableRefObject<HTMLDivElement | null>
-          ).current = node;
-        }
-      },
-      [forwardedRef]
-    );
+  >(
+    (
+      { label, onClick, icon, idKey, showIndicator = false, isEmoji = false },
+      forwardedRef
+    ) => {
+      const isNew = hasMounted && !seenIdsRef.current.has(idKey);
+      const baseButtonSize = 48; // px (w-12)
+      const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
+      const wrapperRef = useRef<HTMLDivElement | null>(null);
+      const isPresent = useIsPresent();
+      const distanceCalc = useTransform(mouseX, (val) => {
+        const bounds = wrapperRef.current?.getBoundingClientRect();
+        if (!bounds || !Number.isFinite(val)) return Infinity;
+        return val - (bounds.left + bounds.width / 2);
+      });
+      const sizeTransform = useTransform(
+        distanceCalc,
+        [-DISTANCE, 0, DISTANCE],
+        [baseButtonSize, maxButtonSize, baseButtonSize]
+      );
+      const sizeSpring = useSpring(sizeTransform, {
+        mass: 0.15,
+        stiffness: 160,
+        damping: 18,
+      });
+      const widthValue = isPresent
+        ? magnifyEnabled
+          ? (sizeSpring as unknown as number)
+          : baseButtonSize
+        : 0;
+      const setCombinedRef = useCallback(
+        (node: HTMLDivElement | null) => {
+          wrapperRef.current = node;
+          if (typeof forwardedRef === "function") {
+            forwardedRef(node);
+          } else if (forwardedRef && "current" in (forwardedRef as object)) {
+            (
+              forwardedRef as React.MutableRefObject<HTMLDivElement | null>
+            ).current = node;
+          }
+        },
+        [forwardedRef]
+      );
 
-    return (
-      <motion.div
-        ref={setCombinedRef}
-        layout
-        layoutId={`dock-icon-${idKey}`}
-        initial={isNew ? { scale: 0, opacity: 0 } : undefined}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{
-          scale: 0,
-          opacity: 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 300,
-          damping: 30,
-          mass: 0.8,
-          layout: {
+      return (
+        <motion.div
+          ref={setCombinedRef}
+          layout
+          layoutId={`dock-icon-${idKey}`}
+          initial={isNew ? { scale: 0, opacity: 0 } : undefined}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{
+            scale: 0,
+            opacity: 0,
+          }}
+          transition={{
             type: "spring",
             stiffness: 300,
             damping: 30,
             mass: 0.8,
-          },
-        }}
-        style={{
-          transformOrigin: "bottom center",
-          willChange: "width, height, transform",
-          width: widthValue,
-          height: widthValue,
-          marginLeft: isPresent ? 4 : 0,
-          marginRight: isPresent ? 4 : 0,
-          overflow: "visible",
-        }}
-        className="flex-shrink-0"
-      >
-        <button
-          aria-label={label}
-          title={label}
-          onClick={onClick}
-          className="relative flex items-end justify-center w-full h-full"
-          style={{
-            willChange: "transform",
+            layout: {
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              mass: 0.8,
+            },
           }}
+          style={{
+            transformOrigin: "bottom center",
+            willChange: "width, height, transform",
+            width: widthValue,
+            height: widthValue,
+            marginLeft: isPresent ? 4 : 0,
+            marginRight: isPresent ? 4 : 0,
+            overflow: "visible",
+          }}
+          className="flex-shrink-0"
         >
-          <ThemedIcon
-            name={icon}
-            alt={label}
-            className="select-none pointer-events-none"
-            draggable={false}
+          <button
+            aria-label={label}
+            title={label}
+            onClick={onClick}
+            className="relative flex items-end justify-center w-full h-full"
             style={{
-              imageRendering: "-webkit-optimize-contrast",
-              width: "100%",
-              height: "100%",
+              willChange: "transform",
             }}
-          />
-          {showIndicator ? (
-            <span
-              aria-hidden
-              className="absolute"
-              style={{
-                bottom: -3,
-                width: 0,
-                height: 0,
-                borderLeft: "4px solid transparent",
-                borderRight: "4px solid transparent",
-                borderTop: "0",
-                borderBottom: "4px solid #000",
-                filter: "none",
-              }}
-            />
-          ) : null}
-        </button>
-      </motion.div>
-    );
-  });
+          >
+            {isEmoji ? (
+              <span
+                className="select-none pointer-events-none flex items-center justify-center"
+                style={{
+                  fontSize: "32px",
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
+                {icon}
+              </span>
+            ) : (
+              <ThemedIcon
+                name={icon}
+                alt={label}
+                className="select-none pointer-events-none"
+                draggable={false}
+                style={{
+                  imageRendering: "-webkit-optimize-contrast",
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            )}
+            {showIndicator ? (
+              <span
+                aria-hidden
+                className="absolute"
+                style={{
+                  bottom: -3,
+                  width: 0,
+                  height: 0,
+                  borderLeft: "4px solid transparent",
+                  borderRight: "4px solid transparent",
+                  borderTop: "0",
+                  borderBottom: "4px solid #000",
+                  filter: "none",
+                }}
+              />
+            ) : null}
+          </button>
+        </motion.div>
+      );
+    }
+  );
 
   const Divider = forwardRef<HTMLDivElement, { idKey: string }>(
     ({ idKey }, ref) => (
@@ -459,20 +542,40 @@ function MacDock() {
                 );
               })}
 
-              {/* Open apps dynamically (excluding pinned) */}
-              {openAppIds.map((appId) => {
-                const icon = getAppIconPath(appId);
-                const label = appRegistry[appId]?.name ?? appId;
-                return (
-                  <IconButton
-                    key={appId}
-                    label={label}
-                    icon={icon}
-                    idKey={appId}
-                    onClick={() => focusMostRecentInstanceOfApp(appId)}
-                    showIndicator
-                  />
-                );
+              {/* Open apps and applet instances dynamically (excluding pinned) */}
+              {openItems.map((item) => {
+                if (item.type === "applet" && item.instanceId) {
+                  // Render individual applet instance
+                  const instance = instances[item.instanceId];
+                  if (!instance) return null;
+
+                  const { icon, label } = getAppletInfo(instance);
+                  return (
+                    <IconButton
+                      key={item.instanceId}
+                      label={label}
+                      icon={icon}
+                      idKey={item.instanceId}
+                      onClick={() => bringInstanceToForeground(item.instanceId!)}
+                      showIndicator
+                      isEmoji
+                    />
+                  );
+                } else {
+                  // Render regular app
+                  const icon = getAppIconPath(item.appId);
+                  const label = appRegistry[item.appId]?.name ?? item.appId;
+                  return (
+                    <IconButton
+                      key={item.appId}
+                      label={label}
+                      icon={icon}
+                      idKey={item.appId}
+                      onClick={() => focusMostRecentInstanceOfApp(item.appId)}
+                      showIndicator
+                    />
+                  );
+                }
               })}
 
               {/* Divider between open apps and Applications/Trash */}
