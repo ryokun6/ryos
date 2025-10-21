@@ -20,6 +20,7 @@ import { useSound, Sounds } from "../../hooks/useSound";
 import { useAppStore } from "@/stores/useAppStore";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { toast } from "sonner";
 
 // Lazily load shiki only when code view is requested to keep initial bundle smaller
 let shikiModulePromise: Promise<typeof import("shiki")> | null = null;
@@ -198,6 +199,7 @@ export default function HtmlPreview({
 
   // Use file system hook for saving applets
   const { saveFile } = useFileSystem("/", { skipLoad: true });
+  const launchApp = useAppStore((state) => state.launchApp);
   const previewRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fullscreenIframeRef = useRef<HTMLIFrameElement>(null);
@@ -665,8 +667,26 @@ export default function HtmlPreview({
       window.dispatchEvent(event);
 
       setIsSaveAppletDialogOpen(false);
+
+      // Show success toast with button to open applet
+      toast.success("Applet saved successfully", {
+        description: nameWithExtension,
+        action: {
+          label: "Open",
+          onClick: () => {
+            launchApp("applet-viewer", {
+              path: appletPath,
+              content: processedHtmlContent,
+            });
+          },
+        },
+        duration: 5000,
+      });
     } catch (err) {
       console.error("Failed to save applet:", err);
+      toast.error("Failed to save applet", {
+        description: "An error occurred while saving the applet.",
+      });
     }
   };
 
