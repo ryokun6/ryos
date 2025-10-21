@@ -313,6 +313,7 @@ export function AppletViewerAppComponent({
       onExportAsHtml={handleExportAsHtml}
       hasAppletContent={hasAppletContent}
       handleFileSelect={handleFileSelect}
+      instanceId={instanceId}
     />
   );
 

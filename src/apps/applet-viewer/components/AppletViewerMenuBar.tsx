@@ -15,6 +15,8 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { toast } from "sonner";
 import React from "react";
+import { useAppStore } from "@/stores/useAppStore";
+import { cn } from "@/lib/utils";
 
 interface AppletViewerMenuBarProps {
   onClose: () => void;
@@ -24,6 +26,7 @@ interface AppletViewerMenuBarProps {
   onExportAsHtml: () => void;
   hasAppletContent: boolean;
   handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  instanceId?: string;
 }
 
 export function AppletViewerMenuBar({
@@ -34,11 +37,21 @@ export function AppletViewerMenuBar({
   onExportAsHtml,
   hasAppletContent,
   handleFileSelect,
+  instanceId,
 }: AppletViewerMenuBarProps) {
   const currentTheme = useThemeStore((s) => s.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const launchApp = useLaunchApp();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const bringInstanceToForeground = useAppStore(
+    (s) => s.bringInstanceToForeground
+  );
+  const instances = useAppStore((s) => s.instances);
+
+  // Get all active applet viewer instances
+  const appletInstances = Object.values(instances).filter(
+    (inst) => inst.appId === "applet-viewer" && inst.isOpen
+  );
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -102,6 +115,50 @@ export function AppletViewerMenuBar({
           >
             Close
           </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Window Menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="default"
+            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
+          >
+            Window
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
+          {appletInstances.length > 0 ? (
+            appletInstances.map((inst) => {
+              const initialData = inst.initialData as any;
+              const path = initialData?.path || "";
+              const fileName = path
+                ? path
+                    .split("/")
+                    .pop()
+                    ?.replace(/\.(html|app)$/i, "") || "Untitled"
+                : "Untitled";
+              const isActive = inst.instanceId === instanceId;
+
+              return (
+                <DropdownMenuItem
+                  key={inst.instanceId}
+                  onClick={() => bringInstanceToForeground(inst.instanceId)}
+                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                >
+                  <span className={cn(!isActive && "pl-4")}>
+                    {isActive ? `✓ ${fileName}` : fileName}
+                  </span>
+                </DropdownMenuItem>
+              );
+            })
+          ) : (
+            <DropdownMenuItem disabled className="text-md h-6 px-3 opacity-50">
+              No applets open
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
