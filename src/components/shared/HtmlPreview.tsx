@@ -1504,7 +1504,7 @@ export default function HtmlPreview({
         onOpenChange={setIsSaveAppletDialogOpen}
         onSubmit={handleSaveAppletSubmit}
         title="Save as Applet"
-        description="Enter a name for the applet:"
+        description="Enter applet name, existing applet will get overwritten:"
         value={appletFileName}
         onChange={setAppletFileName}
       />

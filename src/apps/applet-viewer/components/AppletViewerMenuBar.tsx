@@ -5,30 +5,50 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { toast } from "sonner";
+import React from "react";
 
 interface AppletViewerMenuBarProps {
   onClose: () => void;
   onShowHelp: () => void;
   onShowAbout: () => void;
+  onExportAsApp: () => void;
+  onExportAsHtml: () => void;
+  hasAppletContent: boolean;
+  handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function AppletViewerMenuBar({
   onClose,
   onShowHelp,
   onShowAbout,
+  onExportAsApp,
+  onExportAsHtml,
+  hasAppletContent,
+  handleFileSelect,
 }: AppletViewerMenuBarProps) {
   const currentTheme = useThemeStore((s) => s.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const launchApp = useLaunchApp();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept=".html,.htm,.app"
+        className="hidden"
+      />
       {/* File Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -47,6 +67,34 @@ export function AppletViewerMenuBar({
           >
             Open...
           </DropdownMenuItem>
+          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+          <DropdownMenuItem
+            onClick={() => fileInputRef.current?.click()}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
+            Import from Device...
+          </DropdownMenuItem>
+          {hasAppletContent && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+                Export As...
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem
+                  onClick={onExportAsApp}
+                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                >
+                  ryOS App
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={onExportAsHtml}
+                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                >
+                  HTML
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onClose}

@@ -10,6 +10,8 @@ import { useAppletStore } from "@/stores/useAppletStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { Button } from "@/components/ui/button";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { toast } from "sonner";
+import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -22,6 +24,7 @@ export function AppletViewerAppComponent({
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
@@ -135,15 +138,183 @@ export function AppletViewerAppComponent({
     return `<!DOCTYPE html><html><head>${preload}${fontStyle}</head><body>${content}</body></html>`;
   };
 
+  const launchApp = useLaunchApp();
+  const { saveFile, files } = useFileSystem("/Applets");
+
+  // Helper function to extract emoji from start of string
+  const extractEmojiIcon = (
+    text: string
+  ): { emoji: string | null; remainingText: string } => {
+    // Match emoji at the start of the string (including optional whitespace after)
+    const emojiRegex =
+      /^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}]+)\s*/u;
+    const match = text.match(emojiRegex);
+
+    if (match) {
+      return {
+        emoji: match[1],
+        remainingText: text.slice(match[0].length),
+      };
+    }
+
+    return {
+      emoji: null,
+      remainingText: text,
+    };
+  };
+
+  // Import handler
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const content = await file.text();
+        let fileName = file.name;
+
+        // Extract emoji from filename BEFORE processing extension
+        const { emoji, remainingText } = extractEmojiIcon(fileName);
+
+        // Use the remaining text (without emoji) as the actual filename
+        fileName = remainingText;
+
+        // Ensure the file has .app extension
+        if (fileName.endsWith(".html") || fileName.endsWith(".htm")) {
+          fileName = fileName.replace(/\.(html|htm)$/i, ".app");
+        } else if (!fileName.endsWith(".app")) {
+          fileName = `${fileName}.app`;
+        }
+
+        const filePath = `/Applets/${fileName}`;
+
+        // Save the file to the filesystem first
+        await saveFile({
+          name: fileName,
+          path: filePath,
+          content: content,
+          type: "html",
+          icon: emoji || undefined, // Use extracted emoji as icon if present
+        });
+
+        // Dispatch event to notify Finder of the new file
+        const saveEvent = new CustomEvent("saveFile", {
+          detail: {
+            name: fileName,
+            path: filePath,
+            content: content,
+            icon: emoji || undefined,
+          },
+        });
+        window.dispatchEvent(saveEvent);
+
+        // Launch a new applet viewer instance with the imported content
+        launchApp("applet-viewer", {
+          initialData: {
+            path: filePath,
+            content: content,
+          },
+        });
+
+        toast.success("Applet imported!", {
+          description: `${fileName} saved to /Applets${
+            emoji ? ` with ${emoji} icon` : ""
+          }`,
+        });
+      } catch (error) {
+        console.error("Import failed:", error);
+        toast.error("Import failed", {
+          description: "Could not import the file.",
+        });
+      }
+    }
+
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Export as App handler (with emoji prefix)
+  const handleExportAsApp = () => {
+    if (!hasAppletContent) return;
+
+    // Get base filename without extension
+    let filename = appletPath
+      ? appletPath
+          .split("/")
+          .pop()
+          ?.replace(/\.(html|app)$/i, "") || "Untitled"
+      : "Untitled";
+
+    // Find the current file's icon from the filesystem
+    const currentFile = files.find((f) => f.path === appletPath);
+    const fileIcon = currentFile?.icon;
+
+    // Check if the icon is an emoji (not a file path)
+    const isEmojiIcon =
+      fileIcon &&
+      !fileIcon.startsWith("/") &&
+      !fileIcon.startsWith("http") &&
+      fileIcon.length <= 10;
+
+    // Use the file's actual icon emoji, or fallback to 📦
+    const emojiPrefix = isEmojiIcon ? fileIcon : "📦";
+    filename = `${emojiPrefix} ${filename}`;
+
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${filename}.app`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success("Applet exported!", {
+      description: `${filename}.app exported successfully.`,
+    });
+  };
+
+  // Export as HTML handler (without emoji prefix)
+  const handleExportAsHtml = () => {
+    if (!hasAppletContent) return;
+
+    // Get base filename without extension
+    const filename = appletPath
+      ? appletPath
+          .split("/")
+          .pop()
+          ?.replace(/\.(html|app)$/i, "") || "Untitled"
+      : "Untitled";
+
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${filename}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success("HTML exported!", {
+      description: `${filename}.html exported successfully.`,
+    });
+  };
+
   const menuBar = (
     <AppletViewerMenuBar
       onClose={onClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
+      onExportAsApp={handleExportAsApp}
+      onExportAsHtml={handleExportAsHtml}
+      hasAppletContent={hasAppletContent}
+      handleFileSelect={handleFileSelect}
     />
   );
-
-  const launchApp = useLaunchApp();
 
   // Bring window to foreground when interacting inside the iframe while it's in the back
   useEffect(() => {
