@@ -415,7 +415,7 @@ function MacDock() {
                 className="select-none pointer-events-none flex items-end justify-center"
                 style={{
                   // Slightly larger base size so initial (non-hover) emoji isn't too small
-                  fontSize: baseButtonSize * 0.8,
+                  fontSize: baseButtonSize * 0.84,
                   lineHeight: 1,
                   originY: 1,
                   originX: 0.5,
