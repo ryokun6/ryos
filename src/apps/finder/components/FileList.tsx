@@ -267,6 +267,18 @@ export function FileList({
     return "/icons/file.png";
   };
 
+  // Helper to compute display name. For Finder applets in /Applets ending with .app, hide extension
+  const getDisplayName = (file: FileItem): string => {
+    if (
+      file.path.startsWith("/Applets/") &&
+      !file.isDirectory &&
+      file.name.toLowerCase().endsWith(".app")
+    ) {
+      return file.name.slice(0, -4);
+    }
+    return file.name;
+  };
+
   // --------------- Subcomponents with hook usage ---------------
 
   interface ListRowProps {
@@ -371,7 +383,7 @@ export function FileList({
               data-legacy-aware="true"
             />
           )}
-          {file.name}
+          {getDisplayName(file)}
         </TableCell>
         <TableCell>{getFileType(file)}</TableCell>
         <TableCell className="whitespace-nowrap">
@@ -434,7 +446,7 @@ export function FileList({
         {...(isTouchDevice() ? longPressHandlers : {})}
       >
         <FileIcon
-          name={file.name}
+          name={getDisplayName(file)}
           isDirectory={file.isDirectory}
           icon={file.icon}
           content={isImageFile(file) ? file.content : undefined}
