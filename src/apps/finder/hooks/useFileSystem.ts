@@ -965,25 +965,47 @@ export function useFileSystem(
             contentLength: contentAsString?.length || 0,
             hasContent: !!contentAsString,
           });
-          const newInstanceId = launchApp("applet-viewer", {
-            initialData: { path: file.path, content: contentAsString ?? "" },
-          });
-          // Apply saved window size immediately if available
+
+          // Check for an existing Applet Viewer window for this path
           try {
-            const saved = useAppletStore
-              .getState()
-              .getAppletWindowSize(file.path);
-            if (saved && newInstanceId) {
-              const appStore = useAppStore.getState();
-              const inst = appStore.instances[newInstanceId];
-              if (inst) {
-                const pos = inst.position || { x: 0, y: 0 };
-                appStore.updateInstanceWindowState(newInstanceId, pos, saved);
+            const appStore = useAppStore.getState();
+            const existingAppletInstance = Object.values(
+              appStore.instances
+            ).find(
+              (inst) =>
+                inst.appId === "applet-viewer" &&
+                inst.isOpen &&
+                (inst.initialData as any)?.path === file.path
+            );
+
+            if (existingAppletInstance) {
+              // Bring existing window to foreground
+              appStore.bringInstanceToForeground(
+                existingAppletInstance.instanceId
+              );
+            } else {
+              // Launch new instance
+              const newInstanceId = launchApp("applet-viewer", {
+                initialData: {
+                  path: file.path,
+                  content: contentAsString ?? "",
+                },
+              });
+              // Apply saved window size immediately if available
+              const saved = useAppletStore
+                .getState()
+                .getAppletWindowSize(file.path);
+              if (saved && newInstanceId) {
+                const inst = appStore.instances[newInstanceId];
+                if (inst) {
+                  const pos = inst.position || { x: 0, y: 0 };
+                  appStore.updateInstanceWindowState(newInstanceId, pos, saved);
+                }
               }
             }
           } catch (e) {
             console.warn(
-              "[useFileSystem] Failed to apply saved applet size:",
+              "[useFileSystem] Failed opening applet or applying saved size:",
               e
             );
           }

@@ -23,7 +23,10 @@ export const useLaunchApp = () => {
 
     // Always use multi-window for apps that support it
     const multiWindow =
-      options?.multiWindow || appId === "finder" || appId === "textedit";
+      options?.multiWindow ||
+      appId === "finder" ||
+      appId === "textedit" ||
+      appId === "applet-viewer";
 
     // Use the new instance-based launch system
     const instanceId = launchAppInstance(

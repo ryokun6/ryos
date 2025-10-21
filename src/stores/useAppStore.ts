@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AppId, getWindowConfig } from "@/config/appRegistry";
+import { useAppletStore } from "@/stores/useAppletStore";
 import { appIds } from "@/config/appIds";
 import { AppManagerState, AppState } from "@/apps/base/types";
 import { checkShaderPerformance } from "@/utils/performanceCheck";
@@ -457,9 +458,24 @@ export const useAppStore = create<AppStoreState>()(
               : 40 + openInstances * 20,
           };
           const cfg = getWindowConfig(appId);
-          const size = isMobile
+          let size = isMobile
             ? { width: window.innerWidth, height: cfg.defaultSize.height }
             : cfg.defaultSize;
+
+          // If creating an Applet Viewer window and we have a path, prefer saved size
+          if (appId === "applet-viewer") {
+            try {
+              const path = (initialData as { path?: string } | undefined)?.path;
+              if (path) {
+                const saved = useAppletStore
+                  .getState()
+                  .getAppletWindowSize(path);
+                if (saved) size = saved;
+              }
+            } catch (_) {
+              // ignore and fall back to default size
+            }
+          }
           const instances = {
             ...state.instances,
             [createdId]: {
@@ -619,7 +635,10 @@ export const useAppStore = create<AppStoreState>()(
       launchApp: (appId, initialData, title, multiWindow = false) => {
         const state = get();
         const supportsMultiWindow =
-          multiWindow || appId === "textedit" || appId === "finder";
+          multiWindow ||
+          appId === "textedit" ||
+          appId === "finder" ||
+          appId === "applet-viewer";
         if (!supportsMultiWindow) {
           const existing = Object.values(state.instances).find(
             (i) => i.appId === appId && i.isOpen
