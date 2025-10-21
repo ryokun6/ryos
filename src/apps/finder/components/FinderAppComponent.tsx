@@ -52,6 +52,8 @@ const getFileType = (file: FileItem): string => {
   // Now check extension from file.name
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
   switch (ext) {
+    case "app":
+      return "Application";
     case "png":
       return "PNG Image";
     case "jpg":

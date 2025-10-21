@@ -60,7 +60,7 @@
       "name": "Applets",
       "isDirectory": true,
       "type": "directory",
-      "icon": "/icons/default/ie-site.png",
+      "icon": "/icons/default/applets.png",
       "status": "active"
     },
     {

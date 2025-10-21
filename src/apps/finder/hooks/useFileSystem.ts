@@ -178,6 +178,8 @@ export const dbOperations = {
 function getFileTypeFromExtension(fileName: string): string {
   const ext = fileName.split(".").pop()?.toLowerCase() || "unknown";
   switch (ext) {
+    case "app":
+      return "application";
     case "md":
       return "markdown";
     case "txt":
@@ -955,7 +957,7 @@ export function useFileSystem(
           }); // Pass contentToUse (Blob)
         } else if (
           file.path.startsWith("/Applets/") &&
-          file.path.endsWith(".html")
+          (file.path.endsWith(".app") || file.path.endsWith(".html"))
         ) {
           // Open HTML applets with applet-viewer
           console.log("[useFileSystem] Opening applet:", {

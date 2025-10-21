@@ -1,9 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2025-08-23T18:55:05.060Z",
+  "generatedAt": "2025-10-21T04:24:13.431Z",
   "themes": {
     "default": [
+      "app.png",
       "apple.png",
+      "applet.png",
+      "applets.png",
       "applications.png",
       "bomb.svg",
       "cdrom.png",
@@ -126,10 +129,17 @@
       "warn.png"
     ],
     "macosx": [
+      "app.png",
       "apple.png",
+      "applet.png",
+      "applets.png",
       "applications.png",
+      "automator.png",
+      "bento.png",
       "cdrom.png",
+      "chess.png",
       "control-panels/appearance-manager/app.png",
+      "dictionary.png",
       "directory.png",
       "disk.png",
       "documents.png",
@@ -163,7 +173,9 @@
       "warn.png"
     ],
     "win98": [
+      "app.png",
       "apple.png",
+      "applets.png",
       "applications.png",
       "cdrom.png",
       "control-panels/appearance-manager/app.png",
@@ -200,7 +212,9 @@
       "warn.png"
     ],
     "xp": [
+      "app.png",
       "apple.png",
+      "applets.png",
       "applications.png",
       "cdrom.png",
       "control-panels/appearance-manager/app.png",

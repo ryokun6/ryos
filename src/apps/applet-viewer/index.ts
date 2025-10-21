@@ -23,7 +23,7 @@ export const appMetadata = {
     url: "https://ryo.lu",
   },
   github: "https://github.com/ryokun6/ryos",
-  icon: "/icons/default/ie-site.png",
+  icon: "/icons/default/app.png",
 };
 
 export interface AppletViewerInitialData {

@@ -90,7 +90,7 @@ export function AppletViewerAppComponent({
   const getFileName = (path: string): string => {
     const parts = path.split("/");
     const fileName = parts[parts.length - 1];
-    return fileName.replace(/\.html$/, "");
+    return fileName.replace(/\.(html|app)$/i, "");
   };
 
   const menuBar = (

@@ -642,9 +642,10 @@ export default function HtmlPreview({
     if (!fileName || !fileName.trim()) return;
 
     const trimmedName = fileName.trim();
-    const nameWithExtension = trimmedName.endsWith(".html")
-      ? trimmedName
-      : `${trimmedName}.html`;
+    const nameWithExtension =
+      trimmedName.endsWith(".app") || trimmedName.endsWith(".html")
+        ? trimmedName
+        : `${trimmedName}.app`;
 
     const appletPath = `/Applets/${nameWithExtension}`;
 
@@ -654,7 +655,7 @@ export default function HtmlPreview({
         name: nameWithExtension,
         content: processedHtmlContent,
         type: "html",
-        icon: "/icons/default/ie-site.png",
+        icon: "/icons/default/app.png",
       });
 
       // Notify that file was saved
