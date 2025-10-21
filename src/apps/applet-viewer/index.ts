@@ -4,8 +4,8 @@ import { AppletViewerAppComponent } from "./components/AppletViewerAppComponent"
 export const helpItems = [
   {
     icon: "📄",
-    title: "View HTML Applets",
-    description: "Open and view HTML applets saved from Ryo AI chats.",
+    title: "View Applets",
+    description: "Open and view applets saved from Ryo chats.",
   },
   {
     icon: "📐",

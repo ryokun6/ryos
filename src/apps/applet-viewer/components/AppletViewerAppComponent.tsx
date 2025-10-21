@@ -8,6 +8,8 @@ import { appMetadata, helpItems, AppletViewerInitialData } from "../index";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { Button } from "@/components/ui/button";
+import { useLaunchApp } from "@/hooks/useLaunchApp";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -22,10 +24,13 @@ export function AppletViewerAppComponent({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacTheme = currentTheme === "macosx";
+  const isSystem7Theme = currentTheme === "system7";
 
   const typedInitialData = initialData as AppletViewerInitialData | undefined;
   const appletPath = typedInitialData?.path || "";
   const htmlContent = typedInitialData?.content || "";
+  const hasAppletContent = htmlContent.trim().length > 0;
 
   // Debug logging
   useEffect(() => {
@@ -38,7 +43,7 @@ export function AppletViewerAppComponent({
 
   // Get the applet-specific window size
   const { getAppletWindowSize, setAppletWindowSize } = useAppletStore();
-  const savedSize = getAppletWindowSize(appletPath);
+  const savedSize = appletPath ? getAppletWindowSize(appletPath) : undefined;
 
   // Get current window state from app store
   const currentWindowState = useAppStore((state) =>
@@ -101,6 +106,8 @@ export function AppletViewerAppComponent({
     />
   );
 
+  const launchApp = useLaunchApp();
+
   // Bring window to foreground when interacting inside the iframe while it's in the back
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -151,11 +158,14 @@ export function AppletViewerAppComponent({
 
   if (!isWindowOpen) return null;
 
+  const windowTitle =
+    hasAppletContent && appletPath ? getFileName(appletPath) : "Applet Viewer";
+
   return (
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title={getFileName(appletPath)}
+        title={windowTitle}
         onClose={onClose}
         isForeground={isForeground}
         appId="applet-viewer"
@@ -164,16 +174,46 @@ export function AppletViewerAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
       >
         <div className="w-full h-full bg-white overflow-hidden">
-          <iframe
-            ref={iframeRef}
-            srcDoc={htmlContent}
-            title={getFileName(appletPath)}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
-            style={{
-              display: "block",
-            }}
-          />
+          {hasAppletContent ? (
+            <iframe
+              ref={iframeRef}
+              srcDoc={htmlContent}
+              title={windowTitle}
+              className="w-full h-full border-0"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+              style={{
+                display: "block",
+              }}
+            />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center">
+              <div className="text-center px-6 font-geneva-12">
+                <h2 className="text-[13px] font-geneva-12 font-medium">
+                  No applet open
+                </h2>
+                <p className="text-[11px] text-gray-600 font-geneva-12 mb-3">
+                  Open an applet from Finder
+                </p>
+                <div className="flex items-center justify-center">
+                  <Button
+                    size="sm"
+                    variant={
+                      isMacTheme
+                        ? "default"
+                        : isSystem7Theme
+                        ? "retro"
+                        : "outline"
+                    }
+                    onClick={() =>
+                      launchApp("finder", { initialPath: "/Applets" })
+                    }
+                  >
+                    Open Finder
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </WindowFrame>
       <HelpDialog
