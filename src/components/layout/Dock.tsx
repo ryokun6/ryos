@@ -346,9 +346,13 @@ function MacDock() {
       });
       const widthValue = isPresent
         ? magnifyEnabled
-          ? (sizeSpring as unknown as number)
+          ? sizeSpring
           : baseButtonSize
         : 0;
+
+      // Scale factor for emoji to match magnification (relative to baseButtonSize)
+      const emojiScale = useTransform(sizeSpring, (val) => val / baseButtonSize);
+ 
       const setCombinedRef = useCallback(
         (node: HTMLDivElement | null) => {
           wrapperRef.current = node;
@@ -407,16 +411,23 @@ function MacDock() {
             }}
           >
             {isEmoji ? (
-              <span
-                className="select-none pointer-events-none flex items-center justify-center"
+              <motion.span
+                className="select-none pointer-events-none flex items-end justify-center"
                 style={{
-                  fontSize: "32px",
+                  // Slightly larger base size so initial (non-hover) emoji isn't too small
+                  fontSize: baseButtonSize * 0.8,
+                  lineHeight: 1,
+                  originY: 1,
+                  originX: 0.5,
+                  scale: magnifyEnabled ? emojiScale : 1,
+                  // Lift a couple px so it's not too tight against the bottom
+                  y: -5,
                   width: "100%",
                   height: "100%",
                 }}
               >
                 {icon}
-              </span>
+              </motion.span>
             ) : (
               <ThemedIcon
                 name={icon}
@@ -514,7 +525,7 @@ function MacDock() {
               damping: 30,
             },
           }}
-          onMouseMove={magnifyEnabled ? (e) => mouseX.set(e.pageX) : undefined}
+          onMouseMove={magnifyEnabled ? (e) => mouseX.set(e.clientX) : undefined}
           onMouseLeave={magnifyEnabled ? () => mouseX.set(Infinity) : undefined}
         >
           <LayoutGroup>
