@@ -11,11 +11,8 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { helpItems, appMetadata } from "..";
-import {
-  useFileSystem,
-  dbOperations,
-  STORES,
-} from "@/apps/finder/hooks/useFileSystem";
+import { useFileSystem, dbOperations } from "@/apps/finder/hooks/useFileSystem";
+import { STORES } from "@/utils/indexedDB";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { usePaintStore } from "@/stores/usePaintStore";
 import { Filter } from "./PaintFiltersMenu";

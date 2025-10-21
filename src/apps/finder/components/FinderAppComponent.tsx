@@ -9,9 +9,9 @@ import { FileList } from "./FileList";
 import {
   useFileSystem,
   dbOperations,
-  STORES,
   DocumentContent,
 } from "../hooks/useFileSystem";
+import { STORES } from "@/utils/indexedDB";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -71,6 +71,8 @@ const getFileType = (file: FileItem): string => {
       return "MP3 Audio";
     case "mov":
       return "QuickTime Movie";
+    case "html":
+      return "HTML Applet";
     default:
       return "Unknown";
   }
@@ -107,7 +109,9 @@ export function FinderAppComponent({
   const removeFinderInstance = useFinderStore((state) => state.removeInstance);
   const updateFinderInstance = useFinderStore((state) => state.updateInstance);
   const finderInstances = useFinderStore((state) => state.instances);
-  const setViewTypeForPath = useFinderStore((state) => state.setViewTypeForPath);
+  const setViewTypeForPath = useFinderStore(
+    (state) => state.setViewTypeForPath
+  );
 
   // Legacy store methods for single-window mode
   const legacyViewType = useFinderStore((state) => state.viewType);
@@ -146,7 +150,14 @@ export function FinderAppComponent({
         localStorage.removeItem("app_finder_initialPath");
       }
     }
-  }, [instanceId, createFinderInstance, initialData, finderInstances, setViewTypeForPath, updateFinderInstance]);
+  }, [
+    instanceId,
+    createFinderInstance,
+    initialData,
+    finderInstances,
+    setViewTypeForPath,
+    updateFinderInstance,
+  ]);
 
   // Sync Finder instance cleanup with App store instance lifecycle
   useEffect(() => {
@@ -238,7 +249,13 @@ export function FinderAppComponent({
         legacySetViewType(type);
       }
     },
-    [currentPath, instanceId, setViewTypeForPath, updateFinderInstance, legacySetViewType]
+    [
+      currentPath,
+      instanceId,
+      setViewTypeForPath,
+      updateFinderInstance,
+      legacySetViewType,
+    ]
   );
 
   // Wrap the original handleFileOpen - now only calls the original without TextEditStore updates
@@ -972,7 +989,13 @@ export function FinderAppComponent({
               />
             </div>
           </div>
-          <div className={`flex-1 bg-white ${viewType === "list" ? "overflow-auto" : "overflow-y-auto overflow-x-hidden"}`}>
+          <div
+            className={`flex-1 bg-white ${
+              viewType === "list"
+                ? "overflow-auto"
+                : "overflow-y-auto overflow-x-hidden"
+            }`}
+          >
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 Loading...

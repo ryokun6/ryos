@@ -1,4 +1,12 @@
-import { useMemo, useRef, useState, useCallback, useEffect } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+  forwardRef,
+} from "react";
+import type React from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -237,19 +245,16 @@ function MacDock() {
 
   // index tracking no longer needed; sizing is per-element via motion values
 
-  const IconButton = ({
-    label,
-    onClick,
-    icon,
-    idKey,
-    showIndicator = false,
-  }: {
-    label: string;
-    onClick: () => void;
-    icon: string;
-    idKey: string;
-    showIndicator?: boolean;
-  }) => {
+  const IconButton = forwardRef<
+    HTMLDivElement,
+    {
+      label: string;
+      onClick: () => void;
+      icon: string;
+      idKey: string;
+      showIndicator?: boolean;
+    }
+  >(({ label, onClick, icon, idKey, showIndicator = false }, forwardedRef) => {
     const isNew = hasMounted && !seenIdsRef.current.has(idKey);
     const baseButtonSize = 48; // px (w-12)
     const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
@@ -275,9 +280,23 @@ function MacDock() {
         ? (sizeSpring as unknown as number)
         : baseButtonSize
       : 0;
+    const setCombinedRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        wrapperRef.current = node;
+        if (typeof forwardedRef === "function") {
+          forwardedRef(node);
+        } else if (forwardedRef && "current" in (forwardedRef as object)) {
+          (
+            forwardedRef as React.MutableRefObject<HTMLDivElement | null>
+          ).current = node;
+        }
+      },
+      [forwardedRef]
+    );
+
     return (
       <motion.div
-        ref={wrapperRef}
+        ref={setCombinedRef}
         layout
         layoutId={`dock-icon-${idKey}`}
         initial={isNew ? { scale: 0, opacity: 0 } : undefined}
@@ -348,25 +367,28 @@ function MacDock() {
         </button>
       </motion.div>
     );
-  };
+  });
 
-  const Divider = ({ idKey }: { idKey: string }) => (
-    <motion.div
-      layout
-      layoutId={`dock-divider-${idKey}`}
-      initial={{ opacity: 0, scaleY: 0.8 }}
-      animate={{ opacity: 0.9, scaleY: 1 }}
-      exit={{ opacity: 0, scaleY: 0.8 }}
-      transition={{ type: "spring", stiffness: 260, damping: 26 }}
-      className="bg-black/20"
-      style={{
-        width: 1,
-        height: 48,
-        marginLeft: 6,
-        marginRight: 6,
-        alignSelf: "center",
-      }}
-    />
+  const Divider = forwardRef<HTMLDivElement, { idKey: string }>(
+    ({ idKey }, ref) => (
+      <motion.div
+        ref={ref}
+        layout
+        layoutId={`dock-divider-${idKey}`}
+        initial={{ opacity: 0, scaleY: 0.8 }}
+        animate={{ opacity: 0.9, scaleY: 1 }}
+        exit={{ opacity: 0, scaleY: 0.8 }}
+        transition={{ type: "spring", stiffness: 260, damping: 26 }}
+        className="bg-black/20"
+        style={{
+          width: 1,
+          height: 48,
+          marginLeft: 6,
+          marginRight: 6,
+          alignSelf: "center",
+        }}
+      />
+    )
   );
 
   return (

@@ -56,6 +56,14 @@
       "status": "active"
     },
     {
+      "path": "/Applets",
+      "name": "Applets",
+      "isDirectory": true,
+      "type": "directory",
+      "icon": "/icons/default/ie-site.png",
+      "status": "active"
+    },
+    {
       "path": "/Trash",
       "name": "Trash",
       "isDirectory": true,

@@ -1,0 +1,42 @@
+import { BaseApp } from "../base/types";
+import { AppletViewerAppComponent } from "./components/AppletViewerAppComponent";
+
+export const helpItems = [
+  {
+    icon: "📄",
+    title: "View HTML Applets",
+    description: "Open and view HTML applets saved from Ryo AI chats.",
+  },
+  {
+    icon: "📐",
+    title: "Window Size Memory",
+    description:
+      "Each applet remembers its last window size and restores it when opened.",
+  },
+];
+
+export const appMetadata = {
+  name: "Applet Viewer",
+  version: "1.0",
+  creator: {
+    name: "Ryo Lu",
+    url: "https://ryo.lu",
+  },
+  github: "https://github.com/ryokun6/ryos",
+  icon: "/icons/default/ie-site.png",
+};
+
+export interface AppletViewerInitialData {
+  path: string;
+  content: string;
+}
+
+export const AppletViewerApp: BaseApp<AppletViewerInitialData> = {
+  id: "applet-viewer",
+  name: "Applet Viewer",
+  icon: { type: "image", src: appMetadata.icon },
+  description: "View HTML applets",
+  component: AppletViewerAppComponent,
+  helpItems,
+  metadata: appMetadata,
+};

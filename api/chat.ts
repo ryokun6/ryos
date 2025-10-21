@@ -911,24 +911,34 @@ export default async function handler(req: Request) {
         // --- HTML generation & preview ---
         generateHtml: {
           description:
-            "Generate an HTML snippet following the CODE_GENERATION_INSTRUCTIONS and render it in the chat. Provide the HTML markup as a single string in the 'html' field. DO NOT wrap it in markdown fences; the client will handle formatting.",
+            "Generate an HTML snippet for an ryOS Applet: a small windowed app (default ~320px wide) that runs inside ryOS, not the full page. Design mobile-first for ~320px width but keep layouts responsive to expand gracefully. Provide markup in 'html' and a short 'title'. DO NOT wrap it in markdown fences; the client will handle scaffolding.",
           inputSchema: z.object({
             html: z
               .string()
               .describe(
                 "The HTML code to render. It should follow the guidelines in CODE_GENERATION_INSTRUCTIONS—omit <head>/<body> tags and include only the body contents."
               ),
+            title: z
+              .string()
+              .optional()
+              .describe(
+                "A short, descriptive title for this HTML applet (e.g., 'Calculator', 'Todo List', 'Color Picker'). This will be used as the default filename when the user saves the applet. Omit file extensions."
+              ),
           }),
-          execute: async ({ html }) => {
-            // Server-side execution: validate and return the HTML directly as a string
-            log(`[generateHtml] Received HTML (${html.length} chars)`);
+          execute: async ({ html, title }) => {
+            // Server-side execution: validate and return the HTML and title
+            log(
+              `[generateHtml] Received HTML (${html.length} chars), title: ${
+                title || "none"
+              }`
+            );
 
             if (!html || html.trim().length === 0) {
               throw new Error("HTML content cannot be empty");
             }
 
-            // Return the HTML string directly - the client expects output to be the HTML content
-            return html;
+            // Return object with both html and title
+            return { html, title: title || "Applet" };
           },
         },
         // --- Emoji Aquarium ---

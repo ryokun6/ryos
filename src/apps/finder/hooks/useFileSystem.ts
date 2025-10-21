@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { FileItem as DisplayFileItem } from "../components/FileList";
-import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
+import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
+// Re-export STORES for backward compatibility (other modules import from here)
+export { STORES };
 import { getNonFinderApps, AppId } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -12,19 +14,11 @@ import {
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { useAppletStore } from "@/stores/useAppletStore";
 import { migrateIndexedDBToUUIDs } from "@/utils/indexedDBMigration";
 import { useFinderStore } from "@/stores/useFinderStore";
 
-// Store names for IndexedDB (Content)
-const STORES = {
-  DOCUMENTS: "documents",
-  IMAGES: "images",
-  TRASH: "trash",
-  CUSTOM_WALLPAPERS: "custom_wallpapers",
-} as const;
-
-// Export STORE names
-export { STORES };
+// STORES is now imported from @/utils/indexedDB to avoid duplication
 
 // Interface for content stored in IndexedDB
 export interface DocumentContent {
@@ -314,7 +308,10 @@ export function useFileSystem(
     (path: string) => {
       if (instanceId && finderInstance) {
         const nextViewType = finderStore.getViewTypeForPath(path);
-        updateFinderInstance(instanceId, { currentPath: path, viewType: nextViewType });
+        updateFinderInstance(instanceId, {
+          currentPath: path,
+          viewType: nextViewType,
+        });
       } else {
         setLocalCurrentPath(path);
       }
@@ -836,20 +833,33 @@ export function useFileSystem(
       let contentAsString: string | undefined = undefined;
 
       try {
-        // Fetch content from IndexedDB (Documents or Images)
+        // Fetch content from IndexedDB (Documents, Images, or Applets)
         if (
           file.path.startsWith("/Documents/") ||
-          file.path.startsWith("/Images/")
+          file.path.startsWith("/Images/") ||
+          file.path.startsWith("/Applets/")
         ) {
           // Get the file metadata to get the UUID
           const fileMetadata = fileStore.getItem(file.path);
           if (fileMetadata?.uuid) {
             const storeName = file.path.startsWith("/Documents/")
               ? STORES.DOCUMENTS
-              : STORES.IMAGES;
+              : file.path.startsWith("/Images/")
+              ? STORES.IMAGES
+              : STORES.APPLETS;
             const contentData = await dbOperations.get<DocumentContent>(
               storeName,
               fileMetadata.uuid // Use UUID instead of name
+            );
+            console.log(
+              `[useFileSystem] Fetched content for ${file.path}:`,
+              contentData
+                ? {
+                    hasContent: !!contentData.content,
+                    contentType: typeof contentData.content,
+                    isBlob: contentData.content instanceof Blob,
+                  }
+                : "No content data"
             );
             if (contentData) {
               contentToUse = contentData.content;
@@ -857,22 +867,28 @@ export function useFileSystem(
               console.warn(
                 `[useFileSystem] Content not found in IndexedDB for ${file.path} (UUID: ${fileMetadata.uuid})`
               );
-              // Try to load default content lazily
-              const hasDefaultContent = await ensureDefaultContent(
-                file.path,
-                fileMetadata.uuid
-              );
-              if (hasDefaultContent) {
-                // Try fetching again after loading default content
-                const retryData = await dbOperations.get<DocumentContent>(
-                  storeName,
+              // For applets, there is no default content in filesystem.json; skip lazy-load and open empty
+              if (storeName === STORES.APPLETS) {
+                contentToUse = "";
+                contentAsString = "";
+              } else {
+                // Try to load default content lazily for Documents/Images
+                const hasDefaultContent = await ensureDefaultContent(
+                  file.path,
                   fileMetadata.uuid
                 );
-                if (retryData) {
-                  contentToUse = retryData.content;
-                  console.log(
-                    `[useFileSystem] Successfully loaded default content for ${file.path}`
+                if (hasDefaultContent) {
+                  // Try fetching again after loading default content
+                  const retryData = await dbOperations.get<DocumentContent>(
+                    storeName,
+                    fileMetadata.uuid
                   );
+                  if (retryData) {
+                    contentToUse = retryData.content;
+                    console.log(
+                      `[useFileSystem] Successfully loaded default content for ${file.path}`
+                    );
+                  }
                 }
               }
             }
@@ -883,9 +899,12 @@ export function useFileSystem(
           }
         }
 
-        // Process content: Read blob to string for TextEdit, create URL for Paint
+        // Process content: Read blob to string for TextEdit and Applets, create URL for Paint
         if (contentToUse instanceof Blob) {
-          if (file.path.startsWith("/Documents/")) {
+          if (
+            file.path.startsWith("/Documents/") ||
+            file.path.startsWith("/Applets/")
+          ) {
             contentAsString = await contentToUse.text();
             console.log(
               `[useFileSystem] Read Blob as text for ${file.name}, length: ${contentAsString?.length}`
@@ -934,6 +953,38 @@ export function useFileSystem(
           launchApp("paint", {
             initialData: { path: file.path, content: contentToUse },
           }); // Pass contentToUse (Blob)
+        } else if (
+          file.path.startsWith("/Applets/") &&
+          file.path.endsWith(".html")
+        ) {
+          // Open HTML applets with applet-viewer
+          console.log("[useFileSystem] Opening applet:", {
+            path: file.path,
+            contentLength: contentAsString?.length || 0,
+            hasContent: !!contentAsString,
+          });
+          const newInstanceId = launchApp("applet-viewer", {
+            initialData: { path: file.path, content: contentAsString ?? "" },
+          });
+          // Apply saved window size immediately if available
+          try {
+            const saved = useAppletStore
+              .getState()
+              .getAppletWindowSize(file.path);
+            if (saved && newInstanceId) {
+              const appStore = useAppStore.getState();
+              const inst = appStore.instances[newInstanceId];
+              if (inst) {
+                const pos = inst.position || { x: 0, y: 0 };
+                appStore.updateInstanceWindowState(newInstanceId, pos, saved);
+              }
+            }
+          } catch (e) {
+            console.warn(
+              "[useFileSystem] Failed to apply saved applet size:",
+              e
+            );
+          }
         } else if (file.appId === "ipod" && file.data?.index !== undefined) {
           // iPod uses data directly from the index we calculated
           const trackIndex = file.data.index;
@@ -1093,11 +1144,22 @@ export function useFileSystem(
         );
 
         // 3. Save Content to IndexedDB using UUID
+        console.log(
+          `[useFileSystem:saveFile] Determining store for path: ${path}`
+        );
+        console.log(`[useFileSystem:saveFile] Path checks:`, {
+          startsWithDocuments: path.startsWith("/Documents/"),
+          startsWithImages: path.startsWith("/Images/"),
+          startsWithApplets: path.startsWith("/Applets/"),
+        });
         const storeName = path.startsWith("/Documents/")
           ? STORES.DOCUMENTS
           : path.startsWith("/Images/")
           ? STORES.IMAGES
+          : path.startsWith("/Applets/")
+          ? STORES.APPLETS
           : null;
+        console.log(`[useFileSystem:saveFile] Selected store: ${storeName}`);
         if (storeName) {
           try {
             const contentToStore: DocumentContent = {

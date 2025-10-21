@@ -13,6 +13,7 @@ export const appIds = [
   "pc",
   "terminal",
   "control-panels",
+  "applet-viewer",
 ] as const;
 
-export type AppId = typeof appIds[number]; 
+export type AppId = (typeof appIds)[number];

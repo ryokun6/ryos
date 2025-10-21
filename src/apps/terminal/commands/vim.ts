@@ -1,13 +1,20 @@
 import { Command, CommandContext, CommandResult } from "../types";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { dbOperations, STORES, DocumentContent } from "@/apps/finder/hooks/useFileSystem";
+import {
+  dbOperations,
+  DocumentContent,
+} from "@/apps/finder/hooks/useFileSystem";
+import { STORES } from "@/utils/indexedDB";
 
 export const vimCommand: Command = {
   name: "vim",
   description: "Open file in vim editor",
   usage: "vim <filename>",
-  handler: async (args: string[], context: CommandContext): Promise<CommandResult> => {
+  handler: async (
+    args: string[],
+    context: CommandContext
+  ): Promise<CommandResult> => {
     if (args.length === 0) {
       return {
         output: "usage: vim <filename>",
@@ -37,10 +44,13 @@ export const vimCommand: Command = {
 
     // Load file content
     let fileContent = "";
-    
+
     try {
       // Check if this is a real file (in Documents or Images)
-      if (file.path.startsWith("/Documents/") || file.path.startsWith("/Images/")) {
+      if (
+        file.path.startsWith("/Documents/") ||
+        file.path.startsWith("/Images/")
+      ) {
         // Get file metadata from the store to find UUID
         const fileStore = useFilesStore.getState();
         const fileMetadata = fileStore.getItem(file.path);

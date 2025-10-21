@@ -103,13 +103,16 @@ async function saveDefaultContents(
         : null;
       if (!storeName) continue;
 
-      const existing = await new Promise<StoredContent | undefined>((resolve) => {
-        const tx = db.transaction(storeName, "readonly");
-        const store = tx.objectStore(storeName);
-        const req = store.get(uuid);
-        req.onsuccess = () => resolve(req.result as StoredContent | undefined);
-        req.onerror = () => resolve(undefined);
-      });
+      const existing = await new Promise<StoredContent | undefined>(
+        (resolve) => {
+          const tx = db.transaction(storeName, "readonly");
+          const store = tx.objectStore(storeName);
+          const req = store.get(uuid);
+          req.onsuccess = () =>
+            resolve(req.result as StoredContent | undefined);
+          req.onerror = () => resolve(undefined);
+        }
+      );
       if (existing) continue;
 
       let content: string | Blob | null = null;
@@ -131,7 +134,10 @@ async function saveDefaultContents(
         await new Promise<void>((resolve, reject) => {
           const tx = db.transaction(storeName, "readwrite");
           const store = tx.objectStore(storeName);
-          const putReq = store.put({ name: file.name, content } as StoredContent, uuid);
+          const putReq = store.put(
+            { name: file.name, content } as StoredContent,
+            uuid
+          );
           putReq.onsuccess = () => resolve();
           putReq.onerror = () => reject(putReq.error);
         });
@@ -146,7 +152,7 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 8; // Increment to trigger fresh sync for sizes and timestamps
+const STORE_VERSION = 10; // Update Applets folder icon
 const STORE_NAME = "ryos:files";
 
 const initialFilesData: FilesStoreState = {

@@ -12,6 +12,7 @@ import { PhotoBoothApp } from "@/apps/photo-booth";
 import { SynthApp } from "@/apps/synth";
 import { IpodApp } from "@/apps/ipod";
 import { TerminalApp } from "@/apps/terminal";
+import { AppletViewerApp } from "@/apps/applet-viewer";
 import { appIds } from "./appIds";
 import type {
   BaseApp,
@@ -21,6 +22,7 @@ import type {
   PaintInitialData,
   VideosInitialData,
 } from "@/apps/base/types";
+import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 
 export type AppId = (typeof appIds)[number];
 
@@ -145,6 +147,13 @@ export const appRegistry = {
       defaultSize: { width: 365, height: 415 },
       minSize: { width: 320, height: 415 },
       maxSize: { width: 365, height: 600 },
+    } as WindowConstraints,
+  },
+  [AppletViewerApp.id]: {
+    ...(AppletViewerApp as BaseApp<AppletViewerInitialData>),
+    windowConfig: {
+      defaultSize: { width: 320, height: 400 },
+      minSize: { width: 300, height: 200 },
     } as WindowConstraints,
   },
 } as const;

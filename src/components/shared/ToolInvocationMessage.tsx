@@ -151,23 +151,36 @@ export function ToolInvocationMessage({
   }
 
   // Special handling for generateHtml
-  if (
-    state === "output-available" &&
-    toolName === "generateHtml" &&
-    typeof output === "string" &&
-    output.trim().length > 0
-  ) {
-    return (
-      <HtmlPreview
-        key={partKey}
-        htmlContent={output}
-        onInteractionChange={setIsInteractingWithPreview}
-        playElevatorMusic={playElevatorMusic}
-        stopElevatorMusic={stopElevatorMusic}
-        playDingSound={playDingSound}
-        className="my-1"
-      />
-    );
+  if (state === "output-available" && toolName === "generateHtml") {
+    // Handle both old format (string) and new format (object with html and title)
+    let htmlContent = "";
+    let appletTitle = "";
+    
+    if (typeof output === "string" && output.trim().length > 0) {
+      htmlContent = output;
+    } else if (
+      typeof output === "object" &&
+      output !== null &&
+      "html" in output
+    ) {
+      htmlContent = (output as { html: string; title?: string }).html;
+      appletTitle = (output as { html: string; title?: string }).title || "";
+    }
+
+    if (htmlContent.trim().length > 0) {
+      return (
+        <HtmlPreview
+          key={partKey}
+          htmlContent={htmlContent}
+          appletTitle={appletTitle}
+          onInteractionChange={setIsInteractingWithPreview}
+          playElevatorMusic={playElevatorMusic}
+          stopElevatorMusic={stopElevatorMusic}
+          playDingSound={playDingSound}
+          className="my-1"
+        />
+      );
+    }
   }
 
   if (toolName === "generateHtml") {
@@ -183,11 +196,13 @@ export function ToolInvocationMessage({
       );
     } else if (state === "input-available") {
       const htmlContent = typeof input?.html === "string" ? input.html : "";
+      const appletTitle = typeof input?.title === "string" ? input.title : "";
       if (htmlContent) {
         return (
           <HtmlPreview
             key={partKey}
             htmlContent={htmlContent}
+            appletTitle={appletTitle}
             isStreaming={false}
             onInteractionChange={setIsInteractingWithPreview}
             playElevatorMusic={playElevatorMusic}

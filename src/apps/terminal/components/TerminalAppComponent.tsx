@@ -9,9 +9,9 @@ import { appMetadata, helpItems } from "../index";
 import {
   useFileSystem,
   dbOperations,
-  STORES,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
+import { STORES } from "@/utils/indexedDB";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAiChat } from "@/apps/chats/hooks/useAiChat";

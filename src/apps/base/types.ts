@@ -1,3 +1,5 @@
+import type { AppletViewerInitialData } from "@/apps/applet-viewer";
+
 export interface AppProps<TInitialData = unknown> {
   isWindowOpen: boolean;
   onClose: () => void;
@@ -34,7 +36,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "photo-booth"
     | "synth"
     | "ipod"
-    | "terminal";
+    | "terminal"
+    | "applet-viewer";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;
@@ -112,6 +115,7 @@ export type AnyApp =
   | BaseApp<IpodInitialData>
   | BaseApp<PaintInitialData>
   | BaseApp<VideosInitialData>
+  | BaseApp<AppletViewerInitialData>
   | BaseApp<unknown>; // For apps without specific initialData
 
 // Type for the initialData that could be any of the specific types
@@ -122,6 +126,7 @@ export type AnyInitialData =
   | PaintInitialData
   | VideosInitialData
   | FinderInitialData
+  | AppletViewerInitialData
   | unknown;
 
 // Theme-aware menu bar pattern:

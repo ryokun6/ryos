@@ -1,13 +1,14 @@
 // Utility helpers for IndexedDB operations used across ryOS
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 5; // Increment version for UUID migration
+const DB_VERSION = 7; // Force APPLETS store creation
 
 export const STORES = {
   DOCUMENTS: "documents",
   IMAGES: "images",
   TRASH: "trash",
   CUSTOM_WALLPAPERS: "custom_wallpapers",
+  APPLETS: "applets",
 } as const;
 
 /**
@@ -22,6 +23,10 @@ export const ensureIndexedDBInitialized = async (): Promise<IDBDatabase> => {
 
     request.onsuccess = () => {
       const db = request.result;
+      console.log(
+        `[IndexedDB] Database opened successfully. Object stores:`,
+        Array.from(db.objectStoreNames)
+      );
       resolve(db);
     };
 
@@ -49,8 +54,16 @@ export const ensureIndexedDBInitialized = async (): Promise<IDBDatabase> => {
         if (!db.objectStoreNames.contains(storeName)) {
           console.log(`[IndexedDB] Creating store ${storeName}`);
           db.createObjectStore(storeName);
+          console.log(`[IndexedDB] Store ${storeName} created successfully`);
+        } else {
+          console.log(`[IndexedDB] Store ${storeName} already exists`);
         }
       });
+
+      console.log(
+        `[IndexedDB] Upgrade complete. Final stores:`,
+        Array.from(db.objectStoreNames)
+      );
     };
   });
 };

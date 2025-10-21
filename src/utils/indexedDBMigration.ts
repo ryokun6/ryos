@@ -1,8 +1,8 @@
 import {
   dbOperations,
-  STORES,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
+import { STORES } from "@/utils/indexedDB";
 import { useFilesStore } from "@/stores/useFilesStore";
 
 // Check if migration has been completed

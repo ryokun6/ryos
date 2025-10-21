@@ -5,8 +5,9 @@ import {
   Minimize,
   Copy,
   Check,
-  Save,
+  ArrowDownToLine,
   Code,
+  Share,
   GripVertical,
   Plus,
 } from "lucide-react";
@@ -17,6 +18,8 @@ import {
 } from "@/stores/useAppStore";
 import { useSound, Sounds } from "../../hooks/useSound";
 import { useAppStore } from "@/stores/useAppStore";
+import { InputDialog } from "@/components/dialogs/InputDialog";
+import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 
 // Lazily load shiki only when code view is requested to keep initial bundle smaller
 let shikiModulePromise: Promise<typeof import("shiki")> | null = null;
@@ -143,6 +146,7 @@ export const extractHtmlContent = (
 // Component to render ryOS Code Previews
 interface HtmlPreviewProps {
   htmlContent: string;
+  appletTitle?: string;
   onInteractionChange?: (isInteracting: boolean) => void;
   isStreaming?: boolean;
   maxHeight?: number | string;
@@ -161,6 +165,7 @@ interface HtmlPreviewProps {
 
 export default function HtmlPreview({
   htmlContent,
+  appletTitle = "",
   onInteractionChange,
   isStreaming = false,
   maxHeight = "800px",
@@ -188,6 +193,11 @@ export default function HtmlPreview({
   const wasDragging = useRef(false);
   const lastDragEndTime = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSaveAppletDialogOpen, setIsSaveAppletDialogOpen] = useState(false);
+  const [appletFileName, setAppletFileName] = useState("");
+
+  // Use file system hook for saving applets
+  const { saveFile } = useFileSystem("/", { skipLoad: true });
   const previewRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fullscreenIframeRef = useRef<HTMLIFrameElement>(null);
@@ -610,6 +620,56 @@ export default function HtmlPreview({
     URL.revokeObjectURL(url);
   };
 
+  const handleSaveAsApplet = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Use appletTitle if available, otherwise use timestamp
+    const defaultName = appletTitle
+      ? appletTitle
+      : (() => {
+          const timestamp = new Date()
+            .toISOString()
+            .replace(/[:.]/g, "-")
+            .substring(0, 19);
+          return `applet-${timestamp}`;
+        })();
+    setAppletFileName(defaultName);
+    setIsSaveAppletDialogOpen(true);
+  };
+
+  const handleSaveAppletSubmit = async (fileName: string) => {
+    if (!fileName || !fileName.trim()) return;
+
+    const trimmedName = fileName.trim();
+    const nameWithExtension = trimmedName.endsWith(".html")
+      ? trimmedName
+      : `${trimmedName}.html`;
+
+    const appletPath = `/Applets/${nameWithExtension}`;
+
+    try {
+      await saveFile({
+        path: appletPath,
+        name: nameWithExtension,
+        content: processedHtmlContent,
+        type: "html",
+        icon: "/icons/default/ie-site.png",
+      });
+
+      // Notify that file was saved
+      const event = new CustomEvent("fileUpdated", {
+        detail: {
+          name: nameWithExtension,
+          path: appletPath,
+        },
+      });
+      window.dispatchEvent(event);
+
+      setIsSaveAppletDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to save applet:", err);
+    }
+  };
+
   const toggleFullScreen = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isFullScreen) {
@@ -883,13 +943,25 @@ export default function HtmlPreview({
             }}
           >
             <button
+              onClick={handleSaveAsApplet}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded mr-1 group"
+              aria-label="Save as Applet"
+              disabled={isStreaming}
+            >
+              <ArrowDownToLine
+                size={16}
+                className="text-neutral-400/50 group-hover:text-neutral-300"
+              />
+            </button>
+            <button
               onClick={handleSaveToDisk}
               onMouseDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded mr-1 group"
-              aria-label="Save HTML to disk"
+              aria-label="Download HTML"
               disabled={isStreaming}
             >
-              <Save
+              <Share
                 size={16}
                 className="text-neutral-400/50 group-hover:text-neutral-300"
               />
@@ -1273,11 +1345,21 @@ export default function HtmlPreview({
                           />
                         </button>
                         <button
+                          onClick={handleSaveAsApplet}
+                          className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
+                          aria-label="Save as Applet"
+                        >
+                          <ArrowDownToLine
+                            size={20}
+                            className="text-white/70 group-hover:text-white"
+                          />
+                        </button>
+                        <button
                           onClick={handleSaveToDisk}
                           className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
-                          aria-label="Save HTML to disk"
+                          aria-label="Download HTML"
                         >
-                          <Save
+                          <Share
                             size={20}
                             className="text-white/70 group-hover:text-white"
                           />
@@ -1323,6 +1405,15 @@ export default function HtmlPreview({
         </AnimatePresence>,
         document.body
       )}
+      <InputDialog
+        isOpen={isSaveAppletDialogOpen}
+        onOpenChange={setIsSaveAppletDialogOpen}
+        onSubmit={handleSaveAppletSubmit}
+        title="Save as Applet"
+        description="Enter a name for the applet:"
+        value={appletFileName}
+        onChange={setAppletFileName}
+      />
     </>
   );
 }

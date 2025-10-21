@@ -1,21 +1,21 @@
 import { useCallback } from "react";
 import { Editor } from "@tiptap/core";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
-import { 
-  htmlToMarkdown, 
-  markdownToHtml, 
-  htmlToPlainText 
+import {
+  htmlToMarkdown,
+  markdownToHtml,
+  htmlToPlainText,
 } from "@/utils/markdown";
-import { 
-  removeFileExtension, 
+import {
+  removeFileExtension,
   getContentAsString,
-  generateSuggestedFilename 
+  generateSuggestedFilename,
 } from "../utils/textEditUtils";
 import {
   dbOperations,
-  STORES,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
+import { STORES } from "@/utils/indexedDB";
 
 interface UseFileOperationsProps {
   editor: Editor | null;
@@ -59,179 +59,194 @@ export function useFileOperations({
     }
   }, [editor, currentFilePath, saveFile, onSaveSuccess]);
 
-  const handleSaveAs = useCallback(async (fileName: string): Promise<string> => {
-    if (!editor) throw new Error("Editor not available");
+  const handleSaveAs = useCallback(
+    async (fileName: string): Promise<string> => {
+      if (!editor) throw new Error("Editor not available");
 
-    const filePath = `/Documents/${fileName}${
-      fileName.endsWith(".md") ? "" : ".md"
-    }`;
+      const filePath = `/Documents/${fileName}${
+        fileName.endsWith(".md") ? "" : ".md"
+      }`;
 
-    try {
-      const htmlContent = editor.getHTML();
-      const markdownContent = htmlToMarkdown(htmlContent);
-
-      await saveFile({
-        name: fileName.endsWith(".md") ? fileName : `${fileName}.md`,
-        path: filePath,
-        content: markdownContent,
-      });
-
-      onSaveSuccess?.(filePath);
-      console.log("[TextEdit] File saved successfully:", filePath);
-      return filePath;
-    } catch (error) {
-      console.error("[TextEdit] Failed to save file:", error);
-      throw error;
-    }
-  }, [editor, saveFile, onSaveSuccess]);
-
-  const handleImportFile = useCallback(async (file: File): Promise<string> => {
-    if (!editor) throw new Error("Editor not available");
-    
-    const filePath = `/Documents/${file.name}`;
-    const text = await file.text();
-
-    // Convert content based on file type
-    let editorContent: string;
-    if (file.name.endsWith(".html")) {
-      editorContent = text;
-    } else if (file.name.endsWith(".md")) {
-      editorContent = markdownToHtml(text);
-    } else {
-      editorContent = `<p>${text}</p>`;
-    }
-
-    editor.commands.setContent(editorContent);
-
-    // Always save in markdown format, converting from HTML if needed
-    const markdownContent = file.name.endsWith(".md")
-      ? text
-      : htmlToMarkdown(editor.getHTML());
-
-    try {
-      await saveFile({
-        name: file.name,
-        path: filePath,
-        content: markdownContent,
-      });
-
-      onLoadSuccess?.(filePath);
-      console.log("[TextEdit] File imported successfully:", filePath);
-      return filePath;
-    } catch (error) {
-      console.error("[TextEdit] Failed to import file:", error);
-      throw error;
-    }
-  }, [editor, saveFile, onLoadSuccess]);
-
-  const handleExportFile = useCallback((format: "html" | "md" | "txt") => {
-    if (!editor) return;
-
-    const html = editor.getHTML();
-    let content: string;
-    let mimeType: string;
-    let extension: string;
-
-    switch (format) {
-      case "md":
-        content = htmlToMarkdown(html);
-        mimeType = "text/markdown";
-        extension = "md";
-        break;
-      case "txt":
-        content = htmlToPlainText(html);
-        mimeType = "text/plain";
-        extension = "txt";
-        break;
-      case "html":
-      default:
-        content = html;
-        mimeType = "text/html";
-        extension = "html";
-        break;
-    }
-
-    const filename = currentFilePath
-      ? removeFileExtension(currentFilePath.split("/").pop() || "")
-      : "Untitled";
-
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${filename}.${extension}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [editor, currentFilePath]);
-
-  const handleLoadFromPath = useCallback(async (path: string, content: string | undefined): Promise<void> => {
-    if (!editor) return;
-
-    const contentToUse = typeof content === "string" ? content : "";
-    let editorContent: string | object;
-
-    if (path.endsWith(".md")) {
-      editorContent = markdownToHtml(contentToUse);
-    } else {
       try {
-        editorContent = JSON.parse(contentToUse);
-      } catch {
-        editorContent = `<p>${contentToUse}</p>`;
+        const htmlContent = editor.getHTML();
+        const markdownContent = htmlToMarkdown(htmlContent);
+
+        await saveFile({
+          name: fileName.endsWith(".md") ? fileName : `${fileName}.md`,
+          path: filePath,
+          content: markdownContent,
+        });
+
+        onSaveSuccess?.(filePath);
+        console.log("[TextEdit] File saved successfully:", filePath);
+        return filePath;
+      } catch (error) {
+        console.error("[TextEdit] Failed to save file:", error);
+        throw error;
       }
-    }
+    },
+    [editor, saveFile, onSaveSuccess]
+  );
 
-    editor.commands.setContent(editorContent, false);
-    onLoadSuccess?.(path);
-  }, [editor, onLoadSuccess]);
+  const handleImportFile = useCallback(
+    async (file: File): Promise<string> => {
+      if (!editor) throw new Error("Editor not available");
 
-  const handleLoadFromDatabase = useCallback(async (filePath: string): Promise<boolean> => {
-    if (!editor || !filePath.startsWith("/Documents/")) return false;
+      const filePath = `/Documents/${file.name}`;
+      const text = await file.text();
 
-    try {
-      const { useFilesStore } = await import("@/stores/useFilesStore");
-      const fileStore = useFilesStore.getState();
-      const fileMetadata = fileStore.getItem(filePath);
+      // Convert content based on file type
+      let editorContent: string;
+      if (file.name.endsWith(".html")) {
+        editorContent = text;
+      } else if (file.name.endsWith(".md")) {
+        editorContent = markdownToHtml(text);
+      } else {
+        editorContent = `<p>${text}</p>`;
+      }
 
-      if (fileMetadata && fileMetadata.uuid) {
-        const doc = await dbOperations.get<DocumentContent>(
-          STORES.DOCUMENTS,
-          fileMetadata.uuid
-        );
+      editor.commands.setContent(editorContent);
 
-        if (doc?.content) {
-          const contentStr = await getContentAsString(doc.content);
-          let editorContent;
+      // Always save in markdown format, converting from HTML if needed
+      const markdownContent = file.name.endsWith(".md")
+        ? text
+        : htmlToMarkdown(editor.getHTML());
 
-          if (filePath.endsWith(".md")) {
-            editorContent = markdownToHtml(contentStr);
-          } else {
-            try {
-              editorContent = JSON.parse(contentStr);
-            } catch {
-              editorContent = `<p>${contentStr}</p>`;
+      try {
+        await saveFile({
+          name: file.name,
+          path: filePath,
+          content: markdownContent,
+        });
+
+        onLoadSuccess?.(filePath);
+        console.log("[TextEdit] File imported successfully:", filePath);
+        return filePath;
+      } catch (error) {
+        console.error("[TextEdit] Failed to import file:", error);
+        throw error;
+      }
+    },
+    [editor, saveFile, onLoadSuccess]
+  );
+
+  const handleExportFile = useCallback(
+    (format: "html" | "md" | "txt") => {
+      if (!editor) return;
+
+      const html = editor.getHTML();
+      let content: string;
+      let mimeType: string;
+      let extension: string;
+
+      switch (format) {
+        case "md":
+          content = htmlToMarkdown(html);
+          mimeType = "text/markdown";
+          extension = "md";
+          break;
+        case "txt":
+          content = htmlToPlainText(html);
+          mimeType = "text/plain";
+          extension = "txt";
+          break;
+        case "html":
+        default:
+          content = html;
+          mimeType = "text/html";
+          extension = "html";
+          break;
+      }
+
+      const filename = currentFilePath
+        ? removeFileExtension(currentFilePath.split("/").pop() || "")
+        : "Untitled";
+
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filename}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+    [editor, currentFilePath]
+  );
+
+  const handleLoadFromPath = useCallback(
+    async (path: string, content: string | undefined): Promise<void> => {
+      if (!editor) return;
+
+      const contentToUse = typeof content === "string" ? content : "";
+      let editorContent: string | object;
+
+      if (path.endsWith(".md")) {
+        editorContent = markdownToHtml(contentToUse);
+      } else {
+        try {
+          editorContent = JSON.parse(contentToUse);
+        } catch {
+          editorContent = `<p>${contentToUse}</p>`;
+        }
+      }
+
+      editor.commands.setContent(editorContent, false);
+      onLoadSuccess?.(path);
+    },
+    [editor, onLoadSuccess]
+  );
+
+  const handleLoadFromDatabase = useCallback(
+    async (filePath: string): Promise<boolean> => {
+      if (!editor || !filePath.startsWith("/Documents/")) return false;
+
+      try {
+        const { useFilesStore } = await import("@/stores/useFilesStore");
+        const fileStore = useFilesStore.getState();
+        const fileMetadata = fileStore.getItem(filePath);
+
+        if (fileMetadata && fileMetadata.uuid) {
+          const doc = await dbOperations.get<DocumentContent>(
+            STORES.DOCUMENTS,
+            fileMetadata.uuid
+          );
+
+          if (doc?.content) {
+            const contentStr = await getContentAsString(doc.content);
+            let editorContent;
+
+            if (filePath.endsWith(".md")) {
+              editorContent = markdownToHtml(contentStr);
+            } else {
+              try {
+                editorContent = JSON.parse(contentStr);
+              } catch {
+                editorContent = `<p>${contentStr}</p>`;
+              }
             }
-          }
 
-          if (editorContent) {
-            editor.commands.setContent(editorContent, false);
-            onLoadSuccess?.(filePath);
-            console.log("Loaded content from file:", filePath);
-            return true;
+            if (editorContent) {
+              editor.commands.setContent(editorContent, false);
+              onLoadSuccess?.(filePath);
+              console.log("Loaded content from file:", filePath);
+              return true;
+            }
+          } else {
+            console.warn("Document not found or empty:", filePath);
           }
         } else {
-          console.warn("Document not found or empty:", filePath);
+          console.warn("File metadata or UUID not found for:", filePath);
         }
-      } else {
-        console.warn("File metadata or UUID not found for:", filePath);
+      } catch (err) {
+        console.error("Error loading file content from DB:", err);
       }
-    } catch (err) {
-      console.error("Error loading file content from DB:", err);
-    }
 
-    return false;
-  }, [editor, onLoadSuccess]);
+      return false;
+    },
+    [editor, onLoadSuccess]
+  );
 
   const generateSuggestedFileName = useCallback((): string => {
     return generateSuggestedFilename(customTitle, editor);
