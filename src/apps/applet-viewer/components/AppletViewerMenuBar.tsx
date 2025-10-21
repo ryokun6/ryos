@@ -9,6 +9,8 @@ import {
 import { MenuBar } from "@/components/layout/MenuBar";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { generateAppShareUrl } from "@/utils/sharedUrl";
+import { toast } from "sonner";
 
 interface AppletViewerMenuBarProps {
   onClose: () => void;
@@ -72,6 +74,27 @@ export function AppletViewerMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             Applet Viewer Help
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={async () => {
+              const appId = "applet-viewer"; // Specific app ID
+              const shareUrl = generateAppShareUrl(appId);
+              if (!shareUrl) return;
+              try {
+                await navigator.clipboard.writeText(shareUrl);
+                toast.success("App link copied!", {
+                  description: `Link to ${appId} copied to clipboard.`,
+                });
+              } catch (err) {
+                console.error("Failed to copy app link: ", err);
+                toast.error("Failed to copy link", {
+                  description: "Could not copy link to clipboard.",
+                });
+              }
+            }}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
+            Share App...
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem

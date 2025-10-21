@@ -13,6 +13,12 @@ export const helpItems = [
     description:
       "Each applet remembers its last window size and restores it when opened.",
   },
+  {
+    icon: "📂",
+    title: "Open from Finder",
+    description:
+      "Use the File menu's 'Open...' option to browse applets in the Finder.",
+  },
 ];
 
 export const appMetadata = {

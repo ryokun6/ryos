@@ -82,14 +82,7 @@ export function AppletViewerAppComponent({
     ) {
       setAppletWindowSize(appletPath, next);
     }
-  }, [
-    appletPath,
-    currentWindowState?.size?.width,
-    currentWindowState?.size?.height,
-    savedSize?.width,
-    savedSize?.height,
-    setAppletWindowSize,
-  ]);
+  }, [appletPath, currentWindowState?.size, savedSize, setAppletWindowSize]);
 
   // Get filename from path for window title
   const getFileName = (path: string): string => {
@@ -186,20 +179,30 @@ export function AppletViewerAppComponent({
               }}
             />
           ) : (
-            <div className="h-full w-full flex items-center justify-center">
+            <div
+              className="h-full w-full flex items-center justify-center"
+              style={
+                isMacTheme
+                  ? {
+                      backgroundColor: "var(--os-color-window-bg)",
+                      backgroundImage: "var(--os-pinstripe-window)",
+                    }
+                  : undefined
+              }
+            >
               <div className="text-center px-6 font-geneva-12">
                 <h2 className="text-[13px] font-geneva-12 font-medium">
                   No applet open
                 </h2>
                 <p className="text-[11px] text-gray-600 font-geneva-12 mb-3">
-                  Open an applet from Finder
+                  Open applets from Finder or create from Chats
                 </p>
-                <div className="flex items-center justify-center">
+                <div className="flex items-center justify-center gap-2">
                   <Button
                     size="sm"
                     variant={
                       isMacTheme
-                        ? "default"
+                        ? "secondary"
                         : isSystem7Theme
                         ? "retro"
                         : "outline"
@@ -208,7 +211,20 @@ export function AppletViewerAppComponent({
                       launchApp("finder", { initialPath: "/Applets" })
                     }
                   >
-                    Open Finder
+                    Open
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={
+                      isMacTheme
+                        ? "secondary"
+                        : isSystem7Theme
+                        ? "retro"
+                        : "outline"
+                    }
+                    onClick={() => launchApp("chats")}
+                  >
+                    Create
                   </Button>
                 </div>
               </div>
