@@ -12,8 +12,8 @@ export const appIds = [
   "synth",
   "pc",
   "terminal",
-  "control-panels",
   "applet-viewer",
+  "control-panels",
 ] as const;
 
 export type AppId = (typeof appIds)[number];

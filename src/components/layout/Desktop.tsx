@@ -192,7 +192,12 @@ export function Desktop({
 
   // Compute sorted apps based on selected sort type
   const sortedApps = [...apps]
-    .filter((app) => app.id !== "finder" && app.id !== "control-panels")
+    .filter(
+      (app) =>
+        app.id !== "finder" &&
+        app.id !== "control-panels" &&
+        app.id !== "applet-viewer"
+    )
     .sort((a, b) => {
       switch (sortType) {
         case "name":

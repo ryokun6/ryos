@@ -62,6 +62,8 @@ interface FilesStoreState {
   clearLibrary: () => void;
   resetLibrary: () => Promise<void>;
   initializeLibrary: () => Promise<void>;
+  /** Ensure all root directories from filesystem.json exist in the store */
+  syncRootDirectoriesFromDefaults: () => Promise<void>;
 }
 
 // Function to load default files from JSON
@@ -604,6 +606,57 @@ export const useFilesStore = create<FilesStoreState>()(
         }
       },
 
+      syncRootDirectoriesFromDefaults: async () => {
+        try {
+          const data = await loadDefaultFiles();
+          const now = Date.now();
+          set((state) => {
+            const newItems = { ...state.items };
+            // Ensure all root-level directories (including "/") exist
+            data.directories
+              .filter(
+                (dir) => dir.path === "/" || getParentPath(dir.path) === "/"
+              )
+              .forEach((dir) => {
+                const existing = newItems[dir.path];
+                if (!existing) {
+                  newItems[dir.path] = {
+                    ...dir,
+                    status: "active",
+                    createdAt: now,
+                    modifiedAt: now,
+                  };
+                } else {
+                  // If it exists but is trashed or missing essential fields, bring it back and align minimal metadata
+                  const needsUpdate =
+                    existing.status !== "active" ||
+                    existing.isDirectory !== true ||
+                    !existing.name ||
+                    !existing.type ||
+                    existing.icon !== (dir.icon || existing.icon);
+                  if (needsUpdate) {
+                    newItems[dir.path] = {
+                      ...existing,
+                      name: dir.name || existing.name,
+                      isDirectory: true,
+                      type: dir.type || existing.type || "directory",
+                      icon: dir.icon || existing.icon,
+                      status: "active",
+                      modifiedAt: now,
+                    };
+                  }
+                }
+              });
+            return { items: newItems };
+          });
+        } catch (err) {
+          console.error(
+            "[FilesStore] Failed to sync root directories from defaults:",
+            err
+          );
+        }
+      },
+
       reset: () =>
         set({
           items: getEmptyFileSystemState(),
@@ -724,6 +777,17 @@ export const useFilesStore = create<FilesStoreState>()(
             // Only auto-initialize if library state is uninitialized
             Promise.resolve(state.initializeLibrary()).catch((err) =>
               console.error("Files initialization failed on rehydrate", err)
+            );
+          }
+
+          // Regardless of initialization state, ensure any new root folders
+          if (state && state.syncRootDirectoriesFromDefaults) {
+            Promise.resolve(state.syncRootDirectoriesFromDefaults()).catch(
+              (err) =>
+                console.error(
+                  "Files root directory sync failed on rehydrate",
+                  err
+                )
             );
           }
         };

@@ -141,19 +141,19 @@ export const appRegistry = {
       minSize: { width: 400, height: 300 },
     } as WindowConstraints,
   },
+  [AppletViewerApp.id]: {
+    ...(AppletViewerApp as BaseApp<AppletViewerInitialData>),
+    windowConfig: {
+      defaultSize: { width: 320, height: 400 },
+      minSize: { width: 300, height: 200 },
+    } as WindowConstraints,
+  },
   [ControlPanelsApp.id]: {
     ...(ControlPanelsApp as BaseApp<ControlPanelsInitialData>),
     windowConfig: {
       defaultSize: { width: 365, height: 415 },
       minSize: { width: 320, height: 415 },
       maxSize: { width: 365, height: 600 },
-    } as WindowConstraints,
-  },
-  [AppletViewerApp.id]: {
-    ...(AppletViewerApp as BaseApp<AppletViewerInitialData>),
-    windowConfig: {
-      defaultSize: { width: 320, height: 400 },
-      minSize: { width: 300, height: 200 },
     } as WindowConstraints,
   },
 } as const;
