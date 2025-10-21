@@ -203,18 +203,23 @@ export function FileIcon({
     }
 
     const iconPath = getIconPath();
-    
+
     // Render emoji as text if it's an emoji icon
     if (icon && isEmojiIcon(icon)) {
       return (
-        <div
-          className={`relative ${sizes.icon} flex items-center justify-center text-3xl ${
-            size === "large" ? "text-5xl" : "text-3xl"
-          }`}
+        <span
+          className={`relative ${sizes.icon} flex items-center justify-center leading-none`}
+          style={{
+            // Explicit font size avoids macOS theme global div/p font overrides
+            fontSize: size === "large" ? 48 : 32,
+            lineHeight: 1,
+            display: "flex",
+          }}
           onContextMenu={(e) => e.preventDefault()}
+          data-emoji-icon="true"
         >
           {icon}
-        </div>
+        </span>
       );
     }
 
@@ -286,11 +291,9 @@ export function FileIcon({
         {renderIcon()}
       </div>
       <span
-        className={`px-1 file-icon-label text-center truncate ${
-          sizes.text
-        } ${isMacOSXTheme ? "rounded" : ""} ${
-          isMacOSXTheme && !isFinderContext ? "font-bold" : ""
-        } ${
+        className={`px-1 file-icon-label text-center truncate ${sizes.text} ${
+          isMacOSXTheme ? "rounded" : ""
+        } ${isMacOSXTheme && !isFinderContext ? "font-bold" : ""} ${
           isSelected
             ? ""
             : isWin98Theme
@@ -306,9 +309,7 @@ export function FileIcon({
                 color: "var(--os-color-selection-text)",
               }
             : {}),
-          ...(!isSelected &&
-          (isXpTheme || isMacOSXTheme) &&
-          !isFinderContext
+          ...(!isSelected && (isXpTheme || isMacOSXTheme) && !isFinderContext
             ? isMacOSXTheme
               ? {
                   textShadow:

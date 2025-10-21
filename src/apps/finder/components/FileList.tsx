@@ -342,7 +342,16 @@ export function FileList({
         {...(isTouchDevice() ? longPressHandlers : {})}
       >
         <TableCell className="flex items-center gap-2">
-          {file.contentUrl && isImageFile(file) ? (
+          {file.icon &&
+          !(file.icon.startsWith("/") || file.icon.startsWith("http")) ? (
+            <span
+              className="inline-flex items-center justify-center leading-none"
+              style={{ fontSize: 14, lineHeight: 1, width: 16, height: 16 }}
+              aria-hidden
+            >
+              {file.icon}
+            </span>
+          ) : file.contentUrl && isImageFile(file) ? (
             <img
               src={file.contentUrl}
               alt={file.name}
@@ -479,12 +488,18 @@ export function FileList({
   }
 
   return (
-          <div
-        className={`grid ${viewType === "large" ? "grid-cols-[repeat(auto-fit,minmax(96px,1fr))]" : "grid-cols-[repeat(auto-fit,minmax(80px,1fr))]"} gap-2 p-2 min-h-[150px] ${files.length <= 1 ? "justify-items-start" : "justify-items-center"}`}
-        onDragOver={handleContainerDragOver}
-        onDragLeave={handleContainerDragLeave}
-        onDrop={handleContainerDrop}
-      >
+    <div
+      className={`grid ${
+        viewType === "large"
+          ? "grid-cols-[repeat(auto-fit,minmax(96px,1fr))]"
+          : "grid-cols-[repeat(auto-fit,minmax(80px,1fr))]"
+      } gap-2 p-2 min-h-[150px] ${
+        files.length <= 1 ? "justify-items-start" : "justify-items-center"
+      }`}
+      onDragOver={handleContainerDragOver}
+      onDragLeave={handleContainerDragLeave}
+      onDrop={handleContainerDrop}
+    >
       {files.map((file) => (
         <GridItem key={file.path} file={file} />
       ))}

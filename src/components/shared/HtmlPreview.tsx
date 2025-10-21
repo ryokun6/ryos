@@ -18,6 +18,7 @@ import {
 } from "@/stores/useAppStore";
 import { useSound, Sounds } from "../../hooks/useSound";
 import { useAppStore } from "@/stores/useAppStore";
+import { useFilesStore } from "@/stores/useFilesStore";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { toast } from "sonner";
@@ -624,20 +625,31 @@ export default function HtmlPreview({
     URL.revokeObjectURL(url);
   };
 
-  const handleSaveAsApplet = (e: React.MouseEvent) => {
+  const handleSaveAsApplet = async (e: React.MouseEvent) => {
     e.stopPropagation();
     // Use appletTitle if available, otherwise use timestamp
-    const defaultName = appletTitle
-      ? appletTitle
-      : (() => {
-          const timestamp = new Date()
-            .toISOString()
-            .replace(/[:.]/g, "-")
-            .substring(0, 19);
-          return `applet-${timestamp}`;
-        })();
-    setAppletFileName(defaultName);
-    setIsSaveAppletDialogOpen(true);
+    const defaultName = appletTitle ? appletTitle : "applet";
+
+    const candidateName =
+      defaultName.endsWith(".app") || defaultName.endsWith(".html")
+        ? defaultName
+        : `${defaultName}.app`;
+    const appletPath = `/Applets/${candidateName}`;
+
+    // If same name already exists, fall back to naming dialog; otherwise save immediately
+    const existing = useFilesStore.getState().getItem(appletPath);
+    if (existing) {
+      setAppletFileName(defaultName);
+      setIsSaveAppletDialogOpen(true);
+    } else {
+      try {
+        await handleSaveAppletSubmit(defaultName);
+      } catch (err) {
+        console.error("Quick save applet failed, showing naming dialog:", err);
+        setAppletFileName(defaultName);
+        setIsSaveAppletDialogOpen(true);
+      }
+    }
   };
 
   const handleSaveAppletSubmit = async (fileName: string) => {
