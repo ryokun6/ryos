@@ -91,6 +91,46 @@ export function AppletViewerAppComponent({
     return fileName.replace(/\.(html|app)$/i, "");
   };
 
+  // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
+  const ensureMacFonts = (content: string): string => {
+    if (!isMacTheme || !content) return content;
+    // Ensure fonts.css is available and prefer Lucida Grande
+    const preload = `<link rel="stylesheet" href="/fonts/fonts.css">`;
+    const fontStyle = `<style data-ryos-applet-font-fix>html,body{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}*{font-family:inherit!important}</style>`;
+
+    // If there's a </head>, inject before it
+    const headCloseIdx = content.toLowerCase().lastIndexOf("</head>");
+    if (headCloseIdx !== -1) {
+      return (
+        content.slice(0, headCloseIdx) +
+        preload +
+        fontStyle +
+        content.slice(headCloseIdx)
+      );
+    }
+
+    // If there's an <head>, inject after it
+    const headOpenMatch = /<head[^>]*>/i.exec(content);
+    if (headOpenMatch) {
+      const idx = headOpenMatch.index + headOpenMatch[0].length;
+      return content.slice(0, idx) + preload + fontStyle + content.slice(idx);
+    }
+
+    // If there's an <html>, create head and inject
+    const htmlOpenMatch = /<html[^>]*>/i.exec(content);
+    if (htmlOpenMatch) {
+      const idx = htmlOpenMatch.index + htmlOpenMatch[0].length;
+      return (
+        content.slice(0, idx) +
+        `<head>${preload}${fontStyle}</head>` +
+        content.slice(idx)
+      );
+    }
+
+    // Otherwise, wrap minimally
+    return `<!DOCTYPE html><html><head>${preload}${fontStyle}</head><body>${content}</body></html>`;
+  };
+
   const menuBar = (
     <AppletViewerMenuBar
       onClose={onClose}
@@ -170,7 +210,7 @@ export function AppletViewerAppComponent({
           {hasAppletContent ? (
             <iframe
               ref={iframeRef}
-              srcDoc={htmlContent}
+              srcDoc={ensureMacFonts(htmlContent)}
               title={windowTitle}
               className="w-full h-full border-0"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"

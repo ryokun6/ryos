@@ -18,6 +18,7 @@ import {
 } from "@/stores/useAppStore";
 import { useSound, Sounds } from "../../hooks/useSound";
 import { useAppStore } from "@/stores/useAppStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
@@ -221,6 +222,8 @@ export default function HtmlPreview({
   const terminalSoundsEnabled = useAppStore(
     (state) => state.terminalSoundsEnabled
   );
+  const currentTheme = useThemeStore((state) => state.current);
+  const isMacOsXTheme = currentTheme === "macosx";
 
   // Ensure base URL has a protocol
   const normalizedBaseUrl = baseUrlForAiContent
@@ -303,14 +306,42 @@ export default function HtmlPreview({
       theme: {
         extend: {
           fontFamily: {
-            sans: ["Geneva-12", "ArkPixel", "SerenityOS-Emoji", "sans-serif"],
-            mono: ["Monaco", "ArkPixel", "SerenityOS-Emoji", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"],
-            serif: ["Mondwest", "Yu Mincho", "Hiragino Mincho Pro", "Georgia", "Palatino", "SerenityOS-Emoji", "serif"],
-            emoji: ["SerenityOS-Emoji", "AppleColorEmoji", "AppleColorEmojiFallback"],
-            'geneva': ["Geneva-12", "ArkPixel", "SerenityOS-Emoji", "system-ui", "-apple-system", "sans-serif"],
+            sans: [${
+              isMacOsXTheme
+                ? '"LucidaGrande", "Lucida Grande", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "Apple Color Emoji", "Noto Color Emoji", "sans-serif"'
+                : '"Geneva-12", "ArkPixel", "SerenityOS-Emoji", "sans-serif"'
+            }],
+            mono: [${
+              isMacOsXTheme
+                ? '"ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", "Courier New", "monospace"'
+                : '"Monaco", "ArkPixel", "SerenityOS-Emoji", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"'
+            }],
+            serif: [${
+              isMacOsXTheme
+                ? '"Georgia", "Times New Roman", "Times", "serif"'
+                : '"Mondwest", "Yu Mincho", "Hiragino Mincho Pro", "Georgia", "Palatino", "SerenityOS-Emoji", "serif"'
+            }],
+            emoji: [${
+              isMacOsXTheme
+                ? '"Apple Color Emoji", "Noto Color Emoji"'
+                : '"SerenityOS-Emoji", "AppleColorEmoji", "AppleColorEmojiFallback"'
+            }],
+            'geneva': [${
+              isMacOsXTheme
+                ? '"LucidaGrande", "Lucida Grande", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "Apple Color Emoji", "Noto Color Emoji", "sans-serif"'
+                : '"Geneva-12", "ArkPixel", "SerenityOS-Emoji", "system-ui", "-apple-system", "sans-serif"'
+            }],
             'mondwest': ["Mondwest", "Yu Mincho", "Hiragino Mincho Pro", "Georgia", "Palatino", "Yu Mincho", "Hiragino Mincho Pro", "serif"],
-            'neuebit': ["NeueBit", "ArkPixel", "SerenityOS-Emoji", "Helvetica", "Arial", "Hiragino Sans", "sans-serif"],
-            'monaco': ["Monaco", "ArkPixel", "SerenityOS-Emoji", "monospace"],
+            'neuebit': [${
+              isMacOsXTheme
+                ? '"Helvetica", "Arial", "Hiragino Sans", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"'
+                : '"NeueBit", "ArkPixel", "SerenityOS-Emoji", "Helvetica", "Arial", "Hiragino Sans", "sans-serif"'
+            }],
+            'monaco': [${
+              isMacOsXTheme
+                ? '"ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", "Courier New", "monospace"'
+                : '"Monaco", "ArkPixel", "SerenityOS-Emoji", "monospace"'
+            }],
             'jacquard': ["Jacquard", "Yu Mincho", "Hiragino Mincho Pro", "Georgia", "Palatino", "serif"]
           }
         }
@@ -327,6 +358,11 @@ export default function HtmlPreview({
       width: 100%;
       height: 100%;
       max-width: 100%; /* Prevent body from exceeding viewport width */
+      ${
+        isMacOsXTheme
+          ? 'font-family: "LucidaGrande", "Lucida Grande", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Noto Color Emoji", sans-serif !important;'
+          : ""
+      }
     }
     /* Ensure pre doesn't break layout */
     pre {
@@ -1057,11 +1093,17 @@ export default function HtmlPreview({
           >
             {streamPreviewHtml ? (
               <div
-                className="generated-html-stream font-geneva-12"
+                className={`generated-html-stream ${
+                  isMacOsXTheme ? "" : "font-geneva-12"
+                }`}
                 dangerouslySetInnerHTML={{ __html: streamPreviewHtml }}
               />
             ) : (
-              <pre className="p-2 text-[12px] font-monaco antialiased text-gray-700 whitespace-pre-wrap break-words">
+              <pre
+                className={`p-2 text-[12px] ${
+                  isMacOsXTheme ? "font-mono" : "font-monaco"
+                } antialiased text-gray-700 whitespace-pre-wrap break-words`}
+              >
                 {htmlContent.split("\n").slice(-8).join("\n")}
               </pre>
             )}
@@ -1188,13 +1230,19 @@ export default function HtmlPreview({
                       >
                         {streamPreviewHtml ? (
                           <div
-                            className="generated-html-stream font-geneva-12 text-sm p-4"
+                            className={`generated-html-stream ${
+                              isMacOsXTheme ? "" : "font-geneva-12"
+                            } text-sm p-4`}
                             dangerouslySetInnerHTML={{
                               __html: streamPreviewHtml,
                             }}
                           />
                         ) : (
-                          <pre className="p-4 text-xs font-geneva-12 text-gray-700 whitespace-pre-wrap break-words">
+                          <pre
+                            className={`p-4 text-xs ${
+                              isMacOsXTheme ? "font-sans" : "font-geneva-12"
+                            } text-gray-700 whitespace-pre-wrap break-words`}
+                          >
                             {htmlContent.split("\n").slice(-15).join("\n")}
                           </pre>
                         )}
