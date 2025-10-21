@@ -101,6 +101,54 @@ export function AppletViewerAppComponent({
     />
   );
 
+  // Bring window to foreground when interacting inside the iframe while it's in the back
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || !instanceId) return;
+
+    const attachInteractionListeners = () => {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!doc) return;
+        const handleInteract = () => {
+          const state = useAppStore.getState();
+          const inst = state.instances[instanceId];
+          if (inst && !inst.isForeground) {
+            state.bringInstanceToForeground(instanceId);
+          }
+        };
+        // Use capturing to ensure we catch early
+        doc.addEventListener("pointerdown", handleInteract, true);
+        doc.addEventListener("mousedown", handleInteract, true);
+        doc.addEventListener("touchstart", handleInteract, true);
+        doc.addEventListener("keydown", handleInteract, true);
+
+        return () => {
+          doc.removeEventListener("pointerdown", handleInteract, true);
+          doc.removeEventListener("mousedown", handleInteract, true);
+          doc.removeEventListener("touchstart", handleInteract, true);
+          doc.removeEventListener("keydown", handleInteract, true);
+        };
+      } catch {
+        // If cross-origin or sandbox prevents access, silently ignore
+        return;
+      }
+    };
+
+    // Attach now (for srcDoc) and also on load in case content re-renders
+    const cleanup = attachInteractionListeners();
+    const onLoad = () => {
+      if (cleanup) cleanup();
+      attachInteractionListeners();
+    };
+    iframe.addEventListener("load", onLoad);
+
+    return () => {
+      iframe.removeEventListener("load", onLoad);
+      if (cleanup) cleanup();
+    };
+  }, [instanceId]);
+
   if (!isWindowOpen) return null;
 
   return (
