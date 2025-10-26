@@ -1003,14 +1003,19 @@ export function ControlPanelsAppComponent({
                     };
                     hasChanges = true;
                     console.log(
-                      `[Restore] Created metadata for ${path} with UUID ${uuidToUse}`
+                      `[Restore] Created metadata for ${path} with UUID ${uuidToUse} and icon ${icon}`
                     );
                   } else if (!items[path].uuid) {
-                    // Existing metadata without uuid
+                    // Existing metadata without uuid - preserve existing icon
                     items[path].uuid = uuidToUse;
                     hasChanges = true;
                     console.log(
-                      `[Restore] Added UUID ${uuidToUse} to existing metadata for ${path}`
+                      `[Restore] Added UUID ${uuidToUse} to existing metadata for ${path}, preserving icon: ${items[path].icon}`
+                    );
+                  } else {
+                    // Metadata already exists with UUID - just log for verification
+                    console.log(
+                      `[Restore] Metadata already exists for ${path} with icon: ${items[path].icon}`
                     );
                   }
 
@@ -1185,14 +1190,18 @@ export function ControlPanelsAppComponent({
                     ).result;
                     if (cursor) {
                       const key = cursor.key as string;
-                      const value = cursor.value as { name?: string };
+                      const value = cursor.value as { name?: string; icon?: string };
                       if (value.name) {
                         const path = `/Applets/${value.name}`;
+                        // Use icon from content if available (for future compatibility),
+                        // otherwise use default. ensureFileMetadata will preserve
+                        // existing metadata icon if it already exists.
+                        const iconToUse = value.icon || "/icons/app.png";
                         ensureFileMetadata(
                           path,
                           value.name,
                           "html",
-                          "/icons/app.png",
+                          iconToUse,
                           key
                         );
                         count++;
