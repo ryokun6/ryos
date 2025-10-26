@@ -505,6 +505,7 @@ export function ControlPanelsAppComponent({
         images: StoreItemWithKey[];
         trash: StoreItemWithKey[];
         custom_wallpapers: StoreItemWithKey[];
+        applets: StoreItemWithKey[];
       };
       timestamp: string;
       version: number; // Add version to identify backup format
@@ -515,9 +516,10 @@ export function ControlPanelsAppComponent({
         images: [],
         trash: [],
         custom_wallpapers: [],
+        applets: [],
       },
       timestamp: new Date().toISOString(),
-      version: 2, // Version 2 includes keys
+      version: 3, // Version 3 includes applets support
     };
 
     // Backup all localStorage data
@@ -565,11 +567,12 @@ export function ControlPanelsAppComponent({
         });
       };
 
-      const [docs, imgs, trash, walls] = await Promise.all([
+      const [docs, imgs, trash, walls, apps] = await Promise.all([
         getStoreData("documents"),
         getStoreData("images"),
         getStoreData("trash"),
         getStoreData("custom_wallpapers"),
+        getStoreData("applets"),
       ]);
 
       const serializeStore = async (items: StoreItemWithKey[]) =>
@@ -597,6 +600,7 @@ export function ControlPanelsAppComponent({
       backup.indexedDB.images = await serializeStore(imgs);
       backup.indexedDB.trash = await serializeStore(trash);
       backup.indexedDB.custom_wallpapers = await serializeStore(walls);
+      backup.indexedDB.applets = await serializeStore(apps);
       db.close();
     } catch (error) {
       console.error("Error backing up IndexedDB:", error);
@@ -903,6 +907,8 @@ export function ControlPanelsAppComponent({
                 "custom_wallpapers",
                 backup.indexedDB.custom_wallpapers
               );
+            if (backup.indexedDB.applets)
+              await restoreStoreData("applets", backup.indexedDB.applets);
 
             db.close();
           } catch (error) {
@@ -1053,6 +1059,12 @@ export function ControlPanelsAppComponent({
                     icon: "/icons/sites.png",
                   },
                   {
+                    path: "/Applets",
+                    name: "Applets",
+                    type: "directory",
+                    icon: "/icons/default/applets.png",
+                  },
+                  {
                     path: "/Trash",
                     name: "Trash",
                     type: "directory",
@@ -1156,6 +1168,45 @@ export function ControlPanelsAppComponent({
                   };
                   request.onerror = () => {
                     console.warn("[Restore] Failed to scan images store");
+                    resolve();
+                  };
+                });
+
+                // Scan applets store and ensure metadata exists
+                await new Promise<void>((resolve) => {
+                  const transaction = db.transaction("applets", "readonly");
+                  const store = transaction.objectStore("applets");
+                  const request = store.openCursor();
+
+                  let count = 0;
+                  request.onsuccess = (event) => {
+                    const cursor = (
+                      event.target as IDBRequest<IDBCursorWithValue>
+                    ).result;
+                    if (cursor) {
+                      const key = cursor.key as string;
+                      const value = cursor.value as { name?: string; icon?: string };
+                      if (value.name) {
+                        const path = `/Applets/${value.name}`;
+                        ensureFileMetadata(
+                          path,
+                          value.name,
+                          "html",
+                          "/icons/default/app.png",
+                          key
+                        );
+                        count++;
+                      }
+                      cursor.continue();
+                    } else {
+                      console.log(
+                        `[Restore] Found ${count} applets in IndexedDB`
+                      );
+                      resolve();
+                    }
+                  };
+                  request.onerror = () => {
+                    console.warn("[Restore] Failed to scan applets store");
                     resolve();
                   };
                 });
