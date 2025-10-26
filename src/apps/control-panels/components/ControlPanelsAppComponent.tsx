@@ -1003,19 +1003,14 @@ export function ControlPanelsAppComponent({
                     };
                     hasChanges = true;
                     console.log(
-                      `[Restore] Created metadata for ${path} with UUID ${uuidToUse} and icon ${icon}`
+                      `[Restore] Created metadata for ${path} with UUID ${uuidToUse}`
                     );
                   } else if (!items[path].uuid) {
-                    // Existing metadata without uuid - preserve existing icon
+                    // Existing metadata without uuid
                     items[path].uuid = uuidToUse;
                     hasChanges = true;
                     console.log(
-                      `[Restore] Added UUID ${uuidToUse} to existing metadata for ${path}, preserving icon: ${items[path].icon}`
-                    );
-                  } else {
-                    // Metadata already exists with UUID - just log for verification
-                    console.log(
-                      `[Restore] Metadata already exists for ${path} with icon: ${items[path].icon}`
+                      `[Restore] Added UUID ${uuidToUse} to existing metadata for ${path}`
                     );
                   }
 
@@ -1067,7 +1062,7 @@ export function ControlPanelsAppComponent({
                     path: "/Applets",
                     name: "Applets",
                     type: "directory",
-                    icon: "/icons/app.png",
+                    icon: "/icons/default/applets.png",
                   },
                   {
                     path: "/Trash",
@@ -1193,15 +1188,11 @@ export function ControlPanelsAppComponent({
                       const value = cursor.value as { name?: string; icon?: string };
                       if (value.name) {
                         const path = `/Applets/${value.name}`;
-                        // Use icon from content if available (for future compatibility),
-                        // otherwise use default. ensureFileMetadata will preserve
-                        // existing metadata icon if it already exists.
-                        const iconToUse = value.icon || "/icons/app.png";
                         ensureFileMetadata(
                           path,
                           value.name,
                           "html",
-                          iconToUse,
+                          "/icons/default/app.png",
                           key
                         );
                         count++;
