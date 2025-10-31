@@ -1397,7 +1397,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
           if (!path) {
             console.error(
-              "[ToolCall] readFile: Missing required 'path' parameter"
+              "[ToolCall] readFile: Missing required path parameter"
             );
             addToolResult({
               tool: toolCall.toolName,
