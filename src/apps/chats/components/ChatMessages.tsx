@@ -825,7 +825,7 @@ function ChatMessagesContent({
                               return;
                             }
 
-                            // Build highlight segments data – use *visible* character
+                            // Build highlight segments data ? use *visible* character
                             // length (without Markdown markup like ** or []()) so the
                             // highlight aligns with what is actually rendered.
                             let charCursor = 0;
@@ -1332,6 +1332,9 @@ function ChatMessagesContent({
 
           // Special handling for login message - render in gray like "Start a new conversation?"
           if (errorMessage === "Login to continue chatting with Ryo.") {
+            if (username) {
+              return null;
+            }
             return (
               <motion.div
                 layout="position"
