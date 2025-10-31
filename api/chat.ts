@@ -936,6 +936,26 @@ export default async function handler(req: Request) {
               ),
           }),
         },
+        readFile: {
+          description:
+            "Read the textual contents of a saved applet or document. Only use for files discovered via listFiles. Applets return their HTML, documents return markdown or plain text. Content may be truncated if very long.",
+          inputSchema: z.object({
+            path: z
+              .string()
+              .describe(
+                "The EXACT file path from listFiles (must be in /Applets or /Documents)."
+              ),
+            maxChars: z
+              .number()
+              .int()
+              .min(1)
+              .max(12000)
+              .optional()
+              .describe(
+                "Optional hard limit on the number of characters to return (default 8000, capped at 12,000)."
+              ),
+          }),
+        },
         listIpodLibrary: {
           description:
             "List all songs in the iPod library. Returns a JSON array with each song's id, title, and artist. CRITICAL: You MUST ONLY reference songs that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate songs that are not in the returned list. If the library is empty, acknowledge that reality.",
