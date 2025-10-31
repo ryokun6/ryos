@@ -71,7 +71,7 @@ const getAppName = (id?: string): string => {
 // Minimal system state for AI chat requests
 const getSystemState = () => {
   const appStore = useAppStore.getState();
-  const { username, authToken } = useChatsStore.getState();
+  const { username } = useChatsStore.getState();
   const ieStore = useInternetExplorerStore.getState();
   const videoStore = useVideoStore.getState();
   const ipodStore = useIpodStore.getState();
@@ -163,7 +163,6 @@ const getSystemState = () => {
     // Keep legacy apps for backward compatibility, but mark that instances are preferred
     apps: appStore.apps,
     username,
-    authToken,
     userLocalTime: {
       timeString: userTimeString,
       dateString: userDateString,
