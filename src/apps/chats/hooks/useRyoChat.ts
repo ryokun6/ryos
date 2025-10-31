@@ -43,7 +43,6 @@ const getSystemState = () => {
     apps: appStore.apps,
     instances: appStore.instances,
     username: chatsStore.username,
-    authToken: chatsStore.authToken,
     runningApps: {
       foreground: foregroundApp,
       background: backgroundApps,

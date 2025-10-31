@@ -176,7 +176,6 @@ const getSystemState = () => {
 
   return {
     username: chatsStore.username,
-    authToken: chatsStore.authToken, // Include auth token for API validation
     userLocalTime: {
       timeString: userTimeString,
       dateString: userDateString,
