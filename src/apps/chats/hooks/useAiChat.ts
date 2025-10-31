@@ -362,13 +362,33 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   } | null>(null);
   const [needsUsername, setNeedsUsername] = useState(false);
 
-  // Prepare headers for API calls – include auth token & username when available
-  const apiHeaders: Record<string, string> | undefined = username
-    ? {
-        "X-Username": username,
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      }
-    : undefined;
+  const chatTransport = useMemo(() => {
+    return new DefaultChatTransport({
+      api: "/api/chat",
+      headers: async () => {
+        const { username: currentUsername, authToken: currentToken } =
+          useChatsStore.getState();
+
+        if (!currentUsername) {
+          return {} as Record<string, string>;
+        }
+
+        const headers: Record<string, string> = {
+          "X-Username": currentUsername,
+        };
+
+        if (currentToken) {
+          headers.Authorization = `Bearer ${currentToken}`;
+        }
+
+        return headers;
+      },
+      body: async () => ({
+        systemState: getSystemState(),
+        model: useAppStore.getState().aiModel,
+      }),
+    });
+  }, []);
 
   // --- AI Chat Hook (Vercel AI SDK v5) ---
   // Store reference to setHighlightSegment for use in callbacks
@@ -393,14 +413,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // Automatically submit when all tool results are available
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
 
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      headers: apiHeaders,
-      body: {
-        systemState: getSystemState(), // Initial system state
-        model: aiModel, // Pass the selected AI model
-      },
-    }),
+    transport: chatTransport,
 
     async onToolCall({ toolCall }) {
       // In AI SDK 5, client-side tool execution requires calling addToolResult
