@@ -100,6 +100,9 @@ export function ToolInvocationMessage({
       case "listIpodLibrary":
         displayCallMessage = "Loading iPod library…";
         break;
+      case "readFile":
+        displayCallMessage = "Reading file…";
+        break;
       case "openFile":
         displayCallMessage = "Opening file…";
         break;
@@ -195,6 +198,52 @@ export function ToolInvocationMessage({
         } else {
           displayResultMessage = "Listed iPod library";
         }
+      }
+    } else if (toolName === "readFile") {
+      let parsed:
+        | {
+            name?: string;
+            path?: string;
+            type?: string;
+            size?: number;
+            truncated?: boolean;
+          }
+        | null = null;
+
+      if (typeof output === "string") {
+        try {
+          parsed = JSON.parse(output);
+        } catch {
+          parsed = null;
+        }
+      } else if (output && typeof output === "object") {
+        parsed = output as {
+          name?: string;
+          path?: string;
+          type?: string;
+          size?: number;
+          truncated?: boolean;
+        };
+      }
+
+      if (parsed) {
+        const label =
+          parsed.type === "applet"
+            ? "Applet"
+            : parsed.type === "document"
+            ? "Document"
+            : "File";
+        const targetName = parsed.name || parsed.path || "file";
+
+        if (typeof parsed.size === "number") {
+          const truncatedSuffix = parsed.truncated ? ", truncated preview" : "";
+          displayResultMessage = `Loaded ${label} ${targetName} (${parsed.size} chars${truncatedSuffix})`;
+        } else {
+          const truncatedSuffix = parsed.truncated ? " (truncated preview)" : "";
+          displayResultMessage = `Loaded ${label} ${targetName}${truncatedSuffix}`;
+        }
+      } else {
+        displayResultMessage = "Read file";
       }
     } else if (toolName === "openFile") {
       // Extract file name from output message
