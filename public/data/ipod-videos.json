@@ -1,6 +1,13 @@
 {
   "videos": [
     {
+      "id": "KlhuSz0HbcE",
+      "url": "https://www.youtube.com/watch?v=KlhuSz0HbcE",
+      "title": "Tiramisu",
+      "artist": "Don Toliver",
+      "lyricOffset": -2800
+    },
+    {
       "id": "Ur7aK4FvK-U",
       "url": "https://www.youtube.com/watch?v=Ur7aK4FvK-U",
       "title": "FOCUS",
@@ -584,13 +591,6 @@
       "artist": "周杰倫",
       "album": "十一月的蕭邦",
       "lyricOffset": 4500
-    },
-    {
-      "id": "KlhuSz0HbcE",
-      "url": "https://www.youtube.com/watch?v=KlhuSz0HbcE",
-      "title": "Tiramisu",
-      "artist": "Don Toliver",
-      "lyricOffset": -2800
     }
   ]
 }
