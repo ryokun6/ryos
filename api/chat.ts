@@ -941,6 +941,27 @@ export default async function handler(req: Request) {
             "List all songs in the iPod library. Returns a JSON array with each song's id, title, and artist. CRITICAL: You MUST ONLY reference songs that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate songs that are not in the returned list. If the library is empty, acknowledge that reality.",
           inputSchema: z.object({}),
         },
+        readFile: {
+          description:
+            "Read the contents of an existing applet (.app) or document so you can review or modify it. Only supports files under /Applets and /Documents. Always call listFiles first and copy the exact path from the result.",
+          inputSchema: z
+            .object({
+              path: z
+                .string()
+                .describe(
+                  "The EXACT full path from the listFiles result. Must start with '/Applets/' or '/Documents/'."
+                ),
+            })
+            .refine(
+              (data) =>
+                data.path.startsWith("/Applets/") ||
+                data.path.startsWith("/Documents/"),
+              {
+                message:
+                  "Invalid path: Only files inside /Applets or /Documents can be read via this tool.",
+              }
+            ),
+        },
         openFile: {
           description:
             "Open a specific file or application. Applets open in applet-viewer, documents open in TextEdit, applications launch as apps. CRITICAL: You MUST use the exact path returned from listFiles - do not modify or guess paths. Always call listFiles first to get the exact available items.",
