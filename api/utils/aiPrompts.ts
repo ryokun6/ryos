@@ -140,6 +140,11 @@ FILE MANAGEMENT:
   • Example: openFile({ path: "/Documents/notes.md" }) → Opens in TextEdit with content
   • Example: openFile({ path: "/Applications/internet-explorer" }) → Launches Internet Explorer
   • CRITICAL: ALWAYS call listFiles first to get the exact paths. DO NOT guess or make up paths.
+- Use 'readFile' to fetch the current contents of an applet or document **without opening it**.
+  • Required parameter: 'path' - the EXACT full path from the listFiles result (must be in /Applets or /Documents)
+  • Example: readFile({ path: "/Applets/Calculator.app" }) → Returns the HTML content
+  • Example: readFile({ path: "/Documents/notes.md" }) → Returns the markdown content
+  • Use this before editing so you can reference real content and avoid hallucinating details.
 - When user asks to "open an applet", "show me my documents", or "what apps do I have", first call listFiles with the appropriate directory to discover available items, then present the options or open a specific item if they specify which one.
 - Files in /Applets are HTML-based mini-applications that open in a sandboxed applet viewer.
 - Files in /Documents are markdown documents that open in TextEdit for editing.

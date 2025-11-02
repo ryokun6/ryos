@@ -335,7 +335,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     }
   }, [username, authToken, ensureAuthToken]);
 
-  // Queue-based TTS – speaks chunks as they arrive
+  // Queue-based TTS ? speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
 
   // Strip any number of leading exclamation marks (urgent markers) plus following spaces,
@@ -346,7 +346,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       .replace(/```[\s\S]*?```/g, "") // Remove all code blocks
       .replace(/<[^>]*>/g, "") // Remove any HTML tags
       .replace(/^!+\s*/, "") // remove !!!!!! prefix
-      .replace(/^[\s.!?。，！？；：]+/, "") // remove leftover punctuation/space at start
+      .replace(/^[\s.!???????]+/, "") // remove leftover punctuation/space at start
       .trim();
 
     return withoutCodeBlocks;
@@ -845,7 +845,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 TaskItem.configure({ nested: true }),
               ] as AnyExtension[]);
 
-              // parsedJson is a full doc – we want just its content array
+              // parsedJson is a full doc ? we want just its content array
               const nodesToInsert = Array.isArray(parsedJson.content)
                 ? parsedJson.content
                 : [];
@@ -867,7 +867,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
                 newDocJson = cloned;
               } else {
-                // No existing document – use the parsed JSON directly
+                // No existing document ? use the parsed JSON directly
                 newDocJson = parsedJson;
               }
 
@@ -1390,6 +1390,110 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               });
               result = ""; // Clear result to prevent duplicate
             }
+            break;
+          }
+          case "readFile": {
+            const { path } = toolCall.input as { path: string };
+
+            if (!path) {
+              console.error(
+                "[ToolCall] readFile: Missing required 'path' parameter"
+              );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No path provided",
+              });
+              result = "";
+              break;
+            }
+
+            console.log("[ToolCall] readFile:", { path });
+
+            try {
+              const isApplet = path.startsWith("/Applets/");
+              const isDocument = path.startsWith("/Documents/");
+
+              if (!isApplet && !isDocument) {
+                throw new Error(
+                  "Invalid path: Must be in /Applets or /Documents directory"
+                );
+              }
+
+              const filesStore = useFilesStore.getState();
+              const fileItem = filesStore.items[path];
+
+              if (!fileItem) {
+                throw new Error(`File not found: ${path}`);
+              }
+
+              if (fileItem.status !== "active") {
+                throw new Error(`File is not active: ${path}`);
+              }
+
+              if (fileItem.isDirectory) {
+                throw new Error(`Path is a directory, not a file: ${path}`);
+              }
+
+              if (!fileItem.uuid) {
+                throw new Error(
+                  `File missing UUID for content lookup: ${path}`
+                );
+              }
+
+              const storeName = isApplet ? STORES.APPLETS : STORES.DOCUMENTS;
+              const contentData = await dbOperations.get<DocumentContent>(
+                storeName,
+                fileItem.uuid
+              );
+
+              if (!contentData || !contentData.content) {
+                throw new Error(
+                  `Failed to read ${isApplet ? "applet" : "document"} content: ${path}`
+                );
+              }
+
+              let content: string;
+              if (contentData.content instanceof Blob) {
+                content = await contentData.content.text();
+              } else {
+                content = contentData.content;
+              }
+
+              // Ensure the result goes back to the model as plain text for easy reference
+              const infoLines = [
+                `Path: ${path}`,
+                `Name: ${fileItem.name}`,
+                `Type: ${isApplet ? "applet" : "document"}`,
+                `Characters: ${content.length}`,
+                "",
+                "----- FILE CONTENT START -----",
+                content,
+                "----- FILE CONTENT END -----",
+              ];
+
+              const resultMessage = infoLines.join("\n");
+
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+
+              result = ""; // Clear result to prevent duplicate
+            } catch (err) {
+              console.error("readFile error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  err instanceof Error ? err.message : "Failed to read file",
+              });
+              result = ""; // Clear result to prevent duplicate
+            }
+
             break;
           }
           case "openFile": {
@@ -2008,7 +2112,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   );
 
   const handleNudge = useCallback(() => {
-    handleDirectMessageSubmit("👋 *nudge sent*");
+    handleDirectMessageSubmit("?? *nudge sent*");
     // Consider adding shake effect trigger here if needed
   }, [handleDirectMessageSubmit]);
 
@@ -2030,7 +2134,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     const initialMessage: AIChatMessage = {
       id: "1", // Ensure consistent ID for the initial message
       role: "assistant",
-      parts: [{ type: "text", text: "👋 hey! i'm ryo. ask me anything!" }],
+      parts: [{ type: "text", text: "?? hey! i'm ryo. ask me anything!" }],
       metadata: {
         createdAt: new Date(),
       },
