@@ -103,6 +103,9 @@ export function ToolInvocationMessage({
       case "openFile":
         displayCallMessage = "Opening file…";
         break;
+      case "readFile":
+        displayCallMessage = "Reading file…";
+        break;
       default:
         displayCallMessage = `Running ${formatToolName(toolName)}…`;
     }
@@ -195,6 +198,47 @@ export function ToolInvocationMessage({
         } else {
           displayResultMessage = "Listed iPod library";
         }
+      }
+    } else if (toolName === "readFile") {
+      const parseOutput = (): {
+        name?: string;
+        path?: string;
+        fileCategory?: string;
+        truncated?: boolean;
+        totalLength?: number;
+        returnedLength?: number;
+      } | null => {
+        if (typeof output === "string" && output.trim().length > 0) {
+          try {
+            return JSON.parse(output);
+          } catch (error) {
+            console.warn("Failed to parse readFile output as JSON", error);
+          }
+        }
+        if (typeof output === "object" && output !== null) {
+          return output as {
+            name?: string;
+            path?: string;
+            fileCategory?: string;
+            truncated?: boolean;
+            totalLength?: number;
+            returnedLength?: number;
+          };
+        }
+        return null;
+      };
+
+      const parsed = parseOutput();
+      if (parsed) {
+        const label = parsed.name || parsed.path || "file";
+        const category = parsed.fileCategory || "file";
+        if (parsed.truncated && parsed.totalLength && parsed.returnedLength) {
+          displayResultMessage = `Read ${category} "${label}" (${parsed.returnedLength}/${parsed.totalLength} chars)`;
+        } else {
+          displayResultMessage = `Read ${category} "${label}"`;
+        }
+      } else if (typeof output === "string" && output.trim().length > 0) {
+        displayResultMessage = "Read file";
       }
     } else if (toolName === "openFile") {
       // Extract file name from output message

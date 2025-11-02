@@ -73,6 +73,9 @@ const getMostRecentTextEditInstance = (): string | null => {
   return mostRecent?.instanceId || null;
 };
 
+const DEFAULT_READ_FILE_MAX_CHARS = 8000;
+const HARD_LIMIT_READ_FILE_MAX_CHARS = 12000;
+
 // Replace or update the getSystemState function to use stores
 const getSystemState = () => {
   const appStore = useAppStore.getState();
@@ -335,7 +338,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     }
   }, [username, authToken, ensureAuthToken]);
 
-  // Queue-based TTS – speaks chunks as they arrive
+  // Queue-based TTS ? speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
 
   // Strip any number of leading exclamation marks (urgent markers) plus following spaces,
@@ -346,7 +349,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       .replace(/```[\s\S]*?```/g, "") // Remove all code blocks
       .replace(/<[^>]*>/g, "") // Remove any HTML tags
       .replace(/^!+\s*/, "") // remove !!!!!! prefix
-      .replace(/^[\s.!?。，！？；：]+/, "") // remove leftover punctuation/space at start
+      .replace(/^[\s.!???????]+/, "") // remove leftover punctuation/space at start
       .trim();
 
     return withoutCodeBlocks;
@@ -845,7 +848,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 TaskItem.configure({ nested: true }),
               ] as AnyExtension[]);
 
-              // parsedJson is a full doc – we want just its content array
+              // parsedJson is a full doc ? we want just its content array
               const nodesToInsert = Array.isArray(parsedJson.content)
                 ? parsedJson.content
                 : [];
@@ -867,7 +870,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
                 newDocJson = cloned;
               } else {
-                // No existing document – use the parsed JSON directly
+                // No existing document ? use the parsed JSON directly
                 newDocJson = parsedJson;
               }
 
@@ -1348,6 +1351,147 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   err instanceof Error ? err.message : "Failed to list files",
               });
               result = ""; // Clear result to prevent duplicate
+            }
+            break;
+          }
+          case "readFile": {
+            const { path, maxChars } = toolCall.input as {
+              path?: string;
+              maxChars?: number;
+            };
+
+            if (typeof path !== "string" || path.trim().length === 0) {
+              console.error(
+                "[ToolCall] readFile: Missing required 'path' parameter"
+              );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No path provided",
+              });
+              result = "";
+              break;
+            }
+
+            const normalizedPath = path.trim();
+            const isApplet = normalizedPath.startsWith("/Applets/");
+            const isDocument = normalizedPath.startsWith("/Documents/");
+
+            if (!isApplet && !isDocument) {
+              console.error("[ToolCall] readFile: Unsupported path", normalizedPath);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  "Invalid path: readFile only supports files in /Applets or /Documents.",
+              });
+              result = "";
+              break;
+            }
+
+            try {
+              const filesStore = useFilesStore.getState();
+              const fileItem = filesStore.items[normalizedPath];
+
+              if (!fileItem) {
+                throw new Error(
+                  "File not found. Use listFiles first to discover available items."
+                );
+              }
+              if (fileItem.status !== "active") {
+                throw new Error("File is not active or has been moved to trash.");
+              }
+              if (fileItem.isDirectory) {
+                throw new Error("Cannot read a directory. Select a specific file.");
+              }
+              if (!fileItem.uuid) {
+                throw new Error("File is missing content metadata (UUID).");
+              }
+
+              const storeName = isApplet ? STORES.APPLETS : STORES.DOCUMENTS;
+              const contentData = await dbOperations.get<DocumentContent>(
+                storeName,
+                fileItem.uuid
+              );
+
+              if (!contentData || contentData.content == null) {
+                throw new Error("File content could not be loaded.");
+              }
+
+              let content: string;
+              if (typeof contentData.content === "string") {
+                content = contentData.content;
+              } else if (contentData.content instanceof Blob) {
+                content = await contentData.content.text();
+              } else {
+                throw new Error("Unsupported content type for this file.");
+              }
+
+              const requestedMax =
+                typeof maxChars === "number" && Number.isFinite(maxChars)
+                  ? Math.floor(maxChars)
+                  : undefined;
+              const limit = Math.min(
+                HARD_LIMIT_READ_FILE_MAX_CHARS,
+                Math.max(
+                  1,
+                  requestedMax != null && requestedMax > 0
+                    ? requestedMax
+                    : DEFAULT_READ_FILE_MAX_CHARS
+                )
+              );
+
+              const truncated = content.length > limit;
+              const contentSnippet = truncated ? content.slice(0, limit) : content;
+
+              const lowerName = fileItem.name.toLowerCase();
+              const format = isApplet
+                ? "html"
+                : lowerName.endsWith(".md")
+                ? "markdown"
+                : lowerName.endsWith(".txt")
+                ? "text"
+                : fileItem.type || "text";
+
+              const resultData = {
+                path: normalizedPath,
+                name: fileItem.name,
+                fileCategory: isApplet ? "applet" : "document",
+                format,
+                content: contentSnippet,
+                totalLength: content.length,
+                returnedLength: contentSnippet.length,
+                truncated,
+                limit,
+              };
+
+              const resultMessage = JSON.stringify(resultData, null, 2);
+
+              console.log("[ToolCall] readFile:", {
+                path: normalizedPath,
+                returnedLength: contentSnippet.length,
+                truncated,
+              });
+
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+
+              result = "";
+            } catch (err) {
+              console.error("readFile error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  err instanceof Error ? err.message : "Failed to read file",
+              });
+              result = "";
             }
             break;
           }
@@ -2008,7 +2152,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   );
 
   const handleNudge = useCallback(() => {
-    handleDirectMessageSubmit("👋 *nudge sent*");
+    handleDirectMessageSubmit("?? *nudge sent*");
     // Consider adding shake effect trigger here if needed
   }, [handleDirectMessageSubmit]);
 
@@ -2030,7 +2174,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     const initialMessage: AIChatMessage = {
       id: "1", // Ensure consistent ID for the initial message
       role: "assistant",
-      parts: [{ type: "text", text: "👋 hey! i'm ryo. ask me anything!" }],
+      parts: [{ type: "text", text: "?? hey! i'm ryo. ask me anything!" }],
       metadata: {
         createdAt: new Date(),
       },

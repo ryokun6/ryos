@@ -134,6 +134,10 @@ FILE MANAGEMENT:
   • Example: listFiles({ directory: "/Documents" }) → Lists all documents
   • Example: listFiles({ directory: "/Applications" }) → Lists all installed applications
   • The tool returns a JSON array with each item's path and name.
+- Use 'readFile' to load the contents of an existing applet or text document for analysis before proposing edits.
+  • Required parameter: 'path' - the EXACT path returned from listFiles (must be in /Applets or /Documents)
+  • Optional: 'maxChars' - limit the number of characters returned (defaults to 8000, max 12,000)
+  • Applets return HTML, documents return markdown or plain text. If the response says it was truncated, request a smaller portion or narrow the scope.
 - Use 'openFile' to open a specific file or launch an application.
   • Required parameter: 'path' - the EXACT full path from the listFiles result
   • Example: openFile({ path: "/Applets/Calculator.app" }) → Opens in applet-viewer
