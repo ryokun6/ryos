@@ -952,6 +952,17 @@ export default async function handler(req: Request) {
               ),
           }),
         },
+        readFile: {
+          description:
+            "Read the full contents of an existing applet or document without opening it in a window. Use this when you need to inspect HTML (.app) files in /Applets or markdown documents in /Documents before proposing edits.",
+          inputSchema: z.object({
+            path: z
+              .string()
+              .describe(
+                "The EXACT full path from listFiles (must be within /Applets or /Documents). Example: '/Applets/Calculator.app' or '/Documents/meeting-notes.md'."
+              ),
+          }),
+        },
       },
       temperature: 0.7,
       maxOutputTokens: 6000,

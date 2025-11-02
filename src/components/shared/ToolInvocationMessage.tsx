@@ -103,6 +103,9 @@ export function ToolInvocationMessage({
       case "openFile":
         displayCallMessage = "Opening file…";
         break;
+      case "readFile":
+        displayCallMessage = "Reading file…";
+        break;
       default:
         displayCallMessage = `Running ${formatToolName(toolName)}…`;
     }
@@ -253,6 +256,58 @@ export function ToolInvocationMessage({
           playDingSound={playDingSound}
           className="my-1"
         />
+      );
+    }
+  }
+
+  if (state === "output-available" && toolName === "readFile") {
+    if (typeof output === "string" && output.length > 0) {
+      const lines = output.split("\n");
+      const metadataLines: string[] = [];
+      const contentLines: string[] = [];
+      let inContent = false;
+      let sawMarker = false;
+
+      for (const line of lines) {
+        if (line === "----- FILE CONTENT START -----") {
+          inContent = true;
+          sawMarker = true;
+          continue;
+        }
+
+        if (line === "----- FILE CONTENT END -----") {
+          inContent = false;
+          continue;
+        }
+
+        if (inContent) {
+          contentLines.push(line);
+        } else if (line.trim().length > 0) {
+          metadataLines.push(line);
+        }
+      }
+
+      const displayContent = sawMarker
+        ? contentLines.join("\n")
+        : output;
+
+      return (
+        <div key={partKey} className="mb-0 px-1 py-0.5 text-xs text-gray-700">
+          <div className="flex items-center gap-1">
+            <Check className="h-3 w-3 text-blue-600" />
+            <span>Read file contents</span>
+          </div>
+          {metadataLines.length > 0 && (
+            <div className="mt-1 text-[11px] text-gray-500">
+              {metadataLines.map((line, index) => (
+                <div key={`${partKey}-meta-${index}`}>{line}</div>
+              ))}
+            </div>
+          )}
+          <pre className="mt-1 max-h-64 overflow-auto rounded bg-gray-100 px-2 py-1 text-[11px] leading-4 text-gray-800 whitespace-pre-wrap">
+            {displayContent}
+          </pre>
+        </div>
       );
     }
   }
