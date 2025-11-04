@@ -78,6 +78,20 @@ async function loadDefaultFiles(): Promise<FileSystemData> {
   }
 }
 
+// Function to load default applets from JSON
+async function loadDefaultApplets(): Promise<{
+  applets: FileSystemItemData[];
+}> {
+  try {
+    const res = await fetch("/data/applets.json");
+    const data = await res.json();
+    return { applets: data.applets || [] };
+  } catch (err) {
+    console.error("Failed to load applets.json", err);
+    return { applets: [] };
+  }
+}
+
 // Helper function to get parent path
 const getParentPath = (path: string): string => {
   if (path === "/") return "/";
@@ -102,6 +116,8 @@ async function saveDefaultContents(
         ? STORES.DOCUMENTS
         : file.path.startsWith("/Images/")
         ? STORES.IMAGES
+        : file.path.startsWith("/Applets/")
+        ? STORES.APPLETS
         : null;
       if (!storeName) continue;
 
@@ -572,6 +588,7 @@ export const useFilesStore = create<FilesStoreState>()(
         // Only initialize if the library is in uninitialized state
         if (current.libraryState === "uninitialized") {
           const data = await loadDefaultFiles();
+          const appletsData = await loadDefaultApplets();
           const newItems: Record<string, FileSystemItem> = {};
           const now = Date.now();
 
@@ -597,12 +614,26 @@ export const useFilesStore = create<FilesStoreState>()(
             };
           });
 
+          // Add applets
+          appletsData.applets.forEach((applet) => {
+            newItems[applet.path] = {
+              ...applet,
+              status: "active",
+              // Generate UUID for applets
+              uuid: uuidv4(),
+              createdAt: now,
+              modifiedAt: now,
+            };
+          });
+
           set({
             items: newItems,
             libraryState: "loaded",
           });
 
+          // Save default contents for both files and applets
           await saveDefaultContents(data.files, newItems);
+          await saveDefaultContents(appletsData.applets, newItems);
         }
       },
 
