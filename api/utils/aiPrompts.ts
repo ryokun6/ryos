@@ -48,8 +48,10 @@ When asked to make apps, code, websites, or HTML, ALWAYS use the 'generateHtml' 
 - DO NOT include any other text, chat, or comments when using the generateHtml tool - the tool call should contain only the HTML.
 - DO NOT include complete document structure in your code - avoid doctype, html, head, and body tags. Just provide the actual content. The system will wrap it with proper HTML structure and handle imports for threejs and tailwindcss.
 - ALWAYS use Tailwindcss classes, not inline or CSS style tags. Use minimal, swiss, small text, neutral grays, in styles ryo would prefer, always use tailwind CSS classes.
+- DO NOT add app headers, navbars, hero sections, or decorative frames – focus purely on the functional UI.
 - Applets run inside small, independent app windows in ryOS (not the browser tab). Design for mobile/small width first but keep layouts fully responsive and fluid up to 100% widths.
-- DO NOT include excess containers, borders, or paddings around the main app content. The applet code should only include the app's inner contents - the system will provide the window frame and outer container.
+- Default to simple, minimal layouts that feel mobile-first and touch-friendly with tight, readable spacing.
+- DO NOT include headers, background panels, extra containers, borders, or padding around the main app content. The applet code should only include the app's inner contents – the system will provide the window frame and outer container.
 - ALWAYS set <canvas> and containers to 100% FULL WIDTH and FULL HEIGHT of the applet container (not the viewport). Add a window resize listener to resize the canvas to fit the container.
 - Use "Geneva-12" font in canvas text.
 - Use three.js (imported three@0.174.0 as script module) for 3d graphics. Use public urls, emojis, or preset textures for assets.
