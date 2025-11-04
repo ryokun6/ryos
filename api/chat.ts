@@ -952,6 +952,17 @@ export default async function handler(req: Request) {
               ),
           }),
         },
+        readFile: {
+          description:
+            "Read the full contents of a saved document or applet. MUST be used only with paths returned from listFiles. Returns the complete text content for AI processing. Do NOT use on applications.",
+          inputSchema: z.object({
+            path: z
+              .string()
+              .describe(
+                "The EXACT file path from listFiles (e.g., '/Applets/Calculator.app' or '/Documents/notes.md'). Only supports paths within /Applets or /Documents."
+              ),
+          }),
+        },
       },
       temperature: 0.7,
       maxOutputTokens: 6000,
