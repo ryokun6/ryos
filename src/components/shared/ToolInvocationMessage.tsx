@@ -310,21 +310,19 @@ export function ToolInvocationMessage({
   }
 
   if (toolName === "readFile") {
-    if (state === "output-available" && typeof output === "string") {
-      const [summaryLine, ...contentParts] = output.split("\n\n");
-      const contentBody = contentParts.join("\n\n").trim();
+    if (state === "output-available") {
+      const filePath =
+        typeof input?.path === "string" ? (input.path as string) : null;
+      const fileName = filePath
+        ? filePath.split("/").filter(Boolean).pop()
+        : "file";
 
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
           <div className="flex items-center gap-1 text-gray-700">
             <Check className="h-3 w-3 text-blue-600" />
-            <span>{summaryLine || "Read file"}</span>
+            <span>{`Read ${fileName}`}</span>
           </div>
-          {contentBody && (
-            <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded border border-gray-200 bg-gray-100/80 px-2 py-1 font-mono text-[11px] text-gray-700">
-              {contentBody}
-            </pre>
-          )}
         </div>
       );
     }
