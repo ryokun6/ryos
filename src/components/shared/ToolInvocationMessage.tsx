@@ -80,7 +80,7 @@ export function ToolInvocationMessage({
         displayCallMessage = "Controlling playback…";
         break;
       case "ipodPlaySong":
-        displayCallMessage = `Playing song…`;
+        displayCallMessage = "Playing song…";
         break;
       case "ipodAddAndPlaySong":
         displayCallMessage = "Adding song…";
@@ -102,6 +102,9 @@ export function ToolInvocationMessage({
         break;
       case "openFile":
         displayCallMessage = "Opening file…";
+        break;
+      case "readFile":
+        displayCallMessage = "Reading file…";
         break;
       default:
         displayCallMessage = `Running ${formatToolName(toolName)}…`;
@@ -125,13 +128,13 @@ export function ToolInvocationMessage({
         action === "toggle"
           ? "Toggled"
           : action === "play"
-          ? "Playing"
-          : "Paused"
+            ? "Playing"
+            : "Paused"
       } iPod`;
     } else if (toolName === "ipodPlaySong") {
       const title = input?.title ? String(input.title) : null;
       const artist = input?.artist ? String(input.artist) : null;
-      
+
       if (title && artist) {
         displayResultMessage = `Playing ${title} by ${artist}`;
       } else if (title) {
@@ -163,7 +166,7 @@ export function ToolInvocationMessage({
         const appletMatch = output.match(/Found (\d+) applets?/);
         const documentMatch = output.match(/Found (\d+) documents?/);
         const applicationMatch = output.match(/Found (\d+) applications?/);
-        
+
         if (appletMatch) {
           const count = parseInt(appletMatch[1], 10);
           displayResultMessage = `Found ${count} applet${count === 1 ? "" : "s"}`;
@@ -200,9 +203,13 @@ export function ToolInvocationMessage({
       // Extract file name from output message
       if (typeof output === "string") {
         const appletMatch = output.match(/Successfully opened applet: (.+)/);
-        const documentMatch = output.match(/Successfully opened document: (.+)/);
-        const applicationMatch = output.match(/Successfully launched application: (.+)/);
-        
+        const documentMatch = output.match(
+          /Successfully opened document: (.+)/,
+        );
+        const applicationMatch = output.match(
+          /Successfully launched application: (.+)/,
+        );
+
         if (appletMatch) {
           displayResultMessage = `Opened ${appletMatch[1]}`;
         } else if (documentMatch) {
@@ -227,7 +234,7 @@ export function ToolInvocationMessage({
     let htmlContent = "";
     let appletTitle = "";
     let appletIcon = "";
-    
+
     if (typeof output === "string" && output.trim().length > 0) {
       htmlContent = output;
     } else if (
@@ -235,9 +242,12 @@ export function ToolInvocationMessage({
       output !== null &&
       "html" in output
     ) {
-      htmlContent = (output as { html: string; title?: string; icon?: string }).html;
-      appletTitle = (output as { html: string; title?: string; icon?: string }).title || "";
-      appletIcon = (output as { html: string; title?: string; icon?: string }).icon || "";
+      htmlContent = (output as { html: string; title?: string; icon?: string })
+        .html;
+      appletTitle =
+        (output as { html: string; title?: string; icon?: string }).title || "";
+      appletIcon =
+        (output as { html: string; title?: string; icon?: string }).icon || "";
     }
 
     if (htmlContent.trim().length > 0) {
@@ -294,6 +304,25 @@ export function ToolInvocationMessage({
           className="mb-0 px-1 py-0.5 text-xs italic text-gray-500"
         >
           Preparing HTML preview...
+        </div>
+      );
+    }
+  }
+
+  if (toolName === "readFile") {
+    if (state === "output-available") {
+      const filePath =
+        typeof input?.path === "string" ? (input.path as string) : null;
+      const fileName = filePath
+        ? filePath.split("/").filter(Boolean).pop()
+        : "file";
+
+      return (
+        <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
+          <div className="flex items-center gap-1 text-gray-700">
+            <Check className="h-3 w-3 text-blue-600" />
+            <span>{`Read ${fileName}`}</span>
+          </div>
         </div>
       );
     }

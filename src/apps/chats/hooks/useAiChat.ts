@@ -104,7 +104,7 @@ const getSystemState = () => {
   const foregroundInstance =
     runningInstances.find((inst) => inst.isForeground) || null;
   const backgroundInstances = runningInstances.filter(
-    (inst) => !inst.isForeground
+    (inst) => !inst.isForeground,
   );
 
   // --- Local browser time information (client side) ---
@@ -290,11 +290,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     (
       e:
         | React.ChangeEvent<HTMLInputElement>
-        | React.ChangeEvent<HTMLTextAreaElement>
+        | React.ChangeEvent<HTMLTextAreaElement>,
     ) => {
       setInput(e.target.value);
     },
-    []
+    [],
   );
 
   // Track how many characters of each assistant message have already been sent to TTS
@@ -421,7 +421,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       console.log(
         `[onToolCall] Executing client-side tool: ${toolCall.toolName}`,
-        toolCall
+        toolCall,
       );
 
       try {
@@ -438,7 +438,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const { theme } = toolCall.input as { theme?: OsThemeId };
             if (!theme) {
               console.error(
-                "[ToolCall] switchTheme: Missing required 'theme' parameter"
+                "[ToolCall] switchTheme: Missing required 'theme' parameter",
               );
               addToolResult({
                 tool: toolCall.toolName,
@@ -471,7 +471,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Validate required parameter
             if (!id) {
               console.error(
-                "[ToolCall] launchApp: Missing required 'id' parameter"
+                "[ToolCall] launchApp: Missing required 'id' parameter",
               );
               addToolResult({
                 tool: toolCall.toolName,
@@ -507,7 +507,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Validate required parameter
             if (!id) {
               console.error(
-                "[ToolCall] closeApp: Missing required 'id' parameter"
+                "[ToolCall] closeApp: Missing required 'id' parameter",
               );
               break;
             }
@@ -536,7 +536,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             console.log(
               `[ToolCall] Closed ${appName} (${openInstances.length} window${
                 openInstances.length === 1 ? "" : "s"
-              }).`
+              }).`,
             );
             break;
           }
@@ -551,7 +551,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Validate required parameters
             if (typeof search !== "string") {
               console.error(
-                "[ToolCall] textEditSearchReplace: Missing required 'search' parameter"
+                "[ToolCall] textEditSearchReplace: Missing required 'search' parameter",
               );
               addToolResult({
                 tool: toolCall.toolName,
@@ -562,7 +562,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
             if (typeof replace !== "string") {
               console.error(
-                "[ToolCall] textEditSearchReplace: Missing required 'replace' parameter"
+                "[ToolCall] textEditSearchReplace: Missing required 'replace' parameter",
               );
               addToolResult({
                 tool: toolCall.toolName,
@@ -603,7 +603,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   targetInstanceId || "(not provided)"
                 } not found. Available instances: ${
                   Object.keys(textEditState.instances).join(", ") || "none"
-                }.`
+                }.`,
               );
 
               // Fallback: Try to use the most recently created TextEdit instance
@@ -615,11 +615,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 targetInstanceId = recentInstanceId;
                 usedFallback = true;
                 console.log(
-                  `[ToolCall] Using fallback: most recently created TextEdit instance ${targetInstanceId}`
+                  `[ToolCall] Using fallback: most recently created TextEdit instance ${targetInstanceId}`,
                 );
               } else {
                 console.error(
-                  "[ToolCall] No valid TextEdit instance found for search/replace"
+                  "[ToolCall] No valid TextEdit instance found for search/replace",
                 );
                 addToolResult({
                   tool: toolCall.toolName,
@@ -638,7 +638,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const targetInstance = textEditState.instances[targetInstanceId];
             if (!targetInstance) {
               console.error(
-                `[ToolCall] TextEdit instance ${targetInstanceId} not found after fallback attempt.`
+                `[ToolCall] TextEdit instance ${targetInstanceId} not found after fallback attempt.`,
               );
               addToolResult({
                 tool: toolCall.toolName,
@@ -720,7 +720,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               console.log(
                 `[ToolCall] Replaced "${search}" with "${replace}" in ${displayName}${
                   usedFallback ? " using fallback mechanism" : ""
-                }.`
+                }.`,
               );
 
               // Add tool result back to messages
@@ -752,7 +752,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Validate required parameters
             if (!text) {
               console.error(
-                "[ToolCall] textEditInsertText: Missing required 'text' parameter"
+                "[ToolCall] textEditInsertText: Missing required 'text' parameter",
               );
               addToolResult({
                 tool: toolCall.toolName,
@@ -784,7 +784,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   targetInstanceId || "(not provided)"
                 } not found. Available instances: ${
                   Object.keys(textEditState.instances).join(", ") || "none"
-                }.`
+                }.`,
               );
 
               // Fallback: Try to use the most recently created TextEdit instance
@@ -796,11 +796,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 targetInstanceId = recentInstanceId;
                 usedFallback = true;
                 console.log(
-                  `[ToolCall] Using fallback: most recently created TextEdit instance ${targetInstanceId}`
+                  `[ToolCall] Using fallback: most recently created TextEdit instance ${targetInstanceId}`,
                 );
               } else {
                 console.error(
-                  "[ToolCall] No valid TextEdit instance found for insertion"
+                  "[ToolCall] No valid TextEdit instance found for insertion",
                 );
                 addToolResult({
                   tool: toolCall.toolName,
@@ -819,7 +819,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const targetInstance = textEditState.instances[targetInstanceId];
             if (!targetInstance) {
               console.error(
-                `[ToolCall] TextEdit instance ${targetInstanceId} not found after fallback attempt.`
+                `[ToolCall] TextEdit instance ${targetInstanceId} not found after fallback attempt.`,
               );
               addToolResult({
                 tool: toolCall.toolName,
@@ -858,7 +858,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               ) {
                 // Clone existing document JSON to avoid direct mutation
                 const cloned = JSON.parse(
-                  JSON.stringify(targetInstance.contentJson)
+                  JSON.stringify(targetInstance.contentJson),
                 );
                 if (position === "start") {
                   cloned.content = [...nodesToInsert, ...cloned.content];
@@ -877,7 +877,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 updateInstance(targetInstanceId, {
                   contentJson: newDocJson,
                   hasUnsavedChanges: true,
-                })
+                }),
               );
 
               // Bring the target instance to foreground so user can see the changes
@@ -898,7 +898,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               console.log(
                 `[ToolCall] Successfully inserted text into TextEdit instance ${targetInstanceId} (${displayName})${
                   usedFallback ? " using fallback mechanism" : ""
-                }`
+                }`,
               );
 
               // Add tool result back to messages
@@ -933,7 +933,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               "textedit",
               undefined,
               title,
-              true
+              true,
             );
 
             // Track this newly created instance for fallback mechanism
@@ -956,7 +956,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             console.log(
               `[ToolCall] Created a new TextEdit document (instanceId: ${instanceId})${
                 title ? ` titled "${title}"` : ""
-              }.`
+              }.`,
             );
 
             // Add tool result back to messages
@@ -977,7 +977,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const appState = useAppStore.getState();
             const ipodInstances = appState.getInstancesByAppId("ipod");
             const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen
+              (inst) => inst.isOpen,
             );
 
             if (!hasOpenIpodInstance) {
@@ -1000,7 +1000,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             const nowPlaying = useIpodStore.getState().isPlaying;
             console.log(
-              `[ToolCall] iPod is now ${nowPlaying ? "playing" : "paused"}.`
+              `[ToolCall] iPod is now ${nowPlaying ? "playing" : "paused"}.`,
             );
             break;
           }
@@ -1016,7 +1016,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const appState = useAppStore.getState();
             const ipodInstances = appState.getInstancesByAppId("ipod");
             const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen
+              (inst) => inst.isOpen,
             );
 
             if (!hasOpenIpodInstance) {
@@ -1029,7 +1029,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Helper for case-insensitive includes
             const ciIncludes = (
               source: string | undefined,
-              query: string | undefined
+              query: string | undefined,
             ): boolean => {
               if (!source || !query) return false;
               return source.toLowerCase().includes(query.toLowerCase());
@@ -1060,7 +1060,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             if (primaryCandidates.length > 0) {
               finalCandidateIndices = primaryCandidates.map(
-                ({ index }) => index
+                ({ index }) => index,
               );
             } else if (title || artist) {
               // 3. Secondary filter (cross-match) if primary failed AND title/artist was queried
@@ -1086,10 +1086,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     return artistInTitleMatches;
                   }
                   return false;
-                }
+                },
               );
               finalCandidateIndices = secondaryCandidates.map(
-                ({ index }) => index
+                ({ index }) => index,
               );
             }
             // If only ID was queried and it failed, primaryCandidates would be empty,
@@ -1124,7 +1124,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Validate required parameter
             if (!id) {
               console.error(
-                "[ToolCall] ipodAddAndPlaySong: Missing required 'id' parameter"
+                "[ToolCall] ipodAddAndPlaySong: Missing required 'id' parameter",
               );
               break;
             }
@@ -1135,7 +1135,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const appState = useAppStore.getState();
             const ipodInstances = appState.getInstancesByAppId("ipod");
             const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen
+              (inst) => inst.isOpen,
             );
 
             if (!hasOpenIpodInstance) {
@@ -1149,7 +1149,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
               if (addedTrack) {
                 console.log(
-                  `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`
+                  `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`,
                 );
                 break;
               } else {
@@ -1165,7 +1165,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               // Provide a specific response for oEmbed failures
               if (errorMessage.includes("Failed to fetch video info")) {
                 console.error(
-                  `[ToolCall] Cannot add ${id}: Video unavailable or invalid.`
+                  `[ToolCall] Cannot add ${id}: Video unavailable or invalid.`,
                 );
                 break;
               }
@@ -1180,7 +1180,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const appState = useAppStore.getState();
             const ipodInstances = appState.getInstancesByAppId("ipod");
             const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen
+              (inst) => inst.isOpen,
             );
 
             if (!hasOpenIpodInstance) {
@@ -1211,7 +1211,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const appState = useAppStore.getState();
             const ipodInstances = appState.getInstancesByAppId("ipod");
             const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen
+              (inst) => inst.isOpen,
             );
 
             if (!hasOpenIpodInstance) {
@@ -1242,7 +1242,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Validate required parameter
             if (!html) {
               console.error(
-                "[ToolCall] generateHtml: Missing required 'html' parameter"
+                "[ToolCall] generateHtml: Missing required 'html' parameter",
               );
               break;
             }
@@ -1254,7 +1254,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // HTML will be handled by ChatMessages via HtmlPreview
             console.log(
               "[ToolCall] Generated HTML:",
-              html.substring(0, 100) + "..."
+              html.substring(0, 100) + "...",
             );
             break;
           }
@@ -1266,7 +1266,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             // Validate required parameter
             if (!directory) {
               console.error(
-                "[ToolCall] listFiles: Missing required 'directory' parameter"
+                "[ToolCall] listFiles: Missing required 'directory' parameter",
               );
               addToolResult({
                 tool: toolCall.toolName,
@@ -1296,7 +1296,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     path: `/Applications/${id}`,
                     name: app.name,
                   }));
-                
+
                 fileList = apps;
                 fileType = "application";
               } else {
@@ -1310,7 +1310,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     item.status === "active" &&
                     item.path.startsWith(`${directory}/`) &&
                     !item.isDirectory &&
-                    item.path !== `${directory}/` // Exclude the directory itself
+                    item.path !== `${directory}/`, // Exclude the directory itself
                 );
 
                 // Map to return relevant metadata
@@ -1392,13 +1392,108 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
             break;
           }
+          case "readFile": {
+            const { path } = toolCall.input as { path: string };
+
+            if (!path) {
+              console.error(
+                "[ToolCall] readFile: Missing required 'path' parameter",
+              );
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No path provided",
+              });
+              result = "";
+              break;
+            }
+
+            console.log("[ToolCall] readFile:", { path });
+
+            try {
+              const isApplet = path.startsWith("/Applets/");
+              const isDocument = path.startsWith("/Documents/");
+
+              if (!isApplet && !isDocument) {
+                throw new Error(
+                  "Invalid path: readFile only supports items in /Applets or /Documents",
+                );
+              }
+
+              const filesStore = useFilesStore.getState();
+              const fileItem = filesStore.items[path];
+
+              if (!fileItem) {
+                throw new Error(`File not found: ${path}`);
+              }
+
+              if (fileItem.status !== "active") {
+                throw new Error(`File is not active: ${path}`);
+              }
+
+              if (fileItem.isDirectory) {
+                throw new Error(`Path is a directory, not a file: ${path}`);
+              }
+
+              if (!fileItem.uuid) {
+                throw new Error(
+                  `File missing UUID for content lookup: ${path}`,
+                );
+              }
+
+              const storeName = isApplet ? STORES.APPLETS : STORES.DOCUMENTS;
+              const contentData = await dbOperations.get<DocumentContent>(
+                storeName,
+                fileItem.uuid,
+              );
+
+              if (!contentData || contentData.content == null) {
+                throw new Error(`Failed to read file content: ${path}`);
+              }
+
+              let content: string;
+              if (typeof contentData.content === "string") {
+                content = contentData.content;
+              } else if (contentData.content instanceof Blob) {
+                content = await contentData.content.text();
+              } else {
+                throw new Error("Unsupported content type for file");
+              }
+
+              const fileLabel = isApplet ? "Applet" : "Document";
+              const charCount = content.length;
+              const resultMessage = `${fileLabel} content: ${fileItem.name} (${charCount} characters)\n\n${content}`;
+
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+              result = "";
+            } catch (err) {
+              console.error("readFile error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  err instanceof Error
+                    ? err.message
+                    : "Failed to read file content",
+              });
+              result = "";
+            }
+
+            break;
+          }
           case "openFile": {
             const { path } = toolCall.input as { path: string };
 
             // Validate required parameter
             if (!path) {
               console.error(
-                "[ToolCall] openFile: Missing required 'path' parameter"
+                "[ToolCall] openFile: Missing required 'path' parameter",
               );
               addToolResult({
                 tool: toolCall.toolName,
@@ -1420,7 +1515,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
               if (!isApplet && !isDocument && !isApplication) {
                 throw new Error(
-                  "Invalid path: Must be in /Applets, /Documents, or /Applications directory"
+                  "Invalid path: Must be in /Applets, /Documents, or /Applications directory",
                 );
               }
 
@@ -1444,13 +1539,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Handle applet opening
                 if (!fileItem.uuid) {
                   throw new Error(
-                    `Applet missing UUID for content lookup: ${path}`
+                    `Applet missing UUID for content lookup: ${path}`,
                   );
                 }
 
                 const contentData = await dbOperations.get<DocumentContent>(
                   STORES.APPLETS,
-                  fileItem.uuid
+                  fileItem.uuid,
                 );
 
                 if (!contentData || !contentData.content) {
@@ -1485,13 +1580,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Handle document opening
                 if (!fileItem.uuid) {
                   throw new Error(
-                    `Document missing UUID for content lookup: ${path}`
+                    `Document missing UUID for content lookup: ${path}`,
                   );
                 }
 
                 const contentData = await dbOperations.get<DocumentContent>(
                   STORES.DOCUMENTS,
-                  fileItem.uuid
+                  fileItem.uuid,
                 );
 
                 if (!contentData || !contentData.content) {
@@ -1585,7 +1680,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         if (result) {
           console.log(
             `[onToolCall] Adding result for ${toolCall.toolName}:`,
-            result
+            result,
           );
           addToolResult({
             tool: toolCall.toolName,
@@ -1615,10 +1710,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               createdAt:
                 (msg as AIChatMessage).metadata?.createdAt || new Date(),
             },
-          } as AIChatMessage)
+          }) as AIChatMessage,
       );
       console.log(
-        `AI finished, syncing ${finalMessages.length} final messages to store.`
+        `AI finished, syncing ${finalMessages.length} final messages to store.`,
       );
       setAiMessages(finalMessages);
 
@@ -1631,7 +1726,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       const content = getAssistantVisibleText(lastMsg);
 
       console.log(
-        `[onFinish] Progress: ${progress}, Content length: ${content.length}`
+        `[onFinish] Progress: ${progress}, Content length: ${content.length}`,
       );
 
       // If there's unprocessed content, speak it now
@@ -1660,7 +1755,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           speak(cleaned, () => {
             highlightQueueRef.current.shift();
             setHighlightSegmentRef.current(
-              highlightQueueRef.current[0] || null
+              highlightQueueRef.current[0] || null,
             );
           });
 
@@ -1917,7 +2012,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Ensure auth token exists before submitting (wait for it if needed)
       if (username && !authToken) {
         console.log(
-          "[useAiChat] Waiting for auth token generation before sending message..."
+          "[useAiChat] Waiting for auth token generation before sending message...",
         );
         const tokenResult = await ensureAuthToken();
         if (!tokenResult.ok) {
@@ -1948,11 +2043,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             systemState: freshSystemState,
             model: aiModel,
           },
-        }
+        },
       );
       setInput(""); // Clear input after sending
     },
-    [sendMessage, input, needsUsername, username, authToken, ensureAuthToken, aiModel, setInput] // Updated deps
+    [
+      sendMessage,
+      input,
+      needsUsername,
+      username,
+      authToken,
+      ensureAuthToken,
+      aiModel,
+      setInput,
+    ], // Updated deps
   );
 
   const handleDirectMessageSubmit = useCallback(
@@ -1971,7 +2075,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Ensure auth token exists before submitting (wait for it if needed)
       if (username && !authToken) {
         console.log(
-          "[useAiChat] Waiting for auth token generation before sending message..."
+          "[useAiChat] Waiting for auth token generation before sending message...",
         );
         const tokenResult = await ensureAuthToken();
         if (!tokenResult.ok) {
@@ -2001,10 +2105,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             systemState: getSystemState(),
             model: aiModel,
           },
-        }
+        },
       );
     },
-    [sendMessage, needsUsername, username, authToken, ensureAuthToken, aiModel] // Updated deps
+    [sendMessage, needsUsername, username, authToken, ensureAuthToken, aiModel], // Updated deps
   );
 
   const handleNudge = useCallback(() => {
@@ -2110,7 +2214,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
       }
     },
-    [aiMessages, username, saveFile]
+    [aiMessages, username, saveFile],
   );
 
   // Stop both chat streaming and TTS queue
