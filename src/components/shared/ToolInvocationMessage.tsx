@@ -317,12 +317,46 @@ export function ToolInvocationMessage({
         ? filePath.split("/").filter(Boolean).pop()
         : "file";
 
+      let headerText: string | null = null;
+      let fileContent: string | null = null;
+
+      if (typeof output === "string") {
+        const trimmedOutput = output.trim();
+
+        if (trimmedOutput.length > 0) {
+          const separatorIndex = trimmedOutput.indexOf("\n\n");
+
+          if (separatorIndex !== -1) {
+            headerText = trimmedOutput.slice(0, separatorIndex).trim();
+            fileContent = trimmedOutput.slice(separatorIndex + 2).trimStart();
+          } else {
+            fileContent = trimmedOutput;
+          }
+        }
+      } else if (output != null) {
+        try {
+          fileContent = JSON.stringify(output, null, 2);
+        } catch (err) {
+          console.error("Failed to stringify readFile output", err);
+        }
+      }
+
       return (
         <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
           <div className="flex items-center gap-1 text-gray-700">
             <Check className="h-3 w-3 text-blue-600" />
             <span>{`Read ${fileName}`}</span>
           </div>
+          {headerText && (
+            <div className="mt-1 rounded border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-500">
+              {headerText}
+            </div>
+          )}
+          {fileContent && (
+            <div className="mt-1 max-h-64 overflow-auto rounded border border-gray-200 bg-gray-50 p-2 font-mono text-[11px] leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
+              {fileContent}
+            </div>
+          )}
         </div>
       );
     }
