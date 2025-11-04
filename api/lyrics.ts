@@ -334,11 +334,9 @@ export default async function handler(req: Request) {
         cover,
       };
 
-      // 6. Store in cache (TTL 30 days)
+      // 6. Store in cache (persistent)
       try {
-        await redis.set(cacheKey, JSON.stringify(result), {
-          ex: 60 * 60 * 24 * 30,
-        });
+        await redis.set(cacheKey, JSON.stringify(result));
         logInfo(requestId, "Fetched lyrics successfully", {
           title: result.title,
           artist: result.artist,
