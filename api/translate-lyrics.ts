@@ -93,22 +93,33 @@ export default async function handler(req: Request) {
   const requestId = generateRequestId();
   logRequest(req.method, req.url, null, requestId);
 
+  const effectiveOrigin = getEffectiveOrigin(req);
+
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
     const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
     if (resp) return resp;
   }
 
   if (req.method !== "POST") {
     logError(requestId, "Method not allowed", null);
-    return new Response("Method not allowed", { status: 405 });
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: effectiveOrigin
+        ? { "Access-Control-Allow-Origin": effectiveOrigin }
+        : undefined,
+    });
   }
 
   try {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    if (!isAllowedOrigin(effectiveOrigin)) {
+    if (!effectiveOrigin || !isAllowedOrigin(effectiveOrigin)) {
       return new Response("Unauthorized", { status: 403 });
     }
+
+    const respond = (body: BodyInit | null, init?: ResponseInit) => {
+      const headers = new Headers(init?.headers);
+      headers.set("Access-Control-Allow-Origin", effectiveOrigin);
+      return new Response(body, { ...init, headers });
+    };
 
     // Rate limiting removed - no longer limiting lyrics translation requests
 
@@ -117,7 +128,7 @@ export default async function handler(req: Request) {
 
     if (!validation.success) {
       logError(requestId, "Invalid request body", validation.error);
-      return new Response(
+      return respond(
         JSON.stringify({
           error: "Invalid request body",
           details: validation.error.format(),
@@ -132,7 +143,7 @@ export default async function handler(req: Request) {
     const { lines, targetLanguage } = validation.data;
 
     if (!lines || lines.length === 0) {
-      return new Response("", {
+      return respond("", {
         // Return empty string for empty LRC
         headers: { "Content-Type": "text/plain" },
       });
@@ -163,7 +174,7 @@ export default async function handler(req: Request) {
       const cached = (await redis.get(transCacheKey)) as string | null;
       if (cached) {
         logInfo(requestId, "Translation cache HIT", { transCacheKey });
-        return new Response(cached, {
+        return respond(cached, {
           headers: {
             "Content-Type": "text/plain; charset=utf-8",
             "X-Lyrics-Translation-Cache": "HIT",
@@ -211,16 +222,17 @@ Do not include timestamps or any other formatting in your output strings; just t
 
     // Store in cache (TTL 30 days)
     try {
-      await redis.set(transCacheKey, lrcResult);
+      await redis.set(transCacheKey, lrcResult, {
+        ex: 60 * 60 * 24 * 30,
+      });
       logInfo(requestId, "Stored translation in cache", { transCacheKey });
     } catch (e) {
       logError(requestId, "Redis cache write failed (lyrics translation)", e);
     }
 
-    return new Response(lrcResult, {
+    return respond(lrcResult, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
-        "Access-Control-Allow-Origin": effectiveOrigin!,
       },
     });
   } catch (error: unknown) {

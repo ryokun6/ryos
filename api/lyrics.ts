@@ -148,22 +148,27 @@ export default async function handler(req: Request) {
   const requestId = generateRequestId();
   logRequest(req.method, req.url, null, requestId);
 
+  const effectiveOrigin = getEffectiveOrigin(req);
+
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
     const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
     if (resp) return resp;
   }
 
   if (req.method !== "POST") {
     logError(requestId, "Method not allowed", null);
-    return new Response("Method not allowed", { status: 405 });
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: effectiveOrigin
+        ? { "Access-Control-Allow-Origin": effectiveOrigin }
+        : undefined,
+    });
   }
 
   // Parse and validate request body
   let body: LyricsRequest;
   try {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    if (!isAllowedOrigin(effectiveOrigin)) {
+    if (!effectiveOrigin || !isAllowedOrigin(effectiveOrigin)) {
       return new Response("Unauthorized", { status: 403 });
     }
 
@@ -172,15 +177,23 @@ export default async function handler(req: Request) {
     body = LyricsRequestSchema.parse(await req.json());
   } catch {
     logError(requestId, "Invalid request body", null);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (effectiveOrigin) headers["Access-Control-Allow-Origin"] = effectiveOrigin;
     return new Response(JSON.stringify({ error: "Invalid request body" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers,
     });
   }
 
+  const respond = (body: BodyInit | null, init?: ResponseInit) => {
+    const headers = new Headers(init?.headers);
+    headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
+    return new Response(body, { ...init, headers });
+  };
+
   const { title = "", artist = "", album = "", force = false } = body;
   if (!title && !artist) {
-    return new Response(
+    return respond(
       JSON.stringify({
         error: "At least one of title or artist is required",
       }),
@@ -206,11 +219,10 @@ export default async function handler(req: Request) {
         const cachedStr =
           typeof cachedRaw === "string" ? cachedRaw : JSON.stringify(cachedRaw);
         logInfo(requestId, "Lyrics cache HIT", { cacheKey });
-        return new Response(cachedStr, {
+        return respond(cachedStr, {
           headers: {
             "Content-Type": "application/json",
             "X-Lyrics-Cache": "HIT",
-            "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
           },
         });
       }
@@ -270,16 +282,16 @@ export default async function handler(req: Request) {
       );
     }
 
-    const searchJson =
-      (await searchRes.json()) as unknown as KugouSearchResponse;
-    const infoList: KugouSongInfo[] = searchJson?.data?.info ?? [];
+      const searchJson =
+        (await searchRes.json()) as unknown as KugouSearchResponse;
+      const infoList: KugouSongInfo[] = searchJson?.data?.info ?? [];
 
-    if (infoList.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No matching songs found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
-    }
+      if (infoList.length === 0) {
+        return respond(JSON.stringify({ error: "No matching songs found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
     // Iterate through results until we successfully fetch lyrics
     for (const song of infoList) {
@@ -324,7 +336,9 @@ export default async function handler(req: Request) {
 
       // 6. Store in cache (TTL 30 days)
       try {
-        await redis.set(cacheKey, JSON.stringify(result));
+        await redis.set(cacheKey, JSON.stringify(result), {
+          ex: 60 * 60 * 24 * 30,
+        });
         logInfo(requestId, "Fetched lyrics successfully", {
           title: result.title,
           artist: result.artist,
@@ -334,34 +348,28 @@ export default async function handler(req: Request) {
         console.error("Redis cache write failed (lyrics)", err);
       }
 
-      return new Response(JSON.stringify(result), {
+      return respond(JSON.stringify(result), {
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
           "X-Lyrics-Cache": force ? "BYPASS" : "MISS",
         },
       });
     }
 
     // If loop completes without returning, we failed to fetch lyrics
-    return new Response(
-      JSON.stringify({ error: "Lyrics not found for given query" }),
-      {
-        status: 404,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
-        },
-      }
-    );
+    return respond(JSON.stringify({ error: "Lyrics not found for given query" }), {
+      status: 404,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
   } catch (error: unknown) {
     logError(requestId, "Error fetching lyrics", error);
     console.error("Error fetching lyrics:", error);
-    return new Response(JSON.stringify({ error: "Unexpected server error" }), {
+    return respond(JSON.stringify({ error: "Unexpected server error" }), {
       status: 500,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
       },
     });
   }
