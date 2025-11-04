@@ -286,12 +286,15 @@ export default function HtmlPreview({
     };
   }, [isFullScreen, minimizeSound]);
 
-  // Enhanced processedHtmlContent with timestamp to force fresh execution
-  const processedHtmlContent = (() => {
+  // Helper function to generate HTML content with specific font preference
+  const generateProcessedHtmlContent = (useFallbackFonts: boolean) => {
     const timestamp = `<!-- ts=${contentTimestamp.current} -->`;
     const baseTag = normalizedBaseUrl
       ? `<base href="${normalizedBaseUrl}">`
       : "";
+
+    // Determine which fonts to use: always use fallback fonts when saving, otherwise use theme-based fonts
+    const shouldUseMacFonts = !useFallbackFonts && isMacOsXTheme;
 
     // Define the script tags and styles that should be added ONLY after streaming
     // Font link MUST be first for potentially faster loading/application
@@ -307,38 +310,38 @@ export default function HtmlPreview({
         extend: {
           fontFamily: {
             sans: [${
-              isMacOsXTheme
+              shouldUseMacFonts
                 ? '"LucidaGrande", "Lucida Grande", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "Apple Color Emoji", "Noto Color Emoji", "sans-serif"'
                 : '"Geneva-12", "ArkPixel", "SerenityOS-Emoji", "sans-serif"'
             }],
             mono: [${
-              isMacOsXTheme
+              shouldUseMacFonts
                 ? '"ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", "Courier New", "monospace"'
                 : '"Monaco", "ArkPixel", "SerenityOS-Emoji", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"'
             }],
             serif: [${
-              isMacOsXTheme
+              shouldUseMacFonts
                 ? '"Georgia", "Times New Roman", "Times", "serif"'
                 : '"Mondwest", "Yu Mincho", "Hiragino Mincho Pro", "Georgia", "Palatino", "SerenityOS-Emoji", "serif"'
             }],
             emoji: [${
-              isMacOsXTheme
+              shouldUseMacFonts
                 ? '"Apple Color Emoji", "Noto Color Emoji"'
                 : '"SerenityOS-Emoji", "AppleColorEmoji", "AppleColorEmojiFallback"'
             }],
             'geneva': [${
-              isMacOsXTheme
+              shouldUseMacFonts
                 ? '"LucidaGrande", "Lucida Grande", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "Apple Color Emoji", "Noto Color Emoji", "sans-serif"'
                 : '"Geneva-12", "ArkPixel", "SerenityOS-Emoji", "system-ui", "-apple-system", "sans-serif"'
             }],
             'mondwest': ["Mondwest", "Yu Mincho", "Hiragino Mincho Pro", "Georgia", "Palatino", "Yu Mincho", "Hiragino Mincho Pro", "serif"],
             'neuebit': [${
-              isMacOsXTheme
+              shouldUseMacFonts
                 ? '"Helvetica", "Arial", "Hiragino Sans", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"'
                 : '"NeueBit", "ArkPixel", "SerenityOS-Emoji", "Helvetica", "Arial", "Hiragino Sans", "sans-serif"'
             }],
             'monaco': [${
-              isMacOsXTheme
+              shouldUseMacFonts
                 ? '"ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", "Courier New", "monospace"'
                 : '"Monaco", "ArkPixel", "SerenityOS-Emoji", "monospace"'
             }],
@@ -351,7 +354,7 @@ export default function HtmlPreview({
   <style>
     * {
       box-sizing: border-box;
-      ${isMacOsXTheme ? "font-family: inherit !important;" : ""}
+      ${shouldUseMacFonts ? "font-family: inherit !important;" : ""}
     }
     html, body {
       margin: 0;
@@ -360,13 +363,13 @@ export default function HtmlPreview({
       height: 100%;
       max-width: 100%; /* Prevent body from exceeding viewport width */
       ${
-        isMacOsXTheme
+        shouldUseMacFonts
           ? 'font-family: "LucidaGrande", "Lucida Grande", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Noto Color Emoji", sans-serif !important;'
           : ""
       }
     }
     ${
-      isMacOsXTheme
+      shouldUseMacFonts
         ? `
     /* Ensure headings and common text elements use Lucida Grande */
     h1,h2,h3,h4,h5,h6,p,div,span,a,li,ul,ol,button,input,select,textarea,label,code,pre,blockquote,small,strong,em,table,th,td {
@@ -541,7 +544,14 @@ export default function HtmlPreview({
 </body>
 </html>`;
     }
-  })();
+  };
+
+  // Enhanced processedHtmlContent with timestamp to force fresh execution
+  // Uses theme-based fonts for display
+  const processedHtmlContent = generateProcessedHtmlContent(false);
+
+  // Processed HTML content for saving - always uses fallback fonts
+  const processedHtmlContentForSave = generateProcessedHtmlContent(true);
 
   // Function to update iframe content (now only called after streaming)
   const updateIframeContent = (finalContent: string) => {
@@ -711,10 +721,11 @@ export default function HtmlPreview({
     const appletPath = `/Applets/${nameWithExtension}`;
 
     try {
+      // Always save with fallback fonts, regardless of current theme
       await saveFile({
         path: appletPath,
         name: nameWithExtension,
-        content: processedHtmlContent,
+        content: processedHtmlContentForSave,
         type: "html",
         icon: appletIcon || "/icons/default/app.png",
       });
@@ -738,7 +749,7 @@ export default function HtmlPreview({
           onClick: () => {
             launchApp("applet-viewer", {
               path: appletPath,
-              content: processedHtmlContent,
+              content: processedHtmlContentForSave,
             });
           },
         },
