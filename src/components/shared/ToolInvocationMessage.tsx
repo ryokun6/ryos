@@ -317,14 +317,7 @@ export function ToolInvocationMessage({
         ? filePath.split("/").filter(Boolean).pop()
         : "file";
 
-      return (
-        <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
-          <div className="flex items-center gap-1 text-gray-700">
-            <Check className="h-3 w-3 text-blue-600" />
-            <span>{`Read ${fileName}`}</span>
-          </div>
-        </div>
-      );
+      displayResultMessage = `Read ${fileName}`;
     }
   }
 

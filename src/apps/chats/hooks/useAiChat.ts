@@ -1877,9 +1877,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   // Ensure all messages have metadata with timestamps (runs synchronously during render)
   const messagesWithTimestamps = useMemo<AIChatMessage[]>(() => {
     return (currentSdkMessages as UIMessage[]).map((msg) => {
-      // Check if this message already has a timestamp in the store
+      // Check if this message already exists in the store
       const existingMsg = aiMessages.find((m) => m.id === msg.id);
       const currentMsg = msg as AIChatMessage;
+
       return {
         ...msg,
         metadata: {
