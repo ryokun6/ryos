@@ -5,7 +5,7 @@ import {
   lastAssistantMessageIsCompleteWithToolCalls,
 } from "ai";
 import { useChatsStore } from "../../../stores/useChatsStore";
-import type { AIChatMessage, MessageMetadata } from "@/types/chat";
+import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
@@ -253,17 +253,6 @@ const debouncedInsertTextUpdate = createDebouncedAction(150);
 
 // Helper function to extract visible text from message parts
 const getAssistantVisibleText = (message: UIMessage): string => {
-  const metadata = (message as AIChatMessage).metadata as
-    | (MessageMetadata & Record<string, unknown>)
-    | undefined;
-  const source = metadata
-    ? ((metadata as Record<string, unknown>)["source"] as string | undefined)
-    : undefined;
-
-  if (source === "readFile") {
-    return "";
-  }
-
   // Define type for message parts
   type MessagePart = {
     type: string;
@@ -1472,41 +1461,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 throw new Error("Unsupported content type for file");
               }
 
-                const fileLabel = isApplet ? "Applet" : "Document";
-                const charCount = content.length;
-                const resultMessage = `${fileLabel} content: ${fileItem.name} (${charCount} characters)\n\n${content}`;
+              const fileLabel = isApplet ? "Applet" : "Document";
+              const charCount = content.length;
+              const resultMessage = `${fileLabel} content: ${fileItem.name} (${charCount} characters)\n\n${content}`;
 
-                const messageId = `${toolCall.toolCallId}-readFile-output`;
-                const metadata: MessageMetadata & Record<string, unknown> = {
-                  createdAt: new Date(),
-                  source: "readFile",
-                  filePath: path,
-                };
-
-                setSdkMessages((prevMessages) => {
-                  const alreadyExists = prevMessages.some(
-                    (msg) => msg.id === messageId,
-                  );
-                  if (alreadyExists) {
-                    return prevMessages;
-                  }
-
-                  const fileContentMessage: AIChatMessage = {
-                    id: messageId,
-                    role: "assistant",
-                    parts: [
-                      {
-                        type: "text",
-                        text: resultMessage,
-                      },
-                    ],
-                    metadata,
-                  };
-
-                  return [...prevMessages, fileContentMessage];
-                });
-
-                result = resultMessage;
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+              result = "";
             } catch (err) {
               console.error("readFile error:", err);
               addToolResult({
@@ -1733,38 +1697,30 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           state: "output-error",
           errorText: err instanceof Error ? err.message : "Unknown error",
         });
-        }
-      },
+      }
+    },
 
-      onFinish: ({ messages }) => {
-        // Ensure all messages have metadata with createdAt while preserving existing fields
-        const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
-          (msg) => {
-            const currentMsg = msg as AIChatMessage;
-            const currentMetadata = currentMsg.metadata as
-              | (MessageMetadata & Record<string, unknown>)
-              | undefined;
+    onFinish: ({ messages }) => {
+      // Ensure all messages have metadata with createdAt
+      const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
+        (msg) =>
+          ({
+            ...msg,
+            metadata: {
+              createdAt:
+                (msg as AIChatMessage).metadata?.createdAt || new Date(),
+            },
+          }) as AIChatMessage,
+      );
+      console.log(
+        `AI finished, syncing ${finalMessages.length} final messages to store.`,
+      );
+      setAiMessages(finalMessages);
 
-            const mergedMetadata: MessageMetadata & Record<string, unknown> = {
-              ...(currentMetadata ?? {}),
-              createdAt: currentMetadata?.createdAt || new Date(),
-            };
-
-            return {
-              ...msg,
-              metadata: mergedMetadata,
-            } as AIChatMessage;
-          },
-        );
-        console.log(
-          `AI finished, syncing ${finalMessages.length} final messages to store.`,
-        );
-        setAiMessages(finalMessages);
-
-        // Ensure any final content that wasn't processed is spoken
-        if (!speechEnabled) return;
-        const lastMsg = finalMessages.at(-1);
-        if (!lastMsg || lastMsg.role !== "assistant") return;
+      // Ensure any final content that wasn't processed is spoken
+      if (!speechEnabled) return;
+      const lastMsg = finalMessages.at(-1);
+      if (!lastMsg || lastMsg.role !== "assistant") return;
 
       const progress = speechProgressRef.current[lastMsg.id] ?? 0;
       const content = getAssistantVisibleText(lastMsg);
@@ -1925,23 +1881,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       const existingMsg = aiMessages.find((m) => m.id === msg.id);
       const currentMsg = msg as AIChatMessage;
 
-      const currentMetadata = currentMsg.metadata as
-        | (MessageMetadata & Record<string, unknown>)
-        | undefined;
-      const existingMetadata = existingMsg?.metadata as
-        | (MessageMetadata & Record<string, unknown>)
-        | undefined;
-
-      const mergedMetadata: MessageMetadata & Record<string, unknown> = {
-        ...(existingMetadata ?? {}),
-        ...(currentMetadata ?? {}),
-        createdAt:
-          currentMetadata?.createdAt || existingMetadata?.createdAt || new Date(),
-      };
-
       return {
         ...msg,
-        metadata: mergedMetadata,
+        metadata: {
+          createdAt:
+            currentMsg.metadata?.createdAt ||
+            existingMsg?.metadata?.createdAt ||
+            new Date(),
+        },
       } as AIChatMessage;
     });
   }, [currentSdkMessages, aiMessages]);
