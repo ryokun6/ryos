@@ -344,8 +344,7 @@ export function AppStore({ theme }: AppStoreProps) {
         <style>{appletIconStyles}</style>
         <div className="h-full w-full flex items-center justify-center">
           <div className="text-center">
-            <div className="inline-block w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mb-2" />
-            <p className="text-sm text-gray-600 font-geneva-12">Loading...</p>
+            <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
           </div>
         </div>
       </>
@@ -527,8 +526,7 @@ export function AppStore({ theme }: AppStoreProps) {
             {isLoadingContent ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <div className="inline-block w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mb-2" />
-                  <p className="text-sm text-gray-600 font-geneva-12">Loading...</p>
+                  <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
                 </div>
               </div>
             ) : selectedAppletContent ? (
