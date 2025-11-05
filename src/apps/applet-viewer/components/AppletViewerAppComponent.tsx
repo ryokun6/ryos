@@ -374,9 +374,13 @@ export function AppletViewerAppComponent({
       const currentFile = files.find((f) => f.path === appletPath);
       const fileItem = appletPath ? fileStore.getItem(appletPath) : null;
       const existingShareId = fileItem?.shareId;
+      const fileCreatedBy = fileItem?.createdBy;
 
-      if (existingShareId) {
-        // Applet already shared, just show the existing share URL
+      // Check if user is the author (case-insensitive comparison)
+      const isAuthor = fileCreatedBy && username && fileCreatedBy.toLowerCase() === username.toLowerCase();
+
+      // If applet exists and user is not the author, just show existing share URL
+      if (existingShareId && !isAuthor) {
         setShareId(existingShareId);
         setIsShareDialogOpen(true);
         toast.success("Applet already shared", {
@@ -385,7 +389,7 @@ export function AppletViewerAppComponent({
         return;
       }
 
-      // No existing shareId, create a new share
+      // If applet exists and user is the author, or no existing shareId, create/update share
       const appletTitle = getAppletTitle(htmlContent);
       const appletIcon = currentFile?.icon;
       const appletName = currentFile?.name || (appletPath ? getFileName(appletPath) : undefined);
@@ -407,6 +411,7 @@ export function AppletViewerAppComponent({
           name: appletName || undefined,
           windowWidth: windowDimensions?.width,
           windowHeight: windowDimensions?.height,
+          shareId: existingShareId && isAuthor ? existingShareId : undefined, // Include shareId if updating
         }),
       });
 
@@ -419,7 +424,7 @@ export function AppletViewerAppComponent({
       setShareId(data.id);
       setIsShareDialogOpen(true);
 
-      // Update the file metadata with the new shareId
+      // Update the file metadata with the shareId (preserve existing createdBy)
       if (appletPath && data.id) {
         const currentFileItem = fileStore.getItem(appletPath);
         if (currentFileItem) {
@@ -435,8 +440,10 @@ export function AppletViewerAppComponent({
         }
       }
 
-      toast.success("Applet shared!", {
-        description: "Share link generated successfully.",
+      toast.success(data.updated ? "Applet updated!" : "Applet shared!", {
+        description: data.updated 
+          ? "Share link updated successfully." 
+          : "Share link generated successfully.",
       });
     } catch (error) {
       console.error("Error sharing applet:", error);

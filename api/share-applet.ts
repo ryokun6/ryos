@@ -66,6 +66,7 @@ const SaveAppletRequestSchema = z.object({
   name: z.string().optional(),
   windowWidth: z.number().optional(),
   windowHeight: z.number().optional(),
+  shareId: z.string().optional(), // Optional: if provided, update existing applet
 });
 
 type SaveAppletRequest = z.infer<typeof SaveAppletRequestSchema>;
@@ -297,22 +298,82 @@ export default async function handler(req: Request) {
         );
       }
 
-      const { content, title, icon, name, windowWidth, windowHeight } = validation.data;
+      const { content, title, icon, name, windowWidth, windowHeight, shareId } = validation.data;
 
-      // Generate unique ID
-      const id = generateId();
+      let id: string;
+      let isUpdate = false;
+      let existingAppletData: {
+        createdAt?: number;
+        createdBy?: string;
+      } | null = null;
+
+      // If shareId is provided, check if we can update existing applet
+      if (shareId) {
+        const existingKey = `${APPLET_SHARE_PREFIX}${shareId}`;
+        const existingData = await redis.get(existingKey);
+
+        if (existingData) {
+          // Parse existing applet data
+          let parsed;
+          try {
+            parsed =
+              typeof existingData === "string"
+                ? JSON.parse(existingData)
+                : existingData;
+            
+            // Check if author matches
+            if (parsed && parsed.createdBy && parsed.createdBy.toLowerCase() === username?.toLowerCase()) {
+              // Author matches, update existing applet
+              id = shareId;
+              isUpdate = true;
+              existingAppletData = {
+                createdAt: parsed.createdAt,
+                createdBy: parsed.createdBy,
+              };
+            } else {
+              // Author doesn't match or no author, create new share
+              id = generateId();
+            }
+          } catch (parseError) {
+            // If we can't parse, treat as new share
+            id = generateId();
+          }
+        } else {
+          // Applet doesn't exist, create new share
+          id = generateId();
+        }
+      } else {
+        // No shareId provided, generate new ID
+        id = generateId();
+      }
+
       const key = `${APPLET_SHARE_PREFIX}${id}`;
 
-      // Store applet data in Redis (no TTL - forever)
-      const appletData = {
+      // Prepare applet data
+      const appletData: {
+        content: string;
+        title?: string;
+        icon?: string;
+        name?: string;
+        windowWidth?: number;
+        windowHeight?: number;
+        createdAt: number;
+        createdBy?: string;
+        updatedAt?: number;
+      } = {
         content,
         title: title || undefined,
         icon: icon || undefined,
         name: name || undefined,
         windowWidth: windowWidth || undefined,
         windowHeight: windowHeight || undefined,
-        createdAt: Date.now(),
-        createdBy: username || undefined,
+        createdAt: isUpdate && existingAppletData?.createdAt 
+          ? existingAppletData.createdAt 
+          : Date.now(),
+        createdBy: isUpdate && existingAppletData?.createdBy
+          ? existingAppletData.createdBy
+          : (username || undefined),
+        updatedAt: Date.now(),
       };
 
       try {
@@ -338,6 +399,7 @@ export default async function handler(req: Request) {
         JSON.stringify({
           id,
           shareUrl,
+          updated: isUpdate,
         }),
         {
           status: 200,
