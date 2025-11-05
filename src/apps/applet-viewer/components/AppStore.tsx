@@ -431,29 +431,21 @@ export function AppStore({ theme }: AppStoreProps) {
               </button>
             </>
           )}
-          {installed ? (
-            <Button
-              size="sm"
-              variant={isMacTheme ? "secondary" : isSystem7Theme ? "retro" : "default"}
-              onClick={(e) => {
-                e.stopPropagation();
+          <Button
+            size="sm"
+            variant={isMacTheme ? "secondary" : isSystem7Theme ? "retro" : "default"}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (installed) {
                 handleAppletClick(applet);
-              }}
-            >
-              Open
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant={isMacTheme ? "secondary" : isSystem7Theme ? "retro" : "default"}
-              onClick={(e) => {
-                e.stopPropagation();
+              } else {
                 handleInstall(applet);
-              }}
-            >
-              Install
-            </Button>
-          )}
+              }
+            }}
+            className="w-[60px]"
+          >
+            {installed ? "Open" : "Get"}
+          </Button>
         </div>
       </div>
     );
@@ -526,8 +518,9 @@ export function AppStore({ theme }: AppStoreProps) {
               size="sm"
               variant={isMacTheme ? "secondary" : isSystem7Theme ? "retro" : "default"}
               onClick={() => handleInstall(selectedApplet)}
+              className="w-[60px]"
             >
-              Install
+              Get
             </Button>
           </div>
           <div className="flex-1 overflow-hidden bg-white">
