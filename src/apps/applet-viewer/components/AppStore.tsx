@@ -216,16 +216,13 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
     // Check if we have stored storeCreatedAt metadata
     const storeCreatedAt = fileItem.storeCreatedAt;
 
-    // If no storeCreatedAt exists (prepopulated applets or old installs), initialize it
-    // with current store's createdAt so future updates can be detected
-    if (!storeCreatedAt) {
-      const currentCreatedAt = applet.createdAt || 0;
-      // Initialize storeCreatedAt (even if 0) so we can track future updates
-      // If createdAt is 0, it means the applet might not be in store yet or is very old
-      fileStore.updateItemMetadata(installedFile.path, {
-        storeCreatedAt: currentCreatedAt,
-      });
-      // Return false since we just initialized - they're in sync now
+    // If no storeCreatedAt exists (prepopulated applets or old installs), we can't
+    // determine update status yet. Treat as up to date until metadata is populated.
+    if (
+      storeCreatedAt === undefined ||
+      storeCreatedAt === null ||
+      storeCreatedAt === 0
+    ) {
       return false;
     }
 
@@ -237,6 +234,44 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
     const timeDiff = currentCreatedAt - storeCreatedAt;
     return timeDiff > 1000; // Only show update if difference is more than 1 second
   };
+
+  useEffect(() => {
+    if (!applets.length || !files.length) {
+      return;
+    }
+
+    const pendingUpdates: Array<{ path: string; storeCreatedAt: number }> = [];
+
+    files.forEach((file) => {
+      const fileItem = fileStore.getItem(file.path);
+      if (!fileItem?.shareId) {
+        return;
+      }
+
+      if (fileItem.storeCreatedAt && fileItem.storeCreatedAt !== 0) {
+        return;
+      }
+
+      const matchingApplet = applets.find(
+        (applet) => applet.id === fileItem.shareId,
+      );
+
+      if (!matchingApplet) {
+        return;
+      }
+
+      const createdAt = matchingApplet.createdAt || Date.now();
+      pendingUpdates.push({ path: file.path, storeCreatedAt: createdAt });
+    });
+
+    if (!pendingUpdates.length) {
+      return;
+    }
+
+    pendingUpdates.forEach(({ path, storeCreatedAt }) => {
+      fileStore.updateItemMetadata(path, { storeCreatedAt });
+    });
+  }, [applets, files, fileStore]);
 
   // Handle clicking on an applet
   const handleAppletClick = async (applet: Applet) => {
