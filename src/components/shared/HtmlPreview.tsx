@@ -1107,7 +1107,7 @@ export default function HtmlPreview({
             </div>
             <Button
               size="sm"
-              variant="default"
+              variant="secondary"
               onClick={async (e) => {
                 e.stopPropagation();
                 try {
@@ -1120,7 +1120,7 @@ export default function HtmlPreview({
               className="w-[60px]"
               disabled={isStreaming}
             >
-              Get
+              Save
             </Button>
           </div>
         )}
