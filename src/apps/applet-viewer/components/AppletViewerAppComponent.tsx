@@ -5,12 +5,12 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { AppletViewerMenuBar } from "./AppletViewerMenuBar";
+import { AppStore } from "./AppStore";
 import { appMetadata, helpItems, AppletViewerInitialData } from "../index";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { Button } from "@/components/ui/button";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
@@ -36,7 +36,6 @@ export function AppletViewerAppComponent({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
-  const isSystem7Theme = currentTheme === "system7";
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
 
@@ -578,7 +577,7 @@ export function AppletViewerAppComponent({
       : appletPath
       ? getFileName(appletPath)
       : getAppletTitle(htmlContent, false) || "Applet Viewer"
-    : "Applet Viewer";
+    : "App Store";
 
   return (
     <>
@@ -606,7 +605,7 @@ export function AppletViewerAppComponent({
             />
           ) : (
             <div
-              className="h-full w-full flex items-center justify-center"
+              className="h-full w-full"
               style={
                 isMacTheme
                   ? {
@@ -616,44 +615,7 @@ export function AppletViewerAppComponent({
                   : undefined
               }
             >
-              <div className="text-center px-6 font-geneva-12">
-                <h2 className="text-[13px] font-geneva-12 font-medium">
-                  No applet open
-                </h2>
-                <p className="text-[11px] text-gray-600 font-geneva-12 mb-3">
-                  Open applets from Finder or create from Chats
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    size="sm"
-                    variant={
-                      isMacTheme
-                        ? "secondary"
-                        : isSystem7Theme
-                        ? "retro"
-                        : "outline"
-                    }
-                    onClick={() =>
-                      launchApp("finder", { initialPath: "/Applets" })
-                    }
-                  >
-                    Open
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={
-                      isMacTheme
-                        ? "secondary"
-                        : isSystem7Theme
-                        ? "retro"
-                        : "outline"
-                    }
-                    onClick={() => launchApp("chats")}
-                  >
-                    Create
-                  </Button>
-                </div>
-              </div>
+              <AppStore theme={currentTheme} />
             </div>
           )}
         </div>

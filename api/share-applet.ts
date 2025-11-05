@@ -75,11 +75,11 @@ export default async function handler(req: Request) {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "OPTIONS"], effectiveOrigin);
+    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "PATCH", "OPTIONS"], effectiveOrigin);
     if (resp) return resp;
   }
 
-  if (req.method !== "GET" && req.method !== "POST") {
+  if (req.method !== "GET" && req.method !== "POST" && req.method !== "DELETE" && req.method !== "PATCH" && req.method !== "OPTIONS") {
     return new Response("Method not allowed", { status: 405 });
   }
 
@@ -101,9 +101,81 @@ export default async function handler(req: Request) {
   }
 
   try {
-    // GET: Retrieve applet by ID
+    // GET: Retrieve applet by ID or list featured applets
     if (req.method === "GET") {
       const url = new URL(req.url);
+      const listParam = url.searchParams.get("list");
+      
+      // If list=true, return all applets
+      if (listParam === "true") {
+        // Scan Redis for all applet keys
+        const appletIds: string[] = [];
+        let cursor = 0;
+        
+        do {
+          const [newCursor, keys] = await redis.scan(cursor, {
+            match: `${APPLET_SHARE_PREFIX}*`,
+            count: 100,
+          });
+          cursor = parseInt(newCursor as unknown as string, 10);
+          
+          // Extract IDs from keys (remove prefix)
+          for (const key of keys) {
+            const id = key.substring(APPLET_SHARE_PREFIX.length);
+            if (id) {
+              appletIds.push(id);
+            }
+          }
+        } while (cursor !== 0);
+        
+        // Fetch applet metadata for all IDs
+        let applets = [];
+        
+        if (appletIds.length > 0) {
+          const appletKeys = appletIds.map((id) => `${APPLET_SHARE_PREFIX}${id}`);
+          const appletsData = await redis.mget(...appletKeys);
+          
+          for (let i = 0; i < appletsData.length; i++) {
+            const appletData = appletsData[i];
+            if (!appletData) continue;
+            
+            try {
+              const parsed = typeof appletData === "string" 
+                ? JSON.parse(appletData) 
+                : appletData;
+              
+              applets.push({
+                id: appletIds[i],
+                title: parsed.title,
+                name: parsed.name,
+                icon: parsed.icon,
+                createdAt: parsed.createdAt || 0,
+                featured: parsed.featured || false,
+                createdBy: parsed.createdBy || undefined,
+              });
+            } catch {
+              // Skip invalid applet data
+              continue;
+            }
+          }
+          
+          // Sort: featured first, then by createdAt (newest first)
+          applets.sort((a, b) => {
+            if (a.featured && !b.featured) return -1;
+            if (!a.featured && b.featured) return 1;
+            return (b.createdAt || 0) - (a.createdAt || 0);
+          });
+        }
+        
+        return new Response(JSON.stringify({ applets }), {
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
+          },
+        });
+      }
+      
+      // Otherwise, retrieve by ID
       const id = url.searchParams.get("id");
 
       if (!id) {
@@ -236,6 +308,7 @@ export default async function handler(req: Request) {
         icon: icon || undefined,
         name: name || undefined,
         createdAt: Date.now(),
+        createdBy: username || undefined,
       };
 
       try {
@@ -272,12 +345,214 @@ export default async function handler(req: Request) {
       );
     }
 
+    // DELETE: Delete applet (admin only - ryo)
+    if (req.method === "DELETE") {
+      const authHeader = req.headers.get("Authorization");
+      const usernameHeader = req.headers.get("X-Username");
+
+      const authToken = authHeader?.replace("Bearer ", "") || null;
+      const username = usernameHeader || null;
+
+      // Validate authentication
+      const authResult = await validateAuthToken(redis, username, authToken);
+      if (!authResult.valid) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          {
+            status: 401,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Check if user is ryo
+      if (username?.toLowerCase() !== "ryo") {
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          {
+            status: 403,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      const url = new URL(req.url);
+      const id = url.searchParams.get("id");
+
+      if (!id) {
+        return new Response(
+          JSON.stringify({ error: "Missing id parameter" }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      const key = `${APPLET_SHARE_PREFIX}${id}`;
+      const deleted = await redis.del(key);
+
+      if (deleted === 0) {
+        return new Response(
+          JSON.stringify({ error: "Applet not found" }),
+          {
+            status: 404,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
+          },
+        }
+      );
+    }
+
+    // PATCH: Update applet (admin only - ryo) - for setting featured status
+    if (req.method === "PATCH") {
+      const authHeader = req.headers.get("Authorization");
+      const usernameHeader = req.headers.get("X-Username");
+
+      const authToken = authHeader?.replace("Bearer ", "") || null;
+      const username = usernameHeader || null;
+
+      // Validate authentication
+      const authResult = await validateAuthToken(redis, username, authToken);
+      if (!authResult.valid) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          {
+            status: 401,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Check if user is ryo
+      if (username?.toLowerCase() !== "ryo") {
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          {
+            status: 403,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      const url = new URL(req.url);
+      const id = url.searchParams.get("id");
+
+      if (!id) {
+        return new Response(
+          JSON.stringify({ error: "Missing id parameter" }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Parse request body
+      let body;
+      try {
+        body = await req.json();
+      } catch (parseError) {
+        return new Response(
+          JSON.stringify({ error: "Invalid JSON in request body" }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      const { featured } = body;
+      if (typeof featured !== "boolean") {
+        return new Response(
+          JSON.stringify({ error: "Invalid request body: featured must be boolean" }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      const key = `${APPLET_SHARE_PREFIX}${id}`;
+      const appletData = await redis.get(key);
+
+      if (!appletData) {
+        return new Response(
+          JSON.stringify({ error: "Applet not found" }),
+          {
+            status: 404,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Parse and update
+      const parsed = typeof appletData === "string" 
+        ? JSON.parse(appletData) 
+        : appletData;
+      
+      parsed.featured = featured;
+
+      await redis.set(key, JSON.stringify(parsed));
+
+      return new Response(
+        JSON.stringify({ success: true, featured }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
+          },
+        }
+      );
+    }
+
     // Method not allowed (shouldn't reach here due to early return)
     return new Response("Method not allowed", {
       status: 405,
       headers: {
         "Access-Control-Allow-Origin": effectiveOrigin!,
-        "Allow": "GET, POST, OPTIONS",
+        "Allow": "GET, POST, DELETE, PATCH, OPTIONS",
       },
     });
   } catch (error: unknown) {

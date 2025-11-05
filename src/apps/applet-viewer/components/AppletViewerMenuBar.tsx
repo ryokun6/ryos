@@ -86,6 +86,22 @@ export function AppletViewerMenuBar({
           >
             Open...
           </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => launchApp("applet-viewer", { 
+              initialData: { path: "", content: "" } 
+            })}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
+            Open App Store...
+          </DropdownMenuItem>
+          {hasAppletContent && isLoggedIn && (
+            <DropdownMenuItem
+              onClick={onShareApplet}
+              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            >
+              Share Applet...
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={() => fileInputRef.current?.click()}
@@ -113,14 +129,6 @@ export function AppletViewerMenuBar({
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-          )}
-          {hasAppletContent && isLoggedIn && (
-            <DropdownMenuItem
-              onClick={onShareApplet}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
-            >
-              Share Applet...
-            </DropdownMenuItem>
           )}
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
