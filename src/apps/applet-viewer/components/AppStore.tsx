@@ -83,6 +83,8 @@ export function AppStore({ theme }: AppStoreProps) {
   // Fetch applet content when selectedApplet changes
   useEffect(() => {
     if (selectedApplet) {
+      // Reset content and set loading immediately
+      setSelectedAppletContent("");
       setIsLoadingContent(true);
       fetch(`/api/share-applet?id=${encodeURIComponent(selectedApplet.id)}`)
         .then((response) => {
@@ -103,6 +105,7 @@ export function AppStore({ theme }: AppStoreProps) {
         });
     } else {
       setSelectedAppletContent("");
+      setIsLoadingContent(false);
     }
   }, [selectedApplet]);
 
