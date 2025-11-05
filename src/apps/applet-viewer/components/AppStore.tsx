@@ -600,16 +600,6 @@ export function AppStore({ theme }: AppStoreProps) {
             </div>
           ) : (
             <>
-              {installedApplets.length > 0 && (
-                <>
-                  <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
-                    <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
-                      Installed
-                    </h3>
-                  </div>
-                  {installedApplets.map((applet) => renderAppletItem(applet))}
-                </>
-              )}
               {featuredApplets.length > 0 && (
                 <>
                   <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
@@ -628,6 +618,16 @@ export function AppStore({ theme }: AppStoreProps) {
                     </h3>
                   </div>
                   {allApplets.map((applet) => renderAppletItem(applet))}
+                </>
+              )}
+              {installedApplets.length > 0 && (
+                <>
+                  <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
+                    <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
+                      Installed
+                    </h3>
+                  </div>
+                  {installedApplets.map((applet) => renderAppletItem(applet))}
                 </>
               )}
             </>
