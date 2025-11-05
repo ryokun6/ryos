@@ -218,41 +218,138 @@ export function AppletViewerAppComponent({
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const content = await file.text();
-        let fileName = file.name;
+        let fileText: string;
 
-        // Extract emoji from filename BEFORE processing extension
-        const { emoji, remainingText } = extractEmojiIcon(fileName);
+        // Check if file is gzipped (.app file or .gz file)
+        const fileExtension = file.name.toLowerCase();
+        if (fileExtension.endsWith(".app") || fileExtension.endsWith(".gz")) {
+          // Try to decompress as gzip
+          try {
+            if (typeof DecompressionStream === "undefined") {
+              throw new Error("DecompressionStream API not available");
+            }
 
-        // Use the remaining text (without emoji) as the actual filename
-        fileName = remainingText;
-
-        // Ensure the file has .app extension
-        if (fileName.endsWith(".html") || fileName.endsWith(".htm")) {
-          fileName = fileName.replace(/\.(html|htm)$/i, ".app");
-        } else if (!fileName.endsWith(".app")) {
-          fileName = `${fileName}.app`;
+            const arrayBuffer = await file.arrayBuffer();
+            const blob = new Blob([arrayBuffer]);
+            const stream = blob.stream();
+            const decompressionStream = new DecompressionStream("gzip");
+            const decompressedStream = stream.pipeThrough(decompressionStream);
+            
+            const chunks: Uint8Array[] = [];
+            const reader = decompressedStream.getReader();
+            
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (value) {
+                chunks.push(value);
+              }
+            }
+            
+            // Combine chunks and convert to text
+            const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+            const combined = new Uint8Array(totalLength);
+            let offset = 0;
+            for (const chunk of chunks) {
+              combined.set(chunk, offset);
+              offset += chunk.length;
+            }
+            
+            const decoder = new TextDecoder();
+            fileText = decoder.decode(combined);
+          } catch (decompressError) {
+            // If decompression fails, treat as plain text
+            // Read file again (File objects can be read multiple times)
+            console.warn("Failed to decompress, treating as plain text:", decompressError);
+            fileText = await file.text();
+          }
+        } else {
+          // Not a gzipped file, read as text
+          fileText = await file.text();
         }
 
-        const filePath = `/Applets/${fileName}`;
+        let content: string;
+        let importFileName: string;
+        let icon: string | undefined;
+        let shareId: string | undefined;
+        let createdBy: string | undefined;
+        let windowWidth: number | undefined;
+        let windowHeight: number | undefined;
+        let createdAt: number | undefined;
+        let modifiedAt: number | undefined;
+
+        // Try to parse as JSON (full applet export)
+        try {
+          const jsonData = JSON.parse(fileText);
+          if (jsonData.content && typeof jsonData.content === "string") {
+            // Full JSON format
+            content = jsonData.content;
+            importFileName = jsonData.name || file.name;
+            icon = jsonData.icon;
+            shareId = jsonData.shareId;
+            createdBy = jsonData.createdBy;
+            windowWidth = jsonData.windowWidth;
+            windowHeight = jsonData.windowHeight;
+            createdAt = jsonData.createdAt;
+            modifiedAt = jsonData.modifiedAt;
+          } else {
+            // Not a valid applet JSON, treat as plain HTML
+            content = fileText;
+            importFileName = file.name;
+          }
+        } catch {
+          // Not JSON, treat as plain HTML/App file
+          content = fileText;
+          importFileName = file.name;
+        }
+
+        // Extract emoji from filename BEFORE processing extension
+        const { emoji, remainingText } = extractEmojiIcon(importFileName);
+
+        // Use extracted emoji or JSON icon, or remaining text
+        if (!icon && emoji) {
+          icon = emoji;
+        }
+        importFileName = remainingText;
+
+        // Ensure the file has .app extension
+        if (importFileName.endsWith(".html") || importFileName.endsWith(".htm") || importFileName.endsWith(".json") || importFileName.endsWith(".gz")) {
+          importFileName = importFileName.replace(/\.(html|htm|json|gz)$/i, ".app");
+        } else if (!importFileName.endsWith(".app")) {
+          importFileName = `${importFileName}.app`;
+        }
+
+        const filePath = `/Applets/${importFileName}`;
+        const fileStore = useFilesStore.getState();
         
-        // Save the file to the filesystem first
+        // Save the file to the filesystem with all metadata
         await saveFile({
-          name: fileName,
+          name: importFileName,
           path: filePath,
           content: content,
           type: "html",
-          icon: emoji || undefined, // Use extracted emoji as icon if present
-          createdBy: username || undefined, // Include username for imported applets
+          icon: icon,
+          shareId: shareId,
+          createdBy: createdBy || username || undefined,
         });
+
+        // Update additional metadata if present
+        if (windowWidth || windowHeight || createdAt || modifiedAt) {
+          fileStore.updateItemMetadata(filePath, {
+            ...(windowWidth && { windowWidth }),
+            ...(windowHeight && { windowHeight }),
+            ...(createdAt && { createdAt }),
+            ...(modifiedAt && { modifiedAt }),
+          });
+        }
 
         // Dispatch event to notify Finder of the new file
         const saveEvent = new CustomEvent("saveFile", {
           detail: {
-            name: fileName,
+            name: importFileName,
             path: filePath,
             content: content,
-            icon: emoji || undefined,
+            icon: icon,
           },
         });
         window.dispatchEvent(saveEvent);
@@ -266,8 +363,8 @@ export function AppletViewerAppComponent({
         });
 
         toast.success("Applet imported!", {
-          description: `${fileName} saved to /Applets${
-            emoji ? ` with ${emoji} icon` : ""
+          description: `${importFileName} saved to /Applets${
+            icon ? ` with ${icon} icon` : ""
           }`,
         });
       } catch (error) {
@@ -284,8 +381,8 @@ export function AppletViewerAppComponent({
     }
   };
 
-  // Export as App handler (with emoji prefix)
-  const handleExportAsApp = () => {
+  // Export as App handler (with full JSON metadata, gzipped)
+  const handleExportAsApp = async () => {
     if (!hasAppletContent) return;
 
     // Get base filename without extension
@@ -296,34 +393,92 @@ export function AppletViewerAppComponent({
           ?.replace(/\.(html|app)$/i, "") || "Untitled"
       : "Untitled";
 
-    // Find the current file's icon from the filesystem
-    const currentFile = files.find((f) => f.path === appletPath);
-    const fileIcon = currentFile?.icon;
+    // Get file metadata from the filesystem
+    const fileStore = useFilesStore.getState();
+    const currentFile = fileStore.getItem(appletPath);
+    
+    // Build full JSON export with all metadata
+    const exportData = {
+      name: currentFile?.name || filename,
+      content: htmlContent,
+      icon: currentFile?.icon,
+      shareId: currentFile?.shareId,
+      createdBy: currentFile?.createdBy,
+      windowWidth: currentFile?.windowWidth,
+      windowHeight: currentFile?.windowHeight,
+      createdAt: currentFile?.createdAt,
+      modifiedAt: currentFile?.modifiedAt,
+    };
 
-    // Check if the icon is an emoji (not a file path)
+    // Use the file's actual icon emoji, or fallback to 📦
+    const fileIcon = currentFile?.icon;
     const isEmojiIcon =
       fileIcon &&
       !fileIcon.startsWith("/") &&
       !fileIcon.startsWith("http") &&
       fileIcon.length <= 10;
-
-    // Use the file's actual icon emoji, or fallback to 📦
     const emojiPrefix = isEmojiIcon ? fileIcon : "📦";
     filename = `${emojiPrefix} ${filename}`;
 
-    const blob = new Blob([htmlContent], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${filename}.app`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      // Check if CompressionStream is available
+      if (typeof CompressionStream === "undefined") {
+        throw new Error("CompressionStream API not available in this browser");
+      }
 
-    toast.success("Applet exported!", {
-      description: `${filename}.app exported successfully.`,
-    });
+      // Convert JSON string to Uint8Array for compression
+      const encoder = new TextEncoder();
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const inputData = encoder.encode(jsonString);
+
+      // Create a ReadableStream from the data
+      const readableStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(inputData);
+          controller.close();
+        },
+      });
+
+      // Compress the stream
+      const compressionStream = new CompressionStream("gzip");
+      const compressedStream = readableStream.pipeThrough(compressionStream);
+
+      // Convert the compressed stream to a blob
+      const chunks: Uint8Array[] = [];
+      const reader = compressedStream.getReader();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          chunks.push(value);
+        }
+      }
+
+      // Combine chunks into a single blob
+      const compressedBlob = new Blob(chunks, { type: "application/gzip" });
+
+      // Create download link
+      const url = URL.createObjectURL(compressedBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filename}.app`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("Applet exported!", {
+        description: `${filename}.app exported successfully.`,
+      });
+    } catch (compressionError) {
+      console.error("Compression failed:", compressionError);
+      toast.error("Export failed", {
+        description: compressionError instanceof Error
+          ? compressionError.message
+          : "Could not compress the applet file.",
+      });
+    }
   };
 
   // Export as HTML handler (without emoji prefix)
