@@ -57,6 +57,7 @@ export function AppletViewerAppComponent({
   const hasAppletContent = htmlContent.trim().length > 0;
 
   // Load content from IndexedDB when appletPath exists
+  // Skip if content is already provided in initialData (e.g., from Finder) to avoid double loading
   useEffect(() => {
     const loadContentFromIndexedDB = async () => {
       if (!appletPath || appletPath.startsWith("/Applets/") === false) {
@@ -65,6 +66,21 @@ export function AppletViewerAppComponent({
         return;
       }
 
+      // If content is already provided in initialData, use it and skip IndexedDB load
+      if (typedInitialData?.content && typedInitialData.content.trim().length > 0) {
+        setLoadedContent(typedInitialData.content);
+        // Clear content from initialData to prevent localStorage storage
+        if (instanceId) {
+          const appStore = useAppStore.getState();
+          appStore.updateInstanceInitialData(instanceId, {
+            ...typedInitialData,
+            content: "", // Clear content - it's now in loadedContent state
+          });
+        }
+        return;
+      }
+
+      // Only load from IndexedDB if content wasn't provided in initialData
       try {
         const fileMetadata = fileStore.getItem(appletPath);
         if (fileMetadata?.uuid) {
@@ -82,27 +98,17 @@ export function AppletViewerAppComponent({
               contentStr = contentData.content;
             }
             setLoadedContent(contentStr);
-            
-            // Clear content from initialData to prevent localStorage storage
-            if (instanceId && typedInitialData?.content) {
-              const appStore = useAppStore.getState();
-              appStore.updateInstanceInitialData(instanceId, {
-                ...typedInitialData,
-                content: "", // Clear content - it's now loaded from IndexedDB
-              });
-            }
           } else {
-            // No content in IndexedDB, use initialData.content as fallback
-            setLoadedContent(typedInitialData?.content || "");
+            // No content in IndexedDB
+            setLoadedContent("");
           }
         } else {
-          // No UUID, use initialData.content as fallback
-          setLoadedContent(typedInitialData?.content || "");
+          // No UUID
+          setLoadedContent("");
         }
       } catch (error) {
         console.error("[AppletViewer] Error loading content from IndexedDB:", error);
-        // Fallback to initialData.content on error
-        setLoadedContent(typedInitialData?.content || "");
+        setLoadedContent("");
       }
     };
 
