@@ -21,6 +21,7 @@ import {
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { generateAppletShareUrl } from "@/utils/sharedUrl";
 import { STORES } from "@/utils/indexedDB";
+import { prepareAppletContent } from "../utils/htmlContent";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -354,50 +355,6 @@ export function AppletViewerAppComponent({
     if (isShared && !appletPath) return "";
     // Fallback to filename or "Untitled"
     return appletPath ? getFileName(appletPath) : "Untitled";
-  };
-
-  // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
-  const ensureMacFonts = (content: string): string => {
-    if (!isMacTheme || !content) return content;
-    // Ensure fonts.css is available and prefer Lucida Grande
-    const preload = `<link rel="stylesheet" href="/fonts/fonts.css">`;
-    const fontStyle = `<style data-ryos-applet-font-fix>
-      html,body{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
-      *{font-family:inherit!important}
-      h1,h2,h3,h4,h5,h6,p,div,span,a,li,ul,ol,button,input,select,textarea,label,code,pre,blockquote,small,strong,em,table,th,td{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
-    </style>`;
-
-    // If there's a </head>, inject before it
-    const headCloseIdx = content.toLowerCase().lastIndexOf("</head>");
-    if (headCloseIdx !== -1) {
-      return (
-        content.slice(0, headCloseIdx) +
-        preload +
-        fontStyle +
-        content.slice(headCloseIdx)
-      );
-    }
-
-    // If there's an <head>, inject after it
-    const headOpenMatch = /<head[^>]*>/i.exec(content);
-    if (headOpenMatch) {
-      const idx = headOpenMatch.index + headOpenMatch[0].length;
-      return content.slice(0, idx) + preload + fontStyle + content.slice(idx);
-    }
-
-    // If there's an <html>, create head and inject
-    const htmlOpenMatch = /<html[^>]*>/i.exec(content);
-    if (htmlOpenMatch) {
-      const idx = htmlOpenMatch.index + htmlOpenMatch[0].length;
-      return (
-        content.slice(0, idx) +
-        `<head>${preload}${fontStyle}</head>` +
-        content.slice(idx)
-      );
-    }
-
-    // Otherwise, wrap minimally
-    return `<!DOCTYPE html><html><head>${preload}${fontStyle}</head><body>${content}</body></html>`;
   };
 
   const launchApp = useLaunchApp();
@@ -1065,28 +1022,41 @@ export function AppletViewerAppComponent({
               : getAppletTitle(htmlContent, false) || "Applet Store"
     : "Applet Store";
 
-  return (
-    <>
-      {!isXpTheme && isForeground && menuBar}
-      <WindowFrame
-        title={windowTitle}
-        onClose={onClose}
-        isForeground={isForeground}
-        appId="applet-viewer"
-        skipInitialSound={skipInitialSound}
-        instanceId={instanceId}
-        menuBar={isXpTheme ? menuBar : undefined}
+    return (
+      <>
+        {!isXpTheme && isForeground && menuBar}
+        <WindowFrame
+          title={windowTitle}
+          onClose={onClose}
+          isForeground={isForeground}
+          appId="applet-viewer"
+          skipInitialSound={skipInitialSound}
+          instanceId={instanceId}
+          menuBar={isXpTheme ? menuBar : undefined}
         >
-          <div className="w-full h-full bg-white overflow-hidden">
+          <div
+            className="flex flex-1 min-h-0 overflow-hidden"
+            style={
+              isMacTheme
+                ? {
+                    backgroundColor: "var(--os-color-window-bg)",
+                    backgroundImage: "var(--os-pinstripe-window)",
+                  }
+                : { backgroundColor: "var(--os-color-window-bg)" }
+            }
+          >
             {hasAppletContent ? (
-              <div className="relative h-full w-full">
+              <div className="relative flex-1 min-h-0 overflow-hidden">
                 <iframe
                   ref={iframeRef}
-                  srcDoc={ensureMacFonts(htmlContent)}
+                  srcDoc={prepareAppletContent(htmlContent, {
+                    applyMacFontFix: isMacTheme,
+                  })}
                   title={windowTitle}
-                  className="w-full h-full border-0"
+                  className="absolute inset-0 h-full w-full border-0"
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                   style={{
+                    backgroundColor: "transparent",
                     display: "block",
                   }}
                   onFocus={focusWindow}
@@ -1106,17 +1076,7 @@ export function AppletViewerAppComponent({
                 )}
               </div>
             ) : (
-              <div
-                className="h-full w-full"
-                style={
-                  isMacTheme
-                    ? {
-                        backgroundColor: "var(--os-color-window-bg)",
-                        backgroundImage: "var(--os-pinstripe-window)",
-                      }
-                    : undefined
-                }
-              >
+              <div className="flex flex-1 min-h-0 overflow-hidden">
                 <AppStore
                   theme={currentTheme}
                   sharedAppletId={shareCode || undefined}
@@ -1124,7 +1084,7 @@ export function AppletViewerAppComponent({
               </div>
             )}
           </div>
-      </WindowFrame>
+        </WindowFrame>
       <HelpDialog
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
