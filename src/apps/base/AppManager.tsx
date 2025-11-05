@@ -49,29 +49,35 @@ export function AppManager({ apps }: AppManagerProps) {
   // if ANY instance is open, and `isForeground` should reflect the foreground
   // instance. We also prefer the foreground instance for position/size data.
 
-  const legacyAppStates = Object.values(instances).reduce((acc, instance) => {
-    const existing = acc[instance.appId];
+  const legacyAppStates = Object.values(instances).reduce(
+    (acc, instance) => {
+      const existing = acc[instance.appId];
 
-    // Determine whether this instance should be the source of foreground /
-    // positional data. We always keep foreground instance data if available.
-    const shouldReplace =
-      !existing || // first encounter
-      (instance.isForeground && !existing.isForeground); // take foreground
+      // Determine whether this instance should be the source of foreground /
+      // positional data. We always keep foreground instance data if available.
+      const shouldReplace =
+        !existing || // first encounter
+        (instance.isForeground && !existing.isForeground); // take foreground
 
-    acc[instance.appId] = {
-      // isOpen is true if any instance is open
-      isOpen: (existing?.isOpen ?? false) || instance.isOpen,
-      // isForeground true if this particular instance is foreground, or an
-      // earlier one already marked foreground
-      isForeground: (existing?.isForeground ?? false) || instance.isForeground,
-      // For position / size / initialData, prefer the chosen instance
-      position: shouldReplace ? instance.position : existing?.position,
-      size: shouldReplace ? instance.size : existing?.size,
-      initialData: shouldReplace ? instance.initialData : existing?.initialData,
-    };
+      acc[instance.appId] = {
+        // isOpen is true if any instance is open
+        isOpen: (existing?.isOpen ?? false) || instance.isOpen,
+        // isForeground true if this particular instance is foreground, or an
+        // earlier one already marked foreground
+        isForeground:
+          (existing?.isForeground ?? false) || instance.isForeground,
+        // For position / size / initialData, prefer the chosen instance
+        position: shouldReplace ? instance.position : existing?.position,
+        size: shouldReplace ? instance.size : existing?.size,
+        initialData: shouldReplace
+          ? instance.initialData
+          : existing?.initialData,
+      };
 
-    return acc;
-  }, {} as { [appId: string]: AppState });
+      return acc;
+    },
+    {} as { [appId: string]: AppState },
+  );
 
   const getZIndexForInstance = (instanceId: string) => {
     const index = instanceOrder.indexOf(instanceId);
@@ -93,7 +99,7 @@ export function AppManager({ apps }: AppManagerProps) {
 
     // Fallback: If no open instance found, do nothing but log (helps debug)
     console.warn(
-      `[AppManager] bringAppToForeground: No open instance found for ${appId}`
+      `[AppManager] bringAppToForeground: No open instance found for ${appId}`,
     );
   };
 
@@ -109,7 +115,21 @@ export function AppManager({ apps }: AppManagerProps) {
       const path = window.location.pathname;
       console.log("[AppManager] Checking path:", path); // Keep this log for debugging
 
-      if (path.startsWith("/internet-explorer/")) {
+      const launchAppletViewer = () => {
+        toast.info("Opening Applet Store...");
+
+        setTimeout(() => {
+          const event = new CustomEvent("launchApp", {
+            detail: { appId: "applet-viewer" as AppId },
+          });
+          window.dispatchEvent(event);
+          window.history.replaceState({}, "", "/");
+        }, 100);
+      };
+
+      if (path === "/applet-viewer" || path === "/applet-viewer/") {
+        launchAppletViewer();
+      } else if (path.startsWith("/internet-explorer/")) {
         const shareCode = extractCodeFromPath(path);
         if (shareCode) {
           // Handle shared Internet Explorer URL - Pass code directly
@@ -128,7 +148,7 @@ export function AppManager({ apps }: AppManagerProps) {
             });
             window.dispatchEvent(event);
             console.log(
-              "[AppManager] Dispatched launchApp event for IE share code."
+              "[AppManager] Dispatched launchApp event for IE share code.",
             );
           }, 0);
 
@@ -157,11 +177,16 @@ export function AppManager({ apps }: AppManagerProps) {
             });
             window.dispatchEvent(event);
             console.log(
-              "[AppManager] Dispatched launchApp event for applet share code."
+              "[AppManager] Dispatched launchApp event for applet share code.",
             );
           }, 0);
 
           window.history.replaceState({}, "", "/"); // Clean URL
+        } else {
+          console.log(
+            "[AppManager] No share code detected for applet viewer path, opening base app.",
+          );
+          launchAppletViewer();
         }
       } else if (path.startsWith("/ipod/")) {
         const videoId = path.substring("/ipod/".length);
@@ -177,7 +202,7 @@ export function AppManager({ apps }: AppManagerProps) {
             });
             window.dispatchEvent(event);
             console.log(
-              "[AppManager] Dispatched launchApp event for iPod videoId."
+              "[AppManager] Dispatched launchApp event for iPod videoId.",
             );
           }, 0);
           window.history.replaceState({}, "", "/"); // Clean URL
@@ -196,7 +221,7 @@ export function AppManager({ apps }: AppManagerProps) {
             });
             window.dispatchEvent(event);
             console.log(
-              "[AppManager] Dispatched launchApp event for Videos videoId."
+              "[AppManager] Dispatched launchApp event for Videos videoId.",
             );
           }, 0);
           window.history.replaceState({}, "", "/"); // Clean URL
@@ -248,24 +273,24 @@ export function AppManager({ apps }: AppManagerProps) {
         appId: AppId;
         initialPath?: string;
         initialData?: unknown;
-      }>
+      }>,
     ) => {
       const { appId, initialPath, initialData } = event.detail;
 
       console.log(
         `[AppManager] Launch event received for ${appId}`,
-        event.detail
+        event.detail,
       );
 
       // Check if there's an existing instance before launching
       const existingInstance = Object.values(instances).find(
-        (instance) => instance.appId === appId && instance.isOpen
+        (instance) => instance.appId === appId && instance.isOpen,
       );
 
       // Use instance system
       const instanceId = launchApp(appId, initialData);
       console.log(
-        `[AppManager] Launched instance ${instanceId} for app ${appId}`
+        `[AppManager] Launched instance ${instanceId} for app ${appId}`,
       );
 
       // Store initialPath if provided
@@ -277,7 +302,7 @@ export function AppManager({ apps }: AppManagerProps) {
       if (existingInstance && initialData) {
         console.log(
           `[AppManager] Dispatching updateApp event for existing ${appId} instance with initialData:`,
-          initialData
+          initialData,
         );
         const updateEvent = new CustomEvent("updateApp", {
           detail: { appId, initialData },
