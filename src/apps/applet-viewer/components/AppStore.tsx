@@ -214,7 +214,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
     if (!fileItem) return false;
     
     // Check if we have stored storeCreatedAt metadata
-    let storeCreatedAt = (fileItem as any).storeCreatedAt as number | undefined;
+    const storeCreatedAt = fileItem.storeCreatedAt;
     
     // If no storeCreatedAt exists (prepopulated applets or old installs), initialize it
     // with current store's createdAt so future updates can be detected
@@ -224,7 +224,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
       // If createdAt is 0, it means the applet might not be in store yet or is very old
       fileStore.updateItemMetadata(installedFile.path, {
         storeCreatedAt: currentCreatedAt,
-      } as any);
+      });
       // Return false since we just initialized - they're in sync now
       return false;
     }
@@ -324,7 +324,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
       const storeCreatedAtValue = data.createdAt || Date.now();
       fileStore.updateItemMetadata(finalPath, {
         storeCreatedAt: storeCreatedAtValue,
-      } as any);
+      });
       
       // Save window dimensions to metadata if available
       if (data.windowWidth && data.windowHeight) {

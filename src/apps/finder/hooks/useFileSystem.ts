@@ -466,6 +466,82 @@ export function useFileSystem(
     []
   );
 
+  const fetchAppletContentFromShare = useCallback(
+    async (
+      filePath: string,
+      fileMetadata: FileSystemItem
+    ): Promise<string | null> => {
+      const { shareId, uuid, name } = fileMetadata;
+      if (!shareId || !uuid) {
+        console.warn(
+          `[useFileSystem] Cannot fetch applet content for ${filePath}: missing shareId or uuid`
+        );
+        return null;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/share-applet?id=${encodeURIComponent(shareId)}`
+        );
+
+        if (!response.ok) {
+          console.error(
+            `[useFileSystem] Failed to fetch applet content for shareId ${shareId}: ${response.status}`
+          );
+          return null;
+        }
+
+        const data = await response.json();
+        const content =
+          typeof data.content === "string" ? data.content : "";
+
+        await dbOperations.put<DocumentContent>(
+          STORES.APPLETS,
+          {
+            name: name || filePath.split("/").pop() || shareId,
+            content,
+          },
+          uuid
+        );
+
+        const metadataUpdates: Partial<FileSystemItem> = {};
+
+        if (typeof data.icon === "string" && data.icon !== fileMetadata.icon) {
+          metadataUpdates.icon = data.icon;
+        }
+        if (
+          typeof data.createdBy === "string" &&
+          data.createdBy !== fileMetadata.createdBy
+        ) {
+          metadataUpdates.createdBy = data.createdBy;
+        }
+        if (
+          typeof data.windowWidth === "number" &&
+          typeof data.windowHeight === "number"
+        ) {
+          metadataUpdates.windowWidth = data.windowWidth;
+          metadataUpdates.windowHeight = data.windowHeight;
+        }
+        if (typeof data.createdAt === "number") {
+          metadataUpdates.storeCreatedAt = data.createdAt;
+        }
+
+        if (Object.keys(metadataUpdates).length > 0) {
+          fileStore.updateItemMetadata(filePath, metadataUpdates);
+        }
+
+        return content;
+      } catch (error) {
+        console.error(
+          `[useFileSystem] Error fetching shared applet content for ${shareId}:`,
+          error
+        );
+        return null;
+      }
+    },
+    [fileStore]
+  );
+
   // --- REORDERED useCallback DEFINITIONS --- //
 
   // Define navigateToPath first
@@ -869,10 +945,13 @@ export function useFileSystem(
               console.warn(
                 `[useFileSystem] Content not found in IndexedDB for ${file.path} (UUID: ${fileMetadata.uuid})`
               );
-              // For applets, there is no default content in filesystem.json; skip lazy-load and open empty
+              // For applets, fetch content from the share service on first load
               if (storeName === STORES.APPLETS) {
-                contentToUse = "";
-                contentAsString = "";
+                const fetchedContent = await fetchAppletContentFromShare(
+                  file.path,
+                  fileMetadata
+                );
+                contentToUse = fetchedContent ?? "";
               } else {
                 // Try to load default content lazily for Documents/Images
                 const hasDefaultContent = await ensureDefaultContent(
@@ -971,12 +1050,27 @@ export function useFileSystem(
             const appStore = useAppStore.getState();
             const existingAppletInstance = Object.values(
               appStore.instances
-            ).find(
-              (inst) =>
-                inst.appId === "applet-viewer" &&
-                inst.isOpen &&
-                (inst.initialData as any)?.path === file.path
-            );
+            ).find((inst) => {
+              if (inst.appId !== "applet-viewer" || !inst.isOpen) {
+                return false;
+              }
+
+              const initialData = inst.initialData;
+              if (
+                typeof initialData === "object" &&
+                initialData !== null &&
+                "path" in initialData
+              ) {
+                const { path: initialPath } = initialData as {
+                  path?: unknown;
+                };
+                return (
+                  typeof initialPath === "string" && initialPath === file.path
+                );
+              }
+
+              return false;
+            });
 
             if (existingAppletInstance) {
               // Focus existing window instead of creating a new one
@@ -1049,6 +1143,7 @@ export function useFileSystem(
       setVideoPlaying,
       internetExplorerStore,
       ensureDefaultContent,
+      fetchAppletContentFromShare,
       fileStore,
     ]
   );
