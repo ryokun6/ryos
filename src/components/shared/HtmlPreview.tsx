@@ -158,6 +158,7 @@ interface HtmlPreviewProps {
   isStreaming?: boolean;
   maxHeight?: number | string;
   minHeight?: number | string;
+  minWidth?: number | string;
   initialFullScreen?: boolean;
   className?: string;
   playElevatorMusic?: (mode?: "past" | "future" | "now") => void;
@@ -178,6 +179,7 @@ export default function HtmlPreview({
   isStreaming = false,
   maxHeight = "800px",
   minHeight = "200px",
+  minWidth,
   initialFullScreen = false,
   className = "",
   playElevatorMusic,
@@ -1059,6 +1061,7 @@ export default function HtmlPreview({
             : "0 0 0 1px rgba(0, 0, 0, 0.3)",
           visibility: isFullScreen ? "hidden" : "visible",
           minHeight: minHeight, // Ensure minHeight is respected
+          minWidth: minWidth, // Apply minWidth if provided
         }}
         animate={{
           opacity: isFullScreen ? 0 : 1,

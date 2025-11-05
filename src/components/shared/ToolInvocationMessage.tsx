@@ -282,6 +282,7 @@ export function ToolInvocationMessage({
             appletTitle={appletTitle}
             appletIcon={appletIcon}
             isStreaming={true}
+            minWidth="320px"
             onInteractionChange={setIsInteractingWithPreview}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
