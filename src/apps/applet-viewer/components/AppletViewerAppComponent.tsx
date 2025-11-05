@@ -669,7 +669,7 @@ export function AppletViewerAppComponent({
       ? getAppletTitle(htmlContent, true) || sharedTitle || sharedName || "Shared Applet"
       : appletPath
       ? getFileName(appletPath)
-      : getAppletTitle(htmlContent, false) || "Applet Viewer"
+              : getAppletTitle(htmlContent, false) || "Applet Store"
     : "Applet Store";
 
   return (
@@ -716,7 +716,7 @@ export function AppletViewerAppComponent({
       <HelpDialog
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
-        appName="Applet Viewer"
+        appName="Applet Store"
         helpItems={helpItems}
       />
       <AboutDialog

@@ -22,7 +22,7 @@ export const helpItems = [
 ];
 
 export const appMetadata = {
-  name: "Applet Viewer",
+  name: "Applet Store",
   version: "1.0",
   creator: {
     name: "Ryo Lu",
@@ -42,7 +42,7 @@ export interface AppletViewerInitialData {
 
 export const AppletViewerApp: BaseApp<AppletViewerInitialData> = {
   id: "applet-viewer",
-  name: "Applet Viewer",
+  name: "Applet Store",
   icon: { type: "image", src: appMetadata.icon },
   description: "View HTML applets",
   component: AppletViewerAppComponent,
