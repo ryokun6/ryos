@@ -497,11 +497,11 @@ export function AppStore({ theme }: AppStoreProps) {
             </span>
           </div>
           {updateAvailable && applet.createdAt ? (
-            <div className="text-[10px] text-gray-500 font-geneva-12">
+            <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
               {formatUpdateTime(applet.createdAt)}
             </div>
           ) : applet.createdBy ? (
-            <div className="text-[10px] text-gray-500 font-geneva-12">
+            <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
               {applet.createdBy}
             </div>
           ) : null}

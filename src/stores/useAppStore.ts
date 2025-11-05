@@ -721,7 +721,22 @@ export const useAppStore = create<AppStoreState>()(
         ipodVolume: state.ipodVolume,
         masterVolume: state.masterVolume,
         instances: Object.fromEntries(
-          Object.entries(state.instances).filter(([, inst]) => inst.isOpen)
+          Object.entries(state.instances)
+            .filter(([, inst]) => inst.isOpen)
+            .map(([id, inst]) => {
+              // For applet-viewer, exclude content from initialData to prevent localStorage storage
+              if (inst.appId === "applet-viewer" && inst.initialData) {
+                const appletData = inst.initialData as { path?: string; content?: string; shareCode?: string; icon?: string; name?: string };
+                return [id, {
+                  ...inst,
+                  initialData: {
+                    ...appletData,
+                    content: "", // Exclude content - it should be loaded from IndexedDB
+                  },
+                }];
+              }
+              return [id, inst];
+            })
         ),
         instanceOrder: state.instanceOrder.filter(
           (id) => state.instances[id]?.isOpen

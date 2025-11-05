@@ -13,9 +13,10 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
-import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { useFileSystem, dbOperations, DocumentContent } from "@/apps/finder/hooks/useFileSystem";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { generateAppletShareUrl } from "@/utils/sharedUrl";
+import { STORES } from "@/utils/indexedDB";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -42,9 +43,68 @@ export function AppletViewerAppComponent({
 
   const typedInitialData = initialData as AppletViewerInitialData | undefined;
   const appletPath = typedInitialData?.path || "";
-  const htmlContent = typedInitialData?.content || sharedContent || "";
   const shareCode = typedInitialData?.shareCode;
+  const [loadedContent, setLoadedContent] = useState<string>("");
+  
+  // Get file metadata and applet store (moved before useEffect)
+  const fileStore = useFilesStore();
+  
+  // Load content from IndexedDB if path exists, otherwise use initialData.content or sharedContent
+  const htmlContent = loadedContent || typedInitialData?.content || sharedContent || "";
   const hasAppletContent = htmlContent.trim().length > 0;
+
+  // Load content from IndexedDB when appletPath exists
+  useEffect(() => {
+    const loadContentFromIndexedDB = async () => {
+      if (!appletPath || appletPath.startsWith("/Applets/") === false) {
+        // No path or not an applet path, don't load from IndexedDB
+        setLoadedContent("");
+        return;
+      }
+
+      try {
+        const fileMetadata = fileStore.getItem(appletPath);
+        if (fileMetadata?.uuid) {
+          const contentData = await dbOperations.get<DocumentContent>(
+            STORES.APPLETS,
+            fileMetadata.uuid
+          );
+          
+          if (contentData?.content) {
+            // Convert Blob to string if needed
+            let contentStr: string;
+            if (contentData.content instanceof Blob) {
+              contentStr = await contentData.content.text();
+            } else {
+              contentStr = contentData.content;
+            }
+            setLoadedContent(contentStr);
+            
+            // Clear content from initialData to prevent localStorage storage
+            if (instanceId && typedInitialData?.content) {
+              const appStore = useAppStore.getState();
+              appStore.updateInstanceInitialData(instanceId, {
+                ...typedInitialData,
+                content: "", // Clear content - it's now loaded from IndexedDB
+              });
+            }
+          } else {
+            // No content in IndexedDB, use initialData.content as fallback
+            setLoadedContent(typedInitialData?.content || "");
+          }
+        } else {
+          // No UUID, use initialData.content as fallback
+          setLoadedContent(typedInitialData?.content || "");
+        }
+      } catch (error) {
+        console.error("[AppletViewer] Error loading content from IndexedDB:", error);
+        // Fallback to initialData.content on error
+        setLoadedContent(typedInitialData?.content || "");
+      }
+    };
+
+    loadContentFromIndexedDB();
+  }, [appletPath, instanceId, fileStore, typedInitialData]);
 
   // Debug logging
   useEffect(() => {
@@ -52,11 +112,10 @@ export function AppletViewerAppComponent({
       path: appletPath,
       contentLength: htmlContent.length,
       hasContent: !!htmlContent,
+      loadedFromIndexedDB: !!loadedContent,
     });
-  }, [appletPath, htmlContent]);
+  }, [appletPath, htmlContent, loadedContent]);
 
-  // Get file metadata and applet store
-  const fileStore = useFilesStore();
   const fileItem = appletPath ? fileStore.getItem(appletPath) : undefined;
   const { getAppletWindowSize, setAppletWindowSize } = useAppletStore();
   
