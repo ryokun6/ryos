@@ -575,6 +575,8 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
       (applet) => applet.id === sharedDetailApplet.id,
     );
     if (indexInFeed !== -1) {
+      setIsSharedApplet(false);
+      setSelectedAppletContent("");
       setSharedDetailApplet(null);
       setActiveAppletIndex(indexInFeed);
     }
