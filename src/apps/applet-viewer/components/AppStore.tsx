@@ -29,7 +29,6 @@ export function AppStore({ theme }: AppStoreProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedApplet, setSelectedApplet] = useState<Applet | null>(null);
   const [selectedAppletContent, setSelectedAppletContent] = useState<string>("");
-  const [isLoadingContent, setIsLoadingContent] = useState(false);
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
   const isAdmin = username?.toLowerCase() === "ryo" && !!authToken;
@@ -83,9 +82,8 @@ export function AppStore({ theme }: AppStoreProps) {
   // Fetch applet content when selectedApplet changes
   useEffect(() => {
     if (selectedApplet) {
-      // Reset content and set loading immediately
+      // Reset content immediately to show loading
       setSelectedAppletContent("");
-      setIsLoadingContent(true);
       fetch(`/api/share-applet?id=${encodeURIComponent(selectedApplet.id)}`)
         .then((response) => {
           if (response.ok) {
@@ -98,14 +96,11 @@ export function AppStore({ theme }: AppStoreProps) {
         })
         .catch((error) => {
           console.error("Error fetching applet content:", error);
+          // Keep content empty to show loading state indefinitely
           setSelectedAppletContent("");
-        })
-        .finally(() => {
-          setIsLoadingContent(false);
         });
     } else {
       setSelectedAppletContent("");
-      setIsLoadingContent(false);
     }
   }, [selectedApplet]);
 
@@ -527,13 +522,7 @@ export function AppStore({ theme }: AppStoreProps) {
             </Button>
           </div>
           <div className="flex-1 overflow-hidden bg-white">
-            {isLoadingContent || (!selectedAppletContent && selectedApplet) ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
-                </div>
-              </div>
-            ) : selectedAppletContent ? (
+            {selectedAppletContent ? (
               <iframe
                 srcDoc={ensureMacFonts(selectedAppletContent)}
                 title={displayName}
@@ -544,13 +533,10 @@ export function AppStore({ theme }: AppStoreProps) {
                 }}
               />
             ) : (
-              <div className="px-3 py-4">
-                <p className="text-sm text-gray-600 font-geneva-12">
-                  {selectedApplet.createdBy && `By ${selectedApplet.createdBy}`}
-                </p>
-                <p className="text-sm text-red-600 font-geneva-12 mt-2">
-                  Failed to load applet content.
-                </p>
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
+                </div>
               </div>
             )}
           </div>
