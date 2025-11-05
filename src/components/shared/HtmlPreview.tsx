@@ -1021,7 +1021,7 @@ export default function HtmlPreview({
         ref={previewRef}
         className={`${
           isInternetExplorer ? "" : "rounded"
-        } bg-white overflow-auto m-0 relative ${className} ${
+        } bg-white overflow-hidden m-0 relative flex flex-col ${className} ${
           isStreaming ? "loading-pulse" : ""
         }`}
         style={{
@@ -1044,6 +1044,10 @@ export default function HtmlPreview({
             : "0 0 0 1px rgba(0, 0, 0, 0.3)",
           visibility: isFullScreen ? "hidden" : "visible",
           minHeight: minHeight, // Ensure minHeight is respected
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          flex: isInternetExplorer ? "1 1 auto" : undefined,
         }}
         animate={{
           opacity: isFullScreen ? 0 : 1,
@@ -1158,7 +1162,7 @@ export default function HtmlPreview({
         {/* Conditional Rendering: Text Stream or Iframe */}
         {isStreaming && htmlContent ? (
           <div
-            className="h-full w-full relative overflow-auto"
+            className="flex-1 min-h-0 w-full relative overflow-auto"
             style={{
               maxHeight: isInternetExplorer
                 ? "100%"
@@ -1191,7 +1195,7 @@ export default function HtmlPreview({
             // srcDoc is now set by useEffect after streaming finishes
             // srcDoc={processedHtmlContent()}
             title="ryOS Code Preview"
-            className="w-full h-full border-0"
+            className="w-full h-full border-0 flex-1"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
             style={{
               height: isInternetExplorer
@@ -1203,6 +1207,8 @@ export default function HtmlPreview({
               // pointerEvents: isStreaming ? "none" : "auto", // Already handled by parent div conditional
               position: "relative",
               zIndex: 1,
+              flex: "1 1 auto",
+              minHeight: 0,
             }}
             onMouseDown={(e) => e.stopPropagation()}
           />

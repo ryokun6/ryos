@@ -839,13 +839,13 @@ export function AppletViewerAppComponent({
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
       >
-        <div className="w-full h-full bg-white overflow-hidden">
+        <div className="flex flex-1 min-h-0 bg-white overflow-hidden">
           {hasAppletContent ? (
             <iframe
               ref={iframeRef}
               srcDoc={ensureMacFonts(htmlContent)}
               title={windowTitle}
-              className="w-full h-full border-0"
+              className="flex-1 w-full h-full border-0 block"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
               style={{
                 display: "block",
@@ -853,7 +853,7 @@ export function AppletViewerAppComponent({
             />
           ) : (
             <div
-              className="h-full w-full"
+              className="flex-1 h-full w-full"
               style={
                 isMacTheme
                   ? {
