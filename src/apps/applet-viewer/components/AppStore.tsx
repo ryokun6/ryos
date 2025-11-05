@@ -133,8 +133,10 @@ export function AppStore({ theme }: AppStoreProps) {
       
       // Launch applet viewer with the saved applet
       launchApp("applet-viewer", {
-        path: finalPath,
-        content: data.content,
+        initialData: {
+          path: finalPath,
+          content: data.content,
+        },
       });
 
       toast.success("Applet installed", {

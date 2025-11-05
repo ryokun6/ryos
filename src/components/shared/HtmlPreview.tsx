@@ -756,8 +756,10 @@ export default function HtmlPreview({
           label: "Open",
           onClick: () => {
             launchApp("applet-viewer", {
-              path: appletPath,
-              content: processedHtmlContentForSave,
+              initialData: {
+                path: appletPath,
+                content: processedHtmlContentForSave,
+              },
             });
           },
         },
