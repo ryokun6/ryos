@@ -527,7 +527,7 @@ export function AppStore({ theme }: AppStoreProps) {
             </Button>
           </div>
           <div className="flex-1 overflow-hidden bg-white">
-            {isLoadingContent ? (
+            {isLoadingContent || (!selectedAppletContent && selectedApplet) ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
