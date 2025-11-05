@@ -163,6 +163,7 @@
     { "source": "/videos/:video", "destination": "/" },
     { "source": "/ipod/:track", "destination": "/" },
     { "source": "/internet-explorer/:code", "destination": "/" },
+    { "source": "/applet-viewer/:code", "destination": "/" },
     { "source": "/finder", "destination": "/" },
     { "source": "/soundboard", "destination": "/" },
     { "source": "/chats", "destination": "/" },
@@ -172,12 +173,11 @@
     { "source": "/minesweeper", "destination": "/" },
     { "source": "/videos", "destination": "/" },
     { "source": "/ipod", "destination": "/" },
+    { "source": "/applet-viewer", "destination": "/" },
     { "source": "/synth", "destination": "/" },
     { "source": "/pc", "destination": "/" },
     { "source": "/terminal", "destination": "/" },
     { "source": "/control-panels", "destination": "/" }
   ],
-  "redirects": [
-    { "source": "/404", "destination": "/", "permanent": false }
-  ]
+  "redirects": [{ "source": "/404", "destination": "/", "permanent": false }]
 }
