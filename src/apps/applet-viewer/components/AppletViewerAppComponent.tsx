@@ -1,6 +1,6 @@
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { AppProps } from "@/apps/base/types";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
@@ -40,6 +40,22 @@ export function AppletViewerAppComponent({
   const isMacTheme = currentTheme === "macosx";
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
+
+  const focusWindow = useCallback(() => {
+    const state = useAppStore.getState();
+
+    if (instanceId) {
+      const inst = state.instances[instanceId];
+      if (!inst || !inst.isForeground) {
+        state.bringInstanceToForeground(instanceId);
+      }
+    } else {
+      const appState = state.apps["applet-viewer"];
+      if (!appState || !appState.isForeground) {
+        state.bringToForeground("applet-viewer");
+      }
+    }
+  }, [instanceId]);
 
   const typedInitialData = initialData as AppletViewerInitialData | undefined;
   const appletPath = typedInitialData?.path || "";
@@ -853,25 +869,35 @@ export function AppletViewerAppComponent({
     const attachInteractionListeners = () => {
       try {
         const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc) return;
+        const frameWindow = iframe.contentWindow;
         const handleInteract = () => {
-          const state = useAppStore.getState();
-          const inst = state.instances[instanceId];
-          if (inst && !inst.isForeground) {
-            state.bringInstanceToForeground(instanceId);
-          }
+          focusWindow();
         };
+
         // Use capturing to ensure we catch early
-        doc.addEventListener("pointerdown", handleInteract, true);
-        doc.addEventListener("mousedown", handleInteract, true);
-        doc.addEventListener("touchstart", handleInteract, true);
-        doc.addEventListener("keydown", handleInteract, true);
+        doc?.addEventListener("pointerdown", handleInteract, true);
+        doc?.addEventListener("mousedown", handleInteract, true);
+        doc?.addEventListener("touchstart", handleInteract, true);
+        doc?.addEventListener("keydown", handleInteract, true);
+        doc?.addEventListener("focusin", handleInteract, true);
+
+        try {
+          frameWindow?.addEventListener("focus", handleInteract);
+        } catch {
+          // Ignore cross-origin focus attachment errors
+        }
 
         return () => {
-          doc.removeEventListener("pointerdown", handleInteract, true);
-          doc.removeEventListener("mousedown", handleInteract, true);
-          doc.removeEventListener("touchstart", handleInteract, true);
-          doc.removeEventListener("keydown", handleInteract, true);
+          doc?.removeEventListener("pointerdown", handleInteract, true);
+          doc?.removeEventListener("mousedown", handleInteract, true);
+          doc?.removeEventListener("touchstart", handleInteract, true);
+          doc?.removeEventListener("keydown", handleInteract, true);
+          doc?.removeEventListener("focusin", handleInteract, true);
+          try {
+            frameWindow?.removeEventListener("focus", handleInteract);
+          } catch {
+            // Ignore cross-origin focus removal errors
+          }
         };
       } catch {
         // If cross-origin or sandbox prevents access, silently ignore
@@ -879,19 +905,24 @@ export function AppletViewerAppComponent({
       }
     };
 
-    // Attach now (for srcDoc) and also on load in case content re-renders
-    const cleanup = attachInteractionListeners();
+    let detachListeners = attachInteractionListeners();
+
     const onLoad = () => {
-      if (cleanup) cleanup();
-      attachInteractionListeners();
+      if (detachListeners) detachListeners();
+      detachListeners = attachInteractionListeners();
     };
+
+    const onIframeFocus = () => focusWindow();
+
     iframe.addEventListener("load", onLoad);
+    iframe.addEventListener("focus", onIframeFocus, true);
 
     return () => {
       iframe.removeEventListener("load", onLoad);
-      if (cleanup) cleanup();
+      iframe.removeEventListener("focus", onIframeFocus, true);
+      if (detachListeners) detachListeners();
     };
-  }, [instanceId]);
+  }, [instanceId, focusWindow]);
 
   if (!isWindowOpen) return null;
 
@@ -915,35 +946,54 @@ export function AppletViewerAppComponent({
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
-      >
-        <div className="w-full h-full bg-white overflow-hidden">
-          {hasAppletContent ? (
-            <iframe
-              ref={iframeRef}
-              srcDoc={ensureMacFonts(htmlContent)}
-              title={windowTitle}
-              className="w-full h-full border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
-              style={{
-                display: "block",
-              }}
-            />
-          ) : (
-            <div
-              className="h-full w-full"
-              style={
-                isMacTheme
-                  ? {
-                      backgroundColor: "var(--os-color-window-bg)",
-                      backgroundImage: "var(--os-pinstripe-window)",
-                    }
-                  : undefined
-              }
-            >
-              <AppStore theme={currentTheme} sharedAppletId={shareCode || undefined} />
-            </div>
-          )}
-        </div>
+        >
+          <div className="w-full h-full bg-white overflow-hidden">
+            {hasAppletContent ? (
+              <div className="relative h-full w-full">
+                <iframe
+                  ref={iframeRef}
+                  srcDoc={ensureMacFonts(htmlContent)}
+                  title={windowTitle}
+                  className="w-full h-full border-0"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+                  style={{
+                    display: "block",
+                  }}
+                  onFocus={focusWindow}
+                  onFocusCapture={focusWindow}
+                />
+                {!isForeground && (
+                  <div
+                    className="absolute inset-0 z-50 bg-transparent"
+                    aria-hidden="true"
+                    onClick={focusWindow}
+                    onMouseDown={focusWindow}
+                    onTouchStart={focusWindow}
+                    onWheel={focusWindow}
+                    onDragStart={focusWindow}
+                    onKeyDown={focusWindow}
+                  />
+                )}
+              </div>
+            ) : (
+              <div
+                className="h-full w-full"
+                style={
+                  isMacTheme
+                    ? {
+                        backgroundColor: "var(--os-color-window-bg)",
+                        backgroundImage: "var(--os-pinstripe-window)",
+                      }
+                    : undefined
+                }
+              >
+                <AppStore
+                  theme={currentTheme}
+                  sharedAppletId={shareCode || undefined}
+                />
+              </div>
+            )}
+          </div>
       </WindowFrame>
       <HelpDialog
         isOpen={isHelpDialogOpen}
