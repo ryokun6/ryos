@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import React from "react";
 import { useAppStore } from "@/stores/useAppStore";
 import { cn } from "@/lib/utils";
+import { useChatsStore } from "@/stores/useChatsStore";
 
 interface AppletViewerMenuBarProps {
   onClose: () => void;
@@ -24,6 +25,7 @@ interface AppletViewerMenuBarProps {
   onShowAbout: () => void;
   onExportAsApp: () => void;
   onExportAsHtml: () => void;
+  onShareApplet: () => void;
   hasAppletContent: boolean;
   handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   instanceId?: string;
@@ -35,6 +37,7 @@ export function AppletViewerMenuBar({
   onShowAbout,
   onExportAsApp,
   onExportAsHtml,
+  onShareApplet,
   hasAppletContent,
   handleFileSelect,
   instanceId,
@@ -47,6 +50,9 @@ export function AppletViewerMenuBar({
     (s) => s.bringInstanceToForeground
   );
   const instances = useAppStore((s) => s.instances);
+  const username = useChatsStore((s) => s.username);
+  const authToken = useChatsStore((s) => s.authToken);
+  const isLoggedIn = !!(username && authToken);
 
   // Get all active applet viewer instances
   const appletInstances = Object.values(instances).filter(
@@ -107,6 +113,14 @@ export function AppletViewerMenuBar({
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
+          )}
+          {hasAppletContent && isLoggedIn && (
+            <DropdownMenuItem
+              onClick={onShareApplet}
+              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            >
+              Share Applet...
+            </DropdownMenuItem>
           )}
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem

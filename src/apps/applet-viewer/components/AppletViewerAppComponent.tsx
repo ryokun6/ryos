@@ -3,15 +3,18 @@ import { AppProps } from "@/apps/base/types";
 import { useState, useRef, useEffect } from "react";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { AppletViewerMenuBar } from "./AppletViewerMenuBar";
 import { appMetadata, helpItems, AppletViewerInitialData } from "../index";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { Button } from "@/components/ui/button";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { generateAppletShareUrl } from "@/utils/sharedUrl";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -23,16 +26,24 @@ export function AppletViewerAppComponent({
 }: AppProps<AppletViewerInitialData>) {
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [shareId, setShareId] = useState<string>("");
+  const [sharedContent, setSharedContent] = useState<string>("");
+  const [sharedName, setSharedName] = useState<string | undefined>(undefined);
+  const [sharedTitle, setSharedTitle] = useState<string | undefined>(undefined);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
+  const username = useChatsStore((state) => state.username);
+  const authToken = useChatsStore((state) => state.authToken);
 
   const typedInitialData = initialData as AppletViewerInitialData | undefined;
   const appletPath = typedInitialData?.path || "";
-  const htmlContent = typedInitialData?.content || "";
+  const htmlContent = typedInitialData?.content || sharedContent || "";
+  const shareCode = typedInitialData?.shareCode;
   const hasAppletContent = htmlContent.trim().length > 0;
 
   // Debug logging
@@ -92,6 +103,26 @@ export function AppletViewerAppComponent({
     const parts = path.split("/");
     const fileName = parts[parts.length - 1];
     return fileName.replace(/\.(html|app)$/i, "");
+  };
+
+  // Extract title from HTML content if available
+  const getAppletTitle = (content: string, isShared = false): string => {
+    if (!content) return "";
+    // Try to extract title from HTML comment (<!-- TITLE: ... -->)
+    const titleMatch = content.match(/<!--\s*TITLE:\s*([^>]+)-->/i);
+    if (titleMatch && titleMatch[1]) {
+      return titleMatch[1].trim();
+    }
+    // Try to extract from <title> tag
+    const titleTagMatch = content.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleTagMatch && titleTagMatch[1]) {
+      return titleTagMatch[1].trim();
+    }
+    // For shared applets without path, return empty string (not "Untitled")
+    // so we can fall back to sharedName/sharedTitle
+    if (isShared && !appletPath) return "";
+    // Fallback to filename or "Untitled"
+    return appletPath ? getFileName(appletPath) : "Untitled";
   };
 
   // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
@@ -304,6 +335,178 @@ export function AppletViewerAppComponent({
     });
   };
 
+  // Share applet handler
+  const handleShareApplet = async () => {
+    if (!hasAppletContent) {
+      toast.error("No applet to share", {
+        description: "Please open an applet first.",
+      });
+      return;
+    }
+
+    if (!username || !authToken) {
+      toast.error("Login required", {
+        description: "You must be logged in to share applets.",
+      });
+      return;
+    }
+
+    try {
+      const appletTitle = getAppletTitle(htmlContent);
+      
+      // Get icon and name from file system if available
+      const currentFile = files.find((f) => f.path === appletPath);
+      const appletIcon = currentFile?.icon;
+      const appletName = currentFile?.name || (appletPath ? getFileName(appletPath) : undefined);
+      
+      const response = await fetch("/api/share-applet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        body: JSON.stringify({
+          content: htmlContent,
+          title: appletTitle || undefined,
+          icon: appletIcon || undefined,
+          name: appletName || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to share applet");
+      }
+
+      const data = await response.json();
+      setShareId(data.id);
+      setIsShareDialogOpen(true);
+
+      toast.success("Applet shared!", {
+        description: "Share link generated successfully.",
+      });
+    } catch (error) {
+      console.error("Error sharing applet:", error);
+      toast.error("Failed to share applet", {
+        description:
+          error instanceof Error ? error.message : "Please try again later.",
+      });
+    }
+  };
+
+  // Handle shared applet fetching
+  useEffect(() => {
+    if (shareCode) {
+      // Clear previous shared content when shareCode changes
+      setSharedContent("");
+      
+      const fetchSharedApplet = async () => {
+        try {
+          const response = await fetch(`/api/share-applet?id=${encodeURIComponent(shareCode)}`);
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              toast.error("Applet not found", {
+                description: "The shared applet may have been deleted or the link is invalid.",
+              });
+            } else {
+              throw new Error("Failed to fetch shared applet");
+            }
+            return;
+          }
+
+          const data = await response.json();
+          setSharedContent(data.content);
+          setSharedName(data.name);
+          setSharedTitle(data.title);
+          
+          // Update initialData with icon and name from shared applet
+          if (instanceId && (data.icon || data.name)) {
+            const appStore = useAppStore.getState();
+            const inst = appStore.instances[instanceId];
+            if (inst) {
+              const currentData = inst.initialData as AppletViewerInitialData | undefined;
+              const updatedInitialData: AppletViewerInitialData = {
+                path: currentData?.path ?? "",
+                content: currentData?.content ?? "",
+                shareCode: currentData?.shareCode,
+                icon: data.icon || currentData?.icon,
+                name: data.name || currentData?.name,
+              };
+              appStore.updateInstanceInitialData(instanceId, updatedInitialData);
+            }
+          }
+          
+          // Show toast with Save button
+          const displayName = data.title || data.name || "Shared Applet";
+          toast.success("Shared applet loaded", {
+            description: displayName,
+            action: {
+              label: "Save",
+              onClick: async () => {
+                try {
+                  let defaultName = data.name || data.title || "shared-applet";
+                  
+                  // Strip emoji from name if present (emoji should be saved as icon metadata, not in filename)
+                  const { remainingText } = extractEmojiIcon(defaultName);
+                  defaultName = remainingText;
+                  
+                  const nameWithExtension = defaultName.endsWith(".app") 
+                    ? defaultName 
+                    : `${defaultName}.app`;
+                  
+                  const filePath = `/Applets/${nameWithExtension}`;
+                  
+                  await saveFile({
+                    path: filePath,
+                    name: nameWithExtension,
+                    content: data.content,
+                    type: "html",
+                    icon: data.icon || undefined,
+                  });
+                  
+                  // Notify that file was saved
+                  const event = new CustomEvent("saveFile", {
+                    detail: {
+                      name: nameWithExtension,
+                      path: filePath,
+                      content: data.content,
+                      icon: data.icon || undefined,
+                    },
+                  });
+                  window.dispatchEvent(event);
+                  
+                  toast.success("Applet saved", {
+                    description: `Saved to /Applets/${nameWithExtension}`,
+                  });
+                } catch (error) {
+                  console.error("Error saving shared applet:", error);
+                  toast.error("Failed to save applet", {
+                    description: error instanceof Error ? error.message : "Please try again.",
+                  });
+                }
+              },
+            },
+            duration: 10000,
+          });
+        } catch (error) {
+          console.error("Error fetching shared applet:", error);
+          toast.error("Failed to load shared applet", {
+            description: "Please check your connection and try again.",
+          });
+        }
+      };
+
+      fetchSharedApplet();
+    } else if (!shareCode && sharedContent) {
+      // Clear shared content when opening a regular applet
+      setSharedContent("");
+      setSharedName(undefined);
+      setSharedTitle(undefined);
+    }
+  }, [shareCode]); // Only depend on shareCode - will re-run whenever it changes
+
   const menuBar = (
     <AppletViewerMenuBar
       onClose={onClose}
@@ -311,6 +514,7 @@ export function AppletViewerAppComponent({
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onExportAsApp={handleExportAsApp}
       onExportAsHtml={handleExportAsHtml}
+      onShareApplet={handleShareApplet}
       hasAppletContent={hasAppletContent}
       handleFileSelect={handleFileSelect}
       instanceId={instanceId}
@@ -367,8 +571,14 @@ export function AppletViewerAppComponent({
 
   if (!isWindowOpen) return null;
 
-  const windowTitle =
-    hasAppletContent && appletPath ? getFileName(appletPath) : "Applet Viewer";
+  // Determine window title - prefer applet title, then shared name/title, then filename, then default
+  const windowTitle = hasAppletContent
+    ? shareCode
+      ? getAppletTitle(htmlContent, true) || sharedTitle || sharedName || "Shared Applet"
+      : appletPath
+      ? getFileName(appletPath)
+      : getAppletTitle(htmlContent, false) || "Applet Viewer"
+    : "Applet Viewer";
 
   return (
     <>
@@ -458,6 +668,17 @@ export function AppletViewerAppComponent({
         isOpen={isAboutDialogOpen}
         onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
+      />
+      <ShareItemDialog
+        isOpen={isShareDialogOpen}
+        onClose={() => {
+          setIsShareDialogOpen(false);
+          setShareId("");
+        }}
+        itemType="Applet"
+        itemIdentifier={shareId}
+        title={shareId ? getAppletTitle(htmlContent) : undefined}
+        generateShareUrl={generateAppletShareUrl}
       />
     </>
   );

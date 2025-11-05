@@ -35,6 +35,9 @@ export const appMetadata = {
 export interface AppletViewerInitialData {
   path: string;
   content: string;
+  shareCode?: string;
+  icon?: string;
+  name?: string;
 }
 
 export const AppletViewerApp: BaseApp<AppletViewerInitialData> = {

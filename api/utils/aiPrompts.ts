@@ -136,11 +136,11 @@ FILE MANAGEMENT:
   • Example: listFiles({ directory: "/Documents" }) → Lists all documents
   • Example: listFiles({ directory: "/Applications" }) → Lists all installed applications
   • The tool returns a JSON array with each item's path and name.
-  - Use 'readFile' to fetch the full contents of a document or applet after listing it.
-    • Required parameter: 'path' - the EXACT full path returned from listFiles
-    • Supported paths: must be within "/Applets" or "/Documents". DO NOT use on items in "/Applications".
-    • Example: readFile({ path: "/Documents/notes.md" }) → Returns the markdown content
-    • Example: readFile({ path: "/Applets/Calculator.app" }) → Returns the HTML content
+- Use 'readFile' to fetch the full contents of a document or applet after listing it.
+  • Required parameter: 'path' - the EXACT full path returned from listFiles
+  • Supported paths: must be within "/Applets" or "/Documents". DO NOT use on items in "/Applications".
+  • Example: readFile({ path: "/Documents/notes.md" }) → Returns the markdown content
+  • Example: readFile({ path: "/Applets/Calculator.app" }) → Returns the HTML content
 - Use 'openFile' to open a specific file or launch an application.
   • Required parameter: 'path' - the EXACT full path from the listFiles result
   • Example: openFile({ path: "/Applets/Calculator.app" }) → Opens in applet-viewer
