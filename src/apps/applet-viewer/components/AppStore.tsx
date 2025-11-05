@@ -372,7 +372,7 @@ export function AppStore({ theme }: AppStoreProps) {
     return (
       <div
         key={applet.id}
-        className={`flex items-center gap-3 px-3 py-2 rounded transition-colors ${
+        className={`group flex items-center gap-3 px-3 py-2 rounded transition-colors ${
           installed ? "cursor-pointer hover:bg-gray-100" : "cursor-pointer hover:bg-gray-100"
         }`}
         onClick={(e) => {
@@ -410,7 +410,7 @@ export function AppStore({ theme }: AppStoreProps) {
                   e.stopPropagation();
                   handleToggleFeatured(applet.id, applet.featured || false);
                 }}
-                className="p-1 hover:bg-gray-200 rounded transition-colors"
+                className="p-1 hover:bg-gray-200 rounded transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
                 title={applet.featured ? "Remove from featured" : "Add to featured"}
               >
                 <Star 
@@ -422,7 +422,7 @@ export function AppStore({ theme }: AppStoreProps) {
                   e.stopPropagation();
                   handleDelete(applet.id);
                 }}
-                className="p-1 hover:bg-gray-200 rounded transition-colors text-gray-400"
+                className="p-1 hover:bg-gray-200 rounded transition-all text-gray-400 opacity-100 md:opacity-0 md:group-hover:opacity-100"
                 title="Delete applet"
               >
                 <Trash2 className="h-4 w-4" />
@@ -614,7 +614,7 @@ export function AppStore({ theme }: AppStoreProps) {
                 <>
                   <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
                     <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
-                      All Applets
+                      New Applets
                     </h3>
                   </div>
                   {allApplets.map((applet) => renderAppletItem(applet))}
