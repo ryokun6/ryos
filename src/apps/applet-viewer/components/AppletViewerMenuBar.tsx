@@ -200,7 +200,7 @@ export function AppletViewerMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Applet Store Help
+            Applets Help
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={async () => {
@@ -228,7 +228,7 @@ export function AppletViewerMenuBar({
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About Applet Store
+            About Applets
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
