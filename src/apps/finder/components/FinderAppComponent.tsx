@@ -25,6 +25,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 
 // Type for Finder initial data
@@ -521,12 +522,16 @@ export function FinderAppComponent({
 
           const filePath = `/Applets/${fileName}`;
 
+          // Get username for imported applets
+          const username = useChatsStore.getState().username;
+          
           await saveFile({
             name: fileName,
             path: filePath,
             content: text,
             type: "html",
             icon: emoji || undefined,
+            createdBy: username || undefined, // Include username for imported applets
           });
 
           // Notify file was added

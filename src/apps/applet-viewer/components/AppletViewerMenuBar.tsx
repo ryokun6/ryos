@@ -161,7 +161,7 @@ export function AppletViewerMenuBar({
                     .split("/")
                     .pop()
                     ?.replace(/\.(html|app)$/i, "") || "Untitled"
-                : "Untitled";
+                : "App Store";
               const isActive = inst.instanceId === instanceId;
 
               return (

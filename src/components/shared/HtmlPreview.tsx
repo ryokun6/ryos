@@ -22,6 +22,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 
 // Lazily load shiki only when code view is requested to keep initial bundle smaller
@@ -204,6 +205,7 @@ export default function HtmlPreview({
   // Use file system hook for saving applets
   const { saveFile } = useFileSystem("/", { skipLoad: true });
   const launchApp = useAppStore((state) => state.launchApp);
+  const username = useChatsStore((state) => state.username);
   const previewRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fullscreenIframeRef = useRef<HTMLIFrameElement>(null);
@@ -721,6 +723,10 @@ export default function HtmlPreview({
     const appletPath = `/Applets/${nameWithExtension}`;
 
     try {
+      // Check if file already exists to preserve shareId if it has one
+      const existingFile = useFilesStore.getState().getItem(appletPath);
+      const shareId = existingFile?.shareId; // Preserve existing shareId, don't generate new one
+      
       // Always save with fallback fonts, regardless of current theme
       await saveFile({
         path: appletPath,
@@ -728,6 +734,8 @@ export default function HtmlPreview({
         content: processedHtmlContentForSave,
         type: "html",
         icon: appletIcon || "/icons/default/app.png",
+        shareId: shareId, // Include shareId only if it already exists (preserve existing)
+        createdBy: username || undefined, // Include username for saved applets
       });
 
       // Notify that file was saved

@@ -1099,6 +1099,8 @@ export function useFileSystem(
       content: string | Blob;
       type?: string;
       icon?: string;
+      shareId?: string;
+      createdBy?: string;
     }) => {
       const { path, name, content } = fileData;
       console.log(`[useFileSystem:saveFile] Attempting to save: ${path}`);
@@ -1137,6 +1139,9 @@ export function useFileSystem(
         modifiedAt: now,
         // Include file size
         size: fileSize,
+        // Applet sharing metadata
+        shareId: fileData.shareId || existingItem?.shareId,
+        createdBy: fileData.createdBy || existingItem?.createdBy,
         // Now call getFileIcon with the complete metadata object
         icon:
           fileData.icon ||

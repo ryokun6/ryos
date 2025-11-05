@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { useFilesStore } from "@/stores/useFilesStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 import { Trash2, Star } from "lucide-react";
 
 interface Applet {
@@ -23,13 +26,17 @@ interface AppStoreProps {
 export function AppStore({ theme }: AppStoreProps) {
   const [applets, setApplets] = useState<Applet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
   const isAdmin = username?.toLowerCase() === "ryo" && !!authToken;
   const isMacTheme = theme === "macosx";
   const isSystem7Theme = theme === "system7";
-  const { saveFile } = useFileSystem("/Applets");
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { saveFile, files } = useFileSystem("/Applets");
   const launchApp = useLaunchApp();
+  const fileStore = useFilesStore();
 
   // Helper function to extract emoji from start of string
   const extractEmojiIcon = (
@@ -92,22 +99,32 @@ export function AppStore({ theme }: AppStoreProps) {
         ? defaultName 
         : `${defaultName}.app`;
       
-      const filePath = `/Applets/${nameWithExtension}`;
+      // Check if an applet with this shareId already exists (by checking metadata)
+      const existingApplet = files.find((f) => {
+        const fileItem = fileStore.getItem(f.path);
+        return fileItem?.shareId === applet.id;
+      });
       
-      // Save the applet to /Applets
+      // Use existing path if found, otherwise use new path with normal name
+      const finalPath = existingApplet?.path || `/Applets/${nameWithExtension}`;
+      const finalName = existingApplet?.name || nameWithExtension;
+      
+      // Save the applet to /Applets with shareId and createdBy metadata
       await saveFile({
-        path: filePath,
-        name: nameWithExtension,
+        path: finalPath,
+        name: finalName,
         content: data.content,
         type: "html",
         icon: data.icon || undefined,
+        shareId: applet.id,
+        createdBy: data.createdBy || applet.createdBy,
       });
       
       // Notify that file was saved
       const event = new CustomEvent("saveFile", {
         detail: {
-          name: nameWithExtension,
-          path: filePath,
+          name: finalName,
+          path: finalPath,
           content: data.content,
           icon: data.icon || undefined,
         },
@@ -116,12 +133,12 @@ export function AppStore({ theme }: AppStoreProps) {
       
       // Launch applet viewer with the saved applet
       launchApp("applet-viewer", {
-        path: filePath,
+        path: finalPath,
         content: data.content,
       });
 
       toast.success("Applet installed", {
-        description: `Saved to /Applets/${nameWithExtension}`,
+        description: `Saved to /Applets/${finalName}`,
       });
     } catch (error) {
       console.error("Error installing applet:", error);
@@ -189,90 +206,171 @@ export function AppStore({ theme }: AppStoreProps) {
     }
   };
 
+  // Add CSS to ensure emoji size doesn't get overridden by theme styles
+  const appletIconStyles = `
+    .applet-icon {
+      font-size: 2.25rem !important;
+    }
+  `;
+
   if (isLoading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mb-2" />
-          <p className="text-sm text-gray-600 font-geneva-12">Loading...</p>
+      <>
+        <style>{appletIconStyles}</style>
+        <div className="h-full w-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mb-2" />
+            <p className="text-sm text-gray-600 font-geneva-12">Loading...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
+  // Filter applets based on search query
+  const filteredApplets = applets.filter((applet) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const displayName = (applet.title || applet.name || "Untitled Applet").toLowerCase();
+    const createdBy = (applet.createdBy || "").toLowerCase();
+    return displayName.includes(query) || createdBy.includes(query);
+  });
+
   if (applets.length === 0) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <div className="text-center px-6 font-geneva-12">
-          <p className="text-[11px] text-gray-600 font-geneva-12">
-            No applets available at this time.
-          </p>
+      <>
+        <style>{appletIconStyles}</style>
+        <div className="h-full w-full flex items-center justify-center">
+          <div className="text-center px-6 font-geneva-12">
+            <p className="text-[11px] text-gray-600 font-geneva-12">
+              No applets available at this time.
+            </p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="h-full w-full overflow-y-auto">
-      <div className="space-y-1">
-        {applets.map((applet) => {
-          const displayName = applet.title || applet.name || "Untitled Applet";
-          const displayIcon = applet.icon || "📱";
-          
-          return (
-            <div
-              key={applet.id}
-              className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded transition-colors"
-            >
-              <div className="text-2xl flex-shrink-0">{displayIcon}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm font-geneva-12 truncate">
-                    {displayName}
-                  </span>
-                  {applet.featured && (
-                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  )}
-                </div>
-                {applet.createdBy && (
-                  <div className="text-xs text-gray-500 font-geneva-12 mt-0.5">
-                    by {applet.createdBy}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {isAdmin && (
-                  <>
-                    <button
-                      onClick={() => handleToggleFeatured(applet.id, applet.featured || false)}
-                      className="p-1 hover:bg-gray-200 rounded transition-colors"
-                      title={applet.featured ? "Remove from featured" : "Add to featured"}
-                    >
-                      <Star 
-                        className={`h-4 w-4 ${applet.featured ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`} 
-                      />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(applet.id)}
-                      className="p-1 hover:bg-red-100 rounded transition-colors text-red-600"
-                      title="Delete applet"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </>
-                )}
-                <Button
-                  size="sm"
-                  variant={isMacTheme ? "secondary" : isSystem7Theme ? "retro" : "default"}
-                  onClick={() => handleInstall(applet)}
-                >
-                  Install
-                </Button>
-              </div>
+    <>
+      <style>{appletIconStyles}</style>
+      <div className="h-full w-full flex flex-col">
+      <div
+        className={`px-3 py-2 ${
+          isXpTheme
+            ? "border-b border-[#919b9c]"
+            : currentTheme === "macosx"
+            ? ""
+            : currentTheme === "system7"
+            ? "bg-gray-100 border-b border-black"
+            : "bg-gray-100 border-b border-gray-300"
+        }`}
+        style={{
+          background: isXpTheme ? "transparent" : undefined,
+          backgroundImage: currentTheme === "macosx" ? "var(--os-pinstripe-window)" : undefined,
+          borderBottom:
+            currentTheme === "macosx"
+              ? `var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))`
+              : undefined,
+        }}
+      >
+        <Input
+          type="text"
+          placeholder="Search apps"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className={`w-full pl-2 ${
+            isXpTheme
+              ? "!text-[11px]"
+              : currentTheme === "macosx"
+              ? "!text-[12px] h-[26px]"
+              : "!text-[16px]"
+          }`}
+          style={
+            currentTheme === "macosx"
+              ? {
+                  paddingTop: "2px",
+                  paddingBottom: "2px",
+                }
+              : undefined
+          }
+        />
+      </div>
+      <div className="flex-1 overflow-y-auto bg-white">
+        <div className="space-y-1">
+          {filteredApplets.length === 0 ? (
+            <div className="px-3 py-4 text-center">
+              <p className="text-[11px] text-gray-600 font-geneva-12">
+                No applets found matching "{searchQuery}".
+              </p>
             </div>
-          );
-        })}
+          ) : (
+            filteredApplets.map((applet) => {
+              const displayName = applet.title || applet.name || "Untitled Applet";
+              const displayIcon = applet.icon || "📱";
+              
+              return (
+                <div
+                  key={applet.id}
+                  className="flex items-center gap-3 px-3 py-2 rounded transition-colors odd:bg-gray-200/50"
+                >
+                  <div 
+                    className="!text-4xl flex-shrink-0 applet-icon"
+                    style={{ fontSize: '2.25rem' }}
+                  >
+                    {displayIcon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm font-geneva-12 truncate">
+                        {displayName}
+                      </span>
+                      {applet.featured && (
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      )}
+                    </div>
+                    {applet.createdBy && (
+                      <div className="text-[10px] text-gray-500 font-geneva-12">
+                        {applet.createdBy}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={() => handleToggleFeatured(applet.id, applet.featured || false)}
+                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          title={applet.featured ? "Remove from featured" : "Add to featured"}
+                        >
+                          <Star 
+                            className={`h-4 w-4 ${applet.featured ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`} 
+                          />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(applet.id)}
+                          className="p-1 hover:bg-gray-200 rounded transition-colors text-gray-400"
+                          title="Delete applet"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
+                    <Button
+                      size="sm"
+                      variant={isMacTheme ? "secondary" : isSystem7Theme ? "retro" : "default"}
+                      onClick={() => handleInstall(applet)}
+                    >
+                      Install
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
+    </>
   );
 }

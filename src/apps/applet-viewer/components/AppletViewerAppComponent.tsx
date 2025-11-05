@@ -14,6 +14,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { useFilesStore } from "@/stores/useFilesStore";
 import { generateAppletShareUrl } from "@/utils/sharedUrl";
 
 export function AppletViewerAppComponent({
@@ -170,6 +171,7 @@ export function AppletViewerAppComponent({
 
   const launchApp = useLaunchApp();
   const { saveFile, files } = useFileSystem("/Applets");
+  const fileStore = useFilesStore();
 
   // Helper function to extract emoji from start of string
   const extractEmojiIcon = (
@@ -217,7 +219,7 @@ export function AppletViewerAppComponent({
         }
 
         const filePath = `/Applets/${fileName}`;
-
+        
         // Save the file to the filesystem first
         await saveFile({
           name: fileName,
@@ -225,6 +227,7 @@ export function AppletViewerAppComponent({
           content: content,
           type: "html",
           icon: emoji || undefined, // Use extracted emoji as icon if present
+          createdBy: username || undefined, // Include username for imported applets
         });
 
         // Dispatch event to notify Finder of the new file
@@ -351,10 +354,23 @@ export function AppletViewerAppComponent({
     }
 
     try {
-      const appletTitle = getAppletTitle(htmlContent);
-      
-      // Get icon and name from file system if available
+      // Check if applet already has a shareId
       const currentFile = files.find((f) => f.path === appletPath);
+      const fileItem = appletPath ? fileStore.getItem(appletPath) : null;
+      const existingShareId = fileItem?.shareId;
+
+      if (existingShareId) {
+        // Applet already shared, just show the existing share URL
+        setShareId(existingShareId);
+        setIsShareDialogOpen(true);
+        toast.success("Applet already shared", {
+          description: "Showing existing share link.",
+        });
+        return;
+      }
+
+      // No existing shareId, create a new share
+      const appletTitle = getAppletTitle(htmlContent);
       const appletIcon = currentFile?.icon;
       const appletName = currentFile?.name || (appletPath ? getFileName(appletPath) : undefined);
       
@@ -381,6 +397,22 @@ export function AppletViewerAppComponent({
       const data = await response.json();
       setShareId(data.id);
       setIsShareDialogOpen(true);
+
+      // Update the file metadata with the new shareId
+      if (appletPath && data.id) {
+        const currentFileItem = fileStore.getItem(appletPath);
+        if (currentFileItem) {
+          await saveFile({
+            path: appletPath,
+            name: currentFileItem.name,
+            content: htmlContent,
+            type: "html",
+            icon: currentFileItem.icon,
+            shareId: data.id,
+            createdBy: currentFileItem.createdBy || username,
+          });
+        }
+      }
 
       toast.success("Applet shared!", {
         description: "Share link generated successfully.",
@@ -457,19 +489,31 @@ export function AppletViewerAppComponent({
                   
                   const filePath = `/Applets/${nameWithExtension}`;
                   
+                  // Check if an applet with this shareId already exists (by checking metadata)
+                  const existingApplet = shareCode ? files.find((f) => {
+                    const fileItem = fileStore.getItem(f.path);
+                    return fileItem?.shareId === shareCode;
+                  }) : null;
+                  
+                  // Use existing path if found, otherwise use new path with normal name
+                  const finalPath = existingApplet?.path || filePath;
+                  const finalName = existingApplet?.name || nameWithExtension;
+                  
                   await saveFile({
-                    path: filePath,
-                    name: nameWithExtension,
+                    path: finalPath,
+                    name: finalName,
                     content: data.content,
                     type: "html",
                     icon: data.icon || undefined,
+                    shareId: shareCode,
+                    createdBy: data.createdBy,
                   });
                   
                   // Notify that file was saved
                   const event = new CustomEvent("saveFile", {
                     detail: {
-                      name: nameWithExtension,
-                      path: filePath,
+                      name: finalName,
+                      path: finalPath,
                       content: data.content,
                       icon: data.icon || undefined,
                     },
@@ -477,7 +521,7 @@ export function AppletViewerAppComponent({
                   window.dispatchEvent(event);
                   
                   toast.success("Applet saved", {
-                    description: `Saved to /Applets/${nameWithExtension}`,
+                    description: `Saved to /Applets/${finalName}`,
                   });
                 } catch (error) {
                   console.error("Error saving shared applet:", error);

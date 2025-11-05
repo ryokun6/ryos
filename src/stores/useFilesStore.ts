@@ -21,6 +21,9 @@ export interface FileSystemItem {
   status: "active" | "trashed";
   originalPath?: string; // Path before being moved to trash
   deletedAt?: number; // Timestamp when moved to trash
+  // Applet sharing properties
+  shareId?: string; // Share ID for shared applets (from Redis)
+  createdBy?: string; // Username of the creator
   // Content is NOT stored here, only metadata
 }
 
