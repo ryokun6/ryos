@@ -966,7 +966,7 @@ export function useFileSystem(
             hasContent: !!contentAsString,
           });
 
-          // Check for an existing Applet Viewer window for this path
+          // Check for existing applet viewer window with the same path
           try {
             const appStore = useAppStore.getState();
             const existingAppletInstance = Object.values(
@@ -979,16 +979,17 @@ export function useFileSystem(
             );
 
             if (existingAppletInstance) {
-              // Bring existing window to foreground
+              // Focus existing window instead of creating a new one
               appStore.bringInstanceToForeground(
                 existingAppletInstance.instanceId
               );
             } else {
-              // Launch new instance
+              // Launch new instance only if no existing window for this path
               const newInstanceId = launchApp("applet-viewer", {
                 initialData: {
                   path: file.path,
                   content: contentAsString ?? "",
+                  forceNewInstance: true, // Create new instance from Finder
                 },
               });
               // Apply saved window size immediately if available

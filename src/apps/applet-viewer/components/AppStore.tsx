@@ -21,14 +21,16 @@ interface Applet {
 
 interface AppStoreProps {
   theme?: string;
+  sharedAppletId?: string; // ID of shared applet to show in detail view
 }
 
-export function AppStore({ theme }: AppStoreProps) {
+export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
   const [applets, setApplets] = useState<Applet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedApplet, setSelectedApplet] = useState<Applet | null>(null);
   const [selectedAppletContent, setSelectedAppletContent] = useState<string>("");
+  const [isSharedApplet, setIsSharedApplet] = useState(false);
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
   const isAdmin = username?.toLowerCase() === "ryo" && !!authToken;
@@ -83,9 +85,48 @@ export function AppStore({ theme }: AppStoreProps) {
     fetchApplets();
   }, []);
 
-  // Fetch applet content when selectedApplet changes
+  // If sharedAppletId is provided, fetch and show that applet in detail view
+  useEffect(() => {
+    if (sharedAppletId) {
+      const fetchSharedApplet = async () => {
+        try {
+          const response = await fetch(`/api/share-applet?id=${encodeURIComponent(sharedAppletId)}`);
+          if (response.ok) {
+            const data = await response.json();
+            const applet: Applet = {
+              id: sharedAppletId,
+              title: data.title,
+              name: data.name,
+              icon: data.icon,
+              createdAt: data.createdAt || Date.now(),
+              createdBy: data.createdBy,
+            };
+            setSelectedApplet(applet);
+            setSelectedAppletContent(data.content || "");
+            setIsSharedApplet(true);
+          } else {
+            toast.error("Shared applet not found", {
+              description: "The shared applet may have been deleted or the link is invalid.",
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching shared applet:", error);
+          toast.error("Failed to load shared applet", {
+            description: "Please check your connection and try again.",
+          });
+        }
+      };
+      fetchSharedApplet();
+    }
+  }, [sharedAppletId]);
+
+  // Fetch applet content when selectedApplet changes (but skip if content already loaded from sharedAppletId)
   useEffect(() => {
     if (selectedApplet) {
+      // If content is already set (from sharedAppletId fetch), don't fetch again
+      if (selectedAppletContent && isSharedApplet) {
+        return;
+      }
       // Reset content immediately to show loading
       setSelectedAppletContent("");
       fetch(`/api/share-applet?id=${encodeURIComponent(selectedApplet.id)}`)
@@ -106,7 +147,7 @@ export function AppStore({ theme }: AppStoreProps) {
     } else {
       setSelectedAppletContent("");
     }
-  }, [selectedApplet]);
+  }, [selectedApplet, isSharedApplet]);
 
   // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
   const ensureMacFonts = (content: string): string => {
@@ -299,17 +340,20 @@ export function AppStore({ theme }: AppStoreProps) {
       });
       window.dispatchEvent(event);
       
-      // Launch applet viewer with the saved applet
-      launchApp("applet-viewer", {
-        initialData: {
-          path: finalPath,
-          content: data.content,
-          forceNewInstance: true, // Always create new instance from App Store
-        },
-      });
-
       toast.success(isUpdate ? "Applet updated" : "Applet installed", {
         description: `Saved to /Applets/${finalName}`,
+        action: {
+          label: "Open",
+          onClick: () => {
+            launchApp("applet-viewer", {
+              initialData: {
+                path: finalPath,
+                content: data.content,
+                forceNewInstance: true, // Always create new instance from App Store
+              },
+            });
+          },
+        },
       });
       
       // Refresh applet list to reflect updated timestamps
@@ -612,7 +656,10 @@ export function AppStore({ theme }: AppStoreProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSelectedApplet(null)}
+              onClick={() => {
+                setSelectedApplet(null);
+                setIsSharedApplet(false);
+              }}
               className="h-7 w-7 flex-shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />

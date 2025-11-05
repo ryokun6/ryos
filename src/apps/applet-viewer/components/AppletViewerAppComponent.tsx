@@ -50,7 +50,10 @@ export function AppletViewerAppComponent({
   const fileStore = useFilesStore();
   
   // Load content from IndexedDB if path exists, otherwise use initialData.content or sharedContent
-  const htmlContent = loadedContent || typedInitialData?.content || sharedContent || "";
+  // BUT: If shareCode exists without a path, don't load content - show App Store detail view instead
+  const htmlContent = (shareCode && !appletPath) 
+    ? "" 
+    : loadedContent || typedInitialData?.content || sharedContent || "";
   const hasAppletContent = htmlContent.trim().length > 0;
 
   // Load content from IndexedDB when appletPath exists
@@ -668,10 +671,11 @@ export function AppletViewerAppComponent({
     }
   };
 
-  // Handle shared applet fetching
+  // Handle shared applet fetching - only if we have a path (don't fetch if showing App Store detail view)
   useEffect(() => {
-    if (shareCode) {
-      // Clear previous shared content when shareCode changes
+    if (shareCode && appletPath) {
+      // Only fetch content if we have a path (legacy behavior)
+      // If no path, App Store will handle showing the detail view
       setSharedContent("");
       
       const fetchSharedApplet = async () => {
@@ -922,7 +926,7 @@ export function AppletViewerAppComponent({
                   : undefined
               }
             >
-              <AppStore theme={currentTheme} />
+              <AppStore theme={currentTheme} sharedAppletId={shareCode || undefined} />
             </div>
           )}
         </div>
