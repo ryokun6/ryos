@@ -92,7 +92,7 @@ export function AppletViewerMenuBar({
             })}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Open App Store...
+            Open Applet Store...
           </DropdownMenuItem>
           {hasAppletContent && isLoggedIn && (
             <DropdownMenuItem
@@ -161,7 +161,7 @@ export function AppletViewerMenuBar({
                     .split("/")
                     .pop()
                     ?.replace(/\.(html|app)$/i, "") || "Untitled"
-                : "App Store";
+                : "Applet Store";
               const isActive = inst.instanceId === instanceId;
 
               return (

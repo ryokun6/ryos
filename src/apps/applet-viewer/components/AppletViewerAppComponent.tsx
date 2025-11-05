@@ -670,7 +670,7 @@ export function AppletViewerAppComponent({
       : appletPath
       ? getFileName(appletPath)
       : getAppletTitle(htmlContent, false) || "Applet Viewer"
-    : "App Store";
+    : "Applet Store";
 
   return (
     <>

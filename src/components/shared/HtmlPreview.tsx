@@ -23,6 +23,7 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 
 // Lazily load shiki only when code view is requested to keep initial bundle smaller
@@ -204,7 +205,7 @@ export default function HtmlPreview({
 
   // Use file system hook for saving applets
   const { saveFile } = useFileSystem("/", { skipLoad: true });
-  const launchApp = useAppStore((state) => state.launchApp);
+  const launchApp = useLaunchApp();
   const username = useChatsStore((state) => state.username);
   const previewRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -723,9 +724,43 @@ export default function HtmlPreview({
     const appletPath = `/Applets/${nameWithExtension}`;
 
     try {
-      // Check if file already exists to preserve shareId if it has one
-      const existingFile = useFilesStore.getState().getItem(appletPath);
-      const shareId = existingFile?.shareId; // Preserve existing shareId, don't generate new one
+      const fileStore = useFilesStore.getState();
+      // Check if file already exists to preserve all metadata
+      const existingFile = fileStore.getItem(appletPath);
+      
+      // Extract emoji from name if present (similar to AppStore logic)
+      const extractEmojiIcon = (text: string): { emoji: string | null; remainingText: string } => {
+        const emojiRegex =
+          /^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}]+)\s*/u;
+        const match = text.match(emojiRegex);
+        if (match) {
+          return {
+            emoji: match[1],
+            remainingText: text.slice(match[0].length),
+          };
+        }
+        return {
+          emoji: null,
+          remainingText: text,
+        };
+      };
+
+      // Determine icon: use existing icon if available, otherwise use appletIcon prop, otherwise extract from name
+      let finalIcon = existingFile?.icon || appletIcon;
+      if (!finalIcon || finalIcon === "/icons/default/app.png") {
+        const { emoji } = extractEmojiIcon(trimmedName);
+        if (emoji) {
+          finalIcon = emoji;
+        } else {
+          finalIcon = "/icons/default/app.png";
+        }
+      }
+      
+      // Preserve existing metadata
+      const shareId = existingFile?.shareId; // Preserve existing shareId
+      const existingCreatedBy = existingFile?.createdBy; // Preserve existing createdBy if it exists
+      const windowWidth = existingFile?.windowWidth; // Preserve existing windowWidth
+      const windowHeight = existingFile?.windowHeight; // Preserve existing windowHeight
       
       // Always save with fallback fonts, regardless of current theme
       await saveFile({
@@ -733,10 +768,18 @@ export default function HtmlPreview({
         name: nameWithExtension,
         content: processedHtmlContentForSave,
         type: "html",
-        icon: appletIcon || "/icons/default/app.png",
+        icon: finalIcon,
         shareId: shareId, // Include shareId only if it already exists (preserve existing)
-        createdBy: username || undefined, // Include username for saved applets
+        createdBy: existingCreatedBy || username || undefined, // Preserve existing createdBy, or use current username
       });
+
+      // Preserve window dimensions metadata if they exist
+      if (windowWidth && windowHeight) {
+        fileStore.updateItemMetadata(appletPath, {
+          windowWidth,
+          windowHeight,
+        });
+      }
 
       // Notify that file was saved
       const event = new CustomEvent("fileUpdated", {
@@ -759,6 +802,7 @@ export default function HtmlPreview({
               initialData: {
                 path: appletPath,
                 content: processedHtmlContentForSave,
+                forceNewInstance: true, // Always create new instance
               },
             });
           },

@@ -360,9 +360,10 @@ export function AppStore({ theme }: AppStoreProps) {
     return displayName.includes(query) || createdBy.includes(query);
   });
 
-  // Separate into featured and all apps
-  const featuredApplets = filteredApplets.filter((applet) => applet.featured);
-  const allApplets = filteredApplets.filter((applet) => !applet.featured);
+  // Separate into installed, featured (not installed), and all (not installed, not featured)
+  const installedApplets = filteredApplets.filter((applet) => isAppletInstalled(applet.id));
+  const featuredApplets = filteredApplets.filter((applet) => applet.featured && !isAppletInstalled(applet.id));
+  const allApplets = filteredApplets.filter((applet) => !applet.featured && !isAppletInstalled(applet.id));
 
   // Render a single applet item
   const renderAppletItem = (applet: Applet) => {
@@ -386,8 +387,8 @@ export function AppStore({ theme }: AppStoreProps) {
         }}
       >
         <div 
-          className="!text-4xl flex-shrink-0 applet-icon"
-          style={{ fontSize: '2.25rem' }}
+          className="!text-4xl flex-shrink-0 applet-icon flex items-center justify-center"
+          style={{ fontSize: '2.25rem', width: '3rem' }}
         >
           {displayIcon}
         </div>
@@ -580,7 +581,7 @@ export function AppStore({ theme }: AppStoreProps) {
       >
         <Input
           type="text"
-          placeholder="Search apps"
+          placeholder="Search applets"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className={`w-full pl-2 ${
@@ -610,6 +611,16 @@ export function AppStore({ theme }: AppStoreProps) {
             </div>
           ) : (
             <>
+              {installedApplets.length > 0 && (
+                <>
+                  <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
+                    <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
+                      Installed
+                    </h3>
+                  </div>
+                  {installedApplets.map((applet) => renderAppletItem(applet))}
+                </>
+              )}
               {featuredApplets.length > 0 && (
                 <>
                   <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
@@ -624,7 +635,7 @@ export function AppStore({ theme }: AppStoreProps) {
                 <>
                   <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
                     <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
-                      All Apps
+                      All Applets
                     </h3>
                   </div>
                   {allApplets.map((applet) => renderAppletItem(applet))}
