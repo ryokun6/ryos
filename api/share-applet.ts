@@ -367,9 +367,9 @@ export default async function handler(req: Request) {
         name: name || undefined,
         windowWidth: windowWidth || undefined,
         windowHeight: windowHeight || undefined,
-        createdAt: isUpdate && existingAppletData?.createdAt 
-          ? existingAppletData.createdAt 
-          : Date.now(),
+        // Always update createdAt to current time for simpler update detection
+        // This makes it easier to detect updates by comparing createdAt
+        createdAt: Date.now(),
         createdBy: isUpdate && existingAppletData?.createdBy
           ? existingAppletData.createdBy
           : (username || undefined),

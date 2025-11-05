@@ -66,7 +66,11 @@ export function AppStore({ theme }: AppStoreProps) {
       const response = await fetch("/api/share-applet?list=true");
       if (response.ok) {
         const data = await response.json();
-        setApplets(data.applets || []);
+        // Sort by createdAt descending (latest first)
+        const sortedApplets = (data.applets || []).sort((a: Applet, b: Applet) => {
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+        setApplets(sortedApplets);
       }
     } catch (error) {
       console.error("Error fetching applets:", error);
@@ -150,6 +154,46 @@ export function AppStore({ theme }: AppStoreProps) {
     });
   };
 
+  // Get installed applet file item
+  const getInstalledApplet = (appletId: string) => {
+    return files.find((f) => {
+      const fileItem = fileStore.getItem(f.path);
+      return fileItem?.shareId === appletId;
+    });
+  };
+
+  // Check if installed applet needs update
+  // We compare store's createdAt with stored storeCreatedAt
+  // When an applet is updated, createdAt is updated to current time
+  const needsUpdate = (applet: Applet): boolean => {
+    if (!isAppletInstalled(applet.id)) return false;
+    const installedFile = getInstalledApplet(applet.id);
+    if (!installedFile) return false;
+    const fileItem = fileStore.getItem(installedFile.path);
+    if (!fileItem) return false;
+    
+    // Check if we have stored storeCreatedAt metadata
+    let storeCreatedAt = (fileItem as any).storeCreatedAt as number | undefined;
+    
+    // If no storeCreatedAt exists (prepopulated applets or old installs), initialize it
+    // with current store's createdAt so future updates can be detected
+    if (!storeCreatedAt) {
+      const currentCreatedAt = applet.createdAt || 0;
+      // Initialize storeCreatedAt (even if 0) so we can track future updates
+      // If createdAt is 0, it means the applet might not be in store yet or is very old
+      fileStore.updateItemMetadata(installedFile.path, {
+        storeCreatedAt: currentCreatedAt,
+      } as any);
+      // Return false since we just initialized - they're in sync now
+      return false;
+    }
+    
+    // Compare store's createdAt with stored value
+    // createdAt is updated when applet is updated
+    const currentCreatedAt = applet.createdAt || 0;
+    return currentCreatedAt > storeCreatedAt;
+  };
+
   // Handle clicking on an applet
   const handleAppletClick = async (applet: Applet) => {
     const installed = isAppletInstalled(applet.id);
@@ -188,6 +232,8 @@ export function AppStore({ theme }: AppStoreProps) {
 
   const handleInstall = async (applet: Applet) => {
     try {
+      const isUpdate = isAppletInstalled(applet.id);
+      
       // Fetch the full applet content
       const response = await fetch(`/api/share-applet?id=${encodeURIComponent(applet.id)}`);
       if (!response.ok) {
@@ -229,6 +275,11 @@ export function AppStore({ theme }: AppStoreProps) {
         createdBy: data.createdBy || applet.createdBy,
       });
       
+      // Store the store's createdAt for update detection (minimal metadata)
+      fileStore.updateItemMetadata(finalPath, {
+        storeCreatedAt: data.createdAt || Date.now(),
+      } as any);
+      
       // Save window dimensions to metadata if available
       if (data.windowWidth && data.windowHeight) {
         fileStore.updateItemMetadata(finalPath, {
@@ -257,11 +308,14 @@ export function AppStore({ theme }: AppStoreProps) {
         },
       });
 
-      toast.success("Applet installed", {
+      toast.success(isUpdate ? "Applet updated" : "Applet installed", {
         description: `Saved to /Applets/${finalName}`,
       });
       
-      // Return to list view after installation
+      // Refresh applet list to reflect updated timestamps
+      fetchApplets();
+      
+      // Return to list view after installation/update
       setSelectedApplet(null);
     } catch (error) {
       console.error("Error installing applet:", error);
@@ -358,16 +412,62 @@ export function AppStore({ theme }: AppStoreProps) {
     return displayName.includes(query) || createdBy.includes(query);
   });
 
-  // Separate into installed, featured (not installed), and all (not installed, not featured)
-  const installedApplets = filteredApplets.filter((applet) => isAppletInstalled(applet.id));
-  const featuredApplets = filteredApplets.filter((applet) => applet.featured && !isAppletInstalled(applet.id));
-  const allApplets = filteredApplets.filter((applet) => !applet.featured && !isAppletInstalled(applet.id));
+  // Separate into updates available, installed (no updates), featured (not installed), and all (not installed, not featured)
+  // Sort each group by createdAt descending (latest first)
+  const updatesAvailable = filteredApplets
+    .filter((applet) => isAppletInstalled(applet.id) && needsUpdate(applet))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const installedApplets = filteredApplets
+    .filter((applet) => isAppletInstalled(applet.id) && !needsUpdate(applet))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const featuredApplets = filteredApplets
+    .filter((applet) => applet.featured && !isAppletInstalled(applet.id))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const allApplets = filteredApplets
+    .filter((applet) => !applet.featured && !isAppletInstalled(applet.id))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  // Format relative update time
+  const formatUpdateTime = (timestamp: number): string => {
+    const now = Date.now();
+    const diffMs = now - timestamp;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    const updateDate = new Date(timestamp);
+    const today = new Date();
+    const isToday =
+      updateDate.getDate() === today.getDate() &&
+      updateDate.getMonth() === today.getMonth() &&
+      updateDate.getFullYear() === today.getFullYear();
+
+    if (isToday) {
+      if (diffMins < 1) return "Updated just now";
+      if (diffMins < 60) return `Updated ${diffMins}m ago`;
+      return `Updated ${diffHours}h ago`;
+    }
+
+    if (diffDays === 1) return "Updated yesterday";
+    if (diffDays < 7) return `Updated ${diffDays}d ago`;
+    if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `Updated ${weeks}w ago`;
+    }
+    if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `Updated ${months}mo ago`;
+    }
+    const years = Math.floor(diffDays / 365);
+    return `Updated ${years}y ago`;
+  };
 
   // Render a single applet item
   const renderAppletItem = (applet: Applet) => {
     const displayName = applet.title || applet.name || "Untitled Applet";
     const displayIcon = applet.icon || "📱";
     const installed = isAppletInstalled(applet.id);
+    const updateAvailable = needsUpdate(applet);
     
     return (
       <div
@@ -396,21 +496,25 @@ export function AppStore({ theme }: AppStoreProps) {
               {displayName}
             </span>
           </div>
-          {applet.createdBy && (
+          {updateAvailable && applet.createdAt ? (
+            <div className="text-[10px] text-gray-500 font-geneva-12">
+              {formatUpdateTime(applet.createdAt)}
+            </div>
+          ) : applet.createdBy ? (
             <div className="text-[10px] text-gray-500 font-geneva-12">
               {applet.createdBy}
             </div>
-          )}
+          ) : null}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {isAdmin && (
-            <>
+            <div className="flex items-center gap-0">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleToggleFeatured(applet.id, applet.featured || false);
                 }}
-                className="p-1 hover:bg-gray-200 rounded transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                className="p-1 hover:bg-gray-200 rounded transition-all inline-flex md:hidden md:group-hover:inline-flex"
                 title={applet.featured ? "Remove from featured" : "Add to featured"}
               >
                 <Star 
@@ -422,27 +526,39 @@ export function AppStore({ theme }: AppStoreProps) {
                   e.stopPropagation();
                   handleDelete(applet.id);
                 }}
-                className="p-1 hover:bg-gray-200 rounded transition-all text-gray-400 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                className="p-1 hover:bg-gray-200 rounded transition-all text-gray-400 inline-flex md:hidden md:group-hover:inline-flex"
                 title="Delete applet"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
-            </>
+            </div>
           )}
           <Button
             size="sm"
-            variant={isMacTheme ? "secondary" : isSystem7Theme ? "retro" : "default"}
+            variant={
+              updateAvailable
+                ? "default"
+                : isMacTheme
+                ? "secondary"
+                : isSystem7Theme
+                ? "retro"
+                : "default"
+            }
             onClick={(e) => {
               e.stopPropagation();
               if (installed) {
-                handleAppletClick(applet);
+                if (updateAvailable) {
+                  handleInstall(applet);
+                } else {
+                  handleAppletClick(applet);
+                }
               } else {
                 handleInstall(applet);
               }
             }}
             className="w-[60px]"
           >
-            {installed ? "Open" : "Get"}
+            {installed ? (updateAvailable ? "Update" : "Open") : "Get"}
           </Button>
         </div>
       </div>
@@ -600,6 +716,16 @@ export function AppStore({ theme }: AppStoreProps) {
             </div>
           ) : (
             <>
+              {updatesAvailable.length > 0 && (
+                <>
+                  <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
+                    <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
+                      Updates Available
+                    </h3>
+                  </div>
+                  {updatesAvailable.map((applet) => renderAppletItem(applet))}
+                </>
+              )}
               {featuredApplets.length > 0 && (
                 <>
                   <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
