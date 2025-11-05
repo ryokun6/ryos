@@ -965,11 +965,17 @@ export default async function handler(req: Request) {
         },
       },
       temperature: 0.7,
-      maxOutputTokens: 6000,
+      maxOutputTokens: 32000, // Increased from 6000 to prevent code generation cutoff
       stopWhen: stepCountIs(10), // Allow up to 10 steps for multi-tool workflows
       experimental_transform: smoothStream({
         chunking: /[\u4E00-\u9FFF]|\S+\s+/,
       }),
+      headers: {
+        // Enable fine-grained tool streaming for Anthropic models
+        ...(model.startsWith("claude")
+          ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
+          : {}),
+      },
       providerOptions: {
         openai: {
           reasoningEffort: "minimal", // Turn off reasoning for GPT-5 and other reasoning models

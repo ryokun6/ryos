@@ -268,7 +268,29 @@ export function ToolInvocationMessage({
   }
 
   if (toolName === "generateHtml") {
+    const htmlContent = typeof input?.html === "string" ? input.html : "";
+    const appletTitle = typeof input?.title === "string" ? input.title : "";
+    const appletIcon = typeof input?.icon === "string" ? input.icon : "";
+    
     if (state === "input-streaming") {
+      // Show HTML preview with streaming if HTML content is available
+      if (htmlContent) {
+        return (
+          <HtmlPreview
+            key={partKey}
+            htmlContent={htmlContent}
+            appletTitle={appletTitle}
+            appletIcon={appletIcon}
+            isStreaming={true}
+            onInteractionChange={setIsInteractingWithPreview}
+            playElevatorMusic={playElevatorMusic}
+            stopElevatorMusic={stopElevatorMusic}
+            playDingSound={playDingSound}
+            className="my-1"
+          />
+        );
+      }
+      // Show loading state if HTML not yet available
       return (
         <div
           key={partKey}
@@ -279,9 +301,6 @@ export function ToolInvocationMessage({
         </div>
       );
     } else if (state === "input-available") {
-      const htmlContent = typeof input?.html === "string" ? input.html : "";
-      const appletTitle = typeof input?.title === "string" ? input.title : "";
-      const appletIcon = typeof input?.icon === "string" ? input.icon : "";
       if (htmlContent) {
         return (
           <HtmlPreview
