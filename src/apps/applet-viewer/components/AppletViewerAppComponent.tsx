@@ -13,8 +13,12 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
-import { useFileSystem, dbOperations, DocumentContent } from "@/apps/finder/hooks/useFileSystem";
-import { useFilesStore } from "@/stores/useFilesStore";
+import {
+  useFileSystem,
+  dbOperations,
+  DocumentContent,
+} from "@/apps/finder/hooks/useFileSystem";
+import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { generateAppletShareUrl } from "@/utils/sharedUrl";
 import { STORES } from "@/utils/indexedDB";
 
@@ -64,6 +68,100 @@ export function AppletViewerAppComponent({
   
   // Get file metadata and applet store (moved before useEffect)
   const fileStore = useFilesStore();
+
+  const fetchAndCacheAppletContent = useCallback(
+    async (
+      filePath: string,
+      metadata: FileSystemItem
+    ): Promise<
+      | {
+          content: string;
+          windowWidth?: number;
+          windowHeight?: number;
+        }
+      | null
+    > => {
+      const { shareId, uuid, name } = metadata;
+
+      if (!shareId || !uuid) {
+        console.warn(
+          `[AppletViewer] Cannot fetch shared applet for ${filePath}: missing shareId or uuid`
+        );
+        return null;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/share-applet?id=${encodeURIComponent(shareId)}`
+        );
+
+        if (!response.ok) {
+          console.error(
+            `[AppletViewer] Failed to fetch applet content for shareId ${shareId}: ${response.status}`
+          );
+          return null;
+        }
+
+        const data = await response.json();
+        const content =
+          typeof data.content === "string" ? data.content : "";
+
+        await dbOperations.put<DocumentContent>(
+          STORES.APPLETS,
+          {
+            name: name || filePath.split("/").pop() || shareId,
+            content,
+          },
+          uuid
+        );
+
+        const metadataUpdates: Partial<FileSystemItem> = {};
+
+        if (typeof data.icon === "string" && data.icon !== metadata.icon) {
+          metadataUpdates.icon = data.icon;
+        }
+        if (
+          typeof data.createdBy === "string" &&
+          data.createdBy !== metadata.createdBy
+        ) {
+          metadataUpdates.createdBy = data.createdBy;
+        }
+        if (
+          typeof data.windowWidth === "number" &&
+          typeof data.windowHeight === "number"
+        ) {
+          metadataUpdates.windowWidth = data.windowWidth;
+          metadataUpdates.windowHeight = data.windowHeight;
+        }
+        if (typeof data.createdAt === "number") {
+          metadataUpdates.storeCreatedAt = data.createdAt;
+        }
+
+        if (Object.keys(metadataUpdates).length > 0) {
+          fileStore.updateItemMetadata(filePath, metadataUpdates);
+        }
+
+        return {
+          content,
+          windowWidth:
+            typeof data.windowWidth === "number"
+              ? data.windowWidth
+              : undefined,
+          windowHeight:
+            typeof data.windowHeight === "number"
+              ? data.windowHeight
+              : undefined,
+        };
+      } catch (error) {
+        console.error(
+          `[AppletViewer] Error fetching shared applet content for ${shareId}:`,
+          error
+        );
+        return null;
+      }
+    },
+    [fileStore]
+  );
   
   // Load content from IndexedDB if path exists, otherwise use initialData.content or sharedContent
   // BUT: If shareCode exists without a path, don't load content - show App Store detail view instead
@@ -104,7 +202,7 @@ export function AppletViewerAppComponent({
             STORES.APPLETS,
             fileMetadata.uuid
           );
-          
+
           if (contentData?.content) {
             // Convert Blob to string if needed
             let contentStr: string;
@@ -114,8 +212,35 @@ export function AppletViewerAppComponent({
               contentStr = contentData.content;
             }
             setLoadedContent(contentStr);
+          } else if (fileMetadata.shareId) {
+            const fetched = await fetchAndCacheAppletContent(
+              appletPath,
+              fileMetadata
+            );
+
+            if (fetched) {
+              setLoadedContent(fetched.content);
+
+              if (
+                instanceId &&
+                fetched.windowWidth &&
+                fetched.windowHeight
+              ) {
+                const appStore = useAppStore.getState();
+                const inst = appStore.instances[instanceId];
+                if (inst) {
+                  const pos = inst.position || { x: 0, y: 0 };
+                  appStore.updateInstanceWindowState(instanceId, pos, {
+                    width: fetched.windowWidth,
+                    height: fetched.windowHeight,
+                  });
+                }
+              }
+            } else {
+              setLoadedContent("");
+            }
           } else {
-            // No content in IndexedDB
+            // No content in IndexedDB and no shareId to fetch from
             setLoadedContent("");
           }
         } else {
@@ -127,9 +252,14 @@ export function AppletViewerAppComponent({
         setLoadedContent("");
       }
     };
-
     loadContentFromIndexedDB();
-  }, [appletPath, instanceId, fileStore, typedInitialData]);
+  }, [
+    appletPath,
+    instanceId,
+    fileStore,
+    typedInitialData,
+    fetchAndCacheAppletContent,
+  ]);
 
   // Debug logging
   useEffect(() => {
@@ -682,7 +812,7 @@ export function AppletViewerAppComponent({
           if (data.createdAt) {
             fileStore.updateItemMetadata(appletPath, {
               storeCreatedAt: data.createdAt,
-            } as any);
+            });
           }
         }
       }
