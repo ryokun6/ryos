@@ -231,8 +231,11 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
     
     // Compare store's createdAt with stored value
     // createdAt is updated when applet is updated
+    // Use >= with a small tolerance to account for timing differences
     const currentCreatedAt = applet.createdAt || 0;
-    return currentCreatedAt > storeCreatedAt;
+    // If timestamps are within 1 second, consider them equal (updated)
+    const timeDiff = currentCreatedAt - storeCreatedAt;
+    return timeDiff > 1000; // Only show update if difference is more than 1 second
   };
 
   // Handle clicking on an applet
@@ -317,8 +320,10 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
       });
       
       // Store the store's createdAt for update detection (minimal metadata)
+      // Use the createdAt from the fetched applet data to ensure consistency
+      const storeCreatedAtValue = data.createdAt || Date.now();
       fileStore.updateItemMetadata(finalPath, {
-        storeCreatedAt: data.createdAt || Date.now(),
+        storeCreatedAt: storeCreatedAtValue,
       } as any);
       
       // Save window dimensions to metadata if available
@@ -340,6 +345,10 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
       });
       window.dispatchEvent(event);
       
+      // Refresh applet list to reflect updated timestamps BEFORE showing toast
+      // This ensures the list is up-to-date when needsUpdate is checked
+      await fetchApplets();
+      
       toast.success(isUpdate ? "Applet updated" : "Applet installed", {
         description: `Saved to /Applets/${finalName}`,
         action: {
@@ -355,9 +364,6 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
           },
         },
       });
-      
-      // Refresh applet list to reflect updated timestamps
-      fetchApplets();
       
       // Return to list view after installation/update
       setSelectedApplet(null);
@@ -431,6 +437,9 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
   const appletIconStyles = `
     .applet-icon {
       font-size: 2.25rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
     }
   `;
 
@@ -665,7 +674,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div 
-              className="!text-2xl flex-shrink-0 applet-icon"
+              className="!text-2xl flex-shrink-0 applet-icon flex items-center justify-center"
               style={{ fontSize: '1.5rem' }}
             >
               {displayIcon}

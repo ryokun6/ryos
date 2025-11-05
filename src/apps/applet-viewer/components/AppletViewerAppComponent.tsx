@@ -660,6 +660,14 @@ export function AppletViewerAppComponent({
             shareId: data.id,
             createdBy: currentFileItem.createdBy || username,
           });
+          
+          // Update storeCreatedAt with the createdAt timestamp from the server response
+          // This prevents false "update available" notifications after sharing/updating
+          if (data.createdAt) {
+            fileStore.updateItemMetadata(appletPath, {
+              storeCreatedAt: data.createdAt,
+            } as any);
+          }
         }
       }
 

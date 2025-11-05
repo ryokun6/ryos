@@ -400,12 +400,13 @@ export default async function handler(req: Request) {
           id,
           shareUrl,
           updated: isUpdate,
+          createdAt: appletData.createdAt, // Return createdAt so client can update local metadata
         }),
         {
           status: 200,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin,
+            "Access-Control-Allow-Origin": effectiveOrigin || "*",
           },
         }
       );

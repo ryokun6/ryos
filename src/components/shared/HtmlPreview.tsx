@@ -25,6 +25,7 @@ import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 // Lazily load shiki only when code view is requested to keep initial bundle smaller
 let shikiModulePromise: Promise<typeof import("shiki")> | null = null;
@@ -1014,15 +1015,29 @@ export default function HtmlPreview({
     }
   }, [htmlContent, isStreaming, streamPreviewHtml]);
 
+  // Applet icon styles for proper emoji rendering
+  const appletIconStyles = `
+    .applet-icon {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+      line-height: 1;
+      display: inline-block;
+    }
+  `;
+
   // Normal inline display with optional maximized height
   return (
     <>
+      {!isInternetExplorer && (appletTitle || appletIcon) && (
+        <style>{appletIconStyles}</style>
+      )}
       <motion.div
         ref={previewRef}
         className={`${
           isInternetExplorer ? "" : "rounded"
-        } bg-white overflow-auto m-0 relative ${className} ${
+        } bg-white m-0 relative ${className} ${
           isStreaming ? "loading-pulse" : ""
+        } ${
+          !isInternetExplorer && (appletTitle || appletIcon) ? "flex flex-col overflow-hidden" : "overflow-auto"
         }`}
         style={{
           maxHeight: isInternetExplorer
@@ -1076,7 +1091,41 @@ export default function HtmlPreview({
           />
         )}
 
-        {!isInternetExplorer && (
+        {/* Applet banner - similar to AppStore detail view */}
+        {!isInternetExplorer && (appletTitle || appletIcon) && (
+          <div className="flex items-center gap-3 px-3 py-2 bg-gray-100 border-b border-gray-300 flex-shrink-0">
+            <div 
+              className="!text-2xl flex-shrink-0 applet-icon"
+              style={{ fontSize: '1.5rem' }}
+            >
+              {appletIcon || "📱"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-sm font-geneva-12 truncate">
+                {appletTitle || "Untitled Applet"}
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  await handleSaveAsApplet(e as any);
+                  // handleSaveAsApplet will show toast with Open button
+                } catch (error) {
+                  console.error("Failed to save applet:", error);
+                }
+              }}
+              className="w-[60px]"
+              disabled={isStreaming}
+            >
+              Get
+            </Button>
+          </div>
+        )}
+
+        {!isInternetExplorer && !(appletTitle || appletIcon) && (
           <motion.div
             className="flex justify-end p-1 absolute top-2 right-4 z-20"
             animate={{
@@ -1158,7 +1207,9 @@ export default function HtmlPreview({
         {/* Conditional Rendering: Text Stream or Iframe */}
         {isStreaming && htmlContent ? (
           <div
-            className="h-full w-full relative overflow-auto"
+            className={`h-full w-full relative overflow-auto ${
+              !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : ""
+            }`}
             style={{
               maxHeight: isInternetExplorer
                 ? "100%"
@@ -1191,10 +1242,14 @@ export default function HtmlPreview({
             // srcDoc is now set by useEffect after streaming finishes
             // srcDoc={processedHtmlContent()}
             title="ryOS Code Preview"
-            className="w-full h-full border-0"
+            className={`w-full border-0 ${
+              !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : "h-full"
+            }`}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
             style={{
               height: isInternetExplorer
+                ? "100%"
+                : !isInternetExplorer && (appletTitle || appletIcon)
                 ? "100%"
                 : typeof minHeight === "string"
                 ? minHeight
