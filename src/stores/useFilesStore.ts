@@ -24,6 +24,9 @@ export interface FileSystemItem {
   // Applet sharing properties
   shareId?: string; // Share ID for shared applets (from Redis)
   createdBy?: string; // Username of the creator
+  // Window dimensions
+  windowWidth?: number; // Window width when last opened
+  windowHeight?: number; // Window height when last opened
   // Content is NOT stored here, only metadata
 }
 
@@ -60,6 +63,7 @@ interface FilesStoreState {
   moveItem: (sourcePath: string, destinationPath: string) => boolean; // Add moveItem method
   getItemsInPath: (path: string) => FileSystemItem[];
   getItem: (path: string) => FileSystemItem | undefined;
+  updateItemMetadata: (path: string, updates: Partial<FileSystemItem>) => void;
   getTrashItems: () => FileSystemItem[]; // Helper to get all trashed items
   reset: () => void;
   clearLibrary: () => void;
@@ -538,6 +542,28 @@ export const useFilesStore = create<FilesStoreState>()(
       },
 
       getItem: (path) => get().items[path],
+
+      updateItemMetadata: (path, updates) => {
+        set((state) => {
+          const existingItem = state.items[path];
+          if (!existingItem) {
+            console.warn(
+              `[FilesStore] Cannot update metadata. Path "${path}" does not exist.`
+            );
+            return state;
+          }
+          return {
+            items: {
+              ...state.items,
+              [path]: {
+                ...existingItem,
+                ...updates,
+                modifiedAt: Date.now(),
+              },
+            },
+          };
+        });
+      },
 
       getTrashItems: () => {
         return Object.values(get().items).filter(

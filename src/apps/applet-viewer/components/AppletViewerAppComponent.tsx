@@ -55,9 +55,17 @@ export function AppletViewerAppComponent({
     });
   }, [appletPath, htmlContent]);
 
-  // Get the applet-specific window size
+  // Get file metadata and applet store
+  const fileStore = useFilesStore();
+  const fileItem = appletPath ? fileStore.getItem(appletPath) : undefined;
   const { getAppletWindowSize, setAppletWindowSize } = useAppletStore();
-  const savedSize = appletPath ? getAppletWindowSize(appletPath) : undefined;
+  
+  // Get saved size from file metadata first, fallback to applet store
+  const savedSizeFromMetadata = fileItem?.windowWidth && fileItem?.windowHeight
+    ? { width: fileItem.windowWidth, height: fileItem.windowHeight }
+    : undefined;
+  const savedSizeFromAppletStore = appletPath ? getAppletWindowSize(appletPath) : undefined;
+  const savedSize = savedSizeFromMetadata || savedSizeFromAppletStore;
 
   // Get current window state from app store
   const currentWindowState = useAppStore((state) =>
@@ -84,19 +92,28 @@ export function AppletViewerAppComponent({
     appliedInitialSizeRef.current = true;
   }, [instanceId, savedSize]);
 
-  // Save window size to custom store whenever it changes in the app store (avoid loops)
+  // Save window size to file metadata and applet store whenever it changes in the app store (avoid loops)
   useEffect(() => {
     if (!appletPath || !currentWindowState?.size) return;
     const next = currentWindowState.size;
     // Only write when different from saved size to prevent infinite update loops
-    if (
+    const shouldUpdate =
       !savedSize ||
       savedSize.width !== next.width ||
-      savedSize.height !== next.height
-    ) {
+      savedSize.height !== next.height;
+    
+    if (shouldUpdate) {
+      // Save to file metadata
+      if (fileItem) {
+        fileStore.updateItemMetadata(appletPath, {
+          windowWidth: next.width,
+          windowHeight: next.height,
+        });
+      }
+      // Also save to applet store for backward compatibility
       setAppletWindowSize(appletPath, next);
     }
-  }, [appletPath, currentWindowState?.size, savedSize, setAppletWindowSize]);
+  }, [appletPath, currentWindowState?.size, savedSize, fileItem, fileStore, setAppletWindowSize]);
 
   // Get filename from path for window title
   const getFileName = (path: string): string => {
@@ -171,7 +188,6 @@ export function AppletViewerAppComponent({
 
   const launchApp = useLaunchApp();
   const { saveFile, files } = useFileSystem("/Applets");
-  const fileStore = useFilesStore();
 
   // Helper function to extract emoji from start of string
   const extractEmojiIcon = (
@@ -374,6 +390,9 @@ export function AppletViewerAppComponent({
       const appletIcon = currentFile?.icon;
       const appletName = currentFile?.name || (appletPath ? getFileName(appletPath) : undefined);
       
+      // Get current window dimensions to include in share
+      const windowDimensions = currentWindowState?.size;
+      
       const response = await fetch("/api/share-applet", {
         method: "POST",
         headers: {
@@ -386,6 +405,8 @@ export function AppletViewerAppComponent({
           title: appletTitle || undefined,
           icon: appletIcon || undefined,
           name: appletName || undefined,
+          windowWidth: windowDimensions?.width,
+          windowHeight: windowDimensions?.height,
         }),
       });
 
@@ -452,6 +473,19 @@ export function AppletViewerAppComponent({
           setSharedName(data.name);
           setSharedTitle(data.title);
           
+          // Apply window dimensions if available
+          if (instanceId && data.windowWidth && data.windowHeight) {
+            const appStore = useAppStore.getState();
+            const inst = appStore.instances[instanceId];
+            if (inst) {
+              const pos = inst.position || { x: 0, y: 0 };
+              appStore.updateInstanceWindowState(instanceId, pos, {
+                width: data.windowWidth,
+                height: data.windowHeight,
+              });
+            }
+          }
+          
           // Update initialData with icon and name from shared applet
           if (instanceId && (data.icon || data.name)) {
             const appStore = useAppStore.getState();
@@ -508,6 +542,14 @@ export function AppletViewerAppComponent({
                     shareId: shareCode,
                     createdBy: data.createdBy,
                   });
+                  
+                  // Save window dimensions to metadata if available
+                  if (data.windowWidth && data.windowHeight) {
+                    fileStore.updateItemMetadata(finalPath, {
+                      windowWidth: data.windowWidth,
+                      windowHeight: data.windowHeight,
+                    });
+                  }
                   
                   // Notify that file was saved
                   const event = new CustomEvent("saveFile", {

@@ -164,7 +164,6 @@ export function AppStore({ theme }: AppStoreProps) {
       });
       
       if (installedApplet) {
-        const fileItem = fileStore.getItem(installedApplet.path);
         // Fetch content and launch
         try {
           const response = await fetch(`/api/share-applet?id=${encodeURIComponent(applet.id)}`);
@@ -231,6 +230,14 @@ export function AppStore({ theme }: AppStoreProps) {
         shareId: applet.id,
         createdBy: data.createdBy || applet.createdBy,
       });
+      
+      // Save window dimensions to metadata if available
+      if (data.windowWidth && data.windowHeight) {
+        fileStore.updateItemMetadata(finalPath, {
+          windowWidth: data.windowWidth,
+          windowHeight: data.windowHeight,
+        });
+      }
       
       // Notify that file was saved
       const event = new CustomEvent("saveFile", {
@@ -359,7 +366,7 @@ export function AppStore({ theme }: AppStoreProps) {
   const allApplets = filteredApplets.filter((applet) => !applet.featured);
 
   // Render a single applet item
-  const renderAppletItem = (applet: Applet, index: number, isFeatured: boolean) => {
+  const renderAppletItem = (applet: Applet) => {
     const displayName = applet.title || applet.name || "Untitled Applet";
     const displayIcon = applet.icon || "📱";
     const installed = isAppletInstalled(applet.id);
@@ -619,7 +626,7 @@ export function AppStore({ theme }: AppStoreProps) {
                       Featured
                     </h3>
                   </div>
-                  {featuredApplets.map((applet, index) => renderAppletItem(applet, index, true))}
+                  {featuredApplets.map((applet) => renderAppletItem(applet))}
                 </>
               )}
               {allApplets.length > 0 && (
@@ -629,7 +636,7 @@ export function AppStore({ theme }: AppStoreProps) {
                       All Apps
                     </h3>
                   </div>
-                  {allApplets.map((applet, index) => renderAppletItem(applet, index, false))}
+                  {allApplets.map((applet) => renderAppletItem(applet))}
                 </>
               )}
             </>

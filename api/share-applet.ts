@@ -64,6 +64,8 @@ const SaveAppletRequestSchema = z.object({
   title: z.string().optional(),
   icon: z.string().optional(),
   name: z.string().optional(),
+  windowWidth: z.number().optional(),
+  windowHeight: z.number().optional(),
 });
 
 type SaveAppletRequest = z.infer<typeof SaveAppletRequestSchema>;
@@ -295,7 +297,7 @@ export default async function handler(req: Request) {
         );
       }
 
-      const { content, title, icon, name } = validation.data;
+      const { content, title, icon, name, windowWidth, windowHeight } = validation.data;
 
       // Generate unique ID
       const id = generateId();
@@ -307,6 +309,8 @@ export default async function handler(req: Request) {
         title: title || undefined,
         icon: icon || undefined,
         name: name || undefined,
+        windowWidth: windowWidth || undefined,
+        windowHeight: windowHeight || undefined,
         createdAt: Date.now(),
         createdBy: username || undefined,
       };
