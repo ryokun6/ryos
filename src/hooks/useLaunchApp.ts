@@ -36,22 +36,27 @@ export const useLaunchApp = () => {
 
       // If launching with content (initialData exists)
       if (initialData) {
-        // Check for empty applet viewer instance (no content)
-        const emptyInstance = appletInstances.find((inst) => {
-          const data = inst.initialData as
-            | { path?: string; content?: string }
-            | undefined;
-          return !data?.content || data.content.trim().length === 0;
-        });
+        const data = initialData as { path?: string; content?: string; forceNewInstance?: boolean } | undefined;
+        
+        // Skip empty instance check if forceNewInstance is true
+        if (!data?.forceNewInstance) {
+          // Check for empty applet viewer instance (no content)
+          const emptyInstance = appletInstances.find((inst) => {
+            const instData = inst.initialData as
+              | { path?: string; content?: string }
+              | undefined;
+            return !instData?.content || instData.content.trim().length === 0;
+          });
 
-        if (emptyInstance) {
-          // Swap the empty instance with the new content
-          console.log(
-            `[useLaunchApp] Found empty applet viewer instance ${emptyInstance.instanceId}, updating with content`
-          );
-          updateInstanceInitialData(emptyInstance.instanceId, initialData);
-          bringInstanceToForeground(emptyInstance.instanceId);
-          return emptyInstance.instanceId;
+          if (emptyInstance) {
+            // Swap the empty instance with the new content
+            console.log(
+              `[useLaunchApp] Found empty applet viewer instance ${emptyInstance.instanceId}, updating with content`
+            );
+            updateInstanceInitialData(emptyInstance.instanceId, initialData);
+            bringInstanceToForeground(emptyInstance.instanceId);
+            return emptyInstance.instanceId;
+          }
         }
       } else {
         // Launching empty state - don't launch if instances already exist
