@@ -118,6 +118,12 @@ Works on all devices—including mobile, tablet, and desktop.
   - Real-time lyric highlighting during playback
   - Library persisted locally for offline playback
 
+## Storage & Persistence
+
+- Chat room transcripts are persisted in IndexedDB (`ryOS` ▸ `chat_messages`) instead of `localStorage`, preventing quota issues from large conversations.
+- Finder, applets, and wallpapers continue using IndexedDB stores that can be exported through Control Panels ▸ Backup/Restore. Backups now include the `chat_messages` store.
+- To verify quota usage, open browser DevTools ▸ Application ▸ IndexedDB ▸ `ryOS` and inspect the `chat_messages` store. The matching `localStorage` key (`ryos:chats`) now excludes message payloads.
+
 ## Project Structure
 
 ```

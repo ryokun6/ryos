@@ -51,10 +51,15 @@ export function useChatRoom(
     removeMessageFromRoom,
     incrementUnread,
     messageRenderLimit,
+    hydrateCachedMessages,
   } = useChatsStore();
 
   // Derive isAdmin directly from the username
   const isAdmin = username === "ryo";
+
+  useEffect(() => {
+    void hydrateCachedMessages();
+  }, [hydrateCachedMessages]);
 
   // Pusher refs
   const pusherRef = useRef<ReturnType<typeof getPusherClient> | null>(null);
