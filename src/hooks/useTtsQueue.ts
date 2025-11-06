@@ -21,6 +21,11 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const [isSpeaking, setIsSpeaking] = useState(false);
   // Track any sources currently playing so we can stop them
   const playingSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  type BrowserUtteranceEntry = {
+    utterance: SpeechSynthesisUtterance;
+    onEnd?: () => void;
+  };
+  const browserUtterancesRef = useRef<Set<BrowserUtteranceEntry>>(new Set());
   // Promise chain that guarantees *scheduling* order while still allowing
   // individual fetches to run in parallel.
   const scheduleChainRef = useRef<Promise<void>>(Promise.resolve());
@@ -48,6 +53,8 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   // Get TTS settings from app store
   const ttsModel = useAppStore((s) => s.ttsModel);
   const ttsVoice = useAppStore((s) => s.ttsVoice);
+  const effectiveTtsModel = ttsModel ?? "browser";
+  const isBrowserTts = effectiveTtsModel === "browser";
 
   // Keep track of iPod and chat synth volumes for duck/restore
   const originalIpodVolumeRef = useRef<number | null>(null);
@@ -113,17 +120,22 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
             };
           } = {
             text: request.text,
-            model: ttsModel, // Send null if null, let server decide
           };
 
+          if (effectiveTtsModel === "openai" || effectiveTtsModel === "elevenlabs") {
+            requestBody.model = effectiveTtsModel;
+          } else if (ttsModel === null) {
+            requestBody.model = null;
+          }
+
           // Add model-specific settings
-          if (ttsModel === "elevenlabs") {
+          if (effectiveTtsModel === "elevenlabs") {
             requestBody.voice_id = ttsVoice; // Send null if null
-          } else if (ttsModel === "openai") {
+          } else if (effectiveTtsModel === "openai") {
             // OpenAI settings
             requestBody.voice = ttsVoice; // Send null if null
           }
-          // If ttsModel is null, don't add voice settings - let server decide
+          // If model is browser or unspecified, let the server decide defaults
 
           const res = await fetch(endpoint, {
             method: "POST",
@@ -179,6 +191,51 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       // Signal that we are actively queueing again
       isStoppedRef.current = false;
 
+      if (isBrowserTts) {
+        if (typeof window === "undefined" || !window.speechSynthesis) {
+          console.warn("SpeechSynthesis API is not available in this environment.");
+          return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text.trim());
+        const combinedVolume = Math.max(0, Math.min(1, speechVolume * masterVolume));
+        utterance.volume = combinedVolume;
+
+        if (ttsVoice) {
+          const availableVoices = window.speechSynthesis.getVoices();
+          const matchedVoice = availableVoices.find(
+            (voice) => voice.voiceURI === ttsVoice || voice.name === ttsVoice
+          );
+          if (matchedVoice) {
+            utterance.voice = matchedVoice;
+          }
+        }
+
+        const entry: BrowserUtteranceEntry = { utterance, onEnd };
+
+        utterance.onstart = () => {
+          browserUtterancesRef.current.add(entry);
+          setIsSpeaking(true);
+        };
+
+        const handleUtteranceEnd = () => {
+          browserUtterancesRef.current.delete(entry);
+          if (browserUtterancesRef.current.size === 0) {
+            setIsSpeaking(false);
+          }
+          if (onEnd) onEnd();
+        };
+
+        utterance.onend = handleUtteranceEnd;
+        utterance.onerror = (event) => {
+          console.error("SpeechSynthesisUtterance error", event);
+          handleUtteranceEnd();
+        };
+
+        window.speechSynthesis.speak(utterance);
+        return;
+      }
+
       // Use queued fetch to limit parallel requests
       const fetchPromise = queuedFetch(text.trim());
 
@@ -232,13 +289,22 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       });
     },
-    [queuedFetch]
+    [queuedFetch, isBrowserTts, ttsModel, ttsVoice, speechVolume, masterVolume]
   );
 
   /** Cancel all in-flight requests and reset the queue so the next call starts immediately. */
   const stop = useCallback(() => {
     console.debug("Stopping TTS queue...");
     isStoppedRef.current = true; // Signal to pending operations to stop
+
+    if (isBrowserTts) {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      browserUtterancesRef.current.clear();
+      setIsSpeaking(false);
+      return;
+    }
 
     controllersRef.current.forEach((c) => c.abort());
     controllersRef.current.clear();
@@ -261,7 +327,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     if (ctxRef.current) {
       nextStartRef.current = ctxRef.current.currentTime;
     }
-  }, []);
+  }, [isBrowserTts]);
 
   // Clean up when the component using the hook unmounts
   useEffect(() => {
