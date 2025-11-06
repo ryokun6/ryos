@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { ControlPanelsMenuBar } from "./ControlPanelsMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -155,6 +155,8 @@ Object.entries(PHOTO_WALLPAPERS).forEach(([category, photos]) => {
 // Use shared AI model metadata
 const AI_MODELS = AI_MODEL_METADATA;
 
+const BROWSER_DEFAULT_VOICE_VALUE = "__browser_default__";
+
 // Utility to convert Blob to base64 string for JSON serialization
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -258,6 +260,78 @@ export function ControlPanelsAppComponent({
     setMasterVolume: s.setMasterVolume,
     setCurrentWallpaper: s.setCurrentWallpaper,
   }));
+
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [hasBrowserTts, setHasBrowserTts] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const supported = "speechSynthesis" in window;
+    setHasBrowserTts(supported);
+
+    if (!supported) {
+      setBrowserVoices([]);
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+
+    const loadVoices = () => {
+      const voices = synth
+        .getVoices()
+        .slice()
+        .sort((a, b) => {
+          const langCompare = a.lang.localeCompare(b.lang);
+          if (langCompare !== 0) return langCompare;
+          return a.name.localeCompare(b.name);
+        });
+
+      setBrowserVoices((prev) => {
+        if (
+          prev.length === voices.length &&
+          prev.every((voice, index) => voice.voiceURI === voices[index].voiceURI)
+        ) {
+          return prev;
+        }
+        return voices;
+      });
+    };
+
+    loadVoices();
+    synth.addEventListener("voiceschanged", loadVoices);
+
+    return () => {
+      synth.removeEventListener("voiceschanged", loadVoices);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasBrowserTts && (ttsModel === "browser" || ttsModel === null) && ttsVoice) {
+      setTtsVoice(null);
+    }
+  }, [hasBrowserTts, ttsModel, ttsVoice, setTtsVoice]);
+
+  const normalizedTtsModel = ttsModel ?? "browser";
+  const isBrowserVoiceSelectable = hasBrowserTts && browserVoices.length > 0;
+  const selectedBrowserVoice =
+    normalizedTtsModel === "browser"
+      ? browserVoices.find(
+          (voice) => voice.voiceURI === ttsVoice || voice.name === ttsVoice
+        )
+      : undefined;
+
+  const formatBrowserVoiceLabel = (voice: SpeechSynthesisVoice) =>
+    `${voice.name}${voice.lang ? ` (${voice.lang})` : ""}${
+      voice.default ? " • Default" : ""
+    }`;
+
+  const ttsModelLabel =
+    normalizedTtsModel === "openai"
+      ? "OpenAI"
+      : normalizedTtsModel === "elevenlabs"
+      ? "ElevenLabs"
+      : "Browser";
 
   // Theme state
   const { current: currentTheme, setTheme } = useThemeStore();
@@ -1873,104 +1947,142 @@ export function ControlPanelsAppComponent({
                   </div>
                 )}
 
-                {debugMode && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <Label>TTS Model</Label>
-                      <Label className="text-[11px] text-gray-600 font-geneva-12">
-                        Text-to-speech provider
-                      </Label>
+                  {debugMode && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <Label>TTS Model</Label>
+                        <Label className="text-[11px] text-gray-600 font-geneva-12">
+                          Text-to-speech provider
+                        </Label>
+                      </div>
+                      <Select
+                        value={normalizedTtsModel}
+                        onValueChange={(value) => {
+                          const nextModel = value as "browser" | "openai" | "elevenlabs";
+                          setTtsModel(nextModel);
+                          if (nextModel === "browser") {
+                            setTtsVoice(null);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue placeholder="Select">
+                            {ttsModelLabel}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="browser">Browser (Default)</SelectItem>
+                          <SelectItem value="openai">OpenAI</SelectItem>
+                          <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <Select
-                      value={ttsModel || "__null__"}
-                      onValueChange={(value) =>
-                        setTtsModel(
-                          value === "__null__"
-                            ? null
-                            : (value as "openai" | "elevenlabs")
-                        )
-                      }
-                    >
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Select">
-                          {ttsModel || "Select"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__null__">Default</SelectItem>
-                        <SelectItem value="openai">OpenAI</SelectItem>
-                        <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                  )}
 
-                {debugMode && ttsModel && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <Label>TTS Voice</Label>
-                      <Label className="text-[11px] text-gray-600 font-geneva-12">
-                        {ttsModel === "elevenlabs"
-                          ? "ElevenLabs Voice ID"
-                          : "OpenAI Voice"}
-                      </Label>
+                  {debugMode && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <Label>TTS Voice</Label>
+                        <Label className="text-[11px] text-gray-600 font-geneva-12">
+                          {normalizedTtsModel === "elevenlabs"
+                            ? "ElevenLabs Voice ID"
+                            : normalizedTtsModel === "browser"
+                            ? hasBrowserTts
+                              ? "Uses your browser's speech synthesis voices"
+                              : "Browser speech synthesis not available"
+                            : "OpenAI Voice"}
+                        </Label>
+                      </div>
+                      {normalizedTtsModel === "elevenlabs" ? (
+                        <Select
+                          value={ttsVoice || "__null__"}
+                          onValueChange={(value) =>
+                            setTtsVoice(value === "__null__" ? null : value)
+                          }
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Select">
+                              {ttsVoice === "YC3iw27qriLq7UUaqAyi"
+                                ? "Ryo v3"
+                                : ttsVoice === "kAyjEabBEu68HYYYRAHR"
+                                ? "Ryo v2"
+                                : ttsVoice === "G0mlS0y8ByHjGAOxBgvV"
+                                ? "Ryo"
+                                : "Select"}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__null__">Select</SelectItem>
+                            <SelectItem value="YC3iw27qriLq7UUaqAyi">
+                              Ryo v3
+                            </SelectItem>
+                            <SelectItem value="kAyjEabBEu68HYYYRAHR">
+                              Ryo v2
+                            </SelectItem>
+                            <SelectItem value="G0mlS0y8ByHjGAOxBgvV">
+                              Ryo
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : normalizedTtsModel === "browser" ? (
+                        <Select
+                          value={ttsVoice ?? BROWSER_DEFAULT_VOICE_VALUE}
+                          onValueChange={(value) =>
+                            setTtsVoice(
+                              value === BROWSER_DEFAULT_VOICE_VALUE ? null : value
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            className="w-[220px]"
+                            disabled={!isBrowserVoiceSelectable}
+                          >
+                            <SelectValue
+                              placeholder={hasBrowserTts ? "System Default" : "Unavailable"}
+                            >
+                              {hasBrowserTts
+                                ? selectedBrowserVoice
+                                  ? formatBrowserVoiceLabel(selectedBrowserVoice)
+                                  : "System Default"
+                                : "Unavailable"}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={BROWSER_DEFAULT_VOICE_VALUE}>
+                              System Default
+                            </SelectItem>
+                            {browserVoices.map((voice) => (
+                              <SelectItem key={voice.voiceURI} value={voice.voiceURI}>
+                                {formatBrowserVoiceLabel(voice)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Select
+                          value={ttsVoice || "__null__"}
+                          onValueChange={(value) =>
+                            setTtsVoice(value === "__null__" ? null : value)
+                          }
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Select">
+                              {ttsVoice || "Select"}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__null__">Select</SelectItem>
+                            <SelectItem value="alloy">Alloy</SelectItem>
+                            <SelectItem value="echo">Echo</SelectItem>
+                            <SelectItem value="fable">Fable</SelectItem>
+                            <SelectItem value="onyx">Onyx</SelectItem>
+                            <SelectItem value="nova">Nova</SelectItem>
+                            <SelectItem value="shimmer">Shimmer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
-                    {ttsModel === "elevenlabs" ? (
-                      <Select
-                        value={ttsVoice || "__null__"}
-                        onValueChange={(value) =>
-                          setTtsVoice(value === "__null__" ? null : value)
-                        }
-                      >
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder="Select">
-                            {ttsVoice === "YC3iw27qriLq7UUaqAyi"
-                              ? "Ryo v3"
-                              : ttsVoice === "kAyjEabBEu68HYYYRAHR"
-                              ? "Ryo v2"
-                              : ttsVoice === "G0mlS0y8ByHjGAOxBgvV"
-                              ? "Ryo"
-                              : "Select"}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__null__">Select</SelectItem>
-                          <SelectItem value="YC3iw27qriLq7UUaqAyi">
-                            Ryo v3
-                          </SelectItem>
-                          <SelectItem value="kAyjEabBEu68HYYYRAHR">
-                            Ryo v2
-                          </SelectItem>
-                          <SelectItem value="G0mlS0y8ByHjGAOxBgvV">
-                            Ryo
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Select
-                        value={ttsVoice || "__null__"}
-                        onValueChange={(value) =>
-                          setTtsVoice(value === "__null__" ? null : value)
-                        }
-                      >
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder="Select">
-                            {ttsVoice || "Select"}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__null__">Select</SelectItem>
-                          <SelectItem value="alloy">Alloy</SelectItem>
-                          <SelectItem value="echo">Echo</SelectItem>
-                          <SelectItem value="fable">Fable</SelectItem>
-                          <SelectItem value="onyx">Onyx</SelectItem>
-                          <SelectItem value="nova">Nova</SelectItem>
-                          <SelectItem value="shimmer">Shimmer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                )}
+                  )}
 
                 {debugMode && (
                   <div className="flex items-center justify-between">
