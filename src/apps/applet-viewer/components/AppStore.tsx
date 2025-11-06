@@ -38,7 +38,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
   const isSystem7Theme = theme === "system7";
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const { saveFile, files } = useFileSystem("/Applets");
+  const { saveFile, files, handleFileOpen } = useFileSystem("/Applets");
   const launchApp = useLaunchApp();
   const fileStore = useFilesStore();
 
@@ -243,28 +243,17 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
     const installed = isAppletInstalled(applet.id);
     
     if (installed) {
-      // Find the installed applet and launch it
+      // Find the installed applet and launch it from disk immediately
       const installedApplet = files.find((f) => {
         const fileItem = fileStore.getItem(f.path);
         return fileItem?.shareId === applet.id;
       });
-      
+
       if (installedApplet) {
-        // Fetch content and launch
         try {
-          const response = await fetch(`/api/share-applet?id=${encodeURIComponent(applet.id)}`);
-          if (response.ok) {
-            const data = await response.json();
-            launchApp("applet-viewer", {
-              initialData: {
-                path: installedApplet.path,
-                content: data.content,
-                forceNewInstance: true, // Always create new instance from App Store
-              },
-            });
-          }
+          await handleFileOpen(installedApplet);
         } catch (error) {
-          console.error("Error launching applet:", error);
+          console.error("Error launching applet from disk:", error);
           toast.error("Failed to launch applet");
         }
       }
