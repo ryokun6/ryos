@@ -72,6 +72,21 @@ if (typeof document !== "undefined" && typeof window !== "undefined") {
     }
   };
   const handleFocus = () => void resumeAudioContext();
+  const handleUserGesture = () => {
+    void resumeAudioContext();
+    window.removeEventListener("pointerdown", handleUserGesture);
+    window.removeEventListener("keydown", handleUserGesture);
+    window.removeEventListener("touchstart", handleUserGesture);
+  };
+
   document.addEventListener("visibilitychange", handleVisibility);
   window.addEventListener("focus", handleFocus);
+
+  // Ensure the audio context is resumed as soon as the user interacts
+  // with the page. Some browsers (especially mobile Safari/Chrome) require
+  // the resume call to be tied to a direct user gesture before audio playback
+  // is permitted, otherwise queued clips will never start.
+  window.addEventListener("pointerdown", handleUserGesture);
+  window.addEventListener("keydown", handleUserGesture);
+  window.addEventListener("touchstart", handleUserGesture);
 }
