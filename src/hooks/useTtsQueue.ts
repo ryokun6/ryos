@@ -26,6 +26,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     onEnd?: () => void;
   };
   const browserUtterancesRef = useRef<Set<BrowserUtteranceEntry>>(new Set());
+  const hasAttemptedBrowserUnlockRef = useRef(false);
   // Promise chain that guarantees *scheduling* order while still allowing
   // individual fetches to run in parallel.
   const scheduleChainRef = useRef<Promise<void>>(Promise.resolve());
@@ -197,6 +198,15 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           return;
         }
 
+        if (!hasAttemptedBrowserUnlockRef.current) {
+          hasAttemptedBrowserUnlockRef.current = true;
+          try {
+            window.speechSynthesis.resume();
+          } catch (err) {
+            console.debug("[TTS] Unable to resume SpeechSynthesis immediately", err);
+          }
+        }
+
         const utterance = new SpeechSynthesisUtterance(text.trim());
         const combinedVolume = Math.max(0, Math.min(1, speechVolume * masterVolume));
         utterance.volume = combinedVolume;
@@ -348,6 +358,33 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       window.removeEventListener("focus", handleFocus);
     };
   }, []);
+
+  // Ensure browser SpeechSynthesis is unlocked by the first user interaction
+  useEffect(() => {
+    if (!isBrowserTts || typeof window === "undefined") return;
+
+    const unlock = () => {
+      if (!window.speechSynthesis) return;
+      try {
+        window.speechSynthesis.resume();
+      } catch (err) {
+        console.debug("[TTS] Unable to resume SpeechSynthesis on interaction", err);
+      }
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    window.addEventListener("touchstart", unlock);
+
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+  }, [isBrowserTts]);
 
   // Update gain when speechVolume or masterVolume changes
   useEffect(() => {
