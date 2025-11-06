@@ -8,6 +8,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { Trash2, Star, ArrowLeft } from "lucide-react";
+import { prepareAppletContent } from "../utils/htmlContent";
 
 interface Applet {
   id: string;
@@ -148,44 +149,6 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
       setSelectedAppletContent("");
     }
   }, [selectedApplet, isSharedApplet]);
-
-  // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
-  const ensureMacFonts = (content: string): string => {
-    if (!isMacTheme || !content) return content;
-    // Ensure fonts.css is available and prefer Lucida Grande
-    const preload = `<link rel="stylesheet" href="/fonts/fonts.css">`;
-    const fontStyle = `<style data-ryos-applet-font-fix>
-      html,body{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
-      *{font-family:inherit!important}
-      h1,h2,h3,h4,h5,h6,p,div,span,a,li,ul,ol,button,input,select,textarea,label,code,pre,blockquote,small,strong,em,table,th,td{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
-    </style>`;
-
-    // If there's a </head>, inject before it
-    const headCloseIdx = content.toLowerCase().lastIndexOf("</head>");
-    if (headCloseIdx !== -1) {
-      return (
-        content.slice(0, headCloseIdx) +
-        preload +
-        fontStyle +
-        content.slice(headCloseIdx)
-      );
-    }
-
-    // If there's a <body>, inject before it
-    const bodyOpenIdx = content.toLowerCase().indexOf("<body");
-    if (bodyOpenIdx !== -1) {
-      const bodyTagEnd = content.indexOf(">", bodyOpenIdx) + 1;
-      return (
-        content.slice(0, bodyTagEnd) +
-        preload +
-        fontStyle +
-        content.slice(bodyTagEnd)
-      );
-    }
-
-    // Otherwise, prepend
-    return preload + fontStyle + content;
-  };
 
   // Check if an applet is installed
   const isAppletInstalled = (appletId: string): boolean => {
@@ -681,26 +644,30 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
             >
               Get
             </Button>
-          </div>
-          <div className="flex-1 overflow-hidden bg-white">
-            {selectedAppletContent ? (
-              <iframe
-                srcDoc={ensureMacFonts(selectedAppletContent)}
-                title={displayName}
-                className="w-full h-full border-0"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
-                style={{
-                  display: "block",
-                }}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
+            </div>
+            <div className="flex-1 overflow-hidden bg-white">
+              {selectedAppletContent ? (
+                <iframe
+                  srcDoc={prepareAppletContent(selectedAppletContent, {
+                    applyMacFontFix: isMacTheme,
+                  })}
+                  title={displayName}
+                  className="w-full h-full border-0"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+                  style={{
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">
+                      Loading...
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
         </div>
       </>
     );
