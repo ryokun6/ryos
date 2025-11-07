@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppletActions, type Applet } from "../utils/appletActions";
@@ -27,6 +27,8 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const loadedRef = useRef<Set<string>>(new Set());
   const currentIndexRef = useRef(currentIndex);
   const appletsLengthRef = useRef(applets.length);
+  const hasFetchedRef = useRef(false);
+  const sessionSeedRef = useRef(Math.floor(Math.random() * 1000000));
   const currentTheme = useThemeStore((state) => state.current);
 
   // Stacking constants (similar to TimeMachineView)
@@ -84,14 +86,68 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     return preload + fontStyle + content;
   };
 
-  const fetchApplets = async () => {
+  const fetchApplets = useCallback(async () => {
+    // Seeded random number generator for deterministic shuffling
+    const seededRandom = (seed: number) => {
+      let value = seed;
+      return () => {
+        value = (value * 9301 + 49297) % 233280;
+        return value / 233280;
+      };
+    };
+
+    // Deterministic shuffle using session seed + category identifier
+    const deterministicShuffle = <T extends { id: string }>(array: T[], categorySeed: number): T[] => {
+      if (array.length === 0) return array;
+      
+      // Combine session seed with category seed for stable but random order
+      const seed = (sessionSeedRef.current + categorySeed) % 1000000;
+      const random = seededRandom(seed);
+      
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
     try {
       const response = await fetch("/api/share-applet?list=true");
       if (response.ok) {
         const data = await response.json();
-        const sortedApplets = (data.applets || []).sort((a: Applet, b: Applet) => {
-          return (b.createdAt || 0) - (a.createdAt || 0);
+        const allApplets = data.applets || [];
+        
+        // Categorize applets by priority
+        const featured: Applet[] = [];
+        const withUpdates: Applet[] = [];
+        const notInstalled: Applet[] = [];
+        const others: Applet[] = [];
+        
+        allApplets.forEach((applet: Applet) => {
+          const installed = actions.isAppletInstalled(applet.id);
+          const needsUpdate = actions.needsUpdate(applet);
+          const isFeatured = applet.featured === true;
+          
+          if (isFeatured) {
+            featured.push(applet);
+          } else if (needsUpdate && installed) {
+            withUpdates.push(applet);
+          } else if (!installed) {
+            notInstalled.push(applet);
+          } else {
+            others.push(applet);
+          }
         });
+        
+        // Shuffle each category deterministically using category-specific seeds
+        // Combine in priority order: featured, updates, not installed, others
+        const sortedApplets = [
+          ...deterministicShuffle(featured, 1),
+          ...deterministicShuffle(withUpdates, 2),
+          ...deterministicShuffle(notInstalled, 3),
+          ...deterministicShuffle(others, 4),
+        ];
+        
         setApplets(sortedApplets);
       }
     } catch (error) {
@@ -99,11 +155,14 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [actions]);
 
   useEffect(() => {
-    fetchApplets();
-  }, []);
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchApplets();
+    }
+  }, [fetchApplets]);
 
   // Fetch applet content only for the current applet
   useEffect(() => {
@@ -231,7 +290,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
 
   const handleInstall = async (applet: Applet) => {
     await actions.handleInstall(applet, () => {
-      fetchApplets(); // Refresh list after install
+      // Reset fetch flag to allow refresh after install
+      hasFetchedRef.current = false;
+      fetchApplets();
     });
   };
 
@@ -283,7 +344,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         {/* Applet Preview iframe */}
         <div 
           className="absolute inset-0" 
-          style={{ paddingTop: "35px" }}
+          style={{ paddingTop: "45px" }}
           onWheel={(e) => {
             // Only handle wheel for the current applet
             if (index !== currentIndex) return;
