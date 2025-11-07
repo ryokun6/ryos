@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppletActions, type Applet } from "../utils/appletActions";
@@ -9,7 +9,13 @@ interface AppStoreFeedProps {
   onAppletSelect?: (applet: Applet) => void;
 }
 
-export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
+export interface AppStoreFeedRef {
+  goToNext: () => void;
+  goToPrevious: () => void;
+}
+
+export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
+  ({ theme, onAppletSelect }, ref) => {
   const [applets, setApplets] = useState<Applet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -19,6 +25,8 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
   const feedRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef<Set<string>>(new Set());
   const loadedRef = useRef<Set<string>>(new Set());
+  const currentIndexRef = useRef(currentIndex);
+  const appletsLengthRef = useRef(applets.length);
   const currentTheme = useThemeStore((state) => state.current);
 
   // Stacking constants (similar to TimeMachineView)
@@ -184,9 +192,10 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
   }, [currentIndex, applets.length]);
 
   const scrollToIndex = (index: number) => {
-    if (index >= 0 && index < applets.length) {
-      const prevIndex = currentIndex;
+    if (index >= 0 && index < appletsLengthRef.current) {
+      const prevIndex = currentIndexRef.current;
       setCurrentIndex(index);
+      currentIndexRef.current = index;
       
       // Determine navigation direction
       if (index > prevIndex) {
@@ -198,6 +207,27 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
       }
     }
   };
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  useEffect(() => {
+    appletsLengthRef.current = applets.length;
+  }, [applets.length]);
+
+  useImperativeHandle(ref, () => ({
+    goToNext: () => {
+      if (currentIndexRef.current < appletsLengthRef.current - 1) {
+        scrollToIndex(currentIndexRef.current + 1);
+      }
+    },
+    goToPrevious: () => {
+      if (currentIndexRef.current > 0) {
+        scrollToIndex(currentIndexRef.current - 1);
+      }
+    },
+  }), []);
 
   const handleInstall = async (applet: Applet) => {
     await actions.handleInstall(applet, () => {
@@ -253,7 +283,7 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
         {/* Applet Preview iframe */}
         <div 
           className="absolute inset-0" 
-          style={{ paddingTop: "50px" }}
+          style={{ paddingTop: "35px" }}
           onWheel={(e) => {
             // Only handle wheel for the current applet
             if (index !== currentIndex) return;
@@ -335,6 +365,7 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
               : "bg-gray-100 border-b border-gray-300"
           }`}
           style={{
+            flexWrap: "nowrap",
             background: isXpTheme ? "transparent" : undefined,
             backgroundImage: currentTheme === "macosx" ? "var(--os-pinstripe-window)" : undefined,
             borderBottom:
@@ -382,7 +413,7 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
                 handleInstall(applet);
               }
             }}
-            className="w-[60px]"
+            className="flex-shrink-0 whitespace-nowrap min-w-fit"
           >
             {installed ? (updateAvailable ? "Update" : "Open") : "Get"}
           </Button>
@@ -427,7 +458,7 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
       <style>{appletIconStyles}</style>
       <div
         ref={feedRef}
-        className="h-full w-full overflow-hidden bg-black/40"
+        className="h-full w-full overflow-hidden bg-black/20"
         style={{
           position: "relative",
           perspective: "1000px",
@@ -448,10 +479,15 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
               return (
                 <motion.div
                   key={applet.id}
-                  className="absolute w-[90%] h-[85%] max-w-4xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden bg-white"
+                  className="absolute w-[90%] h-[75%] max-w-4xl rounded-2xl shadow-2xl overflow-hidden bg-white"
                   style={{ 
+                    boxShadow: "0 0 0 1px rgba(0,0,0,0.05)",
                     transformStyle: "preserve-3d",
                     clipPath: "inset(0 round 1rem)",
+                    zIndex: zIndex,
+                    transformOrigin: "center center",
+                    rotateX: distance !== 0 ? -5 : 0,
+                    pointerEvents: distance === 0 ? "auto" : "none",
                   }}
                   initial={(() => {
                     const base = {
@@ -477,7 +513,6 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
                     y: distance * PREVIEW_Y_SPACING,
                     scale: 1 - distance * PREVIEW_SCALE_FACTOR,
                     opacity: opacity,
-                    pointerEvents: distance === 0 ? "auto" : "none",
                   }}
                   variants={exitVariants}
                   exit="exit"
@@ -485,11 +520,6 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
                     type: "spring",
                     stiffness: 150,
                     damping: 25,
-                  }}
-                  style={{
-                    zIndex: zIndex,
-                    transformOrigin: "center center",
-                    rotateX: distance !== 0 ? -5 : 0,
                   }}
                   drag={distance === 0 ? true : false}
                   dragConstraints={{ top: 0, bottom: 0, left: 0, right: 0 }}
@@ -622,4 +652,5 @@ export function AppStoreFeed({ theme, onAppletSelect }: AppStoreFeedProps) {
       </div>
     </>
   );
-}
+  }
+);

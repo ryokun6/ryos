@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { Trash2, Star, ArrowLeft, List, Sparkles } from "lucide-react";
-import { useAppletActions, extractEmojiIcon, type Applet } from "../utils/appletActions";
-import { AppStoreFeed } from "./AppStoreFeed";
+import { Trash2, Star, ArrowLeft, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { useAppletActions, type Applet } from "../utils/appletActions";
+import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
 
 interface AppStoreProps {
   theme?: string;
@@ -21,6 +21,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
   const [selectedAppletContent, setSelectedAppletContent] = useState<string>("");
   const [isSharedApplet, setIsSharedApplet] = useState(false);
   const [showListView, setShowListView] = useState(false);
+  const feedRef = useRef<AppStoreFeedRef>(null);
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
   const isAdmin = username?.toLowerCase() === "ryo" && !!authToken;
@@ -519,25 +520,40 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
         {!showListView ? (
           <div className="flex-1 overflow-hidden relative">
             <AppStoreFeed
+              ref={feedRef}
               theme={theme}
               onAppletSelect={(applet) => setSelectedApplet(applet)}
             />
-            {/* Show All button overlay */}
-            <button
-              onClick={() => setShowListView(true)}
-              className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-full flex items-center gap-2 ${
-                isXpTheme
-                  ? "bg-[#ece9d8] text-black border border-[#919b9c]"
-                  : currentTheme === "macosx"
-                  ? "bg-white/90 backdrop-blur-sm text-gray-900 border border-gray-300"
-                  : currentTheme === "system7"
-                  ? "bg-gray-200 text-black border border-black"
-                  : "bg-white/90 backdrop-blur-sm text-gray-900 border border-gray-300"
-              } shadow-lg hover:shadow-xl transition-shadow`}
-            >
-              <List className="h-4 w-4" />
-              <span className="text-sm font-medium font-geneva-12">Show All</span>
-            </button>
+            {/* Navigation buttons overlay */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+              <Button
+                variant={isMacTheme ? "aqua" : "default"}
+                size="sm"
+                onClick={() => feedRef.current?.goToPrevious()}
+                className={`w-9 h-9 p-0 flex items-center justify-center ${
+                  isMacTheme ? "rounded-full" : "rounded-none"
+                }`}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={isMacTheme ? "aqua" : "default"}
+                size="sm"
+                onClick={() => setShowListView(true)}
+              >
+                <span className="text-sm font-medium font-geneva-12">Show All</span>
+              </Button>
+              <Button
+                variant={isMacTheme ? "aqua" : "default"}
+                size="sm"
+                onClick={() => feedRef.current?.goToNext()}
+                className={`w-9 h-9 p-0 flex items-center justify-center ${
+                  isMacTheme ? "rounded-full" : "rounded-none"
+                }`}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ) : (
           <>
