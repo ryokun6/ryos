@@ -1,0 +1,198 @@
+import { toast } from "sonner";
+import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { useFilesStore } from "@/stores/useFilesStore";
+
+export interface Applet {
+  id: string;
+  title?: string;
+  name?: string;
+  icon?: string;
+  createdAt?: number;
+  featured?: boolean;
+  createdBy?: string;
+}
+
+// Helper function to extract emoji from start of string
+export const extractEmojiIcon = (
+  text: string
+): { emoji: string | null; remainingText: string } => {
+  const emojiRegex =
+    /^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}]+)\s*/u;
+  const match = text.match(emojiRegex);
+
+  if (match) {
+    return {
+      emoji: match[1],
+      remainingText: text.slice(match[0].length),
+    };
+  }
+
+  return {
+    emoji: null,
+    remainingText: text,
+  };
+};
+
+export const useAppletActions = () => {
+  const { saveFile, files, handleFileOpen } = useFileSystem("/Applets");
+  const launchApp = useLaunchApp();
+  const fileStore = useFilesStore();
+
+  // Check if an applet is installed
+  const isAppletInstalled = (appletId: string): boolean => {
+    return files.some((f) => {
+      const fileItem = fileStore.getItem(f.path);
+      return fileItem?.shareId === appletId;
+    });
+  };
+
+  // Get installed applet file item
+  const getInstalledApplet = (appletId: string) => {
+    return files.find((f) => {
+      const fileItem = fileStore.getItem(f.path);
+      return fileItem?.shareId === appletId;
+    });
+  };
+
+  // Check if installed applet needs update
+  const needsUpdate = (applet: Applet): boolean => {
+    if (!isAppletInstalled(applet.id)) return false;
+    const installedFile = getInstalledApplet(applet.id);
+    if (!installedFile) return false;
+    const fileItem = fileStore.getItem(installedFile.path);
+    if (!fileItem) return false;
+    
+    const storeCreatedAt = fileItem.storeCreatedAt;
+    
+    if (!storeCreatedAt) {
+      const currentCreatedAt = applet.createdAt || 0;
+      fileStore.updateItemMetadata(installedFile.path, {
+        storeCreatedAt: currentCreatedAt,
+      });
+      return false;
+    }
+    
+    const currentCreatedAt = applet.createdAt || 0;
+    const timeDiff = currentCreatedAt - storeCreatedAt;
+    return timeDiff > 1000;
+  };
+
+  // Handle clicking on an applet
+  const handleAppletClick = async (applet: Applet) => {
+    const installed = isAppletInstalled(applet.id);
+    
+    if (installed) {
+      const installedApplet = files.find((f) => {
+        const fileItem = fileStore.getItem(f.path);
+        return fileItem?.shareId === applet.id;
+      });
+
+      if (installedApplet) {
+        try {
+          await handleFileOpen(installedApplet);
+        } catch (error) {
+          console.error("Error launching applet from disk:", error);
+          toast.error("Failed to launch applet");
+        }
+      }
+    } else {
+      // Return applet for detail view
+      return applet;
+    }
+  };
+
+  const handleInstall = async (applet: Applet, onSuccess?: () => void) => {
+    try {
+      const isUpdate = isAppletInstalled(applet.id);
+      
+      const response = await fetch(`/api/share-applet?id=${encodeURIComponent(applet.id)}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch applet");
+      }
+
+      const data = await response.json();
+      
+      let defaultName = data.name || data.title || "shared-applet";
+      const { remainingText } = extractEmojiIcon(defaultName);
+      defaultName = remainingText;
+      
+      const nameWithExtension = defaultName.endsWith(".app") 
+        ? defaultName 
+        : `${defaultName}.app`;
+      
+      const existingApplet = files.find((f) => {
+        const fileItem = fileStore.getItem(f.path);
+        return fileItem?.shareId === applet.id;
+      });
+      
+      const finalPath = existingApplet?.path || `/Applets/${nameWithExtension}`;
+      const finalName = existingApplet?.name || nameWithExtension;
+      
+      await saveFile({
+        path: finalPath,
+        name: finalName,
+        content: data.content,
+        type: "html",
+        icon: data.icon || undefined,
+        shareId: applet.id,
+        createdBy: data.createdBy || applet.createdBy,
+      });
+      
+      const storeCreatedAtValue = data.createdAt || Date.now();
+      fileStore.updateItemMetadata(finalPath, {
+        storeCreatedAt: storeCreatedAtValue,
+      });
+      
+      if (data.windowWidth && data.windowHeight) {
+        fileStore.updateItemMetadata(finalPath, {
+          windowWidth: data.windowWidth,
+          windowHeight: data.windowHeight,
+        });
+      }
+      
+      const event = new CustomEvent("saveFile", {
+        detail: {
+          name: finalName,
+          path: finalPath,
+          content: data.content,
+          icon: data.icon || undefined,
+        },
+      });
+      window.dispatchEvent(event);
+      
+      toast.success(isUpdate ? "Applet updated" : "Applet installed", {
+        description: `Saved to /Applets/${finalName}`,
+        action: {
+          label: "Open",
+          onClick: () => {
+            launchApp("applet-viewer", {
+              initialData: {
+                path: finalPath,
+                content: data.content,
+                forceNewInstance: true,
+              },
+            });
+          },
+        },
+      });
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error("Error installing applet:", error);
+      toast.error("Failed to install applet", {
+        description: error instanceof Error ? error.message : "Please try again later.",
+      });
+    }
+  };
+
+  return {
+    isAppletInstalled,
+    getInstalledApplet,
+    needsUpdate,
+    handleAppletClick,
+    handleInstall,
+  };
+};
