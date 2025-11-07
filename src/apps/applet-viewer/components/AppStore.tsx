@@ -405,7 +405,6 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
                 handleInstall(applet);
               }
             }}
-            className="w-[60px]"
           >
             {installed ? (updateAvailable ? "Update" : "Open") : "Get"}
           </Button>
@@ -447,7 +446,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
                 ? ""
                 : currentTheme === "system7"
                 ? "bg-gray-100 border-b border-black"
-                : "bg-gray-100 border-b border-gray-300"
+                : "bg-gray-100 border-b border-gray-200"
             }`}
             style={{
               background: isXpTheme ? "transparent" : undefined,
@@ -561,14 +560,14 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
         ) : (
           <>
             <div
-              className={`px-3 py-2 flex items-center gap-2 ${
+              className={`px-3 py-2 flex items-center gap-1 ${
                 isXpTheme
                   ? "border-b border-[#919b9c]"
                   : currentTheme === "macosx"
                   ? ""
                   : currentTheme === "system7"
                   ? "bg-gray-100 border-b border-black"
-                  : "bg-gray-100 border-b border-gray-300"
+                  : "bg-gray-100 border-b border-gray-200"
               }`}
               style={{
                 background: isXpTheme ? "transparent" : undefined,
@@ -604,7 +603,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowListView(false)}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1 px-1"
               >
                 <Sparkles className="h-4 w-4" />
                 <span className="text-xs font-geneva-12">Discover</span>

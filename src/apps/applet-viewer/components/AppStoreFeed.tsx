@@ -423,7 +423,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
               ? ""
               : currentTheme === "system7"
               ? "bg-gray-100 border-b border-black"
-              : "bg-gray-100 border-b border-gray-300"
+              : "bg-gray-100 border-b border-gray-200"
           }`}
           style={{
             flexWrap: "nowrap",
@@ -474,7 +474,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
                 handleInstall(applet);
               }
             }}
-            className="flex-shrink-0 whitespace-nowrap min-w-fit"
+            className="flex-shrink-0 whitespace-nowrap"
           >
             {installed ? (updateAvailable ? "Update" : "Open") : "Get"}
           </Button>
@@ -519,16 +519,20 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       <style>{appletIconStyles}</style>
       <div
         ref={feedRef}
-        className="h-full w-full overflow-hidden bg-black/20"
+        className="h-full w-full overflow-hidden bg-black/20 flex items-center justify-center"
         style={{
           position: "relative",
-          perspective: "1000px",
+          perspective: "calc(100vh * 1.25)",
           transformStyle: "preserve-3d",
         }}
         >
           <div 
-            className="relative w-full h-full flex items-center justify-center"
-            style={{ transformStyle: "preserve-3d" }}
+            className="relative w-full flex items-center justify-center"
+            style={{ 
+              transformStyle: "preserve-3d",
+              height: "100%",
+              maxHeight: "1200px",
+            }}
           >
             <AnimatePresence initial={false} custom={navigationDirection}>
               {visibleApplets.map((applet, indexInSlice) => {

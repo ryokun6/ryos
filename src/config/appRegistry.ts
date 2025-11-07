@@ -144,7 +144,7 @@ export const appRegistry = {
   [AppletViewerApp.id]: {
     ...(AppletViewerApp as BaseApp<AppletViewerInitialData>),
     windowConfig: {
-      defaultSize: { width: 320, height: 400 },
+      defaultSize: { width: 320, height: 450 },
       minSize: { width: 300, height: 200 },
     } as WindowConstraints,
   },
