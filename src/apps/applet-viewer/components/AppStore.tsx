@@ -530,9 +530,10 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
                 variant={isMacTheme ? "aqua" : "default"}
                 size="sm"
                 onClick={() => feedRef.current?.goToPrevious()}
-                className={`w-9 h-9 p-0 flex items-center justify-center ${
+                className={`h-7 w-7 p-0 flex items-center justify-center ${
                   isMacTheme ? "rounded-full" : "rounded-none"
                 }`}
+                style={{ height: "28px", width: "28px" }}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -540,6 +541,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
                 variant={isMacTheme ? "aqua" : "default"}
                 size="sm"
                 onClick={() => setShowListView(true)}
+                style={{ height: "28px" }}
               >
                 <span className="text-sm font-medium font-geneva-12">Show All</span>
               </Button>
@@ -547,9 +549,10 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
                 variant={isMacTheme ? "aqua" : "default"}
                 size="sm"
                 onClick={() => feedRef.current?.goToNext()}
-                className={`w-9 h-9 p-0 flex items-center justify-center ${
+                className={`h-7 w-7 p-0 flex items-center justify-center ${
                   isMacTheme ? "rounded-full" : "rounded-none"
                 }`}
+                style={{ height: "28px", width: "28px" }}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
