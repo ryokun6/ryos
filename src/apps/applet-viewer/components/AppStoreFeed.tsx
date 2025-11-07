@@ -525,31 +525,32 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
           perspective: "1000px",
           transformStyle: "preserve-3d",
         }}
-      >
-        <div 
-          className="relative w-full h-full flex items-center justify-center"
-          style={{ transformStyle: "preserve-3d" }}
         >
-          <AnimatePresence initial={false} custom={navigationDirection}>
-            {visibleApplets.map((applet, indexInSlice) => {
-              const originalIndex = startIndex + indexInSlice;
-              const distance = originalIndex - currentIndex;
-              const opacity = 1 / (distance + 1);
-              const zIndex = applets.length - originalIndex;
+          <div 
+            className="relative w-full h-full flex items-center justify-center"
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            <AnimatePresence initial={false} custom={navigationDirection}>
+              {visibleApplets.map((applet, indexInSlice) => {
+                const originalIndex = startIndex + indexInSlice;
+                const distance = originalIndex - currentIndex;
+                const opacity = 1 / (distance + 1);
+                const zIndex = applets.length - originalIndex;
 
-              return (
-                <motion.div
-                  key={applet.id}
-                  className="absolute w-[90%] h-[75%] max-w-4xl rounded-2xl shadow-2xl overflow-hidden bg-white"
-                  style={{ 
-                    boxShadow: "0 0 0 1px rgba(0,0,0,0.05)",
-                    transformStyle: "preserve-3d",
-                    clipPath: "inset(0 round 1rem)",
-                    zIndex: zIndex,
-                    transformOrigin: "center center",
-                    rotateX: distance !== 0 ? -5 : 0,
-                    pointerEvents: distance === 0 ? "auto" : "none",
-                  }}
+                return (
+                  <motion.div
+                    key={applet.id}
+                    className="absolute w-[90%] h-[75%] max-w-4xl rounded-2xl shadow-2xl overflow-hidden bg-white"
+                    style={{
+                      boxShadow: "0 0 0 1px rgba(0,0,0,0.05)",
+                      transformStyle: "preserve-3d",
+                      clipPath: "inset(0 round 1rem)",
+                      zIndex: zIndex,
+                      transformOrigin: "center center",
+                      rotateX: distance !== 0 ? -5 : 0,
+                      pointerEvents: distance === 0 ? "auto" : "none",
+                      maxHeight: "720px",
+                    }}
                   initial={(() => {
                     const base = {
                       z: distance * PREVIEW_Z_SPACING,
