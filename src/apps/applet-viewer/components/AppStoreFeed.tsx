@@ -550,6 +550,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
                       rotateX: distance !== 0 ? -5 : 0,
                       pointerEvents: distance === 0 ? "auto" : "none",
                       maxHeight: "720px",
+                      top: "12.5%",
                     }}
                   initial={(() => {
                     const base = {
