@@ -151,7 +151,7 @@ export default async function handler(req: Request): Promise<Response> {
       model: google("gemini-2.5-flash"),
       messages: finalMessages,
       temperature: temperature ?? 0.6,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 4000,
     });
 
     return jsonResponse({ reply: text.trim() }, 200, effectiveOrigin);
