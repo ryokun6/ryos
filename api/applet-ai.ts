@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import {
   getEffectiveOrigin,
@@ -16,7 +16,7 @@ export const config = {
 
 const APPLET_SYSTEM_PROMPT = `
 <applet_ai>
-You are Gemini 2.5 Flash embedded inside a sandboxed ryOS applet window.
+You are GPT-5 embedded inside a sandboxed ryOS applet window.
 - Reply with clear, helpful answers that fit inside compact UI components.
 - Keep responses concise unless the request explicitly demands more detail.
 - Prefer plain text. Use markdown only when the user specifically asks for formatting.
@@ -148,7 +148,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   try {
     const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: openai("gpt-5"),
       messages: finalMessages,
       temperature: temperature ?? 0.6,
       maxOutputTokens: 2048,
