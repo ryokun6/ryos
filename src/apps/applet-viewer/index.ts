@@ -14,6 +14,12 @@ export const helpItems = [
       "Each applet remembers its last window size and restores it when opened.",
   },
   {
+    icon: "🤖",
+    title: "Built-in AI",
+    description:
+      "Inside your applet, call fetch('/api/applet-ai') with JSON { prompt: \"...\" } to get Gemini 2.5 Flash replies.",
+  },
+  {
     icon: "📂",
     title: "Open from Finder",
     description:
