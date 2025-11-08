@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import {
   getEffectiveOrigin,
@@ -148,7 +148,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   try {
     const { text } = await generateText({
-      model: openai("gpt-5-mini"),
+      model: google("gemini-2.5-flash"),
       messages: finalMessages,
       temperature: temperature ?? 0.6,
       maxOutputTokens: 2048,
