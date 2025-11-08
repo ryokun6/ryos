@@ -148,7 +148,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   try {
     const { text } = await generateText({
-      model: openai("gpt-5"),
+      model: openai("gpt-5-mini"),
       messages: finalMessages,
       temperature: temperature ?? 0.6,
       maxOutputTokens: 2048,
