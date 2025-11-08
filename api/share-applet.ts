@@ -297,7 +297,6 @@ export default async function handler(req: Request) {
           }
         );
       }
-
       const { content, title, icon, name, windowWidth, windowHeight, shareId } = validation.data;
 
       let id: string;
@@ -305,6 +304,7 @@ export default async function handler(req: Request) {
       let existingAppletData: {
         createdAt?: number;
         createdBy?: string;
+        featured?: boolean;
       } | null = null;
 
       // If shareId is provided, check if we can update existing applet
@@ -320,7 +320,7 @@ export default async function handler(req: Request) {
               typeof existingData === "string"
                 ? JSON.parse(existingData)
                 : existingData;
-            
+
             // Check if author matches
             if (parsed && parsed.createdBy && parsed.createdBy.toLowerCase() === username?.toLowerCase()) {
               // Author matches, update existing applet
@@ -329,6 +329,7 @@ export default async function handler(req: Request) {
               existingAppletData = {
                 createdAt: parsed.createdAt,
                 createdBy: parsed.createdBy,
+                featured: parsed.featured,
               };
             } else {
               // Author doesn't match or no author, create new share
@@ -360,6 +361,7 @@ export default async function handler(req: Request) {
         createdAt: number;
         createdBy?: string;
         updatedAt?: number;
+        featured?: boolean;
       } = {
         content,
         title: title || undefined,
@@ -374,6 +376,10 @@ export default async function handler(req: Request) {
           ? existingAppletData.createdBy
           : (username || undefined),
         updatedAt: Date.now(),
+        featured:
+          isUpdate && existingAppletData?.featured !== undefined
+            ? existingAppletData.featured
+            : undefined,
       };
 
       try {
