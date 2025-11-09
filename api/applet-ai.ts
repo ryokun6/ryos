@@ -77,14 +77,36 @@ const RequestSchema = z
     context: z.string().min(1).max(2000).optional(),
     temperature: z.number().min(0).max(1).optional(),
     mode: z.enum(["text", "image"]).optional(),
+    images: z
+      .array(ImageAttachmentSchema)
+      .max(4, "A maximum of 4 images are allowed per request.")
+      .optional(),
   })
   .refine(
     (data) =>
       (data.prompt && data.prompt.trim().length > 0) ||
-      (data.messages && data.messages.length > 0),
+      (data.messages && data.messages.length > 0) ||
+      (data.mode === "image" && data.images && data.images.length > 0),
     {
-      message: "Provide a prompt or a non-empty messages array.",
+      message: "Provide a prompt, non-empty messages array, or image attachments.",
       path: ["prompt"],
+    }
+  )
+  .refine(
+    (data) => !data.images || data.mode === "image",
+    {
+      message: 'Images can only be provided when mode is set to "image".',
+      path: ["images"],
+    }
+  )
+  .refine(
+    (data) =>
+      data.mode !== "image" ||
+      ((data.prompt && data.prompt.trim().length > 0) ||
+        (data.images && data.images.length > 0)),
+    {
+      message: "Image requests require text instructions and/or image attachments.",
+      path: ["images"],
     }
   );
 
@@ -306,24 +328,69 @@ export default async function handler(req: Request): Promise<Response> {
   const mode = requestedMode ?? "text";
 
   if (mode === "image") {
-    if (!prompt || prompt.trim().length === 0) {
+    const promptText = prompt?.trim() ?? "";
+    const promptParts: Array<TextPart | ImagePart> = [];
+
+    if (context && context.trim().length > 0) {
+      promptParts.push({ type: "text", text: context.trim() });
+    }
+
+    if (promptText.length > 0) {
+      promptParts.push({ type: "text", text: promptText });
+    }
+
+    try {
+      if (parsedBody.images) {
+        parsedBody.images.forEach((image, index) => {
+          let imageData: Uint8Array;
+          try {
+            imageData = decodeBase64Image(image.data);
+          } catch (error) {
+            const details =
+              error instanceof Error ? error.message : "Invalid base64 payload.";
+            throw new Error(
+              `Invalid image attachment ${index + 1}: ${details}`
+            );
+          }
+
+          promptParts.push({
+            type: "image",
+            image: imageData,
+            mediaType: image.mediaType,
+          });
+        });
+      }
+    } catch (error) {
+      console.error("[applet-ai] Image attachment parsing failed:", error);
       return jsonResponse(
-        { error: "Image generation requires a prompt." },
+        {
+          error: "Invalid image attachments in request body",
+          ...(error instanceof Error ? { details: error.message } : {}),
+        },
+        400,
+        effectiveOrigin
+      );
+    }
+
+    if (promptParts.length === 0) {
+      return jsonResponse(
+        { error: "Image generation requires instructions or image attachments." },
         400,
         effectiveOrigin
       );
     }
 
     try {
-      const combinedPrompt = context
-        ? `${context.trim()}\n\n${prompt.trim()}`
-        : prompt.trim();
-
-      const imageResult = await generateText({
-        model: google("gemini-2.5-flash-image-preview"),
-        prompt: combinedPrompt,
-        ...(typeof temperature === "number" ? { temperature } : {}),
-      });
+        const imageResult = await generateText({
+          model: google("gemini-2.5-flash-image-preview"),
+          prompt: [
+            {
+              role: "user",
+              content: promptParts,
+            },
+          ],
+          ...(typeof temperature === "number" ? { temperature } : {}),
+        });
 
       const imageFile = imageResult.files?.find((file) =>
         file.mediaType.startsWith("image/")
