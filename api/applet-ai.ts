@@ -146,18 +146,29 @@ const jsonResponse = (
 };
 
 const decodeBase64ToBinaryString = (value: string): string => {
-  if (typeof globalThis.atob === "function") {
-    return globalThis.atob(value);
+  const atobFn = (globalThis as typeof globalThis & {
+    atob?: (data: string) => string;
+  }).atob;
+
+  if (typeof atobFn === "function") {
+    return Reflect.apply(atobFn, globalThis, [value]);
   }
 
   const globalBuffer = (globalThis as Record<string, unknown> & {
     Buffer?: {
-      from(data: string, encoding: string): { toString(encoding: string): string };
+      from(
+        data: string,
+        encoding: string
+      ): { toString(encoding: string): string };
     };
   }).Buffer;
 
   if (globalBuffer && typeof globalBuffer.from === "function") {
-    return globalBuffer.from(value, "base64").toString("binary");
+    const bufferResult = Reflect.apply(globalBuffer.from, globalBuffer, [
+      value,
+      "base64",
+    ]);
+    return bufferResult.toString("binary");
   }
 
   throw new Error("Base64 decoding is not supported in this environment.");
@@ -179,10 +190,12 @@ const decodeBase64Image = (input: string): Uint8Array => {
   try {
     binary = decodeBase64ToBinaryString(sanitized);
   } catch (error) {
-    throw new Error(
+    const detailMessage =
       error instanceof Error
         ? error.message
-        : "Attachment data is not valid base64."
+        : "Attachment data is not valid base64.";
+    throw new Error(
+      `Unable to decode base64 payload (length: ${sanitized.length}). ${detailMessage}`
     );
   }
 
