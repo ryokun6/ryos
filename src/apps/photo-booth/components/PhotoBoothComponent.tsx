@@ -140,7 +140,6 @@ export function PhotoBoothComponent({
   const [showThumbnail, setShowThumbnail] = useState(false);
   const { play: playShutter } = useSound(Sounds.PHOTO_SHUTTER, 0.4);
   const [newPhotoIndex, setNewPhotoIndex] = useState<number | null>(null);
-  const [mainStream, setMainStream] = useState<MediaStream | null>(null);
   const { saveFile, files } = useFileSystem("/Images");
 
   const currentTheme = useThemeStore((state) => state.current);
@@ -192,58 +191,48 @@ export function PhotoBoothComponent({
     }
   }, [showPhotoStrip, isInitialLoad]);
 
-  useEffect(() => {
-    // Start camera when window opens or app comes to foreground
-    if (isWindowOpen) {
-      if (isForeground) {
-        // Check if stream is active, if not, restart it
-        const isStreamActive =
-          stream &&
-          stream.active &&
-          stream.getTracks().some((track) => track.readyState === "live");
-
-        if (!isStreamActive) {
-          console.log("Starting/restarting camera");
-          startCamera();
-        }
-      } else {
-        // App going to background - we'll keep the stream alive
-        console.log("App in background - stream will be maintained");
-      }
-    }
-
-    // Only clean up when window actually closes
-    return () => {
+    useEffect(() => {
       if (!isWindowOpen) {
         stopCamera();
+        return;
+      }
+
+      if (!isForeground) {
+        stopCamera();
+        return;
+      }
+
+      const isStreamActive =
+        stream &&
+        stream.active &&
+        stream.getTracks().some((track) => track.readyState === "live");
+
+      if (!isStreamActive) {
+        console.log("Starting/restarting camera");
+        startCamera();
+      }
+
+      return () => {
+        if (!isWindowOpen) {
+          stopCamera();
+        }
+      };
+    }, [isWindowOpen, isForeground, stream]);
+
+    // Fully stop any active media streams and clear timers
+    const stopCamera = () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+
+      setStream(null);
+
+      // Clear any running interval that might be taking additional photos
+      if (multiPhotoTimer) {
+        clearInterval(multiPhotoTimer);
+        setMultiPhotoTimer(null);
       }
     };
-  }, [isWindowOpen, isForeground, stream]);
-
-  // Fully stop any active media streams and clear timers
-  const stopCamera = () => {
-    // Aggregate all known streams so we can safely stop them
-    const streams: MediaStream[] = [];
-
-    if (stream) streams.push(stream);
-    // `mainStream` might be the same as `stream`, but if it is different we
-    // still want to make sure we stop its tracks as well.
-    if (mainStream && mainStream !== stream) streams.push(mainStream);
-
-    streams.forEach((s) => {
-      s.getTracks().forEach((track) => track.stop());
-    });
-
-    // Clear local references so React knows the streams are gone
-    setStream(null);
-    setMainStream(null);
-
-    // Clear any running interval that might be taking additional photos
-    if (multiPhotoTimer) {
-      clearInterval(multiPhotoTimer);
-      setMultiPhotoTimer(null);
-    }
-  };
 
   // Ensure that we always stop the camera when the Photo Booth window is
   // closed.  Returning `null` from the component hides the UI but does **not**
@@ -812,20 +801,20 @@ export function PhotoBoothComponent({
                 ? "pointer-events-none opacity-50"
                 : ""
             }`}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Webcam
-                onPhoto={(photoDataUrl) => {
-                  // Only process if not in preview
-                  if (photoDataUrl) {
-                    handlePhoto(photoDataUrl);
-                  }
-                }}
-                className="w-full h-full"
-                filter={selectedEffect.filter}
-                onStreamReady={setMainStream}
-                selectedCameraId={selectedCameraId}
-              />
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Webcam
+                  onPhoto={(photoDataUrl) => {
+                    // Only process if not in preview
+                    if (photoDataUrl) {
+                      handlePhoto(photoDataUrl);
+                    }
+                  }}
+                  className="w-full h-full"
+                  filter={selectedEffect.filter}
+                  selectedCameraId={selectedCameraId}
+                  stream={stream}
+                />
 
               {/* Camera flash effect */}
               <AnimatePresence>
@@ -907,7 +896,7 @@ export function PhotoBoothComponent({
                             isPreview
                             filter={effect.filter}
                             className="w-full h-full"
-                            sharedStream={mainStream}
+                            sharedStream={stream}
                           />
                           <div
                             className="absolute bottom-0 left-0 right-0 text-center py-1.5 text-white font-geneva-12 text-[12px]"
