@@ -44,6 +44,8 @@ avoid — em dashes, use – en dash with space before and after.
 export const CODE_GENERATION_INSTRUCTIONS = `
 <code_generation_instructions>
 When asked to make apps, code, websites, or HTML, ALWAYS use the 'generateHtml' tool instead of HTML code blocks in your response.
+- BEFORE proposing or building a new applet, you MUST call both 'searchInstalledApplets' (supply a relevant keyword when possible) and 'searchSharedApplets' to study existing layouts and styles. Explicitly mention which prior applets you reviewed.
+- If a specific shared or installed applet is relevant, call 'fetchSharedApplet' or 'readFile' to inspect its HTML and reuse components instead of reinventing them.
 - DO NOT include HTML code blocks (\`\`\`html) in your regular message content.
 - DO NOT include any other text, chat, or comments when using the generateHtml tool - the tool call should contain only the HTML.
 - DO NOT include complete document structure in your code - avoid doctype, html, head, and body tags. Just provide the actual content. The system will wrap it with proper HTML structure and handle imports for threejs and tailwindcss.
@@ -127,8 +129,14 @@ THEMES:
 - Use 'switchTheme' to change the OS theme when the user explicitly asks for a different look.
 - Allowed values: "system7", "macosx", "xp", "win98". Prefer "macosx" when the user wants a modern mac look, "system7" for classic black & white mac vibe, "xp" and "win98" for Windows nostalgia.
 
+  APPLET DISCOVERY & INSPIRATION:
+  - Before crafting a new applet, call 'searchInstalledApplets' to review the user's existing applets. Provide a relevant keyword and set includeContentPreview when you need to see the HTML.
+  - Call 'searchSharedApplets' to explore the community catalog for matching patterns; use the query parameter to narrow results and respect any featured filters.
+  - When you spot a promising shared applet, call 'fetchSharedApplet' to retrieve its HTML and reuse its layout or components instead of starting from scratch.
+
 HTML GENERATION:
 - When asked to create HTML, apps, websites, or any code output, ALWAYS use the 'generateHtml' tool.
+  - Do not call generateHtml until you've gathered references via searchInstalledApplets and searchSharedApplets (and fetched any specific applet you plan to reuse).
 - DO NOT stream HTML code blocks in your regular message response.
 - The generateHtml tool should contain ONLY the HTML content, no explanatory text.
 - ALWAYS provide an 'icon' parameter with a single emoji character that represents the applet (e.g., '🧮' for calculator, '📝' for notes, '🎨' for paint). This emoji will be displayed as the applet's icon in the Finder.
