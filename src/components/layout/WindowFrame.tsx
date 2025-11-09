@@ -79,11 +79,15 @@ export function WindowFrame({
     debugMode,
     updateWindowState,
     updateInstanceWindowState,
+    minimizeInstance,
+    isMinimized,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     debugMode: state.debugMode,
     updateWindowState: state.updateWindowState,
     updateInstanceWindowState: state.updateInstanceWindowState,
+    minimizeInstance: state.minimizeInstance,
+    isMinimized: instanceId ? state.instances[instanceId]?.isMinimized : false,
   }));
   const { play: playWindowOpen } = useSound(Sounds.WINDOW_OPEN);
   const { play: playWindowClose } = useSound(Sounds.WINDOW_CLOSE);
@@ -559,7 +563,9 @@ export function WindowFrame({
         isInitialMount && "animate-in fade-in-0 zoom-in-95 duration-200",
         isShaking && "animate-shake",
         // Disable all pointer events when window is closing
-        !isOpen && "pointer-events-none"
+        !isOpen && "pointer-events-none",
+        // Hide window when minimized (only for Windows themes)
+        isMinimized && isXpTheme && "hidden"
       )}
       onClick={() => {
         if (!isForeground) {
@@ -970,7 +976,10 @@ export function WindowFrame({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Minimize functionality could be added here
+                    if (instanceId) {
+                      playWindowCollapse();
+                      minimizeInstance(instanceId);
+                    }
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   onTouchStart={(e) => e.stopPropagation()}
