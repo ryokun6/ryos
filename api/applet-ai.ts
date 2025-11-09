@@ -151,24 +151,20 @@ const decodeBase64ToBinaryString = (value: string): string => {
   }).atob;
 
   if (typeof atobFn === "function") {
-    return Reflect.apply(atobFn, globalThis, [value]);
+    return atobFn(value);
   }
 
-  const globalBuffer = (globalThis as Record<string, unknown> & {
+  const { Buffer } = globalThis as Record<string, unknown> & {
     Buffer?: {
       from(
         data: string,
         encoding: string
       ): { toString(encoding: string): string };
     };
-  }).Buffer;
+  };
 
-  if (globalBuffer && typeof globalBuffer.from === "function") {
-    const bufferResult = Reflect.apply(globalBuffer.from, globalBuffer, [
-      value,
-      "base64",
-    ]);
-    return bufferResult.toString("binary");
+  if (Buffer && typeof Buffer.from === "function") {
+    return Buffer.from(value, "base64").toString("binary");
   }
 
   throw new Error("Base64 decoding is not supported in this environment.");
