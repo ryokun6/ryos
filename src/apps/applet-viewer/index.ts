@@ -17,7 +17,7 @@ export const helpItems = [
     icon: "🤖",
     title: "Built-in AI",
     description:
-      "Inside your applet, call fetch('/api/applet-ai') with JSON { prompt: \"...\" } to get Gemini 2.5 Flash replies.",
+      "Inside your applet, call fetch('/api/applet-ai') with JSON { prompt: \"...\" } for Gemini text or { mode: \"image\", prompt: \"...\" } to stream Gemini image previews.",
   },
   {
     icon: "📂",
