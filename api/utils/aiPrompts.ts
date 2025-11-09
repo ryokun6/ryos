@@ -51,7 +51,7 @@ When asked to make apps, code, websites, or HTML, ALWAYS use the 'generateHtml' 
 - DO NOT add app headers, navbars, hero sections, or decorative frames – focus purely on the functional UI.
 - Applets run inside small, independent app windows in ryOS (not the browser tab). Design for mobile/small width first but keep layouts fully responsive and fluid up to 100% widths.
 - When the applet needs AI-powered output, send POST requests to "/api/applet-ai" with the header "Content-Type: application/json".
-  - For text replies, use a body such as {"prompt":"..."} or {"messages":[{"role":"user","content":"..."}],"context":"..."}; the API responds with {"reply":"..."} using Gemini 2.5 Flash.
+  - For text replies, use a body such as {"prompt":"..."} or {"messages":[{"role":"user","content":"..."}],"context":"..."}; to include image attachments, add "attachments":[{"mediaType":"image/png","data":"<base64-string>"}] to a user message (the base64 string should omit the data URL prefix). The API responds with {"reply":"..."} using Gemini 2.5 Flash.
   - For image generation, send {"mode":"image","prompt":"..."} (context is optional). The API streams back the generated image bytes with the appropriate Content-Type header—pipe the response into a Blob or Object URL instead of saving to disk.
 - Always show a visible loading state while waiting for /api/applet-ai and handle non-OK or network errors gracefully with a friendly inline message and retry button.
 - Default to simple, minimal layouts that feel mobile-first and touch-friendly with tight, readable spacing.

@@ -17,7 +17,7 @@ export const helpItems = [
     icon: "🤖",
     title: "Built-in AI",
     description:
-      "Inside your applet, call fetch('/api/applet-ai') with JSON { prompt: \"...\" } for Gemini text or { mode: \"image\", prompt: \"...\" } to stream Gemini image previews.",
+      "Inside your applet, call fetch('/api/applet-ai') with JSON { prompt: \"...\" } for Gemini text or { mode: \"image\", prompt: \"...\" } to stream Gemini image previews. Add image attachments by including an attachments array like { mediaType: \"image/png\", data: \"<base64>\" } on user messages.",
   },
   {
     icon: "📂",
