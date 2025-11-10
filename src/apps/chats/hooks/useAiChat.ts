@@ -1464,11 +1464,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 state: "output-error",
                 errorText:
                   err instanceof Error ? err.message : "Failed to list files",
-              });
-              result = ""; // Clear result to prevent duplicate
+                });
+                result = ""; // Clear result to prevent duplicate
+              }
+              break;
             }
-            break;
-          }
+            case "searchSharedApplets":
             case "listSharedApplets": {
               const {
                 listAll = true,
@@ -1518,7 +1519,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ? Math.min(Math.max(parsedLimit, 1), 100)
                   : 50;
 
-              console.log("[ToolCall] listSharedApplets:", {
+              console.log(`[ToolCall] ${toolCall.toolName}:`, {
                 listAll,
                 keyword: normalizedKeyword,
                 limit: maxResults,
@@ -1607,13 +1608,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     } shown):`;
 
                 const lines: string[] = [header];
+                let summaryMessage: string;
 
                 if (limitedApplets.length === 0) {
-                  lines.push(
-                    hasKeyword
-                      ? "• No shared applets matched that keyword."
-                      : "• No shared applets available.",
-                  );
+                  const emptyLine = hasKeyword
+                    ? "• No shared applets matched that keyword."
+                    : "• No shared applets available.";
+                  lines.push(emptyLine);
+                  summaryMessage = hasKeyword
+                    ? `No shared applets matched "${rawKeyword}".`
+                    : "No shared applets available.";
                 } else {
                   limitedApplets.forEach((item) => {
                     const displayName =
@@ -1631,33 +1635,29 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     );
                   }
 
-                  const toolOutput = lines.join("\n");
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    output: toolOutput,
-                  });
-
-                  const summaryMessage =
-                    limitedApplets.length === 0
-                      ? hasKeyword
-                        ? `No shared applets matched "${rawKeyword}".`
-                        : "No shared applets available."
-                      : hasKeyword
-                        ? `Found ${limitedApplets.length} shared applet${
-                            limitedApplets.length === 1 ? "" : "s"
-                          } matching "${rawKeyword}".`
-                        : `Found ${limitedApplets.length}${
-                            totalMatches > limitedApplets.length
-                              ? ` of ${totalMatches}`
-                              : ""
-                          } shared applet${
-                            limitedApplets.length === 1 ? "" : "s"
-                          }.`;
-                  result = summaryMessage;
+                  summaryMessage = hasKeyword
+                    ? `Found ${limitedApplets.length} shared applet${
+                        limitedApplets.length === 1 ? "" : "s"
+                      } matching "${rawKeyword}".`
+                    : `Found ${limitedApplets.length}${
+                        totalMatches > limitedApplets.length
+                          ? ` of ${totalMatches}`
+                          : ""
+                      } shared applet${
+                        limitedApplets.length === 1 ? "" : "s"
+                      }.`;
                 }
+
+                const toolOutput = lines.join("\n");
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: toolOutput,
+                });
+                console.log(`[ToolCall] ${summaryMessage}`);
+                result = ""; // Clear result to prevent duplicate
               } catch (err) {
-                console.error("listSharedApplets error:", err);
+                console.error(`${toolCall.toolName} error:`, err);
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,

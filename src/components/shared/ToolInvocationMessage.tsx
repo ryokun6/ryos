@@ -58,104 +58,108 @@ export function ToolInvocationMessage({
   let displayCallMessage: string | null = null;
   let displayResultMessage: string | null = null;
 
-    // Handle loading states (input-streaming or input-available without output)
-    if (
-      state === "input-streaming" ||
-      (state === "input-available" && !output)
-    ) {
-      switch (toolName) {
-        case "textEditSearchReplace":
-          displayCallMessage = "Replacing text…";
-          break;
-        case "textEditInsertText":
-          displayCallMessage = "Inserting text…";
-          break;
-        case "launchApp":
-          displayCallMessage = `Launching ${getAppName(input?.id)}…`;
-          break;
-        case "closeApp":
-          displayCallMessage = `Closing ${getAppName(input?.id)}…`;
-          break;
-        case "textEditNewFile":
-          displayCallMessage = "Creating new document…";
-          break;
-        case "ipodControl": {
-          const action = input?.action || "toggle";
-          if (action === "next") {
-            displayCallMessage = "Skipping to next…";
-          } else if (action === "previous") {
-            displayCallMessage = "Skipping to previous…";
-          } else if (action === "addAndPlay") {
-            displayCallMessage = "Adding song…";
-          } else if (action === "playKnown") {
-            displayCallMessage = "Playing song…";
-          } else {
-            displayCallMessage = "Controlling playback…";
-          }
-          break;
+  // Handle loading states (input-streaming or input-available without output)
+  if (
+    state === "input-streaming" ||
+    (state === "input-available" && !output)
+  ) {
+    switch (toolName) {
+      case "searchSharedApplets":
+      case "listSharedApplets":
+        displayCallMessage = "Searching shared applets…";
+        break;
+      case "textEditSearchReplace":
+        displayCallMessage = "Replacing text…";
+        break;
+      case "textEditInsertText":
+        displayCallMessage = "Inserting text…";
+        break;
+      case "launchApp":
+        displayCallMessage = `Launching ${getAppName(input?.id)}…`;
+        break;
+      case "closeApp":
+        displayCallMessage = `Closing ${getAppName(input?.id)}…`;
+        break;
+      case "textEditNewFile":
+        displayCallMessage = "Creating new document…";
+        break;
+      case "ipodControl": {
+        const action = input?.action || "toggle";
+        if (action === "next") {
+          displayCallMessage = "Skipping to next…";
+        } else if (action === "previous") {
+          displayCallMessage = "Skipping to previous…";
+        } else if (action === "addAndPlay") {
+          displayCallMessage = "Adding song…";
+        } else if (action === "playKnown") {
+          displayCallMessage = "Playing song…";
+        } else {
+          displayCallMessage = "Controlling playback…";
         }
-        case "switchTheme":
-          displayCallMessage = "Switching theme…";
-          break;
-        case "listFiles":
-          displayCallMessage = "Finding files…";
-          break;
-        case "listIpodLibrary":
-          displayCallMessage = "Loading iPod library…";
-          break;
-        case "openFile":
-          displayCallMessage = "Opening file…";
-          break;
-        case "readFile":
-          displayCallMessage = "Reading file…";
-          break;
-        default:
-          displayCallMessage = `Running ${formatToolName(toolName)}…`;
+        break;
       }
+      case "switchTheme":
+        displayCallMessage = "Switching theme…";
+        break;
+      case "listFiles":
+        displayCallMessage = "Finding files…";
+        break;
+      case "listIpodLibrary":
+        displayCallMessage = "Loading iPod library…";
+        break;
+      case "openFile":
+        displayCallMessage = "Opening file…";
+        break;
+      case "readFile":
+        displayCallMessage = "Reading file…";
+        break;
+      default:
+        displayCallMessage = `Running ${formatToolName(toolName)}…`;
     }
+  }
 
   // Handle success states
-    if (state === "output-available") {
-      if (toolName === "launchApp" && input?.id === "internet-explorer") {
-        const urlPart = input.url ? ` ${input.url}` : "";
-        const yearPart =
-          input.year && input.year !== "" ? ` in ${input.year}` : "";
-        displayResultMessage = `Launched${urlPart}${yearPart}`;
-      } else if (toolName === "launchApp") {
-        displayResultMessage = `Launched ${getAppName(input?.id)}`;
-      } else if (toolName === "closeApp") {
-        displayResultMessage = `Closed ${getAppName(input?.id)}`;
-      } else if (toolName === "ipodControl") {
-        const action = input?.action || "toggle";
-        if (action === "addAndPlay") {
-          displayResultMessage = "Added and started playing new song";
-        } else if (action === "playKnown") {
-          const title = input?.title ? String(input.title) : null;
-          const artist = input?.artist ? String(input.artist) : null;
+  if (state === "output-available") {
+    if (toolName === "launchApp" && input?.id === "internet-explorer") {
+      const urlPart = input.url ? ` ${input.url}` : "";
+      const yearPart =
+        input.year && input.year !== "" ? ` in ${input.year}` : "";
+      displayResultMessage = `Launched${urlPart}${yearPart}`;
+    } else if (toolName === "launchApp") {
+      displayResultMessage = `Launched ${getAppName(input?.id)}`;
+    } else if (toolName === "closeApp") {
+      displayResultMessage = `Closed ${getAppName(input?.id)}`;
+    } else if (toolName === "ipodControl") {
+      const action = input?.action || "toggle";
+      if (action === "addAndPlay") {
+        displayResultMessage = "Added and started playing new song";
+      } else if (action === "playKnown") {
+        const title = input?.title ? String(input.title) : null;
+        const artist = input?.artist ? String(input.artist) : null;
 
-          if (title && artist) {
-            displayResultMessage = `Playing ${title} by ${artist}`;
-          } else if (title) {
-            displayResultMessage = `Playing ${title}`;
-          } else if (artist) {
-            displayResultMessage = `Playing song by ${artist}`;
-          } else if (input?.id) {
-            displayResultMessage = `Playing song (${String(input.id)})`;
-          } else {
-            displayResultMessage = `Playing song`;
-          }
-        } else if (action === "next") {
-          displayResultMessage = "Skipped to next track";
-        } else if (action === "previous") {
-          displayResultMessage = "Skipped to previous track";
+        if (title && artist) {
+          displayResultMessage = `Playing ${title} by ${artist}`;
+        } else if (title) {
+          displayResultMessage = `Playing ${title}`;
+        } else if (artist) {
+          displayResultMessage = `Playing song by ${artist}`;
+        } else if (input?.id) {
+          displayResultMessage = `Playing song (${String(input.id)})`;
         } else {
-          displayResultMessage =
-            action === "play"
-              ? "Playing iPod"
-              : action === "pause"
-                ? "Paused iPod"
-                : "Toggled iPod playback";
+          displayResultMessage = "Playing song";
         }
+      } else if (action === "next") {
+        displayResultMessage = "Skipped to next track";
+      } else if (action === "previous") {
+        displayResultMessage = "Skipped to previous track";
+      } else {
+        displayResultMessage =
+          action === "play"
+            ? "Playing iPod"
+            : action === "pause"
+              ? "Paused iPod"
+              : "Toggled iPod playback";
+      }
     } else if (toolName === "switchTheme") {
       const theme = input?.theme || "theme";
       displayResultMessage = `Switched to ${theme}`;
@@ -175,13 +179,19 @@ export function ToolInvocationMessage({
 
         if (appletMatch) {
           const count = parseInt(appletMatch[1], 10);
-          displayResultMessage = `Found ${count} applet${count === 1 ? "" : "s"}`;
+          displayResultMessage = `Found ${count} applet${
+            count === 1 ? "" : "s"
+          }`;
         } else if (documentMatch) {
           const count = parseInt(documentMatch[1], 10);
-          displayResultMessage = `Found ${count} document${count === 1 ? "" : "s"}`;
+          displayResultMessage = `Found ${count} document${
+            count === 1 ? "" : "s"
+          }`;
         } else if (applicationMatch) {
           const count = parseInt(applicationMatch[1], 10);
-          displayResultMessage = `Found ${count} application${count === 1 ? "" : "s"}`;
+          displayResultMessage = `Found ${count} application${
+            count === 1 ? "" : "s"
+          }`;
         } else if (output.includes("No applets found")) {
           displayResultMessage = "No applets found";
         } else if (output.includes("No documents found")) {
@@ -192,13 +202,38 @@ export function ToolInvocationMessage({
           displayResultMessage = "Listed files";
         }
       }
+    } else if (
+      toolName === "searchSharedApplets" ||
+      toolName === "listSharedApplets"
+    ) {
+      if (typeof output === "string") {
+        if (output.includes("No shared applets matched")) {
+          displayResultMessage = "No shared applets matched";
+        } else if (output.includes("No shared applets available")) {
+          displayResultMessage = "No shared applets available";
+        } else {
+          const headerMatch = output.match(
+            /Shared applets(?: matching "[^"]+")? \((\d+)/,
+          );
+          if (headerMatch) {
+            const count = parseInt(headerMatch[1], 10);
+            displayResultMessage = `Found ${count} shared applet${
+              count === 1 ? "" : "s"
+            }`;
+          } else {
+            displayResultMessage = "Listed shared applets";
+          }
+        }
+      }
     } else if (toolName === "listIpodLibrary") {
       // Parse the output to extract song count
       if (typeof output === "string") {
         const match = output.match(/Found (\d+) songs?/);
         if (match) {
           const count = parseInt(match[1], 10);
-          displayResultMessage = `Found ${count} song${count === 1 ? "" : "s"}`;
+          displayResultMessage = `Found ${count} song${
+            count === 1 ? "" : "s"
+          }`;
         } else if (output.includes("iPod library is empty")) {
           displayResultMessage = "iPod library is empty";
         } else {
@@ -209,9 +244,7 @@ export function ToolInvocationMessage({
       // Extract file name from output message
       if (typeof output === "string") {
         const appletMatch = output.match(/Successfully opened applet: (.+)/);
-        const documentMatch = output.match(
-          /Successfully opened document: (.+)/,
-        );
+        const documentMatch = output.match(/Successfully opened document: (.+)/);
         const applicationMatch = output.match(
           /Successfully launched application: (.+)/,
         );
