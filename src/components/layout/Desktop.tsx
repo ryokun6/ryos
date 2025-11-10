@@ -221,6 +221,13 @@ export function Desktop({
       if (!jsonData) return;
 
       const { path, name, appId } = JSON.parse(jsonData);
+
+      // If this drag originated from an existing desktop shortcut, do not
+      // create another alias. This prevents duplicate icons when dragging
+      // items around on the desktop itself.
+      if (path && path.startsWith("/Desktop/")) {
+        return;
+      }
       
       // Check if an alias already exists for this target
       const desktopItems = fileStore.getItemsInPath("/Desktop");
