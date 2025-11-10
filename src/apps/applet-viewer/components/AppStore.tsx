@@ -11,9 +11,10 @@ import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
 interface AppStoreProps {
   theme?: string;
   sharedAppletId?: string; // ID of shared applet to show in detail view
+  focusWindow?: () => void;
 }
 
-export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
+export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) {
   const [applets, setApplets] = useState<Applet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -158,6 +159,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
   };
 
   const handleAppletClick = async (applet: Applet) => {
+    focusWindow?.();
     const result = await actions.handleAppletClick(applet);
     if (result) {
       setSelectedApplet(result);
@@ -165,6 +167,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
   };
 
   const handlePreviewClick = async (applet: Applet) => {
+    focusWindow?.();
     const installed = actions.isAppletInstalled(applet.id);
     if (installed) {
       // If installed, bring window to foreground
@@ -173,6 +176,7 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
   };
 
   const handleInstall = async (applet: Applet) => {
+    focusWindow?.();
     await actions.handleInstall(applet, async () => {
       await fetchApplets();
       setSelectedApplet(null);
@@ -319,107 +323,108 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
     return `Updated ${years}y ago`;
   };
 
-  // Render a single applet item
-  const renderAppletItem = (applet: Applet) => {
-    const displayName = applet.title || applet.name || "Untitled Applet";
-    const displayIcon = applet.icon || "📱";
-    const installed = actions.isAppletInstalled(applet.id);
-    const updateAvailable = actions.needsUpdate(applet);
-    
-    return (
-      <div
-        key={applet.id}
-        className={`group flex items-center gap-3 px-3 py-2 rounded transition-colors ${
-          installed ? "cursor-pointer hover:bg-gray-100" : "cursor-pointer hover:bg-gray-100"
-        }`}
-        onClick={(e) => {
-          // Don't trigger if clicking on buttons or admin actions
-          const target = e.target as HTMLElement;
-          if (target.closest('button') || target.closest('[role="button"]')) {
-            return;
-          }
-          handleAppletClick(applet);
-        }}
-      >
-        <div 
-          className="!text-4xl flex-shrink-0 applet-icon flex items-center justify-center"
-          style={{ fontSize: '2.25rem', width: '3rem' }}
-        >
-          {displayIcon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sm font-geneva-12 truncate">
-              {displayName}
-            </span>
-          </div>
-          {updateAvailable && applet.createdAt ? (
-            <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
-              {formatUpdateTime(applet.createdAt)}
-            </div>
-          ) : applet.createdBy ? (
-            <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
-              {applet.createdBy}
-            </div>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {isAdmin && (
-            <div className="flex items-center gap-0">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleToggleFeatured(applet.id, applet.featured || false);
-                }}
-                className="p-1 hover:bg-gray-200 rounded transition-all inline-flex md:hidden md:group-hover:inline-flex"
-                title={applet.featured ? "Remove from featured" : "Add to featured"}
-              >
-                <Star 
-                  className={`h-4 w-4 ${applet.featured ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`} 
-                />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(applet.id);
-                }}
-                className="p-1 hover:bg-gray-200 rounded transition-all text-gray-400 inline-flex md:hidden md:group-hover:inline-flex"
-                title="Delete applet"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          <Button
-            size="sm"
-            variant={
-              updateAvailable
-                ? "default"
-                : isMacTheme
-                ? "secondary"
-                : isSystem7Theme
-                ? "retro"
-                : "default"
+    const renderAppletItem = (applet: Applet) => {
+      const displayName = applet.title || applet.name || "Untitled Applet";
+      const displayIcon = applet.icon || "📱";
+      const installed = actions.isAppletInstalled(applet.id);
+      const updateAvailable = actions.needsUpdate(applet);
+
+      return (
+        <div
+          key={applet.id}
+          className={`group flex items-center gap-3 px-3 py-2 rounded transition-colors ${
+            installed ? "cursor-pointer hover:bg-gray-100" : "cursor-pointer hover:bg-gray-100"
+          }`}
+          onClick={(e) => {
+            // Don't trigger if clicking on buttons or admin actions
+            const target = e.target as HTMLElement;
+            if (target.closest("button") || target.closest('[role="button"]')) {
+              return;
             }
-            onClick={(e) => {
-              e.stopPropagation();
-              if (installed) {
-                if (updateAvailable) {
-                  handleInstall(applet);
-                } else {
-                  handleAppletClick(applet);
-                }
-              } else {
-                handleInstall(applet);
-              }
-            }}
+            focusWindow?.();
+            handleAppletClick(applet);
+          }}
+        >
+          <div
+            className="!text-4xl flex-shrink-0 applet-icon flex items-center justify-center"
+            style={{ fontSize: "2.25rem", width: "3rem" }}
           >
-            {installed ? (updateAvailable ? "Update" : "Open") : "Get"}
-          </Button>
+            {displayIcon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-sm font-geneva-12 truncate">
+                {displayName}
+              </span>
+            </div>
+            {updateAvailable && applet.createdAt ? (
+              <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
+                {formatUpdateTime(applet.createdAt)}
+              </div>
+            ) : applet.createdBy ? (
+              <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
+                {applet.createdBy}
+              </div>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {isAdmin && (
+              <div className="flex items-center gap-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleFeatured(applet.id, applet.featured || false);
+                  }}
+                  className="p-1 hover:bg-gray-200 rounded transition-all inline-flex md:hidden md:group-hover:inline-flex"
+                  title={applet.featured ? "Remove from featured" : "Add to featured"}
+                >
+                  <Star
+                    className={`h-4 w-4 ${applet.featured ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`}
+                  />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(applet.id);
+                  }}
+                  className="p-1 hover:bg-gray-200 rounded transition-all text-gray-400 inline-flex md:hidden md:group-hover:inline-flex"
+                  title="Delete applet"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            <Button
+              size="sm"
+              variant={
+                updateAvailable
+                  ? "default"
+                  : isMacTheme
+                  ? "secondary"
+                  : isSystem7Theme
+                  ? "retro"
+                  : "default"
+              }
+              onClick={(e) => {
+                e.stopPropagation();
+                focusWindow?.();
+                if (installed) {
+                  if (updateAvailable) {
+                    handleInstall(applet);
+                  } else {
+                    handleAppletClick(applet);
+                  }
+                } else {
+                  handleInstall(applet);
+                }
+              }}
+            >
+              {installed ? (updateAvailable ? "Update" : "Open") : "Get"}
+            </Button>
+          </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
 
   if (applets.length === 0) {
     return (
@@ -496,15 +501,16 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
               Get
             </Button>
           </div>
-          <div 
-            className="flex-1 overflow-hidden bg-white"
-            onClick={() => {
-              // Only handle click for installed applets to bring window to foreground
-              if (selectedApplet) {
-                handlePreviewClick(selectedApplet);
-              }
-            }}
-          >
+            <div
+              className="flex-1 overflow-hidden bg-white"
+              onClick={() => {
+                // Only handle click for installed applets to bring window to foreground
+                if (selectedApplet) {
+                  focusWindow?.();
+                  handlePreviewClick(selectedApplet);
+                }
+              }}
+            >
             {selectedAppletContent ? (
               <iframe
                 srcDoc={ensureMacFonts(selectedAppletContent)}
@@ -533,12 +539,16 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
       <style>{appletIconStyles}</style>
       <div className="h-full w-full flex flex-col">
         {!showListView ? (
-          <div className="flex-1 overflow-hidden relative">
-            <AppStoreFeed
-              ref={feedRef}
-              theme={theme}
-              onAppletSelect={(applet) => setSelectedApplet(applet)}
-            />
+            <div className="flex-1 overflow-hidden relative">
+              <AppStoreFeed
+                ref={feedRef}
+                theme={theme}
+                focusWindow={focusWindow}
+                onAppletSelect={(applet) => {
+                  focusWindow?.();
+                  setSelectedApplet(applet);
+                }}
+              />
             {/* Navigation buttons overlay */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
               <Button

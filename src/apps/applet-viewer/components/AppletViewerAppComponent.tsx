@@ -1178,7 +1178,7 @@ export function AppletViewerAppComponent({
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
         >
-          <div className="w-full h-full bg-white overflow-hidden">
+            <div className="w-full h-full bg-white overflow-hidden">
             {hasAppletContent ? (
               <div className="relative h-full w-full">
                 <iframe
@@ -1210,22 +1210,35 @@ export function AppletViewerAppComponent({
                 )}
               </div>
             ) : (
-              <div
-                className="h-full w-full"
-                style={
-                  isMacTheme
-                    ? {
-                        backgroundColor: "var(--os-color-window-bg)",
-                        backgroundImage: "var(--os-pinstripe-window)",
-                      }
-                    : undefined
-                }
-              >
-                <AppStore
-                  theme={currentTheme}
-                  sharedAppletId={shareCode || undefined}
-                />
-              </div>
+                <div
+                  className="relative h-full w-full"
+                  style={
+                    isMacTheme
+                      ? {
+                          backgroundColor: "var(--os-color-window-bg)",
+                          backgroundImage: "var(--os-pinstripe-window)",
+                        }
+                      : undefined
+                  }
+                >
+                  <AppStore
+                    theme={currentTheme}
+                    sharedAppletId={shareCode || undefined}
+                    focusWindow={focusWindow}
+                  />
+                  {!isForeground && (
+                    <div
+                      className="absolute inset-0 z-50 bg-transparent"
+                      aria-hidden="true"
+                      onClick={focusWindow}
+                      onMouseDown={focusWindow}
+                      onTouchStart={focusWindow}
+                      onWheel={focusWindow}
+                      onDragStart={focusWindow}
+                      onKeyDown={focusWindow}
+                    />
+                  )}
+                </div>
             )}
           </div>
       </WindowFrame>
