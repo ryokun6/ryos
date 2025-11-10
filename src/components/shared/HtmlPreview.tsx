@@ -210,6 +210,7 @@ export default function HtmlPreview({
   const { saveFile } = useFileSystem("/", { skipLoad: true });
   const launchApp = useLaunchApp();
   const username = useChatsStore((state) => state.username);
+  const authToken = useChatsStore((state) => state.authToken);
   const previewRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fullscreenIframeRef = useRef<HTMLIFrameElement>(null);
