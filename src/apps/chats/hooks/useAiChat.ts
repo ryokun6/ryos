@@ -1655,6 +1655,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                             limitedApplets.length === 1 ? "" : "s"
                           }.`;
                   result = summaryMessage;
+                }
               } catch (err) {
                 console.error("listSharedApplets error:", err);
                 addToolResult({
