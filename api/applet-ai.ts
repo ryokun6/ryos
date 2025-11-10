@@ -131,9 +131,9 @@ const isRyOSHost = (hostHeader: string | null): boolean => {
 
 type RateLimitScope = "text-hour" | "image-hour";
 
-const ANON_TEXT_LIMIT_PER_HOUR = 3;
+const ANON_TEXT_LIMIT_PER_HOUR = 15;
 const ANON_IMAGE_LIMIT_PER_HOUR = 1;
-const AUTH_TEXT_LIMIT_PER_HOUR = 25;
+const AUTH_TEXT_LIMIT_PER_HOUR = 50;
 const AUTH_IMAGE_LIMIT_PER_HOUR = 12;
 const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 
