@@ -61,7 +61,7 @@ export function App() {
       <AppManager apps={apps} />
       <Toaster
         position="bottom-left"
-        offset={`calc(env(safe-area-inset-bottom, 0px) + 32px)`}
+        offset="32px"
       />
     </>
   );
