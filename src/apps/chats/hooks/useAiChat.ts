@@ -1470,19 +1470,44 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             break;
           }
             case "searchSharedApplets": {
-              const { query, limit } = toolCall.input as {
-                query?: string;
+              const {
+                listAll = true,
+                keyword,
+                limit,
+                query,
+              } = toolCall.input as {
+                listAll?: boolean;
+                keyword?: string;
                 limit?: number;
+                query?: string;
               };
 
-              const rawQuery =
-                typeof query === "string" ? query.trim() : "";
-              const normalizedQuery = rawQuery
-                ? normalizeSearchText(rawQuery)
+              const rawKeyword =
+                typeof keyword === "string" && keyword.trim().length > 0
+                  ? keyword.trim()
+                  : typeof query === "string" && query.trim().length > 0
+                    ? query.trim()
+                    : "";
+
+              const normalizedKeyword = rawKeyword
+                ? normalizeSearchText(rawKeyword)
                 : "";
-              const queryTokens = normalizedQuery
-                ? normalizedQuery.split(/\s+/).filter(Boolean)
+              const keywordTokens = normalizedKeyword
+                ? normalizedKeyword.split(/\s+/).filter(Boolean)
                 : [];
+              const hasKeyword = normalizedKeyword.length > 0;
+
+              if (!hasKeyword && listAll === false) {
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText:
+                    "Set listAll to true or provide a keyword to search.",
+                });
+                result = "";
+                break;
+              }
 
               const parsedLimit =
                 typeof limit === "number" && Number.isFinite(limit)
@@ -1490,11 +1515,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   : undefined;
               const maxResults =
                 parsedLimit !== undefined
-                  ? Math.min(Math.max(parsedLimit, 1), 50)
-                  : 25;
+                  ? Math.min(Math.max(parsedLimit, 1), 100)
+                  : 50;
 
               console.log("[ToolCall] searchSharedApplets:", {
-                query: normalizedQuery,
+                listAll,
+                keyword: normalizedKeyword,
                 limit: maxResults,
               });
 
@@ -1514,23 +1540,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   icon?: string;
                   createdAt?: number;
                   createdBy?: string;
-                  featured?: boolean;
                 }> = Array.isArray(data?.applets) ? data.applets : [];
 
-                const filesStore = useFilesStore.getState();
-                const installedShareIds = new Set(
-                  Object.values(filesStore.items)
-                    .filter(
-                      (item) =>
-                        item.status === "active" && typeof item.shareId === "string",
-                    )
-                    .map((item) => (item.shareId as string).toLowerCase()),
-                );
-
-                const useFuzzyMatching = normalizedQuery.length > 0;
-                const scoreThreshold = deriveScoreThreshold(
-                  normalizedQuery.length,
-                );
+                const useFuzzyMatching = hasKeyword;
+                const scoreThreshold = useFuzzyMatching
+                  ? deriveScoreThreshold(normalizedKeyword.length)
+                  : 0;
 
                 const scoredApplets = allApplets.map((applet) => {
                   const normalizedFields = [
@@ -1549,12 +1564,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     ? normalizedFields.reduce((best, field) => {
                         const fieldScore = computeMatchScore(
                           field,
-                          normalizedQuery,
-                          queryTokens,
+                          normalizedKeyword,
+                          keywordTokens,
                         );
                         return fieldScore > best ? fieldScore : best;
                       }, 0)
-                    : 0;
+                    : 1;
 
                   return { applet, score };
                 });
@@ -1576,81 +1591,48 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 const limitedApplets = filteredScoredApplets
                   .slice(0, maxResults)
-                  .map(({ applet, score }) => {
-                    const id = String(applet.id ?? "");
-                    const normalizedId = id.toLowerCase();
-                    return {
-                      id,
-                      title: applet.title ?? null,
-                      name: applet.name ?? null,
-                      icon: applet.icon ?? null,
-                      createdAt: applet.createdAt ?? null,
-                      createdBy: applet.createdBy ?? null,
-                      featured: Boolean(applet.featured),
-                      installed: normalizedId
-                        ? installedShareIds.has(normalizedId)
-                        : false,
-                      score,
-                    };
-                  });
+                  .map(({ applet, score }) => ({
+                    id: String(applet.id ?? ""),
+                    title: applet.title ?? null,
+                    name: applet.name ?? null,
+                    score,
+                  }));
 
-                const summary = rawQuery
-                  ? `Shared applets matching "${rawQuery}": showing ${limitedApplets.length} of ${totalMatches} (limit ${maxResults}).`
-                  : `Shared applets: showing ${limitedApplets.length} of ${totalMatches} (limit ${maxResults}).`;
+                const header = hasKeyword
+                  ? `Shared applets matching "${rawKeyword}" (${limitedApplets.length}/${totalMatches} shown):`
+                  : `Shared applets (${limitedApplets.length}${
+                      totalMatches > limitedApplets.length
+                        ? ` of ${totalMatches}`
+                        : ""
+                    } shown):`;
 
-                const formatDate = (timestamp: number | null): string | null => {
-                  if (!timestamp) return null;
-                  const date = new Date(timestamp);
-                  if (Number.isNaN(date.getTime())) return null;
-                  return date.toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  });
-                };
-
-                const lines: string[] = [summary];
+                const lines: string[] = [header];
 
                 if (limitedApplets.length === 0) {
                   lines.push(
-                    rawQuery
-                      ? `No shared applets matched "${rawQuery}".`
-                      : "No shared applets available.",
+                    hasKeyword
+                      ? "• No shared applets matched that keyword."
+                      : "• No shared applets available.",
                   );
                 } else {
-                  lines.push("");
-                  limitedApplets.forEach((item, index) => {
+                  limitedApplets.forEach((item) => {
                     const displayName =
                       item.title || item.name || "Untitled Applet";
-                    const icon = item.icon ? `${item.icon} ` : "";
-                    const badges: string[] = [];
-                    if (item.featured) badges.push("⭐ featured");
-                    if (item.installed) badges.push("✅ installed");
-                    const badgeText =
-                      badges.length > 0 ? ` (${badges.join(" · ")})` : "";
-                    const scoreText =
-                      useFuzzyMatching && normalizedQuery
-                        ? ` (match ${Math.round(item.score * 100)}%)`
+                    const suffix =
+                      useFuzzyMatching && hasKeyword
+                        ? ` • ${Math.round(item.score * 100)}% match`
                         : "";
-                    lines.push(
-                      `${index + 1}. ${icon}${displayName}${badgeText}${scoreText}`,
-                    );
-                    lines.push(`   id: ${item.id}`);
-                    const metaParts: string[] = [];
-                    if (item.createdBy) {
-                      metaParts.push(`by ${item.createdBy}`);
-                    }
-                    const formattedDate = formatDate(item.createdAt);
-                    if (formattedDate) {
-                      metaParts.push(formattedDate);
-                    }
-                    if (metaParts.length > 0) {
-                      lines.push(`   ${metaParts.join(" · ")}`);
-                    }
+                    lines.push(`• ${displayName} (id: ${item.id})${suffix}`);
                   });
+
+                  if (totalMatches > limitedApplets.length) {
+                    lines.push(
+                      `• …and ${totalMatches - limitedApplets.length} more not shown (increase limit to view).`,
+                    );
+                  }
                 }
 
-                const formattedMessage = lines.join("\n").trimEnd();
+                const formattedMessage = lines.join("\n");
 
                 addToolResult({
                   tool: toolCall.toolName,
