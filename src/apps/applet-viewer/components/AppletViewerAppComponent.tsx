@@ -14,6 +14,10 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 import {
+  APPLET_AUTH_BRIDGE_SCRIPT,
+  APPLET_AUTH_MESSAGE_TYPE,
+} from "@/utils/appletAuthBridge";
+import {
   useFileSystem,
   dbOperations,
   DocumentContent,
@@ -45,6 +49,28 @@ export function AppletViewerAppComponent({
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
 
+  const sendAuthPayload = useCallback(
+    (target: Window | null | undefined) => {
+      if (!target) return;
+      try {
+        target.postMessage(
+          {
+            type: APPLET_AUTH_MESSAGE_TYPE,
+            action: "response",
+            payload: {
+              username: username ?? null,
+              authToken: authToken ?? null,
+            },
+          },
+          "*"
+        );
+      } catch (error) {
+        console.warn("[applet-viewer] Failed to post auth payload:", error);
+      }
+    },
+    [username, authToken]
+  );
+
   const focusWindow = useCallback(() => {
     const state = useAppStore.getState();
 
@@ -68,6 +94,35 @@ export function AppletViewerAppComponent({
   
   // Get file metadata and applet store (moved before useEffect)
   const fileStore = useFilesStore();
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const data = event?.data;
+      if (
+        !data ||
+        data.type !== APPLET_AUTH_MESSAGE_TYPE ||
+        data.action !== "request"
+      ) {
+        return;
+      }
+
+      const sourceWindow = event.source as Window | null;
+      if (!sourceWindow) {
+        return;
+      }
+
+      if (sourceWindow !== iframeRef.current?.contentWindow) {
+        return;
+      }
+
+      sendAuthPayload(sourceWindow);
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [sendAuthPayload]);
 
   const fetchAndCacheAppletContent = useCallback(
     async (
@@ -169,6 +224,10 @@ export function AppletViewerAppComponent({
     ? "" 
     : loadedContent || typedInitialData?.content || sharedContent || "";
   const hasAppletContent = htmlContent.trim().length > 0;
+
+  useEffect(() => {
+    sendAuthPayload(iframeRef.current?.contentWindow);
+  }, [sendAuthPayload, htmlContent]);
 
   // Load content from IndexedDB when appletPath exists
   // Skip if content is already provided in initialData (e.g., from Finder) to avoid double loading
@@ -399,6 +458,48 @@ export function AppletViewerAppComponent({
     // Otherwise, wrap minimally
     return `<!DOCTYPE html><html><head>${preload}${fontStyle}</head><body>${content}</body></html>`;
   };
+
+  const injectAppletAuthScript = useCallback(
+    (content: string): string => {
+      if (!content) return content;
+      if (content.includes(APPLET_AUTH_MESSAGE_TYPE)) {
+        return content;
+      }
+
+      const lower = content.toLowerCase();
+      const headCloseIdx = lower.lastIndexOf("</head>");
+      if (headCloseIdx !== -1) {
+        return (
+          content.slice(0, headCloseIdx) +
+          APPLET_AUTH_BRIDGE_SCRIPT +
+          content.slice(headCloseIdx)
+        );
+      }
+
+      const headOpenMatch = /<head[^>]*>/i.exec(content);
+      if (headOpenMatch) {
+        const insertIdx = headOpenMatch.index + headOpenMatch[0].length;
+        return (
+          content.slice(0, insertIdx) +
+          APPLET_AUTH_BRIDGE_SCRIPT +
+          content.slice(insertIdx)
+        );
+      }
+
+      const htmlOpenMatch = /<html[^>]*>/i.exec(content);
+      if (htmlOpenMatch) {
+        const insertIdx = htmlOpenMatch.index + htmlOpenMatch[0].length;
+        return (
+          content.slice(0, insertIdx) +
+          `<head>${APPLET_AUTH_BRIDGE_SCRIPT}</head>` +
+          content.slice(insertIdx)
+        );
+      }
+
+      return `<!DOCTYPE html><html><head>${APPLET_AUTH_BRIDGE_SCRIPT}</head><body>${content}</body></html>`;
+    },
+    []
+  );
 
   const launchApp = useLaunchApp();
   const { saveFile, files } = useFileSystem("/Applets");
@@ -1082,13 +1183,16 @@ export function AppletViewerAppComponent({
               <div className="relative h-full w-full">
                 <iframe
                   ref={iframeRef}
-                  srcDoc={ensureMacFonts(htmlContent)}
+                  srcDoc={injectAppletAuthScript(ensureMacFonts(htmlContent))}
                   title={windowTitle}
                   className="w-full h-full border-0"
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                   style={{
                     display: "block",
                   }}
+                  onLoad={() =>
+                    sendAuthPayload(iframeRef.current?.contentWindow || null)
+                  }
                   onFocus={focusWindow}
                   onFocusCapture={focusWindow}
                 />

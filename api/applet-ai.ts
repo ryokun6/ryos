@@ -12,6 +12,7 @@ import {
   isAllowedOrigin,
   preflightIfNeeded,
 } from "./utils/cors.js";
+import * as RateLimit from "./utils/rate-limit.js";
 
 export const runtime = "edge";
 export const edge = true;
@@ -30,6 +31,7 @@ You are GPT-5 embedded inside a sandboxed ryOS applet window.
 - When asked for JSON, return valid JSON with no commentary.
 - User messages may include base64-encoded image attachments—reference them explicitly ("the attached image") and describe the important visual details.
 - If the applet needs an image, respond with a short confirmation and restate the exact prompt it should send to /api/applet-ai with {"mode":"image","prompt":"..."} alongside a one-sentence caption describing the desired image.
+- If a call to /api/applet-ai fails with a 429 rate_limit_exceeded error, explain that the hourly quota was hit (anonymous: 15 text / 1 image per hour, signed-in: 50 text / 12 image per hour), suggest waiting for the reset, and avoid retrying immediately.
 </applet_ai>`;
 
 const ImageAttachmentSchema = z.object({
@@ -128,6 +130,14 @@ const isRyOSHost = (hostHeader: string | null): boolean => {
   return false;
 };
 
+type RateLimitScope = "text-hour" | "image-hour";
+
+const ANON_TEXT_LIMIT_PER_HOUR = 15;
+const ANON_IMAGE_LIMIT_PER_HOUR = 1;
+const AUTH_TEXT_LIMIT_PER_HOUR = 50;
+const AUTH_IMAGE_LIMIT_PER_HOUR = 12;
+const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
+
 type ParsedMessage = z.infer<typeof MessageSchema>;
 
 const jsonResponse = (
@@ -143,6 +153,43 @@ const jsonResponse = (
     headers.set("Access-Control-Allow-Origin", origin);
   }
   return new Response(JSON.stringify(data), { status, headers });
+};
+
+const rateLimitExceededResponse = (
+  scope: RateLimitScope,
+  effectiveOrigin: string | null,
+  identifier: string,
+  result: Awaited<ReturnType<typeof RateLimit.checkCounterLimit>>
+): Response => {
+  const resetSeconds =
+    typeof result.resetSeconds === "number" && result.resetSeconds > 0
+      ? result.resetSeconds
+      : result.windowSeconds;
+
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    "Retry-After": String(resetSeconds),
+    "X-RateLimit-Limit": String(result.limit),
+    "X-RateLimit-Remaining": String(Math.max(0, result.limit - result.count)),
+    "X-RateLimit-Reset": String(resetSeconds),
+    Vary: "Origin",
+  });
+
+  if (effectiveOrigin) {
+    headers.set("Access-Control-Allow-Origin", effectiveOrigin);
+  }
+
+  return new Response(
+    JSON.stringify({
+      error: "rate_limit_exceeded",
+      scope,
+      limit: result.limit,
+      windowSeconds: result.windowSeconds,
+      resetSeconds,
+      identifier,
+    }),
+    { status: 429, headers }
+  );
 };
 
 const decodeBase64ToBinaryString = (value: string): string => {
@@ -335,6 +382,50 @@ export default async function handler(req: Request): Promise<Response> {
   const { prompt, messages, context, temperature, mode: requestedMode } =
     parsedBody;
   const mode = requestedMode ?? "text";
+
+  const usernameHeader = req.headers.get("x-username")?.trim().toLowerCase();
+  // Applet requests are usually anonymous; allow trusted user "ryo" to opt out with a header.
+  const rateLimitBypass = usernameHeader === "ryo";
+  const ip = RateLimit.getClientIp(req);
+  const isAuthenticatedUser =
+    !rateLimitBypass && typeof usernameHeader === "string" && usernameHeader.length > 0;
+  const identifier = isAuthenticatedUser
+    ? `user:${usernameHeader}`
+    : `ip:${ip}`;
+
+  if (!rateLimitBypass) {
+    try {
+      const scope: RateLimitScope = mode === "image" ? "image-hour" : "text-hour";
+      const limit =
+        scope === "image-hour"
+          ? isAuthenticatedUser
+            ? AUTH_IMAGE_LIMIT_PER_HOUR
+            : ANON_IMAGE_LIMIT_PER_HOUR
+          : isAuthenticatedUser
+          ? AUTH_TEXT_LIMIT_PER_HOUR
+          : ANON_TEXT_LIMIT_PER_HOUR;
+
+      const key = RateLimit.makeKey([
+        "rl",
+        "applet-ai",
+        scope,
+        isAuthenticatedUser ? "user" : "ip",
+        isAuthenticatedUser ? usernameHeader! : ip,
+      ]);
+
+      const result = await RateLimit.checkCounterLimit({
+        key,
+        windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
+        limit,
+      });
+
+      if (!result.allowed) {
+        return rateLimitExceededResponse(scope, effectiveOrigin, identifier, result);
+      }
+    } catch (error) {
+      console.error("[applet-ai] Rate limit check failed:", error);
+    }
+  }
 
   if (mode === "image") {
     const promptText = prompt?.trim() ?? "";

@@ -17,7 +17,7 @@ export const helpItems = [
     icon: "🤖",
     title: "Built-in AI",
     description:
-      "Inside your applet, call fetch('/api/applet-ai') with JSON { prompt: \"...\" } for Gemini text or { mode: \"image\", prompt: \"...\", images: [{ mediaType: \"image/png\", data: \"<base64>\" }] } to stream or edit Gemini image previews. Add message attachments with { mediaType: \"image/png\", data: \"<base64>\" } to include inline reference images.",
+        "Inside your applet, call fetch('/api/applet-ai') with JSON { prompt: \"...\" } for Gemini text or { mode: \"image\", prompt: \"...\", images: [{ mediaType: \"image/png\", data: \"<base64>\" }] } to stream or edit Gemini image previews. ryOS injects your X-Username and Authorization headers automatically when available, so you can call the endpoint directly.",
   },
   {
     icon: "📂",
