@@ -464,8 +464,9 @@ export function Desktop({
       return;
     }
 
-    // Get current desktop shortcuts
+    // Get current desktop shortcuts (active) and trashed items
     const desktopItems = fileStore.getItemsInPath("/Desktop");
+    const trashedItems = fileStore.getTrashItems();
     
     // Define the default order for desktop shortcuts
     const defaultOrder: AppId[] = [
@@ -516,17 +517,30 @@ export function Desktop({
       return a.name.localeCompare(b.name);
     });
 
-    // Create shortcuts for apps that don't have them yet, in the specified order
+    // Create shortcuts for apps that don't have them yet, in the specified order.
+    // We consider both active and previously trashed shortcuts so that if the
+    // user deletes a default icon, it is not auto-added back on theme changes.
     sortedAppsToShortcut.forEach((app) => {
-      // Check if shortcut already exists
-      const existingShortcut = desktopItems.find(
-        (item) => item.aliasType === "app" && item.aliasTarget === app.id
+      const appId = app.id as AppId;
+
+      const hasActiveShortcut = desktopItems.some(
+        (item) => item.aliasType === "app" && item.aliasTarget === appId
       );
-      if (!existingShortcut) {
-        // Use app path if available
-        const appPath = `/Applications/${app.name}`;
-        fileStore.createAlias(appPath, app.name, "app", app.id);
+
+      const hasTrashedShortcut = trashedItems.some(
+        (item) =>
+          item.aliasType === "app" &&
+          item.aliasTarget === appId &&
+          item.originalPath?.startsWith("/Desktop/")
+      );
+
+      if (hasActiveShortcut || hasTrashedShortcut) {
+        return;
       }
+
+      // Use app path if available
+      const appPath = `/Applications/${app.name}`;
+      fileStore.createAlias(appPath, app.name, "app", appId);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apps, currentTheme]);

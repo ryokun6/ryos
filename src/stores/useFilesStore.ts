@@ -591,6 +591,8 @@ export const useFilesStore = create<FilesStoreState>()(
             return state;
           }
 
+          const newItems: Record<string, FileSystemItem> = { ...state.items };
+
           // Get the original item to copy icon/name from
           let originalItem: FileSystemItem | undefined;
           let icon: string | undefined;
@@ -618,8 +620,20 @@ export const useFilesStore = create<FilesStoreState>()(
           let finalAliasPath = aliasPath;
           let counter = 1;
 
-          // Ensure unique name
-          while (state.items[finalAliasPath]) {
+          const isActiveAtPath = (path: string): boolean => {
+            const existing = newItems[path];
+            return !!existing && existing.status === "active";
+          };
+
+          // If there is a trashed item at the base alias path, permanently
+          // free that path so a new alias can reuse the original name.
+          const existingAtAliasPath = newItems[aliasPath];
+          if (existingAtAliasPath && existingAtAliasPath.status === "trashed") {
+            delete newItems[aliasPath];
+          }
+
+          // Ensure unique name, only considering active items
+          while (isActiveAtPath(finalAliasPath)) {
             const ext = name.includes(".")
               ? `.${name.split(".").pop()}`
               : "";
@@ -645,7 +659,7 @@ export const useFilesStore = create<FilesStoreState>()(
 
           return {
             items: {
-              ...state.items,
+              ...newItems,
               [finalAliasPath]: aliasItem,
             },
           };
