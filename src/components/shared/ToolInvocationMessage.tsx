@@ -59,14 +59,10 @@ export function ToolInvocationMessage({
   let displayResultMessage: string | null = null;
 
   // Handle loading states (input-streaming or input-available without output)
-  if (
-    state === "input-streaming" ||
-    (state === "input-available" && !output)
-  ) {
+  if (state === "input-streaming" || (state === "input-available" && !output)) {
     switch (toolName) {
-      case "searchSharedApplets":
       case "listSharedApplets":
-        displayCallMessage = "Searching shared applets…";
+        displayCallMessage = "Listing shared applets…";
         break;
       case "textEditSearchReplace":
         displayCallMessage = "Replacing text…";
@@ -202,10 +198,7 @@ export function ToolInvocationMessage({
           displayResultMessage = "Listed files";
         }
       }
-    } else if (
-      toolName === "searchSharedApplets" ||
-      toolName === "listSharedApplets"
-    ) {
+    } else if (toolName === "listSharedApplets") {
       if (typeof output === "string") {
         if (output.includes("No shared applets matched")) {
           displayResultMessage = "No shared applets matched";
@@ -231,9 +224,7 @@ export function ToolInvocationMessage({
         const match = output.match(/Found (\d+) songs?/);
         if (match) {
           const count = parseInt(match[1], 10);
-          displayResultMessage = `Found ${count} song${
-            count === 1 ? "" : "s"
-          }`;
+          displayResultMessage = `Found ${count} song${count === 1 ? "" : "s"}`;
         } else if (output.includes("iPod library is empty")) {
           displayResultMessage = "iPod library is empty";
         } else {
@@ -244,7 +235,9 @@ export function ToolInvocationMessage({
       // Extract file name from output message
       if (typeof output === "string") {
         const appletMatch = output.match(/Successfully opened applet: (.+)/);
-        const documentMatch = output.match(/Successfully opened document: (.+)/);
+        const documentMatch = output.match(
+          /Successfully opened document: (.+)/,
+        );
         const applicationMatch = output.match(
           /Successfully launched application: (.+)/,
         );
@@ -310,7 +303,7 @@ export function ToolInvocationMessage({
     const htmlContent = typeof input?.html === "string" ? input.html : "";
     const appletTitle = typeof input?.title === "string" ? input.title : "";
     const appletIcon = typeof input?.icon === "string" ? input.icon : "";
-    
+
     if (state === "input-streaming") {
       // Show HTML preview with streaming if HTML content is available
       if (htmlContent) {
