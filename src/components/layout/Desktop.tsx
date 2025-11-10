@@ -445,10 +445,12 @@ export function Desktop({
       }
     });
 
-  // macOS X: Only show iPod app icon on desktop (with Macintosh HD shown above)
+  // macOS X: Only show iPod and Applet Store icons by default (with Macintosh HD shown above)
   const displayedApps =
     currentTheme === "macosx"
-      ? sortedApps.filter((app) => app.id === "ipod")
+      ? sortedApps.filter(
+          (app) => app.id === "ipod" || app.id === "applet-viewer"
+        )
       : sortedApps;
 
   // Create default shortcuts based on theme
@@ -485,13 +487,9 @@ export function Desktop({
     // Determine which apps should have shortcuts based on theme
     let appsToShortcut: typeof apps;
     if (currentTheme === "macosx") {
-      // macOS X: chats, ipod, applet-viewer, internet-explorer
+      // macOS X: only iPod and Applet Store (applet-viewer) as default shortcuts
       appsToShortcut = apps.filter(
-        (app) =>
-          app.id === "chats" ||
-          app.id === "ipod" ||
-          app.id === "applet-viewer" ||
-          app.id === "internet-explorer"
+        (app) => app.id === "ipod" || app.id === "applet-viewer"
       );
     } else {
       // Other themes: All apps except finder and control-panels
