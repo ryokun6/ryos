@@ -1774,7 +1774,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 },
               });
 
-              result = `Opened shared applet ${shareId} in Applet Viewer`;
+              result = `Opened applet preview`;
               break;
             }
           case "listIpodLibrary": {

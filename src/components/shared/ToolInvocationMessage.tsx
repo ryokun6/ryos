@@ -109,6 +109,9 @@ export function ToolInvocationMessage({
       case "readFile":
         displayCallMessage = "Reading file…";
         break;
+      case "openSharedApplet":
+        displayCallMessage = "Opening applet preview…";
+        break;
       default:
         displayCallMessage = `Running ${formatToolName(toolName)}…`;
     }
@@ -252,6 +255,8 @@ export function ToolInvocationMessage({
           displayResultMessage = "Opened file";
         }
       }
+    } else if (toolName === "openSharedApplet") {
+      displayResultMessage = typeof output === "string" ? output : "Opened applet preview";
     }
   }
 
