@@ -936,6 +936,53 @@ export default async function handler(req: Request) {
               ),
           }),
         },
+          searchSharedApplets: {
+            description:
+              "Search shared applets that are published to the Applet Store but may not be installed locally. Use this to discover reusable applets before generating new code.",
+            inputSchema: z.object({
+              query: z
+                .string()
+                .min(1)
+                .max(200)
+                .optional()
+                .describe(
+                  "Optional case-insensitive substring to filter by title, name, or creator. Omit to list the latest shared applets."
+                ),
+              limit: z
+                .number()
+                .int()
+                .min(1)
+                .max(50)
+                .optional()
+                .describe(
+                  "Optional maximum number of results to return (default 25)."
+                ),
+            }),
+          },
+          fetchSharedApplet: {
+            description:
+              "Fetch the HTML content and metadata for a shared applet by id (returned from searchSharedApplets). Use to inspect or reuse an existing shared applet.",
+            inputSchema: z.object({
+              id: z
+                .string()
+                .min(1)
+                .describe(
+                  "The shared applet id returned from searchSharedApplets."
+                ),
+            }),
+          },
+          openSharedApplet: {
+            description:
+              "Open the Applet Viewer detail view for a shared applet so the user can preview or install it. Provide the id from searchSharedApplets.",
+            inputSchema: z.object({
+              id: z
+                .string()
+                .min(1)
+                .describe(
+                  "The shared applet id returned from searchSharedApplets."
+                ),
+            }),
+          },
         listIpodLibrary: {
           description:
             "List all songs in the iPod library. Returns a JSON array with each song's id, title, and artist. CRITICAL: You MUST ONLY reference songs that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate songs that are not in the returned list. If the library is empty, acknowledge that reality.",

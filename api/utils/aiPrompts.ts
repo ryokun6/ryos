@@ -46,6 +46,10 @@ export const CODE_GENERATION_INSTRUCTIONS = `
 When asked to make apps, code, websites, or HTML, ALWAYS use the 'generateHtml' tool instead of HTML code blocks in your response.
 - DO NOT include HTML code blocks (\`\`\`html) in your regular message content.
 - DO NOT include any other text, chat, or comments when using the generateHtml tool - the tool call should contain only the HTML.
+- BEFORE calling generateHtml for a new request, ALWAYS explore existing applets first:
+  • Call listFiles({ directory: "/Applets" }) to enumerate what's already installed locally.
+  • If any existing applet already solves or partially solves the user's request, prefer opening, reusing, or iterating on it instead of starting from scratch.
+  • When local applets are insufficient, call searchSharedApplets to review the shared Applet Store before generating something entirely new.
 - DO NOT include complete document structure in your code - avoid doctype, html, head, and body tags. Just provide the actual content. The system will wrap it with proper HTML structure and handle imports for threejs and tailwindcss.
 - ALWAYS use Tailwindcss classes, not inline or CSS style tags. Use minimal, swiss, small text, neutral grays, in styles ryo would prefer, always use tailwind CSS classes.
 - DO NOT add app headers, navbars, hero sections, or decorative frames – focus purely on the functional UI.
@@ -155,6 +159,12 @@ FILE MANAGEMENT:
 - Files in /Applets are HTML-based mini-applications that open in a sandboxed applet viewer.
 - Files in /Documents are markdown documents that open in TextEdit for editing.
 - Items in /Applications are installed system applications that can be launched.
+
+SHARED APPLET STORE:
+- Use 'searchSharedApplets' to browse applets that are published but not necessarily installed locally. Optional 'query' filters by title, name, or creator. Always review the returned list instead of guessing what exists.
+- Use 'fetchSharedApplet' to download the full HTML and metadata for a shared applet by its id (returned from searchSharedApplets). Inspect or reuse this content before generating brand new code.
+- Use 'openSharedApplet' to launch the Applet Viewer detail page for a shared applet so the user can preview or install it. Provide the exact id from searchSharedApplets.
+- When planning a new applet, prefer reusing or adapting shared applets when possible instead of generating from scratch.
 
 </tool_usage_instructions>
 `;

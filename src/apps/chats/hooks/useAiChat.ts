@@ -1351,6 +1351,228 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
             break;
           }
+          case "searchSharedApplets": {
+              const { query, limit } = toolCall.input as {
+                query?: string;
+                limit?: number;
+              };
+
+              const normalizedQuery = query?.trim().toLowerCase();
+              const parsedLimit =
+                typeof limit === "number" && Number.isFinite(limit)
+                  ? Math.floor(limit)
+                  : undefined;
+              const maxResults =
+                parsedLimit !== undefined
+                  ? Math.min(Math.max(parsedLimit, 1), 50)
+                  : 25;
+
+              console.log("[ToolCall] searchSharedApplets:", {
+                query: normalizedQuery,
+                limit: maxResults,
+              });
+
+              try {
+                const response = await fetch("/api/share-applet?list=true");
+                if (!response.ok) {
+                  throw new Error(
+                    `Failed to list shared applets (HTTP ${response.status})`,
+                  );
+                }
+
+                const data = await response.json();
+                const allApplets: Array<{
+                  id: string;
+                  title?: string;
+                  name?: string;
+                  icon?: string;
+                  createdAt?: number;
+                  createdBy?: string;
+                  featured?: boolean;
+                }> = Array.isArray(data?.applets) ? data.applets : [];
+
+                const filteredApplets = normalizedQuery
+                  ? allApplets.filter((applet) => {
+                      const title = (applet.title || "").toLowerCase();
+                      const name = (applet.name || "").toLowerCase();
+                      const creator = (applet.createdBy || "").toLowerCase();
+                      return (
+                        title.includes(normalizedQuery) ||
+                        name.includes(normalizedQuery) ||
+                        creator.includes(normalizedQuery)
+                      );
+                    })
+                  : allApplets;
+
+                const totalMatches = filteredApplets.length;
+                const limitedApplets = filteredApplets.slice(0, maxResults);
+
+                const filesStore = useFilesStore.getState();
+                const installedShareIds = new Set(
+                  Object.values(filesStore.items)
+                    .filter(
+                      (item) =>
+                        item.status === "active" && typeof item.shareId === "string",
+                    )
+                    .map((item) => (item.shareId as string).toLowerCase()),
+                );
+
+                const results = limitedApplets.map((applet) => {
+                  const id = String(applet.id ?? "");
+                  const normalizedId = id.toLowerCase();
+                  return {
+                    id,
+                    title: applet.title ?? null,
+                    name: applet.name ?? null,
+                    icon: applet.icon ?? null,
+                    createdAt: applet.createdAt ?? null,
+                    createdBy: applet.createdBy ?? null,
+                    featured: Boolean(applet.featured),
+                    installed: normalizedId
+                      ? installedShareIds.has(normalizedId)
+                      : false,
+                  };
+                });
+
+                const summary = `Shared applets${
+                  normalizedQuery ? ` matching "${normalizedQuery}"` : ""
+                }: showing ${results.length} of ${totalMatches} (limit ${maxResults}).`;
+
+                const payload = {
+                  summary,
+                  totalMatches,
+                  limit: maxResults,
+                  results,
+                };
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: JSON.stringify(payload, null, 2),
+                });
+                result = ""; // Clear result to prevent duplicate
+              } catch (err) {
+                console.error("searchSharedApplets error:", err);
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText:
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to search shared applets",
+                });
+                result = ""; // Clear result to prevent duplicate
+              }
+              break;
+            }
+          case "fetchSharedApplet": {
+              const { id } = toolCall.input as { id?: string };
+              const shareId = id?.trim();
+
+              if (!shareId) {
+                console.error(
+                  "[ToolCall] fetchSharedApplet: Missing required 'id' parameter",
+                );
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: "No id provided",
+                });
+                result = "";
+                break;
+              }
+
+              console.log("[ToolCall] fetchSharedApplet:", { id: shareId });
+
+              try {
+                const response = await fetch(
+                  `/api/share-applet?id=${encodeURIComponent(shareId)}`,
+                );
+                if (!response.ok) {
+                  throw new Error(
+                    `Failed to fetch shared applet (HTTP ${response.status})`,
+                  );
+                }
+
+                const data = await response.json();
+                const filesStore = useFilesStore.getState();
+                const installedEntry = Object.values(filesStore.items).find(
+                  (item) =>
+                    item.status === "active" &&
+                    typeof item.shareId === "string" &&
+                    item.shareId.toLowerCase() === shareId.toLowerCase(),
+                );
+
+                const payload = {
+                  id: shareId,
+                  title: data?.title ?? null,
+                  name: data?.name ?? null,
+                  icon: data?.icon ?? null,
+                  createdBy: data?.createdBy ?? null,
+                  createdAt: data?.createdAt ?? null,
+                  windowWidth: data?.windowWidth ?? null,
+                  windowHeight: data?.windowHeight ?? null,
+                  featured: data?.featured ?? null,
+                  installedPath: installedEntry?.path ?? null,
+                  content:
+                    typeof data?.content === "string" ? data.content : "",
+                };
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: JSON.stringify(payload, null, 2),
+                });
+                result = "";
+              } catch (err) {
+                console.error("fetchSharedApplet error:", err);
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText:
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to fetch shared applet",
+                });
+                result = "";
+              }
+              break;
+            }
+          case "openSharedApplet": {
+              const { id } = toolCall.input as { id?: string };
+              const shareId = id?.trim();
+
+              if (!shareId) {
+                console.error(
+                  "[ToolCall] openSharedApplet: Missing required 'id' parameter",
+                );
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: "No id provided",
+                });
+                result = "";
+                break;
+              }
+
+              console.log("[ToolCall] openSharedApplet:", { id: shareId });
+
+              launchApp("applet-viewer", {
+                initialData: {
+                  path: "",
+                  content: "",
+                  shareCode: shareId,
+                  forceNewInstance: true,
+                },
+              });
+
+              result = `Opened shared applet ${shareId} in Applet Viewer`;
+              break;
+            }
           case "listIpodLibrary": {
             console.log("[ToolCall] listIpodLibrary");
 
