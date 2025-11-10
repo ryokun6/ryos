@@ -1469,7 +1469,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
             break;
           }
-            case "searchSharedApplets": {
+            case "listSharedApplets": {
               const {
                 listAll = true,
                 keyword,
@@ -1518,7 +1518,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ? Math.min(Math.max(parsedLimit, 1), 100)
                   : 50;
 
-              console.log("[ToolCall] searchSharedApplets:", {
+              console.log("[ToolCall] listSharedApplets:", {
                 listAll,
                 keyword: normalizedKeyword,
                 limit: maxResults,
@@ -1632,16 +1632,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   }
                 }
 
-                const formattedMessage = lines.join("\n");
-
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: formattedMessage,
+                  output: `Listed ${limitedApplets.length}${
+                    hasKeyword ? ` of ${totalMatches}` : ""
+                  } applets`,
                 });
                 result = ""; // Clear result to prevent duplicate
               } catch (err) {
-                console.error("searchSharedApplets error:", err);
+                console.error("listSharedApplets error:", err);
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
