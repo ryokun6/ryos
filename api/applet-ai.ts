@@ -359,11 +359,34 @@ export default async function handler(req: Request): Promise<Response> {
     return jsonResponse({ error: "Method not allowed" }, 405, effectiveOrigin);
   }
 
+  const usernameHeaderRaw = req.headers.get("x-username");
+  const usernameHeader =
+    usernameHeaderRaw && usernameHeaderRaw.trim().length > 0
+      ? usernameHeaderRaw.trim().toLowerCase()
+      : null;
+  const usernameLogLabel =
+    usernameHeaderRaw && usernameHeaderRaw.trim().length > 0
+      ? usernameHeaderRaw.trim()
+      : "anonymous";
+
+  const logPrefix = `[applet-ai][User: ${usernameLogLabel}]`;
+  const log = (...args: unknown[]) => console.log(logPrefix, ...args);
+  const logError = (...args: unknown[]) => console.error(logPrefix, ...args);
+
+  const ip = RateLimit.getClientIp(req);
+  log("Request received", {
+    origin: effectiveOrigin ?? "unknown",
+    host,
+    ip,
+    method: req.method,
+  });
+
   let parsedBody: z.infer<typeof RequestSchema>;
   try {
     const body = await req.json();
     const result = RequestSchema.safeParse(body);
     if (!result.success) {
+      logError("Invalid request body", result.error.format());
       return jsonResponse(
         { error: "Invalid request body", details: result.error.format() },
         400,
@@ -371,7 +394,8 @@ export default async function handler(req: Request): Promise<Response> {
       );
     }
     parsedBody = result.data;
-  } catch {
+  } catch (error) {
+    logError("Failed to parse JSON body", error);
     return jsonResponse(
       { error: "Invalid JSON in request body" },
       400,
@@ -383,15 +407,41 @@ export default async function handler(req: Request): Promise<Response> {
     parsedBody;
   const mode = requestedMode ?? "text";
 
-  const usernameHeader = req.headers.get("x-username")?.trim().toLowerCase();
   // Applet requests are usually anonymous; allow trusted user "ryo" to opt out with a header.
   const rateLimitBypass = usernameHeader === "ryo";
-  const ip = RateLimit.getClientIp(req);
-  const isAuthenticatedUser =
-    !rateLimitBypass && typeof usernameHeader === "string" && usernameHeader.length > 0;
+  const isAuthenticatedUser = !rateLimitBypass && usernameHeader !== null;
   const identifier = isAuthenticatedUser
     ? `user:${usernameHeader}`
     : `ip:${ip}`;
+
+  const promptChars =
+    typeof prompt === "string" ? prompt.trim().length : 0;
+  const contextChars =
+    typeof context === "string" ? context.trim().length : 0;
+  const messagesCount = messages?.length ?? 0;
+  const messageAttachments =
+    messages?.reduce(
+      (acc, message) => acc + (message.attachments?.length ?? 0),
+      0
+    ) ?? 0;
+  const requestImagesCount = parsedBody.images?.length ?? 0;
+
+  log("Request payload summary", {
+    mode,
+    isAuthenticatedUser,
+    rateLimitBypass,
+    identifier,
+    promptChars,
+    contextChars,
+    messagesCount,
+    messageAttachments,
+    requestImagesCount,
+    temperature: typeof temperature === "number" ? temperature : "default",
+  });
+
+  if (rateLimitBypass) {
+    log("Rate limit bypass enabled for trusted user");
+  }
 
   if (!rateLimitBypass) {
     try {
@@ -419,11 +469,35 @@ export default async function handler(req: Request): Promise<Response> {
         limit,
       });
 
+      const remaining = Math.max(0, result.limit - result.count);
+      const resetSeconds =
+        typeof result.resetSeconds === "number" && result.resetSeconds > 0
+          ? result.resetSeconds
+          : result.windowSeconds;
+
+      if (isAuthenticatedUser) {
+        log("[rate-limit] Authenticated request", {
+          scope,
+          identifier,
+          count: result.count,
+          limit: result.limit,
+          remaining,
+          resetSeconds,
+        });
+      }
+
       if (!result.allowed) {
+        log("[rate-limit] Limit exceeded", {
+          scope,
+          identifier,
+          count: result.count,
+          limit: result.limit,
+          resetSeconds,
+        });
         return rateLimitExceededResponse(scope, effectiveOrigin, identifier, result);
       }
     } catch (error) {
-      console.error("[applet-ai] Rate limit check failed:", error);
+      logError("Rate limit check failed:", error);
     }
   }
 
@@ -461,7 +535,7 @@ export default async function handler(req: Request): Promise<Response> {
         });
       }
     } catch (error) {
-      console.error("[applet-ai] Image attachment parsing failed:", error);
+      logError("Image attachment parsing failed:", error);
       return jsonResponse(
         {
           error: "Invalid image attachments in request body",
@@ -481,32 +555,35 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     try {
-        const imageResult = await generateText({
-          model: google("gemini-2.5-flash-image-preview"),
-          prompt: [
-            {
-              role: "user",
-              content: promptParts,
-            },
-          ],
-          ...(typeof temperature === "number" ? { temperature } : {}),
-        });
+      const imageResult = await generateText({
+        model: google("gemini-2.5-flash-image-preview"),
+        prompt: [
+          {
+            role: "user",
+            content: promptParts,
+          },
+        ],
+        ...(typeof temperature === "number" ? { temperature } : {}),
+      });
 
       const imageFile = imageResult.files?.find((file) =>
         file.mediaType.startsWith("image/")
       );
 
       if (!imageFile) {
-        console.error(
-          "[applet-ai] Image generation returned no image files.",
-          imageResult
-        );
+        logError("Image generation returned no image files.", imageResult);
         return jsonResponse(
           { error: "The model did not return an image." },
           502,
           effectiveOrigin
         );
       }
+
+      log("Image generation succeeded", {
+        mediaType: imageFile.mediaType,
+        descriptionReturned: Boolean(imageResult.text?.trim()),
+        promptParts: promptParts.length,
+      });
 
       const imageStream = new ReadableStream<Uint8Array>({
         start(controller) {
@@ -536,7 +613,7 @@ export default async function handler(req: Request): Promise<Response> {
         headers,
       });
     } catch (error) {
-      console.error("[applet-ai] Image generation failed:", error);
+      logError("Image generation failed:", error);
       return jsonResponse(
         { error: "Failed to generate image" },
         500,
@@ -554,7 +631,7 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     finalMessages = buildModelMessages(conversation, context);
   } catch (error) {
-    console.error("[applet-ai] Message preparation failed:", error);
+    logError("Message preparation failed:", error);
     return jsonResponse(
       {
         error: "Invalid attachments in request body",
@@ -566,16 +643,23 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-      const { text } = await generateText({
-        model: google("gemini-2.5-flash"),
-        messages: finalMessages,
-        temperature: temperature ?? 0.6,
-        maxOutputTokens: 4000,
-      });
+    const { text } = await generateText({
+      model: google("gemini-2.5-flash"),
+      messages: finalMessages,
+      temperature: temperature ?? 0.6,
+      maxOutputTokens: 4000,
+    });
 
-    return jsonResponse({ reply: text.trim() }, 200, effectiveOrigin);
+    const trimmedReply = text.trim();
+    log("Text generation succeeded", {
+      replyLength: trimmedReply.length,
+      messageCount: finalMessages.length,
+      temperature: temperature ?? 0.6,
+    });
+
+    return jsonResponse({ reply: trimmedReply }, 200, effectiveOrigin);
   } catch (error) {
-    console.error("[applet-ai] Generation failed:", error);
+    logError("Generation failed:", error);
     return jsonResponse(
       { error: "Failed to generate response" },
       500,
