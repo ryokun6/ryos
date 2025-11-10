@@ -17,6 +17,8 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
+import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
+import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import {
   AnimatePresence,
   motion,
@@ -44,6 +46,21 @@ function MacDock() {
   );
   const finderInstances = useFinderStore((s) => s.instances);
   const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
+  const [trashContextMenuPos, setTrashContextMenuPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [isEmptyTrashDialogOpen, setIsEmptyTrashDialogOpen] = useState(false);
+  const dockContainerRef = useRef<HTMLDivElement | null>(null);
+  
+  // Get trash items to check if trash is empty
+  // Use a selector that directly filters items to avoid infinite loops
+  const allItems = useFilesStore((s) => s.items);
+  const trashItems = useMemo(
+    () => Object.values(allItems).filter((item) => item.status === "trashed"),
+    [allItems]
+  );
+  const isTrashEmpty = trashItems.length === 0;
 
   // Helper to get applet info (icon and name) from instance
   const getAppletInfo = useCallback(
@@ -323,10 +340,11 @@ function MacDock() {
       onDragOver?: (e: React.DragEvent<HTMLButtonElement>) => void;
       onDrop?: (e: React.DragEvent<HTMLButtonElement>) => void;
       onDragLeave?: (e: React.DragEvent<HTMLButtonElement>) => void;
+      onContextMenu?: (e: React.MouseEvent<HTMLButtonElement>) => void;
     }
   >(
     (
-      { label, onClick, icon, idKey, showIndicator = false, isEmoji = false, onDragOver, onDrop, onDragLeave },
+      { label, onClick, icon, idKey, showIndicator = false, isEmoji = false, onDragOver, onDrop, onDragLeave, onContextMenu },
       forwardedRef
     ) => {
       const isNew = hasMounted && !seenIdsRef.current.has(idKey);
@@ -410,6 +428,7 @@ function MacDock() {
             aria-label={label}
             title={label}
             onClick={onClick}
+            onContextMenu={onContextMenu}
             {...(onDragOver && { onDragOver })}
             {...(onDrop && { onDrop })}
             {...(onDragLeave && { onDragLeave })}
@@ -495,6 +514,7 @@ function MacDock() {
 
   return (
     <div
+      ref={dockContainerRef}
       className="fixed left-0 right-0 z-50"
       style={{
         bottom: 0,
@@ -533,8 +553,16 @@ function MacDock() {
               damping: 30,
             },
           }}
-          onMouseMove={magnifyEnabled ? (e) => mouseX.set(e.clientX) : undefined}
-          onMouseLeave={magnifyEnabled ? () => mouseX.set(Infinity) : undefined}
+          onMouseMove={
+            magnifyEnabled && !trashContextMenuPos
+              ? (e) => mouseX.set(e.clientX)
+              : undefined
+          }
+          onMouseLeave={
+            magnifyEnabled && !trashContextMenuPos
+              ? () => mouseX.set(Infinity)
+              : undefined
+          }
         >
           <LayoutGroup>
             <AnimatePresence mode="popLayout" initial={false}>
@@ -654,6 +682,25 @@ function MacDock() {
                   setIsDraggingOverTrash(false);
                 };
 
+                const handleTrashContextMenu = (
+                  e: React.MouseEvent<HTMLButtonElement>
+                ) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  const containerRect =
+                    dockContainerRef.current?.getBoundingClientRect();
+                  if (!containerRect) {
+                    setTrashContextMenuPos({ x: e.clientX, y: e.clientY });
+                    return;
+                  }
+
+                  setTrashContextMenuPos({
+                    x: e.clientX - containerRect.left,
+                    y: e.clientY - containerRect.top,
+                  });
+                };
+
                 return (
                   <motion.div
                     animate={{
@@ -673,6 +720,7 @@ function MacDock() {
                       onDragOver={handleTrashDragOver}
                       onDrop={handleTrashDrop}
                       onDragLeave={handleTrashDragLeave}
+                      onContextMenu={handleTrashContextMenu}
                     />
                   </motion.div>
                 );
@@ -681,6 +729,34 @@ function MacDock() {
           </LayoutGroup>
         </motion.div>
       </div>
+      <RightClickMenu
+        items={[
+          {
+            type: "item",
+            label: "Empty Trash...",
+            onSelect: () => {
+              setIsEmptyTrashDialogOpen(true);
+              setTrashContextMenuPos(null);
+            },
+            disabled: isTrashEmpty,
+          },
+        ]}
+        position={trashContextMenuPos}
+        onClose={() => {
+          setTrashContextMenuPos(null);
+          mouseX.set(Infinity);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={isEmptyTrashDialogOpen}
+        onOpenChange={setIsEmptyTrashDialogOpen}
+        onConfirm={() => {
+          fileStore.emptyTrash();
+          setIsEmptyTrashDialogOpen(false);
+        }}
+        title="Empty Trash"
+        description="Are you sure you want to empty the Trash? This action cannot be undone."
+      />
     </div>
   );
 }
