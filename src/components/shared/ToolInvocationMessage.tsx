@@ -422,7 +422,7 @@ export function ToolInvocationMessage({
             <span>{displayResultMessage}</span>
           ) : (
             <div className="flex flex-col">
-              {typeof output === "string" && output.length > 0 && toolName !== "fetchSharedApplet" ? (
+              {typeof output === "string" && output.length > 0 ? (
                 <span className="text-gray-500">{output}</span>
               ) : (
                 <span>{formatToolName(toolName)}</span>
