@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface AppStoreFeedProps {
   theme?: string;
+  focusWindow?: () => void;
   onAppletSelect?: (applet: Applet) => void;
 }
 
@@ -15,7 +16,7 @@ export interface AppStoreFeedRef {
 }
 
 export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
-  ({ theme, onAppletSelect }, ref) => {
+  ({ theme, focusWindow, onAppletSelect }, ref) => {
   const [applets, setApplets] = useState<Applet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -289,6 +290,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   }), []);
 
   const handleInstall = async (applet: Applet) => {
+    focusWindow?.();
     await actions.handleInstall(applet, () => {
       // Reset fetch flag to allow refresh after install
       hasFetchedRef.current = false;
@@ -297,6 +299,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   };
 
   const handleAppletClick = async (applet: Applet) => {
+    focusWindow?.();
     const result = await actions.handleAppletClick(applet);
     if (result && onAppletSelect) {
       onAppletSelect(result);
@@ -304,6 +307,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   };
 
   const handlePreviewClick = async (applet: Applet) => {
+    focusWindow?.();
     const installed = actions.isAppletInstalled(applet.id);
     if (installed) {
       // If installed, bring window to foreground

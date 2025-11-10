@@ -1523,3 +1523,100 @@
   -webkit-font-smoothing: antialiased !important;
   font-smooth: always !important;
 }
+
+/* macOS: Style toast containers with semi-transparent pinstripes like dock */
+:root[data-os-theme="macosx"] .toaster [data-sonner-toast] {
+  background: rgba(248, 248, 248, 0.75) !important;
+  background-image: var(--os-pinstripe-menubar) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  border: none !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Ensure toast text is readable on semi-transparent background */
+:root[data-os-theme="macosx"] .toaster [data-sonner-toast] [data-title],
+:root[data-os-theme="macosx"] .toaster [data-sonner-toast] [data-description] {
+  color: rgba(0, 0, 0, 0.9) !important;
+}
+
+/* macOS: Style toast buttons with aqua button */
+:root[data-os-theme="macosx"] .toaster [data-button],
+:root[data-os-theme="macosx"] .toaster button:not([data-close-button]) {
+  line-height: 1;
+  height: 28px;
+  padding: 0 16px;
+  min-width: auto;
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  outline: none;
+  border: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+  font-smooth: auto;
+  background: linear-gradient(
+    rgba(0, 65, 184, 0.625),
+    rgba(45, 115, 199, 0.625),
+    rgba(33, 160, 196, 0.625)
+  );
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
+    inset 0 1px 3px rgba(0, 17, 49, 0.8),
+    inset 0 2px 3px 1px rgba(0, 78, 187, 0.75);
+  color: black;
+  text-shadow: 0 2px 2px rgba(30, 77, 161, 0.5);
+  font-weight: 500;
+  position: relative;
+  z-index: 3;
+}
+
+:root[data-os-theme="macosx"] .toaster [data-button]:focus,
+:root[data-os-theme="macosx"] .toaster [data-button]:active,
+:root[data-os-theme="macosx"] .toaster button:not([data-close-button]):focus,
+:root[data-os-theme="macosx"] .toaster button:not([data-close-button]):active {
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
+    inset 0 1px 3px rgba(0, 17, 49, 0.8),
+    inset 0 2px 3px 1px rgba(0, 78, 187, 0.75), 0 0 3px rgba(52, 106, 227, 0.5);
+}
+
+/* Top shine for toast buttons */
+:root[data-os-theme="macosx"] .toaster [data-button]:before,
+:root[data-os-theme="macosx"] .toaster button:not([data-close-button]):before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 33%;
+  max-height: 12px;
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.3)
+  );
+  width: calc(100% - 10px);
+  border-radius: 12px 12px 2px 2px;
+  top: 2px;
+  filter: blur(0.5px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Bottom glow for toast buttons */
+:root[data-os-theme="macosx"] .toaster [data-button]:after,
+:root[data-os-theme="macosx"] .toaster button:not([data-close-button]):after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 33%;
+  background: linear-gradient(rgba(255, 255, 255, 0), rgb(255, 255, 255, 0.5));
+  width: calc(100% - 8px);
+  border-radius: 4px;
+  bottom: 2px;
+  filter: blur(1px);
+  pointer-events: none;
+}

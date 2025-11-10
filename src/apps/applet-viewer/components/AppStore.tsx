@@ -22,6 +22,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   const [selectedAppletContent, setSelectedAppletContent] = useState<string>("");
   const [isSharedApplet, setIsSharedApplet] = useState(false);
   const [showListView, setShowListView] = useState(false);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const feedRef = useRef<AppStoreFeedRef>(null);
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
@@ -32,6 +33,8 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   
   const actions = useAppletActions();
+  const lastUpdateToastKeyRef = useRef<string | null>(null);
+  const updateToastIdRef = useRef<string | number | null>(null);
 
 
   const fetchApplets = async () => {
@@ -52,9 +55,117 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     }
   };
 
+  const handleUpdateAll = async (updates: Applet[]) => {
+    if (isBulkUpdating || updates.length === 0) {
+      return;
+    }
+
+    setIsBulkUpdating(true);
+
+    if (updateToastIdRef.current) {
+      toast.dismiss(updateToastIdRef.current);
+      updateToastIdRef.current = null;
+    }
+
+    const updateCount = updates.length;
+    const loadingMessage =
+      updateCount === 1
+        ? "Updating 1 applet..."
+        : `Updating ${updateCount} applets...`;
+    const loadingToastId = toast.loading(loadingMessage, {
+      duration: Infinity,
+    });
+
+    try {
+      for (const applet of updates) {
+        await actions.handleInstall(applet);
+      }
+
+      await fetchApplets();
+
+      toast.success(
+        updateCount === 1
+          ? "Applet updated"
+          : `${updateCount} applets updated`,
+        {
+          id: loadingToastId,
+        }
+      );
+      lastUpdateToastKeyRef.current = null;
+    } catch (error) {
+      console.error("Error updating applets:", error);
+      toast.error("Failed to update applets", {
+        description:
+          error instanceof Error ? error.message : "Please try again later.",
+        id: loadingToastId,
+      });
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
   useEffect(() => {
     fetchApplets();
   }, []);
+
+  useEffect(() => {
+    if (isBulkUpdating) {
+      return;
+    }
+
+    if (!applets.length) {
+      lastUpdateToastKeyRef.current = null;
+      if (updateToastIdRef.current) {
+        toast.dismiss(updateToastIdRef.current);
+        updateToastIdRef.current = null;
+      }
+      return;
+    }
+
+    const updates = applets.filter(
+      (applet) =>
+        actions.isAppletInstalled(applet.id) && actions.needsUpdate(applet)
+    );
+
+    if (updates.length === 0) {
+      lastUpdateToastKeyRef.current = null;
+      if (updateToastIdRef.current) {
+        toast.dismiss(updateToastIdRef.current);
+        updateToastIdRef.current = null;
+      }
+      return;
+    }
+
+    const toastKey = updates
+      .map((applet) => applet.id)
+      .sort()
+      .join("|");
+
+    if (toastKey === lastUpdateToastKeyRef.current) {
+      return;
+    }
+
+    lastUpdateToastKeyRef.current = toastKey;
+
+      const updateCount = updates.length;
+      const appletNames = updates
+        .map((applet) => applet.title || applet.name || "Untitled Applet")
+        .join(", ");
+      const toastId = toast.info(
+        `${updateCount} new applet update${updateCount > 1 ? "s" : ""}`,
+        {
+          description: appletNames,
+          action: {
+            label: "Update",
+            onClick: () => handleUpdateAll(updates),
+          },
+          duration: 8000,
+        }
+      );
+
+    updateToastIdRef.current = toastId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applets, isBulkUpdating]);
 
   // If sharedAppletId is provided, fetch and show that applet in detail view
   useEffect(() => {
@@ -176,6 +287,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   };
 
   const handleInstall = async (applet: Applet) => {
+    if (isBulkUpdating) return;
     focusWindow?.();
     await actions.handleInstall(applet, async () => {
       await fetchApplets();
@@ -418,6 +530,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                   handleInstall(applet);
                 }
               }}
+              disabled={isBulkUpdating}
             >
               {installed ? (updateAvailable ? "Update" : "Open") : "Get"}
             </Button>
@@ -497,6 +610,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               variant={isMacTheme ? "secondary" : isSystem7Theme ? "retro" : "default"}
               onClick={() => handleInstall(selectedApplet)}
               className="w-[60px]"
+              disabled={isBulkUpdating}
             >
               Get
             </Button>
