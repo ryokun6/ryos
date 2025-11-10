@@ -64,7 +64,6 @@ export function ToolInvocationMessage({
     (state === "input-available" && !output)
   ) {
     switch (toolName) {
-      case "searchSharedApplets":
       case "listSharedApplets":
         displayCallMessage = "Searching shared applets…";
         break;
@@ -202,10 +201,7 @@ export function ToolInvocationMessage({
           displayResultMessage = "Listed files";
         }
       }
-    } else if (
-      toolName === "searchSharedApplets" ||
-      toolName === "listSharedApplets"
-    ) {
+    } else if (toolName === "listSharedApplets") {
       if (typeof output === "string") {
         if (output.includes("No shared applets matched")) {
           displayResultMessage = "No shared applets matched";

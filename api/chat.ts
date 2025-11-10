@@ -984,9 +984,9 @@ export default async function handler(req: Request) {
               ),
           }),
         },
-          searchSharedApplets: {
+          listSharedApplets: {
             description:
-              "Search shared applets that are published to the Applet Store but may not be installed locally. Use this to discover reusable applets before generating new code.",
+              "List shared applets that are published to the Applet Store but may not be installed locally. Use this to discover reusable applets before generating new code.",
             inputSchema: z.object({
               query: z
                 .string()
@@ -1009,25 +1009,25 @@ export default async function handler(req: Request) {
           },
           fetchSharedApplet: {
             description:
-              "Fetch the HTML content and metadata for a shared applet by id (returned from searchSharedApplets). Use to inspect or reuse an existing shared applet.",
+              "Fetch the HTML content and metadata for a shared applet by id (returned from listSharedApplets). Use to inspect or reuse an existing shared applet.",
             inputSchema: z.object({
               id: z
                 .string()
                 .min(1)
                 .describe(
-                  "The shared applet id returned from searchSharedApplets."
+                  "The shared applet id returned from listSharedApplets."
                 ),
             }),
           },
           openSharedApplet: {
             description:
-              "Open the Applet Viewer detail view for a shared applet so the user can preview or install it. Provide the id from searchSharedApplets.",
+              "Open the Applet Viewer detail view for a shared applet so the user can preview or install it. Provide the id from listSharedApplets.",
             inputSchema: z.object({
               id: z
                 .string()
                 .min(1)
                 .describe(
-                  "The shared applet id returned from searchSharedApplets."
+                  "The shared applet id returned from listSharedApplets."
                 ),
             }),
           },

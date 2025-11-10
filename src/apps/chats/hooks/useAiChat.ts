@@ -1469,7 +1469,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
               break;
             }
-            case "searchSharedApplets":
             case "listSharedApplets": {
               const {
                 listAll = true,
