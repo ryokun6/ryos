@@ -164,6 +164,14 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
     }
   };
 
+  const handlePreviewClick = async (applet: Applet) => {
+    const installed = actions.isAppletInstalled(applet.id);
+    if (installed) {
+      // If installed, bring window to foreground
+      await handleAppletClick(applet);
+    }
+  };
+
   const handleInstall = async (applet: Applet) => {
     await actions.handleInstall(applet, async () => {
       await fetchApplets();
@@ -488,7 +496,15 @@ export function AppStore({ theme, sharedAppletId }: AppStoreProps) {
               Get
             </Button>
           </div>
-          <div className="flex-1 overflow-hidden bg-white">
+          <div 
+            className="flex-1 overflow-hidden bg-white"
+            onClick={() => {
+              // Only handle click for installed applets to bring window to foreground
+              if (selectedApplet) {
+                handlePreviewClick(selectedApplet);
+              }
+            }}
+          >
             {selectedAppletContent ? (
               <iframe
                 srcDoc={ensureMacFonts(selectedAppletContent)}
