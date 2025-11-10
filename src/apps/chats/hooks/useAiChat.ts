@@ -73,6 +73,160 @@ const getMostRecentTextEditInstance = (): string | null => {
   return mostRecent?.instanceId || null;
 };
 
+const stripDiacritics = (value: string): string =>
+  value.normalize("NFKD").replace(/\p{Diacritic}/gu, "");
+
+const normalizeSearchText = (value: string): string =>
+  stripDiacritics(value).toLowerCase();
+
+const isLooseSubsequence = (target: string, pattern: string): boolean => {
+  if (pattern.length === 0) {
+    return true;
+  }
+
+  let searchStart = 0;
+  for (const char of pattern) {
+    const foundIndex = target.indexOf(char, searchStart);
+    if (foundIndex === -1) {
+      return false;
+    }
+    searchStart = foundIndex + 1;
+  }
+  return true;
+};
+
+const levenshteinDistance = (a: string, b: string): number => {
+  if (a === b) return 0;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  const previous = new Array<number>(a.length + 1);
+  const current = new Array<number>(a.length + 1);
+
+  for (let i = 0; i <= a.length; i += 1) {
+    previous[i] = i;
+  }
+
+  for (let i = 1; i <= b.length; i += 1) {
+    current[0] = i;
+    const bChar = b[i - 1]!;
+
+    for (let j = 1; j <= a.length; j += 1) {
+      const substitutionCost = bChar === a[j - 1]! ? 0 : 1;
+      current[j] = Math.min(
+        current[j - 1]! + 1, // insertion
+        previous[j]! + 1, // deletion
+        previous[j - 1]! + substitutionCost, // substitution
+      );
+    }
+
+    for (let j = 0; j <= a.length; j += 1) {
+      previous[j] = current[j]!;
+    }
+  }
+
+  return previous[a.length]!;
+};
+
+const bestSubstringDistance = (text: string, query: string): number => {
+  const textLength = text.length;
+  const queryLength = query.length;
+
+  if (queryLength === 0) return 0;
+  if (textLength === 0) return queryLength;
+  if (queryLength >= textLength) {
+    return levenshteinDistance(text, query);
+  }
+
+  let best = Number.MAX_SAFE_INTEGER;
+  const maxOffset = textLength - queryLength;
+
+  for (let offset = 0; offset <= maxOffset; offset += 1) {
+    const window = text.slice(offset, offset + queryLength);
+    const distance = levenshteinDistance(window, query);
+    if (distance < best) {
+      best = distance;
+      if (best === 0) {
+        break;
+      }
+    }
+  }
+
+  return best;
+};
+
+const computeMatchScore = (
+  text: string,
+  query: string,
+  tokens: string[],
+): number => {
+  if (!query) return 1;
+  if (!text) return 0;
+
+  let score = 0;
+
+  const includeIndex = text.indexOf(query);
+  if (includeIndex !== -1) {
+    const includeScore =
+      0.7 +
+      (1 - includeIndex / Math.max(text.length, query.length)) * 0.3;
+    score = Math.max(score, Math.min(1, includeScore));
+  }
+
+  if (isLooseSubsequence(text, query)) {
+    const subsequenceScore =
+      0.5 +
+      Math.min(
+        0.4,
+        (query.length / Math.max(text.length, query.length)) * 0.4,
+      );
+    score = Math.max(score, Math.min(1, subsequenceScore));
+  }
+
+  const maxLen = Math.max(query.length, Math.min(text.length, query.length));
+  if (maxLen > 0) {
+    const distance = bestSubstringDistance(text, query);
+    const distanceScore = 1 - distance / (maxLen + 1);
+    score = Math.max(score, Math.max(0, distanceScore));
+  }
+
+  if (tokens.length > 1) {
+    let tokenAccumulator = 0;
+    for (const token of tokens) {
+      if (!token) continue;
+      const tokenIndex = text.indexOf(token);
+      if (tokenIndex !== -1) {
+        tokenAccumulator += 1;
+        continue;
+      }
+      const tokenMaxLen = Math.max(
+        token.length,
+        Math.min(text.length, token.length),
+      );
+      if (tokenMaxLen === 0) continue;
+      const tokenDistance = bestSubstringDistance(text, token);
+      const tokenScore = 1 - tokenDistance / (tokenMaxLen + 1);
+      if (tokenScore > 0.5) {
+        tokenAccumulator += tokenScore;
+      }
+    }
+    if (tokenAccumulator > 0) {
+      const normalizedTokenScore = tokenAccumulator / tokens.length;
+      score = Math.max(score, Math.min(1, normalizedTokenScore));
+    }
+  }
+
+  return Math.max(0, Math.min(1, score));
+};
+
+const deriveScoreThreshold = (queryLength: number): number => {
+  if (queryLength <= 2) return 0.65;
+  if (queryLength <= 4) return 0.55;
+  if (queryLength <= 6) return 0.5;
+  if (queryLength <= 8) return 0.45;
+  return 0.4;
+};
+
 // Replace or update the getSystemState function to use stores
 const getSystemState = () => {
   const appStore = useAppStore.getState();
@@ -1315,13 +1469,21 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
             break;
           }
-          case "searchSharedApplets": {
+            case "searchSharedApplets": {
               const { query, limit } = toolCall.input as {
                 query?: string;
                 limit?: number;
               };
 
-              const normalizedQuery = query?.trim().toLowerCase();
+              const rawQuery =
+                typeof query === "string" ? query.trim() : "";
+              const normalizedQuery = rawQuery
+                ? normalizeSearchText(rawQuery)
+                : "";
+              const queryTokens = normalizedQuery
+                ? normalizedQuery.split(/\s+/).filter(Boolean)
+                : [];
+
               const parsedLimit =
                 typeof limit === "number" && Number.isFinite(limit)
                   ? Math.floor(limit)
@@ -1355,22 +1517,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   featured?: boolean;
                 }> = Array.isArray(data?.applets) ? data.applets : [];
 
-                const filteredApplets = normalizedQuery
-                  ? allApplets.filter((applet) => {
-                      const title = (applet.title || "").toLowerCase();
-                      const name = (applet.name || "").toLowerCase();
-                      const creator = (applet.createdBy || "").toLowerCase();
-                      return (
-                        title.includes(normalizedQuery) ||
-                        name.includes(normalizedQuery) ||
-                        creator.includes(normalizedQuery)
-                      );
-                    })
-                  : allApplets;
-
-                const totalMatches = filteredApplets.length;
-                const limitedApplets = filteredApplets.slice(0, maxResults);
-
                 const filesStore = useFilesStore.getState();
                 const installedShareIds = new Set(
                   Object.values(filesStore.items)
@@ -1381,38 +1527,135 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     .map((item) => (item.shareId as string).toLowerCase()),
                 );
 
-                const results = limitedApplets.map((applet) => {
-                  const id = String(applet.id ?? "");
-                  const normalizedId = id.toLowerCase();
-                  return {
-                    id,
-                    title: applet.title ?? null,
-                    name: applet.name ?? null,
-                    icon: applet.icon ?? null,
-                    createdAt: applet.createdAt ?? null,
-                    createdBy: applet.createdBy ?? null,
-                    featured: Boolean(applet.featured),
-                    installed: normalizedId
-                      ? installedShareIds.has(normalizedId)
-                      : false,
-                  };
+                const useFuzzyMatching = normalizedQuery.length > 0;
+                const scoreThreshold = deriveScoreThreshold(
+                  normalizedQuery.length,
+                );
+
+                const scoredApplets = allApplets.map((applet) => {
+                  const normalizedFields = [
+                    typeof applet.title === "string"
+                      ? normalizeSearchText(applet.title)
+                      : "",
+                    typeof applet.name === "string"
+                      ? normalizeSearchText(applet.name)
+                      : "",
+                    typeof applet.createdBy === "string"
+                      ? normalizeSearchText(applet.createdBy)
+                      : "",
+                  ].filter((value) => value.length > 0);
+
+                  const score = useFuzzyMatching
+                    ? normalizedFields.reduce((best, field) => {
+                        const fieldScore = computeMatchScore(
+                          field,
+                          normalizedQuery,
+                          queryTokens,
+                        );
+                        return fieldScore > best ? fieldScore : best;
+                      }, 0)
+                    : 0;
+
+                  return { applet, score };
                 });
 
-                const summary = `Shared applets${
-                  normalizedQuery ? ` matching "${normalizedQuery}"` : ""
-                }: showing ${results.length} of ${totalMatches} (limit ${maxResults}).`;
+                const filteredScoredApplets = useFuzzyMatching
+                  ? scoredApplets.filter(
+                      ({ score }) => score >= scoreThreshold,
+                    )
+                  : scoredApplets;
 
-                const payload = {
-                  summary,
-                  totalMatches,
-                  limit: maxResults,
-                  results,
+                const totalMatches = filteredScoredApplets.length;
+
+                filteredScoredApplets.sort((a, b) => {
+                  if (useFuzzyMatching && b.score !== a.score) {
+                    return b.score - a.score;
+                  }
+                  return (b.applet.createdAt ?? 0) - (a.applet.createdAt ?? 0);
+                });
+
+                const limitedApplets = filteredScoredApplets
+                  .slice(0, maxResults)
+                  .map(({ applet, score }) => {
+                    const id = String(applet.id ?? "");
+                    const normalizedId = id.toLowerCase();
+                    return {
+                      id,
+                      title: applet.title ?? null,
+                      name: applet.name ?? null,
+                      icon: applet.icon ?? null,
+                      createdAt: applet.createdAt ?? null,
+                      createdBy: applet.createdBy ?? null,
+                      featured: Boolean(applet.featured),
+                      installed: normalizedId
+                        ? installedShareIds.has(normalizedId)
+                        : false,
+                      score,
+                    };
+                  });
+
+                const summary = rawQuery
+                  ? `Shared applets matching "${rawQuery}": showing ${limitedApplets.length} of ${totalMatches} (limit ${maxResults}).`
+                  : `Shared applets: showing ${limitedApplets.length} of ${totalMatches} (limit ${maxResults}).`;
+
+                const formatDate = (timestamp: number | null): string | null => {
+                  if (!timestamp) return null;
+                  const date = new Date(timestamp);
+                  if (Number.isNaN(date.getTime())) return null;
+                  return date.toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  });
                 };
+
+                const lines: string[] = [summary];
+
+                if (limitedApplets.length === 0) {
+                  lines.push(
+                    rawQuery
+                      ? `No shared applets matched "${rawQuery}".`
+                      : "No shared applets available.",
+                  );
+                } else {
+                  lines.push("");
+                  limitedApplets.forEach((item, index) => {
+                    const displayName =
+                      item.title || item.name || "Untitled Applet";
+                    const icon = item.icon ? `${item.icon} ` : "";
+                    const badges: string[] = [];
+                    if (item.featured) badges.push("⭐ featured");
+                    if (item.installed) badges.push("✅ installed");
+                    const badgeText =
+                      badges.length > 0 ? ` (${badges.join(" · ")})` : "";
+                    const scoreText =
+                      useFuzzyMatching && normalizedQuery
+                        ? ` (match ${Math.round(item.score * 100)}%)`
+                        : "";
+                    lines.push(
+                      `${index + 1}. ${icon}${displayName}${badgeText}${scoreText}`,
+                    );
+                    lines.push(`   id: ${item.id}`);
+                    const metaParts: string[] = [];
+                    if (item.createdBy) {
+                      metaParts.push(`by ${item.createdBy}`);
+                    }
+                    const formattedDate = formatDate(item.createdAt);
+                    if (formattedDate) {
+                      metaParts.push(formattedDate);
+                    }
+                    if (metaParts.length > 0) {
+                      lines.push(`   ${metaParts.join(" · ")}`);
+                    }
+                  });
+                }
+
+                const formattedMessage = lines.join("\n").trimEnd();
 
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: JSON.stringify(payload, null, 2),
+                  output: formattedMessage,
                 });
                 result = ""; // Clear result to prevent duplicate
               } catch (err) {
