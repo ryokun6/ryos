@@ -81,7 +81,11 @@ export function Desktop({
       (item) =>
         item.status === "active" &&
         item.path.startsWith("/Desktop/") &&
-        !item.isDirectory
+        !item.isDirectory &&
+        // Theme-conditional defaults: hide items that are marked hidden for
+        // the current theme, but always show user-pinned (no hiddenOnThemes).
+        (!item.hiddenOnThemes ||
+          !item.hiddenOnThemes.includes(currentTheme))
     )
     .sort((a, b) => {
       // Sort by default order if both are app aliases
@@ -228,14 +232,26 @@ export function Desktop({
         const finalAppId = appId || fileStore.getItem(path)?.appId;
         if (finalAppId) {
           // Check if alias already exists for this app
-          aliasExists = desktopItems.some(
+          const existingShortcut = desktopItems.find(
             (item) =>
               item.aliasType === "app" &&
               item.aliasTarget === finalAppId &&
               item.status === "active"
           );
-          
-          if (!aliasExists) {
+          aliasExists = !!existingShortcut;
+
+          if (aliasExists && existingShortcut) {
+            // If this was a theme-conditional default, "fix" it by clearing
+            // hidden themes so it shows regardless of theme.
+            if (
+              existingShortcut.hiddenOnThemes &&
+              existingShortcut.hiddenOnThemes.length > 0
+            ) {
+              fileStore.updateItemMetadata(existingShortcut.path, {
+                hiddenOnThemes: [],
+              });
+            }
+          } else {
             fileStore.createAlias(path || "", name, "app", finalAppId);
           }
         }
@@ -493,11 +509,9 @@ export function Desktop({
         (app) => app.id === "ipod" || app.id === "applet-viewer"
       );
     } else {
-      // Other themes: All apps except finder and control-panels
+      // Other themes: all apps except Finder and Control Panels
       appsToShortcut = apps.filter(
-        (app) =>
-          app.id !== "finder" &&
-          app.id !== "control-panels"
+        (app) => app.id !== "finder" && app.id !== "control-panels"
       );
     }
 
@@ -541,6 +555,32 @@ export function Desktop({
       // Use app path if available
       const appPath = `/Applications/${app.name}`;
       fileStore.createAlias(appPath, app.name, "app", appId);
+
+      // Mark default shortcuts as theme-conditional by hiding them on macOS X
+      // unless they are iPod or Applet Store, which should always be visible.
+      const latestDesktopItems = fileStore.getItemsInPath("/Desktop");
+      const createdShortcut = latestDesktopItems.find(
+        (item) =>
+          item.aliasType === "app" &&
+          item.aliasTarget === appId &&
+          item.status === "active"
+      );
+
+      if (!createdShortcut) {
+        return;
+      }
+
+      // Only apply theme-conditional hiding for non-macOS themes and only for
+      // apps that are NOT iPod or Applet Store.
+      if (
+        currentTheme !== "macosx" &&
+        appId !== "ipod" &&
+        appId !== "applet-viewer"
+      ) {
+        fileStore.updateItemMetadata(createdShortcut.path, {
+          hiddenOnThemes: ["macosx"],
+        });
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apps, currentTheme]);

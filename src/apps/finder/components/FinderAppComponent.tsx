@@ -839,15 +839,24 @@ export function FinderAppComponent({
     // Determine if this is an app or a file/applet
     if (file.path.startsWith("/Applications/") && file.appId) {
       // Check if alias already exists for this app
-      aliasExists = desktopItems.some(
+      const existingShortcut = desktopItems.find(
         (item) =>
           item.aliasType === "app" &&
           item.aliasTarget === file.appId &&
           item.status === "active"
       );
-      
-      if (!aliasExists) {
-        // It's an application
+      aliasExists = !!existingShortcut;
+
+      if (aliasExists) {
+        // If this was a theme-conditional default (hiddenOnThemes), "fix" it by
+        // clearing the hidden themes so it shows on all themes going forward.
+        if (existingShortcut.hiddenOnThemes && existingShortcut.hiddenOnThemes.length > 0) {
+          fileStore.updateItemMetadata(existingShortcut.path, {
+            hiddenOnThemes: [],
+          });
+        }
+      } else {
+        // It's an application - create a new fixed alias
         fileStore.createAlias(file.path, file.name, "app", file.appId);
       }
     } else if (!file.isDirectory) {

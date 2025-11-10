@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
+import type { OsThemeId } from "@/themes/types";
 
 // Define the structure for a file system item (metadata)
 export interface FileSystemItem {
@@ -31,6 +32,8 @@ export interface FileSystemItem {
     // Alias/shortcut properties
     aliasTarget?: string; // Path or appId that the alias points to
     aliasType?: "file" | "app"; // Type of alias - file/app/applet or application
+  /** For default shortcuts: hide them on these OS themes (user-pinned remain visible). */
+  hiddenOnThemes?: OsThemeId[];
   // Content is NOT stored here, only metadata
 }
 
