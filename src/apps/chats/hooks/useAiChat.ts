@@ -1766,44 +1766,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
               console.log("[ToolCall] openSharedApplet:", { id: shareId });
 
-              // Fetch applet details to get the name
-              try {
-                const response = await fetch(
-                  `/api/share-applet?id=${encodeURIComponent(shareId)}`,
-                );
-                
-                let appletName = shareId; // Fallback to ID if name not available
-                
-                if (response.ok) {
-                  const data = await response.json();
-                  appletName = data?.title || data?.name || shareId;
-                }
+              launchApp("applet-viewer", {
+                initialData: {
+                  path: "",
+                  content: "",
+                  shareCode: shareId,
+                  forceNewInstance: true,
+                },
+              });
 
-                launchApp("applet-viewer", {
-                  initialData: {
-                    path: "",
-                    content: "",
-                    shareCode: shareId,
-                    forceNewInstance: true,
-                  },
-                });
-
-                result = `Opened ${appletName} in Applet Store`;
-              } catch (err) {
-                console.error("[ToolCall] openSharedApplet: Fetch error:", err);
-                
-                // Still open the applet viewer even if fetch fails
-                launchApp("applet-viewer", {
-                  initialData: {
-                    path: "",
-                    content: "",
-                    shareCode: shareId,
-                    forceNewInstance: true,
-                  },
-                });
-
-                result = `Opened applet in Applet Store`;
-              }
+              result = `Opened applet preview`;
               break;
             }
           case "listIpodLibrary": {
