@@ -967,273 +967,237 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             });
             break;
           }
-          case "ipodPlayPause": {
-            const { action } = toolCall.input as {
-              action?: "play" | "pause" | "toggle";
-            };
-            console.log("[ToolCall] ipodPlayPause:", { action });
-
-            // Ensure iPod app is open - check instances
-            const appState = useAppStore.getState();
-            const ipodInstances = appState.getInstancesByAppId("ipod");
-            const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen,
-            );
-
-            if (!hasOpenIpodInstance) {
-              launchApp("ipod");
-            }
-
-            const ipod = useIpodStore.getState();
-
-            switch (action) {
-              case "play":
-                if (!ipod.isPlaying) ipod.setIsPlaying(true);
-                break;
-              case "pause":
-                if (ipod.isPlaying) ipod.setIsPlaying(false);
-                break;
-              default:
-                ipod.togglePlay();
-                break;
-            }
-
-            const nowPlaying = useIpodStore.getState().isPlaying;
-            console.log(
-              `[ToolCall] iPod is now ${nowPlaying ? "playing" : "paused"}.`,
-            );
-            break;
-          }
-          case "ipodPlaySong": {
-            const { id, title, artist } = toolCall.input as {
+          case "ipodControl": {
+            const {
+              action = "toggle",
+              id,
+              title,
+              artist,
+            } = toolCall.input as {
+              action?:
+                | "toggle"
+                | "play"
+                | "pause"
+                | "playKnown"
+                | "addAndPlay"
+                | "next"
+                | "previous";
               id?: string;
               title?: string;
               artist?: string;
             };
-            console.log("[ToolCall] ipodPlaySong:", { id, title, artist });
 
-            // Ensure iPod app is open - check instances
-            const appState = useAppStore.getState();
-            const ipodInstances = appState.getInstancesByAppId("ipod");
-            const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen,
-            );
-
-            if (!hasOpenIpodInstance) {
-              launchApp("ipod");
-            }
-
-            const ipodState = useIpodStore.getState();
-            const { tracks } = ipodState;
-
-            // Helper for case-insensitive includes
-            const ciIncludes = (
-              source: string | undefined,
-              query: string | undefined,
-            ): boolean => {
-              if (!source || !query) return false;
-              return source.toLowerCase().includes(query.toLowerCase());
-            };
-
-            let finalCandidateIndices: number[] = [];
-            const allTracksWithIndices = tracks.map((t, idx) => ({
-              track: t,
-              index: idx,
-            }));
-
-            // 1. Filter by ID first if provided
-            const idFilteredTracks = id
-              ? allTracksWithIndices.filter(({ track }) => track.id === id)
-              : allTracksWithIndices;
-
-            // 2. Primary filter: title in track.title, artist in track.artist
-            // Pass if the respective field (title/artist) is not queried
-            const primaryCandidates = idFilteredTracks.filter(({ track }) => {
-              const titleMatches = title
-                ? ciIncludes(track.title, title)
-                : true;
-              const artistMatches = artist
-                ? ciIncludes(track.artist, artist)
-                : true;
-              return titleMatches && artistMatches;
+            console.log("[ToolCall] ipodControl:", {
+              action,
+              id,
+              title,
+              artist,
             });
 
-            if (primaryCandidates.length > 0) {
-              finalCandidateIndices = primaryCandidates.map(
-                ({ index }) => index,
+            const ensureIpodIsOpen = () => {
+              const appState = useAppStore.getState();
+              const ipodInstances = appState.getInstancesByAppId("ipod");
+              const hasOpenIpodInstance = ipodInstances.some(
+                (inst) => inst.isOpen,
               );
-            } else if (title || artist) {
-              // 3. Secondary filter (cross-match) if primary failed AND title/artist was queried
-              const secondaryCandidates = idFilteredTracks.filter(
-                ({ track }) => {
-                  const titleInArtistMatches = title
-                    ? ciIncludes(track.artist, title)
-                    : false;
-                  const artistInTitleMatches = artist
-                    ? ciIncludes(track.title, artist)
-                    : false;
 
-                  if (title && artist) {
-                    // Both title and artist were in the original query
-                    return titleInArtistMatches || artistInTitleMatches;
-                  }
-                  if (title) {
-                    // Only title was in original query
-                    return titleInArtistMatches;
-                  }
-                  if (artist) {
-                    // Only artist was in original query
-                    return artistInTitleMatches;
-                  }
-                  return false;
-                },
-              );
-              finalCandidateIndices = secondaryCandidates.map(
-                ({ index }) => index,
-              );
-            }
-            // If only ID was queried and it failed, primaryCandidates would be empty,
-            // and the `else if (title || artist)` block wouldn't run.
-            // finalCandidateIndices would remain empty.
+              if (!hasOpenIpodInstance) {
+                launchApp("ipod");
+              }
+            };
 
-            if (finalCandidateIndices.length === 0) {
-              console.log("[ToolCall] Song not found in iPod library.");
-              break;
-            }
+            ensureIpodIsOpen();
 
-            // If multiple matches, choose one at random
-            const randomIndexFromArray =
-              finalCandidateIndices[
-                Math.floor(Math.random() * finalCandidateIndices.length)
-              ];
+            const normalizedAction = action ?? "toggle";
 
-            const { setCurrentIndex, setIsPlaying } = useIpodStore.getState();
-            setCurrentIndex(randomIndexFromArray);
-            setIsPlaying(true);
+            if (
+              normalizedAction === "toggle" ||
+              normalizedAction === "play" ||
+              normalizedAction === "pause"
+            ) {
+              const ipod = useIpodStore.getState();
 
-            const track = tracks[randomIndexFromArray];
-            const trackDesc = `${track.title}${
-              track.artist ? ` by ${track.artist}` : ""
-            }`;
-            console.log(`[ToolCall] Playing ${trackDesc}.`);
-            break;
-          }
-          case "ipodAddAndPlaySong": {
-            const { id } = toolCall.input as { id: string };
+              switch (normalizedAction) {
+                case "play":
+                  if (!ipod.isPlaying) ipod.setIsPlaying(true);
+                  break;
+                case "pause":
+                  if (ipod.isPlaying) ipod.setIsPlaying(false);
+                  break;
+                default:
+                  ipod.togglePlay();
+                  break;
+              }
 
-            // Validate required parameter
-            if (!id) {
-              console.error(
-                "[ToolCall] ipodAddAndPlaySong: Missing required 'id' parameter",
+              const nowPlaying = useIpodStore.getState().isPlaying;
+              console.log(
+                `[ToolCall] iPod is now ${nowPlaying ? "playing" : "paused"}.`,
               );
               break;
             }
 
-            console.log("[ToolCall] ipodAddAndPlaySong:", { id });
+            if (normalizedAction === "playKnown") {
+              const ipodState = useIpodStore.getState();
+              const { tracks } = ipodState;
 
-            // Ensure iPod app is open - check instances
-            const appState = useAppStore.getState();
-            const ipodInstances = appState.getInstancesByAppId("ipod");
-            const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen,
-            );
+              const ciIncludes = (
+                source: string | undefined,
+                query: string | undefined,
+              ): boolean => {
+                if (!source || !query) return false;
+                return source.toLowerCase().includes(query.toLowerCase());
+              };
 
-            if (!hasOpenIpodInstance) {
-              launchApp("ipod");
-            }
+              let finalCandidateIndices: number[] = [];
+              const allTracksWithIndices = tracks.map((t, idx) => ({
+                track: t,
+                index: idx,
+              }));
 
-            try {
-              const addedTrack = await useIpodStore
-                .getState()
-                .addTrackFromVideoId(id);
+              const idFilteredTracks = id
+                ? allTracksWithIndices.filter(({ track }) => track.id === id)
+                : allTracksWithIndices;
 
-              if (addedTrack) {
-                console.log(
-                  `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`,
+              const primaryCandidates = idFilteredTracks.filter(({ track }) => {
+                const titleMatches = title
+                  ? ciIncludes(track.title, title)
+                  : true;
+                const artistMatches = artist
+                  ? ciIncludes(track.artist, artist)
+                  : true;
+                return titleMatches && artistMatches;
+              });
+
+              if (primaryCandidates.length > 0) {
+                finalCandidateIndices = primaryCandidates.map(
+                  ({ index }) => index,
                 );
-                break;
-              } else {
-                console.error(`[ToolCall] Failed to add ${id} to iPod.`);
+              } else if (title || artist) {
+                const secondaryCandidates = idFilteredTracks.filter(
+                  ({ track }) => {
+                    const titleInArtistMatches = title
+                      ? ciIncludes(track.artist, title)
+                      : false;
+                    const artistInTitleMatches = artist
+                      ? ciIncludes(track.title, artist)
+                      : false;
+
+                    if (title && artist) {
+                      return titleInArtistMatches || artistInTitleMatches;
+                    }
+                    if (title) {
+                      return titleInArtistMatches;
+                    }
+                    if (artist) {
+                      return artistInTitleMatches;
+                    }
+                    return false;
+                  },
+                );
+                finalCandidateIndices = secondaryCandidates.map(
+                  ({ index }) => index,
+                );
+              }
+
+              if (finalCandidateIndices.length === 0) {
+                console.log("[ToolCall] Song not found in iPod library.");
                 break;
               }
-            } catch (error) {
-              // Handle oEmbed failures and other errors
-              const errorMessage =
-                error instanceof Error ? error.message : "Unknown error";
-              console.error(`[iPod] Error adding ${id}:`, error);
 
-              // Provide a specific response for oEmbed failures
-              if (errorMessage.includes("Failed to fetch video info")) {
+              const randomIndexFromArray =
+                finalCandidateIndices[
+                  Math.floor(Math.random() * finalCandidateIndices.length)
+                ];
+
+              const { setCurrentIndex, setIsPlaying } = useIpodStore.getState();
+              setCurrentIndex(randomIndexFromArray);
+              setIsPlaying(true);
+
+              const track = tracks[randomIndexFromArray];
+              const trackDesc = `${track.title}${
+                track.artist ? ` by ${track.artist}` : ""
+              }`;
+              console.log(`[ToolCall] Playing ${trackDesc}.`);
+              break;
+            }
+
+            if (normalizedAction === "addAndPlay") {
+              if (!id) {
                 console.error(
-                  `[ToolCall] Cannot add ${id}: Video unavailable or invalid.`,
+                  "[ToolCall] ipodControl: 'addAndPlay' action requires 'id'.",
                 );
                 break;
               }
 
-              console.error(`[ToolCall] Failed to add ${id}: ${errorMessage}`);
+              try {
+                const addedTrack = await useIpodStore
+                  .getState()
+                  .addTrackFromVideoId(id);
+
+                if (addedTrack) {
+                  console.log(
+                    `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`,
+                  );
+                  break;
+                } else {
+                  console.error(`[ToolCall] Failed to add ${id} to iPod.`);
+                  break;
+                }
+              } catch (error) {
+                const errorMessage =
+                  error instanceof Error ? error.message : "Unknown error";
+                console.error(`[iPod] Error adding ${id}:`, error);
+
+                if (errorMessage.includes("Failed to fetch video info")) {
+                  console.error(
+                    `[ToolCall] Cannot add ${id}: Video unavailable or invalid.`,
+                  );
+                  break;
+                }
+
+                console.error(
+                  `[ToolCall] Failed to add ${id}: ${errorMessage}`,
+                );
+                break;
+              }
+            }
+
+            if (normalizedAction === "next" || normalizedAction === "previous") {
+              const ipodState = useIpodStore.getState();
+              const navigate =
+                normalizedAction === "next"
+                  ? ipodState.nextTrack
+                  : ipodState.previousTrack;
+
+              if (typeof navigate === "function") {
+                navigate();
+              }
+
+              const updatedIpod = useIpodStore.getState();
+              const track = updatedIpod.tracks[updatedIpod.currentIndex];
+              if (track) {
+                const desc = `${track.title}${
+                  track.artist ? ` by ${track.artist}` : ""
+                }`;
+                const verb =
+                  normalizedAction === "next" ? "Skipped to" : "Went back to";
+                console.log(`[ToolCall] ${verb} ${desc}.`);
+                break;
+              }
+
+              console.log(
+                `[ToolCall] ${
+                  normalizedAction === "next"
+                    ? "Skipped to next track."
+                    : "Went back to previous track."
+                }`,
+              );
               break;
             }
-          }
-          case "ipodNextTrack": {
-            console.log("[ToolCall] ipodNextTrack");
-            // Ensure iPod app is open - check instances
-            const appState = useAppStore.getState();
-            const ipodInstances = appState.getInstancesByAppId("ipod");
-            const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen,
+
+            console.warn(
+              `[ToolCall] ipodControl: Unhandled action "${normalizedAction}".`,
             );
-
-            if (!hasOpenIpodInstance) {
-              launchApp("ipod");
-            }
-
-            const ipodState = useIpodStore.getState();
-            const { nextTrack } = ipodState;
-            if (typeof nextTrack === "function") {
-              nextTrack();
-            }
-
-            const updatedIpod = useIpodStore.getState();
-            const track = updatedIpod.tracks[updatedIpod.currentIndex];
-            if (track) {
-              const desc = `${track.title}${
-                track.artist ? ` by ${track.artist}` : ""
-              }`;
-              console.log(`[ToolCall] Skipped to ${desc}.`);
-              break;
-            }
-            console.log("[ToolCall] Skipped to next track.");
-            break;
-          }
-          case "ipodPreviousTrack": {
-            console.log("[ToolCall] ipodPreviousTrack");
-            // Ensure iPod app is open - check instances
-            const appState = useAppStore.getState();
-            const ipodInstances = appState.getInstancesByAppId("ipod");
-            const hasOpenIpodInstance = ipodInstances.some(
-              (inst) => inst.isOpen,
-            );
-
-            if (!hasOpenIpodInstance) {
-              launchApp("ipod");
-            }
-
-            const ipodState = useIpodStore.getState();
-            const { previousTrack } = ipodState;
-            if (typeof previousTrack === "function") {
-              previousTrack();
-            }
-
-            const updatedIpod = useIpodStore.getState();
-            const track = updatedIpod.tracks[updatedIpod.currentIndex];
-            if (track) {
-              const desc = `${track.title}${
-                track.artist ? ` by ${track.artist}` : ""
-              }`;
-              console.log(`[ToolCall] Went back to previous track: ${desc}.`);
-              break;
-            }
-            console.log("[ToolCall] Went back to previous track.");
             break;
           }
           case "generateHtml": {

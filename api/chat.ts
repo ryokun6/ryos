@@ -821,63 +821,111 @@ export default async function handler(req: Request) {
           }),
         },
         // Add iPod control tools
-        ipodPlayPause: {
+        ipodControl: {
           description:
-            "Play, pause, or toggle playback on the iPod app. If the iPod app is not open, it will be launched automatically.",
-          inputSchema: z.object({
-            action: z
-              .enum(["play", "pause", "toggle"])
-              .optional()
-              .describe(
-                "Playback action to perform. Defaults to 'toggle' if omitted."
-              ),
-          }),
-        },
-        ipodPlaySong: {
-          description:
-            "Play a specific song in the iPod app by matching id, title, or artist. At least one of the parameters must be provided. If the iPod app is not open, it will be launched automatically.",
+            "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist.",
           inputSchema: z
             .object({
+              action: z
+                .enum([
+                  "toggle",
+                  "play",
+                  "pause",
+                  "playKnown",
+                  "addAndPlay",
+                  "next",
+                  "previous",
+                ])
+                .default("toggle")
+                .describe(
+                  "Playback operation to perform. Defaults to 'toggle' when omitted."
+                ),
               id: z
                 .string()
                 .optional()
-                .describe("The YouTube video id of the song to play"),
+                .describe(
+                  "For 'playKnown' (optional) or 'addAndPlay' (required): YouTube video ID or supported URL."
+                ),
               title: z
                 .string()
                 .optional()
-                .describe("The title (or part of it) of the song to play"),
+                .describe(
+                  "For 'playKnown': The title (or part of it) of the song to play."
+                ),
               artist: z
                 .string()
                 .optional()
                 .describe(
-                  "The artist name (or part of it) of the song to play"
+                  "For 'playKnown': The artist name (or part of it) of the song to play."
                 ),
             })
-            .refine((data) => data.id || data.title || data.artist, {
-              message:
-                "Provide at least one of 'id', 'title', or 'artist' to identify the song.",
+            .superRefine((data, ctx) => {
+              const { action, id, title, artist } = data;
+
+              if (action === "addAndPlay") {
+                if (!id) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                      "The 'addAndPlay' action requires the 'id' parameter (YouTube ID or URL).",
+                    path: ["id"],
+                  });
+                }
+                if (title !== undefined) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                      "Do not provide 'title' when using 'addAndPlay' (information is fetched automatically).",
+                    path: ["title"],
+                  });
+                }
+                if (artist !== undefined) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                      "Do not provide 'artist' when using 'addAndPlay' (information is fetched automatically).",
+                    path: ["artist"],
+                  });
+                }
+                return;
+              }
+
+              if (action === "playKnown") {
+                if (!id && !title && !artist) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                      "The 'playKnown' action requires at least one of 'id', 'title', or 'artist'.",
+                    path: ["id"],
+                  });
+                }
+                return;
+              }
+
+              if (
+                (action === "toggle" || action === "play" || action === "pause") &&
+                (id !== undefined || title !== undefined || artist !== undefined)
+              ) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message:
+                    "Do not provide 'id', 'title', or 'artist' when using playback state actions ('toggle', 'play', 'pause').",
+                  path: ["action"],
+                });
+              }
+
+              if (
+                (action === "next" || action === "previous") &&
+                (id !== undefined || title !== undefined || artist !== undefined)
+              ) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message:
+                    "Do not provide 'id', 'title', or 'artist' when using track navigation actions ('next', 'previous').",
+                  path: ["action"],
+                });
+              }
             }),
-        },
-        ipodAddAndPlaySong: {
-          description:
-            "Adds a song to the iPod library from a YouTube video ID or URL and plays it. Supports YouTube URLs (youtube.com/watch?v=, youtu.be/), video IDs, and share URLs (os.ryo.lu/ipod/:id). The system will automatically fetch title, artist, and album information. The iPod app will be launched if it's not already open.",
-          inputSchema: z.object({
-            id: z
-              .string()
-              .describe(
-                "The YouTube video ID or any supported URL format (YouTube URL, os.ryo.lu/ipod/:id, etc.) of the song to add and play."
-              ),
-          }),
-        },
-        ipodNextTrack: {
-          description:
-            "Skip to the next track in the iPod app playlist. If the iPod app is not open, it will be launched automatically.",
-          inputSchema: z.object({}),
-        },
-        ipodPreviousTrack: {
-          description:
-            "Skip to the previous track in the iPod app playlist. If the iPod app is not open, it will be launched automatically.",
-          inputSchema: z.object({}),
         },
         // --- HTML generation & preview ---
         generateHtml: {
