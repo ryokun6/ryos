@@ -1469,7 +1469,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
               break;
             }
-            case "searchSharedApplets":
             case "listSharedApplets": {
               const {
                 listAll = true,
@@ -1665,7 +1664,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   errorText:
                     err instanceof Error
                       ? err.message
-                      : "Failed to search shared applets",
+                      : "Failed to list shared applets",
                 });
                 result = ""; // Clear result to prevent duplicate
               }
