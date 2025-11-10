@@ -814,6 +814,7 @@ export function PhotoBoothComponent({
                   filter={selectedEffect.filter}
                   selectedCameraId={selectedCameraId}
                   stream={stream}
+                  autoStart={false}
                 />
 
               {/* Camera flash effect */}
@@ -897,6 +898,7 @@ export function PhotoBoothComponent({
                             filter={effect.filter}
                             className="w-full h-full"
                             sharedStream={stream}
+                            autoStart={false}
                           />
                           <div
                             className="absolute bottom-0 left-0 right-0 text-center py-1.5 text-white font-geneva-12 text-[12px]"

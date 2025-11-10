@@ -11,6 +11,7 @@ interface WebcamProps {
   sharedStream?: MediaStream | null;
   selectedCameraId?: string | null;
   stream?: MediaStream | null;
+  autoStart?: boolean;
 }
 
 export function Webcam({
@@ -21,6 +22,7 @@ export function Webcam({
   sharedStream,
   selectedCameraId,
   stream: controlledStream,
+  autoStart = true,
 }: WebcamProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -79,6 +81,12 @@ export function Webcam({
       };
     }
 
+    if (!autoStart) {
+      startedInternallyRef.current = false;
+      stopCamera();
+      return;
+    }
+
     const shouldRestartForSelection =
       Boolean(selectedCameraId) &&
       activeDeviceIdRef.current !== selectedCameraId;
@@ -93,7 +101,14 @@ export function Webcam({
         stopCamera();
       }
     };
-  }, [isPreview, sharedStream, controlledStream, selectedCameraId, internalStream]);
+  }, [
+    isPreview,
+    sharedStream,
+    controlledStream,
+    selectedCameraId,
+    internalStream,
+    autoStart,
+  ]);
 
   // Real-time WebGL preview loop for distortion filters
   useEffect(() => {
