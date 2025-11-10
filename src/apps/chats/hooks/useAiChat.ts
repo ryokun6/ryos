@@ -1724,10 +1724,47 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     typeof data?.content === "string" ? data.content : "",
                 };
 
+                const { content: htmlContent, ...metadata } = payload;
+                const contentString = htmlContent || "";
+                const trimmedTitle =
+                  typeof payload.title === "string"
+                    ? payload.title.trim()
+                    : "";
+                const trimmedName =
+                  typeof payload.name === "string" ? payload.name.trim() : "";
+                const displayName =
+                  trimmedTitle.length > 0
+                    ? trimmedTitle
+                    : trimmedName.length > 0
+                      ? trimmedName
+                      : shareId;
+                const summaryParts = [`Fetched shared applet: ${displayName}`];
+
+                if (contentString) {
+                  summaryParts.push(`${contentString.length} HTML characters`);
+                }
+
+                if (payload.installedPath) {
+                  summaryParts.push(
+                    `Installed at ${String(payload.installedPath)}`,
+                  );
+                }
+
+                const summaryLine = summaryParts.join(" • ");
+                const metadataBlock = JSON.stringify(metadata, null, 2);
+
+                const sections = [summaryLine, "", "Metadata:", metadataBlock];
+
+                if (contentString) {
+                  sections.push("", "HTML:", contentString);
+                }
+
+                const resultMessage = sections.join("\n");
+
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: JSON.stringify(payload, null, 2),
+                  output: resultMessage,
                 });
                 result = "";
               } catch (err) {

@@ -415,22 +415,22 @@ export function ToolInvocationMessage({
             )}
           </div>
         )}
-      {state === "output-available" && (
-        <div className="flex items-center gap-1 text-gray-700">
-          <Check className="h-3 w-3 text-blue-600" />
-          {displayResultMessage ? (
-            <span>{displayResultMessage}</span>
-          ) : (
-            <div className="flex flex-col">
-              {typeof output === "string" && output.length > 0 && toolName !== "fetchSharedApplet" ? (
-                <span className="text-gray-500">{output}</span>
-              ) : (
-                <span>{formatToolName(toolName)}</span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+        {state === "output-available" && (
+          <div className="flex items-center gap-1 text-gray-700">
+            <Check className="h-3 w-3 text-blue-600" />
+            {displayResultMessage ? (
+              <span>{displayResultMessage}</span>
+            ) : (
+              <div className="flex flex-col">
+                {typeof output === "string" && output.length > 0 ? (
+                  <span className="text-gray-500">{output}</span>
+                ) : (
+                  <span>{formatToolName(toolName)}</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       {state === "output-error" && (
         <div className="flex items-center gap-1 text-red-600">
           <span className="text-xs">
