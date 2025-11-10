@@ -109,6 +109,9 @@ export function ToolInvocationMessage({
       case "readFile":
         displayCallMessage = "Reading file…";
         break;
+      case "fetchSharedApplet":
+        displayCallMessage = "Fetching applet…";
+        break;
       case "openSharedApplet":
         displayCallMessage = "Opening applet preview…";
         break;
@@ -378,6 +381,24 @@ export function ToolInvocationMessage({
     }
   }
 
+  if (toolName === "fetchSharedApplet") {
+    if (state === "output-available") {
+      // Parse the JSON output to extract the app name
+      let appName = "applet";
+      if (typeof output === "string") {
+        try {
+          const parsed = JSON.parse(output);
+          appName = parsed.title || parsed.name || "applet";
+        } catch {
+          // If parsing fails, fall back to default
+          appName = "applet";
+        }
+      }
+
+      displayResultMessage = `Fetched ${appName}`;
+    }
+  }
+
   // Default rendering for other tools
   return (
     <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
@@ -401,7 +422,7 @@ export function ToolInvocationMessage({
             <span>{displayResultMessage}</span>
           ) : (
             <div className="flex flex-col">
-              {typeof output === "string" && output.length > 0 ? (
+              {typeof output === "string" && output.length > 0 && toolName !== "fetchSharedApplet" ? (
                 <span className="text-gray-500">{output}</span>
               ) : (
                 <span>{formatToolName(toolName)}</span>
