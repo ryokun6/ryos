@@ -1351,6 +1351,311 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
             break;
           }
+            case "searchInstalledApplets": {
+              const {
+                query,
+                includeContentPreview,
+                previewLength,
+              } = toolCall.input as {
+                query?: string;
+                includeContentPreview?: boolean;
+                previewLength?: number;
+              };
+
+              try {
+                const normalizedQuery = query?.trim().toLowerCase();
+                const filesStore = useFilesStore.getState();
+                const items = Object.values(filesStore.items).filter(
+                  (item) =>
+                    item.status === "active" &&
+                    !item.isDirectory &&
+                    item.path.startsWith("/Applets/"),
+                );
+
+                const filteredItems = normalizedQuery
+                  ? items.filter((item) => {
+                      const haystack = [
+                        item.name,
+                        item.path,
+                        item.icon,
+                        item.shareId,
+                        item.createdBy,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase();
+                      return haystack.includes(normalizedQuery);
+                    })
+                  : items;
+
+                const previewLimit = Math.min(
+                  Math.max(previewLength ?? 1200, 50),
+                  8000,
+                );
+
+                const results: Array<Record<string, unknown>> = [];
+
+                for (const item of filteredItems.sort(
+                  (a, b) =>
+                    (b.modifiedAt ?? 0) - (a.modifiedAt ?? 0) ||
+                    (b.createdAt ?? 0) - (a.createdAt ?? 0),
+                )) {
+                  let preview: string | undefined;
+                  let previewTruncated = false;
+
+                  if (includeContentPreview && item.uuid) {
+                    try {
+                      const contentData = await dbOperations.get<DocumentContent>(
+                        STORES.APPLETS,
+                        item.uuid,
+                      );
+                      if (contentData?.content != null) {
+                        const rawContent =
+                          typeof contentData.content === "string"
+                            ? contentData.content
+                            : await contentData.content.text();
+                        if (rawContent) {
+                          preview =
+                            rawContent.length > previewLimit
+                              ? rawContent.slice(0, previewLimit)
+                              : rawContent;
+                          previewTruncated = (preview?.length ?? 0) < rawContent.length;
+                        }
+                      }
+                    } catch (err) {
+                      console.error(
+                        "[ToolCall] searchInstalledApplets preview error:",
+                        err,
+                      );
+                    }
+                  }
+
+                  results.push({
+                    path: item.path,
+                    name: item.name,
+                    icon: item.icon,
+                    shareId: item.shareId,
+                    createdBy: item.createdBy,
+                    createdAt: item.createdAt,
+                    modifiedAt: item.modifiedAt,
+                    windowWidth: item.windowWidth,
+                    windowHeight: item.windowHeight,
+                    preview: includeContentPreview ? preview ?? null : undefined,
+                    previewTruncated: includeContentPreview
+                      ? previewTruncated
+                      : undefined,
+                  });
+                }
+
+                const payload = {
+                  totalInstalled: items.length,
+                  matched: results.length,
+                  query: normalizedQuery ?? null,
+                  includeContentPreview: !!includeContentPreview,
+                  previewLength: includeContentPreview ? previewLimit : undefined,
+                  results,
+                };
+
+                const output = JSON.stringify(payload, null, 2);
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output,
+                });
+                result = "";
+              } catch (err) {
+                console.error("searchInstalledApplets error:", err);
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText:
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to search installed applets",
+                });
+                result = "";
+              }
+              break;
+            }
+            case "searchSharedApplets": {
+              const { query, limit, featuredOnly } = toolCall.input as {
+                query?: string;
+                limit?: number;
+                featuredOnly?: boolean;
+              };
+
+              try {
+                const response = await fetch("/api/share-applet?list=true");
+                if (!response.ok) {
+                  throw new Error(
+                    `Failed to fetch shared applets (status ${response.status})`,
+                  );
+                }
+
+                const data = await response.json();
+                const applets: Array<{
+                  id: string;
+                  title?: string;
+                  name?: string;
+                  icon?: string;
+                  createdAt?: number;
+                  featured?: boolean;
+                  createdBy?: string;
+                }> = Array.isArray(data.applets) ? data.applets : [];
+
+                const normalizedQuery = query?.trim().toLowerCase();
+                let filtered = applets;
+
+                if (normalizedQuery) {
+                  filtered = filtered.filter((applet) => {
+                    const haystack = [
+                      applet.title,
+                      applet.name,
+                      applet.icon,
+                      applet.createdBy,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
+                      .toLowerCase();
+                    return haystack.includes(normalizedQuery);
+                  });
+                }
+
+                if (featuredOnly) {
+                  filtered = filtered.filter((applet) => applet.featured);
+                }
+
+                filtered.sort((a, b) => {
+                  if (a.featured && !b.featured) return -1;
+                  if (!a.featured && b.featured) return 1;
+                  return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+                });
+
+                const maxResults = Math.min(Math.max(limit ?? 12, 1), 50);
+                const trimmed = filtered.slice(0, maxResults);
+
+                const payload = {
+                  totalAvailable: applets.length,
+                  matched: filtered.length,
+                  returned: trimmed.length,
+                  query: normalizedQuery ?? null,
+                  featuredOnly: !!featuredOnly,
+                  results: trimmed,
+                };
+
+                const output = JSON.stringify(payload, null, 2);
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output,
+                });
+                result = "";
+              } catch (err) {
+                console.error("searchSharedApplets error:", err);
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText:
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to search shared applets",
+                });
+                result = "";
+              }
+              break;
+            }
+            case "fetchSharedApplet": {
+              const { id, includeContent, truncateLength } = toolCall.input as {
+                id: string;
+                includeContent?: boolean;
+                truncateLength?: number;
+              };
+
+              if (!id) {
+                console.error(
+                  "[ToolCall] fetchSharedApplet: Missing required 'id' parameter",
+                );
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: "No applet id provided",
+                });
+                result = "";
+                break;
+              }
+
+              try {
+                const response = await fetch(
+                  `/api/share-applet?id=${encodeURIComponent(id)}`,
+                );
+                if (!response.ok) {
+                  throw new Error(
+                    `Failed to fetch applet ${id} (status ${response.status})`,
+                  );
+                }
+
+                const data = await response.json();
+                const includeHtml = includeContent !== false;
+                const maxLength = truncateLength
+                  ? Math.min(Math.max(truncateLength, 100), 20000)
+                  : 6000;
+
+                let content: string | undefined;
+                let contentLength: number | undefined;
+                let contentTruncated: boolean | undefined;
+
+                if (includeHtml && typeof data.content === "string") {
+                  content = data.content;
+                  contentLength = content.length;
+                  if (content.length > maxLength) {
+                    content = content.slice(0, maxLength);
+                    contentTruncated = true;
+                  } else {
+                    contentTruncated = false;
+                  }
+                }
+
+                const payload = {
+                  id,
+                  title: data.title ?? null,
+                  name: data.name ?? null,
+                  icon: data.icon ?? null,
+                  createdBy: data.createdBy ?? null,
+                  createdAt: data.createdAt ?? null,
+                  updatedAt: data.updatedAt ?? null,
+                  windowWidth: data.windowWidth ?? null,
+                  windowHeight: data.windowHeight ?? null,
+                  featured: data.featured ?? false,
+                  content: includeHtml ? content ?? null : undefined,
+                  contentLength: includeHtml ? contentLength ?? 0 : undefined,
+                  contentTruncated: includeHtml ? contentTruncated ?? false : undefined,
+                };
+
+                const output = JSON.stringify(payload, null, 2);
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output,
+                });
+                result = "";
+              } catch (err) {
+                console.error("fetchSharedApplet error:", err);
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText:
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to fetch shared applet",
+                });
+                result = "";
+              }
+              break;
+            }
           case "listIpodLibrary": {
             console.log("[ToolCall] listIpodLibrary");
 

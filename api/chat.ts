@@ -918,6 +918,83 @@ export default async function handler(req: Request) {
             return { html, title: title || "Applet", icon: icon || "📦" };
           },
         },
+        searchInstalledApplets: {
+          description:
+            "Scan the user's installed applets in /Applets to collect references, layouts, and styling inspiration before building something new. Use this to find relevant applets by keyword and optionally preview their HTML.",
+          inputSchema: z.object({
+            query: z
+              .string()
+              .optional()
+              .describe(
+                "Optional case-insensitive substring to match against the applet name, path, icon, shareId, or creator metadata."
+              ),
+            includeContentPreview: z
+              .boolean()
+              .optional()
+              .describe(
+                "Set to true to include a truncated HTML preview for each matching applet."
+              ),
+            previewLength: z
+              .number()
+              .int()
+              .min(50)
+              .max(8000)
+              .optional()
+              .describe(
+                "Maximum number of characters to include in each preview when includeContentPreview is true. Defaults to 1200."
+              ),
+          }),
+        },
+        searchSharedApplets: {
+          description:
+            "Search the shared ryOS community applets catalog (via /api/share-applet?list=true) to discover existing designs. Always consult this before generating a new applet to reuse proven patterns.",
+          inputSchema: z.object({
+            query: z
+              .string()
+              .optional()
+              .describe(
+                "Optional case-insensitive substring to match against the applet title, name, creator, or icon."
+              ),
+            limit: z
+              .number()
+              .int()
+              .min(1)
+              .max(50)
+              .optional()
+              .describe(
+                "Maximum number of results to return, defaults to 12 for balanced context."
+              ),
+            featuredOnly: z
+              .boolean()
+              .optional()
+              .describe("Set true to only return featured community applets."),
+          }),
+        },
+        fetchSharedApplet: {
+          description:
+            "Fetch the full metadata (and optionally HTML content) for a specific shared applet id from /api/share-applet. Use after searchSharedApplets when you need to study layout or reuse snippets.",
+          inputSchema: z.object({
+            id: z
+              .string()
+              .min(1)
+              .describe("The shared applet id returned by searchSharedApplets."),
+            includeContent: z
+              .boolean()
+              .optional()
+              .describe(
+                "Set to false to omit the HTML content. Defaults to true."
+              ),
+            truncateLength: z
+              .number()
+              .int()
+              .min(100)
+              .max(20000)
+              .optional()
+              .describe(
+                "Maximum number of characters of HTML content to return when includeContent is true. Defaults to 6000."
+              ),
+          }),
+        },
         // --- Emoji Aquarium ---
         aquarium: {
           description:
