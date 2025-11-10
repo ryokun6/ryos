@@ -16,10 +16,7 @@ import * as RateLimit from "./utils/rate-limit.js";
 
 export const runtime = "edge";
 export const edge = true;
-export const maxDuration = 60;
-export const config = {
-  runtime: "edge",
-};
+export const maxDuration = 90;
 
 const APPLET_SYSTEM_PROMPT = `
 <applet_ai>

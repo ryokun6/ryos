@@ -163,17 +163,14 @@ export const useAppletActions = () => {
       
       toast.success(isUpdate ? "Applet updated" : "Applet installed", {
         description: `Saved to /Applets/${finalName}`,
-        action: {
-          label: "Open",
-          onClick: () => {
-            launchApp("applet-viewer", {
-              initialData: {
-                path: finalPath,
-                content: data.content,
-                forceNewInstance: true,
-              },
-            });
-          },
+      });
+      
+      // Automatically open the applet in a new window instance
+      launchApp("applet-viewer", {
+        initialData: {
+          path: finalPath,
+          content: data.content,
+          forceNewInstance: true,
         },
       });
       
