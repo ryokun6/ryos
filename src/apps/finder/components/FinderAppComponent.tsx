@@ -847,7 +847,7 @@ export function FinderAppComponent({
       );
       aliasExists = !!existingShortcut;
 
-      if (aliasExists) {
+      if (aliasExists && existingShortcut) {
         // If this was a theme-conditional default (hiddenOnThemes), "fix" it by
         // clearing the hidden themes so it shows on all themes going forward.
         if (existingShortcut.hiddenOnThemes && existingShortcut.hiddenOnThemes.length > 0) {
