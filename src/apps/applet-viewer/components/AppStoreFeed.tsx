@@ -303,6 +303,14 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     }
   };
 
+  const handlePreviewClick = async (applet: Applet) => {
+    const installed = actions.isAppletInstalled(applet.id);
+    if (installed) {
+      // If installed, bring window to foreground
+      await handleAppletClick(applet);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="h-full w-full flex items-center justify-center">
@@ -345,6 +353,12 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         <div 
           className="absolute inset-0" 
           style={{ paddingTop: "45px" }}
+          onClick={() => {
+            // Only handle click for installed applets to bring window to foreground
+            if (index === currentIndex) {
+              handlePreviewClick(applet);
+            }
+          }}
           onWheel={(e) => {
             // Only handle wheel for the current applet
             if (index !== currentIndex) return;
