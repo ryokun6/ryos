@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import {
   Maximize,
@@ -26,6 +26,10 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  APPLET_AUTH_BRIDGE_SCRIPT,
+  APPLET_AUTH_MESSAGE_TYPE,
+} from "@/utils/appletAuthBridge";
 
 // Lazily load shiki only when code view is requested to keep initial bundle smaller
 let shikiModulePromise: Promise<typeof import("shiki")> | null = null;
@@ -232,6 +236,28 @@ export default function HtmlPreview({
   const currentTheme = useThemeStore((state) => state.current);
   const isMacOsXTheme = currentTheme === "macosx";
 
+  const sendAuthPayload = useCallback(
+    (target: Window | null | undefined) => {
+      if (!target) return;
+      try {
+        target.postMessage(
+          {
+            type: APPLET_AUTH_MESSAGE_TYPE,
+            action: "response",
+            payload: {
+              username: username ?? null,
+              authToken: authToken ?? null,
+            },
+          },
+          "*"
+        );
+      } catch (error) {
+        console.warn("[applet-html-preview] Failed to post auth payload:", error);
+      }
+    },
+    [username, authToken]
+  );
+
   // Ensure base URL has a protocol
   const normalizedBaseUrl = baseUrlForAiContent
     ? baseUrlForAiContent.startsWith("http")
@@ -251,6 +277,48 @@ export default function HtmlPreview({
   useEffect(() => {
     saveHtmlPreviewSplit(isSplitView);
   }, [isSplitView]);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const data = event?.data;
+      if (
+        !data ||
+        data.type !== APPLET_AUTH_MESSAGE_TYPE ||
+        data.action !== "request"
+      ) {
+        return;
+      }
+
+      const sourceWindow = event.source as Window | null;
+      if (!sourceWindow) {
+        return;
+      }
+
+      const frameWindows: Window[] = [];
+      if (iframeRef.current?.contentWindow) {
+        frameWindows.push(iframeRef.current.contentWindow);
+      }
+      if (fullscreenIframeRef.current?.contentWindow) {
+        frameWindows.push(fullscreenIframeRef.current.contentWindow);
+      }
+
+      if (!frameWindows.includes(sourceWindow)) {
+        return;
+      }
+
+      sendAuthPayload(sourceWindow);
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [sendAuthPayload]);
+
+  useEffect(() => {
+    sendAuthPayload(iframeRef.current?.contentWindow);
+    sendAuthPayload(fullscreenIframeRef.current?.contentWindow);
+  }, [sendAuthPayload]);
 
   // Capture the original height when toggling fullscreen
   useEffect(() => {
@@ -306,10 +374,11 @@ export default function HtmlPreview({
     // Define the script tags and styles that should be added ONLY after streaming
     // Font link MUST be first for potentially faster loading/application
     const postStreamHeadContent = `
-  <link rel="stylesheet" href="/fonts/fonts.css">
-  ${timestamp} 
-  ${baseTag}
-  <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.min.js"></script>
+    <link rel="stylesheet" href="/fonts/fonts.css">
+    ${timestamp} 
+    ${baseTag}
+    ${APPLET_AUTH_BRIDGE_SCRIPT}
+    <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.min.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.16"></script>
   <script>
     tailwind.config = {
@@ -561,19 +630,28 @@ export default function HtmlPreview({
   const processedHtmlContentForSave = generateProcessedHtmlContent(true);
 
   // Function to update iframe content (now only called after streaming)
-  const updateIframeContent = (finalContent: string) => {
-    requestAnimationFrame(() => {
-      // Update inline iframe
-      if (iframeRef.current) {
-        iframeRef.current.srcdoc = finalContent;
-      }
+  const updateIframeContent = useCallback(
+    (finalContent: string) => {
+      requestAnimationFrame(() => {
+        // Update inline iframe
+        if (iframeRef.current) {
+          iframeRef.current.srcdoc = finalContent;
+          setTimeout(() => {
+            sendAuthPayload(iframeRef.current?.contentWindow || null);
+          }, 0);
+        }
 
-      // Update fullscreen iframe if it exists
-      if (fullscreenIframeRef.current) {
-        fullscreenIframeRef.current.srcdoc = finalContent;
-      }
-    });
-  };
+        // Update fullscreen iframe if it exists
+        if (fullscreenIframeRef.current) {
+          fullscreenIframeRef.current.srcdoc = finalContent;
+          setTimeout(() => {
+            sendAuthPayload(fullscreenIframeRef.current?.contentWindow || null);
+          }, 0);
+        }
+      });
+    },
+    [sendAuthPayload]
+  );
 
   // NEW: Effect to update iframe *after* streaming finishes or when content changes while not streaming
   useEffect(() => {
@@ -585,7 +663,7 @@ export default function HtmlPreview({
     }
     // Dependency: htmlContent ensures update if content changes *after* streaming
     // Dependency: isStreaming ensures update when streaming stops
-  }, [isStreaming, htmlContent]);
+    }, [isStreaming, htmlContent, processedHtmlContent, updateIframeContent]);
 
   // Initialize syntax highlighting only when code view is active
   useEffect(() => {
@@ -655,7 +733,7 @@ export default function HtmlPreview({
       stopElevatorMusic();
     }
     prevStreamingRef.current = isStreaming;
-  }, [isStreaming, playDingSound, stopElevatorMusic, terminalSoundsEnabled]);
+    }, [isStreaming, playDingSound, stopElevatorMusic, terminalSoundsEnabled]);
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -842,7 +920,7 @@ export default function HtmlPreview({
         finalProcessedHtmlRef.current || processedHtmlContent;
       updateIframeContent(finalContent);
     }
-  }, [isFullScreen, isStreaming, processedHtmlContent]);
+    }, [isFullScreen, isStreaming, processedHtmlContent, updateIframeContent]);
 
   // Document-level mouse move handler
   const handleDocumentMouseMove = (e: MouseEvent) => {
@@ -1096,37 +1174,37 @@ export default function HtmlPreview({
         )}
 
         {/* Applet banner - similar to AppStore detail view */}
-        {!isInternetExplorer && (appletTitle || appletIcon) && (
-          <div className="flex items-center gap-3 px-3 py-2 bg-gray-100 border-b border-gray-300 flex-shrink-0">
-            <div 
-              className="!text-2xl flex-shrink-0 applet-icon"
-              style={{ fontSize: '1.5rem' }}
-            >
-              {appletIcon || "📱"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm font-geneva-12 truncate">
-                {appletTitle || "Untitled Applet"}
+          {!isInternetExplorer && (appletTitle || appletIcon) && (
+            <div className="flex items-center gap-3 px-3 py-2 bg-gray-100 border-b border-gray-300 flex-shrink-0">
+              <div
+                className="!text-2xl flex-shrink-0 applet-icon"
+                style={{ fontSize: "1.5rem" }}
+              >
+                {appletIcon || "📱"}
               </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm font-geneva-12 truncate">
+                  {appletTitle || "Untitled Applet"}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    await handleSaveAsApplet(e);
+                    // handleSaveAsApplet will show toast with Open button
+                  } catch (error) {
+                    console.error("Failed to save applet:", error);
+                  }
+                }}
+                className="w-[60px]"
+                disabled={isStreaming}
+              >
+                Save
+              </Button>
             </div>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={async (e) => {
-                e.stopPropagation();
-                try {
-                  await handleSaveAsApplet(e as any);
-                  // handleSaveAsApplet will show toast with Open button
-                } catch (error) {
-                  console.error("Failed to save applet:", error);
-                }
-              }}
-              className="w-[60px]"
-              disabled={isStreaming}
-            >
-              Save
-            </Button>
-          </div>
         )}
 
         {!isInternetExplorer && !(appletTitle || appletIcon) && (
@@ -1262,8 +1340,11 @@ export default function HtmlPreview({
               // pointerEvents: isStreaming ? "none" : "auto", // Already handled by parent div conditional
               position: "relative",
               zIndex: 1,
-            }}
-            onMouseDown={(e) => e.stopPropagation()}
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onLoad={() =>
+                sendAuthPayload(iframeRef.current?.contentWindow || null)
+              }
           />
         )}
       </motion.div>
@@ -1393,6 +1474,11 @@ export default function HtmlPreview({
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
+                        onLoad={() =>
+                          sendAuthPayload(
+                            fullscreenIframeRef.current?.contentWindow || null
+                          )
+                        }
                         style={{
                           pointerEvents: isDragging ? "none" : "auto",
                           ...(isInternetExplorer && {
