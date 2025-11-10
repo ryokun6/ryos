@@ -190,30 +190,31 @@ export function Desktop({
     setContextMenuPos(null);
   };
 
-  // Compute sorted apps based on selected sort type
-  const sortedApps = [...apps]
-    .filter(
-      (app) =>
-        app.id !== "finder" &&
-        app.id !== "control-panels" &&
-        app.id !== "applet-viewer"
-    )
-    .sort((a, b) => {
-      switch (sortType) {
-        case "name":
-          return a.name.localeCompare(b.name);
-        case "kind":
-          return a.id.localeCompare(b.id);
-        default:
-          return 0;
-      }
-    });
+    // Compute sorted apps based on selected sort type
+    const hiddenAppIds = new Set<AppId>(["finder", "control-panels"]);
 
-  // macOS X: Only show iPod app icon on desktop (with Macintosh HD shown above)
-  const displayedApps =
-    currentTheme === "macosx"
-      ? sortedApps.filter((app) => app.id === "ipod")
-      : sortedApps;
+    const sortedApps = [...apps]
+      .filter((app) => !hiddenAppIds.has(app.id))
+      .sort((a, b) => {
+        switch (sortType) {
+          case "name":
+            return a.name.localeCompare(b.name);
+          case "kind":
+            return a.id.localeCompare(b.id);
+          default:
+            return 0;
+        }
+      });
+
+    // macOS X: show a curated set of desktop apps in a fixed order
+    const macDesktopAppOrder: AppId[] = ["ipod", "applet-viewer"];
+
+    const displayedApps =
+      currentTheme === "macosx"
+        ? macDesktopAppOrder.flatMap((appId) =>
+            sortedApps.filter((app) => app.id === appId)
+          )
+        : sortedApps.filter((app) => app.id !== "applet-viewer");
 
   const getContextMenuItems = (): MenuItem[] => {
     if (contextMenuAppId) {
