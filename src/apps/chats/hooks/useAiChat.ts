@@ -1632,12 +1632,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   }
                 }
 
+                const toolOutput = lines.join("\n");
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Listed ${limitedApplets.length}${
-                    hasKeyword ? ` of ${totalMatches}` : ""
-                  } applets`,
+                  output: toolOutput,
                 });
                 result = ""; // Clear result to prevent duplicate
               } catch (err) {
