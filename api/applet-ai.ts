@@ -129,42 +129,13 @@ const isRyOSHost = (hostHeader: string | null): boolean => {
   return false;
 };
 
-type RateLimitScope =
-  | "global"
-  | "text-burst"
-  | "text-budget"
-  | "image-burst"
-  | "image-budget";
+type RateLimitScope = "text-hour" | "image-hour";
 
-const RATE_LIMIT_CONFIG = {
-  // Apply a coarse burst limit across all request types to prevent immediate flooding.
-  GLOBAL: {
-    windowSeconds: 30,
-    limit: 20,
-  },
-  TEXT: {
-    // Allow short bursts while keeping the steady-state budget reasonable.
-    burst: {
-      windowSeconds: 60,
-      limit: 12,
-    },
-    budget: {
-      windowSeconds: 15 * 60,
-      limit: 80,
-    },
-  },
-  IMAGE: {
-    // Image generations are expensive—keep both burst and hourly budgets low.
-    burst: {
-      windowSeconds: 60,
-      limit: 3,
-    },
-    budget: {
-      windowSeconds: 60 * 60,
-      limit: 12,
-    },
-  },
-} as const;
+const ANON_TEXT_LIMIT_PER_HOUR = 3;
+const ANON_IMAGE_LIMIT_PER_HOUR = 1;
+const AUTH_TEXT_LIMIT_PER_HOUR = 25;
+const AUTH_IMAGE_LIMIT_PER_HOUR = 12;
+const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 
 type ParsedMessage = z.infer<typeof MessageSchema>;
 
@@ -198,9 +169,7 @@ const rateLimitExceededResponse = (
     "Content-Type": "application/json",
     "Retry-After": String(resetSeconds),
     "X-RateLimit-Limit": String(result.limit),
-    "X-RateLimit-Remaining": String(
-      Math.max(0, result.limit - result.count)
-    ),
+    "X-RateLimit-Remaining": String(Math.max(0, result.limit - result.count)),
     "X-RateLimit-Reset": String(resetSeconds),
     Vary: "Origin",
   });
@@ -417,73 +386,40 @@ export default async function handler(req: Request): Promise<Response> {
   // Applet requests are usually anonymous; allow trusted user "ryo" to opt out with a header.
   const rateLimitBypass = usernameHeader === "ryo";
   const ip = RateLimit.getClientIp(req);
-  const identifier = `ip:${ip}`;
+  const isAuthenticatedUser =
+    !rateLimitBypass && typeof usernameHeader === "string" && usernameHeader.length > 0;
+  const identifier = isAuthenticatedUser
+    ? `user:${usernameHeader}`
+    : `ip:${ip}`;
 
   if (!rateLimitBypass) {
     try {
-      const globalKey = RateLimit.makeKey([
+      const scope: RateLimitScope = mode === "image" ? "image-hour" : "text-hour";
+      const limit =
+        scope === "image-hour"
+          ? isAuthenticatedUser
+            ? AUTH_IMAGE_LIMIT_PER_HOUR
+            : ANON_IMAGE_LIMIT_PER_HOUR
+          : isAuthenticatedUser
+          ? AUTH_TEXT_LIMIT_PER_HOUR
+          : ANON_TEXT_LIMIT_PER_HOUR;
+
+      const key = RateLimit.makeKey([
         "rl",
         "applet-ai",
-        "global",
-        "ip",
-        ip,
+        scope,
+        isAuthenticatedUser ? "user" : "ip",
+        isAuthenticatedUser ? usernameHeader! : ip,
       ]);
-      const global = await RateLimit.checkCounterLimit({
-        key: globalKey,
-        windowSeconds: RATE_LIMIT_CONFIG.GLOBAL.windowSeconds,
-        limit: RATE_LIMIT_CONFIG.GLOBAL.limit,
-      });
-      if (!global.allowed) {
-        return rateLimitExceededResponse("global", effectiveOrigin, identifier, global);
-      }
 
-      const isImage = mode === "image";
-      const modeConfig = isImage
-        ? RATE_LIMIT_CONFIG.IMAGE
-        : RATE_LIMIT_CONFIG.TEXT;
-
-      const burstKey = RateLimit.makeKey([
-        "rl",
-        "applet-ai",
-        mode,
-        "burst",
-        "ip",
-        ip,
-      ]);
-      const burst = await RateLimit.checkCounterLimit({
-        key: burstKey,
-        windowSeconds: modeConfig.burst.windowSeconds,
-        limit: modeConfig.burst.limit,
+      const result = await RateLimit.checkCounterLimit({
+        key,
+        windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
+        limit,
       });
-      if (!burst.allowed) {
-        return rateLimitExceededResponse(
-          isImage ? "image-burst" : "text-burst",
-          effectiveOrigin,
-          identifier,
-          burst
-        );
-      }
 
-      const budgetKey = RateLimit.makeKey([
-        "rl",
-        "applet-ai",
-        mode,
-        "budget",
-        "ip",
-        ip,
-      ]);
-      const budget = await RateLimit.checkCounterLimit({
-        key: budgetKey,
-        windowSeconds: modeConfig.budget.windowSeconds,
-        limit: modeConfig.budget.limit,
-      });
-      if (!budget.allowed) {
-        return rateLimitExceededResponse(
-          isImage ? "image-budget" : "text-budget",
-          effectiveOrigin,
-          identifier,
-          budget
-        );
+      if (!result.allowed) {
+        return rateLimitExceededResponse(scope, effectiveOrigin, identifier, result);
       }
     } catch (error) {
       console.error("[applet-ai] Rate limit check failed:", error);
