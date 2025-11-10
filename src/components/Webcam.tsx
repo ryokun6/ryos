@@ -8,9 +8,10 @@ interface WebcamProps {
   className?: string;
   isPreview?: boolean;
   filter?: string;
-  onStreamReady?: (stream: MediaStream) => void;
   sharedStream?: MediaStream | null;
   selectedCameraId?: string | null;
+  stream?: MediaStream | null;
+  autoStart?: boolean;
 }
 
 export function Webcam({
@@ -18,43 +19,96 @@ export function Webcam({
   className = "",
   isPreview = false,
   filter = "none",
-  onStreamReady,
   sharedStream,
   selectedCameraId,
+  stream: controlledStream,
+  autoStart = true,
 }: WebcamProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [internalStream, setInternalStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastRenderTimeRef = useRef<number>(0);
+  const startedInternallyRef = useRef(false);
+  const activeDeviceIdRef = useRef<string | null>(null);
 
   // Detect if the current filter string requires WebGL preview (distortion keywords)
   const needsWebGLPreview = useMemo(() => {
     return /bulge|pinch|twist|fisheye|stretch|squeeze|tunnel|kaleidoscope|ripple|glitch/i.test(filter);
   }, [filter]);
 
+  const activeStream = !isPreview
+    ? controlledStream ?? internalStream
+    : sharedStream ?? controlledStream ?? internalStream;
+
   // Start camera when component mounts or shared stream changes
   useEffect(() => {
-    if (!isPreview) {
-      startCamera();
-      return () => stopCamera();
-    } else if (sharedStream) {
-      setStream(sharedStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = sharedStream;
-        videoRef.current.play().catch(console.error);
-      }
-    }
-  }, [isPreview, sharedStream, selectedCameraId]);
+    const videoEl = videoRef.current;
 
-  // Handle stream ready callback
-  useEffect(() => {
-    if (stream && onStreamReady && !isPreview) {
-      onStreamReady(stream);
+    if (isPreview) {
+      if (videoEl) {
+        if (sharedStream) {
+          videoEl.srcObject = sharedStream;
+          videoEl.play().catch(console.error);
+        } else {
+          videoEl.srcObject = null;
+        }
+      }
+
+      return () => {
+        if (videoEl && videoEl.srcObject === sharedStream) {
+          videoEl.srcObject = null;
+        }
+      };
     }
-  }, [stream, onStreamReady, isPreview]);
+
+    if (controlledStream) {
+      startedInternallyRef.current = false;
+      setError(null);
+      setInternalStream(null);
+
+      if (videoEl) {
+        videoEl.srcObject = controlledStream;
+        videoEl.play().catch(console.error);
+      }
+
+      return () => {
+        if (videoEl && videoEl.srcObject === controlledStream) {
+          videoEl.srcObject = null;
+        }
+      };
+    }
+
+    if (!autoStart) {
+      startedInternallyRef.current = false;
+      stopCamera();
+      return;
+    }
+
+    const shouldRestartForSelection =
+      Boolean(selectedCameraId) &&
+      activeDeviceIdRef.current !== selectedCameraId;
+
+    if (!internalStream || shouldRestartForSelection) {
+      startedInternallyRef.current = true;
+      startCamera();
+    }
+
+    return () => {
+      if (startedInternallyRef.current) {
+        stopCamera();
+      }
+    };
+  }, [
+    isPreview,
+    sharedStream,
+    controlledStream,
+    selectedCameraId,
+    internalStream,
+    autoStart,
+  ]);
 
   // Real-time WebGL preview loop for distortion filters
   useEffect(() => {
@@ -131,62 +185,75 @@ export function Webcam({
   // Listen for webcam-capture events
   useEffect(() => {
     const handleCapture = async () => {
-      if (videoRef.current && stream) {
-        const video = videoRef.current;
+      if (!videoRef.current || !activeStream) return;
 
-        // Use the video element directly as the source for WebGL
-        // Set canvas dimensions to match video
-        const captureCanvas = document.createElement("canvas");
-        captureCanvas.width = video.videoWidth;
-        captureCanvas.height = video.videoHeight;
-        const ctx = captureCanvas.getContext("2d");
-        if (!ctx) return;
+      const video = videoRef.current;
 
-        // Apply the horizontal flip using Canvas 2D first
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, -captureCanvas.width, 0, captureCanvas.width, captureCanvas.height);
+      // Use the video element directly as the source for WebGL
+      // Set canvas dimensions to match video
+      const captureCanvas = document.createElement("canvas");
+      captureCanvas.width = video.videoWidth;
+      captureCanvas.height = video.videoHeight;
+      const ctx = captureCanvas.getContext("2d");
+      if (!ctx) return;
 
-        let finalCanvas: HTMLCanvasElement = captureCanvas;
+      // Apply the horizontal flip using Canvas 2D first
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(
+        video,
+        -captureCanvas.width,
+        0,
+        captureCanvas.width,
+        captureCanvas.height
+      );
 
-        // Apply filter using WebGL if a filter is selected
-        if (filter !== "none") {
-            try {
-                const uniforms = mapCssFilterStringToUniforms(filter);
-                // Use the canvas with the flip applied as the source for the GL filter
-                finalCanvas = await runFilter(captureCanvas, uniforms, fragSrc);
-            } catch (error) {
-                console.error("WebGL filtering failed, falling back to no filter:", error);
-                // If WebGL fails, use the canvas with just the flip
-                 finalCanvas = captureCanvas;
-            }
+      let finalCanvas: HTMLCanvasElement = captureCanvas;
+
+      // Apply filter using WebGL if a filter is selected
+      if (filter !== "none") {
+        try {
+          const uniforms = mapCssFilterStringToUniforms(filter);
+          // Use the canvas with the flip applied as the source for the GL filter
+          finalCanvas = await runFilter(captureCanvas, uniforms, fragSrc);
+        } catch (error) {
+          console.error("WebGL filtering failed, falling back to no filter:", error);
+          // If WebGL fails, use the canvas with just the flip
+          finalCanvas = captureCanvas;
         }
-
-        // Convert the final canvas (with flip and potentially WebGL filter) to JPEG data URL
-        const photoDataUrl = finalCanvas.toDataURL("image/jpeg", 0.85);
-
-        // Call the onPhoto callback
-        onPhoto?.(photoDataUrl);
-
-        // Dispatch a custom event with the photo data URL for other components to use
-        const photoTakenEvent = new CustomEvent("photo-taken", {
-          detail: photoDataUrl,
-        });
-        window.dispatchEvent(photoTakenEvent);
-
-        // Clean up temporary canvas
-        // No explicit cleanup needed for canvas elements, they are garbage collected
       }
+
+      // Convert the final canvas (with flip and potentially WebGL filter) to JPEG data URL
+      const photoDataUrl = finalCanvas.toDataURL("image/jpeg", 0.85);
+
+      // Call the onPhoto callback
+      onPhoto?.(photoDataUrl);
+
+      // Dispatch a custom event with the photo data URL for other components to use
+      const photoTakenEvent = new CustomEvent("photo-taken", {
+        detail: photoDataUrl,
+      });
+      window.dispatchEvent(photoTakenEvent);
+
+      // Clean up temporary canvas
+      // No explicit cleanup needed for canvas elements, they are garbage collected
     };
 
     if (!isPreview) {
       window.addEventListener("webcam-capture", handleCapture as EventListener);
-      return () => window.removeEventListener("webcam-capture", handleCapture as EventListener);
+      return () =>
+        window.removeEventListener("webcam-capture", handleCapture as EventListener);
     }
-  }, [stream, onPhoto, isPreview, filter]);
+  }, [activeStream, onPhoto, isPreview, filter]);
 
   const startCamera = async () => {
     try {
+      startedInternallyRef.current = true;
+
+      if (internalStream) {
+        internalStream.getTracks().forEach((track) => track.stop());
+      }
+
       const constraints = {
         audio: false,
         video: {
@@ -196,10 +263,14 @@ export function Webcam({
         },
       };
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia(
-        constraints
-      );
-      setStream(mediaStream);
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const track = mediaStream.getVideoTracks()[0];
+
+      activeDeviceIdRef.current =
+        track?.getSettings().deviceId ?? selectedCameraId ?? null;
+
+      setInternalStream(mediaStream);
+      setError(null);
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -208,13 +279,24 @@ export function Webcam({
     } catch (err) {
       console.error("Camera error:", err);
       setError(err instanceof Error ? err.message : "Failed to access camera");
+      activeDeviceIdRef.current = null;
+      startedInternallyRef.current = false;
     }
   };
 
   const stopCamera = () => {
-    if (stream && !isPreview) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+    if (internalStream && !isPreview) {
+      internalStream.getTracks().forEach((track) => track.stop());
+      setInternalStream(null);
+    }
+
+    if (!controlledStream && videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    if (!controlledStream) {
+      activeDeviceIdRef.current = null;
+      startedInternallyRef.current = false;
     }
   };
 

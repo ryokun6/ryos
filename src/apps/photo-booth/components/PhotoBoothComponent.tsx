@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -131,27 +131,24 @@ export function PhotoBoothComponent({
   const { photos, addPhoto, addPhotos, clearPhotos } = usePhotoBoothStore();
   const [isMultiPhotoMode, setIsMultiPhotoMode] = useState(false);
   const [multiPhotoCount, setMultiPhotoCount] = useState(0);
-  const [multiPhotoTimer, setMultiPhotoTimer] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const multiPhotoTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [currentPhotoBatch, setCurrentPhotoBatch] = useState<string[]>([]);
   const [isFlashing, setIsFlashing] = useState(false);
   const [lastPhoto, setLastPhoto] = useState<string | null>(null);
   const [showThumbnail, setShowThumbnail] = useState(false);
   const { play: playShutter } = useSound(Sounds.PHOTO_SHUTTER, 0.4);
   const [newPhotoIndex, setNewPhotoIndex] = useState<number | null>(null);
-  const [mainStream, setMainStream] = useState<MediaStream | null>(null);
   const { saveFile, files } = useFileSystem("/Images");
+
+  const streamRef = useRef<MediaStream | null>(null);
+  const cameraRequestTokenRef = useRef<symbol | null>(null);
+  const isMountedRef = useRef(true);
+  const isWindowOpenRef = useRef(isWindowOpen);
+  const isForegroundRef = useRef(isForeground);
+  const activeCameraIdRef = useRef<string | null>(null);
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-
-  // Add handler for camera selection
-  const handleCameraSelect = async (deviceId: string) => {
-    console.log("Switching to camera:", deviceId);
-    setSelectedCameraId(deviceId);
-    await startCamera();
-  };
 
   const handleClearPhotos = () => {
     clearPhotos();
@@ -162,23 +159,6 @@ export function PhotoBoothComponent({
     // TODO: Implement photo export functionality
     console.log("Export photos");
   };
-
-  // Component render with menu bar
-  const menuBar = (
-    <PhotoBoothMenuBar
-      onClose={onClose}
-      onShowHelp={() => setShowHelp(true)}
-      onShowAbout={() => setShowAbout(true)}
-      onClearPhotos={handleClearPhotos}
-      onExportPhotos={handleExportPhotos}
-      effects={effects}
-      selectedEffect={selectedEffect}
-      onEffectSelect={setSelectedEffect}
-      availableCameras={availableCameras}
-      selectedCameraId={selectedCameraId}
-      onCameraSelect={handleCameraSelect}
-    />
-  );
 
   // Add a small delay before showing photo strip to prevent flickering
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -192,72 +172,224 @@ export function PhotoBoothComponent({
     }
   }, [showPhotoStrip, isInitialLoad]);
 
-  useEffect(() => {
-    // Start camera when window opens or app comes to foreground
-    if (isWindowOpen) {
-      if (isForeground) {
-        // Check if stream is active, if not, restart it
-        const isStreamActive =
-          stream &&
-          stream.active &&
-          stream.getTracks().some((track) => track.readyState === "live");
+    useEffect(() => {
+      isWindowOpenRef.current = isWindowOpen;
+    }, [isWindowOpen]);
 
-        if (!isStreamActive) {
-          console.log("Starting/restarting camera");
-          startCamera();
+    useEffect(() => {
+      isForegroundRef.current = isForeground;
+    }, [isForeground]);
+
+    const stopCamera = useCallback(
+      (options?: { skipState?: boolean }) => {
+        const skipState = options?.skipState ?? false;
+
+        cameraRequestTokenRef.current = null;
+
+        const currentStream = streamRef.current;
+        if (currentStream) {
+          currentStream.getTracks().forEach((track) => track.stop());
         }
-      } else {
-        // App going to background - we'll keep the stream alive
-        console.log("App in background - stream will be maintained");
-      }
-    }
+        streamRef.current = null;
+        activeCameraIdRef.current = null;
 
-    // Only clean up when window actually closes
-    return () => {
-      if (!isWindowOpen) {
+        if (multiPhotoTimerRef.current) {
+          clearInterval(multiPhotoTimerRef.current);
+          multiPhotoTimerRef.current = null;
+        }
+
+        if (!skipState && isMountedRef.current) {
+          setStream(null);
+          setIsLoadingCamera(false);
+        }
+      },
+      []
+    );
+
+    const startCamera = useCallback(async () => {
+      if (!isMountedRef.current) return;
+
+      const shouldActivate =
+        isWindowOpenRef.current && isForegroundRef.current;
+      if (!shouldActivate) return;
+
+      const currentStream = streamRef.current;
+      const hasActiveTracks =
+        currentStream &&
+        currentStream.active &&
+        currentStream
+          .getTracks()
+          .some((track) => track.readyState === "live");
+
+      const isSameDevice =
+        !selectedCameraId ||
+        activeCameraIdRef.current === selectedCameraId;
+
+      if (hasActiveTracks && isSameDevice) {
+        return;
+      }
+
+      if (currentStream) {
         stopCamera();
       }
-    };
-  }, [isWindowOpen, isForeground, stream]);
 
-  // Fully stop any active media streams and clear timers
-  const stopCamera = () => {
-    // Aggregate all known streams so we can safely stop them
-    const streams: MediaStream[] = [];
+      const requestToken = Symbol("camera-request");
+      cameraRequestTokenRef.current = requestToken;
 
-    if (stream) streams.push(stream);
-    // `mainStream` might be the same as `stream`, but if it is different we
-    // still want to make sure we stop its tracks as well.
-    if (mainStream && mainStream !== stream) streams.push(mainStream);
+      if (isMountedRef.current) {
+        setCameraError(null);
+        setIsLoadingCamera(true);
+      }
 
-    streams.forEach((s) => {
-      s.getTracks().forEach((track) => track.stop());
-    });
+      try {
+        console.log("Environment:", {
+          protocol: window.location.protocol,
+          isSecure: window.isSecureContext,
+          hostname: window.location.hostname,
+          userAgent: navigator.userAgent,
+        });
 
-    // Clear local references so React knows the streams are gone
-    setStream(null);
-    setMainStream(null);
+        if (!window.isSecureContext) {
+          throw new DOMException(
+            "Camera requires a secure context (HTTPS)",
+            "SecurityError"
+          );
+        }
 
-    // Clear any running interval that might be taking additional photos
-    if (multiPhotoTimer) {
-      clearInterval(multiPhotoTimer);
-      setMultiPhotoTimer(null);
-    }
-  };
+        if (!navigator.mediaDevices) {
+          console.error("mediaDevices API not available");
+          throw new Error("Camera API not available");
+        }
 
-  // Ensure that we always stop the camera when the Photo Booth window is
-  // closed.  Returning `null` from the component hides the UI but does **not**
-  // unmount the component itself, so we need a dedicated effect that reacts
-  // to `isWindowOpen` changes and performs cleanup.
-  useEffect(() => {
-    if (!isWindowOpen) {
-      stopCamera();
-    }
+        const constraints = {
+          video: {
+            deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+          },
+          audio: false,
+        } as const;
 
-    // It's safe to omit a cleanup function here because `stopCamera` already
-    // handles stopping tracks and clearing timers – calling it a second time
-    // would simply be a no-op.
-  }, [isWindowOpen]);
+        console.log("Requesting camera access with constraints:", constraints);
+        const mediaStream = await navigator.mediaDevices.getUserMedia(
+          constraints
+        );
+        console.log(
+          "Camera access granted:",
+          mediaStream.active,
+          "Video tracks:",
+          mediaStream.getVideoTracks().length
+        );
+
+        const videoTrack = mediaStream.getVideoTracks()[0];
+        if (videoTrack) {
+          console.log("Video track:", videoTrack.label);
+
+          try {
+            const settings = videoTrack.getSettings();
+            console.log("Track settings:", settings);
+            activeCameraIdRef.current =
+              settings.deviceId ?? selectedCameraId ?? null;
+          } catch (e) {
+            console.warn("Couldn't read track settings:", e);
+            activeCameraIdRef.current = selectedCameraId;
+          }
+        } else {
+          activeCameraIdRef.current = selectedCameraId;
+        }
+
+        const shouldKeepStream =
+          cameraRequestTokenRef.current === requestToken &&
+          isWindowOpenRef.current &&
+          isForegroundRef.current &&
+          isMountedRef.current;
+
+        if (!shouldKeepStream) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = mediaStream;
+
+        if (isMountedRef.current) {
+          setStream(mediaStream);
+        }
+      } catch (error) {
+        if (cameraRequestTokenRef.current !== requestToken) {
+          return;
+        }
+
+        console.error("Camera error:", error);
+        let errorMessage = "Could not access camera";
+
+        if (error instanceof DOMException) {
+          console.log("DOMException type:", error.name);
+          if (error.name === "NotAllowedError") {
+            errorMessage = "Camera permission denied";
+          } else if (error.name === "NotFoundError") {
+            errorMessage = "No camera found";
+          } else if (error.name === "SecurityError") {
+            errorMessage = "Camera requires HTTPS";
+          } else {
+            errorMessage = `Camera error: ${error.name}`;
+          }
+        } else if (error instanceof Error && error.message) {
+          errorMessage = error.message;
+        }
+
+        if (isMountedRef.current) {
+          setCameraError(errorMessage);
+        }
+      } finally {
+        if (cameraRequestTokenRef.current === requestToken) {
+          cameraRequestTokenRef.current = null;
+          if (isMountedRef.current) {
+            setIsLoadingCamera(false);
+          }
+        }
+      }
+    }, [selectedCameraId, stopCamera]);
+
+    useEffect(() => {
+      if (isWindowOpen && isForeground) {
+        startCamera();
+      } else {
+        stopCamera();
+      }
+    }, [isWindowOpen, isForeground, startCamera, stopCamera]);
+
+    useEffect(() => {
+      return () => {
+        isMountedRef.current = false;
+        stopCamera({ skipState: true });
+      };
+    }, [stopCamera]);
+
+    const handleCameraSelect = useCallback(
+      async (deviceId: string) => {
+        console.log("Switching to camera:", deviceId);
+        setSelectedCameraId(deviceId);
+        await startCamera();
+      },
+      [startCamera]
+    );
+
+    // Component render with menu bar
+    const menuBar = (
+      <PhotoBoothMenuBar
+        onClose={onClose}
+        onShowHelp={() => setShowHelp(true)}
+        onShowAbout={() => setShowAbout(true)}
+        onClearPhotos={handleClearPhotos}
+        onExportPhotos={handleExportPhotos}
+        effects={effects}
+        selectedEffect={selectedEffect}
+        onEffectSelect={setSelectedEffect}
+        availableCameras={availableCameras}
+        selectedCameraId={selectedCameraId}
+        onCameraSelect={handleCameraSelect}
+      />
+    );
 
   // Detect iOS devices which need special handling
   const isIOS =
@@ -461,97 +593,6 @@ export function PhotoBoothComponent({
     getCameras();
   }, []);
 
-  // Update startCamera to use selected camera
-  const startCamera = async () => {
-    try {
-      setCameraError(null);
-      setIsLoadingCamera(true);
-
-      // Production-specific debugging
-      console.log("Environment:", {
-        protocol: window.location.protocol,
-        isSecure: window.isSecureContext,
-        hostname: window.location.hostname,
-        userAgent: navigator.userAgent,
-      });
-
-      // Strict check for secure context - required for camera in production
-      if (!window.isSecureContext) {
-        throw new DOMException(
-          "Camera requires a secure context (HTTPS)",
-          "SecurityError"
-        );
-      }
-
-      // Always stop the current stream before starting a new one
-      if (stream) {
-        stopCamera();
-      }
-
-      // Diagnostic check for mediaDevices API
-      if (!navigator.mediaDevices) {
-        console.error("mediaDevices API not available");
-        throw new Error("Camera API not available");
-      }
-
-      // Use specific constraints with ideal dimensions and selected camera
-      const constraints = {
-        video: {
-          deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-        },
-        audio: false,
-      };
-
-      console.log("Requesting camera access with constraints:", constraints);
-      const mediaStream = await navigator.mediaDevices.getUserMedia(
-        constraints
-      );
-      console.log(
-        "Camera access granted:",
-        mediaStream.active,
-        "Video tracks:",
-        mediaStream.getVideoTracks().length
-      );
-
-      // Verify track settings - this helps debug Chrome-specific issues
-      const videoTrack = mediaStream.getVideoTracks()[0];
-      if (videoTrack) {
-        console.log("Video track:", videoTrack.label);
-
-        try {
-          const settings = videoTrack.getSettings();
-          console.log("Track settings:", settings);
-        } catch (e) {
-          console.warn("Couldn't read track settings:", e);
-        }
-      }
-
-      setStream(mediaStream);
-    } catch (error) {
-      console.error("Camera error:", error);
-      let errorMessage = "Could not access camera";
-
-      if (error instanceof DOMException) {
-        console.log("DOMException type:", error.name);
-        if (error.name === "NotAllowedError") {
-          errorMessage = "Camera permission denied";
-        } else if (error.name === "NotFoundError") {
-          errorMessage = "No camera found";
-        } else if (error.name === "SecurityError") {
-          errorMessage = "Camera requires HTTPS";
-        } else {
-          errorMessage = `Camera error: ${error.name}`;
-        }
-      }
-
-      setCameraError(errorMessage);
-    } finally {
-      setIsLoadingCamera(false);
-    }
-  };
-
   const handlePhoto = (photoDataUrl: string) => {
     // Trigger flash effect
     setIsFlashing(true);
@@ -641,6 +682,7 @@ export function PhotoBoothComponent({
 
         if (newCount === 4) {
           clearInterval(timer);
+          multiPhotoTimerRef.current = null;
           setIsMultiPhotoMode(false);
 
           // After the sequence completes, process batch photos and convert to references
@@ -712,7 +754,7 @@ export function PhotoBoothComponent({
       });
     }, 1000);
 
-    setMultiPhotoTimer(timer);
+    multiPhotoTimerRef.current = timer;
 
     // Take the first photo immediately
     const event = new CustomEvent("webcam-capture");
@@ -812,20 +854,21 @@ export function PhotoBoothComponent({
                 ? "pointer-events-none opacity-50"
                 : ""
             }`}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Webcam
-                onPhoto={(photoDataUrl) => {
-                  // Only process if not in preview
-                  if (photoDataUrl) {
-                    handlePhoto(photoDataUrl);
-                  }
-                }}
-                className="w-full h-full"
-                filter={selectedEffect.filter}
-                onStreamReady={setMainStream}
-                selectedCameraId={selectedCameraId}
-              />
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Webcam
+                  onPhoto={(photoDataUrl) => {
+                    // Only process if not in preview
+                    if (photoDataUrl) {
+                      handlePhoto(photoDataUrl);
+                    }
+                  }}
+                  className="w-full h-full"
+                  filter={selectedEffect.filter}
+                  selectedCameraId={selectedCameraId}
+                  stream={stream}
+                  autoStart={false}
+                />
 
               {/* Camera flash effect */}
               <AnimatePresence>
@@ -907,7 +950,8 @@ export function PhotoBoothComponent({
                             isPreview
                             filter={effect.filter}
                             className="w-full h-full"
-                            sharedStream={mainStream}
+                            sharedStream={stream}
+                            autoStart={false}
                           />
                           <div
                             className="absolute bottom-0 left-0 right-0 text-center py-1.5 text-white font-geneva-12 text-[12px]"
