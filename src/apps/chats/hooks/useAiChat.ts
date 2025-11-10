@@ -1630,15 +1630,31 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                       `• …and ${totalMatches - limitedApplets.length} more not shown (increase limit to view).`,
                     );
                   }
-                }
 
-                const toolOutput = lines.join("\n");
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: toolOutput,
-                });
-                result = ""; // Clear result to prevent duplicate
+                  const toolOutput = lines.join("\n");
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output: toolOutput,
+                  });
+
+                  const summaryMessage =
+                    limitedApplets.length === 0
+                      ? hasKeyword
+                        ? `No shared applets matched "${rawKeyword}".`
+                        : "No shared applets available."
+                      : hasKeyword
+                        ? `Found ${limitedApplets.length} shared applet${
+                            limitedApplets.length === 1 ? "" : "s"
+                          } matching "${rawKeyword}".`
+                        : `Found ${limitedApplets.length}${
+                            totalMatches > limitedApplets.length
+                              ? ` of ${totalMatches}`
+                              : ""
+                          } shared applet${
+                            limitedApplets.length === 1 ? "" : "s"
+                          }.`;
+                  result = summaryMessage;
               } catch (err) {
                 console.error("listSharedApplets error:", err);
                 addToolResult({
