@@ -3,7 +3,7 @@ import { FileItem as DisplayFileItem } from "../components/FileList";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 // Re-export STORES for backward compatibility (other modules import from here)
 export { STORES };
-import { getNonFinderApps, AppId } from "@/config/appRegistry";
+import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useVideoStore } from "@/stores/useVideoStore";
@@ -202,7 +202,36 @@ function getFileTypeFromExtension(fileName: string): string {
 
 // Get icon based on FileSystemItem metadata
 function getFileIcon(item: FileSystemItem): string {
-  if (item.icon) return item.icon; // Use specific icon if provided
+  // Handle aliases/shortcuts first
+  if (item.aliasType && item.aliasTarget) {
+    if (item.aliasType === "app") {
+      // For app aliases, resolve icon from app registry
+      try {
+        const iconPath = getAppIconPath(item.aliasTarget as AppId);
+        if (iconPath) {
+          return iconPath;
+        }
+      } catch (err) {
+        console.warn(`[getFileIcon] Failed to resolve icon for app alias ${item.aliasTarget}:`, err);
+      }
+      return "/icons/default/application.png";
+    } else if (item.aliasType === "file") {
+      // For file aliases, resolve icon from target file
+      const fileStore = useFilesStore.getState();
+      const targetFile = fileStore.getItem(item.aliasTarget);
+      if (targetFile) {
+        // Recursively get icon for target (in case target is also an alias)
+        return getFileIcon(targetFile);
+      }
+      return "/icons/default/file.png";
+    }
+  }
+
+  // Use stored icon if available (but only if not an alias, since aliases should resolve)
+  if (item.icon && item.icon.trim() !== "") {
+    return item.icon;
+  }
+
   if (item.isDirectory) {
     // Special handling for Trash icon based on content
     if (item.path === "/Trash") {

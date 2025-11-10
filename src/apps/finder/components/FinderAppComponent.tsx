@@ -826,8 +826,58 @@ export function FinderAppComponent({
     { type: "item", label: "New Folder…", onSelect: handleNewFolder },
   ];
 
+  const handleAddToDesktop = (file: FileItem) => {
+    // Check if item is already an alias or is Desktop itself
+    if (file.path.startsWith("/Desktop") || file.path === "/Desktop") {
+      return;
+    }
+
+    // Check if an alias already exists for this target
+    const desktopItems = fileStore.getItemsInPath("/Desktop");
+    let aliasExists = false;
+
+    // Determine if this is an app or a file/applet
+    if (file.path.startsWith("/Applications/") && file.appId) {
+      // Check if alias already exists for this app
+      aliasExists = desktopItems.some(
+        (item) =>
+          item.aliasType === "app" &&
+          item.aliasTarget === file.appId &&
+          item.status === "active"
+      );
+      
+      if (!aliasExists) {
+        // It's an application
+        fileStore.createAlias(file.path, file.name, "app", file.appId);
+      }
+    } else if (!file.isDirectory) {
+      // Check if alias already exists for this file
+      aliasExists = desktopItems.some(
+        (item) =>
+          item.aliasType === "file" &&
+          item.aliasTarget === file.path &&
+          item.status === "active"
+      );
+      
+      if (!aliasExists) {
+        // It's a file or applet
+        fileStore.createAlias(file.path, file.name, "file");
+      }
+    }
+  };
+
   const fileMenuItems = (file: FileItem): MenuItem[] => [
     { type: "item", label: "Open", onSelect: () => handleFileOpen(file) },
+    { type: "separator" },
+    {
+      type: "item",
+      label: "Add to Desktop",
+      onSelect: () => handleAddToDesktop(file),
+      disabled:
+        file.isDirectory ||
+        file.path.startsWith("/Desktop") ||
+        file.path === "/Desktop",
+    },
     { type: "separator" },
     { type: "item", label: "Rename…", onSelect: handleRename },
     { type: "item", label: "Duplicate", onSelect: handleDuplicate },

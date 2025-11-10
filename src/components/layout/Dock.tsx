@@ -38,10 +38,12 @@ function MacDock() {
 
   const launchApp = useLaunchApp();
   const files = useFilesStore((s) => s.items);
+  const fileStore = useFilesStore();
   const trashIcon = useFilesStore(
     (s) => s.items["/Trash"]?.icon || "/icons/trash-empty.png"
   );
   const finderInstances = useFinderStore((s) => s.instances);
+  const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
 
   // Helper to get applet info (icon and name) from instance
   const getAppletInfo = useCallback(
@@ -318,10 +320,13 @@ function MacDock() {
       idKey: string;
       showIndicator?: boolean;
       isEmoji?: boolean;
+      onDragOver?: (e: React.DragEvent<HTMLButtonElement>) => void;
+      onDrop?: (e: React.DragEvent<HTMLButtonElement>) => void;
+      onDragLeave?: (e: React.DragEvent<HTMLButtonElement>) => void;
     }
   >(
     (
-      { label, onClick, icon, idKey, showIndicator = false, isEmoji = false },
+      { label, onClick, icon, idKey, showIndicator = false, isEmoji = false, onDragOver, onDrop, onDragLeave },
       forwardedRef
     ) => {
       const isNew = hasMounted && !seenIdsRef.current.has(idKey);
@@ -405,6 +410,9 @@ function MacDock() {
             aria-label={label}
             title={label}
             onClick={onClick}
+            {...(onDragOver && { onDragOver })}
+            {...(onDrop && { onDrop })}
+            {...(onDragLeave && { onDragLeave })}
             className="relative flex items-end justify-center w-full h-full"
             style={{
               willChange: "transform",
@@ -608,16 +616,65 @@ function MacDock() {
 
               {/* Trash (right side) */}
               {(() => {
+                const handleTrashDragOver = (e: React.DragEvent<HTMLButtonElement>) => {
+                  // Check if this is a desktop shortcut being dragged
+                  // We can't use getData in dragOver, so check types instead
+                  const types = Array.from(e.dataTransfer.types);
+                  if (types.includes("application/json")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect = "move";
+                    setIsDraggingOverTrash(true);
+                  }
+                };
+
+                const handleTrashDrop = (e: React.DragEvent<HTMLButtonElement>) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingOverTrash(false);
+
+                  try {
+                    const data = e.dataTransfer.getData("application/json");
+                    if (data) {
+                      const parsed = JSON.parse(data);
+                      // Only handle desktop shortcuts
+                      if (parsed.path && parsed.path.startsWith("/Desktop/")) {
+                        // Move shortcut to trash
+                        fileStore.removeItem(parsed.path);
+                      }
+                    }
+                  } catch (err) {
+                    console.warn("[Dock] Failed to handle trash drop:", err);
+                  }
+                };
+
+                const handleTrashDragLeave = (e: React.DragEvent<HTMLButtonElement>) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingOverTrash(false);
+                };
+
                 return (
-                  <IconButton
-                    key="__trash__"
-                    label="Trash"
-                    icon={trashIcon}
-                    idKey="__trash__"
-                    onClick={() => {
-                      focusFinderAtPathOrLaunch("/Trash");
+                  <motion.div
+                    animate={{
+                      scale: isDraggingOverTrash ? 1.2 : 1,
+                      opacity: isDraggingOverTrash ? 0.7 : 1,
                     }}
-                  />
+                    transition={{ duration: 0.2 }}
+                  >
+                    <IconButton
+                      key="__trash__"
+                      label="Trash"
+                      icon={trashIcon}
+                      idKey="__trash__"
+                      onClick={() => {
+                        focusFinderAtPathOrLaunch("/Trash");
+                      }}
+                      onDragOver={handleTrashDragOver}
+                      onDrop={handleTrashDrop}
+                      onDragLeave={handleTrashDragLeave}
+                    />
+                  </motion.div>
                 );
               })()}
             </AnimatePresence>

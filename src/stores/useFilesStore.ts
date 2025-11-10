@@ -28,6 +28,9 @@ export interface FileSystemItem {
     // Window dimensions
     windowWidth?: number; // Window width when last opened
     windowHeight?: number; // Window height when last opened
+    // Alias/shortcut properties
+    aliasTarget?: string; // Path or appId that the alias points to
+    aliasType?: "file" | "app"; // Type of alias - file/app/applet or application
   // Content is NOT stored here, only metadata
 }
 
@@ -66,6 +69,12 @@ interface FilesStoreState {
   getItem: (path: string) => FileSystemItem | undefined;
   updateItemMetadata: (path: string, updates: Partial<FileSystemItem>) => void;
   getTrashItems: () => FileSystemItem[]; // Helper to get all trashed items
+  createAlias: (
+    targetPath: string,
+    aliasName: string,
+    aliasType: "file" | "app",
+    targetAppId?: string
+  ) => void; // Create an alias/shortcut in /Desktop
   reset: () => void;
   clearLibrary: () => void;
   resetLibrary: () => Promise<void>;
@@ -570,6 +579,77 @@ export const useFilesStore = create<FilesStoreState>()(
         return Object.values(get().items).filter(
           (item) => item.status === "trashed"
         );
+      },
+
+      createAlias: (targetPath, aliasName, aliasType, targetAppId) => {
+        set((state) => {
+          // Ensure /Desktop directory exists
+          if (!state.items["/Desktop"] || !state.items["/Desktop"].isDirectory) {
+            console.warn(
+              "[FilesStore] Cannot create alias. /Desktop directory does not exist."
+            );
+            return state;
+          }
+
+          // Get the original item to copy icon/name from
+          let originalItem: FileSystemItem | undefined;
+          let icon: string | undefined;
+          let name: string = aliasName;
+
+          if (aliasType === "app" && targetAppId) {
+            // For apps, don't set icon here - let Desktop component resolve it via getAppIconPath
+            icon = undefined;
+          } else {
+            // For files/applets, get from the file system
+            originalItem = state.items[targetPath];
+            if (originalItem) {
+              icon = originalItem.icon;
+              // Use original name if aliasName not provided
+              if (!aliasName || aliasName === originalItem.name) {
+                name = originalItem.name;
+              }
+            } else {
+              icon = "/icons/default/file.png";
+            }
+          }
+
+          // Create unique alias path
+          const aliasPath = `/Desktop/${name}`;
+          let finalAliasPath = aliasPath;
+          let counter = 1;
+
+          // Ensure unique name
+          while (state.items[finalAliasPath]) {
+            const ext = name.includes(".")
+              ? `.${name.split(".").pop()}`
+              : "";
+            const baseName = ext ? name.slice(0, -ext.length) : name;
+            finalAliasPath = `/Desktop/${baseName} ${counter}${ext}`;
+            counter++;
+          }
+
+          const now = Date.now();
+          const aliasItem: FileSystemItem = {
+            path: finalAliasPath,
+            name: finalAliasPath.split("/").pop() || name,
+            isDirectory: false,
+            icon: icon,
+            type: aliasType === "app" ? "application" : originalItem?.type || "alias",
+            aliasTarget: aliasType === "app" && targetAppId ? targetAppId : targetPath,
+            aliasType: aliasType,
+            appId: aliasType === "app" ? targetAppId : undefined,
+            status: "active",
+            createdAt: now,
+            modifiedAt: now,
+          };
+
+          return {
+            items: {
+              ...state.items,
+              [finalAliasPath]: aliasItem,
+            },
+          };
+        });
       },
 
       clearLibrary: () =>

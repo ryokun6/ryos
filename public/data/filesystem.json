@@ -70,6 +70,14 @@
       "type": "directory",
       "icon": "/icons/default/trash-empty.png",
       "status": "active"
+    },
+    {
+      "path": "/Desktop",
+      "name": "Desktop",
+      "isDirectory": true,
+      "type": "directory",
+      "icon": "/icons/default/desktop.png",
+      "status": "active"
     }
   ],
   "files": [

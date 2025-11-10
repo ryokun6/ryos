@@ -13,6 +13,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useState, useRef, useEffect } from "react";
 import { useLongPress } from "@/hooks/useLongPress";
 import { isTouchDevice } from "@/utils/device";
+import { useThemeStore } from "@/stores/useThemeStore";
 
 export interface FileItem {
   name: string;
@@ -59,6 +60,9 @@ export function FileList({
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const [dropTargetPath, setDropTargetPath] = useState<string | null>(null);
   const draggedFileRef = useRef<FileItem | null>(null);
+  const currentTheme = useThemeStore((state) => state.current);
+  const isMacOSXTheme = currentTheme === "macosx";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   // Add refs for rename timing
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -135,16 +139,119 @@ export function FileList({
       JSON.stringify({
         path: file.path,
         name: file.name,
+        appId: file.appId, // Include appId for applications
       })
     );
 
-    // Set drag image to be the element itself
+    // Create a clean drag image
     const target = e.currentTarget as HTMLElement;
-    e.dataTransfer.setDragImage(
-      target,
-      e.nativeEvent.offsetX,
-      e.nativeEvent.offsetY
-    );
+    const clonedElement = target.cloneNode(true) as HTMLElement;
+    
+    // Check if this is icon view (small/large) vs list view
+    const isIconView = viewType === "small" || viewType === "large";
+    
+    let dragImage: HTMLElement = clonedElement;
+    
+    if (isIconView) {
+      // For icon view: apply desktop-style transparent background and text shadows
+      const labelElement = clonedElement.querySelector('.file-icon-label') as HTMLElement;
+      if (labelElement) {
+        labelElement.style.background = 'transparent';
+        labelElement.style.backgroundColor = 'transparent';
+        
+        // Apply the same text shadow styles as desktop shortcuts
+        if (isMacOSXTheme || isXpTheme) {
+          labelElement.style.color = 'white';
+          if (isMacOSXTheme) {
+            labelElement.style.textShadow =
+              'rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px';
+          } else if (isXpTheme) {
+            labelElement.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.8)';
+          }
+        }
+      }
+      
+      // Make the container background transparent too
+      clonedElement.style.background = 'transparent';
+      clonedElement.style.backgroundColor = 'transparent';
+    } else {
+      // For list view: retain original styling and fix width to match original
+      const originalWidth = target.offsetWidth;
+      
+      // Ensure table structure is maintained - wrap in table/tbody if needed
+      if (clonedElement.tagName === 'TR') {
+        // If it's a table row, ensure it has proper table structure
+        const table = document.createElement('table');
+        table.style.width = `${originalWidth}px`;
+        table.style.borderCollapse = 'collapse';
+        table.style.tableLayout = 'auto';
+        const tbody = document.createElement('tbody');
+        tbody.appendChild(clonedElement);
+        table.appendChild(tbody);
+        dragImage = table;
+      } else {
+        clonedElement.style.width = `${originalWidth}px`;
+        clonedElement.style.minWidth = `${originalWidth}px`;
+        clonedElement.style.maxWidth = `${originalWidth}px`;
+      }
+      
+      clonedElement.style.whiteSpace = 'nowrap';
+      clonedElement.style.display = clonedElement.style.display || 'table-row';
+      
+      // Ensure table cells maintain their width and visibility
+      const cells = clonedElement.querySelectorAll('td');
+      cells.forEach((cell) => {
+        const cellEl = cell as HTMLElement;
+        cellEl.style.width = 'auto';
+        cellEl.style.minWidth = '0';
+        cellEl.style.maxWidth = 'none';
+        cellEl.style.visibility = 'visible';
+        
+        // For flex containers (like the first cell with icon and name), prevent wrapping
+        if (cellEl.classList.contains('flex')) {
+          // Keep flex display but ensure it doesn't wrap
+          cellEl.style.display = 'flex';
+          cellEl.style.flexWrap = 'nowrap';
+          cellEl.style.whiteSpace = 'nowrap';
+          // Ensure flex children don't wrap and stay on one line
+          const flexChildren = Array.from(cellEl.children);
+          flexChildren.forEach((child) => {
+            const childEl = child as HTMLElement;
+            childEl.style.whiteSpace = 'nowrap';
+            childEl.style.flexShrink = '0';
+            // Ensure text content doesn't wrap
+            if (childEl.textContent) {
+              childEl.style.display = 'inline-block';
+            }
+          });
+        } else {
+          // For non-flex cells, use table-cell display
+          cellEl.style.display = 'table-cell';
+          cellEl.style.whiteSpace = 'nowrap';
+        }
+        
+        // Preserve whitespace-nowrap on cells that have it
+        if (cellEl.classList.contains('whitespace-nowrap')) {
+          cellEl.style.whiteSpace = 'nowrap';
+        }
+      });
+    }
+    
+    // Position off-screen and add to DOM temporarily
+    dragImage.style.position = "absolute";
+    dragImage.style.top = "-1000px";
+    dragImage.style.left = "-1000px";
+    document.body.appendChild(dragImage);
+    
+    // Set drag image
+    e.dataTransfer.setDragImage(dragImage, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    
+    // Clean up after a short delay
+    setTimeout(() => {
+      if (document.body.contains(dragImage)) {
+        document.body.removeChild(dragImage);
+      }
+    }, 0);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLElement>, file: FileItem) => {
@@ -268,7 +375,13 @@ export function FileList({
   };
 
   // Helper to compute display name. For Finder applets in /Applets ending with .app, hide extension
+  // Also hide extensions for desktop shortcuts
   const getDisplayName = (file: FileItem): string => {
+    // Hide extension for desktop shortcuts
+    if (file.path.startsWith("/Desktop/") && !file.isDirectory) {
+      return file.name.replace(/\.[^/.]+$/, "");
+    }
+    // Hide extension for applets
     if (
       file.path.startsWith("/Applets/") &&
       !file.isDirectory &&

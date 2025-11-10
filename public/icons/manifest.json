@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2025-11-05T04:45:58.016Z",
+  "generatedAt": "2025-11-10T17:42:50.404Z",
   "themes": {
     "default": [
       "app.png",
@@ -32,6 +32,7 @@
       "control-panels/sound-manager/sound-on.png",
       "control-panels/sound-manager/stt.png",
       "control-panels/sound-manager/tts.png",
+      "desktop.png",
       "directory.png",
       "disk.png",
       "documents.png",
@@ -139,6 +140,7 @@
       "cdrom.png",
       "chess.png",
       "control-panels/appearance-manager/app.png",
+      "desktop.png",
       "dictionary.png",
       "directory.png",
       "disk.png",
@@ -179,6 +181,7 @@
       "applications.png",
       "cdrom.png",
       "control-panels/appearance-manager/app.png",
+      "desktop.png",
       "directory.png",
       "disk.png",
       "documents.png",
@@ -218,6 +221,7 @@
       "applications.png",
       "cdrom.png",
       "control-panels/appearance-manager/app.png",
+      "desktop.png",
       "directory.png",
       "disk.png",
       "documents.png",
