@@ -5,7 +5,7 @@ import { LanguageModelV2 } from "@ai-sdk/provider";
 import {
   SupportedModel as ImportedSupportedModel,
   DEFAULT_AI_MODEL,
-} from "../../src/types/aiModels";
+} from "../../src/types/aiModels.js";
 
 // Re-export the type
 export type SupportedModel = ImportedSupportedModel;

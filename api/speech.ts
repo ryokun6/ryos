@@ -1,7 +1,7 @@
 import { experimental_generateSpeech as generateSpeech } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./utils/cors.js";
-import * as RateLimit from "./utils/rate-limit";
+import * as RateLimit from "./utils/rate-limit.js";
 import { Redis } from "@upstash/redis";
 
 // --- Default Configuration -----------------------------------------------
@@ -351,7 +351,7 @@ export default async function handler(req: Request) {
       });
 
       audioData = audio.uint8Array.buffer;
-      mimeType = audio.mimeType ?? "audio/mpeg";
+      mimeType = "audio/mpeg";
       logInfo(requestId, "OpenAI speech generated", {
         bytes: audioData.byteLength,
         voice: openaiVoice,
