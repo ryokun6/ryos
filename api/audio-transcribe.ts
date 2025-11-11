@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import * as RateLimit from "./utils/rate-limit";
+import * as RateLimit from "./utils/rate-limit.js";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./utils/cors.js";
 
 interface OpenAIError {

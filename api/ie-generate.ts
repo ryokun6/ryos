@@ -3,8 +3,9 @@ import {
   smoothStream,
   convertToModelMessages,
   type ModelMessage,
+  type UIMessage,
 } from "ai";
-import * as RateLimit from "./utils/rate-limit";
+import * as RateLimit from "./utils/rate-limit.js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -14,15 +15,15 @@ import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
-} from "./utils/aiModels";
+  } from "./utils/aiModels.js";
 import { Redis } from "@upstash/redis";
-import { normalizeUrlForCacheKey } from "./utils/url";
+import { normalizeUrlForCacheKey } from "./utils/url.js";
 import {
   CORE_PRIORITY_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
   DELIVERABLE_REQUIREMENTS,
-} from "./utils/aiPrompts";
-import { SUPPORTED_AI_MODELS } from "../src/types/aiModels";
+  } from "./utils/aiPrompts.js";
+import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
 
 // CORS handled via shared utils
 
@@ -57,10 +58,12 @@ const logError = (id: string, message: string, error: unknown) => {
 const generateRequestId = (): string =>
   Math.random().toString(36).substring(2, 10);
 
+type IncomingUIMessage = Omit<UIMessage, "id">;
+
 interface IEGenerateRequestBody {
   url?: string;
   year?: string;
-  messages?: ModelMessage[];
+  messages?: IncomingUIMessage[];
   model?: SupportedModel;
 }
 
@@ -273,7 +276,10 @@ export default async function handler(req: Request) {
       requestId
     ); // Log original requested URL
 
-    const { messages = [], model: bodyModel = DEFAULT_MODEL } = bodyData;
+    const {
+      messages: incomingMessages = [],
+      model: bodyModel = DEFAULT_MODEL,
+    } = bodyData;
 
     // Use normalized URL for the cache key
     const cacheKey =
@@ -288,7 +294,7 @@ export default async function handler(req: Request) {
     // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = queryModel || bodyModel || DEFAULT_MODEL;
 
-    if (!messages || !Array.isArray(messages)) {
+    if (!Array.isArray(incomingMessages)) {
       return new Response("Invalid messages format", { status: 400 });
     }
 
@@ -313,7 +319,7 @@ export default async function handler(req: Request) {
     };
 
     // Convert UIMessages to ModelMessages for the AI model (AI SDK v5)
-    const modelMessages = convertToModelMessages(messages);
+    const modelMessages = convertToModelMessages(incomingMessages);
 
     const enrichedMessages: ModelMessage[] = [
       staticSystemMessage,
