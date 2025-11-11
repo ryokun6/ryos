@@ -1320,12 +1320,14 @@ export function AppletViewerAppComponent({
                   ref={iframeRef}
                   srcDoc={injectAppletAuthScript(ensureMacFonts(htmlContent))}
                   title={windowTitle}
-                  className="w-full h-full border-0"
+                  className="border-0"
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                   style={{
                     display: "block",
                     margin: 0,
                     padding: 0,
+                    width: "calc(100% + 1px)",
+                    height: "calc(100% + 1px)",
                   }}
                   onLoad={() =>
                     sendAuthPayload(iframeRef.current?.contentWindow || null)
