@@ -9,7 +9,7 @@ import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
-} from "./utils/aiModels";
+} from "./utils/aiModels.js";
 import {
   CORE_PRIORITY_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
@@ -18,15 +18,15 @@ import {
   CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
   DELIVERABLE_REQUIREMENTS,
-} from "./utils/aiPrompts";
+} from "./utils/aiPrompts.js";
 import { z } from "zod";
-import { SUPPORTED_AI_MODELS } from "../src/types/aiModels";
-import { appIds } from "../src/config/appIds";
-import type { OsThemeId } from "../src/themes/types";
+import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
+import { appIds } from "../src/config/appIds.js";
+import type { OsThemeId } from "../src/themes/types.js";
 import {
   checkAndIncrementAIMessageCount,
   AI_LIMIT_PER_5_HOURS,
-} from "./utils/rate-limit";
+} from "./utils/rate-limit.js";
 import { Redis } from "@upstash/redis";
 
 // Central list of supported theme IDs for tool validation

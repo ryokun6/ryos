@@ -3,8 +3,9 @@ import {
   smoothStream,
   convertToModelMessages,
   type ModelMessage,
+  type UIMessage,
 } from "ai";
-import * as RateLimit from "./utils/rate-limit";
+import * as RateLimit from "./utils/rate-limit.js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -14,15 +15,15 @@ import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
-} from "./utils/aiModels";
+} from "./utils/aiModels.js";
 import { Redis } from "@upstash/redis";
-import { normalizeUrlForCacheKey } from "./utils/url";
+import { normalizeUrlForCacheKey } from "./utils/url.js";
 import {
   CORE_PRIORITY_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
   DELIVERABLE_REQUIREMENTS,
-} from "./utils/aiPrompts";
-import { SUPPORTED_AI_MODELS } from "../src/types/aiModels";
+} from "./utils/aiPrompts.js";
+import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
 
 // CORS handled via shared utils
 
@@ -60,7 +61,7 @@ const generateRequestId = (): string =>
 interface IEGenerateRequestBody {
   url?: string;
   year?: string;
-  messages?: ModelMessage[];
+  messages?: UIMessage[];
   model?: SupportedModel;
 }
 
