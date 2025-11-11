@@ -356,7 +356,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         {/* Applet Preview iframe */}
         <div 
           className="absolute inset-0" 
-          style={{ paddingTop: "45px" }}
+          style={{ paddingTop: "54px" }}
           onClick={() => {
             // Only handle click for installed applets to bring window to foreground
             if (index === currentIndex) {
