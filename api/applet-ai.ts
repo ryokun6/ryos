@@ -13,6 +13,7 @@ import {
   preflightIfNeeded,
 } from "./utils/cors.js";
 import * as RateLimit from "./utils/rate-limit.js";
+import { Redis } from "@upstash/redis";
 
 export const runtime = "edge";
 export const edge = true;
@@ -120,6 +121,41 @@ const ALLOWED_HOSTS = new Set([
   "127.0.0.1:3000",
   "127.0.0.1:5173",
 ]);
+
+// Authentication constants
+const AUTH_TOKEN_PREFIX = "chat:token:";
+const USER_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days (for tokens only)
+
+// Validate authentication token function
+async function validateAuthToken(
+  redis: Redis,
+  username: string | undefined | null,
+  authToken: string | undefined | null
+): Promise<{ valid: boolean }> {
+  if (!username || !authToken) {
+    return { valid: false };
+  }
+
+  const normalizedUsername = username.toLowerCase();
+  // 1) New multi-token scheme: chat:token:user:{username}:{token}
+  const userScopedKey = `chat:token:user:${normalizedUsername}:${authToken}`;
+  const exists = await redis.exists(userScopedKey);
+  if (exists) {
+    await redis.expire(userScopedKey, USER_TTL_SECONDS);
+    return { valid: true };
+  }
+
+  // 2) Fallback to legacy single-token mapping (username -> token)
+  const legacyKey = `${AUTH_TOKEN_PREFIX}${normalizedUsername}`;
+  const storedToken = await redis.get(legacyKey);
+
+  if (storedToken && storedToken === authToken) {
+    await redis.expire(legacyKey, USER_TTL_SECONDS);
+    return { valid: true };
+  }
+
+  return { valid: false };
+}
 
 const isRyOSHost = (hostHeader: string | null): boolean => {
   if (!hostHeader) return false;
@@ -359,6 +395,18 @@ export default async function handler(req: Request): Promise<Response> {
     return jsonResponse({ error: "Method not allowed" }, 405, effectiveOrigin);
   }
 
+  // Initialize Redis for auth token validation
+  const redis = new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
+
+  // Extract auth headers
+  const authHeader = req.headers.get("authorization");
+  const authToken =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.substring(7)
+      : null;
   const usernameHeaderRaw = req.headers.get("x-username");
   const usernameHeader =
     usernameHeaderRaw && usernameHeaderRaw.trim().length > 0
@@ -372,6 +420,22 @@ export default async function handler(req: Request): Promise<Response> {
   const logPrefix = `[applet-ai][User: ${usernameLogLabel}]`;
   const log = (...args: unknown[]) => console.log(logPrefix, ...args);
   const logError = (...args: unknown[]) => console.error(logPrefix, ...args);
+
+  // Validate authentication (all users, including "ryo", must present a valid token)
+  if (usernameHeader) {
+    const validationResult = await validateAuthToken(redis, usernameHeader, authToken);
+    if (!validationResult.valid) {
+      logError("Authentication failed – invalid or missing token");
+      return jsonResponse(
+        {
+          error: "authentication_failed",
+          message: "Invalid or missing authentication token",
+        },
+        401,
+        effectiveOrigin
+      );
+    }
+  }
 
   const ip = RateLimit.getClientIp(req);
   log("Request received", {
@@ -407,9 +471,10 @@ export default async function handler(req: Request): Promise<Response> {
     parsedBody;
   const mode = requestedMode ?? "text";
 
-  // Applet requests are usually anonymous; allow trusted user "ryo" to opt out with a header.
+  // Allow trusted user "ryo" to bypass rate limits (but still requires valid auth token)
   const rateLimitBypass = usernameHeader === "ryo";
-  const isAuthenticatedUser = !rateLimitBypass && usernameHeader !== null;
+  // If usernameHeader is not null, we've already validated the token, so user is authenticated
+  const isAuthenticatedUser = usernameHeader !== null;
   const identifier = isAuthenticatedUser
     ? `user:${usernameHeader}`
     : `ip:${ip}`;
