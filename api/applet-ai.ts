@@ -505,7 +505,16 @@ export default async function handler(req: Request): Promise<Response> {
   });
 
   if (rateLimitBypass) {
-    log("Rate limit bypass enabled for trusted user");
+    const scope: RateLimitScope = mode === "image" ? "image-hour" : "text-hour";
+    const limit =
+      scope === "image-hour"
+        ? AUTH_IMAGE_LIMIT_PER_HOUR
+        : AUTH_TEXT_LIMIT_PER_HOUR;
+    log("[rate-limit] Bypass enabled for trusted user", {
+      scope,
+      identifier,
+      wouldHaveLimit: limit,
+    });
   }
 
   if (!rateLimitBypass) {
@@ -540,16 +549,17 @@ export default async function handler(req: Request): Promise<Response> {
           ? result.resetSeconds
           : result.windowSeconds;
 
-      if (isAuthenticatedUser) {
-        log("[rate-limit] Authenticated request", {
-          scope,
-          identifier,
-          count: result.count,
-          limit: result.limit,
-          remaining,
-          resetSeconds,
-        });
-      }
+      // Log rate limit information for all requests
+      log("[rate-limit] Check", {
+        scope,
+        identifier,
+        isAuthenticatedUser,
+        count: result.count,
+        limit: result.limit,
+        remaining,
+        resetSeconds,
+        allowed: result.allowed,
+      });
 
       if (!result.allowed) {
         log("[rate-limit] Limit exceeded", {

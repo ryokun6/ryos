@@ -3,6 +3,11 @@ import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { motion, AnimatePresence } from "framer-motion";
+import { useChatsStore } from "@/stores/useChatsStore";
+import {
+  APPLET_AUTH_BRIDGE_SCRIPT,
+  APPLET_AUTH_MESSAGE_TYPE,
+} from "@/utils/appletAuthBridge";
 
 interface AppStoreFeedProps {
   theme?: string;
@@ -31,6 +36,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const hasFetchedRef = useRef(false);
   const sessionSeedRef = useRef(Math.floor(Math.random() * 1000000));
   const currentTheme = useThemeStore((state) => state.current);
+  const { username, authToken } = useChatsStore();
 
   // Stacking constants (similar to TimeMachineView)
   const MAX_VISIBLE_PREVIEWS = 4;
@@ -54,21 +60,24 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   `;
 
   // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
+  // Also inject auth bridge script for API authentication
   const ensureMacFonts = (content: string): string => {
-    if (!isMacTheme || !content) return content;
+    if (!content) return content;
+    
     const preload = `<link rel="stylesheet" href="/fonts/fonts.css">`;
-    const fontStyle = `<style data-ryos-applet-font-fix>
+    const fontStyle = isMacTheme ? `<style data-ryos-applet-font-fix>
       html,body{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
       *{font-family:inherit!important}
       h1,h2,h3,h4,h5,h6,p,div,span,a,li,ul,ol,button,input,select,textarea,label,code,pre,blockquote,small,strong,em,table,th,td{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
-    </style>`;
+    </style>` : '';
+    
+    const injectedContent = `${APPLET_AUTH_BRIDGE_SCRIPT}${preload}${fontStyle}`;
 
     const headCloseIdx = content.toLowerCase().lastIndexOf("</head>");
     if (headCloseIdx !== -1) {
       return (
         content.slice(0, headCloseIdx) +
-        preload +
-        fontStyle +
+        injectedContent +
         content.slice(headCloseIdx)
       );
     }
@@ -78,14 +87,83 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       const bodyTagEnd = content.indexOf(">", bodyOpenIdx) + 1;
       return (
         content.slice(0, bodyTagEnd) +
-        preload +
-        fontStyle +
+        injectedContent +
         content.slice(bodyTagEnd)
       );
     }
 
-    return preload + fontStyle + content;
+    return injectedContent + content;
   };
+
+  // Send auth payload to iframe
+  const sendAuthPayload = useCallback(
+    (target: Window | null | undefined) => {
+      if (!target) return;
+      try {
+        target.postMessage(
+          {
+            type: APPLET_AUTH_MESSAGE_TYPE,
+            action: "response",
+            payload: {
+              username: username ?? null,
+              authToken: authToken ?? null,
+            },
+          },
+          "*"
+        );
+      } catch (error) {
+        console.warn("[AppStoreFeed] Failed to post auth payload:", error);
+      }
+    },
+    [username, authToken]
+  );
+
+  // Listen for auth requests from iframes
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const data = event?.data;
+      if (
+        !data ||
+        data.type !== APPLET_AUTH_MESSAGE_TYPE ||
+        data.action !== "request"
+      ) {
+        return;
+      }
+
+      const sourceWindow = event.source as Window | null;
+      if (!sourceWindow) {
+        return;
+      }
+
+      // Check if the message is from one of our applet preview iframes
+      const iframes = feedRef.current?.querySelectorAll("iframe");
+      const frameWindows: Window[] = [];
+      iframes?.forEach((iframe) => {
+        if (iframe.contentWindow) {
+          frameWindows.push(iframe.contentWindow);
+        }
+      });
+
+      if (!frameWindows.includes(sourceWindow)) {
+        return;
+      }
+
+      sendAuthPayload(sourceWindow);
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [sendAuthPayload]);
+
+  // Send auth payload to all iframes when auth changes
+  useEffect(() => {
+    const iframes = feedRef.current?.querySelectorAll("iframe");
+    iframes?.forEach((iframe) => {
+      sendAuthPayload(iframe.contentWindow || undefined);
+    });
+  }, [username, authToken, sendAuthPayload, appletContents]);
 
   const fetchApplets = useCallback(async () => {
     // Seeded random number generator for deterministic shuffling
