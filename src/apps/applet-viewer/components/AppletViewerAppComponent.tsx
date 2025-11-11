@@ -550,8 +550,8 @@ export function AppletViewerAppComponent({
     // Ensure fonts.css is available and prefer Lucida Grande
     const preload = `<link rel="stylesheet" href="/fonts/fonts.css">`;
     const fontStyle = `<style data-ryos-applet-font-fix>
-      html,body{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
-      *{font-family:inherit!important}
+      html,body{margin:0;padding:0;font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
+      *{font-family:inherit!important;box-sizing:border-box}
       h1,h2,h3,h4,h5,h6,p,div,span,a,li,ul,ol,button,input,select,textarea,label,code,pre,blockquote,small,strong,em,table,th,td{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
     </style>`;
 
@@ -1324,6 +1324,7 @@ export function AppletViewerAppComponent({
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                   style={{
                     display: "block",
+                    verticalAlign: "top",
                   }}
                   onLoad={() =>
                     sendAuthPayload(iframeRef.current?.contentWindow || null)
