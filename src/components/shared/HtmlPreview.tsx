@@ -434,6 +434,7 @@ export default function HtmlPreview({
     }
     html, body {
       margin: 0;
+      padding: 0;
       overflow-x: auto; /* Allow horizontal scroll if content overflows */
       width: 100%;
       height: 100%;
@@ -1336,6 +1337,7 @@ export default function HtmlPreview({
                 ? minHeight
                 : `${minHeight}px`,
               display: "block",
+              verticalAlign: "top",
               // pointerEvents: isStreaming ? "none" : "auto", // Already handled by parent div conditional
               position: "relative",
               zIndex: 1,
@@ -1480,6 +1482,8 @@ export default function HtmlPreview({
                         }
                         style={{
                           pointerEvents: isDragging ? "none" : "auto",
+                          display: "block",
+                          verticalAlign: "top",
                           ...(isInternetExplorer && {
                             position: "absolute",
                             inset: 0,
