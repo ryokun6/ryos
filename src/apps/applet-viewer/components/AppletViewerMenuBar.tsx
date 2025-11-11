@@ -29,6 +29,12 @@ interface AppletViewerMenuBarProps {
   hasAppletContent: boolean;
   handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   instanceId?: string;
+  onSetUsername?: () => void;
+  onVerifyToken?: () => void;
+  onLogout?: () => Promise<void>;
+  updateCount?: number;
+  onCheckForUpdates?: () => Promise<void>;
+  onUpdateAll?: () => Promise<void>;
 }
 
 export function AppletViewerMenuBar({
@@ -41,6 +47,12 @@ export function AppletViewerMenuBar({
   hasAppletContent,
   handleFileSelect,
   instanceId,
+  onSetUsername,
+  onVerifyToken,
+  onLogout,
+  updateCount = 0,
+  onCheckForUpdates,
+  onUpdateAll,
 }: AppletViewerMenuBarProps) {
   const currentTheme = useThemeStore((s) => s.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -85,14 +97,6 @@ export function AppletViewerMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             Open...
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => launchApp("applet-viewer", { 
-              initialData: { path: "", content: "" } 
-            })}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
-          >
-            Open Applet Store...
           </DropdownMenuItem>
           {hasAppletContent && isLoggedIn && (
             <DropdownMenuItem
@@ -140,6 +144,67 @@ export function AppletViewerMenuBar({
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Store Menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="default"
+            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
+          >
+            Store
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
+          <DropdownMenuItem
+            onClick={() => launchApp("applet-viewer", { 
+              initialData: { path: "", content: "" } 
+            })}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
+            Open Applet Store
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={async () => {
+              if (updateCount > 0 && onUpdateAll) {
+                await onUpdateAll();
+              } else if (onCheckForUpdates) {
+                await onCheckForUpdates();
+              }
+            }}
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
+            {updateCount > 0
+              ? `Update ${updateCount} applet${updateCount > 1 ? "s" : ""}`
+              : "Check for updates"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+          {username && authToken ? (
+            <DropdownMenuItem
+              onClick={() => onLogout?.()}
+              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            >
+              Log Out
+            </DropdownMenuItem>
+          ) : (
+            <>
+              <DropdownMenuItem
+                onClick={onSetUsername}
+                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              >
+                Create Account...
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onVerifyToken}
+                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              >
+                Login...
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       {/* Window Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -154,7 +219,7 @@ export function AppletViewerMenuBar({
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           {appletInstances.length > 0 ? (
             appletInstances.map((inst) => {
-              const initialData = inst.initialData as any;
+              const initialData = inst.initialData as { path?: string; content?: string } | undefined;
               const path = initialData?.path || "";
               const fileName = path
                 ? path

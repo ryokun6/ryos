@@ -170,7 +170,6 @@ export const useAppletActions = () => {
               initialData: {
                 path: finalPath,
                 content: data.content,
-                forceNewInstance: true,
               },
             });
           },

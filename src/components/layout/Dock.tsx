@@ -78,7 +78,7 @@ function MacDock() {
         return fileName.replace(/\.(html|app)$/i, "");
       };
 
-      const label = path ? getFileName(path) : "Applet";
+      const label = path ? getFileName(path) : "Applet Store";
 
       // Check if the file icon is an emoji (not a file path)
       const fileIcon = file?.icon;
@@ -88,9 +88,20 @@ function MacDock() {
         !fileIcon.startsWith("http") &&
         fileIcon.length <= 10;
 
-      const icon = isEmojiIcon ? fileIcon : "📦";
+      // If no path (applet store), use the applet viewer icon
+      // Otherwise, use file icon if emoji, or fallback to package emoji
+      let icon: string;
+      let isEmoji: boolean;
+      if (!path) {
+        // Applet store - use app icon
+        icon = getAppIconPath("applet-viewer");
+        isEmoji = false;
+      } else {
+        icon = isEmojiIcon ? fileIcon : "📦";
+        isEmoji = true;
+      }
 
-      return { icon, label };
+      return { icon, label, isEmoji };
     },
     [files]
   );
@@ -596,7 +607,7 @@ function MacDock() {
                   const instance = instances[item.instanceId];
                   if (!instance) return null;
 
-                  const { icon, label } = getAppletInfo(instance);
+                  const { icon, label, isEmoji } = getAppletInfo(instance);
                   return (
                     <IconButton
                       key={item.instanceId}
@@ -605,7 +616,7 @@ function MacDock() {
                       idKey={item.instanceId}
                       onClick={() => bringInstanceToForeground(item.instanceId!)}
                       showIndicator
-                      isEmoji
+                      isEmoji={isEmoji}
                     />
                   );
                 } else {

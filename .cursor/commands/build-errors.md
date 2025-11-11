@@ -1,0 +1,1 @@
+check bun run build for errors

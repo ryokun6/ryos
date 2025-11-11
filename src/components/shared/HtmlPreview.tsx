@@ -884,7 +884,6 @@ export default function HtmlPreview({
               initialData: {
                 path: appletPath,
                 content: processedHtmlContentForSave,
-                forceNewInstance: true, // Always create new instance
               },
             });
           },

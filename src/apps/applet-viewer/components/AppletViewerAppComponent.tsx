@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { AppletViewerMenuBar } from "./AppletViewerMenuBar";
 import { AppStore } from "./AppStore";
 import { appMetadata, helpItems, AppletViewerInitialData } from "../index";
@@ -12,6 +13,9 @@ import { useAppletStore } from "@/stores/useAppletStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { useAuth } from "@/hooks/useAuth";
+import { useAppletUpdates } from "../hooks/useAppletUpdates";
+import { useAppletActions } from "../utils/appletActions";
 import { toast } from "sonner";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
@@ -48,6 +52,131 @@ export function AppletViewerAppComponent({
   const isMacTheme = currentTheme === "macosx";
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
+  
+  // Use auth hook for authentication functionality
+  const authResult = useAuth();
+  const {
+    promptSetUsername,
+    promptVerifyToken,
+    logout,
+    isUsernameDialogOpen,
+    setIsUsernameDialogOpen,
+    newUsername,
+    setNewUsername,
+    newPassword,
+    setNewPassword,
+    isSettingUsername,
+    usernameError,
+    submitUsernameDialog,
+    isVerifyDialogOpen,
+    setVerifyDialogOpen,
+    verifyPasswordInput,
+    setVerifyPasswordInput,
+    verifyUsernameInput,
+    setVerifyUsernameInput,
+    isVerifyingToken,
+    verifyError,
+    handleVerifyTokenSubmit,
+  } = authResult;
+
+  // Use applet updates hook
+  const { updateCount, updatesAvailable, checkForUpdates } = useAppletUpdates();
+  const actions = useAppletActions();
+
+  // Handler for checking updates
+  const handleCheckForUpdates = useCallback(async () => {
+    const result = await checkForUpdates();
+    if (result.count > 0) {
+      const appletNames = result.updates
+        .map((applet) => applet.title || applet.name || "Untitled Applet")
+        .join(", ");
+      toast.info(
+        `${result.count} new applet update${result.count > 1 ? "s" : ""}`,
+        {
+          description: appletNames,
+          action: {
+            label: "Update",
+            onClick: async () => {
+              // Use the updates from the check result
+              const updateCount = result.updates.length;
+              const loadingMessage =
+                updateCount === 1
+                  ? "Updating 1 applet..."
+                  : `Updating ${updateCount} applets...`;
+              const loadingToastId = toast.loading(loadingMessage, {
+                duration: Infinity,
+              });
+
+              try {
+                for (const applet of result.updates) {
+                  await actions.handleInstall(applet);
+                }
+
+                await checkForUpdates();
+
+                toast.success(
+                  updateCount === 1
+                    ? "Applet updated"
+                    : `${updateCount} applets updated`,
+                  {
+                    id: loadingToastId,
+                  }
+                );
+              } catch (error) {
+                console.error("Error updating applets:", error);
+                toast.error("Failed to update applets", {
+                  description:
+                    error instanceof Error ? error.message : "Please try again later.",
+                  id: loadingToastId,
+                });
+              }
+            },
+          },
+          duration: 8000,
+        }
+      );
+    } else {
+      toast.success("All applets are up to date");
+    }
+  }, [checkForUpdates, actions]);
+
+  // Handler for updating all applets
+  const handleUpdateAll = useCallback(async () => {
+    if (updatesAvailable.length === 0) return;
+
+    const updateCount = updatesAvailable.length;
+    const loadingMessage =
+      updateCount === 1
+        ? "Updating 1 applet..."
+        : `Updating ${updateCount} applets...`;
+    const loadingToastId = toast.loading(loadingMessage, {
+      duration: Infinity,
+    });
+
+    try {
+      for (const applet of updatesAvailable) {
+        await actions.handleInstall(applet);
+      }
+
+      await checkForUpdates();
+
+      toast.success(
+        updateCount === 1
+          ? "Applet updated"
+          : `${updateCount} applets updated`,
+        {
+          id: loadingToastId,
+        }
+      );
+    } catch (error) {
+      console.error("Error updating applets:", error);
+      toast.error("Failed to update applets", {
+        description:
+          error instanceof Error ? error.message : "Please try again later.",
+        id: loadingToastId,
+      });
+    }
+  }, [updatesAvailable, actions, checkForUpdates]);
 
   const sendAuthPayload = useCallback(
     (target: Window | null | undefined) => {
@@ -1089,6 +1218,12 @@ export function AppletViewerAppComponent({
       hasAppletContent={hasAppletContent}
       handleFileSelect={handleFileSelect}
       instanceId={instanceId}
+      onSetUsername={promptSetUsername}
+      onVerifyToken={promptVerifyToken}
+      onLogout={logout}
+      updateCount={updateCount}
+      onCheckForUpdates={handleCheckForUpdates}
+      onUpdateAll={handleUpdateAll}
     />
   );
 
@@ -1263,6 +1398,34 @@ export function AppletViewerAppComponent({
         itemIdentifier={shareId}
         title={shareId ? getAppletTitle(htmlContent) : undefined}
         generateShareUrl={generateAppletShareUrl}
+      />
+      <LoginDialog
+        initialTab={isVerifyDialogOpen ? "login" : "signup"}
+        isOpen={isUsernameDialogOpen || isVerifyDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsUsernameDialogOpen(false);
+            setVerifyDialogOpen(false);
+          }
+        }}
+        /* Login props */
+        usernameInput={verifyUsernameInput}
+        onUsernameInputChange={setVerifyUsernameInput}
+        passwordInput={verifyPasswordInput}
+        onPasswordInputChange={setVerifyPasswordInput}
+        onLoginSubmit={async () => {
+          await handleVerifyTokenSubmit(verifyPasswordInput, true);
+        }}
+        isLoginLoading={isVerifyingToken}
+        loginError={verifyError}
+        /* Sign-up props */
+        newUsername={newUsername}
+        onNewUsernameChange={setNewUsername}
+        newPassword={newPassword}
+        onNewPasswordChange={setNewPassword}
+        onSignUpSubmit={submitUsernameDialog}
+        isSignUpLoading={isSettingUsername}
+        signUpError={usernameError}
       />
     </>
   );

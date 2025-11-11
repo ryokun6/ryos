@@ -1770,7 +1770,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   path: "",
                   content: "",
                   shareCode: shareId,
-                  forceNewInstance: true,
                 },
               });
 

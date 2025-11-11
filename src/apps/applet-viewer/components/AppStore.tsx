@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -353,6 +353,46 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     }
   };
 
+  // IMPORTANT: All hooks must be called before any early returns
+  // Filter applets based on search query - memoized to avoid recalculation
+  const filteredApplets = useMemo(() => {
+    return applets.filter((applet) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      const displayName = (applet.title || applet.name || "Untitled Applet").toLowerCase();
+      const createdBy = (applet.createdBy || "").toLowerCase();
+      return displayName.includes(query) || createdBy.includes(query);
+    });
+  }, [applets, searchQuery]);
+
+  // Separate into updates available, installed (no updates), featured (not installed), and all (not installed, not featured)
+  // Sort each group by createdAt descending (latest first)
+  // Memoize these calculations to avoid recalculating on every render
+  const updatesAvailable = useMemo(() => 
+    filteredApplets
+      .filter((applet) => actions.isAppletInstalled(applet.id) && actions.needsUpdate(applet))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+    [filteredApplets, actions]
+  );
+  const installedApplets = useMemo(() =>
+    filteredApplets
+      .filter((applet) => actions.isAppletInstalled(applet.id) && !actions.needsUpdate(applet))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+    [filteredApplets, actions]
+  );
+  const featuredApplets = useMemo(() =>
+    filteredApplets
+      .filter((applet) => applet.featured && !actions.isAppletInstalled(applet.id))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+    [filteredApplets, actions]
+  );
+  const allApplets = useMemo(() =>
+    filteredApplets
+      .filter((applet) => !applet.featured && !actions.isAppletInstalled(applet.id))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+    [filteredApplets, actions]
+  );
+
   // Add CSS to ensure emoji size doesn't get overridden by theme styles
   const appletIconStyles = `
     .applet-icon {
@@ -363,6 +403,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     }
   `;
 
+  // Early returns - all hooks must be called before these
   if (isLoading) {
     return (
       <>
@@ -375,30 +416,6 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       </>
     );
   }
-
-  // Filter applets based on search query
-  const filteredApplets = applets.filter((applet) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    const displayName = (applet.title || applet.name || "Untitled Applet").toLowerCase();
-    const createdBy = (applet.createdBy || "").toLowerCase();
-    return displayName.includes(query) || createdBy.includes(query);
-  });
-
-  // Separate into updates available, installed (no updates), featured (not installed), and all (not installed, not featured)
-  // Sort each group by createdAt descending (latest first)
-  const updatesAvailable = filteredApplets
-    .filter((applet) => actions.isAppletInstalled(applet.id) && actions.needsUpdate(applet))
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  const installedApplets = filteredApplets
-    .filter((applet) => actions.isAppletInstalled(applet.id) && !actions.needsUpdate(applet))
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  const featuredApplets = filteredApplets
-    .filter((applet) => applet.featured && !actions.isAppletInstalled(applet.id))
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  const allApplets = filteredApplets
-    .filter((applet) => !applet.featured && !actions.isAppletInstalled(applet.id))
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   // Format relative update time
   const formatUpdateTime = (timestamp: number): string => {

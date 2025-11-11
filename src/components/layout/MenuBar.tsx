@@ -558,7 +558,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       return fileName.replace(/\.(html|app)$/i, "");
     };
 
-    const label = path ? getFileName(path) : "Applet";
+    const label = path ? getFileName(path) : "Applet Store";
 
     // Check if the file icon is an emoji (not a file path)
     const fileIcon = file?.icon;
@@ -568,9 +568,20 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       !fileIcon.startsWith("http") &&
       fileIcon.length <= 10;
 
-    const icon = isEmojiIcon ? fileIcon : "📦";
+    // If no path (applet store), use the applet viewer icon
+    // Otherwise, use file icon if emoji, or fallback to package emoji
+    let icon: string;
+    let isEmoji: boolean;
+    if (!path) {
+      // Applet store - use app icon
+      icon = getAppIconPath("applet-viewer");
+      isEmoji = false;
+    } else {
+      icon = isEmojiIcon ? fileIcon : "📦";
+      isEmoji = true;
+    }
 
-    return { icon, label, isEmoji: true };
+    return { icon, label, isEmoji };
   };
 
   // Taskbar overflow handling (used for XP taskbar rendering)

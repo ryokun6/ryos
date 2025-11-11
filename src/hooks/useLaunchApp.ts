@@ -15,9 +15,6 @@ export const useLaunchApp = () => {
   const bringInstanceToForeground = useAppStore(
     (state) => state.bringInstanceToForeground
   );
-  const updateInstanceInitialData = useAppStore(
-    (state) => state.updateInstanceInitialData
-  );
 
   const launchApp = (appId: AppId, options?: LaunchAppOptions) => {
     console.log(`[useLaunchApp] Launch event received for ${appId}`, options);
@@ -36,26 +33,59 @@ export const useLaunchApp = () => {
 
       // If launching with content (initialData exists)
       if (initialData) {
-        const data = initialData as { path?: string; content?: string; forceNewInstance?: boolean } | undefined;
+        const data = initialData as { path?: string; content?: string; shareCode?: string; forceNewInstance?: boolean };
         
         // Skip empty instance check if forceNewInstance is true
-        if (!data?.forceNewInstance) {
-          // Check for empty applet viewer instance (no content)
-          const emptyInstance = appletInstances.find((inst) => {
-            const instData = inst.initialData as
-              | { path?: string; content?: string }
-              | undefined;
-            return !instData?.content || instData.content.trim().length === 0;
-          });
+        if (!data.forceNewInstance) {
+          // First, check if the same applet (by path or shareCode) is already open
+          if (data.path || data.shareCode) {
+            const existingInstance = appletInstances.find((inst) => {
+              const instData = inst.initialData as
+                | { path?: string; content?: string; shareCode?: string }
+                | undefined;
+              
+              // Check by path if provided
+              if (data.path && instData?.path === data.path) {
+                return true;
+              }
+              
+              // Check by shareCode if provided
+              if (data.shareCode && instData?.shareCode === data.shareCode) {
+                return true;
+              }
+              
+              return false;
+            });
 
-          if (emptyInstance) {
-            // Swap the empty instance with the new content
-            console.log(
-              `[useLaunchApp] Found empty applet viewer instance ${emptyInstance.instanceId}, updating with content`
-            );
-            updateInstanceInitialData(emptyInstance.instanceId, initialData);
-            bringInstanceToForeground(emptyInstance.instanceId);
-            return emptyInstance.instanceId;
+            if (existingInstance) {
+              // Same applet already open, bring it to foreground
+              const identifier = data.path || data.shareCode;
+              console.log(
+                `[useLaunchApp] Applet with ${data.path ? 'path' : 'shareCode'} ${identifier} already open in instance ${existingInstance.instanceId}, bringing to foreground`
+              );
+              bringInstanceToForeground(existingInstance.instanceId);
+              return existingInstance.instanceId;
+            }
+            // If opening a specific applet that's not already open, create a new instance
+            // (don't reuse empty instances for different applets)
+          } else {
+            // Opening applet store (no path, no shareCode) - can reuse empty instance
+            const emptyInstance = appletInstances.find((inst) => {
+              const instData = inst.initialData as
+                | { path?: string; content?: string; shareCode?: string }
+                | undefined;
+              // Empty instance is one without path, content, or shareCode
+              return !instData?.path && !instData?.content && !instData?.shareCode;
+            });
+
+            if (emptyInstance) {
+              // Reuse the empty applet store instance
+              console.log(
+                `[useLaunchApp] Found empty applet store instance ${emptyInstance.instanceId}, reusing`
+              );
+              bringInstanceToForeground(emptyInstance.instanceId);
+              return emptyInstance.instanceId;
+            }
           }
         }
       } else {
