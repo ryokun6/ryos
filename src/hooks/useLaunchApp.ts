@@ -59,16 +59,29 @@ export const useLaunchApp = () => {
           }
         }
       } else {
-        // Launching empty state - don't launch if instances already exist
-        if (appletInstances.length > 0) {
+        // Launching empty state - check if there's already an applet store window (empty instance)
+        const appletStoreInstance = appletInstances.find((inst) => {
+          const instData = inst.initialData as
+            | { path?: string; content?: string; shareCode?: string }
+            | undefined;
+          // An applet store window is one without path, content, or shareCode
+          return !instData?.path && !instData?.content && !instData?.shareCode;
+        });
+        
+        if (appletStoreInstance) {
+          // Bring the applet store window to foreground
           console.log(
-            `[useLaunchApp] Applet viewer instances already exist, bringing most recent to foreground instead of launching empty state`
+            `[useLaunchApp] Found existing applet store window ${appletStoreInstance.instanceId}, bringing to foreground`
           );
-          // Bring the most recent instance to foreground
-          const mostRecent = appletInstances[appletInstances.length - 1];
-          bringInstanceToForeground(mostRecent.instanceId);
-          return mostRecent.instanceId;
+          bringInstanceToForeground(appletStoreInstance.instanceId);
+          return appletStoreInstance.instanceId;
         }
+        
+        // If no applet store window exists, create a new one
+        // (fall through to the launchAppInstance call below)
+        console.log(
+          `[useLaunchApp] No applet store window found, creating new one`
+        );
       }
     }
 
