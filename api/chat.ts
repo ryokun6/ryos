@@ -125,10 +125,21 @@ interface SystemState {
 const ALLOWED_ORIGINS = new Set(["https://os.ryo.lu", "http://localhost:3000"]);
 
 // Function to validate request origin
-// Only allow explicit origins defined in ALLOWED_ORIGINS – no wildcard ports or IP fallbacks
+// Allow explicit origins defined in ALLOWED_ORIGINS, or any localhost port
 const isValidOrigin = (origin: string | null): boolean => {
   if (!origin) return false;
-  return ALLOWED_ORIGINS.has(origin);
+  // Check explicit allowed origins
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  // Allow any localhost port number
+  try {
+    const url = new URL(origin);
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      return true;
+    }
+  } catch {
+    // Invalid URL, fall through to return false
+  }
+  return false;
 };
 
 // Allow streaming responses up to 60 seconds

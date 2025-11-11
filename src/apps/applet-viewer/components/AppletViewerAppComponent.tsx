@@ -1324,6 +1324,8 @@ export function AppletViewerAppComponent({
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                   style={{
                     display: "block",
+                    margin: 0,
+                    padding: 0,
                   }}
                   onLoad={() =>
                     sendAuthPayload(iframeRef.current?.contentWindow || null)

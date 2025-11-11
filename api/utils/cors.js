@@ -20,7 +20,19 @@ export function getEffectiveOrigin(req) {
 }
 
 export function isAllowedOrigin(origin) {
-  return !!origin && ALLOWED_ORIGINS.has(origin);
+  if (!origin) return false;
+  // Check explicit allowed origins
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  // Allow any localhost port number
+  try {
+    const url = new URL(origin);
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      return true;
+    }
+  } catch {
+    // Invalid URL, fall through to return false
+  }
+  return false;
 }
 
 export function preflightIfNeeded(req, allowedMethods, effectiveOrigin) {

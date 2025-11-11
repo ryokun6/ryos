@@ -1117,7 +1117,7 @@ export default function HtmlPreview({
         } bg-white m-0 relative ${className} ${
           isStreaming ? "loading-pulse" : ""
         } ${
-          !isInternetExplorer && (appletTitle || appletIcon) ? "flex flex-col overflow-hidden" : "overflow-auto"
+          !isInternetExplorer && (appletTitle || appletIcon) ? "flex flex-col overflow-hidden" : isInternetExplorer ? "overflow-hidden" : "overflow-auto"
         }`}
         style={{
           maxHeight: isInternetExplorer
@@ -1336,6 +1336,8 @@ export default function HtmlPreview({
                 ? minHeight
                 : `${minHeight}px`,
               display: "block",
+              margin: 0,
+              padding: 0,
               // pointerEvents: isStreaming ? "none" : "auto", // Already handled by parent div conditional
               position: "relative",
               zIndex: 1,
@@ -1479,6 +1481,9 @@ export default function HtmlPreview({
                           )
                         }
                         style={{
+                          display: "block",
+                          margin: 0,
+                          padding: 0,
                           pointerEvents: isDragging ? "none" : "auto",
                           ...(isInternetExplorer && {
                             position: "absolute",
