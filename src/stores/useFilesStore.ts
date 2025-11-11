@@ -191,7 +191,7 @@ async function saveDefaultContents(
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
 const STORE_VERSION = 10; // Update Applets folder icon
-const STORE_NAME = "ryos:files";
+const STORE_NAME = "zios:files";
 
 const initialFilesData: FilesStoreState = {
   items: getEmptyFileSystemState(),

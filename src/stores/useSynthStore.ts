@@ -129,7 +129,7 @@ interface SynthStoreState {
 }
 
 const STORE_VERSION = 1;
-const STORE_NAME = "ryos:synth";
+const STORE_NAME = "zios:synth";
 
 // Helper to get values from old localStorage keys
 const getOldPresets = (): SynthPreset[] => {

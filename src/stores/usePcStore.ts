@@ -77,7 +77,7 @@ export const usePcStore = create<PcStoreState>()(
       setGames: (games) => set({ games }),
     }),
     {
-      name: "ryos:pc",
+      name: "zios:pc",
       partialize: (state) => ({ games: state.games }),
     }
   )

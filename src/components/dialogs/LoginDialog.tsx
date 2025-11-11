@@ -443,19 +443,19 @@ export function LoginDialog({
       >
         {isXpTheme ? (
           <>
-            <DialogHeader>ryOS Login</DialogHeader>
+            <DialogHeader>ZiOS Login</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : currentTheme === "macosx" ? (
           <>
-            <DialogHeader>ryOS Login</DialogHeader>
+            <DialogHeader>ZiOS Login</DialogHeader>
             {dialogContent}
           </>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="font-normal text-[16px]">
-                ryOS Login
+                ZiOS Login
               </DialogTitle>
               <DialogDescription className="sr-only">
                 {activeTab === "login"

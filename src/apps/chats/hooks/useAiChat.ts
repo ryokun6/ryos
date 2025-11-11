@@ -2560,7 +2560,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     const initialMessage: AIChatMessage = {
       id: "1", // Ensure consistent ID for the initial message
       role: "assistant",
-      parts: [{ type: "text", text: "👋 hey! i'm ryo. ask me anything!" }],
+      parts: [{ type: "text", text: "👋 hey! i'm zi. ask me anything!" }],
       metadata: {
         createdAt: new Date(),
       },
@@ -2608,7 +2608,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       const transcript = aiMessages // Use messages from store
         .map((msg: UIMessage) => {
           const time = ""; // v5 UIMessage doesn't have createdAt
-          const sender = msg.role === "user" ? username || "You" : "Ryo";
+          const sender = msg.role === "user" ? username || "You" : "Zi";
           const content = getAssistantVisibleText(msg);
           return `**${sender}** (${time}):\n${content}`;
         })

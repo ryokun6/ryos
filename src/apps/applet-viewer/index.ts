@@ -5,7 +5,7 @@ export const helpItems = [
   {
     icon: "📄",
     title: "View Applets",
-    description: "Open and view applets saved from Ryo chats.",
+    description: "Open and view applets saved from Zi chats.",
   },
   {
     icon: "📐",
@@ -17,7 +17,7 @@ export const helpItems = [
     icon: "🤖",
     title: "Built-in AI",
     description:
-        "Inside your applet, call fetch('/api/applet-ai') with JSON { prompt: \"...\" } for Gemini text or { mode: \"image\", prompt: \"...\", images: [{ mediaType: \"image/png\", data: \"<base64>\" }] } to stream or edit Gemini image previews. ryOS injects your X-Username and Authorization headers automatically when available, so you can call the endpoint directly.",
+        "Inside your applet, call fetch('/api/applet-ai') with JSON { prompt: \"...\" } for Gemini text or { mode: \"image\", prompt: \"...\", images: [{ mediaType: \"image/png\", data: \"<base64>\" }] } to stream or edit Gemini image previews. ZiOS injects your X-Username and Authorization headers automatically when available, so you can call the endpoint directly.",
   },
   {
     icon: "📂",
@@ -31,10 +31,10 @@ export const appMetadata = {
   name: "Applet Store",
   version: "1.0",
   creator: {
-    name: "Ryo Lu",
-    url: "https://ryo.lu",
+    name: "Zihan Huang",
+    url: "https://bravohenry.com",
   },
-  github: "https://github.com/ryokun6/ryos",
+  github: "https://github.com/bravohenry/ziOS",
   icon: "/icons/default/app.png",
 };
 

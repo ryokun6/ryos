@@ -7,7 +7,7 @@ import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { useChatSynth } from "@/hooks/useChatSynth";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { track } from "@vercel/analytics";
+import { track } from "@/utils/analytics";
 import {
   Tooltip,
   TooltipContent,
@@ -56,7 +56,7 @@ interface ChatInputProps {
   previousMessages?: string[];
   /**
    * Whether to display the "nudge" (👋) button. Defaults to true so that the
-   * button is shown in the regular Ryo chat, and can be disabled for chat-room
+   * button is shown in the regular Zi chat, and can be disabled for chat-room
    * contexts where nudging is not available.
    */
   showNudgeButton?: boolean;
@@ -115,9 +115,9 @@ export function ChatInput({
   // Get the model display name for debug information
   const modelDisplayName = aiModel ? AI_MODELS[aiModel]?.name : null;
 
-  // Check if user is typing @ryo
-  const isTypingRyoMention =
-    isInChatRoom && (input.startsWith("@ryo ") || input === "@ryo");
+  // Check if user is typing @zi
+  const isTypingZiMention =
+    isInChatRoom && (input.startsWith("@zi ") || input === "@zi");
 
   useEffect(() => {
     // Check if device has touch capability
@@ -225,7 +225,7 @@ export function ChatInput({
   const handleMentionClick = () => {
     let newValue = input;
 
-    if (input.startsWith("@ryo ")) {
+    if (input.startsWith("@zi ")) {
       // Already properly mentioned, just focus
       inputRef.current?.focus();
       // Position cursor at the end
@@ -238,12 +238,12 @@ export function ChatInput({
         }
       }, 0);
       return;
-    } else if (input.startsWith("@ryo")) {
-      // Has @ryo but missing space
-      newValue = input.replace("@ryo", "@ryo ");
+    } else if (input.startsWith("@zi")) {
+      // Has @zi but missing space
+      newValue = input.replace("@zi", "@zi ");
     } else {
-      // Add @ryo at the beginning
-      newValue = `@ryo ${input}`.trim() + (input.endsWith(" ") ? "" : " ");
+      // Add @zi at the beginning
+      newValue = `@zi ${input}`.trim() + (input.endsWith(" ") ? "" : " ");
     }
 
     const event = {
@@ -342,7 +342,7 @@ export function ChatInput({
                   isMacTheme ? "pl-3 pr-16 rounded-full" : "pl-2 pr-16"
                 } backdrop-blur-lg bg-white/80 ${
                   isFocused ? "input--focused" : ""
-                } ${isTypingRyoMention ? "border-blue-600 bg-blue-50" : ""} ${
+                } ${isTypingZiMention ? "border-blue-600 bg-blue-50" : ""} ${
                   needsUsername && !isInChatRoom
                     ? "border-orange-600 bg-orange-50"
                     : ""
@@ -412,14 +412,14 @@ export function ChatInput({
                                 : ""
                             }`}
                             disabled={isLoading}
-                            aria-label="Mention Ryo"
+                            aria-label="Mention Zi"
                           >
                             <AtSign className="h-4 w-4" />
                           </button>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Mention Ryo</p>
+                        <p>Mention Zi</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -610,7 +610,7 @@ export function ChatInput({
           </AnimatePresence>
         </form>
         <AnimatePresence>
-          {(isTypingRyoMention ||
+          {(isTypingZiMention ||
             (!isInChatRoom && debugMode && modelDisplayName)) && (
             <motion.div
               key="model-info"
@@ -620,8 +620,8 @@ export function ChatInput({
               transition={{ duration: 0.15 }}
               className="mt-2 px-1 text-xs text-neutral-700 font-geneva-12"
             >
-              {isTypingRyoMention
-                ? `Ryo will respond to this message${
+              {isTypingZiMention
+                ? `Zi will respond to this message${
                     debugMode && modelDisplayName
                       ? ` (${modelDisplayName})`
                       : ""

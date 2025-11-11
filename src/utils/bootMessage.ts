@@ -1,4 +1,4 @@
-export const BOOT_MESSAGE_KEY = "ryos:nextBootMessage";
+export const BOOT_MESSAGE_KEY = "zios:nextBootMessage";
 
 export const setNextBootMessage = (message: string): void => {
   try {

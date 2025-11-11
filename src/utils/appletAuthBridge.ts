@@ -1,4 +1,4 @@
-export const APPLET_AUTH_MESSAGE_TYPE = "ryos-applet-auth";
+export const APPLET_AUTH_MESSAGE_TYPE = "zios-applet-auth";
 
 export const APPLET_AUTH_BRIDGE_SCRIPT = `
 <script>
@@ -24,9 +24,9 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
         authResolved = true;
         currentAuthPayload = payload || null;
         try {
-          window.__RYOS_APPLET_AUTH = currentAuthPayload || {};
+          window.__ZIOS_APPLET_AUTH = currentAuthPayload || {};
         } catch (err) {
-          console.warn("[ryOS] Failed to expose applet auth payload:", err);
+          console.warn("[ZiOS] Failed to expose applet auth payload:", err);
         }
         resolve(null);
       };
@@ -39,7 +39,7 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
           window.parent.postMessage({ type: CHANNEL, action: "request" }, "*");
         }
       } catch (err) {
-        console.warn("[ryOS] Applet auth request failed:", err);
+        console.warn("[ZiOS] Applet auth request failed:", err);
       }
     };
 
@@ -69,22 +69,22 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
         if (authResolved) {
           currentAuthPayload = data.payload || null;
           try {
-            window.__RYOS_APPLET_AUTH = currentAuthPayload || {};
+            window.__ZIOS_APPLET_AUTH = currentAuthPayload || {};
           } catch (err) {
-            console.warn("[ryOS] Failed to refresh applet auth payload:", err);
+            console.warn("[ZiOS] Failed to refresh applet auth payload:", err);
           }
           return;
         }
         resolveAuth(data.payload || null);
       });
 
-      if (window.__RYOS_APPLET_FETCH_PATCHED) {
+      if (window.__ZIOS_APPLET_FETCH_PATCHED) {
         return;
       }
 
       var originalFetch = window.fetch.bind(window);
-      window.__RYOS_APPLET_FETCH_PATCHED = true;
-      window.__RYOS_ORIGINAL_FETCH = originalFetch;
+      window.__ZIOS_APPLET_FETCH_PATCHED = true;
+      window.__ZIOS_ORIGINAL_FETCH = originalFetch;
 
       window.fetch = function (input, init) {
         return authReady.then(function () {

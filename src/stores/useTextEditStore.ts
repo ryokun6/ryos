@@ -232,7 +232,7 @@ export const useTextEditStore = create<TextEditStoreState>()(
       },
     }),
     {
-      name: "ryos:textedit",
+      name: "zios:textedit",
       version: CURRENT_TEXTEDIT_STORE_VERSION,
       migrate: (persistedState: unknown, version: number) => {
         // Migrate from v1 to v2 (single window to multi-instance)

@@ -17,7 +17,7 @@ export function formatPrivateRoomName(
     .filter((u) => u.startsWith("@"))
     .map((u) => u.substring(1)); // Remove @ prefix
 
-  // Filter out the current user (case-sensitive) so that variations like "Ryo" (AI) remain visible
+  // Filter out the current user (case-sensitive) so that variations like "Zi" (AI) remain visible
   const otherUsers = users.filter((u) => u !== currentUsername);
 
   // If no other users (shouldn't happen in a valid private room), return original

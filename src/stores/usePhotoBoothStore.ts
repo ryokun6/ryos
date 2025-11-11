@@ -16,7 +16,7 @@ interface PhotoBoothStoreState {
 }
 
 const STORE_VERSION = 1;
-const STORE_NAME = "ryos:photo-booth";
+const STORE_NAME = "zios:photo-booth";
 
 export const usePhotoBoothStore = create<PhotoBoothStoreState>()(
   persist(

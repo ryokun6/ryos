@@ -45,7 +45,7 @@ import {
 } from "@/stores/useInternetExplorerStore";
 import FutureSettingsDialog from "@/components/dialogs/FutureSettingsDialog";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
-import { track } from "@vercel/analytics";
+import { track } from "@/utils/analytics";
 import { useAppStore } from "@/stores/useAppStore";
 import TimeMachineView from "./TimeMachineView";
 import {

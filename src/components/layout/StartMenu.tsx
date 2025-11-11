@@ -151,7 +151,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                     textAlign: "left",
                   }}
                 >
-                  ryOS{" "}
+                  ZiOS{" "}
                   <span style={{ fontWeight: "100" }}>
                     {currentTheme === "xp" ? "Professional" : "98"}
                   </span>

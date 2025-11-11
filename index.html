@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="apple-mobile-web-app-title" content="ryOS" />
+    <meta name="apple-mobile-web-app-title" content="ZiOS" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
@@ -28,31 +28,41 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://os.ryo.lu/" />
-    <meta property="og:title" content="ryOS" />
+    <meta property="og:url" content="https://bravohenry.com/" />
+    <meta property="og:title" content="ZiOS" />
     <meta
       property="og:description"
       content="A web-based OS experience, made with Cursor"
     />
-    <meta property="og:image" content="https://os.ryo.lu/icons/mac-512.png" />
-    <meta property="og:site_name" content="ryOS" />
+    <meta property="og:image" content="https://bravohenry.com/icons/mac-512.png" />
+    <meta property="og:site_name" content="ZiOS" />
 
     <!-- Twitter Card -->
     <meta property="twitter:card" content="summary" />
-    <meta property="twitter:title" content="ryOS" />
+    <meta property="twitter:title" content="ZiOS" />
     <meta
       property="twitter:description"
       content="A web-based OS experience, made with Cursor"
     />
     <meta
       property="twitter:image"
-      content="https://os.ryo.lu/icons/mac-512.png"
+      content="https://bravohenry.com/icons/mac-512.png"
     />
 
-    <title>ryOS</title>
+    <title>ZiOS</title>
   </head>
   <body style="background-color: black">
     <div id="root"></div>
+    <script>
+      console.log("HTML 脚本开始执行");
+      console.log("Root 元素:", document.getElementById("root"));
+      window.addEventListener("error", function(e) {
+        console.error("全局错误:", e.error, e.message, e.filename, e.lineno);
+      });
+      window.addEventListener("unhandledrejection", function(e) {
+        console.error("未处理的 Promise 拒绝:", e.reason);
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

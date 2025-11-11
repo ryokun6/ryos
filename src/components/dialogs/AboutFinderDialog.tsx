@@ -82,7 +82,7 @@ export function AboutFinderDialog({
                     : "font-apple-garamond text-2xl"
                 )}
               >
-                ryOS
+                ZiOS
                 {currentTheme === "system7"
                   ? " 7"
                   : currentTheme === "macosx"
@@ -128,7 +128,7 @@ export function AboutFinderDialog({
                       : undefined,
                   }}
                 >
-                  © Ryo Lu. 1992-{new Date().getFullYear()}
+                  © Zihan. {new Date().getFullYear()}
                 </div>
               </div>
             </div>
@@ -203,7 +203,7 @@ export function AboutFinderDialog({
                 About This Computer
               </DialogTitle>
               <DialogDescription className="sr-only">
-                Information about ryOS on this computer
+                Information about ZiOS on this computer
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

@@ -54,7 +54,7 @@ export function useChatRoom(
   } = useChatsStore();
 
   // Derive isAdmin directly from the username
-  const isAdmin = username === "ryo";
+  const isAdmin = username === "zi";
 
   // Pusher refs
   const pusherRef = useRef<ReturnType<typeof getPusherClient> | null>(null);
@@ -240,7 +240,7 @@ export function useChatRoom(
     async (newRoomId: string | null) => {
       if (newRoomId === currentRoomId) return;
 
-      console.log(`[Room Hook] Switching to room: ${newRoomId || "@ryo"}`);
+      console.log(`[Room Hook] Switching to room: ${newRoomId || "@zi"}`);
 
       // Check if the target room has unread messages before switching
       const { unreadCounts } = useChatsStore.getState();
@@ -340,7 +340,7 @@ export function useChatRoom(
       // For private rooms, the API will check if user is a member
       const result = await deleteRoom(roomId);
       if (result.ok && currentRoomId === roomId) {
-        handleRoomSelect(null); // Switch back to @ryo
+        handleRoomSelect(null); // Switch back to @zi
       }
       return result;
     },

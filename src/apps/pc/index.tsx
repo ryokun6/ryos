@@ -5,10 +5,10 @@ export const appMetadata = {
   name: "Virtual PC",
   version: "1.0.0",
   creator: {
-    name: "Ryo Lu",
-    url: "https://ryo.lu",
+    name: "Zihan Huang",
+    url: "https://bravohenry.com",
   },
-  github: "https://github.com/ryokun6/ryos",
+  github: "https://github.com/bravohenry/ziOS",
   icon: "/icons/default/pc.png",
 };
 

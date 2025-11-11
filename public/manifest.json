@@ -1,6 +1,6 @@
 {
-  "name": "ryOS",
-  "short_name": "ryOS",
+  "name": "ZiOS",
+  "short_name": "ZiOS",
   "description": "A web-based OS experience, made with Cursor",
   "start_url": "/",
   "display": "standalone",

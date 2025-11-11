@@ -30,7 +30,7 @@ export const helpItems = [
   {
     icon: "⚡",
     title: "Slash Commands",
-    description: "Type / for quick actions or let Ryo AI edit lines remotely",
+    description: "Type / for quick actions or let Zi AI edit lines remotely",
   },
 ];
 
@@ -38,10 +38,10 @@ export const appMetadata = {
   name: "TextEdit",
   version: "1.0",
   creator: {
-    name: "Ryo Lu",
-    url: "https://ryo.lu",
+    name: "Zihan Huang",
+    url: "https://bravohenry.com",
   },
-  github: "https://github.com/ryokun6/ryos",
+  github: "https://github.com/bravohenry/ziOS",
   icon: "/icons/default/textedit.png",
 };
 

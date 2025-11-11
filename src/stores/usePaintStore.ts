@@ -8,7 +8,7 @@ interface PaintStoreState {
 }
 
 const STORE_VERSION = 1;
-const STORE_NAME = "ryos:paint";
+const STORE_NAME = "zios:paint";
 
 export const usePaintStore = create<PaintStoreState>()(
   persist(

@@ -26,7 +26,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   const feedRef = useRef<AppStoreFeedRef>(null);
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
-  const isAdmin = username?.toLowerCase() === "ryo" && !!authToken;
+  const isAdmin = username?.toLowerCase() === "zi" && !!authToken;
   const isMacTheme = theme === "macosx";
   const isSystem7Theme = theme === "system7";
   const currentTheme = useThemeStore((state) => state.current);
@@ -236,7 +236,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     if (!isMacTheme || !content) return content;
     // Ensure fonts.css is available and prefer Lucida Grande
     const preload = `<link rel="stylesheet" href="/fonts/fonts.css">`;
-    const fontStyle = `<style data-ryos-applet-font-fix>
+    const fontStyle = `<style data-zios-applet-font-fix>
       html,body{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
       *{font-family:inherit!important}
       h1,h2,h3,h4,h5,h6,p,div,span,a,li,ul,ol,button,input,select,textarea,label,code,pre,blockquote,small,strong,em,table,th,td{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}

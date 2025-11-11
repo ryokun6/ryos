@@ -12,7 +12,7 @@ import {
 } from "./utils/aiModels.js";
 import {
   CORE_PRIORITY_INSTRUCTIONS,
-  RYO_PERSONA_INSTRUCTIONS,
+  ZI_PERSONA_INSTRUCTIONS,
   ANSWER_STYLE_INSTRUCTIONS,
   CODE_GENERATION_INSTRUCTIONS,
   CHAT_INSTRUCTIONS,
@@ -122,7 +122,7 @@ interface SystemState {
 }
 
 // Allowed origins for API requests
-const ALLOWED_ORIGINS = new Set(["https://os.ryo.lu", "http://localhost:3000"]);
+const ALLOWED_ORIGINS = new Set(["https://bravohenry.com", "http://localhost:3000"]);
 
 // Function to validate request origin
 // Only allow explicit origins defined in ALLOWED_ORIGINS – no wildcard ports or IP fallbacks
@@ -144,7 +144,7 @@ export const config = {
 const STATIC_SYSTEM_PROMPT = [
   CORE_PRIORITY_INSTRUCTIONS,
   ANSWER_STYLE_INSTRUCTIONS,
-  RYO_PERSONA_INSTRUCTIONS,
+  ZI_PERSONA_INSTRUCTIONS,
   CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
   CODE_GENERATION_INSTRUCTIONS,
@@ -174,7 +174,7 @@ const generateDynamicSystemPrompt = (systemState?: SystemState) => {
     day: "numeric",
   });
 
-  const ryoTimeZone = "America/Los_Angeles";
+  const ziTimeZone = "America/Los_Angeles";
 
   if (!systemState) return "";
 
@@ -183,7 +183,7 @@ const generateDynamicSystemPrompt = (systemState?: SystemState) => {
 Current User: ${systemState.username || "you"}
 
 ## TIME & LOCATION
-Ryo Time: ${timeString} on ${dateString} (${ryoTimeZone})`;
+Zi Time: ${timeString} on ${dateString} (${ziTimeZone})`;
 
   if (systemState.userLocalTime) {
     prompt += `
@@ -324,7 +324,7 @@ ${index + 1}. ${instance.title}${unsavedMark} (ID: ${instance.instanceId})`;
     prompt += `\n\n<chat_room_reply_instructions>
 ## CHAT ROOM CONTEXT
 Room ID: ${systemState.chatRoomContext.roomId}
-Your Role: Respond as 'ryo' in this IRC-style chat room
+Your Role: Respond as 'zi' in this IRC-style chat room
 Response Style: Use extremely concise responses
 
 Recent Conversation:
@@ -521,7 +521,7 @@ export default async function handler(req: Request) {
     // ---------------------------
     // Rate-limit & auth checks
     // ---------------------------
-    // Validate authentication (all users, including "ryo", must present a valid token)
+    // Validate authentication (all users, including "zi", must present a valid token)
     const validationResult = await validateAuthToken(username, authToken);
 
     // If a username was provided but the token is missing/invalid, reject the request early
@@ -674,7 +674,7 @@ export default async function handler(req: Request) {
       tools: {
         launchApp: {
           description:
-            "Launch an application in the ryOS interface when the user explicitly requests it. If the id is 'internet-explorer', you must provide BOTH a real 'url' and a 'year' for time-travel; otherwise provide neither.",
+            "Launch an application in the ZiOS interface when the user explicitly requests it. If the id is 'internet-explorer', you must provide BOTH a real 'url' and a 'year' for time-travel; otherwise provide neither.",
           inputSchema: z
             .object({
               id: z.enum(appIds).describe("The app id to launch"),
@@ -747,14 +747,14 @@ export default async function handler(req: Request) {
         },
         closeApp: {
           description:
-            "Close an application in the ryOS interface—but only when the user explicitly asks you to close that specific app.",
+            "Close an application in the ZiOS interface—but only when the user explicitly asks you to close that specific app.",
           inputSchema: z.object({
             id: z.enum(appIds).describe("The app id to close"),
           }),
         },
         switchTheme: {
           description:
-            "Switch the ryOS UI theme to a specific OS style when the user explicitly requests it.",
+            "Switch the ZiOS UI theme to a specific OS style when the user explicitly requests it.",
           inputSchema: z.object({
             theme: z
               .enum(themeIds)
@@ -930,7 +930,7 @@ export default async function handler(req: Request) {
         // --- HTML generation & preview ---
         generateHtml: {
           description:
-            "Generate an HTML snippet for an ryOS Applet: a small windowed app (default ~320px wide) that runs inside ryOS, not the full page. Design mobile-first for ~320px width but keep layouts responsive to expand gracefully. Provide markup in 'html', a short 'title', and an 'icon' (emoji). DO NOT wrap it in markdown fences; the client will handle scaffolding.",
+            "Generate an HTML snippet for a ZiOS Applet: a small windowed app (default ~320px wide) that runs inside ZiOS, not the full page. Design mobile-first for ~320px width but keep layouts responsive to expand gracefully. Provide markup in 'html', a short 'title', and an 'icon' (emoji). DO NOT wrap it in markdown fences; the client will handle scaffolding.",
           inputSchema: z.object({
             html: z
               .string()

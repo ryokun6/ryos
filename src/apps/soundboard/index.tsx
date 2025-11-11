@@ -38,10 +38,10 @@ export const appMetadata = {
   name: "Soundboard",
   version: "0.2",
   creator: {
-    name: "Ryo Lu",
-    url: "https://ryo.lu",
+    name: "Zihan Huang",
+    url: "https://bravohenry.com",
   },
-  github: "https://github.com/ryokun6/ryos",
+  github: "https://github.com/bravohenry/ziOS",
   icon: "/icons/default/cdrom.png",
 };
 

@@ -418,7 +418,7 @@ export default async function handler(req: Request) {
       );
     }
 
-    // DELETE: Delete applet (admin only - ryo)
+    // DELETE: Delete applet (admin only - zi)
     if (req.method === "DELETE") {
       const authHeader = req.headers.get("Authorization");
       const usernameHeader = req.headers.get("X-Username");
@@ -441,8 +441,8 @@ export default async function handler(req: Request) {
         );
       }
 
-      // Check if user is ryo
-      if (username?.toLowerCase() !== "ryo") {
+      // Check if user is zi
+      if (username?.toLowerCase() !== "zi") {
         return new Response(
           JSON.stringify({ error: "Forbidden" }),
           {
@@ -499,7 +499,7 @@ export default async function handler(req: Request) {
       );
     }
 
-    // PATCH: Update applet (admin only - ryo) - for setting featured status
+    // PATCH: Update applet (admin only - zi) - for setting featured status
     if (req.method === "PATCH") {
       const authHeader = req.headers.get("Authorization");
       const usernameHeader = req.headers.get("X-Username");
@@ -522,8 +522,8 @@ export default async function handler(req: Request) {
         );
       }
 
-      // Check if user is ryo
-      if (username?.toLowerCase() !== "ryo") {
+      // Check if user is zi
+      if (username?.toLowerCase() !== "zi") {
         return new Response(
           JSON.stringify({ error: "Forbidden" }),
           {

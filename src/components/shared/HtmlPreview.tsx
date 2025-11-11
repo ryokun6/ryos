@@ -153,7 +153,7 @@ export const extractHtmlContent = (
   };
 };
 
-// Component to render ryOS Code Previews
+// Component to render ZiOS Code Previews
 interface HtmlPreviewProps {
   htmlContent: string;
   appletTitle?: string;
@@ -760,7 +760,7 @@ export default function HtmlPreview({
       .replace(/[:.]/g, "-")
       .substring(0, 19);
     a.href = url;
-    a.download = `ryOS-generated-${timestamp}.html`;
+    a.download = `ZiOS-generated-${timestamp}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1322,7 +1322,7 @@ export default function HtmlPreview({
             id={iframeId}
             // srcDoc is now set by useEffect after streaming finishes
             // srcDoc={processedHtmlContent()}
-            title="ryOS Code Preview"
+            title="ZiOS Code Preview"
             className={`w-full border-0 ${
               !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : "h-full"
             }`}
@@ -1468,7 +1468,7 @@ export default function HtmlPreview({
                         id={`fullscreen-${iframeId}`}
                         // srcDoc is now set by useEffect after streaming finishes
                         // srcDoc={processedHtmlContent()}
-                        title="ryOS Code Preview Fullscreen"
+                        title="ZiOS Code Preview Fullscreen"
                         className="border-0 bg-white w-full h-full"
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                         onClick={(e) => e.stopPropagation()}

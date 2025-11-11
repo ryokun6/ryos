@@ -13,8 +13,7 @@ export interface Favorite {
 
 // Define a constant for domains that bypass the proxy when in "now" mode
 export const DIRECT_PASSTHROUGH_DOMAINS = [
-  "baby-cursor.ryo.lu",
-  "os.ryo.lu",
+  "bravohenry.com",
   "hcsimulator.com",
   "os.rocorgi.wang",
 ];
@@ -112,9 +111,9 @@ export const DEFAULT_FAVORITES: Favorite[] = [
     isDirectory: false,
   },
   {
-    title: "Ryo",
-    url: "https://ryo.lu",
-    favicon: "https://www.google.com/s2/favicons?domain=ryo.lu&sz=32",
+    title: "Zihan",
+    url: "https://bravohenry.com",
+    favicon: "https://www.google.com/s2/favicons?domain=bravohenry.com&sz=32",
     year: "current",
     isDirectory: false,
   },
@@ -249,8 +248,8 @@ export const DEFAULT_FAVORITES: Favorite[] = [
     children: [
       {
         title: "Baby Cursor",
-        url: "https://baby-cursor.ryo.lu",
-        favicon: "https://www.google.com/s2/favicons?domain=ryo.lu&sz=32",
+        url: "https://bravohenry.com",
+        favicon: "https://www.google.com/s2/favicons?domain=bravohenry.com&sz=32",
         year: "current",
         isDirectory: false,
       },
@@ -830,7 +829,7 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
       updateBrowserState: () => {},
     }),
     {
-      name: "ryos:internet-explorer",
+      name: "zios:internet-explorer",
       version: CURRENT_IE_STORE_VERSION,
       partialize: (state) => ({
         url: state.url,

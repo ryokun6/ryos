@@ -6,8 +6,8 @@ import { STORES } from "@/utils/indexedDB";
 import { useFilesStore } from "@/stores/useFilesStore";
 
 // Check if migration has been completed
-const MIGRATION_KEY = "ryos:indexeddb-uuid-migration-v1";
-const BACKUP_KEY = "ryos:indexeddb-backup";
+const MIGRATION_KEY = "zios:indexeddb-uuid-migration-v1";
+const BACKUP_KEY = "zios:indexeddb-backup";
 
 // Backup all data before schema migration
 async function backupDataBeforeMigration() {
@@ -28,7 +28,7 @@ async function backupDataBeforeMigration() {
   try {
     // Open the old version database directly
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open("ryOS", 4); // Open version 4 explicitly
+      const request = indexedDB.open("ZiOS", 4); // Open version 4 explicitly
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
       // Don't upgrade yet
@@ -326,7 +326,7 @@ export async function migrateIndexedDBToUUIDs() {
 
   // Check if we need to backup data before schema migration
   const currentDBVersion = await new Promise<number>((resolve) => {
-    const request = indexedDB.open("ryOS");
+    const request = indexedDB.open("ZiOS");
     request.onsuccess = () => {
       const version = request.result.version;
       request.result.close();

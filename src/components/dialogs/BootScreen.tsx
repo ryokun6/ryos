@@ -87,7 +87,7 @@ export function BootScreen({
                 className="w-64 h-32"
               />
               <h1 className="text-[36px] font-mondwest mt-4 mb-0">
-                <span className="text-blue-500">ry</span>OS
+                <span className="text-blue-500">Zi</span>OS
               </h1>
             </div>
             <h2 className="text-[16px] font-chicago mt-4 mb-1">{title}</h2>
