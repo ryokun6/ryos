@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -56,27 +57,59 @@ export const useAppletActions = () => {
   };
 
   // Check if installed applet needs update
-  const needsUpdate = (applet: Applet): boolean => {
-    if (!isAppletInstalled(applet.id)) return false;
-    const installedFile = getInstalledApplet(applet.id);
-    if (!installedFile) return false;
-    const fileItem = fileStore.getItem(installedFile.path);
-    if (!fileItem) return false;
-    
-    const storeCreatedAt = fileItem.storeCreatedAt;
-    
-    if (!storeCreatedAt) {
+  const pendingStoreCreatedAtUpdates = useRef<Set<string>>(new Set());
+
+  const scheduleStoreCreatedAtUpdate = useCallback(
+    (filePath: string, createdAt: number | undefined) => {
+      if (!filePath || !createdAt) return;
+      if (pendingStoreCreatedAtUpdates.current.has(filePath)) return;
+      pendingStoreCreatedAtUpdates.current.add(filePath);
+
+      // Defer metadata write until after render to avoid React update loops
+      setTimeout(() => {
+        try {
+          const latestItem = fileStore.getItem(filePath);
+          if (latestItem && !latestItem.storeCreatedAt) {
+            fileStore.updateItemMetadata(filePath, {
+              storeCreatedAt: createdAt,
+            });
+          }
+        } finally {
+          pendingStoreCreatedAtUpdates.current.delete(filePath);
+        }
+      }, 0);
+    },
+    [fileStore]
+  );
+
+  const needsUpdate = useCallback(
+    (applet: Applet): boolean => {
+      if (!isAppletInstalled(applet.id)) return false;
+      const installedFile = getInstalledApplet(applet.id);
+      if (!installedFile) return false;
+      const fileItem = fileStore.getItem(installedFile.path);
+      if (!fileItem) return false;
+
       const currentCreatedAt = applet.createdAt || 0;
-      fileStore.updateItemMetadata(installedFile.path, {
-        storeCreatedAt: currentCreatedAt,
-      });
-      return false;
-    }
-    
-    const currentCreatedAt = applet.createdAt || 0;
-    const timeDiff = currentCreatedAt - storeCreatedAt;
-    return timeDiff > 1000;
-  };
+
+      if (!fileItem.storeCreatedAt && currentCreatedAt) {
+        scheduleStoreCreatedAtUpdate(installedFile.path, currentCreatedAt);
+      }
+
+      if (!currentCreatedAt) {
+        return false;
+      }
+
+      const baselineCreatedAt =
+        fileItem.storeCreatedAt ??
+        fileItem.createdAt ??
+        fileItem.modifiedAt ??
+        0;
+
+      return currentCreatedAt - baselineCreatedAt > 1000;
+    },
+    [fileStore, getInstalledApplet, isAppletInstalled, scheduleStoreCreatedAtUpdate]
+  );
 
   // Handle clicking on an applet
   const handleAppletClick = async (applet: Applet) => {
@@ -176,14 +209,16 @@ export const useAppletActions = () => {
         },
       });
       
-      // Automatically open the applet in a new window instance
-      launchApp("applet-viewer", {
-        initialData: {
-          path: finalPath,
-          content: data.content,
-          forceNewInstance: true,
-        },
-      });
+      // Automatically open the applet in a new window instance (only for new installs, not updates)
+      if (!isUpdate) {
+        launchApp("applet-viewer", {
+          initialData: {
+            path: finalPath,
+            content: data.content,
+            forceNewInstance: true,
+          },
+        });
+      }
       
       if (onSuccess) {
         onSuccess();

@@ -55,6 +55,10 @@ export function Desktop({
   // File system and launch app hooks
   const fileStore = useFilesStore();
   const launchApp = useLaunchApp();
+  
+  // Get trash icon (updates automatically when trash state changes)
+  const allItems = useFilesStore((state) => state.items);
+  const trashIcon = fileStore.getItem("/Trash")?.icon || "/icons/trash-empty.png";
 
   // Define the default order for desktop shortcuts
   const defaultShortcutOrder: AppId[] = [
@@ -75,7 +79,6 @@ export function Desktop({
 
   // Get desktop shortcuts - subscribe to store changes
   // Access items directly to ensure reactivity
-  const allItems = useFilesStore((state) => state.items);
   const desktopShortcuts = Object.values(allItems)
     .filter(
       (item) =>
@@ -617,6 +620,23 @@ export function Desktop({
       ];
     } else if (contextMenuAppId) {
       // Icon-specific context menu
+      if (contextMenuAppId === "trash") {
+        return [
+          {
+            type: "item",
+            label: "Open",
+            onSelect: () => {
+              localStorage.setItem("app_finder_initialPath", "/Trash");
+              const finderApp = apps.find((app) => app.id === "finder");
+              if (finderApp) {
+                toggleApp(finderApp.id);
+              }
+              setContextMenuPos(null);
+              setContextMenuAppId(null);
+            },
+          },
+        ];
+      }
       return [
         {
           type: "item",
@@ -827,6 +847,38 @@ export function Desktop({
               data-desktop-icon="true"
             />
           ))}
+          {/* Display Trash icon at the end for non-macOS X themes */}
+          {currentTheme !== "macosx" && (
+            <FileIcon
+              name="Trash"
+              isDirectory={true}
+              icon={trashIcon}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedAppId("trash");
+              }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                localStorage.setItem("app_finder_initialPath", "/Trash");
+                const finderApp = apps.find((app) => app.id === "finder");
+                if (finderApp) {
+                  toggleApp(finderApp.id);
+                }
+                setSelectedAppId(null);
+              }}
+              onContextMenu={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setContextMenuPos({ x: e.clientX, y: e.clientY });
+                setContextMenuAppId("trash");
+                setContextMenuShortcutPath(null);
+                setSelectedAppId("trash");
+              }}
+              isSelected={selectedAppId === "trash"}
+              size="large"
+              data-desktop-icon="true"
+            />
+          )}
         </div>
       </div>
       <RightClickMenu
