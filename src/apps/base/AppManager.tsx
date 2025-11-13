@@ -9,6 +9,7 @@ import { AppId, getAppComponent, appRegistry } from "@/config/appRegistry";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { extractCodeFromPath } from "@/utils/sharedUrl";
 import { toast } from "sonner";
+import { useThemeStore } from "@/stores/useThemeStore";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -27,6 +28,7 @@ export function AppManager({ apps }: AppManagerProps) {
     navigateToNextInstance,
     navigateToPreviousInstance,
     getForegroundInstance,
+    restoreAllMinimizedInstances,
   } = useAppStoreShallow((state) => ({
     instances: state.instances,
     instanceOrder: state.instanceOrder,
@@ -36,11 +38,19 @@ export function AppManager({ apps }: AppManagerProps) {
     navigateToNextInstance: state.navigateToNextInstance,
     navigateToPreviousInstance: state.navigateToPreviousInstance,
     getForegroundInstance: state.getForegroundInstance,
+    restoreAllMinimizedInstances: state.restoreAllMinimizedInstances,
   }));
 
   const [isInitialMount, setIsInitialMount] = useState(true);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+
+  // When switching away from XP/Win98 to macOS or System7, restore all minimized windows
+  useEffect(() => {
+    if (currentTheme === "macosx" || currentTheme === "system7") {
+      restoreAllMinimizedInstances();
+    }
+  }, [currentTheme, restoreAllMinimizedInstances]);
 
   // Create legacy-compatible appStates from instances for AppContext
   // NOTE: There can be multiple open instances for the same appId. We need to
@@ -339,6 +349,7 @@ export function AppManager({ apps }: AppManagerProps) {
       {/* App Instances */}
       {Object.values(instances).map((instance) => {
         if (!instance.isOpen) return null;
+        if (instance.isMinimized) return null;
 
         const appId = instance.appId as AppId;
         const zIndex = getZIndexForInstance(instance.instanceId);
