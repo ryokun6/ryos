@@ -5,6 +5,14 @@ import {
   type ChatMessage,
   type AIChatMessage,
 } from "@/types/chat";
+import {
+  saveRoomMessages as saveRoomMessagesToIndexedDB,
+  saveRoomMessagesBulk,
+  loadRoomMessages as loadRoomMessagesFromIndexedDB,
+  loadAllRoomMessages as loadAllRoomMessagesFromIndexedDB,
+  deleteRoomMessages as deleteRoomMessagesFromIndexedDB,
+  clearAllRoomMessages as clearAllRoomMessagesFromIndexedDB,
+} from "@/utils/chatMessagesIndexedDB";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -180,19 +188,21 @@ export interface ChatsStoreState {
   messageRenderLimit: number; // Max messages to render per room initially
 
   // Actions
-  setAiMessages: (messages: AIChatMessage[]) => void;
-  setUsername: (username: string | null) => void;
-  setAuthToken: (token: string | null) => void; // Set auth token
-  setHasPassword: (hasPassword: boolean | null) => void; // Set password status
-  checkHasPassword: () => Promise<{ ok: boolean; error?: string }>; // Check if user has password
-  setPassword: (password: string) => Promise<{ ok: boolean; error?: string }>; // Set password for user
-  setRooms: (rooms: ChatRoom[]) => void;
-  setCurrentRoomId: (roomId: string | null) => void;
-  setRoomMessagesForCurrentRoom: (messages: ChatMessage[]) => void; // Sets messages for the *current* room
-  addMessageToRoom: (roomId: string, message: ChatMessage) => void;
-  removeMessageFromRoom: (roomId: string, messageId: string) => void;
-  clearRoomMessages: (roomId: string) => void; // Clears messages for a specific room
-  toggleSidebarVisibility: () => void;
+    setAiMessages: (messages: AIChatMessage[]) => void;
+    setUsername: (username: string | null) => void;
+    setAuthToken: (token: string | null) => void; // Set auth token
+    setHasPassword: (hasPassword: boolean | null) => void; // Set password status
+    checkHasPassword: () => Promise<{ ok: boolean; error?: string }>; // Check if user has password
+    setPassword: (password: string) => Promise<{ ok: boolean; error?: string }>; // Set password for user
+    setRooms: (rooms: ChatRoom[]) => void;
+    setCurrentRoomId: (roomId: string | null) => void;
+    setRoomMessagesForCurrentRoom: (messages: ChatMessage[]) => void; // Sets messages for the *current* room
+    addMessageToRoom: (roomId: string, message: ChatMessage) => void;
+    removeMessageFromRoom: (roomId: string, messageId: string) => void;
+    clearRoomMessages: (roomId: string) => void; // Clears messages for a specific room
+    hydrateCachedMessages: () => Promise<void>;
+    loadCachedMessagesForRoom: (roomId: string) => Promise<void>;
+    toggleSidebarVisibility: () => void;
   toggleChannelsOpen: () => void; // Toggle Channels collapsed state
   togglePrivateOpen: () => void; // Toggle Private collapsed state
   setFontSize: (size: number | ((prevSize: number) => number)) => void; // Add font size action
@@ -309,16 +319,38 @@ const getInitialState = (): Omit<
   };
 };
 
-const STORE_VERSION = 2;
+const STORE_VERSION = 3;
 const STORE_NAME = "ryos:chats";
 
 export const useChatsStore = create<ChatsStoreState>()(
   persist(
     (set, get) => {
-      // Get initial state
-      const initialState = getInitialState();
-      // Ensure recovery keys are set if values exist
-      ensureRecoveryKeysAreSet(initialState.username, initialState.authToken);
+        // Get initial state
+        const initialState = getInitialState();
+        // Ensure recovery keys are set if values exist
+        ensureRecoveryKeysAreSet(initialState.username, initialState.authToken);
+
+        const persistRoomMessages = (roomId: string, messages: ChatMessage[]) => {
+          if (!roomId) return;
+          void saveRoomMessagesToIndexedDB(roomId, messages).catch((error) => {
+            console.error(
+              "[ChatsStore] Failed to persist messages for room",
+              roomId,
+              error
+            );
+          });
+        };
+
+        const deletePersistedRoomMessages = (roomId: string) => {
+          if (!roomId) return;
+          void deleteRoomMessagesFromIndexedDB(roomId).catch((error) => {
+            console.error(
+              "[ChatsStore] Failed to delete persisted messages for room",
+              roomId,
+              error
+            );
+          });
+        };
 
       return {
         ...initialState,
@@ -489,14 +521,16 @@ export const useChatsStore = create<ChatsStoreState>()(
         setRoomMessagesForCurrentRoom: (messages) => {
           const currentRoomId = get().currentRoomId;
           if (currentRoomId) {
+            const sorted = [...messages].sort(
+              (a, b) => a.timestamp - b.timestamp
+            );
             set((state) => ({
               roomMessages: {
                 ...state.roomMessages,
-                [currentRoomId]: messages.sort(
-                  (a, b) => a.timestamp - b.timestamp
-                ),
+                [currentRoomId]: sorted,
               },
             }));
+            persistRoomMessages(currentRoomId, sorted);
           }
         },
         addMessageToRoom: (roomId, message) => {
@@ -531,12 +565,14 @@ export const useChatsStore = create<ChatsStoreState>()(
                   ...incoming,
                   clientId: tempMsg.clientId || tempMsg.id,
                 } as ChatMessage;
-                const updated = [...existingMessages];
-                updated[idxByClientId] = replaced;
+                const sorted = [...existingMessages];
+                sorted[idxByClientId] = replaced;
+                sorted.sort((a, b) => a.timestamp - b.timestamp);
+                persistRoomMessages(roomId, sorted);
                 return {
                   roomMessages: {
                     ...state.roomMessages,
-                    [roomId]: updated.sort((a, b) => a.timestamp - b.timestamp),
+                    [roomId]: sorted,
                   },
                 };
               }
@@ -556,12 +592,14 @@ export const useChatsStore = create<ChatsStoreState>()(
                 ...incoming,
                 clientId: tempMsg.clientId || tempMsg.id, // preserve stable client key
               } as ChatMessage;
-              const updated = [...existingMessages];
-              updated[tempIndex] = replaced; // replace in place to minimise list churn
+              const sorted = [...existingMessages];
+              sorted[tempIndex] = replaced; // replace in place to minimise list churn
+              sorted.sort((a, b) => a.timestamp - b.timestamp);
+              persistRoomMessages(roomId, sorted);
               return {
                 roomMessages: {
                   ...state.roomMessages,
-                  [roomId]: updated.sort((a, b) => a.timestamp - b.timestamp),
+                  [roomId]: sorted,
                 },
               };
             }
@@ -604,23 +642,27 @@ export const useChatsStore = create<ChatsStoreState>()(
                 ...incoming,
                 clientId: tempMsg.clientId || tempMsg.id,
               } as ChatMessage;
-              const updated = [...existingMessages];
-              updated[bestIdx] = replaced;
+              const sorted = [...existingMessages];
+              sorted[bestIdx] = replaced;
+              sorted.sort((a, b) => a.timestamp - b.timestamp);
+              persistRoomMessages(roomId, sorted);
               return {
                 roomMessages: {
                   ...state.roomMessages,
-                  [roomId]: updated.sort((a, b) => a.timestamp - b.timestamp),
+                  [roomId]: sorted,
                 },
               };
             }
 
             // No optimistic message to replace – append normally
+            const next = [...existingMessages, incoming].sort(
+              (a, b) => a.timestamp - b.timestamp
+            );
+            persistRoomMessages(roomId, next);
             return {
               roomMessages: {
                 ...state.roomMessages,
-                [roomId]: [...existingMessages, incoming].sort(
-                  (a, b) => a.timestamp - b.timestamp
-                ),
+                [roomId]: next,
               },
             };
           });
@@ -633,6 +675,11 @@ export const useChatsStore = create<ChatsStoreState>()(
             );
             // Only update if a message was actually removed
             if (updatedMessages.length < existingMessages.length) {
+              if (updatedMessages.length > 0) {
+                persistRoomMessages(roomId, updatedMessages);
+              } else {
+                deletePersistedRoomMessages(roomId);
+              }
               return {
                 roomMessages: {
                   ...state.roomMessages,
@@ -650,6 +697,46 @@ export const useChatsStore = create<ChatsStoreState>()(
               [roomId]: [],
             },
           }));
+          deletePersistedRoomMessages(roomId);
+        },
+        hydrateCachedMessages: async () => {
+          try {
+            const cached = await loadAllRoomMessagesFromIndexedDB();
+            set((state) => ({
+              roomMessages: {
+                ...cached,
+                ...state.roomMessages,
+              },
+            }));
+          } catch (error) {
+            console.error(
+              "[ChatsStore] Failed to hydrate cached chat messages:",
+              error
+            );
+          }
+        },
+        loadCachedMessagesForRoom: async (roomId) => {
+          if (!roomId) return;
+          const existing = get().roomMessages[roomId];
+          if (existing && existing.length > 0) {
+            return;
+          }
+          try {
+            const cached = await loadRoomMessagesFromIndexedDB(roomId);
+            if (cached.length > 0) {
+              set((state) => ({
+                roomMessages: {
+                  ...state.roomMessages,
+                  [roomId]: cached,
+                },
+              }));
+            }
+          } catch (error) {
+            console.error(
+              `[ChatsStore] Failed to load cached messages for room ${roomId}:`,
+              error
+            );
+          }
         },
         toggleSidebarVisibility: () =>
           set((state) => ({
@@ -890,6 +977,12 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           // Reset the store to initial state (which already tries to recover username and auth token)
           set(getInitialState());
+          void clearAllRoomMessagesFromIndexedDB().catch((error) =>
+            console.error(
+              "[ChatsStore] Failed to clear cached chat messages during reset:",
+              error
+            )
+          );
         },
         logout: async () => {
           console.log("[ChatsStore] Logging out user...");
@@ -1045,6 +1138,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 const merged = Array.from(byId.values()).sort(
                   (a, b) => a.timestamp - b.timestamp
                 );
+                persistRoomMessages(roomId, merged);
                 return {
                   roomMessages: {
                     ...state.roomMessages,
@@ -1126,6 +1220,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                     nextRoomMessages[roomId] = Array.from(byId.values()).sort(
                       (a, b) => a.timestamp - b.timestamp
                     );
+                    persistRoomMessages(roomId, nextRoomMessages[roomId]);
                   }
                 );
 
@@ -1204,6 +1299,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           // Always fetch messages for the new room to ensure latest content
           if (newRoomId) {
+            await get().loadCachedMessagesForRoom(newRoomId);
             console.log(
               `[ChatsStore] Fetching latest messages for room ${newRoomId}`
             );
@@ -1502,24 +1598,39 @@ export const useChatsStore = create<ChatsStoreState>()(
       name: STORE_NAME,
       version: STORE_VERSION,
       storage: createJSONStorage(() => localStorage), // Use localStorage
-      partialize: (state) => ({
-        // Select properties to persist
-        aiMessages: state.aiMessages,
-        username: state.username,
-        authToken: state.authToken, // Persist auth token
-        hasPassword: state.hasPassword, // Persist password status
-        currentRoomId: state.currentRoomId,
-        isSidebarVisible: state.isSidebarVisible,
-        isChannelsOpen: state.isChannelsOpen,
-        isPrivateOpen: state.isPrivateOpen,
-        rooms: state.rooms, // Persist rooms list
-        roomMessages: state.roomMessages, // Persist room messages cache
-        fontSize: state.fontSize, // Persist font size
-        unreadCounts: state.unreadCounts,
-        hasEverUsedChats: state.hasEverUsedChats,
-      }),
+        partialize: (state) => ({
+          // Select properties to persist
+          aiMessages: state.aiMessages,
+          username: state.username,
+          authToken: state.authToken, // Persist auth token
+          hasPassword: state.hasPassword, // Persist password status
+          currentRoomId: state.currentRoomId,
+          isSidebarVisible: state.isSidebarVisible,
+          isChannelsOpen: state.isChannelsOpen,
+          isPrivateOpen: state.isPrivateOpen,
+          rooms: state.rooms, // Persist rooms list
+          fontSize: state.fontSize, // Persist font size
+          unreadCounts: state.unreadCounts,
+          hasEverUsedChats: state.hasEverUsedChats,
+        }),
       // --- Migration from old localStorage keys ---
-      migrate: (persistedState, version) => {
+        migrate: async (persistedState, version) => {
+          const finalize = async (state: ChatsStoreState) => {
+            if (
+              state?.roomMessages &&
+              Object.keys(state.roomMessages).length > 0
+            ) {
+              try {
+                await saveRoomMessagesBulk(state.roomMessages);
+              } catch (error) {
+                console.error(
+                  "[ChatsStore] Failed to persist room messages to IndexedDB during migration:",
+                  error
+                );
+              }
+            }
+            return state;
+          };
         console.log(
           "[ChatsStore] Migrate function started. Version:",
           version,
@@ -1535,7 +1646,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
         }
 
-        if (version < STORE_VERSION && !persistedState) {
+          if (version < STORE_VERSION && !persistedState) {
           console.log(
             `[ChatsStore] Migrating from old localStorage keys to version ${STORE_VERSION}...`
           );
@@ -1624,7 +1735,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             // localStorage.removeItem('chats:cachedRoomMessages');
             // console.log("[ChatsStore] Old localStorage keys potentially removed.");
 
-            const finalMigratedState = {
+              const finalMigratedState = {
               ...getInitialState(),
               ...migratedState,
             } as ChatsStoreState;
@@ -1638,7 +1749,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               "Is Array:",
               Array.isArray(finalMigratedState.rooms)
             );
-            return finalMigratedState;
+              return finalize(finalMigratedState);
           } catch (e) {
             console.error("[ChatsStore] Migration failed:", e);
           }
@@ -1661,11 +1772,11 @@ export const useChatsStore = create<ChatsStoreState>()(
             "Is Array:",
             Array.isArray(finalState.rooms)
           );
-          return finalState;
+            return finalize(finalState);
         }
         // Fallback to initial state if migration fails or no persisted state
         console.log("[ChatsStore] Falling back to initial state.");
-        return { ...getInitialState() } as ChatsStoreState;
+          return finalize({ ...getInitialState() } as ChatsStoreState);
       },
       // --- Rehydration Check for Null Username ---
       onRehydrateStorage: () => {
@@ -1721,6 +1832,20 @@ export const useChatsStore = create<ChatsStoreState>()(
                 );
                 state.authToken = recoveredAuthToken;
               }
+            }
+
+            if (Object.keys(state.roomMessages || {}).length === 0) {
+              Promise.resolve().then(() => {
+                void useChatsStore
+                  .getState()
+                  .hydrateCachedMessages()
+                  .catch((err) =>
+                    console.error(
+                      "[ChatsStore] Failed to hydrate cached messages after rehydrate:",
+                      err
+                    )
+                  );
+              });
             }
 
             // Ensure both are saved to recovery
