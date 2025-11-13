@@ -143,10 +143,18 @@
     -webkit-user-select: none;
   }
 
+  /* Prevent any element from causing horizontal overflow */
+  #root {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
   .no-touch-callout {
     -webkit-touch-callout: none;
   }
   html {
+    overflow-x: hidden;
     overscroll-behavior: none;
     overscroll-behavior-x: none;
     overscroll-behavior-y: none;
@@ -164,8 +172,10 @@
     -webkit-font-smoothing: none;
     font-smooth: never;
     overflow: hidden;
+    overflow-x: hidden;
     position: fixed;
     inset: 0;
+    width: 100%;
     /* Additional mobile gesture prevention */
     overscroll-behavior: none;
     overscroll-behavior-x: none;
