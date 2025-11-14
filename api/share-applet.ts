@@ -360,7 +360,6 @@ export default async function handler(req: Request) {
         windowHeight?: number;
         createdAt: number;
         createdBy?: string;
-        updatedAt?: number;
         featured?: boolean;
       } = {
         content,
@@ -375,7 +374,6 @@ export default async function handler(req: Request) {
         createdBy: isUpdate && existingAppletData?.createdBy
           ? existingAppletData.createdBy
           : (username || undefined),
-        updatedAt: Date.now(),
         featured:
           isUpdate && existingAppletData?.featured !== undefined
             ? existingAppletData.featured
