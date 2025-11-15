@@ -80,7 +80,11 @@ Works on all devices—including mobile, tablet, and desktop.
   - Save favorites by year and share time-travel links
 - **Chats**: AI-powered chat with speech & tool calling
   - Natural conversation with Ryo AI
-  - Join public chat rooms with @ryo mentions
+  - **Public and private chat rooms** with real-time messaging via Pusher
+  - Join public chat rooms with @ryo mentions for AI-powered responses
+  - Private conversations with other users
+  - Real-time message synchronization across devices
+  - Unread message notifications and counters
   - Push-to-talk voice messages with real-time transcription
   - Text-to-speech for AI responses with word highlighting
   - Control apps and edit documents via chat commands
@@ -89,6 +93,8 @@ Works on all devices—including mobile, tablet, and desktop.
   - Tool calling capabilities for system integration
   - Save transcript to Markdown
   - Speech synthesis with volume controls
+  - User authentication system with secure token-based sessions
+  - Message deletion and moderation capabilities
 - **Control Panels**: System preferences & power tools
   - Appearance & shader selection (CRT, Galaxy, Aurora)
   - UI / typing / Terminal sound toggles
@@ -117,6 +123,20 @@ Works on all devices—including mobile, tablet, and desktop.
   - Fullscreen lyrics mode with video support
   - Real-time lyric highlighting during playback
   - Library persisted locally for offline playback
+- **Applet Store**: Discover, install, and share HTML applets
+  - Browse community-created applets in a curated store
+  - Featured applets and update notifications
+  - One-click install and update system
+  - Share your own applets with shareable links
+  - View applets in detail before installing
+  - Search and filter applets by name or creator
+  - Automatic update detection for installed applets
+  - Bulk update all applets at once
+  - Import/export applets as `.app` files (gzipped JSON) or HTML
+  - Applet authentication bridge for secure API access
+  - Custom window sizes per applet
+  - Integration with Finder for file management
+  - Create applets via ryOS Chat AI assistant
 
 ## Project Structure
 
@@ -148,19 +168,49 @@ project/
 │   ├── types/        # TypeScript type definitions
 │   └── utils/        # Utility functions
 ├── api/              # API endpoints
+│   ├── applet-ai.ts  # AI API for applets with rate limiting
+│   ├── share-applet.ts # Applet sharing and storage
+│   ├── chat.ts       # Main AI chat endpoint
+│   ├── chat-rooms.js # Chat room management and real-time messaging
+│   ├── audio-transcribe.ts # Speech-to-text transcription
+│   ├── speech.ts     # Text-to-speech synthesis
+│   ├── lyrics.ts     # Lyric fetching and translation
+│   ├── ie-generate.ts # Internet Explorer AI site generation
+│   └── utils/        # API utilities (CORS, rate limiting, AI models)
 └── ...config files   # e.g., vite.config.ts, tsconfig.json, package.json
 ```
 
-## Development
+## Key Features & Technologies
 
-The project uses:
+### AI & Backend
+- **AI Integration**: Multiple AI models (OpenAI, Anthropic, Google) via Vercel AI SDK
+- **Real-time Communication**: Pusher for chat rooms and live updates
+- **Rate Limiting**: Redis-based rate limiting for API endpoints
+- **Authentication**: Token-based authentication with Redis storage
+- **Edge Functions**: Vercel Edge Runtime for low-latency API responses
 
-- TypeScript for type safety
-- ESLint for code quality
-- Tailwind for utility-first CSS
-- shadcn/ui components built on Radix UI primitives
-- Lucide icons
-- Vercel for deployment
+### Frontend Stack
+- **TypeScript** for type safety
+- **React 18** with hooks and context
+- **Zustand** for state management
+- **Tailwind CSS** for utility-first styling
+- **shadcn/ui** components built on Radix UI primitives
+- **Framer Motion** for animations
+- **Lucide React** for icons
+- **TipTap** for rich text editing
+- **Three.js** for 3D graphics (Galaxy shader, etc.)
+- **Tone.js** for audio synthesis
+
+### Storage & Persistence
+- **IndexedDB** for local file system and document storage
+- **LocalStorage** for user preferences and app state
+- **Redis (Upstash)** for server-side data (chat rooms, applets, auth tokens)
+
+### Development Tools
+- **Vite** for fast development and building
+- **ESLint** for code quality
+- **Bun** as package manager and runtime
+- **Vercel** for deployment and hosting
 
 ## Scripts
 
@@ -168,6 +218,31 @@ The project uses:
 - `bun run build` - Build for production
 - `bun run lint` - Run ESLint
 - `bun run preview` - Preview production build
+- `bun run generate:icons` - Generate icon manifest
+- `bun run generate:wallpapers` - Generate wallpaper manifest
+- `bun run launch-kiosk` - Launch in kiosk mode
+
+## Recent Updates
+
+### Applet System
+- **Applet Store**: Browse, install, and share HTML applets created by the community
+- **Applet AI API**: Dedicated AI endpoint for applets with rate limiting (15-50 text requests/hour, 1-12 image requests/hour)
+- **Applet Authentication**: Secure token bridge for applets to access user authentication
+- **Update System**: Automatic detection and one-click updates for installed applets
+- **Import/Export**: Support for `.app` files (gzipped JSON with metadata) and plain HTML
+
+### Chat Rooms
+- **Real-time Messaging**: Public and private chat rooms with Pusher integration
+- **User Authentication**: Secure login system with token-based sessions
+- **Unread Tracking**: Message counters and notifications for rooms
+- **Message Management**: Delete messages and moderate rooms
+- **Private Conversations**: One-on-one private messaging
+
+### Enhanced Features
+- **Multi-window TextEdit**: Open multiple documents simultaneously with independent state
+- **iPod Lyrics**: Interactive lyric offset adjustment with gesture support
+- **Finder Integration**: Applets appear in Finder with metadata and sharing support
+- **Theme Improvements**: Enhanced Windows XP/98 theme support with mobile-safe controls
 
 ## License
 
