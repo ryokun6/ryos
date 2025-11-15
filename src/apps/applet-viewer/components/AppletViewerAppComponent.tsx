@@ -143,6 +143,7 @@ export function AppletViewerAppComponent({
                     : `${updateCount} applets updated`,
                   {
                     id: loadingToastId,
+                    duration: 3000,
                   }
                 );
               } catch (error) {
@@ -189,6 +190,7 @@ export function AppletViewerAppComponent({
           : `${updateCount} applets updated`,
         {
           id: loadingToastId,
+          duration: 3000,
         }
       );
     } catch (error) {
@@ -487,17 +489,27 @@ export function AppletViewerAppComponent({
   // Check for updates when applet window is launched (only once per applet)
   const updateCheckedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (!appletPath || !fileItem?.shareId) return;
+    if (!appletPath) return;
     
-    // Skip if we've already checked for this applet in this session
-    if (updateCheckedRef.current.has(fileItem.shareId)) return;
-    
-    // Mark as checked immediately to prevent duplicate checks
-    updateCheckedRef.current.add(fileItem.shareId);
-    
-    // Check for updates asynchronously
-    const checkUpdate = async () => {
-      const updateApplet = await checkForAppletUpdate(fileItem.shareId);
+    // Check for updates asynchronously - wait for content to be loaded
+    const checkUpdate = async (retryCount: number = 0) => {
+      // Get fileItem directly from store to ensure we have the latest value
+      const currentFileItem = fileStore.getItem(appletPath);
+      if (!currentFileItem?.shareId) {
+        // If no shareId yet and we haven't exceeded max retries, try again
+        if (retryCount < 5) {
+          setTimeout(() => checkUpdate(retryCount + 1), 500);
+        }
+        return;
+      }
+      
+      // Skip if we've already checked for this applet in this session
+      if (updateCheckedRef.current.has(currentFileItem.shareId)) return;
+      
+      // Mark as checked immediately to prevent duplicate checks
+      updateCheckedRef.current.add(currentFileItem.shareId);
+      
+      const updateApplet = await checkForAppletUpdate(currentFileItem.shareId);
       
       if (updateApplet) {
         const appletName = updateApplet.title || updateApplet.name || "this applet";
@@ -534,10 +546,11 @@ export function AppletViewerAppComponent({
 
                 toast.success("Applet updated", {
                   id: loadingToastId,
+                  duration: 3000,
                 });
                 
                 // Remove from checked set so we can check again if needed
-                updateCheckedRef.current.delete(fileItem.shareId);
+                updateCheckedRef.current.delete(currentFileItem.shareId);
               } catch (error) {
                 console.error("Error updating applet:", error);
                 toast.error("Failed to update applet", {
@@ -546,7 +559,7 @@ export function AppletViewerAppComponent({
                   id: loadingToastId,
                 });
                 // Remove from checked set on error so user can retry
-                updateCheckedRef.current.delete(fileItem.shareId);
+                updateCheckedRef.current.delete(currentFileItem.shareId);
               }
             },
           },
@@ -555,10 +568,10 @@ export function AppletViewerAppComponent({
       }
     };
     
-    // Small delay to ensure content is loaded first
-    const timeoutId = setTimeout(checkUpdate, 500);
+    // Delay to ensure fileItem is loaded from store (especially when opening from Finder)
+    const timeoutId = setTimeout(() => checkUpdate(0), 1000);
     return () => clearTimeout(timeoutId);
-  }, [appletPath, fileItem, checkForAppletUpdate, actions, fileStore]);
+  }, [appletPath, loadedContent, checkForAppletUpdate, actions, fileStore]);
   const { getAppletWindowSize, setAppletWindowSize } = useAppletStore();
   
   // Get saved size from file metadata first, fallback to applet store
@@ -1150,6 +1163,7 @@ export function AppletViewerAppComponent({
         description: data.updated 
           ? "Share link updated successfully." 
           : "Share link generated successfully.",
+        duration: 3000,
       });
     } catch (error) {
       console.error("Error sharing applet:", error);

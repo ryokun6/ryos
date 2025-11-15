@@ -196,6 +196,7 @@ export const useAppletActions = () => {
       
       toast.success(isUpdate ? "Applet updated" : "Applet installed", {
         description: `Saved to /Applets/${finalName}`,
+        duration: 3000,
         action: {
           label: "Open",
           onClick: () => {

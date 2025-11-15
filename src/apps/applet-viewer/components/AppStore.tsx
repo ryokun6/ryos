@@ -89,6 +89,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
           : `${updateCount} applets updated`,
         {
           id: loadingToastId,
+          duration: 3000,
         }
       );
       lastUpdateToastKeyRef.current = null;
