@@ -15,7 +15,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppletUpdates } from "../hooks/useAppletUpdates";
-import { useAppletActions } from "../utils/appletActions";
+import { useAppletActions, type Applet } from "../utils/appletActions";
 import { toast } from "sonner";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
@@ -82,6 +82,29 @@ export function AppletViewerAppComponent({
   // Use applet updates hook
   const { updateCount, updatesAvailable, checkForUpdates } = useAppletUpdates();
   const actions = useAppletActions();
+
+  // Check for update for a specific applet by shareId
+  const checkForAppletUpdate = useCallback(async (shareId: string) => {
+    try {
+      const response = await fetch("/api/share-applet?list=true");
+      if (!response.ok) return null;
+      
+      const data = await response.json();
+      const applet = (data.applets || []).find((a: Applet) => a.id === shareId);
+      
+      if (!applet) return null;
+      
+      // Check if update is needed using the same logic as AppStore
+      if (actions.isAppletInstalled(applet.id) && actions.needsUpdate(applet)) {
+        return applet;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("[AppletViewer] Error checking for applet update:", error);
+      return null;
+    }
+  }, [actions]);
 
   // Handler for checking updates
   const handleCheckForUpdates = useCallback(async () => {
@@ -460,6 +483,82 @@ export function AppletViewerAppComponent({
   }, [appletPath, htmlContent, loadedContent]);
 
   const fileItem = appletPath ? fileStore.getItem(appletPath) : undefined;
+
+  // Check for updates when applet window is launched (only once per applet)
+  const updateCheckedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!appletPath || !fileItem?.shareId) return;
+    
+    // Skip if we've already checked for this applet in this session
+    if (updateCheckedRef.current.has(fileItem.shareId)) return;
+    
+    // Mark as checked immediately to prevent duplicate checks
+    updateCheckedRef.current.add(fileItem.shareId);
+    
+    // Check for updates asynchronously
+    const checkUpdate = async () => {
+      const updateApplet = await checkForAppletUpdate(fileItem.shareId);
+      
+      if (updateApplet) {
+        const appletName = updateApplet.title || updateApplet.name || "this applet";
+        toast.info("Applet update available", {
+          description: `${appletName} has an update available.`,
+          action: {
+            label: "Update",
+            onClick: async () => {
+              const loadingToastId = toast.loading("Updating applet...", {
+                duration: Infinity,
+              });
+
+              try {
+                await actions.handleInstall(updateApplet);
+                
+                // Reload the content after update
+                const updatedFileItem = fileStore.getItem(appletPath);
+                if (updatedFileItem?.uuid) {
+                  const contentData = await dbOperations.get<DocumentContent>(
+                    STORES.APPLETS,
+                    updatedFileItem.uuid
+                  );
+                  
+                  if (contentData?.content) {
+                    let contentStr: string;
+                    if (contentData.content instanceof Blob) {
+                      contentStr = await contentData.content.text();
+                    } else {
+                      contentStr = contentData.content;
+                    }
+                    setLoadedContent(contentStr);
+                  }
+                }
+
+                toast.success("Applet updated", {
+                  id: loadingToastId,
+                });
+                
+                // Remove from checked set so we can check again if needed
+                updateCheckedRef.current.delete(fileItem.shareId);
+              } catch (error) {
+                console.error("Error updating applet:", error);
+                toast.error("Failed to update applet", {
+                  description:
+                    error instanceof Error ? error.message : "Please try again later.",
+                  id: loadingToastId,
+                });
+                // Remove from checked set on error so user can retry
+                updateCheckedRef.current.delete(fileItem.shareId);
+              }
+            },
+          },
+          duration: 8000,
+        });
+      }
+    };
+    
+    // Small delay to ensure content is loaded first
+    const timeoutId = setTimeout(checkUpdate, 500);
+    return () => clearTimeout(timeoutId);
+  }, [appletPath, fileItem, checkForAppletUpdate, actions, fileStore]);
   const { getAppletWindowSize, setAppletWindowSize } = useAppletStore();
   
   // Get saved size from file metadata first, fallback to applet store
