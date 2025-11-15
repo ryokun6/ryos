@@ -26,6 +26,20 @@
       "icon": "🧮",
       "status": "active",
       "shareId": "7bd837678200f4d81a7b79fcb9093b6a"
+    },
+    {
+      "name": "AI SimCity.app",
+      "path": "/Applets/AI SimCity.app",
+      "isDirectory": false,
+      "type": "html",
+      "icon": "🏙️",
+      "status": "active",
+      "windowWidth": 420,
+      "windowHeight": 625,
+      "createdAt": 1763246769755,
+      "createdBy": "ryo",
+      "modifiedAt": 1763246769755,
+      "featured": true
     }
   ]
 }
