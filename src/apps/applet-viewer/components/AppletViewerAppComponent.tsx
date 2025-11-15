@@ -495,7 +495,8 @@ export function AppletViewerAppComponent({
     const checkUpdate = async (retryCount: number = 0) => {
       // Get fileItem directly from store to ensure we have the latest value
       const currentFileItem = fileStore.getItem(appletPath);
-      if (!currentFileItem?.shareId) {
+      const shareId = currentFileItem?.shareId;
+      if (!shareId) {
         // If no shareId yet and we haven't exceeded max retries, try again
         if (retryCount < 5) {
           setTimeout(() => checkUpdate(retryCount + 1), 500);
@@ -504,12 +505,12 @@ export function AppletViewerAppComponent({
       }
       
       // Skip if we've already checked for this applet in this session
-      if (updateCheckedRef.current.has(currentFileItem.shareId)) return;
+      if (updateCheckedRef.current.has(shareId)) return;
       
       // Mark as checked immediately to prevent duplicate checks
-      updateCheckedRef.current.add(currentFileItem.shareId);
+      updateCheckedRef.current.add(shareId);
       
-      const updateApplet = await checkForAppletUpdate(currentFileItem.shareId);
+      const updateApplet = await checkForAppletUpdate(shareId);
       
       if (updateApplet) {
         const appletName = updateApplet.title || updateApplet.name || "this applet";
@@ -550,7 +551,7 @@ export function AppletViewerAppComponent({
                 });
                 
                 // Remove from checked set so we can check again if needed
-                updateCheckedRef.current.delete(currentFileItem.shareId);
+                updateCheckedRef.current.delete(shareId);
               } catch (error) {
                 console.error("Error updating applet:", error);
                 toast.error("Failed to update applet", {
@@ -559,7 +560,7 @@ export function AppletViewerAppComponent({
                   id: loadingToastId,
                 });
                 // Remove from checked set on error so user can retry
-                updateCheckedRef.current.delete(currentFileItem.shareId);
+                updateCheckedRef.current.delete(shareId);
               }
             },
           },
