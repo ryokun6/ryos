@@ -639,12 +639,11 @@ export function PaintMenuBar({
   onPaste,
   onApplyFilter,
 }: PaintMenuBarProps) {
-  if (!isWindowOpen) return null;
-
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  if (!isWindowOpen) return null;
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
