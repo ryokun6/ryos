@@ -79,11 +79,13 @@ export function WindowFrame({
     debugMode,
     updateWindowState,
     updateInstanceWindowState,
+    minimizeInstance,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     debugMode: state.debugMode,
     updateWindowState: state.updateWindowState,
     updateInstanceWindowState: state.updateInstanceWindowState,
+    minimizeInstance: state.minimizeInstance,
   }));
   const { play: playWindowOpen } = useSound(Sounds.WINDOW_OPEN);
   const { play: playWindowClose } = useSound(Sounds.WINDOW_CLOSE);
@@ -818,7 +820,10 @@ export function WindowFrame({
                   aria-label="Minimize"
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Minimize functionality could be added here
+                    if (!instanceId) return;
+                    // XP/98 minimize to taskbar
+                    playWindowCollapse();
+                    minimizeInstance(instanceId);
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   onTouchStart={(e) => e.stopPropagation()}
