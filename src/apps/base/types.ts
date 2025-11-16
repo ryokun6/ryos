@@ -71,6 +71,7 @@ export interface AppState<TInitialData = unknown> {
   size?: { width: number; height: number };
   isForeground?: boolean;
   initialData?: TInitialData;
+  isMinimized?: boolean;
 }
 
 export interface AppManagerState {
