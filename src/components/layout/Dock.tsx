@@ -27,7 +27,238 @@ import {
   useSpring,
   useTransform,
   useIsPresent,
+  type MotionValue,
 } from "framer-motion";
+
+const MAX_SCALE = 2.3; // peak multiplier at cursor center
+const DISTANCE = 140; // px range where magnification is applied
+const BASE_BUTTON_SIZE = 48; // px (w-12)
+
+interface IconButtonProps {
+  label: string;
+  onClick: () => void;
+  icon: string;
+  idKey: string;
+  showIndicator?: boolean;
+  isEmoji?: boolean;
+  onDragOver?: (e: React.DragEvent<HTMLButtonElement>) => void;
+  onDrop?: (e: React.DragEvent<HTMLButtonElement>) => void;
+  onDragLeave?: (e: React.DragEvent<HTMLButtonElement>) => void;
+  onContextMenu?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  mouseX: MotionValue<number>;
+  magnifyEnabled: boolean;
+  isNew: boolean;
+}
+
+const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
+  (
+    {
+      label,
+      onClick,
+      icon,
+      idKey,
+      showIndicator = false,
+      isEmoji = false,
+      onDragOver,
+      onDrop,
+      onDragLeave,
+      onContextMenu,
+      mouseX,
+      magnifyEnabled,
+      isNew,
+    },
+    forwardedRef
+  ) => {
+    const [hovered, setHovered] = useState(false);
+    const baseButtonSize = BASE_BUTTON_SIZE;
+    const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
+    const wrapperRef = useRef<HTMLDivElement | null>(null);
+    const isPresent = useIsPresent();
+    const distanceCalc = useTransform(mouseX, (val) => {
+      const bounds = wrapperRef.current?.getBoundingClientRect();
+      if (!bounds || !Number.isFinite(val)) return Infinity;
+      return val - (bounds.left + bounds.width / 2);
+    });
+    const sizeTransform = useTransform(
+      distanceCalc,
+      [-DISTANCE, 0, DISTANCE],
+      [baseButtonSize, maxButtonSize, baseButtonSize]
+    );
+    const sizeSpring = useSpring(sizeTransform, {
+      mass: 0.15,
+      stiffness: 160,
+      damping: 18,
+    });
+    const widthValue = isPresent
+      ? magnifyEnabled
+        ? sizeSpring
+        : baseButtonSize
+      : 0;
+
+    // Scale factor for emoji to match magnification (relative to baseButtonSize)
+    const emojiScale = useTransform(sizeSpring, (val) => val / baseButtonSize);
+
+    const setCombinedRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        wrapperRef.current = node;
+        if (typeof forwardedRef === "function") {
+          forwardedRef(node);
+        } else if (forwardedRef && "current" in (forwardedRef as object)) {
+          (
+            forwardedRef as React.MutableRefObject<HTMLDivElement | null>
+          ).current = node;
+        }
+      },
+      [forwardedRef]
+    );
+
+    return (
+      <motion.div
+        ref={setCombinedRef}
+        layout
+        layoutId={`dock-icon-${idKey}`}
+        initial={isNew ? { scale: 0, opacity: 0 } : undefined}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{
+          scale: 0,
+          opacity: 0,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+          mass: 0.8,
+          layout: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+            mass: 0.8,
+          },
+        }}
+        style={{
+          transformOrigin: "bottom center",
+          willChange: "width, height, transform",
+          width: widthValue,
+          height: widthValue,
+          marginLeft: isPresent ? 4 : 0,
+          marginRight: isPresent ? 4 : 0,
+          overflow: "visible",
+        }}
+        className="flex-shrink-0 relative"
+      >
+        <AnimatePresence>
+          {hovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, x: "-50%" }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                x: "-50%",
+                transition: { duration: 0.05 }
+              }}
+              exit={{ 
+                opacity: 0, 
+                y: 5, 
+                x: "-50%",
+                transition: { duration: 0.15 }
+              }}
+              className="absolute bottom-full mb-3 left-1/2 px-3 py-1 bg-gray-800 text-white/90 text-sm font-medium rounded-full shadow-xl whitespace-nowrap pointer-events-none z-50"
+            >
+              {label}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-gray-800" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <button
+          aria-label={label}
+          title="" // remove native tooltip
+          onClick={onClick}
+          onContextMenu={onContextMenu}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          {...(onDragOver && { onDragOver })}
+          {...(onDrop && { onDrop })}
+          {...(onDragLeave && { onDragLeave })}
+          className="relative flex items-end justify-center w-full h-full"
+          style={{
+            willChange: "transform",
+          }}
+        >
+          {isEmoji ? (
+            <motion.span
+              className="select-none pointer-events-none flex items-end justify-center"
+              style={{
+                // Slightly larger base size so initial (non-hover) emoji isn't too small
+                fontSize: baseButtonSize * 0.84,
+                lineHeight: 1,
+                originY: 1,
+                originX: 0.5,
+                scale: magnifyEnabled ? emojiScale : 1,
+                // Lift a couple px so it's not too tight against the bottom
+                y: -5,
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              {icon}
+            </motion.span>
+          ) : (
+            <ThemedIcon
+              name={icon}
+              alt={label}
+              className="select-none pointer-events-none"
+              draggable={false}
+              style={{
+                imageRendering: "-webkit-optimize-contrast",
+                width: "100%",
+                height: "100%",
+              }}
+            />
+          )}
+          {showIndicator ? (
+            <span
+              aria-hidden
+              className="absolute"
+              style={{
+                bottom: -3,
+                width: 0,
+                height: 0,
+                borderLeft: "4px solid transparent",
+                borderRight: "4px solid transparent",
+                borderTop: "0",
+                borderBottom: "4px solid #000",
+                filter: "none",
+              }}
+            />
+          ) : null}
+        </button>
+      </motion.div>
+    );
+  }
+);
+
+const Divider = forwardRef<HTMLDivElement, { idKey: string }>(
+  ({ idKey }, ref) => (
+    <motion.div
+      ref={ref}
+      layout
+      layoutId={`dock-divider-${idKey}`}
+      initial={{ opacity: 0, scaleY: 0.8 }}
+      animate={{ opacity: 0.9, scaleY: 1 }}
+      exit={{ opacity: 0, scaleY: 0.8 }}
+      transition={{ type: "spring", stiffness: 260, damping: 26 }}
+      className="bg-black/20"
+      style={{
+        width: 1,
+        height: 48,
+        marginLeft: 6,
+        marginRight: 6,
+        alignSelf: "center",
+      }}
+    />
+  )
+);
 
 function MacDock() {
   const isPhone = useIsPhone();
@@ -339,190 +570,6 @@ function MacDock() {
 
   // index tracking no longer needed; sizing is per-element via motion values
 
-  const IconButton = forwardRef<
-    HTMLDivElement,
-    {
-      label: string;
-      onClick: () => void;
-      icon: string;
-      idKey: string;
-      showIndicator?: boolean;
-      isEmoji?: boolean;
-      onDragOver?: (e: React.DragEvent<HTMLButtonElement>) => void;
-      onDrop?: (e: React.DragEvent<HTMLButtonElement>) => void;
-      onDragLeave?: (e: React.DragEvent<HTMLButtonElement>) => void;
-      onContextMenu?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-    }
-  >(
-    (
-      { label, onClick, icon, idKey, showIndicator = false, isEmoji = false, onDragOver, onDrop, onDragLeave, onContextMenu },
-      forwardedRef
-    ) => {
-      const isNew = hasMounted && !seenIdsRef.current.has(idKey);
-      const baseButtonSize = 48; // px (w-12)
-      const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
-      const wrapperRef = useRef<HTMLDivElement | null>(null);
-      const isPresent = useIsPresent();
-      const distanceCalc = useTransform(mouseX, (val) => {
-        const bounds = wrapperRef.current?.getBoundingClientRect();
-        if (!bounds || !Number.isFinite(val)) return Infinity;
-        return val - (bounds.left + bounds.width / 2);
-      });
-      const sizeTransform = useTransform(
-        distanceCalc,
-        [-DISTANCE, 0, DISTANCE],
-        [baseButtonSize, maxButtonSize, baseButtonSize]
-      );
-      const sizeSpring = useSpring(sizeTransform, {
-        mass: 0.15,
-        stiffness: 160,
-        damping: 18,
-      });
-      const widthValue = isPresent
-        ? magnifyEnabled
-          ? sizeSpring
-          : baseButtonSize
-        : 0;
-
-      // Scale factor for emoji to match magnification (relative to baseButtonSize)
-      const emojiScale = useTransform(sizeSpring, (val) => val / baseButtonSize);
- 
-      const setCombinedRef = useCallback(
-        (node: HTMLDivElement | null) => {
-          wrapperRef.current = node;
-          if (typeof forwardedRef === "function") {
-            forwardedRef(node);
-          } else if (forwardedRef && "current" in (forwardedRef as object)) {
-            (
-              forwardedRef as React.MutableRefObject<HTMLDivElement | null>
-            ).current = node;
-          }
-        },
-        [forwardedRef]
-      );
-
-      return (
-        <motion.div
-          ref={setCombinedRef}
-          layout
-          layoutId={`dock-icon-${idKey}`}
-          initial={isNew ? { scale: 0, opacity: 0 } : undefined}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{
-            scale: 0,
-            opacity: 0,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 30,
-            mass: 0.8,
-            layout: {
-              type: "spring",
-              stiffness: 300,
-              damping: 30,
-              mass: 0.8,
-            },
-          }}
-          style={{
-            transformOrigin: "bottom center",
-            willChange: "width, height, transform",
-            width: widthValue,
-            height: widthValue,
-            marginLeft: isPresent ? 4 : 0,
-            marginRight: isPresent ? 4 : 0,
-            overflow: "visible",
-          }}
-          className="flex-shrink-0"
-        >
-          <button
-            aria-label={label}
-            title={label}
-            onClick={onClick}
-            onContextMenu={onContextMenu}
-            {...(onDragOver && { onDragOver })}
-            {...(onDrop && { onDrop })}
-            {...(onDragLeave && { onDragLeave })}
-            className="relative flex items-end justify-center w-full h-full"
-            style={{
-              willChange: "transform",
-            }}
-          >
-            {isEmoji ? (
-              <motion.span
-                className="select-none pointer-events-none flex items-end justify-center"
-                style={{
-                  // Slightly larger base size so initial (non-hover) emoji isn't too small
-                  fontSize: baseButtonSize * 0.84,
-                  lineHeight: 1,
-                  originY: 1,
-                  originX: 0.5,
-                  scale: magnifyEnabled ? emojiScale : 1,
-                  // Lift a couple px so it's not too tight against the bottom
-                  y: -5,
-                  width: "100%",
-                  height: "100%",
-                }}
-              >
-                {icon}
-              </motion.span>
-            ) : (
-              <ThemedIcon
-                name={icon}
-                alt={label}
-                className="select-none pointer-events-none"
-                draggable={false}
-                style={{
-                  imageRendering: "-webkit-optimize-contrast",
-                  width: "100%",
-                  height: "100%",
-                }}
-              />
-            )}
-            {showIndicator ? (
-              <span
-                aria-hidden
-                className="absolute"
-                style={{
-                  bottom: -3,
-                  width: 0,
-                  height: 0,
-                  borderLeft: "4px solid transparent",
-                  borderRight: "4px solid transparent",
-                  borderTop: "0",
-                  borderBottom: "4px solid #000",
-                  filter: "none",
-                }}
-              />
-            ) : null}
-          </button>
-        </motion.div>
-      );
-    }
-  );
-
-  const Divider = forwardRef<HTMLDivElement, { idKey: string }>(
-    ({ idKey }, ref) => (
-      <motion.div
-        ref={ref}
-        layout
-        layoutId={`dock-divider-${idKey}`}
-        initial={{ opacity: 0, scaleY: 0.8 }}
-        animate={{ opacity: 0.9, scaleY: 1 }}
-        exit={{ opacity: 0, scaleY: 0.8 }}
-        transition={{ type: "spring", stiffness: 260, damping: 26 }}
-        className="bg-black/20"
-        style={{
-          width: 1,
-          height: 48,
-          marginLeft: 6,
-          marginRight: 6,
-          alignSelf: "center",
-        }}
-      />
-    )
-  );
-
   return (
     <div
       ref={dockContainerRef}
@@ -596,6 +643,9 @@ function MacDock() {
                       }
                     }}
                     showIndicator={isOpen}
+                    mouseX={mouseX}
+                    magnifyEnabled={magnifyEnabled}
+                    isNew={hasMounted && !seenIdsRef.current.has(appId)}
                   />
                 );
               })}
@@ -617,6 +667,9 @@ function MacDock() {
                       onClick={() => bringInstanceToForeground(item.instanceId!)}
                       showIndicator
                       isEmoji={isEmoji}
+                      mouseX={mouseX}
+                      magnifyEnabled={magnifyEnabled}
+                      isNew={hasMounted && !seenIdsRef.current.has(item.instanceId!)}
                     />
                   );
                 } else {
@@ -631,6 +684,9 @@ function MacDock() {
                       idKey={item.appId}
                       onClick={() => focusMostRecentInstanceOfApp(item.appId)}
                       showIndicator
+                      mouseX={mouseX}
+                      magnifyEnabled={magnifyEnabled}
+                      isNew={hasMounted && !seenIdsRef.current.has(item.appId)}
                     />
                   );
                 }
@@ -651,6 +707,9 @@ function MacDock() {
                     viewType: "large",
                   })
                 }
+                mouseX={mouseX}
+                magnifyEnabled={magnifyEnabled}
+                isNew={hasMounted && !seenIdsRef.current.has("__applications__")}
               />
 
               {/* Trash (right side) */}
@@ -732,6 +791,9 @@ function MacDock() {
                       onDrop={handleTrashDrop}
                       onDragLeave={handleTrashDragLeave}
                       onContextMenu={handleTrashContextMenu}
+                      mouseX={mouseX}
+                      magnifyEnabled={magnifyEnabled}
+                      isNew={hasMounted && !seenIdsRef.current.has("__trash__")}
                     />
                   </motion.div>
                 );

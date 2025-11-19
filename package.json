@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port $PORT",
+    "dev:vercel": "vercel dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
