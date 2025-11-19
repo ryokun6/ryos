@@ -520,8 +520,6 @@ function MacDock() {
 
   // Dock magnification state/logic driven by Framer motion value at container level
   const mouseX = useMotionValue<number>(Infinity);
-  const MAX_SCALE = 2.3; // peak multiplier at cursor center
-  const DISTANCE = 140; // px range where magnification is applied
 
   // Disable magnification on mobile/touch (coarse pointer or no hover)
   const [magnifyEnabled, setMagnifyEnabled] = useState(true);
