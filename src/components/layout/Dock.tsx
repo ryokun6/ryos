@@ -48,6 +48,10 @@ interface IconButtonProps {
   mouseX: MotionValue<number>;
   magnifyEnabled: boolean;
   isNew: boolean;
+  isHovered: boolean;
+  isSwapping: boolean;
+  onHover: () => void;
+  onLeave: () => void;
 }
 
 const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
@@ -66,10 +70,13 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
       mouseX,
       magnifyEnabled,
       isNew,
+      isHovered,
+      isSwapping,
+      onHover,
+      onLeave,
     },
     forwardedRef
   ) => {
-    const [hovered, setHovered] = useState(false);
     const baseButtonSize = BASE_BUTTON_SIZE;
     const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
     const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -147,20 +154,20 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
         className="flex-shrink-0 relative"
       >
         <AnimatePresence>
-          {hovered && (
+          {isHovered && (
             <motion.div
               initial={{ opacity: 0, y: 10, x: "-50%" }}
               animate={{ 
                 opacity: 1, 
                 y: 0, 
                 x: "-50%",
-                transition: { duration: 0.05 }
+                transition: { duration: isSwapping ? 0 : 0.05 }
               }}
               exit={{ 
                 opacity: 0, 
                 y: 5, 
                 x: "-50%",
-                transition: { duration: 0.15 }
+                transition: { duration: isSwapping ? 0 : 0.15 }
               }}
               className="absolute bottom-full mb-3 left-1/2 px-3 py-1 bg-gray-800 text-white/90 text-sm font-medium rounded-full shadow-xl whitespace-nowrap pointer-events-none z-50"
             >
@@ -175,8 +182,8 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
           title="" // remove native tooltip
           onClick={onClick}
           onContextMenu={onContextMenu}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
+          onMouseEnter={onHover}
+          onMouseLeave={onLeave}
           {...(onDragOver && { onDragOver })}
           {...(onDrop && { onDrop })}
           {...(onDragLeave && { onDragLeave })}
@@ -284,6 +291,38 @@ function MacDock() {
   const [isEmptyTrashDialogOpen, setIsEmptyTrashDialogOpen] = useState(false);
   const dockContainerRef = useRef<HTMLDivElement | null>(null);
   
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [isSwapping, setIsSwapping] = useState(false);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleIconHover = useCallback((id: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+      setIsSwapping(true);
+      setHoveredId(id);
+      return;
+    }
+    
+    setHoveredId((prev) => {
+      if (prev !== null && prev !== id) {
+        setIsSwapping(true);
+      } else {
+        setIsSwapping(false);
+      }
+      return id;
+    });
+  }, []);
+
+  const handleIconLeave = useCallback(() => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredId(null);
+      setIsSwapping(false);
+      hoverTimeoutRef.current = null;
+    }, 50);
+  }, []);
+
   // Get trash items to check if trash is empty
   // Use a selector that directly filters items to avoid infinite loops
   const allItems = useFilesStore((s) => s.items);
@@ -618,7 +657,10 @@ function MacDock() {
           }
           onMouseLeave={
             magnifyEnabled && !trashContextMenuPos
-              ? () => mouseX.set(Infinity)
+              ? () => {
+                  mouseX.set(Infinity);
+                  handleIconLeave();
+                }
               : undefined
           }
         >
@@ -646,6 +688,10 @@ function MacDock() {
                     mouseX={mouseX}
                     magnifyEnabled={magnifyEnabled}
                     isNew={hasMounted && !seenIdsRef.current.has(appId)}
+                    isHovered={hoveredId === appId}
+                    isSwapping={isSwapping}
+                    onHover={() => handleIconHover(appId)}
+                    onLeave={handleIconLeave}
                   />
                 );
               })}
@@ -670,6 +716,10 @@ function MacDock() {
                       mouseX={mouseX}
                       magnifyEnabled={magnifyEnabled}
                       isNew={hasMounted && !seenIdsRef.current.has(item.instanceId!)}
+                      isHovered={hoveredId === item.instanceId}
+                      isSwapping={isSwapping}
+                      onHover={() => handleIconHover(item.instanceId!)}
+                      onLeave={handleIconLeave}
                     />
                   );
                 } else {
@@ -687,6 +737,10 @@ function MacDock() {
                       mouseX={mouseX}
                       magnifyEnabled={magnifyEnabled}
                       isNew={hasMounted && !seenIdsRef.current.has(item.appId)}
+                      isHovered={hoveredId === item.appId}
+                      isSwapping={isSwapping}
+                      onHover={() => handleIconHover(item.appId)}
+                      onLeave={handleIconLeave}
                     />
                   );
                 }
@@ -710,6 +764,10 @@ function MacDock() {
                 mouseX={mouseX}
                 magnifyEnabled={magnifyEnabled}
                 isNew={hasMounted && !seenIdsRef.current.has("__applications__")}
+                isHovered={hoveredId === "__applications__"}
+                isSwapping={isSwapping}
+                onHover={() => handleIconHover("__applications__")}
+                onLeave={handleIconLeave}
               />
 
               {/* Trash (right side) */}
@@ -794,6 +852,10 @@ function MacDock() {
                       mouseX={mouseX}
                       magnifyEnabled={magnifyEnabled}
                       isNew={hasMounted && !seenIdsRef.current.has("__trash__")}
+                      isHovered={hoveredId === "__trash__"}
+                      isSwapping={isSwapping}
+                      onHover={() => handleIconHover("__trash__")}
+                      onLeave={handleIconLeave}
                     />
                   </motion.div>
                 );
