@@ -13,6 +13,7 @@ import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
+import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 
 interface DesktopStyles {
   backgroundImage?: string;
@@ -47,6 +48,7 @@ export function Desktop({
   } | null>(null);
   const [contextMenuAppId, setContextMenuAppId] = useState<string | null>(null);
   const [contextMenuShortcutPath, setContextMenuShortcutPath] = useState<string | null>(null);
+  const [isEmptyTrashDialogOpen, setIsEmptyTrashDialogOpen] = useState(false);
 
   // Get current theme for layout adjustments
   const currentTheme = useThemeStore((state) => state.current);
@@ -452,6 +454,28 @@ export function Desktop({
     setContextMenuPos(null);
   };
 
+  const handleEmptyTrash = () => {
+    setIsEmptyTrashDialogOpen(true);
+  };
+
+  const confirmEmptyTrash = async () => {
+    // 1. Permanently delete metadata from FileStore and get UUIDs of files whose content needs deletion
+    const contentUUIDsToDelete = fileStore.emptyTrash();
+
+    // 2. Clear corresponding content from TRASH IndexedDB store
+    try {
+      // Delete content based on UUIDs collected from fileStore.emptyTrash()
+      for (const uuid of contentUUIDsToDelete) {
+        await dbOperations.delete(STORES.TRASH, uuid);
+      }
+      console.log("[Desktop] Cleared trash content from IndexedDB.");
+    } catch (err) {
+      console.error("Error clearing trash content from IndexedDB:", err);
+    }
+    
+    setIsEmptyTrashDialogOpen(false);
+  };
+
   // Compute sorted apps based on selected sort type
   const sortedApps = [...apps]
     .filter(
@@ -646,6 +670,9 @@ export function Desktop({
       ];
     } else {
       // Blank desktop context menu
+      const trashItems = fileStore.getTrashItems();
+      const isTrashEmpty = trashItems.length === 0;
+      
       return [
         {
           type: "submenu",
@@ -661,6 +688,13 @@ export function Desktop({
               ],
             },
           ],
+        },
+        { type: "separator" },
+        {
+          type: "item",
+          label: "Empty Trash...",
+          onSelect: handleEmptyTrash,
+          disabled: isTrashEmpty,
         },
         { type: "separator" },
         {
@@ -889,6 +923,13 @@ export function Desktop({
           setContextMenuShortcutPath(null);
         }}
         items={getContextMenuItems()}
+      />
+      <ConfirmDialog
+        isOpen={isEmptyTrashDialogOpen}
+        onOpenChange={setIsEmptyTrashDialogOpen}
+        onConfirm={confirmEmptyTrash}
+        title="Empty Trash"
+        description="Are you sure you want to empty the Trash? This action cannot be undone."
       />
     </div>
   );

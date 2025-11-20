@@ -823,7 +823,18 @@ export function FinderAppComponent({
       ],
     },
     { type: "separator" },
-    { type: "item", label: "New Folder…", onSelect: handleNewFolder },
+    ...(currentPath === "/Trash"
+      ? [
+          {
+            type: "item" as const,
+            label: "Empty Trash...",
+            onSelect: handleEmptyTrash,
+            disabled: trashItemsCount === 0,
+          },
+        ]
+      : [
+          { type: "item" as const, label: "New Folder…", onSelect: handleNewFolder },
+        ]),
   ];
 
   const handleAddToDesktop = (file: FileItem) => {
