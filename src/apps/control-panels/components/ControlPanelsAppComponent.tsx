@@ -506,6 +506,7 @@ export function ControlPanelsAppComponent({
         trash: StoreItemWithKey[];
         custom_wallpapers: StoreItemWithKey[];
         applets: StoreItemWithKey[];
+        chat_messages: StoreItemWithKey[];
       };
       timestamp: string;
       version: number; // Add version to identify backup format
@@ -517,9 +518,10 @@ export function ControlPanelsAppComponent({
         trash: [],
         custom_wallpapers: [],
         applets: [],
+        chat_messages: [],
       },
       timestamp: new Date().toISOString(),
-      version: 3, // Version 3 includes applets support
+      version: 4, // Version 4 includes chat messages support
     };
 
     // Backup all localStorage data
@@ -567,12 +569,13 @@ export function ControlPanelsAppComponent({
         });
       };
 
-      const [docs, imgs, trash, walls, apps] = await Promise.all([
+      const [docs, imgs, trash, walls, apps, chats] = await Promise.all([
         getStoreData("documents"),
         getStoreData("images"),
         getStoreData("trash"),
         getStoreData("custom_wallpapers"),
         getStoreData("applets"),
+        getStoreData("chat_messages"),
       ]);
 
       const serializeStore = async (items: StoreItemWithKey[]) =>
@@ -601,6 +604,7 @@ export function ControlPanelsAppComponent({
       backup.indexedDB.trash = await serializeStore(trash);
       backup.indexedDB.custom_wallpapers = await serializeStore(walls);
       backup.indexedDB.applets = await serializeStore(apps);
+      backup.indexedDB.chat_messages = await serializeStore(chats);
       db.close();
     } catch (error) {
       console.error("Error backing up IndexedDB:", error);
@@ -909,6 +913,11 @@ export function ControlPanelsAppComponent({
               );
             if (backup.indexedDB.applets)
               await restoreStoreData("applets", backup.indexedDB.applets);
+            if (backup.indexedDB.chat_messages)
+              await restoreStoreData(
+                "chat_messages",
+                backup.indexedDB.chat_messages
+              );
 
             db.close();
           } catch (error) {
