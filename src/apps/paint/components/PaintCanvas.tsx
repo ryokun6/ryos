@@ -28,9 +28,9 @@ interface PaintCanvasRef {
   clear: () => void;
   exportCanvas: () => Promise<Blob>;
   importImage: (dataUrl: string) => void;
-  cut: () => void;
-  copy: () => void;
-  paste: () => void;
+  cut: () => Promise<void>;
+  copy: () => Promise<void>;
+  paste: () => Promise<void>;
   applyFilter: (filter: Filter) => void;
 }
 
@@ -40,11 +40,13 @@ interface Point {
 }
 
 interface Selection {
+  type: "rectangle" | "lasso";
   startX: number;
   startY: number;
   width: number;
   height: number;
   imageData?: ImageData;
+  path?: Point[]; // For lasso selections
 }
 
 export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
@@ -83,6 +85,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
     const touchStartRef = useRef<Point | null>(null);
     const [isLoadingFile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const lassoPathRef = useRef<Point[]>([]);
 
     // Handle canvas resize
     useEffect(() => {
@@ -246,18 +249,32 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         // Always restore the original canvas state before drawing selection
         contextRef.current.putImageData(lastImageRef.current, 0, 0);
 
-        // Draw animated selection rectangle
+        // Draw animated selection outline
         contextRef.current.save();
         contextRef.current.strokeStyle = "#000";
         contextRef.current.lineWidth = 1;
         contextRef.current.setLineDash([5, 5]);
         contextRef.current.lineDashOffset = dashOffsetRef.current;
-        contextRef.current.strokeRect(
-          selection.startX,
-          selection.startY,
-          selection.width,
-          selection.height
-        );
+
+        if (selection.type === "rectangle") {
+          // Draw rectangle selection
+          contextRef.current.strokeRect(
+            selection.startX,
+            selection.startY,
+            selection.width,
+            selection.height
+          );
+        } else if (selection.type === "lasso" && selection.path && selection.path.length > 0) {
+          // Draw lasso selection path
+          contextRef.current.beginPath();
+          contextRef.current.moveTo(selection.path[0].x, selection.path[0].y);
+          for (let i = 1; i < selection.path.length; i++) {
+            contextRef.current.lineTo(selection.path[i].x, selection.path[i].y);
+          }
+          contextRef.current.closePath();
+          contextRef.current.stroke();
+        }
+
         contextRef.current.restore();
 
         // Update dash offset
@@ -366,12 +383,19 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       const canvas = canvasRef.current;
       if (!canvas || !contextRef.current) return;
 
-      const newImageData = contextRef.current.getImageData(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+      // If there's an active selection, use the clean state from lastImageRef
+      // to avoid saving the selection ring overlay into history
+      let newImageData: ImageData;
+      if (selection && lastImageRef.current) {
+        newImageData = lastImageRef.current;
+      } else {
+        newImageData = contextRef.current.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+      }
 
       // Check if there are actual changes before saving to history
       const hasChanges =
@@ -408,7 +432,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       if (!isLoadingFile) {
         onContentChange?.();
       }
-    }, [onCanUndoChange, onCanRedoChange, onContentChange, isLoadingFile]);
+    }, [onCanUndoChange, onCanRedoChange, onContentChange, isLoadingFile, selection]);
 
     // Helper function to compare ImageData
     const compareImageData = useCallback((img1: ImageData, img2: ImageData) => {
@@ -430,44 +454,158 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       return true;
     }, []);
 
-    // Clipboard methods
-    const copySelectionToClipboard = useCallback(() => {
-      if (!contextRef.current || !canvasRef.current) return;
+    // Helper function to extract selection region with mask support
+    const extractSelectionRegion = useCallback(() => {
+      if (!contextRef.current || !canvasRef.current || !selection) return null;
 
-      let imageData: ImageData;
-      if (selection && selection.imageData) {
-        // If there's a selection, copy just that
-        imageData = selection.imageData;
-      } else {
-        // If no selection, copy entire canvas
-        imageData = contextRef.current.getImageData(
+      const { startX, startY, width, height, type, path } = selection;
+
+      // Create a temporary canvas for the selection
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext("2d", { willReadFrequently: true });
+      if (!tempCtx) return null;
+
+      if (type === "rectangle") {
+        // Simple rectangle extraction
+        const imageData = contextRef.current.getImageData(startX, startY, width, height);
+        tempCtx.putImageData(imageData, 0, 0);
+      } else if (type === "lasso" && path && path.length > 0) {
+        // Lasso selection: extract pixels within the path
+        // Get the full canvas image data
+        const fullImageData = contextRef.current.getImageData(
           0,
           0,
           canvasRef.current.width,
           canvasRef.current.height
         );
+
+        // Create a mask for the lasso path
+        const maskCanvas = document.createElement("canvas");
+        maskCanvas.width = canvasRef.current.width;
+        maskCanvas.height = canvasRef.current.height;
+        const maskCtx = maskCanvas.getContext("2d");
+        if (!maskCtx) return null;
+
+        // Draw the path as a filled shape
+        maskCtx.beginPath();
+        maskCtx.moveTo(path[0].x, path[0].y);
+        for (let i = 1; i < path.length; i++) {
+          maskCtx.lineTo(path[i].x, path[i].y);
+        }
+        maskCtx.closePath();
+        maskCtx.fillStyle = "white";
+        maskCtx.fill();
+
+        // Extract pixels that are within the mask
+        const maskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+        const outputData = tempCtx.createImageData(width, height);
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const canvasX = startX + x;
+            const canvasY = startY + y;
+            const canvasIdx = (canvasY * canvasRef.current.width + canvasX) * 4;
+            const outputIdx = (y * width + x) * 4;
+
+            // Check if pixel is within mask
+            if (maskData.data[canvasIdx + 3] > 0) {
+              // Copy pixel
+              outputData.data[outputIdx] = fullImageData.data[canvasIdx];
+              outputData.data[outputIdx + 1] = fullImageData.data[canvasIdx + 1];
+              outputData.data[outputIdx + 2] = fullImageData.data[canvasIdx + 2];
+              outputData.data[outputIdx + 3] = fullImageData.data[canvasIdx + 3];
+            } else {
+              // Transparent pixel
+              outputData.data[outputIdx] = 0;
+              outputData.data[outputIdx + 1] = 0;
+              outputData.data[outputIdx + 2] = 0;
+              outputData.data[outputIdx + 3] = 0;
+            }
+          }
+        }
+
+        tempCtx.putImageData(outputData, 0, 0);
       }
 
-      // Create a temporary canvas to convert the image data to a data URL
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = imageData.width;
-      tempCanvas.height = imageData.height;
-      const tempCtx = tempCanvas.getContext("2d");
-      if (!tempCtx) return;
-
-      tempCtx.putImageData(imageData, 0, 0);
-      tempCanvas.toBlob((blob) => {
-        if (blob) {
-          const item = new ClipboardItem({ "image/png": blob });
-          navigator.clipboard.write([item]).catch(console.error);
-        }
-      });
+      return tempCanvas;
     }, [selection]);
 
+    // Clipboard methods
+    const copySelectionToClipboard = useCallback(async () => {
+      if (!contextRef.current || !canvasRef.current) {
+        console.error("Canvas not available for copy");
+        return;
+      }
+
+      // Restore canvas to show actual content (not selection overlay)
+      if (lastImageRef.current && selection) {
+        contextRef.current.putImageData(lastImageRef.current, 0, 0);
+      }
+
+      let tempCanvas: HTMLCanvasElement | null = null;
+
+      if (selection) {
+        // Extract selection region
+        tempCanvas = extractSelectionRegion();
+        if (!tempCanvas) {
+          console.error("Failed to extract selection region");
+          return;
+        }
+      } else {
+        // If no selection, copy entire canvas
+        tempCanvas = document.createElement("canvas");
+        tempCanvas.width = canvasRef.current.width;
+        tempCanvas.height = canvasRef.current.height;
+        const tempCtx = tempCanvas.getContext("2d");
+        if (!tempCtx) {
+          console.error("Failed to create temp canvas context");
+          return;
+        }
+        tempCtx.drawImage(canvasRef.current, 0, 0);
+      }
+
+      // Convert to blob and copy to clipboard
+      return new Promise<void>((resolve, reject) => {
+        if (!tempCanvas) {
+          reject(new Error("Failed to create temp canvas"));
+          return;
+        }
+        tempCanvas.toBlob((blob) => {
+          if (!blob) {
+            console.error("Failed to create blob from canvas");
+            reject(new Error("Failed to create blob"));
+            return;
+          }
+          
+          const item = new ClipboardItem({ "image/png": blob });
+          navigator.clipboard
+            .write([item])
+            .then(() => {
+              console.log("Successfully copied to clipboard");
+              resolve();
+            })
+            .catch((err) => {
+              console.error("Failed to write to clipboard:", err);
+              reject(err);
+            });
+        }, "image/png");
+      });
+    }, [selection, extractSelectionRegion]);
+
     const handlePaste = useCallback(async () => {
-      if (!contextRef.current || !canvasRef.current) return;
+      if (!contextRef.current || !canvasRef.current) {
+        console.error("Canvas not available for paste");
+        return;
+      }
 
       try {
+        // Restore canvas to actual state (remove selection overlay if present)
+        if (lastImageRef.current && selection) {
+          contextRef.current.putImageData(lastImageRef.current, 0, 0);
+        }
+
         const clipboardItems = await navigator.clipboard.read();
         for (const clipboardItem of clipboardItems) {
           for (const type of clipboardItem.types) {
@@ -475,28 +613,101 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
               const blob = await clipboardItem.getType(type);
               const img = new Image();
               img.src = URL.createObjectURL(blob);
-              await new Promise((resolve) => {
+              await new Promise<void>((resolve, reject) => {
                 img.onload = () => {
-                  if (!contextRef.current || !canvasRef.current) return;
+                  if (!contextRef.current || !canvasRef.current) {
+                    reject(new Error("Canvas not available"));
+                    return;
+                  }
 
-                  // If there's a selection, paste into the selection area
+                  // Restore the clean canvas state again right before drawing.
+                  // The selection outline animation may have drawn additional
+                  // strokes while we were waiting on the clipboard/image load,
+                  // so re-applying the clean snapshot prevents baking the
+                  // marching-ants box into the canvas when pasting.
+                  if (selection && lastImageRef.current) {
+                    contextRef.current.putImageData(lastImageRef.current, 0, 0);
+                  }
+
+                  // If there's a selection, paste into the selection area (scaled to fit)
                   if (selection) {
-                    contextRef.current.drawImage(
-                      img,
-                      selection.startX,
-                      selection.startY,
-                      selection.width,
-                      selection.height
-                    );
+                    // Calculate scaling to fit selection while maintaining aspect ratio
+                    const scaleX = selection.width / img.width;
+                    const scaleY = selection.height / img.height;
+                    const scale = Math.min(scaleX, scaleY);
+                    const scaledWidth = img.width * scale;
+                    const scaledHeight = img.height * scale;
+                    const offsetX = (selection.width - scaledWidth) / 2;
+                    const offsetY = (selection.height - scaledHeight) / 2;
+
+                    // For lasso selections, we need to clip to the path
+                    if (selection.type === "lasso" && selection.path) {
+                      // Save current state
+                      contextRef.current.save();
+                      
+                      // Create clipping path
+                      contextRef.current.beginPath();
+                      contextRef.current.moveTo(
+                        selection.path[0].x,
+                        selection.path[0].y
+                      );
+                      for (let i = 1; i < selection.path.length; i++) {
+                        contextRef.current.lineTo(
+                          selection.path[i].x,
+                          selection.path[i].y
+                        );
+                      }
+                      contextRef.current.closePath();
+                      contextRef.current.clip();
+
+                      // Draw image scaled to fit
+                      contextRef.current.drawImage(
+                        img,
+                        selection.startX + offsetX,
+                        selection.startY + offsetY,
+                        scaledWidth,
+                        scaledHeight
+                      );
+
+                      contextRef.current.restore();
+                    } else {
+                      // Rectangle selection - simple draw
+                      contextRef.current.drawImage(
+                        img,
+                        selection.startX + offsetX,
+                        selection.startY + offsetY,
+                        scaledWidth,
+                        scaledHeight
+                      );
+                    }
                   } else {
                     // If no selection, paste at center
                     const x = (canvasRef.current.width - img.width) / 2;
                     const y = (canvasRef.current.height - img.height) / 2;
                     contextRef.current.drawImage(img, x, y);
                   }
+                  
+                  // Clear selection FIRST to stop the animation from drawing the selection box
+                  // This must happen before updating lastImageRef to prevent race conditions
+                  setSelection(null);
+                  
+                  // Update lastImageRef to reflect the pasted state (without selection box)
+                  if (canvasRef.current && contextRef.current) {
+                    lastImageRef.current = contextRef.current.getImageData(
+                      0,
+                      0,
+                      canvasRef.current.width,
+                      canvasRef.current.height
+                    );
+                  }
+                  
                   saveToHistory();
                   if (onContentChange) onContentChange();
-                  resolve(null);
+                  
+                  resolve();
+                };
+                img.onerror = () => {
+                  reject(new Error("Failed to load image from clipboard"));
                 };
               });
               URL.revokeObjectURL(img.src);
@@ -506,25 +717,61 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         }
       } catch (err) {
         console.error("Failed to read clipboard contents: ", err);
+        // Show user-friendly error message
+        if (err instanceof Error && err.name === "NotAllowedError") {
+          console.error("Clipboard access denied. Please grant clipboard permissions.");
+        }
       }
     }, [selection, saveToHistory, onContentChange]);
 
     const clearSelection = useCallback(() => {
-      if (!contextRef.current || !selection) return;
+      if (!contextRef.current || !canvasRef.current || !selection) return;
 
-      // Fill selection area with white
+      // Restore canvas to actual state (remove selection overlay)
+      if (lastImageRef.current) {
+        contextRef.current.putImageData(lastImageRef.current, 0, 0);
+      }
+
       contextRef.current.save();
-      contextRef.current.fillStyle = "#FFFFFF";
-      contextRef.current.fillRect(
-        selection.startX,
-        selection.startY,
-        selection.width,
-        selection.height
-      );
-      contextRef.current.restore();
 
+      if (selection.type === "lasso" && selection.path && selection.path.length > 0) {
+        // For lasso, fill the path shape with white
+        contextRef.current.beginPath();
+        contextRef.current.moveTo(selection.path[0].x, selection.path[0].y);
+        for (let i = 1; i < selection.path.length; i++) {
+          contextRef.current.lineTo(selection.path[i].x, selection.path[i].y);
+        }
+        contextRef.current.closePath();
+        contextRef.current.fillStyle = "#FFFFFF";
+        contextRef.current.fill();
+      } else {
+        // Rectangle selection - fill with white
+        contextRef.current.fillStyle = "#FFFFFF";
+        contextRef.current.fillRect(
+          selection.startX,
+          selection.startY,
+          selection.width,
+          selection.height
+        );
+      }
+
+      contextRef.current.restore();
+      
+      // Update lastImageRef to reflect the cleared state
+      if (canvasRef.current && contextRef.current) {
+        lastImageRef.current = contextRef.current.getImageData(
+          0,
+          0,
+          canvasRef.current.width,
+          canvasRef.current.height
+        );
+      }
+      
       saveToHistory();
       if (onContentChange) onContentChange();
+      
+      // Clear selection after cut
+      setSelection(null);
     }, [selection, saveToHistory, onContentChange]);
 
     // Expose methods via ref
@@ -567,12 +814,31 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
           saveToHistory();
         },
         exportCanvas: () => {
-          if (!canvasRef.current) {
+          const canvas = canvasRef.current;
+          if (!canvas) {
             return Promise.reject(new Error("Canvas not available"));
           }
 
           return new Promise<Blob>((resolve, reject) => {
-            canvasRef.current?.toBlob((blob) => {
+            // If selection is active, use clean state from lastImageRef
+            if (selection && lastImageRef.current && contextRef.current) {
+              const tempCanvas = document.createElement("canvas");
+              tempCanvas.width = canvas.width;
+              tempCanvas.height = canvas.height;
+              const tempCtx = tempCanvas.getContext("2d");
+              if (!tempCtx) {
+                reject(new Error("Failed to create temp canvas"));
+                return;
+              }
+              tempCtx.putImageData(lastImageRef.current, 0, 0);
+              tempCanvas.toBlob((blob) => {
+                if (blob) resolve(blob);
+                else reject(new Error("Failed to create blob"));
+              }, "image/png");
+              return;
+            }
+
+            canvas.toBlob((blob) => {
               if (blob) {
                 resolve(blob);
               } else {
@@ -599,11 +865,23 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
             saveToHistory();
           };
         },
-        cut: () => {
-          copySelectionToClipboard();
-          clearSelection();
+        cut: async () => {
+          if (selection) {
+            try {
+              await copySelectionToClipboard();
+              clearSelection();
+            } catch (err) {
+              console.error("Failed to cut selection:", err);
+            }
+          }
         },
-        copy: copySelectionToClipboard,
+        copy: async () => {
+          try {
+            await copySelectionToClipboard();
+          } catch (err) {
+            console.error("Failed to copy selection:", err);
+          }
+        },
         paste: handlePaste,
         applyFilter: (filter: Filter) => {
           if (canvasRef.current) {
@@ -688,13 +966,37 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
     };
 
     const isPointInSelection = (point: Point, sel: Selection): boolean => {
-      return (
-        point.x >= sel.startX &&
-        point.x <= sel.startX + sel.width &&
-        point.y >= sel.startY &&
-        point.y <= sel.startY + sel.height
-      );
+      if (sel.type === "rectangle") {
+        return (
+          point.x >= sel.startX &&
+          point.x <= sel.startX + sel.width &&
+          point.y >= sel.startY &&
+          point.y <= sel.startY + sel.height
+        );
+      } else if (sel.type === "lasso" && sel.path) {
+        return isPointInLassoPath(point, sel.path);
+      }
+      return false;
     };
+
+    // Point-in-polygon test for lasso selection
+    const isPointInLassoPath = useCallback((point: Point, path: Point[]): boolean => {
+      if (path.length < 3) return false;
+
+      let inside = false;
+      for (let i = 0, j = path.length - 1; i < path.length; j = i++) {
+        const xi = path[i].x;
+        const yi = path[i].y;
+        const xj = path[j].x;
+        const yj = path[j].y;
+
+        const intersect =
+          yi > point.y !== yj > point.y &&
+          point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }, []);
 
     const floodFill = (startX: number, startY: number) => {
       const canvas = canvasRef.current;
@@ -915,7 +1217,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
           }
         }
 
-        // Handle selection tool click
+        // Handle rectangle selection tool
         if (selectedTool === "rect-select") {
           // If clicking outside selection, clear it
           if (selection && !isPointInSelection(point, selection)) {
@@ -942,6 +1244,38 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
             canvas.width,
             canvas.height
           );
+          return;
+        }
+
+        // Handle lasso selection tool
+        if (selectedTool === "select") {
+          // If clicking outside selection, clear it
+          if (selection && selection.type === "lasso" && selection.path) {
+            const isInside = isPointInLassoPath(point, selection.path);
+            if (!isInside) {
+              // Restore canvas to state before selection
+              if (lastImageRef.current) {
+                contextRef.current.putImageData(lastImageRef.current, 0, 0);
+              }
+              setSelection(null);
+            } else {
+              // If clicking inside existing selection, prepare for drag
+              setIsDraggingSelection(true);
+              dragStartRef.current = point;
+              return;
+            }
+          }
+
+          // Start new lasso selection
+          lassoPathRef.current = [point];
+          // Store the current canvas state before starting new selection
+          lastImageRef.current = contextRef.current.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+          isDrawing.current = true;
           return;
         }
 
@@ -1020,6 +1354,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         isTyping,
         floodFill,
         isPointInSelection,
+        isPointInLassoPath,
         setSelection,
         setTextPosition,
         setIsTyping,
@@ -1044,14 +1379,69 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
 
           setSelection((prev) => {
             if (!prev) return null;
-            return {
-              ...prev,
-              startX: prev.startX + dx,
-              startY: prev.startY + dy,
-            };
+            if (prev.type === "rectangle") {
+              return {
+                ...prev,
+                startX: prev.startX + dx,
+                startY: prev.startY + dy,
+              };
+            } else if (prev.type === "lasso" && prev.path) {
+              // Move all path points
+              const newPath = prev.path.map((p) => ({
+                x: p.x + dx,
+                y: p.y + dy,
+              }));
+              return {
+                ...prev,
+                startX: prev.startX + dx,
+                startY: prev.startY + dy,
+                path: newPath,
+              };
+            }
+            return prev;
           });
 
           dragStartRef.current = point;
+          return;
+        }
+
+        // Handle lasso selection drawing
+        if (selectedTool === "select" && isDrawing.current && lastImageRef.current) {
+          // Add point to lasso path
+          lassoPathRef.current.push(point);
+
+          // Restore canvas and draw lasso preview
+          contextRef.current.putImageData(lastImageRef.current, 0, 0);
+
+          contextRef.current.save();
+          contextRef.current.strokeStyle = "#000";
+          contextRef.current.lineWidth = 1;
+          contextRef.current.setLineDash([5, 5]);
+          contextRef.current.lineDashOffset = dashOffsetRef.current;
+
+          if (lassoPathRef.current.length > 1) {
+            contextRef.current.beginPath();
+            contextRef.current.moveTo(
+              lassoPathRef.current[0].x,
+              lassoPathRef.current[0].y
+            );
+            for (let i = 1; i < lassoPathRef.current.length; i++) {
+              contextRef.current.lineTo(
+                lassoPathRef.current[i].x,
+                lassoPathRef.current[i].y
+              );
+            }
+            // Draw line back to start if path is long enough
+            if (lassoPathRef.current.length > 2) {
+              contextRef.current.lineTo(
+                lassoPathRef.current[0].x,
+                lassoPathRef.current[0].y
+              );
+            }
+            contextRef.current.stroke();
+          }
+
+          contextRef.current.restore();
           return;
         }
 
@@ -1143,7 +1533,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
           }
         }
       },
-      [selectedTool, isDraggingSelection, selection, setSelection]
+      [selectedTool, isDraggingSelection, selection]
     );
 
     const stopDrawing = useCallback(
@@ -1160,6 +1550,59 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         const point = getCanvasPoint(event);
 
         touchStartRef.current = null;
+
+        // Handle lasso selection completion
+        if (selectedTool === "select" && lassoPathRef.current.length > 2) {
+          const path = [...lassoPathRef.current];
+          
+          // Calculate bounding box
+          let minX = path[0].x;
+          let minY = path[0].y;
+          let maxX = path[0].x;
+          let maxY = path[0].y;
+
+          for (const p of path) {
+            minX = Math.min(minX, p.x);
+            minY = Math.min(minY, p.y);
+            maxX = Math.max(maxX, p.x);
+            maxY = Math.max(maxY, p.y);
+          }
+
+          const width = maxX - minX;
+          const height = maxY - minY;
+
+          if (width > 0 && height > 0) {
+            if (lastImageRef.current) {
+              contextRef.current.putImageData(lastImageRef.current, 0, 0);
+            }
+
+            // Extract selection region (will be used for copy/cut)
+            const selectionImageData = contextRef.current.getImageData(
+              minX,
+              minY,
+              width,
+              height
+            );
+
+            setSelection({
+              type: "lasso",
+              startX: minX,
+              startY: minY,
+              width,
+              height,
+              path,
+              imageData: selectionImageData,
+            });
+          } else {
+            if (lastImageRef.current) {
+              contextRef.current.putImageData(lastImageRef.current, 0, 0);
+            }
+            setSelection(null);
+          }
+
+          lassoPathRef.current = [];
+          isDrawing.current = false;
+        }
 
         if (selectedTool === "rect-select" && startPointRef.current) {
           const width = point.x - startPointRef.current.x;
@@ -1183,6 +1626,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
             );
 
             setSelection({
+              type: "rectangle",
               startX,
               startY,
               width: absWidth,
