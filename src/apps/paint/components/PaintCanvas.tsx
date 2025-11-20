@@ -460,16 +460,31 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
 
       const { startX, startY, width, height, type, path } = selection;
 
+      // Normalize selection bounds to integers so we don't end up indexing
+      // image data with fractional coordinates (which returns undefined and
+      // yields a transparent copy).
+      const intStartX = Math.floor(startX);
+      const intStartY = Math.floor(startY);
+      const intEndX = Math.ceil(startX + width);
+      const intEndY = Math.ceil(startY + height);
+      const intWidth = Math.max(1, intEndX - intStartX);
+      const intHeight = Math.max(1, intEndY - intStartY);
+
       // Create a temporary canvas for the selection
       const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = width;
-      tempCanvas.height = height;
+      tempCanvas.width = intWidth;
+      tempCanvas.height = intHeight;
       const tempCtx = tempCanvas.getContext("2d", { willReadFrequently: true });
       if (!tempCtx) return null;
 
       if (type === "rectangle") {
         // Simple rectangle extraction
-        const imageData = contextRef.current.getImageData(startX, startY, width, height);
+        const imageData = contextRef.current.getImageData(
+          intStartX,
+          intStartY,
+          intWidth,
+          intHeight
+        );
         tempCtx.putImageData(imageData, 0, 0);
       } else if (type === "lasso" && path && path.length > 0) {
         // Lasso selection: extract pixels within the path
@@ -500,14 +515,15 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
 
         // Extract pixels that are within the mask
         const maskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
-        const outputData = tempCtx.createImageData(width, height);
+        const outputData = tempCtx.createImageData(intWidth, intHeight);
 
-        for (let y = 0; y < height; y++) {
-          for (let x = 0; x < width; x++) {
-            const canvasX = startX + x;
-            const canvasY = startY + y;
-            const canvasIdx = (canvasY * canvasRef.current.width + canvasX) * 4;
-            const outputIdx = (y * width + x) * 4;
+        for (let y = 0; y < intHeight; y++) {
+          for (let x = 0; x < intWidth; x++) {
+            const canvasX = intStartX + x;
+            const canvasY = intStartY + y;
+            const canvasIdx =
+              (canvasY * canvasRef.current.width + canvasX) * 4;
+            const outputIdx = (y * intWidth + x) * 4;
 
             // Check if pixel is within mask
             if (maskData.data[canvasIdx + 3] > 0) {
