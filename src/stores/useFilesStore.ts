@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { OsThemeId } from "@/themes/types";
+import type { AppId } from "@/config/appIds";
 
 // Define the structure for a file system item (metadata)
 export interface FileSystemItem {
@@ -84,7 +85,125 @@ interface FilesStoreState {
   initializeLibrary: () => Promise<void>;
   /** Ensure all root directories from filesystem.json exist in the store */
   syncRootDirectoriesFromDefaults: () => Promise<void>;
+  /** Ensure default desktop shortcuts exist for core apps */
+  ensureDefaultDesktopShortcuts: () => void;
 }
+
+interface DefaultShortcutConfig {
+  appId: AppId;
+  name: string;
+  hiddenOnThemes?: OsThemeId[];
+}
+
+const MAC_THEME_ONLY: OsThemeId[] = ["macosx"];
+
+const DEFAULT_DESKTOP_SHORTCUTS: DefaultShortcutConfig[] = [
+  { appId: "ipod", name: "iPod" },
+  { appId: "chats", name: "Chats", hiddenOnThemes: MAC_THEME_ONLY },
+  { appId: "applet-viewer", name: "Applet Store" },
+  {
+    appId: "internet-explorer",
+    name: "Internet Explorer",
+    hiddenOnThemes: MAC_THEME_ONLY,
+  },
+  { appId: "textedit", name: "TextEdit", hiddenOnThemes: MAC_THEME_ONLY },
+  {
+    appId: "photo-booth",
+    name: "Photo Booth",
+    hiddenOnThemes: MAC_THEME_ONLY,
+  },
+  { appId: "videos", name: "Videos", hiddenOnThemes: MAC_THEME_ONLY },
+  { appId: "paint", name: "Paint", hiddenOnThemes: MAC_THEME_ONLY },
+  { appId: "soundboard", name: "Soundboard", hiddenOnThemes: MAC_THEME_ONLY },
+  {
+    appId: "minesweeper",
+    name: "Minesweeper",
+    hiddenOnThemes: MAC_THEME_ONLY,
+  },
+  { appId: "synth", name: "Synth", hiddenOnThemes: MAC_THEME_ONLY },
+  { appId: "terminal", name: "Terminal", hiddenOnThemes: MAC_THEME_ONLY },
+  { appId: "pc", name: "Virtual PC", hiddenOnThemes: MAC_THEME_ONLY },
+];
+
+const ensureDefaultDesktopShortcutsInItems = (
+  items: Record<string, FileSystemItem>,
+  timestamp = Date.now()
+): boolean => {
+  const desktopFolder = items["/Desktop"];
+  if (
+    !desktopFolder ||
+    !desktopFolder.isDirectory ||
+    desktopFolder.status === "trashed"
+  ) {
+    return false;
+  }
+
+  let changed = false;
+
+  const getItemsArray = () => Object.values(items);
+
+  DEFAULT_DESKTOP_SHORTCUTS.forEach((shortcut) => {
+    const hasActiveShortcut = getItemsArray().some(
+      (item) =>
+        item.aliasType === "app" &&
+        item.aliasTarget === shortcut.appId &&
+        item.status === "active"
+    );
+
+    if (hasActiveShortcut) {
+      return;
+    }
+
+    const hasTrashedShortcut = getItemsArray().some(
+      (item) =>
+        item.aliasType === "app" &&
+        item.aliasTarget === shortcut.appId &&
+        item.status === "trashed" &&
+        item.originalPath?.startsWith("/Desktop/")
+    );
+
+    if (hasTrashedShortcut) {
+      return;
+    }
+
+    const baseName = shortcut.name;
+    let aliasName = baseName;
+    let aliasPath = `/Desktop/${aliasName}`;
+    let counter = 2;
+
+    while (items[aliasPath] && items[aliasPath].status !== "trashed") {
+      aliasName = `${baseName} ${counter}`;
+      aliasPath = `/Desktop/${aliasName}`;
+      counter++;
+    }
+
+    const existingAtAliasPath = items[aliasPath];
+    if (existingAtAliasPath && existingAtAliasPath.status === "trashed") {
+      delete items[aliasPath];
+    }
+
+    items[aliasPath] = {
+      path: aliasPath,
+      name: aliasName,
+      isDirectory: false,
+      icon: undefined,
+      type: "application",
+      aliasTarget: shortcut.appId,
+      aliasType: "app",
+      appId: shortcut.appId,
+      status: "active",
+      createdAt: timestamp,
+      modifiedAt: timestamp,
+      hiddenOnThemes:
+        shortcut.hiddenOnThemes && shortcut.hiddenOnThemes.length > 0
+          ? [...shortcut.hiddenOnThemes]
+          : undefined,
+    };
+    changed = true;
+  });
+
+  return changed;
+};
 
 // Function to load default files from JSON
 async function loadDefaultFiles(): Promise<FileSystemData> {
@@ -702,6 +821,8 @@ export const useFilesStore = create<FilesStoreState>()(
           };
         });
 
+        ensureDefaultDesktopShortcutsInItems(newItems, now);
+
         set({
           items: newItems,
           libraryState: "loaded",
@@ -741,26 +862,28 @@ export const useFilesStore = create<FilesStoreState>()(
             };
           });
 
-          // Add applets
-          appletsData.applets.forEach((applet) => {
-            newItems[applet.path] = {
-              ...applet,
-              status: "active",
-              // Generate UUID for applets
-              uuid: uuidv4(),
-              createdAt: now,
-              modifiedAt: now,
-            };
-          });
+        // Add applets
+        appletsData.applets.forEach((applet) => {
+          newItems[applet.path] = {
+            ...applet,
+            status: "active",
+            // Generate UUID for applets
+            uuid: uuidv4(),
+            createdAt: now,
+            modifiedAt: now,
+          };
+        });
 
-          set({
-            items: newItems,
-            libraryState: "loaded",
-          });
+        ensureDefaultDesktopShortcutsInItems(newItems, now);
 
-          // Save default contents for both files and applets
-          await saveDefaultContents(data.files, newItems);
-          await saveDefaultContents(appletsData.applets, newItems);
+        set({
+          items: newItems,
+          libraryState: "loaded",
+        });
+
+        // Save default contents for both files and applets
+        await saveDefaultContents(data.files, newItems);
+        await saveDefaultContents(appletsData.applets, newItems);
         }
       },
 
@@ -813,13 +936,21 @@ export const useFilesStore = create<FilesStoreState>()(
             err
           );
         }
-      },
-
-      reset: () =>
-        set({
-          items: getEmptyFileSystemState(),
-          libraryState: "uninitialized",
-        }),
+        },
+        ensureDefaultDesktopShortcuts: () =>
+          set((state) => {
+            const newItems = { ...state.items };
+            const changed = ensureDefaultDesktopShortcutsInItems(newItems);
+            if (!changed) {
+              return state;
+            }
+            return { items: newItems };
+          }),
+        reset: () =>
+          set({
+            items: getEmptyFileSystemState(),
+            libraryState: "uninitialized",
+          }),
     }),
     {
       name: STORE_NAME,
@@ -947,6 +1078,17 @@ export const useFilesStore = create<FilesStoreState>()(
                   err
                 )
             );
+          }
+
+          if (state && state.ensureDefaultDesktopShortcuts) {
+            try {
+              state.ensureDefaultDesktopShortcuts();
+            } catch (err) {
+              console.error(
+                "Files default shortcut sync failed on rehydrate",
+                err
+              );
+            }
           }
         };
       },
