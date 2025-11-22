@@ -1,7 +1,7 @@
 import { AnyApp } from "@/apps/base/types";
 import { AppManagerState } from "@/apps/base/types";
 import { AppId } from "@/config/appRegistry";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { FileIcon } from "@/apps/finder/components/FileIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import { useWallpaper } from "@/hooks/useWallpaper";
@@ -60,6 +60,7 @@ export function Desktop({
   
   // Get trash icon (updates automatically when trash state changes)
   const allItems = useFilesStore((state) => state.items);
+  const libraryState = useFilesStore((state) => state.libraryState);
   const trashIcon = fileStore.getItem("/Trash")?.icon || "/icons/trash-empty.png";
 
   // Define the default order for desktop shortcuts
@@ -81,39 +82,42 @@ export function Desktop({
 
   // Get desktop shortcuts - subscribe to store changes
   // Access items directly to ensure reactivity
-  const desktopShortcuts = Object.values(allItems)
-    .filter(
-      (item) =>
-        item.status === "active" &&
-        item.path.startsWith("/Desktop/") &&
-        !item.isDirectory &&
-        // Theme-conditional defaults: hide items that are marked hidden for
-        // the current theme, but always show user-pinned (no hiddenOnThemes).
-        (!item.hiddenOnThemes ||
-          !item.hiddenOnThemes.includes(currentTheme))
-    )
-    .sort((a, b) => {
-      // Sort by default order if both are app aliases
-      if (a.aliasType === "app" && b.aliasType === "app") {
-        const aIndex = defaultShortcutOrder.indexOf(a.aliasTarget as AppId);
-        const bIndex = defaultShortcutOrder.indexOf(b.aliasTarget as AppId);
-        
-        // If both are in the order list, sort by their position
-        if (aIndex !== -1 && bIndex !== -1) {
-          return aIndex - bIndex;
+  // Use useMemo to ensure proper re-computation when items change
+  const desktopShortcuts = useMemo(() => {
+    return Object.values(allItems)
+      .filter(
+        (item) =>
+          item.status === "active" &&
+          item.path.startsWith("/Desktop/") &&
+          !item.isDirectory &&
+          // Theme-conditional defaults: hide items that are marked hidden for
+          // the current theme, but always show user-pinned (no hiddenOnThemes).
+          (!item.hiddenOnThemes ||
+            !item.hiddenOnThemes.includes(currentTheme))
+      )
+      .sort((a, b) => {
+        // Sort by default order if both are app aliases
+        if (a.aliasType === "app" && b.aliasType === "app") {
+          const aIndex = defaultShortcutOrder.indexOf(a.aliasTarget as AppId);
+          const bIndex = defaultShortcutOrder.indexOf(b.aliasTarget as AppId);
+          
+          // If both are in the order list, sort by their position
+          if (aIndex !== -1 && bIndex !== -1) {
+            return aIndex - bIndex;
+          }
+          // If only one is in the list, prioritize it
+          if (aIndex !== -1) return -1;
+          if (bIndex !== -1) return 1;
+          // If neither is in the list, sort alphabetically by name
+          return a.name.localeCompare(b.name);
         }
-        // If only one is in the list, prioritize it
-        if (aIndex !== -1) return -1;
-        if (bIndex !== -1) return 1;
-        // If neither is in the list, sort alphabetically by name
+        // App aliases come before file aliases
+        if (a.aliasType === "app" && b.aliasType !== "app") return -1;
+        if (a.aliasType !== "app" && b.aliasType === "app") return 1;
+        // Both are file aliases, sort alphabetically
         return a.name.localeCompare(b.name);
-      }
-      // App aliases come before file aliases
-      if (a.aliasType === "app" && b.aliasType !== "app") return -1;
-      if (a.aliasType !== "app" && b.aliasType === "app") return 1;
-      // Both are file aliases, sort alphabetically
-      return a.name.localeCompare(b.name);
-    });
+      });
+  }, [allItems, currentTheme]);
 
   // Remove file extension from display name (for desktop shortcuts)
   const getDisplayName = (name: string): string => {
@@ -505,8 +509,13 @@ export function Desktop({
 
   // Create default shortcuts based on theme
   useEffect(() => {
-    // Ensure apps are loaded and Desktop folder exists
+    // Ensure apps are loaded and file store is initialized
     if (!apps || apps.length === 0) return;
+    
+    // Wait for file store to be initialized before creating shortcuts
+    if (libraryState === "uninitialized") {
+      return;
+    }
     
     const desktopFolder = fileStore.getItem("/Desktop");
     if (!desktopFolder || !desktopFolder.isDirectory) {
@@ -616,8 +625,7 @@ export function Desktop({
         });
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apps, currentTheme]);
+  }, [apps, currentTheme, libraryState]);
 
   const getContextMenuItems = (): MenuItem[] => {
     if (contextMenuShortcutPath) {
@@ -712,9 +720,12 @@ export function Desktop({
     if (shortcut.aliasType === "app" && shortcut.aliasTarget) {
       const appId = shortcut.aliasTarget as AppId;
       try {
-        const iconPath = getAppIconPath(appId);
-        if (iconPath) {
-          return iconPath;
+        // Ensure app registry is available before resolving icon
+        if (appId && typeof getAppIconPath === "function") {
+          const iconPath = getAppIconPath(appId);
+          if (iconPath && iconPath.trim() !== "") {
+            return iconPath;
+          }
         }
         console.warn(`[Desktop] getAppIconPath returned empty for app ${appId}`);
       } catch (err) {
