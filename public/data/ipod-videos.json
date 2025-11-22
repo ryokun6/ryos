@@ -599,6 +599,13 @@
       "artist": "周杰倫",
       "album": "十一月的蕭邦",
       "lyricOffset": 4500
+    },
+    {
+      "id": "fXivMSJm_kA",
+      "url": "https://www.youtube.com/watch?v=fXivMSJm_kA",
+      "title": "YUKON",
+      "artist": "Justin Bieber",
+      "lyricOffset": 1000
     }
   ]
 }
