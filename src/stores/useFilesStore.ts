@@ -84,6 +84,8 @@ interface FilesStoreState {
   initializeLibrary: () => Promise<void>;
   /** Ensure all root directories from filesystem.json exist in the store */
   syncRootDirectoriesFromDefaults: () => Promise<void>;
+  /** Initialize default desktop shortcuts based on theme */
+  initializeDesktopShortcuts: () => void;
 }
 
 // Function to load default files from JSON
@@ -669,6 +671,142 @@ export const useFilesStore = create<FilesStoreState>()(
         });
       },
 
+      initializeDesktopShortcuts: () => {
+        set((state) => {
+          // Ensure /Desktop directory exists
+          if (!state.items["/Desktop"] || !state.items["/Desktop"].isDirectory) {
+            console.warn(
+              "[FilesStore] Cannot initialize desktop shortcuts. /Desktop directory does not exist."
+            );
+            return state;
+          }
+
+          // Get current theme from localStorage (store may not be hydrated yet)
+          const currentTheme = localStorage.getItem("os_theme") || "macosx";
+
+          // Get desktop items and trashed items
+          const desktopItems = Object.values(state.items).filter(
+            (item) => item.status === "active" && item.path.startsWith("/Desktop/")
+          );
+          const trashedItems = Object.values(state.items).filter(
+            (item) => item.status === "trashed"
+          );
+
+          // Import app IDs from config (we'll need to hardcode the list here)
+          const defaultOrder: string[] = [
+            "ipod",
+            "chats",
+            "applet-viewer",
+            "internet-explorer",
+            "textedit",
+            "photo-booth",
+            "videos",
+            "paint",
+            "soundboard",
+            "minesweeper",
+            "synth",
+            "terminal",
+            "pc",
+          ];
+
+          // Get list of apps from Applications folder
+          const applicationItems = Object.values(state.items).filter(
+            (item) =>
+              item.path.startsWith("/Applications/") &&
+              getParentPath(item.path) === "/Applications" &&
+              item.appId
+          );
+
+          // Determine which apps should have shortcuts based on theme
+          let appsToShortcut: typeof applicationItems;
+          if (currentTheme === "macosx") {
+            // macOS X: only iPod and Applet Store (applet-viewer) as default shortcuts
+            appsToShortcut = applicationItems.filter(
+              (app) => app.appId === "ipod" || app.appId === "applet-viewer"
+            );
+          } else {
+            // Other themes: all apps except Finder and Control Panels
+            appsToShortcut = applicationItems.filter(
+              (app) => app.appId !== "finder" && app.appId !== "control-panels"
+            );
+          }
+
+          // Sort apps according to default order
+          const sortedAppsToShortcut = [...appsToShortcut].sort((a, b) => {
+            const aIndex = defaultOrder.indexOf(a.appId || "");
+            const bIndex = defaultOrder.indexOf(b.appId || "");
+
+            if (aIndex !== -1 && bIndex !== -1) {
+              return aIndex - bIndex;
+            }
+            if (aIndex !== -1) return -1;
+            if (bIndex !== -1) return 1;
+            return (a.name || "").localeCompare(b.name || "");
+          });
+
+          const newItems = { ...state.items };
+          const now = Date.now();
+
+          // Create shortcuts for apps that don't have them yet
+          sortedAppsToShortcut.forEach((app) => {
+            const appId = app.appId;
+            if (!appId) return;
+
+            const hasActiveShortcut = desktopItems.some(
+              (item) => item.aliasType === "app" && item.aliasTarget === appId
+            );
+
+            const hasTrashedShortcut = trashedItems.some(
+              (item) =>
+                item.aliasType === "app" &&
+                item.aliasTarget === appId &&
+                item.originalPath?.startsWith("/Desktop/")
+            );
+
+            if (hasActiveShortcut || hasTrashedShortcut) {
+              return;
+            }
+
+            // Create alias path
+            const aliasPath = `/Desktop/${app.name}`;
+
+            // Check if path is available
+            if (!newItems[aliasPath] || newItems[aliasPath].status === "trashed") {
+              // If trashed item exists, remove it to free up the path
+              if (newItems[aliasPath] && newItems[aliasPath].status === "trashed") {
+                delete newItems[aliasPath];
+              }
+
+              const aliasItem: FileSystemItem = {
+                path: aliasPath,
+                name: app.name,
+                isDirectory: false,
+                icon: undefined, // Let Desktop component resolve via getAppIconPath
+                type: "application",
+                aliasTarget: appId,
+                aliasType: "app",
+                appId: appId,
+                status: "active",
+                createdAt: now,
+                modifiedAt: now,
+                // Mark default shortcuts as theme-conditional by hiding them on macOS X
+                // unless they are iPod or Applet Store
+                hiddenOnThemes:
+                  currentTheme !== "macosx" &&
+                  appId !== "ipod" &&
+                  appId !== "applet-viewer"
+                    ? ["macosx"]
+                    : [],
+              };
+
+              newItems[aliasPath] = aliasItem;
+            }
+          });
+
+          return { items: newItems };
+        });
+      },
+
       clearLibrary: () =>
         set({
           items: getEmptyFileSystemState(),
@@ -761,6 +899,9 @@ export const useFilesStore = create<FilesStoreState>()(
           // Save default contents for both files and applets
           await saveDefaultContents(data.files, newItems);
           await saveDefaultContents(appletsData.applets, newItems);
+
+          // Initialize desktop shortcuts
+          get().initializeDesktopShortcuts();
         }
       },
 
@@ -807,6 +948,9 @@ export const useFilesStore = create<FilesStoreState>()(
               });
             return { items: newItems };
           });
+
+          // Initialize desktop shortcuts after syncing root directories
+          get().initializeDesktopShortcuts();
         } catch (err) {
           console.error(
             "[FilesStore] Failed to sync root directories from defaults:",
