@@ -617,7 +617,7 @@ export function Desktop({
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apps, currentTheme]);
+  }, [apps, currentTheme, fileStore.items]);
 
   const getContextMenuItems = (): MenuItem[] => {
     if (contextMenuShortcutPath) {
