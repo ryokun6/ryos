@@ -84,6 +84,8 @@ interface FilesStoreState {
   initializeLibrary: () => Promise<void>;
   /** Ensure all root directories from filesystem.json exist in the store */
   syncRootDirectoriesFromDefaults: () => Promise<void>;
+  /** Ensure default desktop shortcuts exist for all apps */
+  ensureDefaultDesktopShortcuts: () => Promise<void>;
 }
 
 // Function to load default files from JSON
@@ -815,6 +817,75 @@ export const useFilesStore = create<FilesStoreState>()(
         }
       },
 
+      ensureDefaultDesktopShortcuts: async () => {
+        try {
+          // Import dynamically to avoid circular dependencies
+          const { appRegistry } = await import("@/config/appRegistry");
+          
+          const state = get();
+          // Ensure Desktop folder exists
+          if (!state.items["/Desktop"] || !state.items["/Desktop"].isDirectory) {
+            return;
+          }
+
+          const desktopItems = Object.values(state.items).filter(
+            (item) =>
+              item.status === "active" && getParentPath(item.path) === "/Desktop"
+          );
+          const trashedItems = Object.values(state.items).filter(
+            (item) => item.status === "trashed"
+          );
+
+          // Process all apps in registry except Finder and Control Panels
+          // @ts-ignore - iterating over values of appRegistry
+          const apps = Object.values(appRegistry).filter(
+            (app: any) => app.id !== "finder" && app.id !== "control-panels"
+          );
+
+          for (const app of apps) {
+            const appId = app.id;
+
+            // Check existence
+            const hasActiveShortcut = desktopItems.some(
+              (item) => item.aliasType === "app" && item.aliasTarget === appId
+            );
+            const hasTrashedShortcut = trashedItems.some(
+              (item) =>
+                item.aliasType === "app" &&
+                item.aliasTarget === appId &&
+                item.originalPath?.startsWith("/Desktop/")
+            );
+
+            if (!hasActiveShortcut && !hasTrashedShortcut) {
+              // Create alias
+              const appPath = `/Applications/${app.name}`;
+              get().createAlias(appPath, app.name, "app", appId);
+
+              // Find the created shortcut to update metadata
+              const updatedState = get();
+              const createdShortcut = Object.values(updatedState.items).find(
+                (item) =>
+                  item.aliasType === "app" &&
+                  item.aliasTarget === appId &&
+                  item.status === "active"
+              );
+
+              if (createdShortcut) {
+                // Apply hiddenOnThemes for non-iPod/AppletViewer
+                // This ensures they are hidden on macOS X theme but visible on others
+                if (appId !== "ipod" && appId !== "applet-viewer") {
+                  get().updateItemMetadata(createdShortcut.path, {
+                    hiddenOnThemes: ["macosx"],
+                  });
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error("[FilesStore] Failed to ensure default desktop shortcuts:", err);
+        }
+      },
+
       reset: () =>
         set({
           items: getEmptyFileSystemState(),
@@ -940,7 +1011,12 @@ export const useFilesStore = create<FilesStoreState>()(
 
           // Regardless of initialization state, ensure any new root folders
           if (state && state.syncRootDirectoriesFromDefaults) {
-            Promise.resolve(state.syncRootDirectoriesFromDefaults()).catch(
+            Promise.resolve(state.syncRootDirectoriesFromDefaults()).then(() => {
+              // After syncing roots, ensure desktop shortcuts
+              if (state && state.ensureDefaultDesktopShortcuts) {
+                 return state.ensureDefaultDesktopShortcuts();
+              }
+            }).catch(
               (err) =>
                 console.error(
                   "Files root directory sync failed on rehydrate",
