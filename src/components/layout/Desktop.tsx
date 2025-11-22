@@ -60,6 +60,7 @@ export function Desktop({
   
   // Get trash icon (updates automatically when trash state changes)
   const allItems = useFilesStore((state) => state.items);
+  const libraryState = useFilesStore((state) => state.libraryState);
   const trashIcon = fileStore.getItem("/Trash")?.icon || "/icons/trash-empty.png";
 
   // Define the default order for desktop shortcuts
@@ -505,8 +506,11 @@ export function Desktop({
 
   // Create default shortcuts based on theme
   useEffect(() => {
-    // Ensure apps are loaded and Desktop folder exists
+    // Ensure apps are loaded, file store is initialized, and Desktop folder exists
     if (!apps || apps.length === 0) return;
+    
+    // Wait for the file store to finish initializing
+    if (libraryState !== "loaded") return;
     
     const desktopFolder = fileStore.getItem("/Desktop");
     if (!desktopFolder || !desktopFolder.isDirectory) {
@@ -617,7 +621,7 @@ export function Desktop({
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apps, currentTheme]);
+  }, [apps, currentTheme, libraryState]);
 
   const getContextMenuItems = (): MenuItem[] => {
     if (contextMenuShortcutPath) {
