@@ -1515,6 +1515,7 @@
   font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 32px) !important;
 }
 
 /* System 7: use Geneva-12 for toasts */
