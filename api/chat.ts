@@ -1084,7 +1084,7 @@ export default async function handler(req: Request) {
       },
       providerOptions: {
         openai: {
-          reasoningEffort: "minimal", // Turn off reasoning for GPT-5 and other reasoning models
+          reasoningEffort: "none", // Turn off reasoning for GPT-5 and other reasoning models
         },
       },
     });
