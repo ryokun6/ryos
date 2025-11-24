@@ -21,6 +21,8 @@ export const getModelInstance = (model: SupportedModel): LanguageModelV2 => {
       return google("gemini-2.5-pro");
     case "gemini-2.5-flash":
       return google("gemini-2.5-flash");
+    case "gemini-3-pro-preview":
+      return google("gemini-3-pro-preview");
     case "claude-4.5":
       return anthropic("claude-sonnet-4-5");
     case "claude-4":
