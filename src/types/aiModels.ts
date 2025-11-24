@@ -10,6 +10,10 @@ export const AI_MODELS = {
     name: "gemini-2.5-flash",
     provider: "Google",
   },
+  "gemini-3-pro-preview": {
+    name: "gemini-3-pro-preview",
+    provider: "Google",
+  },
   "claude-4.5": {
     name: "claude-4.5",
     provider: "Anthropic",
