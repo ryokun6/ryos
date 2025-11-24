@@ -30,6 +30,10 @@ export const AI_MODELS = {
     name: "gpt-5",
     provider: "OpenAI",
   },
+  "gpt-5.1": {
+    name: "gpt-5.1",
+    provider: "OpenAI",
+  },
   "gpt-5-mini": {
     name: "gpt-5-mini",
     provider: "OpenAI",
@@ -70,4 +74,4 @@ export const AI_MODEL_METADATA: AIModelInfo[] = Object.entries(AI_MODELS).map(
 );
 
 // Default model
-export const DEFAULT_AI_MODEL: SupportedModel = "claude-4.5";
+export const DEFAULT_AI_MODEL: SupportedModel = "gpt-5.1";
