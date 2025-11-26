@@ -31,6 +31,14 @@ const getInitialState = (): AppManagerState => {
 };
 
 interface AppStoreState extends AppManagerState {
+  // Screen Saver state
+  screenSaverId: string;
+  setScreenSaverId: (id: string) => void;
+  screenSaverEnabled: boolean;
+  setScreenSaverEnabled: (enabled: boolean) => void;
+  screenSaverTimeout: number;
+  setScreenSaverTimeout: (minutes: number) => void;
+
   // Instance (window) management
   instances: Record<string, AppInstance>;
   instanceOrder: string[]; // END = TOP (foreground)
@@ -449,6 +457,14 @@ export const useAppStore = create<AppStoreState>()(
       ipodVolume: 1,
       setIpodVolume: (v) => set({ ipodVolume: v }),
 
+      // Screen Saver
+      screenSaverId: "starfield",
+      setScreenSaverId: (id) => set({ screenSaverId: id }),
+      screenSaverEnabled: true,
+      setScreenSaverEnabled: (enabled) => set({ screenSaverEnabled: enabled }),
+      screenSaverTimeout: 1, // 1 minute default
+      setScreenSaverTimeout: (timeout) => set({ screenSaverTimeout: timeout }),
+
       // Instance store
       instances: {},
       instanceOrder: [],
@@ -720,6 +736,9 @@ export const useAppStore = create<AppStoreState>()(
         ttsVoice: state.ttsVoice,
         ipodVolume: state.ipodVolume,
         masterVolume: state.masterVolume,
+        screenSaverId: state.screenSaverId,
+        screenSaverEnabled: state.screenSaverEnabled,
+        screenSaverTimeout: state.screenSaverTimeout,
         instances: Object.fromEntries(
           Object.entries(state.instances)
             .filter(([, inst]) => inst.isOpen)

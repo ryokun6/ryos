@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { WallpaperPicker } from "./WallpaperPicker";
+import { ScreenSaverPicker } from "./ScreenSaverPicker";
 import { AppProps, ControlPanelsInitialData } from "@/apps/base/types";
 import { clearAllAppStates } from "@/stores/useAppStore";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
@@ -646,7 +647,9 @@ export function ControlPanelsAppComponent({
       }
 
       // Combine chunks into a single blob
-      const compressedBlob = new Blob(chunks, { type: "application/gzip" });
+      const compressedBlob = new Blob(chunks as BlobPart[], {
+        type: "application/gzip",
+      });
 
       // Create download link
       const url = URL.createObjectURL(compressedBlob);
@@ -1496,6 +1499,7 @@ export function ControlPanelsAppComponent({
                   className="h-7! flex justify-start! p-0 -mt-1 -mb-[2px] bg-transparent shadow-none /* Windows XP/98 tab strip */"
                 >
                   <TabsTrigger value="appearance">Appearance</TabsTrigger>
+                  <TabsTrigger value="screensaver">Screen Saver</TabsTrigger>
                   <TabsTrigger value="sound">Sound</TabsTrigger>
                   <TabsTrigger value="system">System</TabsTrigger>
                 </menu>
@@ -1507,6 +1511,12 @@ export function ControlPanelsAppComponent({
                   className={tabStyles.tabTriggerClasses}
                 >
                   Appearance
+                </TabsTrigger>
+                <TabsTrigger
+                  value="screensaver"
+                  className={tabStyles.tabTriggerClasses}
+                >
+                  Screen Saver
                 </TabsTrigger>
                 <TabsTrigger
                   value="sound"
@@ -1561,6 +1571,15 @@ export function ControlPanelsAppComponent({
                 />
 
                 <WallpaperPicker />
+              </div>
+            </TabsContent>
+
+            <TabsContent
+              value="screensaver"
+              className={tabStyles.tabContentClasses}
+            >
+              <div className="space-y-4 h-full overflow-y-auto p-4 pt-6">
+                <ScreenSaverPicker />
               </div>
             </TabsContent>
 
