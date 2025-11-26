@@ -1172,15 +1172,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             ensureIpodIsOpen();
 
             // Helper function to apply video, translation, and fullscreen settings
-            const applyIpodSettings = () => {
+            // Returns an array of state change messages
+            const applyIpodSettings = (): string[] => {
               const ipod = useIpodStore.getState();
+              const stateChanges: string[] = [];
               
               if (enableVideo !== undefined) {
                 if (enableVideo && !ipod.showVideo) {
                   ipod.setShowVideo(true);
+                  stateChanges.push("Turned on video");
                   console.log("[ToolCall] Video enabled.");
                 } else if (!enableVideo && ipod.showVideo) {
                   ipod.setShowVideo(false);
+                  stateChanges.push("Turned off video");
                   console.log("[ToolCall] Video disabled.");
                 }
               }
@@ -1188,6 +1192,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (enableTranslation !== undefined) {
                 if (enableTranslation === null || enableTranslation === "") {
                   ipod.setLyricsTranslationLanguage(null);
+                  stateChanges.push("Turned off lyrics translation");
                   console.log("[ToolCall] Lyrics translation disabled.");
                 } else {
                   ipod.setLyricsTranslationLanguage(enableTranslation);
@@ -1195,6 +1200,22 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   if (currentTrack?.id) {
                     ipod.setLyricsTranslationRequest(enableTranslation, currentTrack.id);
                   }
+                  // Map language codes to readable names
+                  const languageNames: Record<string, string> = {
+                    'en': 'English',
+                    'zh-TW': 'Traditional Chinese',
+                    'zh-CN': 'Simplified Chinese',
+                    'ja': 'Japanese',
+                    'ko': 'Korean',
+                    'es': 'Spanish',
+                    'fr': 'French',
+                    'de': 'German',
+                    'pt': 'Portuguese',
+                    'it': 'Italian',
+                    'ru': 'Russian',
+                  };
+                  const langName = languageNames[enableTranslation] || enableTranslation;
+                  stateChanges.push(`Translated lyrics to ${langName}`);
                   console.log(`[ToolCall] Lyrics translation enabled for language: ${enableTranslation}.`);
                 }
               }
@@ -1202,12 +1223,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (enableFullscreen !== undefined) {
                 if (enableFullscreen && !ipod.isFullScreen) {
                   ipod.toggleFullScreen();
+                  stateChanges.push("Turned on full screen mode");
                   console.log("[ToolCall] Fullscreen enabled.");
                 } else if (!enableFullscreen && ipod.isFullScreen) {
                   ipod.toggleFullScreen();
+                  stateChanges.push("Turned off full screen mode");
                   console.log("[ToolCall] Fullscreen disabled.");
                 }
               }
+
+              return stateChanges;
             };
 
             const normalizedAction = action ?? "toggle";
@@ -1231,9 +1256,22 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   break;
               }
 
-              applyIpodSettings();
-
+              const stateChanges = applyIpodSettings();
               const nowPlaying = useIpodStore.getState().isPlaying;
+              
+              const playbackState = nowPlaying ? "Playing" : "Paused";
+              const resultParts = [playbackState];
+              if (stateChanges.length > 0) {
+                resultParts.push(...stateChanges);
+              }
+              
+              const resultMessage = resultParts.join(". ") + ".";
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+              
               console.log(
                 `[ToolCall] iPod is now ${nowPlaying ? "playing" : "paused"}.`,
               );
@@ -1304,7 +1342,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
 
               if (finalCandidateIndices.length === 0) {
-                console.log("[ToolCall] Song not found in iPod library.");
+                const errorMsg = "Song not found in iPod library.";
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: errorMsg,
+                });
+                console.log(`[ToolCall] ${errorMsg}`);
                 break;
               }
 
@@ -1317,21 +1361,37 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               setCurrentIndex(randomIndexFromArray);
               setIsPlaying(true);
 
-              applyIpodSettings();
-
+              const stateChanges = applyIpodSettings();
               const track = tracks[randomIndexFromArray];
               const trackDesc = `${track.title}${
                 track.artist ? ` by ${track.artist}` : ""
               }`;
+              
+              const resultParts = [`Playing ${trackDesc}`];
+              if (stateChanges.length > 0) {
+                resultParts.push(...stateChanges);
+              }
+              
+              const resultMessage = resultParts.join(". ") + ".";
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+              
               console.log(`[ToolCall] Playing ${trackDesc}.`);
               break;
             }
 
             if (normalizedAction === "addAndPlay") {
               if (!id) {
-                console.error(
-                  "[ToolCall] ipodControl: 'addAndPlay' action requires 'id'.",
-                );
+                const errorMsg = "The 'addAndPlay' action requires the 'id' parameter (YouTube ID or URL).";
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: errorMsg,
+                });
+                console.error(`[ToolCall] ${errorMsg}`);
                 break;
               }
 
@@ -1341,13 +1401,31 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   .addTrackFromVideoId(id);
 
                 if (addedTrack) {
-                  applyIpodSettings();
+                  const stateChanges = applyIpodSettings();
+                  const resultParts = [`Added '${addedTrack.title}' to iPod and started playing`];
+                  if (stateChanges.length > 0) {
+                    resultParts.push(...stateChanges);
+                  }
+                  
+                  const resultMessage = resultParts.join(". ") + ".";
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output: resultMessage,
+                  });
+                  
                   console.log(
                     `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`,
                   );
                   break;
                 } else {
-                  console.error(`[ToolCall] Failed to add ${id} to iPod.`);
+                  const errorMsg = `Failed to add ${id} to iPod.`;
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output: errorMsg,
+                  });
+                  console.error(`[ToolCall] ${errorMsg}`);
                   break;
                 }
               } catch (error) {
@@ -1355,16 +1433,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   error instanceof Error ? error.message : "Unknown error";
                 console.error(`[iPod] Error adding ${id}:`, error);
 
+                let errorMsg: string;
                 if (errorMessage.includes("Failed to fetch video info")) {
-                  console.error(
-                    `[ToolCall] Cannot add ${id}: Video unavailable or invalid.`,
-                  );
-                  break;
+                  errorMsg = `Cannot add ${id}: Video unavailable or invalid.`;
+                } else {
+                  errorMsg = `Failed to add ${id}: ${errorMessage}`;
                 }
-
-                console.error(
-                  `[ToolCall] Failed to add ${id}: ${errorMessage}`,
-                );
+                
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: errorMsg,
+                });
+                
+                console.error(`[ToolCall] ${errorMsg}`);
                 break;
               }
             }
@@ -1380,7 +1462,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 navigate();
               }
 
-              applyIpodSettings();
+              const stateChanges = applyIpodSettings();
 
               const updatedIpod = useIpodStore.getState();
               const track = updatedIpod.tracks[updatedIpod.currentIndex];
@@ -1390,10 +1472,39 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }`;
                 const verb =
                   normalizedAction === "next" ? "Skipped to" : "Went back to";
+                
+                const resultParts = [`${verb} ${desc}`];
+                if (stateChanges.length > 0) {
+                  resultParts.push(...stateChanges);
+                }
+                
+                const resultMessage = resultParts.join(". ") + ".";
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: resultMessage,
+                });
+                
                 console.log(`[ToolCall] ${verb} ${desc}.`);
                 break;
               }
 
+              const resultParts = [
+                normalizedAction === "next"
+                  ? "Skipped to next track"
+                  : "Went back to previous track"
+              ];
+              if (stateChanges.length > 0) {
+                resultParts.push(...stateChanges);
+              }
+              
+              const resultMessage = resultParts.join(". ") + ".";
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+              
               console.log(
                 `[ToolCall] ${
                   normalizedAction === "next"
@@ -1405,7 +1516,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
 
             // Apply settings even if action is unhandled
-            applyIpodSettings();
+            const stateChanges = applyIpodSettings();
+            
+            if (stateChanges.length > 0) {
+              const resultMessage = stateChanges.join(". ") + ".";
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+            }
             
             console.warn(
               `[ToolCall] ipodControl: Unhandled action "${normalizedAction}".`,

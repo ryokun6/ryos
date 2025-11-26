@@ -132,35 +132,41 @@ export function ToolInvocationMessage({
     } else if (toolName === "closeApp") {
       displayResultMessage = `Closed ${getAppName(input?.id)}`;
     } else if (toolName === "ipodControl") {
-      const action = input?.action || "toggle";
-      if (action === "addAndPlay") {
-        displayResultMessage = "Added and started playing new song";
-      } else if (action === "playKnown") {
-        const title = input?.title ? String(input.title) : null;
-        const artist = input?.artist ? String(input.artist) : null;
-
-        if (title && artist) {
-          displayResultMessage = `Playing ${title} by ${artist}`;
-        } else if (title) {
-          displayResultMessage = `Playing ${title}`;
-        } else if (artist) {
-          displayResultMessage = `Playing song by ${artist}`;
-        } else if (input?.id) {
-          displayResultMessage = `Playing song (${String(input.id)})`;
-        } else {
-          displayResultMessage = "Playing song";
-        }
-      } else if (action === "next") {
-        displayResultMessage = "Skipped to next track";
-      } else if (action === "previous") {
-        displayResultMessage = "Skipped to previous track";
+      // Use output directly if available (it contains detailed state information)
+      if (typeof output === "string" && output.trim().length > 0) {
+        displayResultMessage = output;
       } else {
-        displayResultMessage =
-          action === "play"
-            ? "Playing iPod"
-            : action === "pause"
-              ? "Paused iPod"
-              : "Toggled iPod playback";
+        // Fallback to basic messages if output is not available
+        const action = input?.action || "toggle";
+        if (action === "addAndPlay") {
+          displayResultMessage = "Added and started playing new song";
+        } else if (action === "playKnown") {
+          const title = input?.title ? String(input.title) : null;
+          const artist = input?.artist ? String(input.artist) : null;
+
+          if (title && artist) {
+            displayResultMessage = `Playing ${title} by ${artist}`;
+          } else if (title) {
+            displayResultMessage = `Playing ${title}`;
+          } else if (artist) {
+            displayResultMessage = `Playing song by ${artist}`;
+          } else if (input?.id) {
+            displayResultMessage = `Playing song (${String(input.id)})`;
+          } else {
+            displayResultMessage = "Playing song";
+          }
+        } else if (action === "next") {
+          displayResultMessage = "Skipped to next track";
+        } else if (action === "previous") {
+          displayResultMessage = "Skipped to previous track";
+        } else {
+          displayResultMessage =
+            action === "play"
+              ? "Playing iPod"
+              : action === "pause"
+                ? "Paused iPod"
+                : "Toggled iPod playback";
+        }
       }
     } else if (toolName === "switchTheme") {
       const theme = input?.theme || "theme";
