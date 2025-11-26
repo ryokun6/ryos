@@ -834,7 +834,7 @@ export default async function handler(req: Request) {
         // Add iPod control tools
         ipodControl: {
           description:
-            "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist.",
+            "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video, lyric translations, or fullscreen mode with enableVideo, enableTranslation, or enableFullscreen.",
           inputSchema: z
             .object({
               action: z
@@ -868,6 +868,24 @@ export default async function handler(req: Request) {
                 .optional()
                 .describe(
                   "For 'playKnown': The artist name (or part of it) of the song to play."
+                ),
+              enableVideo: z
+                .boolean()
+                .optional()
+                .describe(
+                  "Enable video playback in the iPod. Can be combined with any action."
+                ),
+              enableTranslation: z
+                .string()
+                .optional()
+                .describe(
+                  "Enable lyric translations in the specified language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru'). Can be combined with any action. Set to null or omit to disable translations."
+                ),
+              enableFullscreen: z
+                .boolean()
+                .optional()
+                .describe(
+                  "Enable fullscreen mode for the iPod player. Can be combined with any action."
                 ),
             })
             .superRefine((data, ctx) => {

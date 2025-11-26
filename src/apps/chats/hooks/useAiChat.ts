@@ -1127,6 +1127,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               id,
               title,
               artist,
+              enableVideo,
+              enableTranslation,
+              enableFullscreen,
             } = toolCall.input as {
               action?:
                 | "toggle"
@@ -1139,6 +1142,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               id?: string;
               title?: string;
               artist?: string;
+              enableVideo?: boolean;
+              enableTranslation?: string | null;
+              enableFullscreen?: boolean;
             };
 
             console.log("[ToolCall] ipodControl:", {
@@ -1146,6 +1152,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               id,
               title,
               artist,
+              enableVideo,
+              enableTranslation,
+              enableFullscreen,
             });
 
             const ensureIpodIsOpen = () => {
@@ -1161,6 +1170,45 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             };
 
             ensureIpodIsOpen();
+
+            // Helper function to apply video, translation, and fullscreen settings
+            const applyIpodSettings = () => {
+              const ipod = useIpodStore.getState();
+              
+              if (enableVideo !== undefined) {
+                if (enableVideo && !ipod.showVideo) {
+                  ipod.setShowVideo(true);
+                  console.log("[ToolCall] Video enabled.");
+                } else if (!enableVideo && ipod.showVideo) {
+                  ipod.setShowVideo(false);
+                  console.log("[ToolCall] Video disabled.");
+                }
+              }
+
+              if (enableTranslation !== undefined) {
+                if (enableTranslation === null || enableTranslation === "") {
+                  ipod.setLyricsTranslationLanguage(null);
+                  console.log("[ToolCall] Lyrics translation disabled.");
+                } else {
+                  ipod.setLyricsTranslationLanguage(enableTranslation);
+                  const currentTrack = ipod.tracks[ipod.currentIndex];
+                  if (currentTrack?.id) {
+                    ipod.setLyricsTranslationRequest(enableTranslation, currentTrack.id);
+                  }
+                  console.log(`[ToolCall] Lyrics translation enabled for language: ${enableTranslation}.`);
+                }
+              }
+
+              if (enableFullscreen !== undefined) {
+                if (enableFullscreen && !ipod.isFullScreen) {
+                  ipod.toggleFullScreen();
+                  console.log("[ToolCall] Fullscreen enabled.");
+                } else if (!enableFullscreen && ipod.isFullScreen) {
+                  ipod.toggleFullScreen();
+                  console.log("[ToolCall] Fullscreen disabled.");
+                }
+              }
+            };
 
             const normalizedAction = action ?? "toggle";
 
@@ -1182,6 +1230,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ipod.togglePlay();
                   break;
               }
+
+              applyIpodSettings();
 
               const nowPlaying = useIpodStore.getState().isPlaying;
               console.log(
@@ -1267,6 +1317,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               setCurrentIndex(randomIndexFromArray);
               setIsPlaying(true);
 
+              applyIpodSettings();
+
               const track = tracks[randomIndexFromArray];
               const trackDesc = `${track.title}${
                 track.artist ? ` by ${track.artist}` : ""
@@ -1289,6 +1341,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   .addTrackFromVideoId(id);
 
                 if (addedTrack) {
+                  applyIpodSettings();
                   console.log(
                     `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`,
                   );
@@ -1327,6 +1380,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 navigate();
               }
 
+              applyIpodSettings();
+
               const updatedIpod = useIpodStore.getState();
               const track = updatedIpod.tracks[updatedIpod.currentIndex];
               if (track) {
@@ -1349,6 +1404,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
+            // Apply settings even if action is unhandled
+            applyIpodSettings();
+            
             console.warn(
               `[ToolCall] ipodControl: Unhandled action "${normalizedAction}".`,
             );
