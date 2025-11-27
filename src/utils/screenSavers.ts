@@ -19,6 +19,7 @@ export const getAllScreenSavers = () => Object.values(SCREEN_SAVERS);
 
 // Import built-in screen savers
 import { StarfieldScreenSaver } from "../components/screensavers/StarfieldScreenSaver";
+import { PipesScreenSaver } from "../components/screensavers/PipesScreenSaver";
 
 // Register built-in screen savers
 registerScreenSaver({
@@ -26,5 +27,12 @@ registerScreenSaver({
   name: "Starfield",
   component: StarfieldScreenSaver,
   description: "Classic 3D flying stars simulation",
+});
+
+registerScreenSaver({
+  id: "pipes",
+  name: "Pipes",
+  component: PipesScreenSaver,
+  description: "Procedural 3D pipes weaving through space",
 });
 
