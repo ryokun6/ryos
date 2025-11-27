@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useAppStore } from "@/stores/useAppStore";
 import { getScreenSaver } from "@/utils/screenSavers";
-import { useSound, Sounds } from "@/hooks/useSound";
 
 interface ScreenSaverOverlayProps {
   previewMode?: boolean; // If true, forces display and ignores idle timers (for settings preview)
@@ -13,7 +13,24 @@ export function ScreenSaverOverlay({ previewMode = false, onExitPreview }: Scree
   const [isActive, setIsActive] = useState(false);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-  const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.1); // Subtle sound on wake
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  const isActiveRef = useRef(false);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
+
+  // Setup portal container
+  useEffect(() => {
+    let el = document.getElementById("ryos-screensaver-portal");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "ryos-screensaver-portal";
+      // Ensure the container itself has high z-index if needed, but usually content z-index is enough
+      document.body.appendChild(el);
+    }
+    setPortalContainer(el);
+  }, []);
 
   // Handle Screen Wake Lock
   useEffect(() => {
@@ -53,7 +70,7 @@ export function ScreenSaverOverlay({ previewMode = false, onExitPreview }: Scree
   const resetIdleTimer = useCallback(() => {
     if (previewMode) return; // Don't manage timer in preview mode
 
-    if (isActive) {
+    if (isActiveRef.current) {
       // If active, any activity wakes the screen
       setIsActive(false);
       // Optional: play wake sound
@@ -68,7 +85,7 @@ export function ScreenSaverOverlay({ previewMode = false, onExitPreview }: Scree
       // Convert minutes to milliseconds
       idleTimerRef.current = setTimeout(activateScreenSaver, screenSaverTimeout * 60 * 1000);
     }
-  }, [isActive, screenSaverEnabled, screenSaverTimeout, activateScreenSaver, previewMode]);
+  }, [screenSaverEnabled, screenSaverTimeout, activateScreenSaver, previewMode]);
 
   // Set up activity listeners
   useEffect(() => {
@@ -109,20 +126,22 @@ export function ScreenSaverOverlay({ previewMode = false, onExitPreview }: Scree
     }
   };
 
-  if (!isActive) return null;
+  if (!isActive || !portalContainer) return null;
 
   const ScreenSaverComponent = getScreenSaver(screenSaverId)?.component;
 
   if (!ScreenSaverComponent) return null;
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[2147483647] bg-black cursor-none"
+      className="fixed inset-0 bg-black cursor-none"
+      style={{ zIndex: 99999999 }}
       onClick={handleOverlayClick}
       onMouseMove={() => !previewMode && setIsActive(false)}
     >
       <ScreenSaverComponent />
-    </div>
+    </div>,
+    portalContainer
   );
 }
 

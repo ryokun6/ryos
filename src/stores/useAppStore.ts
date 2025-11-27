@@ -136,7 +136,13 @@ interface AppStoreState extends AppManagerState {
   _debugCheckInstanceIntegrity: () => void;
 }
 
-const CURRENT_APP_STORE_VERSION = 3; // bump for instanceOrder unification
+const CURRENT_APP_STORE_VERSION = 4; // bump for screensaver timeout clamp
+const clampScreenSaverTimeout = (value: number | undefined | null) => {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return 1;
+  }
+  return Math.min(Math.max(value, 1), 5);
+};
 const initialShaderState = checkShaderPerformance();
 
 // ---------------- Store ---------------------------------------------------------
@@ -463,7 +469,8 @@ export const useAppStore = create<AppStoreState>()(
       screenSaverEnabled: true,
       setScreenSaverEnabled: (enabled) => set({ screenSaverEnabled: enabled }),
       screenSaverTimeout: 1, // 1 minute default
-      setScreenSaverTimeout: (timeout) => set({ screenSaverTimeout: timeout }),
+      setScreenSaverTimeout: (timeout) =>
+        set({ screenSaverTimeout: clampScreenSaverTimeout(timeout) }),
 
       // Instance store
       instances: {},
@@ -789,6 +796,11 @@ export const useAppStore = create<AppStoreState>()(
           ).filter((id: string) => prev.instances?.[id]);
           delete prev.instanceStackOrder;
           delete prev.instanceWindowOrder;
+        }
+        if (version < 4) {
+          prev.screenSaverTimeout = clampScreenSaverTimeout(
+            prev.screenSaverTimeout
+          );
         }
         prev.version = CURRENT_APP_STORE_VERSION;
         return prev;

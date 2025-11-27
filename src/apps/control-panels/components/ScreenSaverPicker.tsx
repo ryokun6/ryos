@@ -88,14 +88,14 @@ export function ScreenSaverPicker() {
             {/* Timeout Slider */}
             <div className="flex flex-col gap-3 pt-2">
               <div className="flex justify-between">
-                <Label>Start after</Label>
+                <Label>Start after (1-5 min)</Label>
                 <span className="text-xs font-mono">{screenSaverTimeout} min</span>
               </div>
               <Slider
                 value={[screenSaverTimeout]}
                 onValueChange={(vals) => setScreenSaverTimeout(vals[0])}
                 min={1}
-                max={60}
+                max={5}
                 step={1}
                 className="w-full"
               />
