@@ -1515,6 +1515,8 @@
   font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
+  /* iOS safe area support - add bottom padding for safe area */
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
 }
 
 /* System 7: use Geneva-12 for toasts */
