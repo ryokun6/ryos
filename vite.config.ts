@@ -58,11 +58,12 @@ export default defineConfig({
           "ai-sdk": ["ai", "@ai-sdk/anthropic", "@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/react"],
           
           // Rich text editor - deferred until TextEdit opens
+          // Note: @tiptap/pm is excluded because it only exports subpaths (e.g. @tiptap/pm/state)
+          // and has no main entry point, which causes Vite to fail
           tiptap: [
             "@tiptap/core",
             "@tiptap/react",
             "@tiptap/starter-kit",
-            "@tiptap/pm",
             "@tiptap/extension-task-item",
             "@tiptap/extension-task-list",
             "@tiptap/extension-text-align",
