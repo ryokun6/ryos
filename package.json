@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --port $PORT",
     "dev:vercel": "vercel dev",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && cp dist/sw.js dist/workbox-*.js .vercel/output/static/",
     "lint": "eslint .",
     "preview": "vite preview",
     "generate:icons": "bun run scripts/generate-icon-manifest.ts",
