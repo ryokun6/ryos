@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
+import { track } from "@vercel/analytics";
+import { APP_ANALYTICS } from "@/utils/analytics";
 
 export function useAuth() {
   const {
@@ -158,6 +160,10 @@ export function useAuth() {
             if (result.username) {
               setUsername(result.username);
             }
+            // Track password login analytics
+            track(APP_ANALYTICS.USER_LOGIN_PASSWORD, {
+              username: result.username || targetUsername,
+            });
             toast.success("Success", {
               description: "Logged in successfully with password",
             });
@@ -210,6 +216,11 @@ export function useAuth() {
           if (result.username) {
             setUsername(result.username);
           }
+
+          // Track token login analytics
+          track(APP_ANALYTICS.USER_LOGIN_TOKEN, {
+            username: result.username || "",
+          });
 
           toast.success("Success", {
             description: "Token verified and set successfully",

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AI_MODELS } from "@/types/aiModels";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { CHAT_ANALYTICS } from "@/utils/analytics";
 
 // Animated ellipsis component (copied from TerminalAppComponent)
 function AnimatedEllipsis() {
@@ -35,14 +36,6 @@ function AnimatedEllipsis() {
 
   return <span>{dots}</span>;
 }
-
-// Analytics event namespace for chat events
-export const CHAT_ANALYTICS = {
-  TEXT_MESSAGE: "chats:text",
-  VOICE_MESSAGE: "chats:voice",
-  NUDGE: "chats:nudge",
-  STOP_GENERATION: "chats:stop",
-};
 
 interface ChatInputProps {
   input: string;

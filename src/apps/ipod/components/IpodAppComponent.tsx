@@ -27,6 +27,8 @@ import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, KoreanDisplay } from "@/types/lyrics";
 import { isMobileSafari } from "@/utils/device";
+import { track } from "@vercel/analytics";
+import { IPOD_ANALYTICS } from "@/utils/analytics";
 // Globe icon removed; using text label "Aあ" for translate
 
 // Add this component definition before the IpodAppComponent
@@ -988,6 +990,8 @@ export function IpodAppComponent({
   const playerRef = useRef<ReactPlayer>(null);
   // Separate ref for the full-screen player rendered in the portal
   const fullScreenPlayerRef = useRef<ReactPlayer>(null);
+  // Ref to track the last song that was tracked for analytics
+  const lastTrackedSongRef = useRef<{ trackId: string; elapsedTime: number } | null>(null);
   const skipOperationRef = useRef(false);
   const userHasInteractedRef = useRef(false);
 
@@ -1725,7 +1729,31 @@ export function IpodAppComponent({
       showStatus("▶");
     }
     skipOperationRef.current = false;
-  }, [isPlaying, setIsPlaying, showStatus]);
+
+    // Track song play analytics when a song actually starts playing
+    const currentTrack = tracks[currentIndex];
+    if (currentTrack) {
+      const lastTracked = lastTrackedSongRef.current;
+      
+      // Track if:
+      // 1. This is a new track (different track ID) - always track new songs
+      // 2. Or playback is starting from the beginning (elapsedTime < 1 second) - track restarts
+      const isNewTrack = !lastTracked || lastTracked.trackId !== currentTrack.id;
+      const isStartingFromBeginning = elapsedTime < 1;
+
+      if (isNewTrack || isStartingFromBeginning) {
+        track(IPOD_ANALYTICS.SONG_PLAY, {
+          trackId: currentTrack.id,
+          title: currentTrack.title,
+          artist: currentTrack.artist || "",
+        });
+        lastTrackedSongRef.current = {
+          trackId: currentTrack.id,
+          elapsedTime: elapsedTime,
+        };
+      }
+    }
+  }, [setIsPlaying, showStatus, tracks, currentIndex, elapsedTime]);
 
   const handlePause = useCallback(() => {
     // Always sync playing state when ReactPlayer reports a pause.

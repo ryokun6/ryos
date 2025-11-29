@@ -50,8 +50,7 @@ import { TypewriterText, parseSimpleMarkdown } from "./TypewriterText";
 import { AnimatedEllipsis } from "./AnimatedEllipsis";
 import { UrgentMessageAnimation } from "./UrgentMessageAnimation";
 
-// Import analytics constants from AI command
-import { TERMINAL_ANALYTICS } from "../commands/ai";
+import { TERMINAL_ANALYTICS } from "@/utils/analytics";
 
 // Removed interfaces and constants - now imported from separate files
 

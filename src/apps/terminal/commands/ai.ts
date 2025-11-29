@@ -2,14 +2,7 @@ import { Command, CommandResult } from "../types";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { track } from "@vercel/analytics";
-
-// Analytics event namespace for terminal AI events
-export const TERMINAL_ANALYTICS = {
-  AI_COMMAND: "terminal:ai_command",
-  CHAT_START: "terminal:chat_start",
-  CHAT_EXIT: "terminal:chat_exit",
-  CHAT_CLEAR: "terminal:chat_clear",
-};
+import { TERMINAL_ANALYTICS } from "@/utils/analytics";
 
 export const aiCommand: Command = {
   name: "ai",

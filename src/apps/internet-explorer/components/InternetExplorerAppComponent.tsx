@@ -58,13 +58,7 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
-
-// Analytics event namespace for Internet Explorer events
-export const IE_ANALYTICS = {
-  NAVIGATION_START: "internet-explorer:navigation_start",
-  NAVIGATION_ERROR: "internet-explorer:navigation_error",
-  NAVIGATION_SUCCESS: "internet-explorer:navigation_success",
-};
+import { IE_ANALYTICS } from "@/utils/analytics";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {

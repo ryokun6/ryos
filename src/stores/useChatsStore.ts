@@ -5,6 +5,8 @@ import {
   type ChatMessage,
   type AIChatMessage,
 } from "@/types/chat";
+import { track } from "@vercel/analytics";
+import { APP_ANALYTICS } from "@/utils/analytics";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -919,6 +921,11 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
           }
 
+          // Track user logout analytics before clearing data
+          if (currentUsername) {
+            track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
+          }
+
           // Clear recovery keys from localStorage
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           localStorage.removeItem(AUTH_TOKEN_RECOVERY_KEY);
@@ -1470,6 +1477,9 @@ export const useChatsStore = create<ChatsStoreState>()(
                   get().checkHasPassword();
                 }, 100); // Small delay to ensure token is set
               }
+
+              // Track user creation analytics
+              track(APP_ANALYTICS.USER_CREATE, { username: data.user.username });
 
               return { ok: true };
             }
