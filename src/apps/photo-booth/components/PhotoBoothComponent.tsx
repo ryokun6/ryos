@@ -359,6 +359,8 @@ export function PhotoBoothComponent({
     }, [isWindowOpen, isForeground, startCamera, stopCamera]);
 
     useEffect(() => {
+      // Explicitly set to true on mount to handle lazy loading scenarios
+      isMountedRef.current = true;
       return () => {
         isMountedRef.current = false;
         stopCamera({ skipState: true });
