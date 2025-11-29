@@ -296,7 +296,7 @@ export const appRegistry = {
   },
   ["pc"]: {
     id: "pc",
-    name: "PC",
+    name: "Virtual PC",
     icon: { type: "image", src: pcMetadata.icon },
     description: "3D PC simulation",
     component: LazyPcApp,
@@ -323,7 +323,7 @@ export const appRegistry = {
   },
   ["applet-viewer"]: {
     id: "applet-viewer",
-    name: "Applet Viewer",
+    name: "Applet Store",
     icon: { type: "image", src: appletViewerMetadata.icon },
     description: "View and run applets",
     component: LazyAppletViewerApp,
