@@ -66,7 +66,7 @@ function createLazyComponent<T = unknown>(
 import { FinderAppComponent } from "@/apps/finder/components/FinderAppComponent";
 
 // Lazy-loaded apps (loaded on-demand when opened)
-const LazyTextEditApp = createLazyComponent(
+const LazyTextEditApp = createLazyComponent<unknown>(
   () => import("@/apps/textedit/components/TextEditAppComponent").then(m => ({ default: m.TextEditAppComponent }))
 );
 
@@ -74,7 +74,7 @@ const LazyInternetExplorerApp = createLazyComponent<InternetExplorerInitialData>
   () => import("@/apps/internet-explorer/components/InternetExplorerAppComponent").then(m => ({ default: m.InternetExplorerAppComponent }))
 );
 
-const LazyChatsApp = createLazyComponent(
+const LazyChatsApp = createLazyComponent<unknown>(
   () => import("@/apps/chats/components/ChatsAppComponent").then(m => ({ default: m.ChatsAppComponent }))
 );
 
@@ -82,11 +82,11 @@ const LazyControlPanelsApp = createLazyComponent<ControlPanelsInitialData>(
   () => import("@/apps/control-panels/components/ControlPanelsAppComponent").then(m => ({ default: m.ControlPanelsAppComponent }))
 );
 
-const LazyMinesweeperApp = createLazyComponent(
+const LazyMinesweeperApp = createLazyComponent<unknown>(
   () => import("@/apps/minesweeper/components/MinesweeperAppComponent").then(m => ({ default: m.MinesweeperAppComponent }))
 );
 
-const LazySoundboardApp = createLazyComponent(
+const LazySoundboardApp = createLazyComponent<unknown>(
   () => import("@/apps/soundboard/components/SoundboardAppComponent").then(m => ({ default: m.SoundboardAppComponent }))
 );
 
@@ -98,15 +98,15 @@ const LazyVideosApp = createLazyComponent<VideosInitialData>(
   () => import("@/apps/videos/components/VideosAppComponent").then(m => ({ default: m.VideosAppComponent }))
 );
 
-const LazyPcApp = createLazyComponent(
+const LazyPcApp = createLazyComponent<unknown>(
   () => import("@/apps/pc/components/PcAppComponent").then(m => ({ default: m.PcAppComponent }))
 );
 
-const LazyPhotoBoothApp = createLazyComponent(
-  () => import("@/apps/photo-booth/components/PhotoBoothComponent").then(m => ({ default: m.PhotoBoothAppComponent }))
+const LazyPhotoBoothApp = createLazyComponent<unknown>(
+  () => import("@/apps/photo-booth/components/PhotoBoothComponent").then(m => ({ default: m.PhotoBoothComponent }))
 );
 
-const LazySynthApp = createLazyComponent(
+const LazySynthApp = createLazyComponent<unknown>(
   () => import("@/apps/synth/components/SynthAppComponent").then(m => ({ default: m.SynthAppComponent }))
 );
 
@@ -114,7 +114,7 @@ const LazyIpodApp = createLazyComponent<IpodInitialData>(
   () => import("@/apps/ipod/components/IpodAppComponent").then(m => ({ default: m.IpodAppComponent }))
 );
 
-const LazyTerminalApp = createLazyComponent(
+const LazyTerminalApp = createLazyComponent<unknown>(
   () => import("@/apps/terminal/components/TerminalAppComponent").then(m => ({ default: m.TerminalAppComponent }))
 );
 
@@ -244,7 +244,7 @@ export const appRegistry = {
   ["minesweeper"]: {
     id: "minesweeper",
     name: "Minesweeper",
-    icon: { type: "image", src: minesweeperMetadata.icon },
+    icon: { type: "image", src: minesweeperMetadata!.icon },
     description: "Classic puzzle game",
     component: LazyMinesweeperApp,
     helpItems: minesweeperHelpItems,
@@ -311,7 +311,7 @@ export const appRegistry = {
   ["terminal"]: {
     id: "terminal",
     name: "Terminal",
-    icon: { type: "image", src: terminalMetadata.icon },
+    icon: { type: "image", src: terminalMetadata!.icon },
     description: "Command line interface",
     component: LazyTerminalApp,
     helpItems: terminalHelpItems,
