@@ -28,6 +28,7 @@ import {
   AI_LIMIT_PER_5_HOURS,
   } from "./utils/rate-limit.js";
 import { Redis } from "@upstash/redis";
+import { getEffectiveOrigin, isAllowedOrigin } from "./utils/cors.js";
 
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
@@ -121,26 +122,6 @@ interface SystemState {
   };
 }
 
-// Allowed origins for API requests
-const ALLOWED_ORIGINS = new Set(["https://os.ryo.lu", "http://localhost:3000"]);
-
-// Function to validate request origin
-// Allow explicit origins defined in ALLOWED_ORIGINS, or any localhost port
-const isValidOrigin = (origin: string | null): boolean => {
-  if (!origin) return false;
-  // Check explicit allowed origins
-  if (ALLOWED_ORIGINS.has(origin)) return true;
-  // Allow any localhost port number
-  try {
-    const url = new URL(origin);
-    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
-      return true;
-    }
-  } catch {
-    // Invalid URL, fall through to return false
-  }
-  return false;
-};
 
 // Allow streaming responses up to 60 seconds
 export const maxDuration = 80;
@@ -443,13 +424,13 @@ async function validateAuthToken(
 
 export default async function handler(req: Request) {
   // Check origin before processing request
-  const origin = req.headers.get("origin");
-  if (!isValidOrigin(origin)) {
+  const effectiveOrigin = getEffectiveOrigin(req);
+  if (!isAllowedOrigin(effectiveOrigin)) {
     return new Response("Unauthorized", { status: 403 });
   }
 
-  // At this point origin is guaranteed to be a valid string from ALLOWED_ORIGINS
-  const validOrigin = origin as string;
+  // At this point origin is guaranteed to be a valid string
+  const validOrigin = effectiveOrigin as string;
 
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -499,12 +480,12 @@ export default async function handler(req: Request) {
 
     // Get IP address for rate limiting anonymous users
     // For Vercel deployments, use x-vercel-forwarded-for (won't be overwritten by proxies)
-    // For localhost, use a fixed identifier
-    const isLocalhost = origin === "http://localhost:3000";
+    // For localhost/local dev, use a fixed identifier
+    const isLocalDev = validOrigin?.startsWith("http://localhost") || validOrigin?.startsWith("http://127.0.0.1") || validOrigin?.includes("100.110.251.60");
     let ip: string;
 
-    if (isLocalhost) {
-      // For localhost development, use a fixed identifier
+    if (isLocalDev) {
+      // For local development, use a fixed identifier
       ip = "localhost-dev";
     } else {
       // For Vercel deployments, prefer x-vercel-forwarded-for which is more reliable

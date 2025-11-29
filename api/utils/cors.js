@@ -5,6 +5,8 @@ export const ALLOWED_ORIGINS = new Set([
   "https://ryo.lu",
   "http://localhost:3000",
   "http://localhost:5173",
+  "http://100.110.251.60",
+  "http://100.110.251.60:3000",
 ]);
 
 export function getEffectiveOrigin(req) {
@@ -23,10 +25,10 @@ export function isAllowedOrigin(origin) {
   if (!origin) return false;
   // Check explicit allowed origins
   if (ALLOWED_ORIGINS.has(origin)) return true;
-  // Allow any localhost port number
+  // Allow any localhost port number or local network IPs
   try {
     const url = new URL(origin);
-    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "100.110.251.60") {
       return true;
     }
   } catch {

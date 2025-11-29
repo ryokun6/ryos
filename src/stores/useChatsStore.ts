@@ -689,7 +689,9 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: true };
           }
 
-          // Username exists but no token, generate one
+          // Username exists but no token - this is a legacy scenario.
+          // Modern auth flows (createUser, authenticateWithPassword) return tokens directly.
+          // This fallback exists for users who somehow have a username but no token.
           console.log(
             "[ChatsStore] Generating auth token for existing user:",
             currentUsername

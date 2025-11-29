@@ -480,14 +480,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     });
   }, [aiMessages]);
 
-  // Ensure auth token exists when username is present
-  useEffect(() => {
-    if (username && !authToken) {
-      ensureAuthToken().catch((err) => {
-        console.error("[useAiChat] Failed to generate auth token", err);
-      });
-    }
-  }, [username, authToken, ensureAuthToken]);
+  // Note: We no longer auto-call ensureAuthToken here.
+  // Tokens are obtained via:
+  // 1. createUser (new account registration)
+  // 2. authenticateWithPassword (password login)
+  // 3. Token login (user provides existing token)
+  // The ensureAuthToken function is only called explicitly before sending
+  // messages as a fallback for legacy users without tokens.
 
   // Queue-based TTS – speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
