@@ -63,6 +63,12 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Exclude API routes and iframe content from navigation fallback
+        // This prevents the SW from returning index.html for iframe requests
+        navigateFallbackDenylist: [
+          /^\/api\//,  // API routes
+          /^\/iframe-check/,  // iframe proxy endpoint
+        ],
         // Cache strategy for different asset types
         runtimeCaching: [
           {
