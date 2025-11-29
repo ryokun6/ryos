@@ -25,10 +25,14 @@ export function isAllowedOrigin(origin) {
   if (!origin) return false;
   // Check explicit allowed origins
   if (ALLOWED_ORIGINS.has(origin)) return true;
-  // Allow any localhost port number or local network IPs
+  // Allow any localhost port number, local network IPs, or Vercel preview links
   try {
     const url = new URL(origin);
     if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "100.110.251.60") {
+      return true;
+    }
+    // Allow Vercel preview deployments
+    if (url.hostname.endsWith(".ryo-lus-projects.vercel.app")) {
       return true;
     }
   } catch {
