@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import vercel from "vite-plugin-vercel";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -18,7 +19,150 @@ export default defineConfig({
       ignored: ["**/.terminals/**"],
     },
   },
-  plugins: [react(), tailwindcss(), vercel()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    vercel(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: [
+        "favicon.ico",
+        "apple-touch-icon.png",
+        "icons/*.png",
+        "fonts/*.woff",
+        "fonts/*.woff2",
+        "fonts/*.otf",
+        "fonts/*.ttf",
+      ],
+      manifest: {
+        name: "ryOS",
+        short_name: "ryOS",
+        description: "A web-based agentic AI OS, made with Cursor",
+        theme_color: "#000000",
+        background_color: "#000000",
+        display: "standalone",
+        orientation: "any",
+        start_url: "/",
+        icons: [
+          {
+            src: "/icons/mac-192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "/icons/mac-512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "/icons/mac-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+      workbox: {
+        // Cache strategy for different asset types
+        runtimeCaching: [
+          {
+            // Cache JS/CSS chunks - stale-while-revalidate for fast loads
+            urlPattern: /\.(?:js|css)$/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "static-resources",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
+            },
+          },
+          {
+            // Cache images aggressively
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "images",
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            // Cache fonts
+            urlPattern: /\.(?:woff|woff2|ttf|otf|eot)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "fonts",
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
+          {
+            // Cache audio files
+            urlPattern: /\.(?:mp3|wav|ogg|m4a)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "audio",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            // Cache JSON data files with network-first for freshness
+            urlPattern: /\/data\/.*\.json$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "data-files",
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+              networkTimeoutSeconds: 3, // Fall back to cache after 3s
+            },
+          },
+          {
+            // Cache wallpapers
+            urlPattern: /\/wallpapers\//i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "wallpapers",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+        ],
+        // Precache the most important assets (excluding large files)
+        globPatterns: [
+          "**/*.html",
+          "**/*.css",
+          "fonts/*.{woff,woff2,otf,ttf}",
+        ],
+        // Exclude large data files from precaching (they'll be cached at runtime)
+        globIgnores: [
+          "**/data/all-sounds.json", // 4.7MB - too large
+          "**/node_modules/**",
+        ],
+        // Allow the main bundle to be precached (it's chunked, but entry is ~3MB)
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+        // Clean up old caches
+        cleanupOutdatedCaches: true,
+        // Skip waiting to activate new service worker immediately
+        skipWaiting: true,
+        clientsClaim: true,
+      },
+      devOptions: {
+        enabled: false, // Disable in dev to avoid confusion
+      },
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
