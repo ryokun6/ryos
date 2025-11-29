@@ -54,6 +54,15 @@ export default defineConfig({
           // Heavy audio libs - deferred until Soundboard/iPod/Synth opens
           audio: ["tone", "wavesurfer.js", "audio-buffer-utils"],
           
+          // Media player - shared by iPod and Videos apps
+          "media-player": ["react-player"],
+          
+          // Chinese character conversion - large dictionary data, only needed for lyrics
+          "opencc": ["opencc-js"],
+          
+          // Korean romanization - only needed for lyrics
+          "hangul": ["hangul-romanization"],
+          
           // AI SDK - deferred until Chats/IE opens  
           "ai-sdk": ["ai", "@ai-sdk/anthropic", "@ai-sdk/google", "@ai-sdk/openai", "@ai-sdk/react"],
           
