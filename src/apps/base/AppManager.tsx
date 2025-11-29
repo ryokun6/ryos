@@ -9,6 +9,7 @@ import { AppId, getAppComponent, appRegistry } from "@/config/appRegistry";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { extractCodeFromPath } from "@/utils/sharedUrl";
 import { toast } from "sonner";
+import { ScreenSaverOverlay } from "@/components/screensavers/ScreenSaverOverlay";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -387,6 +388,7 @@ export function AppManager({ apps }: AppManagerProps) {
         }}
         appStates={{ windowOrder: instanceOrder, apps: legacyAppStates }}
       />
+      <ScreenSaverOverlay />
     </AppContext.Provider>
   );
 }
