@@ -31,8 +31,8 @@ export function isAllowedOrigin(origin) {
     if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "100.110.251.60") {
       return true;
     }
-    // Allow Vercel preview deployments
-    if (url.hostname.endsWith(".ryo-lus-projects.vercel.app")) {
+    // Allow Vercel preview deployments (e.g., ryos-git-main-ryo-lus-projects.vercel.app)
+    if (url.hostname.endsWith("-ryo-lus-projects.vercel.app")) {
       return true;
     }
   } catch {
