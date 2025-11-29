@@ -763,6 +763,9 @@ export const useFilesStore = create<FilesStoreState>()(
           // Save default contents for both files and applets
           await saveDefaultContents(data.files, newItems);
           await saveDefaultContents(appletsData.applets, newItems);
+
+          // Create default desktop shortcuts after directories are set up
+          await get().ensureDefaultDesktopShortcuts();
         }
       },
 
@@ -842,6 +845,13 @@ export const useFilesStore = create<FilesStoreState>()(
             (app: any) => app.id !== "finder" && app.id !== "control-panels"
           );
 
+          // Collect all shortcuts to create in a single batch update
+          const shortcutsToCreate: Array<{
+            appId: string;
+            appName: string;
+            hiddenOnThemes: string[];
+          }> = [];
+
           for (const app of apps) {
             const appId = app.id;
 
@@ -857,29 +867,54 @@ export const useFilesStore = create<FilesStoreState>()(
             );
 
             if (!hasActiveShortcut && !hasTrashedShortcut) {
-              // Create alias
-              const appPath = `/Applications/${app.name}`;
-              get().createAlias(appPath, app.name, "app", appId);
-
-              // Find the created shortcut to update metadata
-              const updatedState = get();
-              const createdShortcut = Object.values(updatedState.items).find(
-                (item) =>
-                  item.aliasType === "app" &&
-                  item.aliasTarget === appId &&
-                  item.status === "active"
-              );
-
-              if (createdShortcut) {
+              // Queue shortcut for batch creation
+              shortcutsToCreate.push({
+                appId,
+                appName: app.name,
                 // Apply hiddenOnThemes for non-iPod/AppletViewer
                 // This ensures they are hidden on macOS X theme but visible on others
-                if (appId !== "ipod" && appId !== "applet-viewer") {
-                  get().updateItemMetadata(createdShortcut.path, {
-                    hiddenOnThemes: ["macosx"],
-                  });
-                }
-              }
+                hiddenOnThemes: appId !== "ipod" && appId !== "applet-viewer" ? ["macosx"] : [],
+              });
             }
+          }
+
+          // Batch create all shortcuts in a single state update
+          if (shortcutsToCreate.length > 0) {
+            set((currentState) => {
+              const newItems = { ...currentState.items };
+              const now = Date.now();
+
+              for (const shortcut of shortcutsToCreate) {
+                const aliasPath = `/Desktop/${shortcut.appName}`;
+                let finalAliasPath = aliasPath;
+                let counter = 1;
+
+                // Ensure unique path
+                while (newItems[finalAliasPath] && newItems[finalAliasPath].status === "active") {
+                  finalAliasPath = `/Desktop/${shortcut.appName} ${counter}`;
+                  counter++;
+                }
+
+                const aliasItem: FileSystemItem = {
+                  path: finalAliasPath,
+                  name: finalAliasPath.split("/").pop() || shortcut.appName,
+                  isDirectory: false,
+                  icon: undefined, // Let Desktop component resolve via getAppIconPath
+                  type: "application",
+                  aliasTarget: shortcut.appId,
+                  aliasType: "app",
+                  appId: shortcut.appId,
+                  status: "active",
+                  createdAt: now,
+                  modifiedAt: now,
+                  hiddenOnThemes: shortcut.hiddenOnThemes.length > 0 ? shortcut.hiddenOnThemes as OsThemeId[] : undefined,
+                };
+
+                newItems[finalAliasPath] = aliasItem;
+              }
+
+              return { items: newItems };
+            });
           }
         } catch (err) {
           console.error("[FilesStore] Failed to ensure default desktop shortcuts:", err);
@@ -1002,19 +1037,24 @@ export const useFilesStore = create<FilesStoreState>()(
         return (state, error) => {
           if (error) {
             console.error("Error rehydrating files store:", error);
-          } else if (state && state.libraryState === "uninitialized") {
-            // Only auto-initialize if library state is uninitialized
+            return;
+          }
+          
+          if (!state) return;
+
+          if (state.libraryState === "uninitialized") {
+            // For new users: initializeLibrary handles everything including
+            // creating directories and desktop shortcuts in proper order
             Promise.resolve(state.initializeLibrary()).catch((err) =>
               console.error("Files initialization failed on rehydrate", err)
             );
-          }
-
-          // Regardless of initialization state, ensure any new root folders
-          if (state && state.syncRootDirectoriesFromDefaults) {
+          } else {
+            // For existing users: sync root directories and ensure desktop shortcuts
+            // This handles cases where new apps are added in updates
             Promise.resolve(state.syncRootDirectoriesFromDefaults()).then(() => {
               // After syncing roots, ensure desktop shortcuts
-              if (state && state.ensureDefaultDesktopShortcuts) {
-                 return state.ensureDefaultDesktopShortcuts();
+              if (state.ensureDefaultDesktopShortcuts) {
+                return state.ensureDefaultDesktopShortcuts();
               }
             }).catch(
               (err) =>
