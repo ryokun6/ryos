@@ -50,9 +50,17 @@ export const IPOD_ANALYTICS = {
   SONG_PLAY: "ipod:song_play",
 } as const;
 
+// Applet Viewer events
+export const APPLET_ANALYTICS = {
+  INSTALL: "applet:install",
+  UPDATE: "applet:update",
+  VIEW: "applet:view",
+} as const;
+
 // Type helpers for analytics event names
 export type AppAnalyticsEvent = typeof APP_ANALYTICS[keyof typeof APP_ANALYTICS];
 export type ChatAnalyticsEvent = typeof CHAT_ANALYTICS[keyof typeof CHAT_ANALYTICS];
 export type IEAnalyticsEvent = typeof IE_ANALYTICS[keyof typeof IE_ANALYTICS];
 export type TerminalAnalyticsEvent = typeof TERMINAL_ANALYTICS[keyof typeof TERMINAL_ANALYTICS];
 export type IpodAnalyticsEvent = typeof IPOD_ANALYTICS[keyof typeof IPOD_ANALYTICS];
+export type AppletAnalyticsEvent = typeof APPLET_ANALYTICS[keyof typeof APPLET_ANALYTICS];

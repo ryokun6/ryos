@@ -29,6 +29,8 @@ import {
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { generateAppletShareUrl } from "@/utils/sharedUrl";
 import { STORES } from "@/utils/indexedDB";
+import { track } from "@vercel/analytics";
+import { APPLET_ANALYTICS } from "@/utils/analytics";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -485,6 +487,37 @@ export function AppletViewerAppComponent({
   }, [appletPath, htmlContent, loadedContent]);
 
   const fileItem = appletPath ? fileStore.getItem(appletPath) : undefined;
+
+  // Track applet view analytics when content is loaded
+  const trackedViewsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    // Only track if we have both a path and content (not store view)
+    if (!appletPath || !htmlContent || htmlContent.trim().length === 0) {
+      return;
+    }
+
+    // Track once per applet path per session
+    if (trackedViewsRef.current.has(appletPath)) {
+      return;
+    }
+
+    trackedViewsRef.current.add(appletPath);
+
+    // Get metadata for tracking
+    const shareId = fileItem?.shareId;
+    // Extract filename from path (inline to avoid dependency issues)
+    const parts = appletPath.split("/");
+    const fileName = parts[parts.length - 1];
+    const title = fileItem?.name || fileName.replace(/\.(html|app)$/i, "");
+    const createdBy = fileItem?.createdBy || "";
+
+    // Track applet view
+    track(APPLET_ANALYTICS.VIEW, {
+      appletId: shareId || appletPath,
+      title: title,
+      createdBy: createdBy,
+    });
+  }, [appletPath, htmlContent, fileItem]);
 
   // Check for updates when applet window is launched (only once per applet)
   const updateCheckedRef = useRef<Set<string>>(new Set());
