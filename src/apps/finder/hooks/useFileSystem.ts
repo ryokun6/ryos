@@ -859,6 +859,62 @@ export function useFileSystem(
   // Define handleFileOpen
   const handleFileOpen = useCallback(
     async (file: ExtendedDisplayFileItem) => {
+      // 0. Handle Aliases/Shortcuts first - resolve to target before processing
+      // Handle nested aliases by resolving until we get to the actual target
+      let currentFile = file;
+      let resolved = false;
+      const visitedPaths = new Set<string>();
+      const maxDepth = 10; // Prevent infinite loops from circular aliases
+      let depth = 0;
+      
+      while (!resolved && depth < maxDepth) {
+        depth++;
+        const fileMetadata = fileStore.getItem(currentFile.path);
+        if (fileMetadata?.aliasType && fileMetadata?.aliasTarget) {
+          // Check for circular references
+          if (visitedPaths.has(currentFile.path)) {
+            console.warn(`[useFileSystem] Circular alias detected at ${currentFile.path}`);
+            return;
+          }
+          visitedPaths.add(currentFile.path);
+          
+          if (fileMetadata.aliasType === "app") {
+            // Launch app directly
+            const appId = fileMetadata.aliasTarget as AppId;
+            launchApp(appId);
+            return;
+          } else {
+            // Open file/applet - need to resolve the original file
+            const targetPath = fileMetadata.aliasTarget;
+            const targetFile = fileStore.getItem(targetPath);
+            
+            if (!targetFile) {
+              console.warn(`[useFileSystem] Target file not found: ${targetPath}`);
+              return;
+            }
+
+            // Replace currentFile with target file and check if it's also an alias
+            currentFile = {
+              ...targetFile,
+              icon: getFileIcon(targetFile),
+              modifiedAt: targetFile.modifiedAt ? new Date(targetFile.modifiedAt) : undefined,
+            } as ExtendedDisplayFileItem;
+            // Continue loop to check if target is also an alias
+          }
+        } else {
+          // Not an alias, use this file
+          resolved = true;
+        }
+      }
+      
+      if (depth >= maxDepth) {
+        console.warn(`[useFileSystem] Maximum alias resolution depth reached for ${file.path}`);
+        return;
+      }
+      
+      // Use the resolved file for the rest of the function
+      file = currentFile;
+
       // 1. Handle Directories (Virtual and Real)
       if (file.isDirectory) {
         if (file.type === "directory" || file.type === "directory-virtual") {
