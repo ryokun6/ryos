@@ -19,6 +19,7 @@ export interface AppInstance extends AppState {
   appId: AppId;
   title?: string;
   createdAt: number; // stable ordering for taskbar (creation time)
+  isLoading?: boolean;
 }
 
 const getInitialState = (): AppManagerState => {
@@ -48,6 +49,7 @@ interface AppStoreState extends AppManagerState {
     initialData?: unknown,
     title?: string
   ) => string;
+  markInstanceAsLoaded: (instanceId: string) => void;
   closeAppInstance: (instanceId: string) => void;
   bringInstanceToForeground: (instanceId: string) => void;
   updateInstanceWindowState: (
@@ -493,13 +495,19 @@ export const useAppStore = create<AppStoreState>()(
               // ignore and fall back to default size
             }
           }
+
+          // Check if app is lazy (most are, except Finder which is critical)
+          // We can assume non-Finder apps might need loading time
+          const isLazy = appId !== "finder";
+
           const instances = {
             ...state.instances,
             [createdId]: {
               instanceId: createdId,
               appId,
               isOpen: true,
-              isForeground: true,
+              isForeground: !isLazy, // Only foreground immediately if not lazy
+              isLoading: isLazy,
               initialData,
               title,
               position,
@@ -507,10 +515,14 @@ export const useAppStore = create<AppStoreState>()(
               createdAt: Date.now(),
             },
           } as typeof state.instances;
-          Object.keys(instances).forEach((id) => {
-            if (id !== createdId)
-              instances[id] = { ...instances[id], isForeground: false };
-          });
+
+          if (!isLazy) {
+            Object.keys(instances).forEach((id) => {
+              if (id !== createdId)
+                instances[id] = { ...instances[id], isForeground: false };
+            });
+          }
+
           const instanceOrder = [
             ...state.instanceOrder.filter((id) => id !== createdId),
             createdId,
@@ -518,7 +530,7 @@ export const useAppStore = create<AppStoreState>()(
           return {
             instances,
             instanceOrder,
-            foregroundInstanceId: createdId,
+            foregroundInstanceId: isLazy ? state.foregroundInstanceId : createdId,
             nextInstanceId: nextNum,
           };
         });
@@ -528,7 +540,7 @@ export const useAppStore = create<AppStoreState>()(
               detail: {
                 instanceId: createdId,
                 isOpen: true,
-                isForeground: true,
+                isForeground: appId === "finder", // Only finder is foreground immediately
               },
             })
           );
@@ -536,6 +548,50 @@ export const useAppStore = create<AppStoreState>()(
           track(APP_ANALYTICS.APP_LAUNCH, { appId });
         }
         return createdId;
+      },
+
+      markInstanceAsLoaded: (instanceId) => {
+        set((state) => {
+          const inst = state.instances[instanceId];
+          if (!inst || !inst.isLoading) return state;
+
+          // When loaded, bring to foreground
+          const instances = { ...state.instances };
+          Object.keys(instances).forEach((id) => {
+            instances[id] = {
+              ...instances[id],
+              isForeground: id === instanceId,
+            };
+          });
+
+          instances[instanceId] = {
+            ...inst,
+            isLoading: false,
+            isForeground: true,
+          };
+
+          // Ensure it's at the end of order
+          const order = [
+            ...state.instanceOrder.filter((id) => id !== instanceId),
+            instanceId,
+          ];
+
+          window.dispatchEvent(
+            new CustomEvent("instanceStateChange", {
+              detail: {
+                instanceId,
+                isOpen: true,
+                isForeground: true,
+              },
+            })
+          );
+
+          return {
+            instances,
+            instanceOrder: order,
+            foregroundInstanceId: instanceId,
+          };
+        });
       },
 
       closeAppInstance: (instanceId) => {

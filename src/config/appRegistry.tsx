@@ -1,4 +1,4 @@
-import { lazy, Suspense, ComponentType } from "react";
+import { lazy, Suspense, ComponentType, useEffect } from "react";
 import { appIds } from "./appIds";
 import type {
   AppProps,
@@ -10,7 +10,7 @@ import type {
   VideosInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
-import { MenuBar } from "@/components/layout/MenuBar";
+import { useAppStore } from "@/stores/useAppStore";
 
 export type AppId = (typeof appIds)[number];
 
@@ -36,9 +36,31 @@ const defaultWindowConstraints: WindowConstraints = {
 // LAZY LOADING WRAPPER
 // ============================================================================
 
-// Loading fallback that shows the MenuBar while app loads
-// This prevents the menu bar from disappearing during lazy load
-const LoadingFallback = () => <MenuBar />;
+// Signal component to notify store when lazy component is loaded
+const LoadSignal = ({ instanceId }: { instanceId?: string }) => {
+  const markInstanceAsLoaded = useAppStore((state) => state.markInstanceAsLoaded);
+  useEffect(() => {
+    if (instanceId) {
+      // Use requestIdleCallback for non-urgent loading signal, falling back to setTimeout
+      // This ensures we don't block the main thread during heavy app initialization
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        const handle = window.requestIdleCallback(
+          () => {
+            markInstanceAsLoaded(instanceId);
+          },
+          { timeout: 1000 }
+        );
+        return () => window.cancelIdleCallback(handle);
+      } else {
+        const timer = setTimeout(() => {
+          markInstanceAsLoaded(instanceId);
+        }, 200); 
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [instanceId, markInstanceAsLoaded]);
+  return null;
+};
 
 // Helper to create a lazy-loaded component with Suspense
 function createLazyComponent<T = unknown>(
@@ -47,10 +69,10 @@ function createLazyComponent<T = unknown>(
   const LazyComponent = lazy(importFn);
   
   // Wrap with Suspense to handle loading state
-  // Shows MenuBar while loading to prevent UI flash
   const WrappedComponent = (props: AppProps<T>) => (
-    <Suspense fallback={<LoadingFallback />}>
+    <Suspense fallback={null}>
       <LazyComponent {...props} />
+      <LoadSignal instanceId={props.instanceId} />
     </Suspense>
   );
   

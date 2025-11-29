@@ -52,6 +52,7 @@ interface IconButtonProps {
   isSwapping: boolean;
   onHover: () => void;
   onLeave: () => void;
+  isLoading?: boolean;
 }
 
 const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
@@ -62,6 +63,7 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
       icon,
       idKey,
       showIndicator = false,
+      isLoading = false,
       isEmoji = false,
       onDragOver,
       onDrop,
@@ -192,37 +194,63 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
             willChange: "transform",
           }}
         >
-          {isEmoji ? (
-            <motion.span
-              className="select-none pointer-events-none flex items-end justify-center"
-              style={{
-                // Slightly larger base size so initial (non-hover) emoji isn't too small
-                fontSize: baseButtonSize * 0.84,
-                lineHeight: 1,
-                originY: 1,
-                originX: 0.5,
-                scale: magnifyEnabled ? emojiScale : 1,
-                // Lift a couple px so it's not too tight against the bottom
-                y: -5,
-                width: "100%",
-                height: "100%",
-              }}
-            >
-              {icon}
-            </motion.span>
-          ) : (
-            <ThemedIcon
-              name={icon}
-              alt={label}
-              className="select-none pointer-events-none"
-              draggable={false}
-              style={{
-                imageRendering: "-webkit-optimize-contrast",
-                width: "100%",
-                height: "100%",
-              }}
-            />
-          )}
+          <motion.div
+            className="w-full h-full flex items-end justify-center"
+            animate={
+              isLoading
+                ? {
+                    y: [0, -20, 0],
+                    transition: {
+                      y: {
+                        repeat: Infinity,
+                        duration: 0.8,
+                        ease: "easeInOut",
+                        repeatType: "loop",
+                      },
+                    },
+                  }
+                : { y: 0 }
+            }
+            transition={{
+              y: {
+                type: "spring",
+                stiffness: 200,
+                damping: 20,
+              },
+            }}
+          >
+            {isEmoji ? (
+              <motion.span
+                className="select-none pointer-events-none flex items-end justify-center"
+                style={{
+                  // Slightly larger base size so initial (non-hover) emoji isn't too small
+                  fontSize: baseButtonSize * 0.84,
+                  lineHeight: 1,
+                  originY: 1,
+                  originX: 0.5,
+                  scale: magnifyEnabled ? emojiScale : 1,
+                  // Lift a couple px so it's not too tight against the bottom
+                  y: -5,
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
+                {icon}
+              </motion.span>
+            ) : (
+              <ThemedIcon
+                name={icon}
+                alt={label}
+                className="select-none pointer-events-none"
+                draggable={false}
+                style={{
+                  imageRendering: "-webkit-optimize-contrast",
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            )}
+          </motion.div>
           {showIndicator ? (
             <span
               aria-hidden
@@ -668,6 +696,9 @@ function MacDock() {
               {pinnedLeft.map((appId) => {
                 const icon = getAppIconPath(appId);
                 const isOpen = openAppsAllSet.has(appId);
+                const isLoading = Object.values(instances).some(
+                  (i) => i.appId === appId && i.isOpen && i.isLoading
+                );
                 const label = appRegistry[appId]?.name ?? appId;
                 return (
                   <IconButton
@@ -683,6 +714,7 @@ function MacDock() {
                       }
                     }}
                     showIndicator={isOpen}
+                    isLoading={isLoading}
                     mouseX={mouseX}
                     magnifyEnabled={magnifyEnabled}
                     isNew={hasMounted && !seenIdsRef.current.has(appId)}
@@ -710,6 +742,7 @@ function MacDock() {
                       idKey={item.instanceId}
                       onClick={() => bringInstanceToForeground(item.instanceId!)}
                       showIndicator
+                      isLoading={instance.isLoading}
                       isEmoji={isEmoji}
                       mouseX={mouseX}
                       magnifyEnabled={magnifyEnabled}
@@ -724,6 +757,9 @@ function MacDock() {
                   // Render regular app
                   const icon = getAppIconPath(item.appId);
                   const label = appRegistry[item.appId]?.name ?? item.appId;
+                  const isLoading = Object.values(instances).some(
+                    (i) => i.appId === item.appId && i.isOpen && i.isLoading
+                  );
                   return (
                     <IconButton
                       key={item.appId}
@@ -732,6 +768,7 @@ function MacDock() {
                       idKey={item.appId}
                       onClick={() => focusMostRecentInstanceOfApp(item.appId)}
                       showIndicator
+                      isLoading={isLoading}
                       mouseX={mouseX}
                       magnifyEnabled={magnifyEnabled}
                       isNew={hasMounted && !seenIdsRef.current.has(item.appId)}
