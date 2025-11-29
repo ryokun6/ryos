@@ -496,7 +496,7 @@ export default async function handler(req: Request) {
         "unknown-ip";
     }
 
-    log(`Request origin: ${origin}, IP: ${ip}`);
+    log(`Request origin: ${validOrigin}, IP: ${ip}`);
 
     // ---------------------------
     // Authentication extraction
