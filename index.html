@@ -26,6 +26,22 @@
     <!-- Cache control -->
     <meta http-equiv="Cache-Control" content="max-age=86400" />
 
+    <!-- Preconnect to external domains for faster resource loading -->
+    <link rel="preconnect" href="https://www.youtube.com" />
+    <link rel="preconnect" href="https://i.ytimg.com" />
+    <link rel="dns-prefetch" href="https://www.youtube.com" />
+    <link rel="dns-prefetch" href="https://i.ytimg.com" />
+
+    <!-- Preload critical fonts (used immediately on page load) -->
+    <link rel="preload" href="/fonts/ChicagoKare-Regular.woff" as="font" type="font/woff" crossorigin />
+    <link rel="preload" href="/fonts/geneva-12.otf" as="font" type="font/otf" crossorigin />
+    <link rel="preload" href="/fonts/LucidaGrande.ttf" as="font" type="font/truetype" crossorigin />
+
+    <!-- Preload critical JSON data -->
+    <link rel="preload" href="/data/filesystem.json" as="fetch" type="application/json" crossorigin />
+    <link rel="preload" href="/data/applets.json" as="fetch" type="application/json" crossorigin />
+    <link rel="preload" href="/data/ipod-videos.json" as="fetch" type="application/json" crossorigin />
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://os.ryo.lu/" />

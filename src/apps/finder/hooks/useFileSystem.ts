@@ -11,7 +11,7 @@ import {
   useInternetExplorerStore,
   type Favorite,
 } from "@/stores/useInternetExplorerStore";
-import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
+import { useFilesStore, FileSystemItem, ensureFileContentLoaded } from "@/stores/useFilesStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { migrateIndexedDBToUUIDs } from "@/utils/indexedDBMigration";
@@ -419,77 +419,11 @@ export function useFileSystem(
     return "/" + parts.slice(0, -1).join("/");
   };
 
-  // --- Lazy Default Content Loader --- //
+  // --- Lazy Default Content Loader (uses cached filesystem data) --- //
   const ensureDefaultContent = useCallback(
     async (filePath: string, uuid: string): Promise<boolean> => {
-      try {
-        // Load the filesystem data from JSON
-        const res = await fetch("/data/filesystem.json");
-        const data = await res.json();
-
-        // Find the file in the JSON data
-        const fileData = data.files?.find(
-          (f: { path: string }) => f.path === filePath
-        );
-        if (!fileData) {
-          return false; // No default content for this file
-        }
-
-        if (fileData.content) {
-          // This is a document with text content
-          const storeName = STORES.DOCUMENTS;
-          const existingDoc = await dbOperations.get<DocumentContent>(
-            storeName,
-            uuid
-          );
-          if (!existingDoc) {
-            console.log(
-              `[useFileSystem] Loading default content for document ${fileData.name}`
-            );
-            await dbOperations.put<DocumentContent>(
-              storeName,
-              {
-                name: fileData.name,
-                content: fileData.content,
-              },
-              uuid
-            );
-            return true;
-          }
-        } else if (fileData.assetPath) {
-          // This is an image with an asset path
-          const storeName = STORES.IMAGES;
-          const existingImg = await dbOperations.get<DocumentContent>(
-            storeName,
-            uuid
-          );
-          if (!existingImg) {
-            console.log(
-              `[useFileSystem] Loading default content for image ${fileData.name}`
-            );
-            const response = await fetch(fileData.assetPath);
-            if (response.ok) {
-              const blob = await response.blob();
-              await dbOperations.put<DocumentContent>(
-                storeName,
-                {
-                  name: fileData.name,
-                  content: blob,
-                },
-                uuid
-              );
-              return true;
-            }
-          }
-        }
-        return false;
-      } catch (err) {
-        console.error(
-          `[useFileSystem] Error loading default content for ${filePath}:`,
-          err
-        );
-        return false;
-      }
+      // Use the centralized lazy loader which has cached JSON data
+      return ensureFileContentLoaded(filePath, uuid);
     },
     []
   );

@@ -3,18 +3,13 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
-@font-face {
-  font-family: "ChicagoKare";
-  src: url("/fonts/ChicagoKare-Regular.woff") format("woff");
-  font-weight: normal;
-  font-style: normal;
-}
-
+/* Additional fonts not in fonts.css */
 @font-face {
   font-family: "ArkPixel";
   src: url("/fonts/fusion-pixel-12px-proportional-ja.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 @supports not (font: -apple-system-body) {
@@ -23,6 +18,7 @@
     src: url("/fonts/SerenityOS-Emoji.ttf") format("truetype");
     font-weight: normal;
     font-style: normal;
+    font-display: swap;
   }
 }
 
@@ -31,55 +27,7 @@
   src: url("/fonts/geneva-9.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
-}
-
-@font-face {
-  font-family: "Geneva-12";
-  src: url("/fonts/geneva-12.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "AppleGaramond";
-  src: url("/fonts/AppleGaramond-Light.ttf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Monaco";
-  src: url("/fonts/monacottf.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Mondwest";
-  src: url("/fonts/Mondwest-Regular.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Mondwest";
-  src: url("/fonts/Mondwest-Bold.woff2") format("woff2");
-  font-weight: bold;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "NeueBit";
-  src: url("/fonts/NeueBit-Regular.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "NeueBit";
-  src: url("/fonts/NeueBit-Bold.woff2") format("woff2");
-  font-weight: bold;
-  font-style: normal;
+  font-display: swap;
 }
 
 @layer base {

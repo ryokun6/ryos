@@ -88,30 +88,93 @@ interface FilesStoreState {
   ensureDefaultDesktopShortcuts: () => Promise<void>;
 }
 
-// Function to load default files from JSON
-async function loadDefaultFiles(): Promise<FileSystemData> {
-  try {
-    const res = await fetch("/data/filesystem.json");
-    const data = await res.json();
-    return data as FileSystemData;
-  } catch (err) {
-    console.error("Failed to load filesystem.json", err);
-    return { directories: [], files: [] };
-  }
+// ============================================================================
+// CACHING & PRELOADING SYSTEM
+// ============================================================================
+
+// In-memory cache for JSON data to avoid repeated fetches
+let cachedFileSystemData: FileSystemData | null = null;
+let cachedAppletsData: { applets: FileSystemItemData[] } | null = null;
+let fileSystemDataPromise: Promise<FileSystemData> | null = null;
+let appletsDataPromise: Promise<{ applets: FileSystemItemData[] }> | null = null;
+
+// Preload status tracking
+let preloadStarted = false;
+
+/**
+ * Preload filesystem data early (can be called before React mounts).
+ * This starts fetching JSON files in parallel without blocking.
+ * Call this as early as possible in your app's entry point.
+ */
+export function preloadFileSystemData(): void {
+  if (preloadStarted) return;
+  preloadStarted = true;
+  
+  // Start fetching both JSON files in parallel (non-blocking)
+  loadDefaultFiles();
+  loadDefaultApplets();
 }
 
-// Function to load default applets from JSON
+// Function to load default files from JSON (with caching)
+async function loadDefaultFiles(): Promise<FileSystemData> {
+  // Return cached data immediately if available
+  if (cachedFileSystemData) {
+    return cachedFileSystemData;
+  }
+  
+  // Return existing promise if fetch is in progress (deduplication)
+  if (fileSystemDataPromise) {
+    return fileSystemDataPromise;
+  }
+  
+  // Start new fetch
+  fileSystemDataPromise = (async () => {
+    try {
+      const res = await fetch("/data/filesystem.json");
+      const data = await res.json();
+      cachedFileSystemData = data as FileSystemData;
+      return cachedFileSystemData;
+    } catch (err) {
+      console.error("Failed to load filesystem.json", err);
+      return { directories: [], files: [] };
+    } finally {
+      fileSystemDataPromise = null;
+    }
+  })();
+  
+  return fileSystemDataPromise;
+}
+
+// Function to load default applets from JSON (with caching)
 async function loadDefaultApplets(): Promise<{
   applets: FileSystemItemData[];
 }> {
-  try {
-    const res = await fetch("/data/applets.json");
-    const data = await res.json();
-    return { applets: data.applets || [] };
-  } catch (err) {
-    console.error("Failed to load applets.json", err);
-    return { applets: [] };
+  // Return cached data immediately if available
+  if (cachedAppletsData) {
+    return cachedAppletsData;
   }
+  
+  // Return existing promise if fetch is in progress (deduplication)
+  if (appletsDataPromise) {
+    return appletsDataPromise;
+  }
+  
+  // Start new fetch
+  appletsDataPromise = (async () => {
+    try {
+      const res = await fetch("/data/applets.json");
+      const data = await res.json();
+      cachedAppletsData = { applets: data.applets || [] };
+      return cachedAppletsData;
+    } catch (err) {
+      console.error("Failed to load applets.json", err);
+      return { applets: [] };
+    } finally {
+      appletsDataPromise = null;
+    }
+  })();
+  
+  return appletsDataPromise;
 }
 
 // Helper function to get parent path
@@ -122,14 +185,187 @@ const getParentPath = (path: string): string => {
   return "/" + parts.slice(0, -1).join("/");
 };
 
-// Save default file contents into IndexedDB using generated UUIDs
-async function saveDefaultContents(
+// Track files pending lazy load (path -> FileSystemItemData)
+const pendingLazyLoadFiles = new Map<string, FileSystemItemData>();
+
+// Track which UUIDs are currently being loaded (to prevent duplicate fetches)
+const loadingAssets = new Set<string>();
+
+/**
+ * Register files for lazy loading - content will be fetched on-demand
+ * when the file is actually opened, not during initialization.
+ */
+function registerFilesForLazyLoad(
   files: FileSystemItemData[],
   items: Record<string, FileSystemItem>
 ) {
+  for (const file of files) {
+    const meta = items[file.path];
+    if (!meta?.uuid) continue;
+    // Only register files that have assetPath (binary assets that need fetching)
+    if (file.assetPath) {
+      pendingLazyLoadFiles.set(file.path, file);
+    }
+  }
+}
+
+/**
+ * Load content for a specific file on-demand (lazy loading).
+ * Call this when a file is opened to ensure its content is in IndexedDB.
+ * Returns true if content was loaded (or already exists), false on error.
+ */
+export async function ensureFileContentLoaded(
+  filePath: string,
+  uuid: string
+): Promise<boolean> {
+  const storeName = filePath.startsWith("/Documents/")
+    ? STORES.DOCUMENTS
+    : filePath.startsWith("/Images/")
+    ? STORES.IMAGES
+    : filePath.startsWith("/Applets/")
+    ? STORES.APPLETS
+    : null;
+  if (!storeName) return false;
+
+  // Prevent duplicate concurrent loads
+  if (loadingAssets.has(uuid)) {
+    // Wait for existing load to complete
+    await new Promise((resolve) => {
+      const checkComplete = () => {
+        if (!loadingAssets.has(uuid)) {
+          resolve(true);
+        } else {
+          setTimeout(checkComplete, 50);
+        }
+      };
+      checkComplete();
+    });
+    
+    // Bug fix: After waiting, verify content was actually loaded by checking IndexedDB
+    // The first request might have failed, so we need to verify
+    try {
+      const db = await ensureIndexedDBInitialized();
+      try {
+        const exists = await new Promise<boolean>((resolve) => {
+          const tx = db.transaction(storeName, "readonly");
+          const store = tx.objectStore(storeName);
+          const req = store.get(uuid);
+          req.onsuccess = () => resolve(!!req.result);
+          req.onerror = () => resolve(false);
+        });
+        return exists;
+      } finally {
+        db.close();
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  let db: IDBDatabase | null = null;
+  
   try {
-    const db = await ensureIndexedDBInitialized();
-    for (const file of files) {
+    db = await ensureIndexedDBInitialized();
+    
+    // Check if content already exists in IndexedDB
+    const existing = await new Promise<StoredContent | undefined>((resolve) => {
+      const tx = db!.transaction(storeName, "readonly");
+      const store = tx.objectStore(storeName);
+      const req = store.get(uuid);
+      req.onsuccess = () => resolve(req.result as StoredContent | undefined);
+      req.onerror = () => resolve(undefined);
+    });
+    
+    if (existing) {
+      return true;
+    }
+
+    // Check if this file has pending lazy load data
+    const pendingFile = pendingLazyLoadFiles.get(filePath);
+    if (!pendingFile?.assetPath) {
+      return false;
+    }
+
+    // Mark as loading
+    loadingAssets.add(uuid);
+
+    try {
+      // Fetch the asset
+      const resp = await fetch(pendingFile.assetPath);
+      if (!resp.ok) {
+        console.error(`[FilesStore] Failed to fetch asset: ${pendingFile.assetPath}`);
+        return false;
+      }
+      
+      const content = await resp.blob();
+      
+      // Save to IndexedDB
+      await new Promise<void>((resolve, reject) => {
+        const tx = db!.transaction(storeName, "readwrite");
+        const store = tx.objectStore(storeName);
+        const putReq = store.put(
+          { name: pendingFile.name, content } as StoredContent,
+          uuid
+        );
+        putReq.onsuccess = () => resolve();
+        putReq.onerror = () => reject(putReq.error);
+      });
+
+      // Remove from pending once successfully loaded
+      pendingLazyLoadFiles.delete(filePath);
+      
+      return true;
+    } finally {
+      loadingAssets.delete(uuid);
+    }
+  } catch (err) {
+    console.error(`[FilesStore] Error loading content for ${filePath}:`, err);
+    loadingAssets.delete(uuid);
+    return false;
+  } finally {
+    // Bug fix: Ensure db is always closed, even on errors
+    if (db) {
+      db.close();
+    }
+  }
+}
+
+// Save default file contents into IndexedDB using generated UUIDs
+// Optimized: Only saves text content immediately, defers binary assets for lazy loading
+async function saveDefaultContents(
+  files: FileSystemItemData[],
+  items: Record<string, FileSystemItem>,
+  options: { lazyLoadAssets?: boolean } = { lazyLoadAssets: true }
+) {
+  const textFiles: FileSystemItemData[] = [];
+  const assetFiles: FileSystemItemData[] = [];
+  
+  // Separate text files (immediate) from asset files (lazy)
+  for (const file of files) {
+    if (file.content) {
+      textFiles.push(file);
+    } else if (file.assetPath) {
+      assetFiles.push(file);
+    }
+  }
+  
+  // Register asset files for lazy loading
+  if (options.lazyLoadAssets && assetFiles.length > 0) {
+    registerFilesForLazyLoad(assetFiles, items);
+  }
+  
+  // Only process text files immediately (they're small and already in JSON)
+  if (textFiles.length === 0) return;
+  
+  let db: IDBDatabase | null = null;
+  
+  try {
+    db = await ensureIndexedDBInitialized();
+    
+    // Group files by store for batch operations
+    const filesByStore = new Map<string, { file: FileSystemItemData; uuid: string }[]>();
+    
+    for (const file of textFiles) {
       const meta = items[file.path];
       const uuid = meta?.uuid;
       if (!uuid) continue;
@@ -143,49 +379,63 @@ async function saveDefaultContents(
         : null;
       if (!storeName) continue;
 
-      const existing = await new Promise<StoredContent | undefined>(
-        (resolve) => {
-          const tx = db.transaction(storeName, "readonly");
-          const store = tx.objectStore(storeName);
-          const req = store.get(uuid);
-          req.onsuccess = () =>
-            resolve(req.result as StoredContent | undefined);
-          req.onerror = () => resolve(undefined);
-        }
-      );
-      if (existing) continue;
-
-      let content: string | Blob | null = null;
-      if (file.content) {
-        content = file.content;
-      } else if (file.assetPath) {
-        try {
-          const resp = await fetch(file.assetPath);
-          if (resp.ok) content = await resp.blob();
-        } catch (err) {
-          console.error(
-            `[FilesStore] Failed fetching asset for ${file.path}:`,
-            err
-          );
-        }
+      if (!filesByStore.has(storeName)) {
+        filesByStore.set(storeName, []);
       }
-
-      if (content != null) {
-        await new Promise<void>((resolve, reject) => {
-          const tx = db.transaction(storeName, "readwrite");
-          const store = tx.objectStore(storeName);
-          const putReq = store.put(
-            { name: file.name, content } as StoredContent,
-            uuid
-          );
-          putReq.onsuccess = () => resolve();
-          putReq.onerror = () => reject(putReq.error);
-        });
-      }
+      filesByStore.get(storeName)!.push({ file, uuid });
     }
-    db.close();
+    
+    // Process each store with batched operations
+    for (const [storeName, storeFiles] of filesByStore) {
+      // First, check which UUIDs already exist (batch read)
+      const existingUUIDs = new Set<string>();
+      await new Promise<void>((resolve) => {
+        const tx = db!.transaction(storeName, "readonly");
+        const store = tx.objectStore(storeName);
+        let completed = 0;
+        
+        for (const { uuid } of storeFiles) {
+          const req = store.get(uuid);
+          req.onsuccess = () => {
+            if (req.result) existingUUIDs.add(uuid);
+            completed++;
+            if (completed === storeFiles.length) resolve();
+          };
+          req.onerror = () => {
+            completed++;
+            if (completed === storeFiles.length) resolve();
+          };
+        }
+        
+        if (storeFiles.length === 0) resolve();
+      });
+      
+      // Filter out existing files and batch write new ones
+      const newFiles = storeFiles.filter(({ uuid }) => !existingUUIDs.has(uuid));
+      if (newFiles.length === 0) continue;
+      
+      // Batch write in a single transaction
+      await new Promise<void>((resolve, reject) => {
+        const tx = db!.transaction(storeName, "readwrite");
+        const store = tx.objectStore(storeName);
+        
+        for (const { file, uuid } of newFiles) {
+          if (file.content) {
+            store.put({ name: file.name, content: file.content } as StoredContent, uuid);
+          }
+        }
+        
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
   } catch (err) {
     console.error("[FilesStore] Error saving default contents:", err);
+  } finally {
+    // Bug fix: Ensure db is always closed, even on errors
+    if (db) {
+      db.close();
+    }
   }
 }
 
@@ -1051,12 +1301,20 @@ export const useFilesStore = create<FilesStoreState>()(
           } else {
             // For existing users: sync root directories and ensure desktop shortcuts
             // This handles cases where new apps are added in updates
-            Promise.resolve(state.syncRootDirectoriesFromDefaults()).then(() => {
-              // After syncing roots, ensure desktop shortcuts
-              if (state.ensureDefaultDesktopShortcuts) {
-                return state.ensureDefaultDesktopShortcuts();
-              }
-            }).catch(
+            // Also register default files for lazy loading (uses cached JSON)
+            Promise.all([
+              loadDefaultFiles().then((data) => {
+                // Register default files for lazy loading so existing users
+                // can benefit from cached content loading
+                registerFilesForLazyLoad(data.files, state.items);
+              }),
+              state.syncRootDirectoriesFromDefaults().then(() => {
+                // After syncing roots, ensure desktop shortcuts
+                if (state.ensureDefaultDesktopShortcuts) {
+                  return state.ensureDefaultDesktopShortcuts();
+                }
+              }),
+            ]).catch(
               (err) =>
                 console.error(
                   "Files root directory sync failed on rehydrate",
