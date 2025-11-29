@@ -1,7 +1,7 @@
 // Utility helpers for IndexedDB operations used across ryOS
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 7; // Force APPLETS store creation
+const DB_VERSION = 8; // Add chat messages store
 
 export const STORES = {
   DOCUMENTS: "documents",
@@ -9,6 +9,7 @@ export const STORES = {
   TRASH: "trash",
   CUSTOM_WALLPAPERS: "custom_wallpapers",
   APPLETS: "applets",
+  CHAT_MESSAGES: "chat_messages",
 } as const;
 
 /**
