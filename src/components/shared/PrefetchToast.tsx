@@ -61,7 +61,7 @@ export function PrefetchToast({
 
 export function PrefetchCompleteToast({ version, buildNumber }: PrefetchCompleteToastProps) {
   const versionText = version || BUILD_VERSION;
-  const buildText = buildNumber ? ` (build ${buildNumber})` : '';
+  const buildText = buildNumber ? ` (${buildNumber})` : '';
   
   return (
     <div className="text-sm">
