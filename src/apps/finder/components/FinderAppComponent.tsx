@@ -474,15 +474,14 @@ export function FinderAppComponent({
 
       // Accept different file types based on current directory
       if (isAppletsDir) {
-        // In Applets: accept .app, .html, and .gz files
+        // In Applets: accept .app and .html files
         if (
           !file.name.endsWith(".app") &&
           !file.name.endsWith(".html") &&
-          !file.name.endsWith(".htm") &&
-          !file.name.endsWith(".gz")
+          !file.name.endsWith(".htm")
         ) {
           toast.error("Invalid file type", {
-            description: "Only .app, .html, and .gz files can be imported to Applets",
+            description: "Only .app and .html files can be imported to Applets",
           });
           e.target.value = "";
           return;
@@ -496,86 +495,16 @@ export function FinderAppComponent({
       }
 
       try {
-        let text: string;
+        const text = await file.text();
         let fileName = file.name;
-
-        // Check if file is gzipped (.app or .gz file)
-        const fileExtension = file.name.toLowerCase();
-        if (fileExtension.endsWith(".app") || fileExtension.endsWith(".gz")) {
-          // Try to decompress as gzip
-          try {
-            if (typeof DecompressionStream === "undefined") {
-              throw new Error("DecompressionStream API not available");
-            }
-
-            const arrayBuffer = await file.arrayBuffer();
-            const blob = new Blob([arrayBuffer]);
-            const stream = blob.stream();
-            const decompressionStream = new DecompressionStream("gzip");
-            const decompressedStream = stream.pipeThrough(decompressionStream);
-
-            const chunks: Uint8Array[] = [];
-            const reader = decompressedStream.getReader();
-
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              if (value) {
-                chunks.push(value);
-              }
-            }
-
-            // Combine chunks and convert to text
-            const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-            const combined = new Uint8Array(totalLength);
-            let offset = 0;
-            for (const chunk of chunks) {
-              combined.set(chunk, offset);
-              offset += chunk.length;
-            }
-
-            const decoder = new TextDecoder();
-            text = decoder.decode(combined);
-          } catch {
-            // If decompression fails, treat as plain text
-            text = await file.text();
-          }
-        } else {
-          // Not a gzipped file, read as text
-          text = await file.text();
-        }
 
         // Handle applet files
         if (isAppletsDir) {
-          let content: string;
-          let icon: string | undefined;
-          let shareId: string | undefined;
-          let createdBy: string | undefined;
-
-          // Try to parse as JSON (full applet export format)
-          try {
-            const jsonData = JSON.parse(text);
-            if (jsonData.content && typeof jsonData.content === "string") {
-              // Full JSON format from .app.gz export
-              content = jsonData.content;
-              fileName = jsonData.name || fileName;
-              icon = jsonData.icon;
-              shareId = jsonData.shareId;
-              createdBy = jsonData.createdBy;
-            } else {
-              // Not a valid applet JSON, treat as plain HTML
-              content = text;
-            }
-          } catch {
-            // Not JSON, treat as plain HTML/App file
-            content = text;
-          }
-
           // Extract emoji from filename for use as icon
           const emojiRegex =
             /^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}]+)\s*/u;
           const match = fileName.match(emojiRegex);
-          const extractedEmoji = match ? match[1] : null;
+          const emoji = match ? match[1] : null;
           const remainingText = match
             ? fileName.slice(match[0].length)
             : fileName;
@@ -583,14 +512,9 @@ export function FinderAppComponent({
           // Use remaining text as filename
           fileName = remainingText;
 
-          // Use extracted emoji if no icon from JSON
-          if (!icon && extractedEmoji) {
-            icon = extractedEmoji;
-          }
-
           // Convert to .app extension if needed
-          if (fileName.endsWith(".html") || fileName.endsWith(".htm") || fileName.endsWith(".json") || fileName.endsWith(".gz")) {
-            fileName = fileName.replace(/\.(html|htm|json|gz)$/i, ".app");
+          if (fileName.endsWith(".html") || fileName.endsWith(".htm")) {
+            fileName = fileName.replace(/\.(html|htm)$/i, ".app");
           } else if (!fileName.endsWith(".app")) {
             fileName = `${fileName}.app`;
           }
@@ -600,11 +524,9 @@ export function FinderAppComponent({
           await saveFile({
             name: fileName,
             path: filePath,
-            content: content,
+            content: text,
             type: "html",
-            icon: icon,
-            shareId: shareId,
-            createdBy: createdBy,
+            icon: emoji || undefined,
           });
 
           // Notify file was added
@@ -612,15 +534,15 @@ export function FinderAppComponent({
             detail: {
               name: fileName,
               path: filePath,
-              content: content,
-              icon: icon,
+              content: text,
+              icon: emoji || undefined,
             },
           });
           window.dispatchEvent(event);
 
           toast.success("Applet imported!", {
             description: `${fileName} saved to /Applets${
-              icon ? ` with ${icon} icon` : ""
+              emoji ? ` with ${emoji} icon` : ""
             }`,
           });
         } else {
@@ -1034,7 +956,7 @@ export function FinderAppComponent({
         ref={fileInputRef}
         className="hidden"
         accept={
-          currentPath === "/Applets" ? ".app,.html,.htm,.gz" : ".txt,.md,text/*"
+          currentPath === "/Applets" ? ".app,.html,.htm" : ".txt,.md,text/*"
         }
         onChange={handleFileInputChange}
       />
