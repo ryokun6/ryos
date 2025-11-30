@@ -1659,20 +1659,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const appStore = useAppStore.getState();
               const textEditStore = useTextEditStore.getState();
 
-              // Ensure /Documents directory exists
-              const filesStoreState = useFilesStore.getState();
-              if (!filesStoreState.items["/Documents"]) {
-                // Create the Documents directory if it doesn't exist
-                filesStoreState.addItem({
-                  path: "/Documents",
-                  name: "Documents",
-                  isDirectory: true,
-                  type: "directory",
-                  icon: "📁",
-                });
-              }
-
-              // Check if file exists (get fresh state after potential directory creation)
+              // Check if file exists
               const existingItem = useFilesStore.getState().items[path];
               const isNewFile = !existingItem || existingItem.status !== "active";
 
