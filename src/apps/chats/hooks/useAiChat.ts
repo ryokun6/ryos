@@ -752,6 +752,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               enableFullscreen,
             });
 
+            // Check if user is on iOS (cannot auto-play due to browser restrictions)
+            const isIOS = detectUserOS() === "iOS";
+
             const ensureIpodIsOpen = () => {
               const appState = useAppStore.getState();
               const ipodInstances = appState.getInstancesByAppId("ipod");
@@ -844,6 +847,25 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               normalizedAction === "pause"
             ) {
               const ipod = useIpodStore.getState();
+
+              // On iOS, don't auto-play - inform user to press play manually
+              if (isIOS && (normalizedAction === "play" || normalizedAction === "toggle")) {
+                const stateChanges = applyIpodSettings();
+                const resultParts = ["iPod is ready. Please press the center button or play button on the iPod to start playing (iOS browser restriction)"];
+                if (stateChanges.length > 0) {
+                  resultParts.push(...stateChanges);
+                }
+                
+                const resultMessage = resultParts.join(". ") + ".";
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: resultMessage,
+                });
+                result = "";
+                console.log("[ToolCall] iOS detected - user must manually start playback.");
+                break;
+              }
 
               switch (normalizedAction) {
                 case "play":
@@ -962,13 +984,34 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
               const { setCurrentIndex, setIsPlaying } = useIpodStore.getState();
               setCurrentIndex(randomIndexFromArray);
-              setIsPlaying(true);
-
-              const stateChanges = applyIpodSettings();
+              
               const track = tracks[randomIndexFromArray];
               const trackDesc = `${track.title}${
                 track.artist ? ` by ${track.artist}` : ""
               }`;
+
+              // On iOS, don't auto-play - just select the track
+              if (isIOS) {
+                const stateChanges = applyIpodSettings();
+                const resultParts = [`Selected ${trackDesc}. Please press the center button or play button on the iPod to start playing (iOS browser restriction)`];
+                if (stateChanges.length > 0) {
+                  resultParts.push(...stateChanges);
+                }
+                
+                const resultMessage = resultParts.join(". ") + ".";
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: resultMessage,
+                });
+                result = "";
+                console.log(`[ToolCall] iOS detected - selected ${trackDesc}, user must manually start playback.`);
+                break;
+              }
+
+              setIsPlaying(true);
+
+              const stateChanges = applyIpodSettings();
               
               const resultParts = [`Playing ${trackDesc}`];
               if (stateChanges.length > 0) {
@@ -1001,13 +1044,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
 
               try {
+                // On iOS, use addTrackFromVideoId with autoPlay=false
                 const addedTrack = await useIpodStore
                   .getState()
-                  .addTrackFromVideoId(id);
+                  .addTrackFromVideoId(id, !isIOS); // autoPlay = true for non-iOS, false for iOS
 
                 if (addedTrack) {
                   const stateChanges = applyIpodSettings();
-                  const resultParts = [`Added '${addedTrack.title}' to iPod and started playing`];
+                  
+                  // Different message for iOS vs other platforms
+                  const resultParts = isIOS
+                    ? [`Added '${addedTrack.title}' to iPod. Please press the center button or play button on the iPod to start playing (iOS browser restriction)`]
+                    : [`Added '${addedTrack.title}' to iPod and started playing`];
+                  
                   if (stateChanges.length > 0) {
                     resultParts.push(...stateChanges);
                   }
@@ -1021,7 +1070,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   result = ""; // Clear result to prevent duplicate
                   
                   console.log(
-                    `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`,
+                    isIOS
+                      ? `[ToolCall] iOS detected - added '${addedTrack.title}' to iPod, user must manually start playback.`
+                      : `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`,
                   );
                   break;
                 } else {

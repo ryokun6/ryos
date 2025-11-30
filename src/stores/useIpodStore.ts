@@ -185,7 +185,7 @@ export interface IpodState extends IpodData {
   /** Export library to JSON string */
   exportLibrary: () => string;
   /** Adds a track from a YouTube video ID or URL, fetching metadata automatically */
-  addTrackFromVideoId: (urlOrId: string) => Promise<Track | null>;
+  addTrackFromVideoId: (urlOrId: string, autoPlay?: boolean) => Promise<Track | null>;
   /** Load the default library if no tracks exist */
   initializeLibrary: () => Promise<void>;
 
@@ -608,7 +608,7 @@ export const useIpodStore = create<IpodState>()(
           });
         }
       },
-      addTrackFromVideoId: async (urlOrId: string): Promise<Track | null> => {
+      addTrackFromVideoId: async (urlOrId: string, autoPlay: boolean = true): Promise<Track | null> => {
         // Extract video ID from various URL formats
         const extractVideoId = (input: string): string | null => {
           // If it's already a video ID (11 characters, alphanumeric + hyphens/underscores)
@@ -727,6 +727,10 @@ export const useIpodStore = create<IpodState>()(
 
         try {
           get().addTrack(newTrack); // Add track to the store
+          // If autoPlay is false (e.g., for iOS), pause after adding
+          if (!autoPlay) {
+            set({ isPlaying: false });
+          }
           return newTrack;
         } catch (error) {
           console.error("Error adding track to store:", error);
