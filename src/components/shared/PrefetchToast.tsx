@@ -54,7 +54,7 @@ export function PrefetchToast({
 export function PrefetchCompleteToast({ version, buildNumber }: PrefetchCompleteToastProps) {
   return (
     <div className="text-sm">
-      Update ready for {version} ({buildNumber})
+      Update ready for ryOS {version} ({buildNumber})
     </div>
   );
 }
