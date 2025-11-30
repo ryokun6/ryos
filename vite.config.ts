@@ -133,13 +133,14 @@ export default defineConfig({
             },
           },
           {
-            // Cache wallpapers
-            urlPattern: /\/wallpapers\//i,
+            // Cache wallpaper images (photos and tiles only, NOT videos)
+            // Videos need range request support which CacheFirst doesn't handle well
+            urlPattern: /\/wallpapers\/(?:photos|tiles)\/.+\.(?:jpg|jpeg|png|webp)$/i,
             handler: "CacheFirst",
             options: {
               cacheName: "wallpapers",
               expiration: {
-                maxEntries: 50,
+                maxEntries: 100,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
             },

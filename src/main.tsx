@@ -6,6 +6,7 @@ import "./index.css";
 import { useThemeStore } from "./stores/useThemeStore";
 import { preloadFileSystemData } from "./stores/useFilesStore";
 import { preloadIpodData } from "./stores/useIpodStore";
+import { initPrefetch } from "./utils/prefetch";
 
 // ============================================================================
 // PRELOADING - Start fetching JSON data early (non-blocking)
@@ -13,6 +14,12 @@ import { preloadIpodData } from "./stores/useIpodStore";
 // ============================================================================
 preloadFileSystemData();
 preloadIpodData();
+
+// ============================================================================
+// PREFETCHING - Cache icons, sounds, and app components after boot
+// This runs during idle time to populate the service worker cache
+// ============================================================================
+initPrefetch();
 
 // Hydrate theme from localStorage before rendering
 useThemeStore.getState().hydrate();

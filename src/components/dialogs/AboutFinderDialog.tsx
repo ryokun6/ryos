@@ -9,8 +9,9 @@ import { getNonFinderApps } from "@/config/appRegistry";
 import { useAppContext } from "@/contexts/AppContext";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { BUILD_VERSION, BUILD_TIME } from "@/config/buildVersion";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export function AboutFinderDialog({
   const { appStates } = useAppContext();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const [showBuildDate, setShowBuildDate] = useState(false);
 
   const memoryUsage = useMemo(() => {
     const totalMemory = 32; // 32MB total memory
@@ -69,7 +71,7 @@ export function AboutFinderDialog({
         {/* Right side with system info */}
         <div className="space-y-3 flex-1 ">
           <div className="flex flex-row items-center space-x-2 p-2 px-4">
-            <div className="flex flex-col w-1/3 items-center space-x-2">
+            <div className="flex flex-col w-1/3 items-center">
               <ThemedIcon
                 name="mac-classic.png"
                 alt="Happy Mac"
@@ -79,7 +81,7 @@ export function AboutFinderDialog({
                 className={cn(
                   isXpTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[16px]"
-                    : "font-apple-garamond text-2xl"
+                    : "font-apple-garamond text-2xl "
                 )}
               >
                 ryOS
@@ -92,6 +94,21 @@ export function AboutFinderDialog({
                   : currentTheme === "xp"
                   ? " XP"
                   : ""}
+              </div>
+              <div
+                className={cn(
+                  "cursor-pointer select-none transition-opacity hover:opacity-70 text-gray-500",
+                  isXpTheme
+                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
+                    : "font-geneva-12 text-[10px]"
+                )}
+                onClick={() => setShowBuildDate(!showBuildDate)}
+                title="Click to toggle"
+              >
+                {showBuildDate 
+                  ? new Date(BUILD_TIME).toLocaleDateString()
+                  : BUILD_VERSION
+                }
               </div>
             </div>
 
