@@ -71,8 +71,9 @@ export default defineConfig({
           /^\/iframe-check/,  // iframe proxy endpoint
           /^\/404/,  // Don't intercept 404 redirects
         ],
-        // Disable default navigation fallback (we handle it with runtime caching)
-        navigateFallback: null,
+        // Enable navigation fallback to precached index.html for offline support
+        // This ensures the app can start when offline by serving the cached shell
+        navigateFallback: 'index.html',
         // Cache strategy for different asset types
         runtimeCaching: [
           {
@@ -172,6 +173,20 @@ export default defineConfig({
             },
           },
           {
+            // Cache icon and wallpaper manifests for offline theming support
+            // These are critical for resolving themed icon paths when offline
+            urlPattern: /\/(icons|wallpapers)\/manifest\.json$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "manifests",
+              expiration: {
+                maxEntries: 5,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+              networkTimeoutSeconds: 3, // Fall back to cache after 3s
+            },
+          },
+          {
             // Cache wallpaper images (photos and tiles only, NOT videos)
             // Videos need range request support which CacheFirst doesn't handle well
             urlPattern: /\/wallpapers\/(?:photos|tiles)\/.+\.(?:jpg|jpeg|png|webp)(?:\?.*)?$/i,
@@ -185,12 +200,15 @@ export default defineConfig({
             },
           },
         ],
-        // Precache the most important assets (excluding large files)
-        // Note: HTML is NOT precached - uses NetworkFirst runtime caching
-        // to avoid Safari errors with stale index.html referencing old scripts
+        // Precache the most important assets for offline support
+        // index.html is precached to serve as navigation fallback when offline
+        // Service worker uses skipWaiting + clientsClaim to update immediately,
+        // minimizing risk of stale HTML referencing old scripts
         globPatterns: [
+          "index.html",
           "**/*.css",
           "fonts/*.{woff,woff2,otf,ttf}",
+          "icons/manifest.json",
         ],
         // Exclude large data files from precaching (they'll be cached at runtime)
         globIgnores: [
