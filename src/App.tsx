@@ -26,11 +26,13 @@ export function App() {
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
-    // Mobile: always show at bottom-center with safe area clearance
+    const dockHeight = currentTheme === "macosx" ? 56 : 0;
+    
+    // Mobile: always show at bottom-center with dock and safe area clearance
     if (isMobile) {
       return {
         position: "bottom-center" as const,
-        offset: `calc(env(safe-area-inset-bottom, 0px) + 16px)`,
+        offset: `calc(env(safe-area-inset-bottom, 0px) + ${dockHeight + 16}px)`,
       };
     }
 

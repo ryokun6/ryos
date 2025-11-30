@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { createElement } from "react";
 import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/PrefetchToast";
 import { useAppStore } from "@/stores/useAppStore";
+import { setNextBootMessage } from "@/utils/bootMessage";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos-manifest-timestamp';
@@ -49,8 +50,19 @@ function storeVersion(version: string, buildNumber: string, buildTime?: string):
 /**
  * Reload the page to apply updates
  * Unregisters service worker first to avoid Safari "redirections from worker" errors
+ * @param version - Optional version string to show in boot screen
+ * @param buildNumber - Optional build number to show in boot screen
  */
-async function reloadPage(): Promise<void> {
+async function reloadPage(version?: string, buildNumber?: string): Promise<void> {
+  // Set boot message to show boot screen after reload
+  if (version && buildNumber) {
+    setNextBootMessage(`Updating to ryOS ${version} (${buildNumber})...`);
+  } else if (version) {
+    setNextBootMessage(`Updating to ryOS ${version}...`);
+  } else {
+    setNextBootMessage("Rebooting...");
+  }
+  
   try {
     // Unregister service worker before reloading to avoid Safari navigation issues
     // Safari can error with "redirections from worker" when SW is in transitional state
@@ -354,7 +366,7 @@ async function runPrefetchWithToast(
           duration: Infinity,
           action: {
             label: "Reboot",
-            onClick: reloadPage,
+            onClick: () => reloadPage(server.version, server.buildNumber),
           },
         }
       );

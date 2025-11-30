@@ -737,6 +737,18 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   right: 12px !important;
 }
 
+/* Mobile bottom-positioned toasts: account for dock height and safe area */
+@media (max-width: 768px) {
+  [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
+  }
+  
+  /* macOS X theme: add dock height (56px) */
+  :root[data-os-theme="macosx"] [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+  }
+}
+
 /* System 7 theme: square corners, black border, drop shadow, smaller body text */
 :root[data-os-theme="system7"] [data-sonner-toast] {
   border-radius: 0 !important;
