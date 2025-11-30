@@ -71,8 +71,24 @@ export default defineConfig({
           /^\/iframe-check/,  // iframe proxy endpoint
           /^\/404/,  // Don't intercept 404 redirects
         ],
+        // Disable default navigation fallback (we handle it with runtime caching)
+        navigateFallback: null,
         // Cache strategy for different asset types
         runtimeCaching: [
+          {
+            // Navigation requests (/, /foo, etc.) - network first to avoid stale index.html
+            // Critical for Safari which can error on missing chunks after updates
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-pages",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+              networkTimeoutSeconds: 3,
+            },
+          },
           {
             // Cache JS chunks - network first for freshness (code changes often)
             // Falls back to cache if network is slow/unavailable
@@ -170,8 +186,9 @@ export default defineConfig({
           },
         ],
         // Precache the most important assets (excluding large files)
+        // Note: HTML is NOT precached - uses NetworkFirst runtime caching
+        // to avoid Safari errors with stale index.html referencing old scripts
         globPatterns: [
-          "**/*.html",
           "**/*.css",
           "fonts/*.{woff,woff2,otf,ttf}",
         ],

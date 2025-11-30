@@ -1032,6 +1032,15 @@
   border-radius: 7.2px !important;
 }
 
+:root[data-os-theme="macosx"] .macosx-dialog.rounded-none {
+  border-radius: 0 !important;
+}
+
+/* Use Apple Garamond for ryOS branding in macOSX dialogs */
+:root[data-os-theme="macosx"] .macosx-dialog .font-mondwest {
+  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", serif !important;
+}
+
 :root[data-os-theme="macosx"] .macosx-dialog-header {
   border-radius: 7.2px 7.2px 0px 0px !important;
 }
