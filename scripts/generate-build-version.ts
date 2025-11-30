@@ -21,6 +21,7 @@ const MINOR_VERSION = 1;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const versionPath = join(__dirname, '../.version');
 const outputPath = join(__dirname, '../src/config/buildVersion.ts');
+const publicVersionPath = join(__dirname, '../public/version.json');
 
 // Check if this is a manual version bump (called directly via version:bump)
 const isManualBump = process.argv.includes('--bump');
@@ -74,5 +75,17 @@ export const COMMIT_SHA_SHORT = '${shortSha}';
 `;
 
 writeFileSync(outputPath, content);
+
+// Also write version.json to public folder for runtime version fetching
+const versionJson = {
+  version,
+  buildNumber: shortSha,
+  commitSha,
+  buildTime,
+  majorVersion,
+  minorVersion,
+};
+
+writeFileSync(publicVersionPath, JSON.stringify(versionJson, null, 2));
 
 console.log(`[Build] Generated version: ${version} (${shortSha}) at ${buildTime}`);

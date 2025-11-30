@@ -73,7 +73,11 @@ export async function forceRefreshCache(): Promise<void> {
  * @param showVersionToast - If true, shows "Updated to version X" with reload button. 
  *                           If false, just dismisses the toast on completion.
  */
-async function runPrefetchWithToast(showVersionToast: boolean = true): Promise<void> {
+async function runPrefetchWithToast(
+  showVersionToast: boolean = true,
+  serverVersion?: string,
+  serverBuildNumber?: string
+): Promise<void> {
   console.log('[Prefetch] Starting prefetch with toast...');
   
   // Fetch manifest first
@@ -160,10 +164,14 @@ async function runPrefetchWithToast(showVersionToast: boolean = true): Promise<v
     
     // Show completion toast - with version/reload for updates, just dismiss for first-time
     if (showVersionToast) {
+      // Use server version if available, otherwise fall back to current build version
+      const versionToShow = serverVersion || BUILD_VERSION;
+      const buildNumberToShow = serverBuildNumber || COMMIT_SHA_SHORT;
+      
       toast.success(
         createElement(PrefetchCompleteToast, {
-          version: BUILD_VERSION,
-          buildNumber: COMMIT_SHA_SHORT,
+          version: versionToShow,
+          buildNumber: buildNumberToShow,
         }),
         {
           id: toastId,
@@ -396,6 +404,68 @@ async function discoverAllJsChunks(): Promise<string[]> {
 }
 
 /**
+ * Fetch version info from the server
+ * Tries version.json first, then falls back to buildVersion.ts
+ */
+async function fetchServerVersion(): Promise<{ version: string; buildNumber: string } | null> {
+  try {
+    // First, try to fetch version.json (if it exists)
+    let response = await fetch('/version.json', { 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+      }
+    });
+    
+    if (response.ok) {
+      try {
+        const data = await response.json();
+        if (data.version && data.buildNumber) {
+          return {
+            version: data.version,
+            buildNumber: data.buildNumber,
+          };
+        }
+      } catch {
+        // Not valid JSON, continue to next method
+      }
+    }
+    
+    // Fallback: try to fetch the buildVersion.ts file from the server
+    // Note: This may not work in production if the file isn't served as a static asset
+    response = await fetch('/src/config/buildVersion.ts', { 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+      }
+    });
+    
+    if (response.ok) {
+      const content = await response.text();
+      
+      // Parse the version from the file content
+      // Format: export const BUILD_VERSION = '10.1';
+      // Format: export const COMMIT_SHA_SHORT = '9c94c1e';
+      const versionMatch = content.match(/BUILD_VERSION\s*=\s*['"]([^'"]+)['"]/);
+      const buildNumberMatch = content.match(/COMMIT_SHA_SHORT\s*=\s*['"]([^'"]+)['"]/);
+      
+      if (versionMatch && buildNumberMatch) {
+        return {
+          version: versionMatch[1],
+          buildNumber: buildNumberMatch[1],
+        };
+      }
+    }
+    
+    console.log('[Prefetch] Could not fetch version from server');
+    return null;
+  } catch (error) {
+    console.warn('[Prefetch] Failed to fetch server version:', error);
+    return null;
+  }
+}
+
+/**
  * Helper to create toast content using createElement
  */
 function createToastContent(props: {
@@ -482,13 +552,20 @@ async function checkForVersionUpdate(): Promise<boolean> {
     // If the hashes are different, a new version is available
     if (serverBundleHash !== currentBundleHash) {
       console.log('[Prefetch] New version detected, triggering update...');
+      // Fetch the new version info from the server
+      const serverVersionInfo = await fetchServerVersion();
+      
       // Clear the prefetch flag and caches to force re-prefetch
       clearPrefetchFlag();
       await clearSwCaches();
       // Run the prefetch with toast to show update progress
       isPrefetchInProgress = true;
       try {
-        await runPrefetchWithToast(true);
+        await runPrefetchWithToast(
+          true,
+          serverVersionInfo?.version,
+          serverVersionInfo?.buildNumber
+        );
       } finally {
         isPrefetchInProgress = false;
       }
