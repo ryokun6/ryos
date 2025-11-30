@@ -14,12 +14,13 @@ interface PrefetchToastProps {
 interface PrefetchCompleteToastProps {
   hasUpdate?: boolean;
   onReload: () => void;
+  buildNumber?: string;
 }
 
 const phaseLabels: Record<string, string> = {
-  icons: 'Caching icons',
-  sounds: 'Caching sounds',
-  scripts: 'Caching scripts',
+  icons: 'Updating icons',
+  sounds: 'Updating sounds',
+  scripts: 'Updating scripts',
 };
 
 export function PrefetchToast({ 
@@ -30,7 +31,7 @@ export function PrefetchToast({
   phaseTotal = 0,
   percentage = 0,
 }: PrefetchToastProps) {
-  const label = phaseLabels[phase] || 'Caching assets';
+  const label = phaseLabels[phase] || 'Updating assets';
   const displayPercentage = percentage || Math.round((completed / total) * 100);
   
   return (
@@ -57,20 +58,19 @@ export function PrefetchToast({
   );
 }
 
-export function PrefetchCompleteToast({ hasUpdate, onReload }: PrefetchCompleteToastProps) {
+export function PrefetchCompleteToast({ hasUpdate, onReload, buildNumber }: PrefetchCompleteToastProps) {
+  const buildText = buildNumber ? ` (build ${buildNumber})` : '';
+  
   return (
     <div className="flex flex-col gap-2 w-full min-w-[200px]">
       <div className="text-sm">
-        {hasUpdate 
-          ? 'New version available!' 
-          : 'Assets cached for offline use'
-        }
+        Updated to version{buildText}
       </div>
       <button
         onClick={onReload}
         className="w-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
       >
-        {hasUpdate ? 'Reload to update' : 'Reload now'}
+        Reload
       </button>
     </div>
   );

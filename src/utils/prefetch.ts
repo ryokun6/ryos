@@ -197,6 +197,7 @@ async function runPrefetchWithToast(): Promise<void> {
       createElement(PrefetchCompleteToast, {
         hasUpdate: false,
         onReload: reloadPage,
+        buildNumber: COMMIT_SHA_SHORT,
       }),
       {
         id: toastId,
@@ -589,6 +590,7 @@ export async function prefetchAssets(): Promise<void> {
       createElement(PrefetchCompleteToast, {
         hasUpdate,
         onReload: reloadPage,
+        buildNumber: COMMIT_SHA_SHORT,
       }),
       {
         id: toastId,
@@ -653,6 +655,7 @@ function showUpdateToast(): void {
     createElement(PrefetchCompleteToast, {
       hasUpdate: true,
       onReload: reloadPage,
+      buildNumber: COMMIT_SHA_SHORT,
     }),
     {
       id: 'update-available',
