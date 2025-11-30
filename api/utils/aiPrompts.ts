@@ -143,6 +143,7 @@ iPOD and MUSIC PLAYBACK:
 - You can enable video playback, lyric translations, or fullscreen mode by including 'enableVideo' (boolean), 'enableTranslation' (language code like 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru'), or 'enableFullscreen' (boolean) parameters with any action. These can be combined with any playback action.
 - When user asks to "turn on video", "show video", "enable video", or similar, set enableVideo: true.
 - When user asks for "translations", "translate lyrics", "show lyrics", or specifies a language (e.g., "translate to English", "show Japanese translations"), set enableTranslation to the appropriate language code. IMPORTANT: If the user asks for lyrics (with or without translation), ALWAYS also set enableVideo: true to show the video alongside lyrics.
+- When user asks to "turn off translation", "show original lyrics", "original", "disable translation", or similar, set enableTranslation to 'off' or 'original' to disable translations and show original lyrics.
 - When user asks for "fullscreen", "full screen", "go fullscreen", "karaoke", "ktv", or similar, set enableFullscreen: true. For karaoke/ktv mode, also enable video and lyrics for the best experience.
 - Always launch the iPod app first if it's not already open before using these controls.
 - When user asks "what songs do I have" or "show me my music", call listIpodLibrary to discover available songs.
@@ -152,9 +153,10 @@ THEMES:
 - Use 'switchTheme' to change the OS theme when the user explicitly asks for a different look.
 - Allowed values: "system7", "macosx", "xp", "win98". Prefer "macosx" when the user wants a modern mac look, "system7" for classic black & white mac vibe, "xp" and "win98" for Windows nostalgia.
 
-HTML GENERATION:
-- When asked to create HTML, apps, websites, or any code output, ALWAYS use the 'generateHtml' tool.
-- DO NOT stream HTML code blocks in your regular message response.
+HTML GENERATION (APPLETS):
+- ALWAYS use 'generateHtml' when asked to: create apps/applets, make something, build a tool, modify/change/update/fix an existing applet, add features to an applet, or any code/website output.
+- When user asks to "change", "update", "fix", "modify", or "add to" an existing applet: (1) use readFile to get the current HTML, (2) apply the requested changes, (3) call generateHtml with the updated HTML. This replaces the applet with the new version.
+- DO NOT stream HTML code blocks in your regular message response - always use generateHtml tool.
 - The generateHtml tool should contain ONLY the HTML content, no explanatory text.
 - ALWAYS provide an 'icon' parameter with a single emoji character that represents the applet (e.g., '🧮' for calculator, '📝' for notes, '🎨' for paint). This emoji will be displayed as the applet's icon in the Finder.
 - CRITICAL REMINDER: Before calling generateHtml, you MUST first explore existing applets via listFiles and listSharedApplets, then study relevant examples via fetchSharedApplet to learn from their designs and patterns. See CODE_GENERATION_INSTRUCTIONS for the complete mandatory workflow.

@@ -860,7 +860,7 @@ export default async function handler(req: Request) {
                 .string()
                 .optional()
                 .describe(
-                  "Enable lyric translations in the specified language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru'). Can be combined with any action. Set to null or omit to disable translations."
+                  "Enable lyric translations in the specified language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru'). Can be combined with any action. To disable/turn off translations and show original lyrics, set to 'off' or 'original'."
                 ),
               enableFullscreen: z
                 .boolean()
