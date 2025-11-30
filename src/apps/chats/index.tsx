@@ -3,39 +3,40 @@ import { ChatsAppComponent } from "./components/ChatsAppComponent";
 
 export const helpItems = [
   {
-    icon: "💬",
-    title: "Chat with Ryo",
+    icon: "📦",
+    title: "Create & Edit Files & Applets",
     description:
-      "Type your message to chat with Ryo, generate code, or help with ryOS.",
+      "Generate HTML applets, create/edit markdown documents, read/write files, search Applets Store.",
+  },
+  {
+    icon: "🎮",
+    title: "System Control",
+    description:
+      "Launch/close apps, switch themes, control iPod playback, full ryOS integration.",
   },
   {
     icon: "#️⃣",
-    title: "Join Chat Rooms",
-    description: "Connect with netizens in public chat rooms.",
+    title: "Chat Rooms & @ryo Mentions",
+    description:
+      "Join public/private rooms, mention @ryo for AI responses in IRC-style chat.",
   },
   {
     icon: "🎤",
-    title: "Push to Talk",
+    title: "Voice & Speech",
     description:
-      "Hold Space or tap the microphone button to record and send voice messages.",
+      "Push-to-talk voice messages with transcription, text-to-speech with word highlighting.",
   },
   {
-    icon: "📝",
-    title: "Control TextEdit",
+    icon: "👋",
+    title: "Nudge & DJ Mode",
     description:
-      "Ask Ryo to read, insert, replace, or delete lines in your open TextEdit document.",
+      "👋 nudge for context-aware interactions, ryOS FM DJ mode when music is playing.",
   },
   {
-    icon: "🚀",
-    title: "Control Apps",
+    icon: "📁",
+    title: "File System Management",
     description:
-      "Ask Ryo to launch or close other applications like Internet Explorer or Video Player.",
-  },
-  {
-    icon: "💾",
-    title: "Save Transcript",
-    description:
-      "Save your current chat conversation with Ryo as a Markdown file.",
+      "List/search files, open from Applets Store/Documents/Music, manage virtual file system.",
   },
 ];
 
