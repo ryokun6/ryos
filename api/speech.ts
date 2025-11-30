@@ -216,13 +216,16 @@ export default async function handler(req: Request) {
     // Skip rate limiting for authenticated ryo user
     if (!isAuthenticatedRyo) {
       const ip = RateLimit.getClientIp(req);
+      // Use identifier (username or anon:ip) like chat.ts does
+      const rateLimitIdentifier = isAuthenticated && identifier ? identifier : `anon:${ip}`;
+      
       const BURST_WINDOW = 60; // 1 minute
       const BURST_LIMIT = 10;
       const DAILY_WINDOW = 60 * 60 * 24; // 1 day
-      const DAILY_LIMIT = 50; // treat all as anon for now
+      const DAILY_LIMIT = 50;
 
-      const burstKey = RateLimit.makeKey(["rl", "tts", "burst", "ip", ip]);
-      const dailyKey = RateLimit.makeKey(["rl", "tts", "daily", "ip", ip]);
+      const burstKey = RateLimit.makeKey(["rl", "tts", "burst", rateLimitIdentifier]);
+      const dailyKey = RateLimit.makeKey(["rl", "tts", "daily", rateLimitIdentifier]);
 
       const burst = await RateLimit.checkCounterLimit({
         key: burstKey,
@@ -238,7 +241,7 @@ export default async function handler(req: Request) {
             limit: burst.limit,
             windowSeconds: burst.windowSeconds,
             resetSeconds: burst.resetSeconds,
-            identifier: `ip:${ip}`,
+            identifier: rateLimitIdentifier,
           }),
           {
             status: 429,
@@ -268,7 +271,7 @@ export default async function handler(req: Request) {
             limit: daily.limit,
             windowSeconds: daily.windowSeconds,
             resetSeconds: daily.resetSeconds,
-            identifier: `ip:${ip}`,
+            identifier: rateLimitIdentifier,
           }),
           {
             status: 429,
