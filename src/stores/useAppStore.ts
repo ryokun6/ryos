@@ -88,20 +88,20 @@ interface AppStoreState extends AppManagerState {
   setSelectedShaderType: (t: ShaderType) => void;
   aiModel: AIModel;
   setAiModel: (m: AIModel) => void;
-  terminalSoundsEnabled: boolean;
-  setTerminalSoundsEnabled: (v: boolean) => void;
-  uiSoundsEnabled: boolean;
-  setUiSoundsEnabled: (v: boolean) => void;
-  typingSynthEnabled: boolean;
-  setTypingSynthEnabled: (v: boolean) => void;
-  speechEnabled: boolean;
-  setSpeechEnabled: (v: boolean) => void;
-  speechVolume: number;
-  setSpeechVolume: (v: number) => void;
-  ttsModel: "openai" | "elevenlabs" | null;
-  setTtsModel: (m: "openai" | "elevenlabs" | null) => void;
-  ttsVoice: string | null;
-  setTtsVoice: (v: string | null) => void;
+    terminalSoundsEnabled: boolean;
+    setTerminalSoundsEnabled: (v: boolean) => void;
+    uiSoundsEnabled: boolean;
+    setUiSoundsEnabled: (v: boolean) => void;
+    typingSynthEnabled: boolean;
+    setTypingSynthEnabled: (v: boolean) => void;
+    speechEnabled: boolean;
+    setSpeechEnabled: (v: boolean) => void;
+    speechVolume: number;
+    setSpeechVolume: (v: number) => void;
+    ttsModel: "browser" | "openai" | "elevenlabs" | null;
+    setTtsModel: (m: "browser" | "openai" | "elevenlabs" | null) => void;
+    ttsVoice: string | null;
+    setTtsVoice: (v: string | null) => void;
   synthPreset: string;
   setSynthPreset: (v: string) => void;
   displayMode: DisplayMode;
@@ -138,7 +138,7 @@ interface AppStoreState extends AppManagerState {
   setRyOSVersion: (version: string, buildNumber: string, buildTime?: string) => void;
 }
 
-const CURRENT_APP_STORE_VERSION = 3; // bump for instanceOrder unification
+const CURRENT_APP_STORE_VERSION = 4; // add browser TTS default
 const initialShaderState = checkShaderPerformance();
 
 // ---------------- Store ---------------------------------------------------------
@@ -168,8 +168,8 @@ export const useAppStore = create<AppStoreState>()(
       setSpeechEnabled: (v) => set({ speechEnabled: v }),
       speechVolume: 2,
       setSpeechVolume: (v) => set({ speechVolume: v }),
-      ttsModel: null,
-      setTtsModel: (m) => set({ ttsModel: m }),
+        ttsModel: "browser",
+        setTtsModel: (m) => set({ ttsModel: m }),
       ttsVoice: null,
       setTtsVoice: (v) => set({ ttsVoice: v }),
       synthPreset: "classic",
@@ -850,6 +850,11 @@ export const useAppStore = create<AppStoreState>()(
           ).filter((id: string) => prev.instances?.[id]);
           delete prev.instanceStackOrder;
           delete prev.instanceWindowOrder;
+        }
+        if (version < 4) {
+          if (!prev.ttsModel) {
+            prev.ttsModel = "browser";
+          }
         }
         prev.version = CURRENT_APP_STORE_VERSION;
         return prev;
