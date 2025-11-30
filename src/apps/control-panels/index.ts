@@ -1,6 +1,3 @@
-import { BaseApp, ControlPanelsInitialData } from "../base/types";
-import { ControlPanelsAppComponent } from "./components/ControlPanelsAppComponent";
-
 export const helpItems = [
   {
     icon: "🎨",
@@ -45,18 +42,3 @@ export const appMetadata = {
   github: "https://github.com/ryokun6/ryos",
   icon: "/icons/control-panels/appearance-manager/app.png",
 };
-
-const app: BaseApp<ControlPanelsInitialData> = {
-  id: "control-panels",
-  name: "Control Panels",
-  icon: {
-    type: "image",
-    src: "/icons/control-panels/appearance-manager/app.png",
-  },
-  description: "System settings and configuration",
-  component: ControlPanelsAppComponent,
-  helpItems,
-  metadata: appMetadata,
-};
-
-export default app;

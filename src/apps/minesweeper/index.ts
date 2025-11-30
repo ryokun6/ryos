@@ -1,7 +1,4 @@
-import { BaseApp } from "../base/types";
-import { MinesweeperAppComponent } from "./components/MinesweeperAppComponent";
-
-export const appMetadata: BaseApp["metadata"] = {
+export const appMetadata = {
   name: "Minesweeper",
   version: "1.0.0",
   creator: {
@@ -12,7 +9,7 @@ export const appMetadata: BaseApp["metadata"] = {
   icon: "/icons/default/minesweeper.png",
 };
 
-export const helpItems: BaseApp["helpItems"] = [
+export const helpItems = [
   {
     icon: "🖱️",
     title: "Desktop Controls",
@@ -42,13 +39,3 @@ export const helpItems: BaseApp["helpItems"] = [
       "Press the smiley face or choose Game ▸ New to start a fresh board.",
   },
 ];
-
-export const MinesweeperApp: BaseApp = {
-  id: "minesweeper",
-  name: "Minesweeper",
-  icon: { type: "image", src: "/icons/default/minesweeper.png" },
-  description: "Classic Minesweeper game",
-  component: MinesweeperAppComponent,
-  helpItems,
-  metadata: appMetadata,
-};

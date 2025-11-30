@@ -1,6 +1,3 @@
-import { PaintAppComponent } from "./components/PaintAppComponent";
-import type { BaseApp, PaintInitialData } from "../base/types";
-
 export const helpItems = [
   {
     icon: "✏️",
@@ -48,14 +45,4 @@ export const appMetadata = {
   },
   github: "https://github.com/ryokun6/ryos",
   icon: "/icons/default/paint.png",
-};
-
-export const PaintApp: BaseApp<PaintInitialData> = {
-  id: "paint",
-  name: "Paint",
-  icon: { type: "image", src: "/icons/default/paint.png" },
-  description: "Classic MacPaint-style drawing application",
-  component: PaintAppComponent,
-  helpItems,
-  metadata: appMetadata,
 };

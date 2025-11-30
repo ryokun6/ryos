@@ -43,7 +43,7 @@ export function SoundSlot({
           isRecording ? "bg-destructive animate-pulse" : ""
         } ${
           isPlaying
-            ? "[border-image:url('/button-default.svg')_60_stretch]"
+            ? "[border-image:url('/assets/button-default.svg')_60_stretch]"
             : ""
         }`}
         onClick={onSlotClick}

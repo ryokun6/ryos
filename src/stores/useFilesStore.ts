@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { OsThemeId } from "@/themes/types";
+import { appRegistry } from "@/config/appRegistry";
 
 // Define the structure for a file system item (metadata)
 export interface FileSystemItem {
@@ -1072,9 +1073,6 @@ export const useFilesStore = create<FilesStoreState>()(
 
       ensureDefaultDesktopShortcuts: async () => {
         try {
-          // Import dynamically to avoid circular dependencies
-          const { appRegistry } = await import("@/config/appRegistry");
-          
           const state = get();
           // Ensure Desktop folder exists
           if (!state.items["/Desktop"] || !state.items["/Desktop"].isDirectory) {

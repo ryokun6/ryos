@@ -2,7 +2,7 @@ import {
   dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
-import { STORES } from "@/utils/indexedDB";
+import { STORES, ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import { useFilesStore } from "@/stores/useFilesStore";
 
 // Check if migration has been completed
@@ -353,7 +353,6 @@ export async function migrateIndexedDBToUUIDs() {
     }
 
     // Now trigger the schema upgrade by opening with new version
-    const { ensureIndexedDBInitialized } = await import("@/utils/indexedDB");
     await ensureIndexedDBInitialized();
 
     // Wait a bit for the upgrade to complete

@@ -1,6 +1,3 @@
-import { BaseApp } from "../base/types";
-import { AppletViewerAppComponent } from "./components/AppletViewerAppComponent";
-
 export const helpItems = [
   {
     icon: "🛒",
@@ -52,13 +49,3 @@ export interface AppletViewerInitialData {
   icon?: string;
   name?: string;
 }
-
-export const AppletViewerApp: BaseApp<AppletViewerInitialData> = {
-  id: "applet-viewer",
-  name: "Applet Store",
-  icon: { type: "image", src: appMetadata.icon },
-  description: "View HTML applets",
-  component: AppletViewerAppComponent,
-  helpItems,
-  metadata: appMetadata,
-};
