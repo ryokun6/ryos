@@ -82,7 +82,7 @@ export function AppletViewerMenuBar({
         type="file"
         ref={fileInputRef}
         onChange={handleFileSelect}
-        accept=".html,.htm,.app"
+        accept=".html,.htm,.app,.gz"
         className="hidden"
       />
       {/* File Menu */}

@@ -172,7 +172,20 @@ export function ToolInvocationMessage({
       }
     } else if (toolName === "read") {
       const path = typeof input?.path === "string" ? input.path : "";
-      const fileName = path.split("/").filter(Boolean).pop() || "file";
+      let fileName = path.split("/").filter(Boolean).pop() || "file";
+      
+      // For Applets Store, try to extract title/name from output JSON
+      if (path.startsWith("/Applets Store/") && typeof output === "string") {
+        try {
+          const parsed = JSON.parse(output);
+          if (parsed.title || parsed.name) {
+            fileName = parsed.title || parsed.name;
+          }
+        } catch {
+          // Keep the ID as filename if parsing fails
+        }
+      }
+      
       displayResultMessage = `Read ${fileName}`;
     } else if (toolName === "write") {
       if (typeof output === "string") {
@@ -191,14 +204,18 @@ export function ToolInvocationMessage({
         } else if (output.includes("matches") && output.includes("locations")) {
           displayResultMessage = "Multiple matches found";
         } else if (output.includes("Successfully") || output.includes("edited")) {
-          displayResultMessage = "File edited";
+          const path = typeof input?.path === "string" ? input.path : "";
+          const fileName = path.split("/").filter(Boolean).pop() || "file";
+          displayResultMessage = `Edited ${fileName}`;
         } else if (output.includes("Created")) {
           displayResultMessage = "File created";
         } else {
           displayResultMessage = output;
         }
       } else {
-        displayResultMessage = "File edited";
+        const path = typeof input?.path === "string" ? input.path : "";
+        const fileName = path.split("/").filter(Boolean).pop() || "file";
+        displayResultMessage = `Edited ${fileName}`;
       }
     } else if (toolName === "launchApp" && input?.id === "internet-explorer") {
       const urlPart = input.url ? ` ${input.url}` : "";
