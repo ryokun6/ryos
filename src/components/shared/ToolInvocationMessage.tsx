@@ -204,14 +204,18 @@ export function ToolInvocationMessage({
         } else if (output.includes("matches") && output.includes("locations")) {
           displayResultMessage = "Multiple matches found";
         } else if (output.includes("Successfully") || output.includes("edited")) {
-          displayResultMessage = "File edited";
+          const path = typeof input?.path === "string" ? input.path : "";
+          const fileName = path.split("/").filter(Boolean).pop() || "file";
+          displayResultMessage = `Edited ${fileName}`;
         } else if (output.includes("Created")) {
           displayResultMessage = "File created";
         } else {
           displayResultMessage = output;
         }
       } else {
-        displayResultMessage = "File edited";
+        const path = typeof input?.path === "string" ? input.path : "";
+        const fileName = path.split("/").filter(Boolean).pop() || "file";
+        displayResultMessage = `Edited ${fileName}`;
       }
     } else if (toolName === "launchApp" && input?.id === "internet-explorer") {
       const urlPart = input.url ? ` ${input.url}` : "";
