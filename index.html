@@ -66,6 +66,133 @@
     />
 
     <title>ryOS</title>
+    
+    <!-- Stale bundle detection: reload if cached index.html references missing JS bundles -->
+    <script>
+      (function() {
+        // Prevent infinite reload loops - only try once per page load
+        var reloadKey = 'ryos-stale-reload';
+        var lastReload = sessionStorage.getItem(reloadKey);
+        var now = Date.now();
+        
+        // If we reloaded in the last 10 seconds, don't reload again
+        if (lastReload && (now - parseInt(lastReload, 10)) < 10000) {
+          console.warn('[ryOS] Recently reloaded for stale bundle, skipping to prevent loop');
+          return;
+        }
+        
+        // Guard to prevent multiple reload attempts
+        var isReloading = false;
+        
+        // Listen for script load errors (captures ES module import failures)
+        window.addEventListener('error', function(event) {
+          if (isReloading) return;
+          // Check if this is a script/module loading error
+          var target = event.target || event.srcElement;
+          
+          // Handle <script> tag errors
+          if (target && target.tagName === 'SCRIPT') {
+            var src = target.src || '';
+            // Check if it's our JS bundle from /assets/
+            if (src.indexOf('/assets/') !== -1 && src.indexOf('.js') !== -1) {
+              console.error('[ryOS] Bundle failed to load:', src);
+              triggerStaleReload('Script tag error: ' + src);
+            }
+          }
+        }, true); // Use capture phase to catch errors before they propagate
+        
+        // Handle dynamic import failures (ES modules)
+        window.addEventListener('unhandledrejection', function(event) {
+          if (isReloading) return;
+          var reason = event.reason;
+          if (!reason) return;
+          
+          var message = reason.message || String(reason);
+          var stack = reason.stack || '';
+          
+          // Check for module loading failures
+          // Common error patterns:
+          // - "Failed to fetch dynamically imported module" (Chrome)
+          // - "error loading dynamically imported module" (Firefox)
+          // - "Loading module from ... was blocked" (Safari)
+          // - "Importing a module script failed" (Safari)
+          // - "Unable to preload CSS" with chunk reference
+          var isModuleError = 
+            message.indexOf('dynamically imported module') !== -1 ||
+            message.indexOf('Loading module') !== -1 ||
+            message.indexOf('module script failed') !== -1 ||
+            message.indexOf('Unable to preload CSS') !== -1;
+          
+          // Also check if error is specifically about our assets
+          // This catches Safari-specific errors that include the URL in the message
+          var isAssetError = 
+            (message.indexOf('/assets/') !== -1 && message.indexOf('.js') !== -1) ||
+            (stack.indexOf('/assets/') !== -1 && stack.indexOf('.js') !== -1);
+          
+          // Only trigger for module errors or asset-specific errors
+          // Avoid triggering for general "Failed to fetch" from API calls
+          if (isModuleError || isAssetError) {
+            console.error('[ryOS] Module import failed:', message);
+            triggerStaleReload('Module import error: ' + message);
+          }
+        });
+        
+        function triggerStaleReload(reason) {
+          if (isReloading) return;
+          isReloading = true;
+          
+          console.warn('[ryOS] Stale bundle detected, clearing caches and reloading...', reason);
+          
+          // Mark that we're reloading to prevent loops
+          sessionStorage.setItem(reloadKey, String(Date.now()));
+          
+          // Clear all caches to ensure fresh assets
+          if (window.caches) {
+            caches.keys().then(function(names) {
+              return Promise.all(names.map(function(name) {
+                return caches.delete(name);
+              }));
+            }).then(function() {
+              console.log('[ryOS] Caches cleared');
+              doReload();
+            }).catch(function() {
+              doReload();
+            });
+          } else {
+            doReload();
+          }
+        }
+        
+        function doReload() {
+          // Unregister service worker to avoid serving stale HTML again
+          if (navigator.serviceWorker) {
+            navigator.serviceWorker.getRegistration().then(function(reg) {
+              if (reg) {
+                reg.unregister().then(function() {
+                  console.log('[ryOS] Service worker unregistered');
+                  forceReload();
+                }).catch(function() {
+                  forceReload();
+                });
+              } else {
+                forceReload();
+              }
+            }).catch(function() {
+              forceReload();
+            });
+          } else {
+            forceReload();
+          }
+        }
+        
+        function forceReload() {
+          // Add cache-busting param to force fresh index.html fetch
+          var url = new URL(window.location.href);
+          url.searchParams.set('_cb', Date.now());
+          window.location.replace(url.toString());
+        }
+      })();
+    </script>
   </head>
   <body style="background-color: black">
     <div id="root"></div>
