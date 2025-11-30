@@ -2305,11 +2305,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             try {
               // Route based on path
-              if (path === "/iPod/Library") {
+              if (path === "/Music") {
                 // List iPod library
                 const ipodStore = useIpodStore.getState();
                 const library = ipodStore.tracks.map((track) => ({
-                  path: `/iPod/Library/${track.id}`,
+                  path: `/Music/${track.id}`,
                   id: track.id,
                   title: track.title,
                   artist: track.artist,
@@ -2317,8 +2317,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 const resultMessage =
                   library.length > 0
-                    ? `Found ${library.length} song${library.length === 1 ? "" : "s"} in iPod library:\n${JSON.stringify(library, null, 2)}`
-                    : "iPod library is empty";
+                    ? `Found ${library.length} song${library.length === 1 ? "" : "s"} in Music:\n${JSON.stringify(library, null, 2)}`
+                    : "Music library is empty";
 
                 addToolResult({
                   tool: toolCall.toolName,
@@ -2326,7 +2326,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   output: resultMessage,
                 });
                 result = "";
-              } else if (path === "/Store/Applets") {
+              } else if (path === "/Applets Store") {
                 // List shared applets from store
                 const normalizedKeyword = query
                   ? normalizeSearchText(query.trim())
@@ -2385,7 +2385,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
 
                 const limitedApplets = filteredApplets.slice(0, maxResults).map(({ applet }) => ({
-                  path: `/Store/Applets/${applet.id}`,
+                  path: `/Applets Store/${applet.id}`,
                   id: applet.id,
                   title: applet.title ?? applet.name ?? "Untitled",
                   name: applet.name,
@@ -2453,7 +2453,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText: `Invalid path: ${path}. Supported paths: /Applets, /Documents, /Applications, /iPod/Library, /Store/Applets`,
+                  errorText: `Invalid path: ${path}. Supported paths: /Applets, /Documents, /Applications, /Music, /Applets Store`,
                 });
                 result = "";
               }
@@ -2487,9 +2487,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             try {
               // Route based on path prefix
-              if (path.startsWith("/iPod/Library/")) {
+              if (path.startsWith("/Music/")) {
                 // Play iPod song by ID
-                const songId = path.replace("/iPod/Library/", "");
+                const songId = path.replace("/Music/", "");
                 const ipodState = useIpodStore.getState();
                 const trackIndex = ipodState.tracks.findIndex((t) => t.id === songId);
 
@@ -2514,9 +2514,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   output: `Playing ${track.title}${track.artist ? ` by ${track.artist}` : ""}`,
                 });
                 result = "";
-              } else if (path.startsWith("/Store/Applets/")) {
+              } else if (path.startsWith("/Applets Store/")) {
                 // Open shared applet preview
-                const shareId = path.replace("/Store/Applets/", "");
+                const shareId = path.replace("/Applets Store/", "");
                 launchApp("applet-viewer", {
                   initialData: { path: "", content: "", shareCode: shareId },
                 });
@@ -2672,9 +2672,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             console.log("[ToolCall] read:", { path });
 
             try {
-              if (path.startsWith("/Store/Applets/")) {
+              if (path.startsWith("/Applets Store/")) {
                 // Fetch shared applet content
-                const shareId = path.replace("/Store/Applets/", "");
+                const shareId = path.replace("/Applets Store/", "");
                 const response = await fetch(`/api/share-applet?id=${encodeURIComponent(shareId)}`);
 
                 if (!response.ok) {
@@ -2748,7 +2748,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText: `Invalid path for read: ${path}. Use /Applets/*, /Documents/*, or /Store/Applets/*`,
+                  errorText: `Invalid path for read: ${path}. Use /Applets/*, /Documents/*, or /Applets Store/*`,
                 });
                 result = "";
               }
@@ -2801,8 +2801,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Write to document (via TextEdit)
                 const appStore = useAppStore.getState();
                 const textEditStore = useTextEditStore.getState();
-                const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
 
                 // Find existing TextEdit instance with this file
                 let targetInstanceId: string | null = null;

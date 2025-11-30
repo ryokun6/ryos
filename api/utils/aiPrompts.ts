@@ -53,9 +53,9 @@ When asked to make apps, code, websites, or HTML, ALWAYS use the 'generateHtml' 
      • If any existing applet already solves or partially solves the user's request, prefer opening, reusing, or iterating on it instead of starting from scratch.
   
   2. Search Shared Applet Store:
-     • ALWAYS call list({ path: "/Store/Applets", query: "relevant terms" }) to review the shared Applet Store.
+     • ALWAYS call list({ path: "/Applets Store", query: "relevant terms" }) to review the shared Applet Store.
      • Study multiple relevant applets, not just one—aim to review at least 2-3 similar applets when available.
-     • For EVERY promising match, call read({ path: "/Store/Applets/{id}" }) to download and analyze the complete HTML source code.
+     • For EVERY promising match, call read({ path: "/Applets Store/{id}" }) to download and analyze the complete HTML source code.
   
   3. Learn from Existing Designs and Patterns:
      • Carefully study the HTML structure, Tailwind CSS patterns, JavaScript interactions, and UI/UX approaches used in existing applets.
@@ -122,16 +122,16 @@ ryOS uses a unified virtual file system model. All file operations use path-base
 - \`/Applets\` - Local saved applets (HTML mini-apps)
 - \`/Documents\` - User documents (markdown files)
 - \`/Applications\` - Installed system applications
-- \`/iPod/Library\` - Songs in the iPod library
-- \`/Store/Applets\` - Shared applets from the Applet Store
+- \`/Music\` - Songs in the iPod library (virtual)
+- \`/Applets Store\` - Shared applets from the Applet Store
 
 ### LIST - Discover Available Items
 Use \`list\` to discover what's available before opening or reading:
 - \`list({ path: "/Applets" })\` → List local applets
 - \`list({ path: "/Documents" })\` → List user documents  
 - \`list({ path: "/Applications" })\` → List system apps
-- \`list({ path: "/iPod/Library" })\` → List songs in iPod
-- \`list({ path: "/Store/Applets" })\` → List shared applets (use \`query\` to search)
+- \`list({ path: "/Music" })\` → List songs in iPod
+- \`list({ path: "/Applets Store" })\` → List shared applets (use \`query\` to search)
 CRITICAL: ONLY reference items returned in the tool result. DO NOT guess or make up items.
 
 ### OPEN - Launch Files and Apps
@@ -139,15 +139,15 @@ Use \`open\` to open items from the VFS. The system routes based on path:
 - \`open({ path: "/Applets/Calculator.app" })\` → Opens in applet-viewer
 - \`open({ path: "/Documents/notes.md" })\` → Opens in TextEdit
 - \`open({ path: "/Applications/internet-explorer" })\` → Launches the app
-- \`open({ path: "/iPod/Library/{songId}" })\` → Plays song in iPod
-- \`open({ path: "/Store/Applets/{shareId}" })\` → Opens preview
+- \`open({ path: "/Music/{songId}" })\` → Plays song in iPod
+- \`open({ path: "/Applets Store/{shareId}" })\` → Opens preview
 CRITICAL: Use EXACT paths from \`list\` results. Always call \`list\` first.
 
 ### READ - Get File Contents
 Use \`read\` to fetch full contents for AI processing:
 - \`read({ path: "/Applets/MyApp.app" })\` → Returns HTML content
 - \`read({ path: "/Documents/notes.md" })\` → Returns markdown content
-- \`read({ path: "/Store/Applets/{shareId}" })\` → Fetches shared applet HTML and metadata
+- \`read({ path: "/Applets Store/{shareId}" })\` → Fetches shared applet HTML and metadata
 
 ### WRITE - Create or Modify Files
 Use \`write\` to create or modify documents and applets:
@@ -169,9 +169,9 @@ For documents, can also use \`/Documents/{instanceId}\` for open TextEdit window
 - Use \`closeApp\` only when user explicitly asks to close an app
 - For Internet Explorer time-travel: provide both \`url\` and \`year\` parameters
 
-## iPOD AND MUSIC
-- Use \`list({ path: "/iPod/Library" })\` to discover available songs first
-- Use \`open({ path: "/iPod/Library/{songId}" })\` to play a specific song
+## MUSIC PLAYBACK
+- Use \`list({ path: "/Music" })\` to discover available songs first
+- Use \`open({ path: "/Music/{songId}" })\` to play a specific song
 - Use \`ipodControl\` for playback control (toggle/play/pause/next/previous)
 - Use \`ipodControl\` with action "addAndPlay" and YouTube ID to add new songs
 - Optional flags: \`enableVideo\`, \`enableTranslation\` (language code), \`enableFullscreen\`
@@ -188,18 +188,18 @@ Use \`switchTheme\` when user requests a different look:
 - ALWAYS provide an \`icon\` emoji parameter
 - CRITICAL: Before generating, MUST search existing applets:
   1. \`list({ path: "/Applets" })\` - Check local applets
-  2. \`list({ path: "/Store/Applets", query: "relevant term" })\` - Search shared applets
-  3. \`read({ path: "/Store/Applets/{id}" })\` - Study 2-3 similar applets for patterns
+  2. \`list({ path: "/Applets Store", query: "relevant term" })\` - Search shared applets
+  3. \`read({ path: "/Applets Store/{id}" })\` - Study 2-3 similar applets for patterns
 
 ## LEGACY TOOL ALIASES (DEPRECATED)
 These legacy tools still work but prefer the unified tools above:
 - \`listFiles\` → Use \`list\`
-- \`listIpodLibrary\` → Use \`list({ path: "/iPod/Library" })\`
-- \`listSharedApplets\` → Use \`list({ path: "/Store/Applets" })\`
+- \`listIpodLibrary\` → Use \`list({ path: "/Music" })\`
+- \`listSharedApplets\` → Use \`list({ path: "/Applets Store" })\`
 - \`openFile\` → Use \`open\`
-- \`openSharedApplet\` → Use \`open({ path: "/Store/Applets/{id}" })\`
+- \`openSharedApplet\` → Use \`open({ path: "/Applets Store/{id}" })\`
 - \`readFile\` → Use \`read\`
-- \`fetchSharedApplet\` → Use \`read({ path: "/Store/Applets/{id}" })\`
+- \`fetchSharedApplet\` → Use \`read({ path: "/Applets Store/{id}" })\`
 - \`textEditNewFile\` → Use \`write({ path: "/Documents/new.md", content: "..." })\`
 - \`textEditInsertText\` → Use \`write\` with mode "append" or "prepend"
 - \`textEditSearchReplace\` → Use \`searchReplace\`

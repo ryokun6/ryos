@@ -955,24 +955,19 @@ export default async function handler(req: Request) {
         // --- Unified Virtual File System Tools ---
         list: {
           description:
-            "List items from the ryOS virtual file system. Supports multiple directories and virtual paths. Returns a JSON array with metadata for each item. CRITICAL: You MUST ONLY reference items that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate items that are not in the returned list.",
+            "List items from the ryOS virtual file system. Returns a JSON array with metadata for each item. CRITICAL: You MUST ONLY reference items that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate items that are not in the returned list.",
           inputSchema: z.object({
             path: z
-              .string()
+              .enum(["/Applets", "/Documents", "/Applications", "/Music", "/Applets Store"])
               .describe(
-                "The directory path to list. Supported paths:\n" +
-                "- '/Applets' - Local saved applets\n" +
-                "- '/Documents' - User documents\n" +
-                "- '/Applications' - Installed system applications\n" +
-                "- '/iPod/Library' - Songs in iPod library\n" +
-                "- '/Store/Applets' - Shared applets from the Applet Store"
+                "The directory path to list: '/Applets' for local applets, '/Documents' for documents, '/Applications' for apps, '/Music' for iPod songs, '/Applets Store' for shared applets"
               ),
             query: z
               .string()
               .max(200)
               .optional()
               .describe(
-                "Optional search query to filter results (only used for '/Store/Applets' path). Case-insensitive substring match on title, name, or creator."
+                "Optional search query to filter results (only used for '/Applets Store' path). Case-insensitive substring match on title, name, or creator."
               ),
             limit: z
               .number()
@@ -981,7 +976,7 @@ export default async function handler(req: Request) {
               .max(50)
               .optional()
               .describe(
-                "Optional maximum number of results to return (default 25, only used for '/Store/Applets' path)."
+                "Optional maximum number of results to return (default 25, only used for '/Applets Store' path)."
               ),
           }),
         },
@@ -991,8 +986,8 @@ export default async function handler(req: Request) {
             "- Applets → applet-viewer\n" +
             "- Documents → TextEdit\n" +
             "- Applications → launches the app\n" +
-            "- iPod songs → plays in iPod\n" +
-            "- Store applets → opens preview\n" +
+            "- Music → plays in iPod\n" +
+            "- Applets Store → opens preview\n" +
             "CRITICAL: Use exact paths from 'list' results. Always call 'list' first.",
           inputSchema: z.object({
             path: z
@@ -1002,8 +997,8 @@ export default async function handler(req: Request) {
                 "- '/Applets/Calculator.app' - Open local applet\n" +
                 "- '/Documents/notes.md' - Open document in TextEdit\n" +
                 "- '/Applications/internet-explorer' - Launch app\n" +
-                "- '/iPod/Library/{id}' - Play song by ID\n" +
-                "- '/Store/Applets/{id}' - Preview shared applet"
+                "- '/Music/{id}' - Play song by ID\n" +
+                "- '/Applets Store/{id}' - Preview shared applet"
               ),
           }),
         },
@@ -1012,12 +1007,12 @@ export default async function handler(req: Request) {
             "Read the full contents of a file from the virtual file system. Returns the complete text content for AI processing. Supports:\n" +
             "- '/Applets/*' - Read applet HTML content\n" +
             "- '/Documents/*' - Read document markdown content\n" +
-            "- '/Store/Applets/{id}' - Fetch shared applet content and metadata",
+            "- '/Applets Store/{id}' - Fetch shared applet content and metadata",
           inputSchema: z.object({
             path: z
               .string()
               .describe(
-                "The file path to read. Must be from /Applets, /Documents, or /Store/Applets. Use exact path from list results or store applet ID for shared applets."
+                "The file path to read. Must be from /Applets, /Documents, or /Applets Store. Use exact path from list results or store applet ID for shared applets."
               ),
           }),
         },
@@ -1090,7 +1085,7 @@ export default async function handler(req: Request) {
         },
         listSharedApplets: {
           description:
-            "DEPRECATED: Use list({ path: '/Store/Applets' }) instead. List shared applets from the store.",
+            "DEPRECATED: Use list({ path: '/Applets Store' }) instead. List shared applets from the store.",
           inputSchema: z.object({
             query: z.string().max(200).optional(),
             limit: z.number().int().min(1).max(50).optional(),
@@ -1098,21 +1093,21 @@ export default async function handler(req: Request) {
         },
         fetchSharedApplet: {
           description:
-            "DEPRECATED: Use read({ path: '/Store/Applets/{id}' }) instead. Fetch shared applet content.",
+            "DEPRECATED: Use read({ path: '/Applets Store/{id}' }) instead. Fetch shared applet content.",
           inputSchema: z.object({
             id: z.string().min(1),
           }),
         },
         openSharedApplet: {
           description:
-            "DEPRECATED: Use open({ path: '/Store/Applets/{id}' }) instead. Open shared applet preview.",
+            "DEPRECATED: Use open({ path: '/Applets Store/{id}' }) instead. Open shared applet preview.",
           inputSchema: z.object({
             id: z.string().min(1),
           }),
         },
         listIpodLibrary: {
           description:
-            "DEPRECATED: Use list({ path: '/iPod/Library' }) instead. List iPod library songs.",
+            "DEPRECATED: Use list({ path: '/Music' }) instead. List iPod library songs.",
           inputSchema: z.object({}),
         },
         openFile: {

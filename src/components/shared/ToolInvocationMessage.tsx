@@ -64,9 +64,9 @@ export function ToolInvocationMessage({
       // Unified VFS tools
       case "list": {
         const path = typeof input?.path === "string" ? input.path : "";
-        if (path === "/iPod/Library") {
-          displayCallMessage = "Loading iPod library…";
-        } else if (path === "/Store/Applets") {
+        if (path === "/Music") {
+          displayCallMessage = "Loading music library…";
+        } else if (path === "/Applets Store") {
           displayCallMessage = "Listing shared applets…";
         } else if (path === "/Applications") {
           displayCallMessage = "Listing applications…";
@@ -77,9 +77,9 @@ export function ToolInvocationMessage({
       }
       case "open": {
         const path = typeof input?.path === "string" ? input.path : "";
-        if (path.startsWith("/iPod/Library/")) {
+        if (path.startsWith("/Music/")) {
           displayCallMessage = "Playing song…";
-        } else if (path.startsWith("/Store/Applets/")) {
+        } else if (path.startsWith("/Applets Store/")) {
           displayCallMessage = "Opening applet preview…";
         } else if (path.startsWith("/Applications/")) {
           displayCallMessage = "Launching app…";
@@ -90,7 +90,7 @@ export function ToolInvocationMessage({
       }
       case "read": {
         const path = typeof input?.path === "string" ? input.path : "";
-        if (path.startsWith("/Store/Applets/")) {
+        if (path.startsWith("/Applets Store/")) {
           displayCallMessage = "Fetching applet…";
         } else {
           displayCallMessage = "Reading file…";
