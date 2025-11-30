@@ -255,8 +255,9 @@ async function runPrefetchWithToast(
   const iconUrls = getIconUrlsFromManifest(manifest);
   const jsUrls = await discoverAllJsChunks();
   const soundUrls = getSoundUrls();
+  const assetUrls = getStaticAssetUrls();
   
-  const totalItems = iconUrls.length + soundUrls.length + jsUrls.length;
+  const totalItems = iconUrls.length + soundUrls.length + jsUrls.length + assetUrls.length;
   
   if (totalItems === 0) {
     toast.info('No assets to cache');
@@ -321,6 +322,15 @@ async function runPrefetchWithToast(
       });
     }
     
+    // Prefetch static assets (textures, splash screens, etc.)
+    if (assetUrls.length > 0) {
+      const baseCompleted = overallCompleted;
+      await prefetchUrlsWithProgress(assetUrls, 'Assets', (completed, total) => {
+        overallCompleted = baseCompleted + completed;
+        updateToast('assets', completed, total);
+      });
+    }
+    
     // Store manifest timestamp
     storeManifestTimestamp(manifest);
     
@@ -355,6 +365,27 @@ async function runPrefetchWithToast(
     toast.error('Failed to cache assets', { id: toastId });
   }
 }
+
+// Static assets that should be prefetched for UI theming
+const STATIC_ASSETS = [
+  // Theme textures
+  '/assets/brushed-metal.jpg',
+  '/assets/button.svg',
+  '/assets/button-default.svg',
+  // Splash screens
+  '/assets/splash/hello.svg',
+  '/assets/splash/macos.svg',
+  '/assets/splash/win98.png',
+  '/assets/splash/xp.png',
+  // Video player controls
+  '/assets/videos/play.png',
+  '/assets/videos/pause.png',
+  '/assets/videos/stop.png',
+  '/assets/videos/prev.png',
+  '/assets/videos/next.png',
+  '/assets/videos/clear.png',
+  '/assets/videos/switch.png',
+];
 
 // UI sound files in /sounds/ directory
 const UI_SOUNDS = [
@@ -489,6 +520,13 @@ function storeManifestTimestamp(manifest: IconManifest): void {
  */
 function getSoundUrls(): string[] {
   return UI_SOUNDS.map(sound => `/sounds/${sound}`);
+}
+
+/**
+ * Get all static asset URLs (textures, splash screens, etc.)
+ */
+function getStaticAssetUrls(): string[] {
+  return STATIC_ASSETS;
 }
 
 /**
