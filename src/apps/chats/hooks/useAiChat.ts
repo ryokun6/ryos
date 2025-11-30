@@ -1360,6 +1360,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               } else if (path.startsWith("/Applets Store/")) {
                 // Open shared applet preview
                 const shareId = path.replace("/Applets Store/", "");
+                
+                // Fetch applet metadata to get the name
+                let appletName = shareId;
+                try {
+                  const response = await fetch(`/api/share-applet?id=${encodeURIComponent(shareId)}`);
+                  if (response.ok) {
+                    const data = await response.json();
+                    appletName = data.title || data.name || shareId;
+                  }
+                } catch {
+                  // Fall back to shareId if fetch fails
+                }
+                
                 launchApp("applet-viewer", {
                   initialData: { path: "", content: "", shareCode: shareId },
                 });
@@ -1367,7 +1380,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: "Opened applet preview",
+                  output: `Opened applet: ${appletName}`,
                 });
                 result = "";
               } else if (path.startsWith("/Applications/")) {
