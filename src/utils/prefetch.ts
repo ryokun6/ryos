@@ -606,11 +606,15 @@ export async function prefetchAssets(): Promise<void> {
   }
 }
 
+// Flag to prevent concurrent prefetch operations
+let isPrefetchInProgress = false;
+
 /**
  * Check if a newer version is available by fetching index.html without cache
  * This runs on every app load to detect updates even if the user has cached assets
+ * Returns true if an update was found and triggered
  */
-export async function checkForVersionUpdate(): Promise<void> {
+async function checkForVersionUpdate(): Promise<boolean> {
   try {
     // Fetch index.html without cache to get the latest version
     const response = await fetch('/index.html', { 
@@ -622,7 +626,7 @@ export async function checkForVersionUpdate(): Promise<void> {
     
     if (!response.ok) {
       console.log('[Prefetch] Could not fetch index.html for version check');
-      return;
+      return false;
     }
     
     const html = await response.text();
@@ -632,7 +636,7 @@ export async function checkForVersionUpdate(): Promise<void> {
     const bundleMatch = html.match(/\/assets\/index-([A-Za-z0-9_-]+)\.js/);
     if (!bundleMatch || !bundleMatch[1]) {
       console.log('[Prefetch] Could not find bundle hash in index.html');
-      return;
+      return false;
     }
     
     const serverBundleHash = bundleMatch[1];
@@ -645,7 +649,7 @@ export async function checkForVersionUpdate(): Promise<void> {
     
     if (!currentBundleHash) {
       console.log('[Prefetch] Could not determine current bundle hash');
-      return;
+      return false;
     }
     
     console.log(`[Prefetch] Version check: current=${currentBundleHash}, server=${serverBundleHash}`);
@@ -656,32 +660,51 @@ export async function checkForVersionUpdate(): Promise<void> {
       // Clear the prefetch flag to force re-prefetch
       clearPrefetchFlag();
       // Run the prefetch with toast to show update progress
-      await runPrefetchWithToast();
+      isPrefetchInProgress = true;
+      try {
+        await runPrefetchWithToast();
+      } finally {
+        isPrefetchInProgress = false;
+      }
+      return true;
     } else {
       console.log('[Prefetch] Already running latest version');
+      return false;
     }
   } catch (error) {
     console.warn('[Prefetch] Version check failed:', error);
+    return false;
   }
 }
 
 /**
  * Initialize prefetching after the app has loaded
- * Automatically handles first-time prefetch and version updates
- * Also checks for new versions without cache on every load
+ * Checks for new versions without cache on every load, then handles first-time prefetch
  */
 export function initPrefetch(): void {
+  const runPrefetchFlow = async () => {
+    // First, check for version updates without cache
+    const updateTriggered = await checkForVersionUpdate();
+    
+    // If an update was already triggered, skip the regular prefetch
+    if (updateTriggered) {
+      console.log('[Prefetch] Update already triggered, skipping regular prefetch');
+      return;
+    }
+    
+    // If no update was triggered and no prefetch is in progress, run regular prefetch
+    // This handles first-time users or users whose localStorage was cleared
+    if (!isPrefetchInProgress) {
+      await prefetchAssets();
+    }
+  };
+  
   if (document.readyState === 'complete') {
-    // Check for version updates without cache first
-    setTimeout(checkForVersionUpdate, 2000);
-    // Then run regular prefetch for first-time users
-    setTimeout(prefetchAssets, 3000);
+    // Delay to not interfere with initial render
+    setTimeout(runPrefetchFlow, 2000);
   } else {
     window.addEventListener('load', () => {
-      // Check for version updates without cache first
-      setTimeout(checkForVersionUpdate, 2000);
-      // Then run regular prefetch for first-time users
-      setTimeout(prefetchAssets, 3000);
+      setTimeout(runPrefetchFlow, 2000);
     }, { once: true });
   }
 }
