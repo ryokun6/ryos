@@ -87,12 +87,24 @@ const getSystemState = () => {
   // Use new instance-based model instead of legacy apps
   const runningInstances = Object.entries(appStore.instances)
     .filter(([, instance]) => instance.isOpen)
-    .map(([instanceId, instance]) => ({
-      instanceId,
-      appId: instance.appId,
-      isForeground: instance.isForeground || false,
-      title: instance.title,
-    }));
+    .map(([instanceId, instance]) => {
+      const base = {
+        instanceId,
+        appId: instance.appId,
+        isForeground: instance.isForeground || false,
+        title: instance.title,
+      };
+      // For applet-viewer instances, include the applet path
+      if (instance.appId === "applet-viewer" && instance.initialData) {
+        const appletData = instance.initialData as { path?: string; shareCode?: string };
+        return {
+          ...base,
+          appletPath: appletData.path || undefined,
+          appletId: appletData.shareCode || undefined,
+        };
+      }
+      return base;
+    });
 
   const foregroundInstance =
     runningInstances.find((inst) => inst.isForeground) || null;
