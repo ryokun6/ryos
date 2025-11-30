@@ -23,7 +23,7 @@ import {
 } from "@/apps/finder/hooks/useFileSystem";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
-import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
+import { useFilesStore } from "@/stores/useFilesStore";
 import { generateHTML, generateJSON } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -1659,7 +1659,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const appStore = useAppStore.getState();
               const textEditStore = useTextEditStore.getState();
 
-              // Check if file exists
+              // Check if file exists for append/prepend modes
               const existingItem = useFilesStore.getState().items[path];
               const isNewFile = !existingItem || existingItem.status !== "active";
 
@@ -1677,36 +1677,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
               }
 
-              // Calculate file size
-              const fileSize = new Blob([finalContent]).size;
-              const now = Date.now();
-
-              // Create/update file metadata (addItem will generate UUID for new files)
-              const metadata: Omit<FileSystemItem, "status"> = {
+              // Save metadata to file store (addItem generates UUID for new files, preserves for existing)
+              useFilesStore.getState().addItem({
                 path,
                 name: fileName,
                 isDirectory: false,
                 type: "markdown",
-                uuid: existingItem?.uuid, // Preserve existing UUID if updating
-                createdAt: existingItem?.createdAt || now,
-                modifiedAt: now,
-                size: fileSize,
+                size: new Blob([finalContent]).size,
                 icon: "📄",
-              };
+              });
 
-              // Save metadata to file store
-              useFilesStore.getState().addItem(metadata);
-
-              // Get fresh state to get the saved item with UUID
+              // Get the saved item with UUID
               const savedItem = useFilesStore.getState().items[path];
               if (!savedItem?.uuid) {
-                // Log debug info
-                console.error("[ToolCall] write: Failed to save file metadata", {
-                  path,
-                  documentsExists: !!useFilesStore.getState().items["/Documents"],
-                  allItems: Object.keys(useFilesStore.getState().items),
-                });
-                throw new Error("Failed to save document. Check if /Documents directory exists.");
+                throw new Error("Failed to save document metadata");
               }
 
               // Save content to IndexedDB
