@@ -743,7 +743,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
 
               if (enableTranslation !== undefined) {
-                if (enableTranslation === null || enableTranslation === "") {
+                // Check for values that should disable translation
+                const disableValues = ['original', 'off', 'none', 'disable', 'disabled', 'null'];
+                const shouldDisable = enableTranslation === null || 
+                  enableTranslation === "" || 
+                  (typeof enableTranslation === 'string' && disableValues.includes(enableTranslation.toLowerCase()));
+                
+                if (shouldDisable) {
                   ipod.setLyricsTranslationLanguage(null);
                   stateChanges.push("Turned off lyrics translation");
                   console.log("[ToolCall] Lyrics translation disabled.");
