@@ -23,7 +23,7 @@ import {
 } from "@/apps/finder/hooks/useFileSystem";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
-import { useFilesStore } from "@/stores/useFilesStore";
+import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { generateHTML, generateJSON } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -31,7 +31,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
-import { AnyExtension, JSONContent } from "@tiptap/core";
+import { AnyExtension } from "@tiptap/core";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
 
@@ -1600,11 +1600,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             break;
           }
           case "write": {
-            const { path, content, mode = "overwrite", title } = toolCall.input as {
+            const { path, content, mode = "overwrite" } = toolCall.input as {
               path: string;
               content: string;
               mode?: "overwrite" | "append" | "prepend";
-              title?: string;
             };
 
             if (!path) {
@@ -1613,6 +1612,31 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
                 errorText: "No path provided",
+              });
+              result = "";
+              break;
+            }
+
+            // Validate path format for documents
+            if (!path.startsWith("/Documents/")) {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: `Invalid path: ${path}. Use /Documents/filename.md for documents. For applets, use generateHtml (new) or searchReplace (edit).`,
+              });
+              result = "";
+              break;
+            }
+
+            // Validate filename has .md extension
+            const fileName = path.split("/").pop() || "";
+            if (!fileName.endsWith(".md")) {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: `Invalid filename: ${fileName}. Document files must end with .md extension (e.g., /Documents/my-notes.md)`,
               });
               result = "";
               break;
@@ -1632,123 +1656,104 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
 
             try {
-              if (path.startsWith("/Documents/")) {
-                // Write to document (via TextEdit)
-                const appStore = useAppStore.getState();
-                const textEditStore = useTextEditStore.getState();
+              const filesStore = useFilesStore.getState();
+              const appStore = useAppStore.getState();
+              const textEditStore = useTextEditStore.getState();
 
-                // Find existing TextEdit instance with this file
-                let targetInstanceId: string | null = null;
-                for (const [instanceId, instance] of Object.entries(textEditStore.instances)) {
-                  if (instance.filePath === path) {
-                    targetInstanceId = instanceId;
-                    break;
-                  }
+              // Check if file exists
+              const existingItem = filesStore.items[path];
+              const isNewFile = !existingItem || existingItem.status !== "active";
+
+              // Determine final content based on mode
+              let finalContent = content || "";
+              if (!isNewFile && mode !== "overwrite" && existingItem?.uuid) {
+                const existingData = await dbOperations.get<DocumentContent>(STORES.DOCUMENTS, existingItem.uuid);
+                if (existingData?.content) {
+                  const existingContent = typeof existingData.content === "string"
+                    ? existingData.content
+                    : await existingData.content.text();
+                  finalContent = mode === "prepend"
+                    ? content + existingContent
+                    : existingContent + content;
                 }
+              }
 
-                // Create new instance if not found
-                if (!targetInstanceId) {
-                  const windowTitle = title || path.split("/").pop()?.replace(/\.md$/, "") || "Untitled";
-                  targetInstanceId = appStore.launchApp("textedit", undefined, windowTitle, true);
-                  trackNewTextEditInstance(targetInstanceId);
-                  await new Promise((resolve) => setTimeout(resolve, 200));
-                }
+              // Calculate file size
+              const fileSize = new Blob([finalContent]).size;
+              const now = Date.now();
 
-                const targetInstance = textEditStore.instances[targetInstanceId];
-                const htmlFragment = markdownToHtml(content || "");
-                const parsedJson = generateJSON(htmlFragment, [
-                  StarterKit,
-                  Underline,
-                  TextAlign.configure({ types: ["heading", "paragraph"] }),
-                  TaskList,
-                  TaskItem.configure({ nested: true }),
-                ] as AnyExtension[]);
+              // Create/update file metadata
+              const metadata: FileSystemItem = {
+                path,
+                name: fileName,
+                isDirectory: false,
+                type: "markdown",
+                status: "active",
+                uuid: existingItem?.uuid, // Preserve existing UUID if updating
+                createdAt: existingItem?.createdAt || now,
+                modifiedAt: now,
+                size: fileSize,
+                icon: "📄",
+              };
 
-                let newDocJson: JSONContent;
-                const nodesToInsert = Array.isArray(parsedJson.content) ? parsedJson.content : [];
+              // Save metadata to file store
+              filesStore.addItem(metadata);
 
-                if (mode === "overwrite" || !targetInstance?.contentJson) {
-                  newDocJson = parsedJson;
-                } else {
-                  const cloned = JSON.parse(JSON.stringify(targetInstance.contentJson));
-                  if (mode === "prepend") {
-                    cloned.content = [...nodesToInsert, ...cloned.content];
-                  } else {
-                    cloned.content = [...cloned.content, ...nodesToInsert];
-                  }
-                  newDocJson = cloned;
-                }
+              // Get the saved item to get UUID (in case it was newly generated)
+              const savedItem = filesStore.items[path];
+              if (!savedItem?.uuid) {
+                throw new Error("Failed to get UUID for saved document");
+              }
 
-                textEditStore.updateInstance(targetInstanceId, {
-                  filePath: path,
-                  contentJson: newDocJson,
-                  hasUnsavedChanges: true,
-                });
+              // Save content to IndexedDB
+              await dbOperations.put<DocumentContent>(
+                STORES.DOCUMENTS,
+                { name: fileName, content: finalContent },
+                savedItem.uuid,
+              );
 
-                appStore.bringInstanceToForeground(targetInstanceId);
-
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: `Successfully wrote to document: ${path} (instanceId: ${targetInstanceId})`,
-                });
-                result = "";
-              } else if (path.startsWith("/Applets/")) {
-                // Modify existing applet (new applets should use generateHtml)
-                const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
-
-                if (!fileItem || fileItem.status !== "active") {
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    state: "output-error",
-                    errorText: `Applet not found: ${path}. Use generateHtml to create new applets.`,
-                  });
-                  result = "";
+              // Find or create TextEdit instance for this file
+              let targetInstanceId: string | null = null;
+              for (const [instanceId, instance] of Object.entries(textEditStore.instances)) {
+                if (instance.filePath === path) {
+                  targetInstanceId = instanceId;
                   break;
                 }
-
-                if (!fileItem.uuid) {
-                  throw new Error(`Applet missing UUID: ${path}`);
-                }
-
-                // Get existing content for append/prepend modes
-                let finalContent = content;
-                if (mode !== "overwrite") {
-                  const existingData = await dbOperations.get<DocumentContent>(STORES.APPLETS, fileItem.uuid);
-                  if (existingData?.content) {
-                    const existingContent = typeof existingData.content === "string"
-                      ? existingData.content
-                      : await existingData.content.text();
-                    finalContent = mode === "prepend"
-                      ? content + existingContent
-                      : existingContent + content;
-                  }
-                }
-
-                // Save updated content
-                await dbOperations.put<DocumentContent>(
-                  STORES.APPLETS,
-                  { name: fileItem.uuid, content: finalContent },
-                  fileItem.uuid,
-                );
-
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: `Successfully updated applet: ${path}`,
-                });
-                result = "";
-              } else {
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  state: "output-error",
-                  errorText: `Invalid path for write: ${path}. Use /Documents/* or /Applets/*`,
-                });
-                result = "";
               }
+
+              // Create new TextEdit instance if not found
+              if (!targetInstanceId) {
+                const windowTitle = fileName.replace(/\.md$/, "") || "Untitled";
+                targetInstanceId = appStore.launchApp("textedit", undefined, windowTitle, true);
+                trackNewTextEditInstance(targetInstanceId);
+                await new Promise((resolve) => setTimeout(resolve, 200));
+              }
+
+              // Update TextEdit instance with content
+              const htmlFragment = markdownToHtml(finalContent);
+              const contentJson = generateJSON(htmlFragment, [
+                StarterKit,
+                Underline,
+                TextAlign.configure({ types: ["heading", "paragraph"] }),
+                TaskList,
+                TaskItem.configure({ nested: true }),
+              ] as AnyExtension[]);
+
+              textEditStore.updateInstance(targetInstanceId, {
+                filePath: path,
+                contentJson,
+                hasUnsavedChanges: false, // Already saved to disk
+              });
+
+              appStore.bringInstanceToForeground(targetInstanceId);
+
+              const actionVerb = isNewFile ? "Created" : "Updated";
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: `${actionVerb} document: ${path}`,
+              });
+              result = "";
             } catch (err) {
               console.error("write error:", err);
               addToolResult({

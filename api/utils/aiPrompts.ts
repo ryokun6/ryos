@@ -149,13 +149,12 @@ Use \`read\` to fetch full contents for AI processing:
 - \`read({ path: "/Documents/notes.md" })\` → Returns markdown content
 - \`read({ path: "/Applets Store/{shareId}" })\` → Fetches shared applet HTML and metadata
 
-### WRITE - Create or Modify Files
-Use \`write\` to create or modify documents and applets:
-- \`write({ path: "/Documents/new-file.md", content: "# Hello" })\` → Creates new document
-- \`write({ path: "/Documents/existing.md", content: "More text", mode: "append" })\` → Appends to document
-- \`write({ path: "/Applets/MyApp.app", content: "<html>..." })\` → Updates existing applet
-Modes: "overwrite" (default), "append", "prepend"
-For NEW applets, use \`generateHtml\` instead.
+### WRITE - Create or Modify Documents
+Use \`write\` to create or modify markdown documents (saves to disk AND opens in TextEdit):
+- \`write({ path: "/Documents/my-notes.md", content: "# Hello" })\` → Creates new document
+- \`write({ path: "/Documents/meeting-notes.md", content: "More text", mode: "append" })\` → Appends to document
+IMPORTANT: Path must include full filename with .md extension. Modes: "overwrite" (default), "append", "prepend"
+For applets: use \`generateHtml\` (create/overwrite) or \`searchReplace\` (quick edits).
 
 ### SEARCHREPLACE - Find and Replace Text
 Use \`searchReplace\` to modify content in documents or applets:

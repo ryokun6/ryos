@@ -991,31 +991,20 @@ export default async function handler(req: Request) {
         },
         write: {
           description:
-            "Write or modify content in a document or applet. Creates a new file if it doesn't exist. For documents, opens in TextEdit. Supports:\n" +
-            "- '/Documents/*' - Create or modify markdown documents\n" +
-            "- '/Applets/*' - Modify existing applet HTML (use generateHtml for new applets)",
+            "Create or modify markdown documents. Saves to disk and opens in TextEdit. " +
+            "IMPORTANT: For applets, use generateHtml (create/overwrite) or searchReplace (edit).",
           inputSchema: z.object({
             path: z
               .string()
               .describe(
-                "The file path to write to. For new documents use '/Documents/filename.md'. For applets use '/Applets/name.app'."
+                "Full file path including .md extension. Example: '/Documents/my-notes.md' or '/Documents/Meeting Notes.md'"
               ),
-            content: z
-              .string()
-              .describe(
-                "The content to write. For documents: markdown text. For applets: HTML content."
-              ),
+            content: z.string().describe("The markdown content to write."),
             mode: z
               .enum(["overwrite", "append", "prepend"])
               .optional()
               .describe(
                 "Write mode: 'overwrite' replaces content (default), 'append' adds to end, 'prepend' adds to start."
-              ),
-            title: z
-              .string()
-              .optional()
-              .describe(
-                "Optional window title. For documents defaults to filename, for applets defaults to 'Applet'."
               ),
           }),
         },
