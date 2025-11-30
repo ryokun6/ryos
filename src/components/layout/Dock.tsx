@@ -664,7 +664,7 @@ function MacDock() {
             maxWidth: "min(92vw, 980px)",
             transformOrigin: "center bottom",
             borderRadius: "0px",
-            overflowX: isPhone ? "hidden" : "visible",
+            overflowX: isPhone ? "auto" : "visible",
             overflowY: "visible",
             WebkitOverflowScrolling: isPhone ? "touch" : undefined,
             overscrollBehaviorX: isPhone ? "contain" : undefined,
