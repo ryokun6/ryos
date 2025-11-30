@@ -27,7 +27,7 @@ import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
-import { clearPrefetchFlag, prefetchAssets } from "@/utils/prefetch";
+import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
 import { AIModel, AI_MODEL_METADATA } from "@/types/aiModels";
 import { VolumeMixer } from "./VolumeMixer";
 import { v4 as uuidv4 } from "uuid";
@@ -1796,8 +1796,7 @@ export function ControlPanelsAppComponent({
                   <Button
                     variant="retro"
                     onClick={() => {
-                      clearPrefetchFlag();
-                      prefetchAssets();
+                      forceRefreshCache();
                     }}
                     className="w-full"
                   >

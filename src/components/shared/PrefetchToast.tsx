@@ -11,6 +11,11 @@ interface PrefetchToastProps {
   percentage?: number;
 }
 
+interface PrefetchCompleteToastProps {
+  hasUpdate?: boolean;
+  onReload: () => void;
+}
+
 const phaseLabels: Record<string, string> = {
   icons: 'Caching icons',
   sounds: 'Caching sounds',
@@ -48,6 +53,25 @@ export function PrefetchToast({
           : `${completed}/${total} total`
         }
       </div>
+    </div>
+  );
+}
+
+export function PrefetchCompleteToast({ hasUpdate, onReload }: PrefetchCompleteToastProps) {
+  return (
+    <div className="flex flex-col gap-2 w-full min-w-[200px]">
+      <div className="text-sm">
+        {hasUpdate 
+          ? 'New version available!' 
+          : 'Assets cached for offline use'
+        }
+      </div>
+      <button
+        onClick={onReload}
+        className="w-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+      >
+        {hasUpdate ? 'Reload to update' : 'Reload now'}
+      </button>
     </div>
   );
 }

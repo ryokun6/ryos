@@ -6,14 +6,56 @@
 
 import { toast } from "sonner";
 import { createElement } from "react";
-import { PrefetchToast } from "@/components/shared/PrefetchToast";
+import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/PrefetchToast";
 import { COMMIT_SHA_SHORT } from "@/config/buildVersion";
 
 // Storage keys for tracking prefetch status
 const PREFETCH_KEY = 'ryos-prefetch-version';
 const MANIFEST_KEY = 'ryos-manifest-timestamp';
+const LAST_KNOWN_VERSION_KEY = 'ryos-last-known-version';
 // Use commit SHA - automatically updates on each deployment
 const PREFETCH_VERSION = COMMIT_SHA_SHORT;
+
+/**
+ * Check if there's a new version available (current build differs from last known)
+ */
+function checkForNewVersion(): boolean {
+  try {
+    const lastKnownVersion = localStorage.getItem(LAST_KNOWN_VERSION_KEY);
+    // If no stored version, this is first run - not an "update"
+    if (!lastKnownVersion) {
+      localStorage.setItem(LAST_KNOWN_VERSION_KEY, COMMIT_SHA_SHORT);
+      return false;
+    }
+    // Check if version changed
+    const hasUpdate = lastKnownVersion !== COMMIT_SHA_SHORT;
+    if (hasUpdate) {
+      console.log(`[Prefetch] New version detected: ${lastKnownVersion} -> ${COMMIT_SHA_SHORT}`);
+    }
+    return hasUpdate;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Update the stored version after reload/update
+ */
+function updateStoredVersion(): void {
+  try {
+    localStorage.setItem(LAST_KNOWN_VERSION_KEY, COMMIT_SHA_SHORT);
+  } catch {
+    // localStorage might not be available
+  }
+}
+
+/**
+ * Reload the page to apply updates
+ */
+function reloadPage(): void {
+  updateStoredVersion();
+  window.location.reload();
+}
 
 /**
  * Clear the prefetch flag to force re-prefetch on next boot
@@ -26,6 +68,145 @@ export function clearPrefetchFlag(): void {
     console.log('[Prefetch] Flag cleared, will re-prefetch on next boot');
   } catch {
     // localStorage might not be available
+  }
+}
+
+/**
+ * Force clear all caches and immediately re-prefetch with toast
+ * Use this for manual "Reset System Cache" action
+ * This bypasses service worker checks and always shows the toast
+ */
+export async function forceRefreshCache(): Promise<void> {
+  console.log('[Prefetch] Force refresh triggered...');
+  
+  // Clear all flags first
+  try {
+    localStorage.removeItem(PREFETCH_KEY);
+    localStorage.removeItem(MANIFEST_KEY);
+  } catch {
+    // Continue even if localStorage fails
+  }
+  
+  // Clear service worker caches
+  try {
+    const cacheNames = await caches.keys();
+    const swCaches = cacheNames.filter(name => 
+      SW_CACHE_NAMES.some(swName => name.includes(swName))
+    );
+    await Promise.all(swCaches.map(name => caches.delete(name)));
+    console.log(`[Prefetch] Force cleared ${swCaches.length} caches`);
+  } catch (error) {
+    console.warn('[Prefetch] Failed to clear caches:', error);
+  }
+  
+  // Run prefetch logic directly (bypassing service worker checks)
+  await runPrefetchWithToast();
+}
+
+/**
+ * Run the prefetch logic with toast - used by forceRefreshCache
+ * This bypasses service worker requirement checks
+ */
+async function runPrefetchWithToast(): Promise<void> {
+  console.log('[Prefetch] Starting prefetch with toast...');
+  
+  // Fetch manifest first
+  const manifest = await fetchIconManifest();
+  if (!manifest) {
+    toast.error('Failed to load asset manifest');
+    console.log('[Prefetch] Could not fetch manifest');
+    return;
+  }
+  
+  // Gather all URLs
+  const iconUrls = getIconUrlsFromManifest(manifest);
+  const jsUrls = await discoverAllJsChunks();
+  const soundUrls = getSoundUrls();
+  
+  const totalItems = iconUrls.length + soundUrls.length + jsUrls.length;
+  
+  if (totalItems === 0) {
+    toast.info('No assets to cache');
+    console.log('[Prefetch] No assets to prefetch');
+    return;
+  }
+  
+  let overallCompleted = 0;
+  
+  // Create a toast with progress
+  const toastId = toast.loading(
+    createToastContent({ 
+      phase: 'icons', 
+      completed: 0, 
+      total: totalItems 
+    }),
+    {
+      duration: Infinity,
+      id: 'prefetch-progress',
+    }
+  );
+  
+  const updateToast = (phase: string, phaseCompleted: number, phaseTotal: number) => {
+    const percentage = Math.round((overallCompleted / totalItems) * 100);
+    toast.loading(
+      createToastContent({
+        phase,
+        completed: overallCompleted,
+        total: totalItems,
+        phaseCompleted,
+        phaseTotal,
+        percentage,
+      }),
+      { id: toastId, duration: Infinity }
+    );
+  };
+  
+  try {
+    // Prefetch icons
+    if (iconUrls.length > 0) {
+      await prefetchUrlsWithProgress(iconUrls, 'Icons', (completed, total) => {
+        overallCompleted = completed;
+        updateToast('icons', completed, total);
+      });
+    }
+    
+    // Prefetch sounds
+    if (soundUrls.length > 0) {
+      const baseCompleted = overallCompleted;
+      await prefetchUrlsWithProgress(soundUrls, 'Sounds', (completed, total) => {
+        overallCompleted = baseCompleted + completed;
+        updateToast('sounds', completed, total);
+      });
+    }
+    
+    // Prefetch JS chunks
+    if (jsUrls.length > 0) {
+      const baseCompleted = overallCompleted;
+      await prefetchUrlsWithProgress(jsUrls, 'Scripts', (completed, total) => {
+        overallCompleted = baseCompleted + completed;
+        updateToast('scripts', completed, total);
+      });
+    }
+    
+    // Mark as complete and store manifest timestamp
+    markPrefetchComplete();
+    storeManifestTimestamp(manifest);
+    
+    // Show completion toast with reload button
+    toast.success(
+      createElement(PrefetchCompleteToast, {
+        hasUpdate: false,
+        onReload: reloadPage,
+      }),
+      {
+        id: toastId,
+        duration: 5000,
+      }
+    );
+    
+  } catch (error) {
+    console.error('[Prefetch] Error during prefetch:', error);
+    toast.error('Failed to cache assets', { id: toastId });
   }
 }
 
@@ -399,10 +580,21 @@ export async function prefetchAssets(): Promise<void> {
     // Mark as complete and store manifest timestamp
     markPrefetchComplete();
     storeManifestTimestamp(manifest);
-    toast.success('Assets cached for offline use', {
-      id: toastId,
-      duration: 2000,
-    });
+    
+    // Check if there's a new version available
+    const hasUpdate = checkForNewVersion();
+    
+    // Show completion toast with reload button
+    toast.success(
+      createElement(PrefetchCompleteToast, {
+        hasUpdate,
+        onReload: reloadPage,
+      }),
+      {
+        id: toastId,
+        duration: hasUpdate ? 10000 : 5000, // Longer duration if update available
+      }
+    );
     
   } catch (error) {
     console.error('[Prefetch] Error during prefetch:', error);
@@ -411,14 +603,103 @@ export async function prefetchAssets(): Promise<void> {
 }
 
 /**
+ * Check for updates by fetching the latest index.html and comparing build version
+ * This fetches fresh from the server to detect new deployments
+ */
+async function checkForUpdatesRemote(): Promise<boolean> {
+  try {
+    // Fetch index.html with cache-busting to get the latest version
+    const response = await fetch('/index.html', {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    if (!response.ok) return false;
+    
+    const html = await response.text();
+    
+    // Find the main bundle hash in the HTML
+    // The main bundle looks like: /assets/index-XXXX.js
+    const bundleMatch = html.match(/\/assets\/index-([A-Za-z0-9_-]+)\.js/);
+    if (!bundleMatch) return false;
+    
+    const remoteBundleHash = bundleMatch[1];
+    
+    // Get current page's bundle hash
+    const scripts = document.querySelectorAll('script[src*="/assets/index-"]');
+    for (const script of scripts) {
+      const src = script.getAttribute('src') || '';
+      const currentMatch = src.match(/\/assets\/index-([A-Za-z0-9_-]+)\.js/);
+      if (currentMatch) {
+        const currentBundleHash = currentMatch[1];
+        if (currentBundleHash !== remoteBundleHash) {
+          console.log(`[Prefetch] Remote update detected: ${currentBundleHash} -> ${remoteBundleHash}`);
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.warn('[Prefetch] Failed to check for remote updates:', error);
+    return false;
+  }
+}
+
+/**
+ * Show update available toast with reload button
+ */
+function showUpdateToast(): void {
+  toast.info(
+    createElement(PrefetchCompleteToast, {
+      hasUpdate: true,
+      onReload: reloadPage,
+    }),
+    {
+      id: 'update-available',
+      duration: 15000,
+    }
+  );
+}
+
+/**
+ * Periodically check for updates (every 5 minutes)
+ */
+let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+function startUpdateChecker(): void {
+  // Check immediately on start (after a short delay)
+  setTimeout(async () => {
+    const hasUpdate = await checkForUpdatesRemote();
+    if (hasUpdate) {
+      showUpdateToast();
+    }
+  }, 10000); // Wait 10 seconds after load
+  
+  // Then check every 5 minutes
+  updateCheckInterval = setInterval(async () => {
+    const hasUpdate = await checkForUpdatesRemote();
+    if (hasUpdate) {
+      showUpdateToast();
+      // Stop checking once we've detected an update
+      if (updateCheckInterval) {
+        clearInterval(updateCheckInterval);
+        updateCheckInterval = null;
+      }
+    }
+  }, 5 * 60 * 1000); // 5 minutes
+}
+
+/**
  * Initialize prefetching after the app has loaded
  */
 export function initPrefetch(): void {
   if (document.readyState === 'complete') {
     setTimeout(prefetchAssets, 3000);
+    startUpdateChecker();
   } else {
     window.addEventListener('load', () => {
       setTimeout(prefetchAssets, 3000);
+      startUpdateChecker();
     }, { once: true });
   }
 }
