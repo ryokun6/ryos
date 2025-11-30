@@ -7,6 +7,42 @@ import { useVideoStore } from "@/stores/useVideoStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 
+// Helper function to detect user's operating system
+const detectUserOS = (): string => {
+  if (typeof navigator === "undefined") return "Unknown";
+  
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform || "";
+  
+  // Check for iOS (iPhone, iPad, iPod)
+  if (/iPad|iPhone|iPod/.test(userAgent) || 
+      (platform === "MacIntel" && navigator.maxTouchPoints > 1)) {
+    return "iOS";
+  }
+  
+  // Check for Android
+  if (/Android/.test(userAgent)) {
+    return "Android";
+  }
+  
+  // Check for Windows
+  if (/Win/.test(platform)) {
+    return "Windows";
+  }
+  
+  // Check for macOS (not iOS)
+  if (/Mac/.test(platform)) {
+    return "macOS";
+  }
+  
+  // Check for Linux
+  if (/Linux/.test(platform)) {
+    return "Linux";
+  }
+  
+  return "Unknown";
+};
+
 // Helper function to get system state for AI chat
 const getSystemState = () => {
   const appStore = useAppStore.getState();
@@ -17,6 +53,9 @@ const getSystemState = () => {
 
   const currentVideo = videoStore.getCurrentVideo();
   const currentTrack = ipodStore.tracks[ipodStore.currentIndex];
+
+  // Detect user's operating system
+  const userOS = detectUserOS();
 
   // Use new instance-based model
   const openInstances = Object.values(appStore.instances).filter(
@@ -43,6 +82,7 @@ const getSystemState = () => {
     apps: appStore.apps,
     instances: appStore.instances,
     username: chatsStore.username,
+    userOS,
     runningApps: {
       foreground: foregroundApp,
       background: backgroundApps,

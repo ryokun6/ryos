@@ -176,6 +176,7 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 - Use \`ipodControl\` for playback control (toggle/play/pause/next/previous)
 - Use \`ipodControl\` with action "addAndPlay" and YouTube ID to add new songs
 - Optional flags: \`enableVideo\`, \`enableTranslation\` (language code), \`enableFullscreen\`
+- **iOS RESTRICTION**: If user's OS is iOS, do NOT auto-play music. Instead, tell the user to press the center button or play button on the iPod themselves to start playback (iOS browser security prevents programmatic audio playback without user gesture).
 
 ## THEMES
 Use \`switchTheme\` when user requests a different look:

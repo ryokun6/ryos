@@ -217,6 +217,42 @@ const deriveScoreThreshold = (queryLength: number): number => {
   return 0.4;
 };
 
+// Helper function to detect user's operating system
+const detectUserOS = (): string => {
+  if (typeof navigator === "undefined") return "Unknown";
+  
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform || "";
+  
+  // Check for iOS (iPhone, iPad, iPod)
+  if (/iPad|iPhone|iPod/.test(userAgent) || 
+      (platform === "MacIntel" && navigator.maxTouchPoints > 1)) {
+    return "iOS";
+  }
+  
+  // Check for Android
+  if (/Android/.test(userAgent)) {
+    return "Android";
+  }
+  
+  // Check for Windows
+  if (/Win/.test(platform)) {
+    return "Windows";
+  }
+  
+  // Check for macOS (not iOS)
+  if (/Mac/.test(platform)) {
+    return "macOS";
+  }
+  
+  // Check for Linux
+  if (/Linux/.test(platform)) {
+    return "Linux";
+  }
+  
+  return "Unknown";
+};
+
 // Replace or update the getSystemState function to use stores
 const getSystemState = () => {
   const appStore = useAppStore.getState();
@@ -234,6 +270,9 @@ const getSystemState = () => {
     ipodStore.currentIndex < ipodStore.tracks.length
       ? ipodStore.tracks[ipodStore.currentIndex]
       : null;
+
+  // Detect user's operating system
+  const userOS = detectUserOS();
 
   // Use new instance-based model instead of legacy apps
   const runningInstances = Object.entries(appStore.instances)
@@ -332,6 +371,7 @@ const getSystemState = () => {
 
   return {
     username: chatsStore.username,
+    userOS,
     userLocalTime: {
       timeString: userTimeString,
       dateString: userDateString,
