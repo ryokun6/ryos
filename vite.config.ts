@@ -71,8 +71,9 @@ export default defineConfig({
           /^\/iframe-check/,  // iframe proxy endpoint
           /^\/404/,  // Don't intercept 404 redirects
         ],
-        // Disable default navigation fallback (we handle it with runtime caching)
-        navigateFallback: null,
+        // Enable navigation fallback to precached index.html for offline support
+        // This ensures the app can start when offline by serving the cached shell
+        navigateFallback: 'index.html',
         // Cache strategy for different asset types
         runtimeCaching: [
           {
@@ -185,10 +186,12 @@ export default defineConfig({
             },
           },
         ],
-        // Precache the most important assets (excluding large files)
-        // Note: HTML is NOT precached - uses NetworkFirst runtime caching
-        // to avoid Safari errors with stale index.html referencing old scripts
+        // Precache the most important assets for offline support
+        // index.html is precached to serve as navigation fallback when offline
+        // Service worker uses skipWaiting + clientsClaim to update immediately,
+        // minimizing risk of stale HTML referencing old scripts
         globPatterns: [
+          "index.html",
           "**/*.css",
           "fonts/*.{woff,woff2,otf,ttf}",
         ],
