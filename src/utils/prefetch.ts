@@ -327,17 +327,20 @@ async function runPrefetchWithToast(
     // Store version in app store after successful prefetch
     storeVersion(server.version, server.buildNumber, server.buildTime);
     
+    // Dismiss the progress toast
+    toast.dismiss(toastId);
+    
     // Show completion toast - with version/reload for updates, just dismiss for first-time
     if (showVersionToast) {
       console.log(`[Prefetch] Showing update toast: ${server.version} (${server.buildNumber})`);
       
+      // Create a new toast (not replacing the old one)
       toast.success(
         createElement(PrefetchCompleteToast, {
           version: server.version,
           buildNumber: server.buildNumber,
         }),
         {
-          id: toastId,
           duration: Infinity,
           action: {
             label: "Reboot",
@@ -345,9 +348,6 @@ async function runPrefetchWithToast(
           },
         }
       );
-    } else {
-      // First-time prefetch - just dismiss the progress toast
-      toast.dismiss(toastId);
     }
     
   } catch (error) {

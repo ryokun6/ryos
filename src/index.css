@@ -737,24 +737,6 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   right: 12px !important;
 }
 
-/* Slide from right animation for right-positioned toasts (desktop only) */
-@keyframes toast-slide-in-right {
-  from {
-    transform: translateX(calc(100% + 12px));
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@media (min-width: 768px) and (hover: hover) {
-  [data-sonner-toaster][data-x-position="right"] [data-sonner-toast][data-mounted="true"]:not([data-expanded="false"][data-front="false"]) {
-    animation: toast-slide-in-right 0.3s ease-out;
-  }
-}
-
 /* System 7 theme: square corners, black border, drop shadow, smaller body text */
 :root[data-os-theme="system7"] [data-sonner-toast] {
   border-radius: 0 !important;
