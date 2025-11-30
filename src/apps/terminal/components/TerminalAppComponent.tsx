@@ -285,8 +285,8 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
     if (toolName === "aquarium") return null;
     let msg = "";
     switch (toolName) {
-      case "textEditSearchReplace":
-        msg = "Replacing text…";
+      case "edit":
+        msg = "Editing file…";
         break;
       case "textEditInsertText":
         msg = "Inserting text…";

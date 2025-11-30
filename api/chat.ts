@@ -992,7 +992,7 @@ export default async function handler(req: Request) {
         write: {
           description:
             "Create or modify markdown documents. Saves to disk and opens in TextEdit. " +
-            "IMPORTANT: For applets, use generateHtml (create/overwrite) or searchReplace (edit).",
+            "IMPORTANT: For applets, use generateHtml (create/overwrite) or edit (small changes).",
           inputSchema: z.object({
             path: z
               .string()
@@ -1008,30 +1008,45 @@ export default async function handler(req: Request) {
               ),
           }),
         },
-        searchReplace: {
+        edit: {
           description:
-            "Search and replace text in a document or applet. Works on files that are currently open or opens them automatically. Supports regex patterns.",
+            "Edit files in the ryOS virtual file system. For larger rewrites, use the write tool with mode 'overwrite' instead.\n\n" +
+            "Before using this tool:\n" +
+            "1. Use the read tool to understand the file's contents and context\n" +
+            "2. Verify the file exists using list\n\n" +
+            "To make a file edit, provide the following:\n" +
+            "1. path: The file path to modify (e.g., '/Documents/notes.md' or '/Applets/MyApp.app')\n" +
+            "2. old_string: The text to replace (must be unique within the file, and must match exactly including whitespace)\n" +
+            "3. new_string: The edited text to replace the old_string\n\n" +
+            "The tool will replace ONE occurrence of old_string with new_string in the specified file.\n\n" +
+            "CRITICAL REQUIREMENTS:\n" +
+            "1. UNIQUENESS: The old_string MUST uniquely identify the specific instance you want to change. Include context lines before and after if needed.\n" +
+            "2. SINGLE INSTANCE: This tool changes ONE instance at a time. Make separate calls for multiple changes.\n" +
+            "3. VERIFICATION: Before using, check how many instances of the target text exist. If multiple exist, include enough context to uniquely identify each one.\n\n" +
+            "WARNING: If you do not follow these requirements:\n" +
+            "- The tool will fail if old_string matches multiple locations\n" +
+            "- The tool will fail if old_string doesn't match exactly (including whitespace)\n\n" +
+            "Supported paths:\n" +
+            "- '/Documents/*' - Edit markdown documents\n" +
+            "- '/Applets/*' - Edit applet HTML files\n\n" +
+            "If you want to create a new file, use:\n" +
+            "- An empty old_string\n" +
+            "- The new file's contents as new_string",
           inputSchema: z.object({
             path: z
               .string()
               .describe(
-                "The file path to search/replace in. Must be in /Documents or /Applets. Use '/Documents/{instanceId}' for open TextEdit windows."
+                "The file path to edit. Must be in /Documents or /Applets."
               ),
-            search: z
+            old_string: z
               .string()
               .describe(
-                "The text or regular expression pattern to search for."
+                "The text to replace (must be unique within the file, and must match exactly including whitespace and indentation)."
               ),
-            replace: z
+            new_string: z
               .string()
               .describe(
-                "The text to replace matches with."
-              ),
-            isRegex: z
-              .boolean()
-              .optional()
-              .describe(
-                "Set to true to treat 'search' as a JavaScript regular expression. Defaults to false (literal text match)."
+                "The edited text to replace the old_string."
               ),
           }),
         },

@@ -62,16 +62,6 @@ const trackNewTextEditInstance = (instanceId: string) => {
   }
 };
 
-// Helper to get the most recently created TextEdit instance
-const getMostRecentTextEditInstance = (): string | null => {
-  let mostRecent: { instanceId: string; timestamp: number } | null = null;
-  for (const data of recentlyCreatedTextEditInstances.values()) {
-    if (!mostRecent || data.timestamp > mostRecent.timestamp) {
-      mostRecent = data;
-    }
-  }
-  return mostRecent?.instanceId || null;
-};
 
 const stripDiacritics = (value: string): string =>
   value.normalize("NFKD").replace(/\p{Diacritic}/gu, "");
@@ -1629,7 +1619,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: `Invalid path: ${path}. Use /Documents/filename.md for documents. For applets, use generateHtml (new) or searchReplace (edit).`,
+                errorText: `Invalid path: ${path}. Use /Documents/filename.md for documents. For applets, use generateHtml (new) or edit (small changes).`,
               });
               result = "";
               break;
@@ -1760,119 +1750,207 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
             break;
           }
-          case "searchReplace": {
-            const { path, search, replace, isRegex } = toolCall.input as {
+          case "edit": {
+            const { path, old_string, new_string } = toolCall.input as {
               path: string;
-              search: string;
-              replace: string;
-              isRegex?: boolean;
+              old_string: string;
+              new_string: string;
             };
 
-            if (!path || typeof search !== "string" || typeof replace !== "string") {
+            if (!path || typeof old_string !== "string" || typeof new_string !== "string") {
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: "Missing required parameters: path, search, and replace",
+                errorText: "Missing required parameters: path, old_string, and new_string",
               });
               result = "";
               break;
             }
 
-            console.log("[ToolCall] searchReplace:", { path, search, replace, isRegex });
+            console.log("[ToolCall] edit:", { path, old_string: old_string.substring(0, 50) + "...", new_string: new_string.substring(0, 50) + "..." });
 
-            const normalizedSearch = search.replace(/\r\n?/g, "\n");
-            const normalizedReplace = replace.replace(/\r\n?/g, "\n");
-            const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            // Normalize line endings
+            const normalizedOldString = old_string.replace(/\r\n?/g, "\n");
+            const normalizedNewString = new_string.replace(/\r\n?/g, "\n");
 
             try {
               if (path.startsWith("/Documents/")) {
-                // Search/replace in document (same as textEditSearchReplace)
-                const textEditState = useTextEditStore.getState();
+                // Edit document - read directly from file system (independent of TextEdit instances)
+                const filesStore = useFilesStore.getState();
+                const fileItem = filesStore.items[path];
 
-                // Try to find instance by file path or instanceId
-                let targetInstanceId: string | null = null;
-                const instanceIdMatch = path.match(/^\/Documents\/(\d+)$/);
+                // Check if file exists
+                const isNewFile = !fileItem || fileItem.status !== "active";
+                
+                // Handle new file creation with empty old_string
+                if (isNewFile && normalizedOldString === "") {
+                  // Create new document
+                  const fileName = path.split("/").pop() || "Untitled.md";
+                  
+                  // Save metadata to file store
+                  useFilesStore.getState().addItem({
+                    path,
+                    name: fileName,
+                    isDirectory: false,
+                    type: "markdown",
+                    size: new Blob([normalizedNewString]).size,
+                    icon: "📄",
+                  });
 
-                if (instanceIdMatch) {
-                  targetInstanceId = instanceIdMatch[1];
-                } else {
-                  for (const [instanceId, instance] of Object.entries(textEditState.instances)) {
-                    if (instance.filePath === path) {
-                      targetInstanceId = instanceId;
-                      break;
-                    }
+                  // Get the saved item with UUID
+                  const savedItem = useFilesStore.getState().items[path];
+                  if (!savedItem?.uuid) {
+                    throw new Error("Failed to save document metadata");
                   }
-                }
 
-                if (!targetInstanceId || !textEditState.instances[targetInstanceId]) {
-                  // Fall back to most recent instance
-                  targetInstanceId = getMostRecentTextEditInstance();
-                }
+                  // Save content to IndexedDB
+                  await dbOperations.put<DocumentContent>(
+                    STORES.DOCUMENTS,
+                    { name: fileName, content: normalizedNewString },
+                    savedItem.uuid,
+                  );
 
-                if (!targetInstanceId || !textEditState.instances[targetInstanceId]) {
-                  throw new Error(`No TextEdit instance found for: ${path}`);
-                }
-
-                const targetInstance = textEditState.instances[targetInstanceId];
-                const currentContentJson = targetInstance.contentJson || {
-                  type: "doc",
-                  content: [{ type: "paragraph", content: [] }],
-                };
-
-                const htmlStr = generateHTML(currentContentJson, [
-                  StarterKit,
-                  Underline,
-                  TextAlign.configure({ types: ["heading", "paragraph"] }),
-                  TaskList,
-                  TaskItem.configure({ nested: true }),
-                ] as AnyExtension[]);
-
-                const markdownStr = htmlToMarkdown(htmlStr);
-                const pattern = isRegex ? normalizedSearch : escapeRegExp(normalizedSearch);
-                const regex = new RegExp(pattern, "gm");
-                const updatedMarkdown = markdownStr.replace(regex, normalizedReplace);
-
-                if (updatedMarkdown === markdownStr) {
                   addToolResult({
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
-                    output: "No matches found to replace",
+                    output: `Created new document: ${path}`,
                   });
                   result = "";
                   break;
                 }
 
-                const updatedHtml = markdownToHtml(updatedMarkdown);
-                const updatedJson = generateJSON(updatedHtml, [
-                  StarterKit,
-                  Underline,
-                  TextAlign.configure({ types: ["heading", "paragraph"] }),
-                  TaskList,
-                  TaskItem.configure({ nested: true }),
-                ] as AnyExtension[]);
+                if (!fileItem || fileItem.status !== "active" || !fileItem.uuid) {
+                  throw new Error(`Document not found: ${path}. Use list({ path: "/Documents" }) to see available files.`);
+                }
 
-                textEditState.updateInstance(targetInstanceId, {
-                  contentJson: updatedJson,
-                  hasUnsavedChanges: true,
+                // Read existing content from IndexedDB
+                const contentData = await dbOperations.get<DocumentContent>(STORES.DOCUMENTS, fileItem.uuid);
+                if (!contentData?.content) {
+                  throw new Error(`Failed to read document content: ${path}`);
+                }
+
+                const existingContent = typeof contentData.content === "string"
+                  ? contentData.content
+                  : await contentData.content.text();
+
+                // Normalize existing content
+                const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
+
+                // Check for uniqueness - count occurrences
+                const occurrences = normalizedExisting.split(normalizedOldString).length - 1;
+                
+                if (occurrences === 0) {
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    state: "output-error",
+                    errorText: "old_string not found in file. Use read tool to verify current content.",
+                  });
+                  result = "";
+                  break;
+                }
+
+                if (occurrences > 1) {
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    state: "output-error",
+                    errorText: `old_string matches ${occurrences} locations. Include more context to make it unique.`,
+                  });
+                  result = "";
+                  break;
+                }
+
+                // Replace exactly one occurrence
+                const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
+
+                // Save updated content to IndexedDB
+                await dbOperations.put<DocumentContent>(
+                  STORES.DOCUMENTS,
+                  { name: fileItem.name, content: updatedContent },
+                  fileItem.uuid,
+                );
+
+                // Update file size in metadata
+                filesStore.addItem({
+                  ...fileItem,
+                  size: new Blob([updatedContent]).size,
                 });
 
-                const appStore = useAppStore.getState();
-                appStore.bringInstanceToForeground(targetInstanceId);
+                // Also update any open TextEdit instance showing this file
+                const textEditState = useTextEditStore.getState();
+                for (const [instanceId, instance] of Object.entries(textEditState.instances)) {
+                  if (instance.filePath === path) {
+                    const updatedHtml = markdownToHtml(updatedContent);
+                    const updatedJson = generateJSON(updatedHtml, [
+                      StarterKit,
+                      Underline,
+                      TextAlign.configure({ types: ["heading", "paragraph"] }),
+                      TaskList,
+                      TaskItem.configure({ nested: true }),
+                    ] as AnyExtension[]);
+
+                    textEditState.updateInstance(instanceId, {
+                      contentJson: updatedJson,
+                      hasUnsavedChanges: false, // Already saved to disk
+                    });
+                    break;
+                  }
+                }
 
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Successfully replaced text in document (instanceId: ${targetInstanceId})`,
+                  output: `Successfully edited document: ${path}`,
                 });
                 result = "";
               } else if (path.startsWith("/Applets/")) {
-                // Search/replace in applet HTML
+                // Edit applet HTML
                 const filesStore = useFilesStore.getState();
                 const fileItem = filesStore.items[path];
 
+                // Handle new file creation with empty old_string
+                const isNewFile = !fileItem || fileItem.status !== "active";
+                
+                if (isNewFile && normalizedOldString === "") {
+                  // Create new applet
+                  const fileName = path.split("/").pop() || "Untitled.app";
+                  
+                  // Save metadata to file store
+                  useFilesStore.getState().addItem({
+                    path,
+                    name: fileName,
+                    isDirectory: false,
+                    type: "applet",
+                    size: new Blob([normalizedNewString]).size,
+                    icon: "📦",
+                  });
+
+                  // Get the saved item with UUID
+                  const savedItem = useFilesStore.getState().items[path];
+                  if (!savedItem?.uuid) {
+                    throw new Error("Failed to save applet metadata");
+                  }
+
+                  // Save content to IndexedDB
+                  await dbOperations.put<DocumentContent>(
+                    STORES.APPLETS,
+                    { name: fileName, content: normalizedNewString },
+                    savedItem.uuid,
+                  );
+
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output: `Created new applet: ${path}`,
+                  });
+                  result = "";
+                  break;
+                }
+
                 if (!fileItem || fileItem.status !== "active" || !fileItem.uuid) {
-                  throw new Error(`Applet not found: ${path}`);
+                  throw new Error(`Applet not found: ${path}. Use list({ path: "/Applets" }) to see available files.`);
                 }
 
                 const contentData = await dbOperations.get<DocumentContent>(STORES.APPLETS, fileItem.uuid);
@@ -1884,30 +1962,54 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ? contentData.content
                   : await contentData.content.text();
 
-                const pattern = isRegex ? normalizedSearch : escapeRegExp(normalizedSearch);
-                const regex = new RegExp(pattern, "gm");
-                const updatedContent = existingContent.replace(regex, normalizedReplace);
+                // Normalize existing content
+                const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
 
-                if (updatedContent === existingContent) {
+                // Check for uniqueness - count occurrences
+                const occurrences = normalizedExisting.split(normalizedOldString).length - 1;
+                
+                if (occurrences === 0) {
                   addToolResult({
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
-                    output: "No matches found to replace",
+                    state: "output-error",
+                    errorText: "old_string not found in file. Use read tool to verify current content.",
                   });
                   result = "";
                   break;
                 }
 
+                if (occurrences > 1) {
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    state: "output-error",
+                    errorText: `old_string matches ${occurrences} locations. Include more context to make it unique.`,
+                  });
+                  result = "";
+                  break;
+                }
+
+                // Replace exactly one occurrence
+                const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
+
+                // Save to IndexedDB
                 await dbOperations.put<DocumentContent>(
                   STORES.APPLETS,
                   { name: fileItem.uuid, content: updatedContent },
                   fileItem.uuid,
                 );
 
+                // Update file size in metadata
+                filesStore.addItem({
+                  ...fileItem,
+                  size: new Blob([updatedContent]).size,
+                });
+
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Successfully replaced text in applet: ${path}`,
+                  output: `Successfully edited applet: ${path}`,
                 });
                 result = "";
               } else {
@@ -1915,17 +2017,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText: `Invalid path for searchReplace: ${path}. Use /Documents/* or /Applets/*`,
+                  errorText: `Invalid path for edit: ${path}. Use /Documents/* or /Applets/*`,
                 });
                 result = "";
               }
             } catch (err) {
-              console.error("searchReplace error:", err);
+              console.error("edit error:", err);
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: err instanceof Error ? err.message : "Failed to search/replace",
+                errorText: err instanceof Error ? err.message : "Failed to edit file",
               });
               result = "";
             }
