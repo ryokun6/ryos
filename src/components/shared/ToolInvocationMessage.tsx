@@ -172,7 +172,20 @@ export function ToolInvocationMessage({
       }
     } else if (toolName === "read") {
       const path = typeof input?.path === "string" ? input.path : "";
-      const fileName = path.split("/").filter(Boolean).pop() || "file";
+      let fileName = path.split("/").filter(Boolean).pop() || "file";
+      
+      // For Applets Store, try to extract title/name from output JSON
+      if (path.startsWith("/Applets Store/") && typeof output === "string") {
+        try {
+          const parsed = JSON.parse(output);
+          if (parsed.title || parsed.name) {
+            fileName = parsed.title || parsed.name;
+          }
+        } catch {
+          // Keep the ID as filename if parsing fails
+        }
+      }
+      
       displayResultMessage = `Read ${fileName}`;
     } else if (toolName === "write") {
       if (typeof output === "string") {
