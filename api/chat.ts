@@ -103,11 +103,15 @@ interface SystemState {
       instanceId: string;
       appId: string;
       title?: string;
+      appletPath?: string;
+      appletId?: string;
     } | null;
     background: Array<{
       instanceId: string;
       appId: string;
       title?: string;
+      appletPath?: string;
+      appletId?: string;
     }>;
     instanceWindowOrder: string[];
   };
@@ -196,12 +200,21 @@ User Location: ${location} (inferred from IP, may be inaccurate)`;
   // Applications Section
   prompt += `\n\n## RUNNING APPLICATIONS`;
 
+  // Helper to format app instance info
+  const formatAppInstance = (inst: { appId: string; title?: string; appletPath?: string; appletId?: string }) => {
+    let info = inst.appId;
+    if (inst.title) info += ` (${inst.title})`;
+    // For applet-viewer, include applet path and/or ID
+    if (inst.appId === "applet-viewer") {
+      if (inst.appletPath) info += ` [path: ${inst.appletPath}]`;
+      if (inst.appletId) info += ` [appletId: ${inst.appletId}]`;
+    }
+    return info;
+  };
+
   if (systemState.runningApps?.foreground) {
-    const foregroundTitle = systemState.runningApps.foreground.title
-      ? ` (${systemState.runningApps.foreground.title})`
-      : "";
     prompt += `
-Foreground: ${systemState.runningApps.foreground.appId}${foregroundTitle}`;
+Foreground: ${formatAppInstance(systemState.runningApps.foreground)}`;
   } else {
     prompt += `
 Foreground: None`;
@@ -212,7 +225,7 @@ Foreground: None`;
     systemState.runningApps.background.length > 0
   ) {
     const backgroundApps = systemState.runningApps.background
-      .map((inst) => inst.appId + (inst.title ? ` (${inst.title})` : ""))
+      .map((inst) => formatAppInstance(inst))
       .join(", ");
     prompt += `
 Background: ${backgroundApps}`;
@@ -294,8 +307,9 @@ ${htmlMd}`;
 
     systemState.textEdit.instances.forEach((instance, index) => {
       const unsavedMark = instance.hasUnsavedChanges ? " *" : "";
+      const pathInfo = instance.filePath ? ` [${instance.filePath}]` : "";
       prompt += `
-${index + 1}. ${instance.title}${unsavedMark} (ID: ${instance.instanceId})`;
+${index + 1}. ${instance.title}${unsavedMark}${pathInfo} (instanceId: ${instance.instanceId})`;
 
       if (instance.contentMarkdown) {
         // Limit content preview to avoid overly long prompts
