@@ -301,6 +301,12 @@ export function AppletViewerAppComponent({
         return null;
       }
 
+      // Check if offline
+      if (typeof navigator !== "undefined" && "onLine" in navigator && !navigator.onLine) {
+        console.warn("[AppletViewer] Cannot fetch applet: offline");
+        return null;
+      }
+
       try {
         const response = await fetch(
           `/api/share-applet?id=${encodeURIComponent(shareId)}`

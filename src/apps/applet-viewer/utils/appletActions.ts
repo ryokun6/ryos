@@ -138,6 +138,11 @@ export const useAppletActions = () => {
   };
 
   const handleInstall = async (applet: Applet, onSuccess?: () => void) => {
+    // Check if offline
+    if (typeof navigator !== "undefined" && "onLine" in navigator && !navigator.onLine) {
+      throw new Error("Applet installation requires an internet connection");
+    }
+
     try {
       const isUpdate = isAppletInstalled(applet.id);
       

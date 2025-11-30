@@ -166,6 +166,11 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   }, [username, authToken, sendAuthPayload, appletContents]);
 
   const fetchApplets = useCallback(async () => {
+    // Check if offline
+    if (typeof navigator !== "undefined" && "onLine" in navigator && !navigator.onLine) {
+      setIsLoading(false);
+      return;
+    }
     // Seeded random number generator for deterministic shuffling
     const seededRandom = (seed: number) => {
       let value = seed;

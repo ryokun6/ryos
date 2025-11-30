@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
+import { QRCodeSVG } from "qrcode.react";
 
 interface ShareItemDialogProps {
   isOpen: boolean;
@@ -97,11 +98,6 @@ export function ShareItemDialog({
     }
   };
 
-  const getQRCodeUrl = () => {
-    if (!shareUrl) return "";
-    const encodedUrl = encodeURIComponent(shareUrl);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodedUrl}`;
-  };
 
   // Construct the descriptive text
   const descriptionText = () => {
@@ -146,11 +142,12 @@ export function ShareItemDialog({
           </div>
         ) : shareUrl ? (
           <div className="bg-white p-1.5 w-32 h-32 flex items-center justify-center">
-            <img
-              src={getQRCodeUrl()}
-              alt={`QR Code for ${shareUrl}`}
+            <QRCodeSVG
+              value={shareUrl}
+              size={112}
+              level="M"
+              includeMargin={false}
               className="w-28 h-28"
-              title={`Scan to open: ${shareUrl}`}
             />
           </div>
         ) : (

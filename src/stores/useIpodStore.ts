@@ -337,9 +337,27 @@ export const useIpodStore = create<IpodState>()(
             historyPosition: newShuffleState ? -1 : state.historyPosition,
           };
         }),
-      togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
-      setIsPlaying: (playing) => set({ isPlaying: playing }),
-      toggleVideo: () => set((state) => ({ showVideo: !state.showVideo })),
+      togglePlay: () => {
+        // Prevent playback when offline
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          return;
+        }
+        set((state) => ({ isPlaying: !state.isPlaying }));
+      },
+      setIsPlaying: (playing) => {
+        // Prevent starting playback when offline
+        if (playing && typeof navigator !== "undefined" && !navigator.onLine) {
+          return;
+        }
+        set({ isPlaying: playing });
+      },
+      toggleVideo: () => {
+        // Prevent turning on video when offline
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          return;
+        }
+        set((state) => ({ showVideo: !state.showVideo }));
+      },
       toggleBacklight: () =>
         set((state) => ({ backlightOn: !state.backlightOn })),
       toggleLcdFilter: () =>

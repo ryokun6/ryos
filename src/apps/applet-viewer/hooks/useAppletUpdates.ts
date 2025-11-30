@@ -7,6 +7,11 @@ export function useAppletUpdates() {
   const actions = useAppletActions();
 
   const fetchApplets = useCallback(async (): Promise<Applet[]> => {
+    // Check if offline
+    if (typeof navigator !== "undefined" && "onLine" in navigator && !navigator.onLine) {
+      setIsLoading(false);
+      return [];
+    }
     setIsLoading(true);
     try {
       const response = await fetch("/api/share-applet?list=true");

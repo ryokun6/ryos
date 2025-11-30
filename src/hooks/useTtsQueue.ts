@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { checkOfflineAndShowError } from "@/utils/offline";
 
 /**
  * Hook that turns short text chunks into speech and queues them in the same
@@ -175,6 +176,11 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const speak = useCallback(
     (text: string, onEnd?: () => void) => {
       if (!text || !text.trim()) return;
+
+      // Check if offline and show error
+      if (checkOfflineAndShowError("Text-to-speech requires an internet connection")) {
+        return;
+      }
 
       // Signal that we are actively queueing again
       isStoppedRef.current = false;

@@ -9,6 +9,7 @@ import { getNextBootMessage, clearNextBootMessage } from "./utils/bootMessage";
 import { AnyApp } from "./apps/base/types";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useIsMobile } from "./hooks/useIsMobile";
+import { useOffline } from "./hooks/useOffline";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -23,6 +24,8 @@ export function App() {
   );
   const currentTheme = useThemeStore((state) => state.current);
   const isMobile = useIsMobile();
+  // Initialize offline detection
+  useOffline();
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {

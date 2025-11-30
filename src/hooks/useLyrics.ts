@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { LyricLine } from "@/types/lyrics";
 import { parseLRC } from "@/utils/lrcParser";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { isOffline } from "@/utils/offline";
 
 interface UseLyricsParams {
   /** Song title */
@@ -64,6 +65,14 @@ export function useLyrics({
 
     if (!title && !artist && !album) {
       setIsFetchingOriginal(false);
+      return;
+    }
+
+    // Check if offline before fetching
+    if (isOffline()) {
+      setIsFetchingOriginal(false);
+      setError("iPod requires an internet connection");
+      // Don't show toast here - let the component handle it to avoid duplicates
       return;
     }
 
@@ -160,6 +169,14 @@ export function useLyrics({
     // If original fetch is still in progress, wait for it.
     if (isFetchingOriginal) {
       setIsTranslating(false); // Not yet translating
+      return;
+    }
+
+    // Check if offline before translating
+    if (isOffline()) {
+      setIsTranslating(false);
+      setError("iPod requires an internet connection");
+      // Don't show toast here - let the component handle it to avoid duplicates
       return;
     }
 

@@ -210,6 +210,11 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       if (selectedAppletContent && isSharedApplet) {
         return;
       }
+      // Check if offline
+      if (typeof navigator !== "undefined" && "onLine" in navigator && !navigator.onLine) {
+        setSelectedAppletContent("");
+        return;
+      }
       // Reset content immediately to show loading
       setSelectedAppletContent("");
       fetch(`/api/share-applet?id=${encodeURIComponent(selectedApplet.id)}`)

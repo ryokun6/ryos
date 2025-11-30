@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
@@ -7,9 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import { appRegistry } from "@/config/appRegistry";
 
 interface ControlPanelsMenuBarProps {
   onClose: () => void;
@@ -22,6 +24,9 @@ export function ControlPanelsMenuBar({
   onShowHelp,
   onShowAbout,
 }: ControlPanelsMenuBarProps) {
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const appId = "control-panels";
+  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -65,22 +70,7 @@ export function ControlPanelsMenuBar({
             Control Panels Help
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={async () => {
-              const appId = "control-panels"; // Specific app ID
-              const shareUrl = generateAppShareUrl(appId);
-              if (!shareUrl) return;
-              try {
-                await navigator.clipboard.writeText(shareUrl);
-                toast.success("App link copied!", {
-                  description: `Link to ${appId} copied to clipboard.`,
-                });
-              } catch (err) {
-                console.error("Failed to copy app link: ", err);
-                toast.error("Failed to copy link", {
-                  description: "Could not copy link to clipboard.",
-                });
-              }
-            }}
+            onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             Share App...
@@ -94,6 +84,14 @@ export function ControlPanelsMenuBar({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ShareItemDialog
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+        itemType="App"
+        itemIdentifier={appId}
+        title={appName}
+        generateShareUrl={generateAppShareUrl}
+      />
     </MenuBar>
   );
 }

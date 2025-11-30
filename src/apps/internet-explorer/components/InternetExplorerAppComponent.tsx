@@ -59,6 +59,8 @@ import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { IE_ANALYTICS } from "@/utils/analytics";
+import { useOffline } from "@/hooks/useOffline";
+import { checkOfflineAndShowError } from "@/utils/offline";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
@@ -684,33 +686,35 @@ export function InternetExplorerAppComponent({
           const textContent =
             iframeRef.current.contentDocument.body?.textContent?.trim();
           if (textContent) {
-            try {
-              const potentialErrorData = JSON.parse(
-                textContent
-              ) as ErrorResponse;
-              if (
-                potentialErrorData &&
-                potentialErrorData.error === true &&
-                potentialErrorData.type
-              ) {
-                console.log(
-                  "[IE] Detected JSON error response in iframe body:",
-                  potentialErrorData
-                );
-                track(IE_ANALYTICS.NAVIGATION_ERROR, {
-                  url: iframeSrc,
-                  type: potentialErrorData.type,
-                  status: potentialErrorData.status || 500,
-                  message: potentialErrorData.message,
-                });
-                handleNavigationError(potentialErrorData, url);
-                return;
+            // Only try to parse as JSON if it looks like JSON (starts with { or [)
+            const looksLikeJson = textContent.startsWith("{") || textContent.startsWith("[");
+            if (looksLikeJson) {
+              try {
+                const potentialErrorData = JSON.parse(
+                  textContent
+                ) as ErrorResponse;
+                if (
+                  potentialErrorData &&
+                  potentialErrorData.error === true &&
+                  potentialErrorData.type
+                ) {
+                  console.log(
+                    "[IE] Detected JSON error response in iframe body:",
+                    potentialErrorData
+                  );
+                  track(IE_ANALYTICS.NAVIGATION_ERROR, {
+                    url: iframeSrc,
+                    type: potentialErrorData.type,
+                    status: potentialErrorData.status || 500,
+                    message: potentialErrorData.message,
+                  });
+                  handleNavigationError(potentialErrorData, url);
+                  return;
+                }
+              } catch (parseError) {
+                // Silently ignore - content looked like JSON but wasn't valid JSON
+                // This is expected for regular HTML pages
               }
-            } catch (parseError) {
-              console.debug(
-                "[IE] Iframe body content was not a JSON error:",
-                parseError
-              );
             }
           }
 
@@ -865,6 +869,11 @@ export function InternetExplorerAppComponent({
       forceRegenerate = false,
       currentHtmlContent: string | null = null
     ) => {
+      // Check if offline and show error
+      if (checkOfflineAndShowError("Internet Explorer requires an internet connection to navigate")) {
+        return;
+      }
+
       clearErrorDetails();
 
       if (abortControllerRef.current) {
@@ -1930,6 +1939,7 @@ export function InternetExplorerAppComponent({
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isOffline = useOffline();
 
   const menuBar = (
     <InternetExplorerMenuBar
@@ -2014,7 +2024,7 @@ export function InternetExplorerAppComponent({
                     variant="ghost"
                     size="icon"
                     onClick={handleGoBack}
-                    disabled={historyIndex >= history.length - 1}
+                    disabled={isOffline || historyIndex >= history.length - 1}
                     className="h-8 w-8"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -2023,7 +2033,7 @@ export function InternetExplorerAppComponent({
                     variant="ghost"
                     size="icon"
                     onClick={handleGoForward}
-                    disabled={historyIndex <= 0}
+                    disabled={isOffline || historyIndex <= 0}
                     className="h-8 w-8"
                   >
                     <ArrowRight className="h-4 w-4" />
@@ -2049,6 +2059,7 @@ export function InternetExplorerAppComponent({
                   <Input
                     ref={urlInputRef}
                     value={localUrl}
+                    disabled={isOffline}
                     onChange={(e) => {
                       // Strip any https:// prefix on input
                       const strippedValue = stripProtocol(e.target.value);
@@ -2057,6 +2068,10 @@ export function InternetExplorerAppComponent({
                       setIsUrlDropdownOpen(true);
                     }}
                     onKeyDown={(e) => {
+                      if (isOffline && e.key === "Enter") {
+                        checkOfflineAndShowError("Internet Explorer requires an internet connection to navigate");
+                        return;
+                      }
                       if (e.key === "Enter") {
                         setIsUrlDropdownOpen(false);
                         // Use the currently selected suggestion when Enter is pressed
@@ -2253,14 +2268,20 @@ export function InternetExplorerAppComponent({
                           >
                             {suggestion.type === "search" ? (
                               <Search className="w-4 h-4 text-neutral-400" />
-                            ) : (
+                            ) : suggestion.favicon && !isOffline ? (
                               <img
-                                src={suggestion.favicon || "/icons/ie-site.png"}
+                                src={suggestion.favicon}
                                 alt=""
                                 className="w-4 h-4"
                                 onError={(e) => {
-                                  e.currentTarget.src = "/icons/ie-site.png";
+                                  e.currentTarget.src = "/icons/default/ie-site.png";
                                 }}
+                              />
+                            ) : (
+                              <ThemedIcon
+                                name="ie-site.png"
+                                alt=""
+                                className="w-4 h-4 [image-rendering:pixelated]"
                               />
                             )}
                             <div className="flex-1 truncate">
@@ -2418,15 +2439,22 @@ export function InternetExplorerAppComponent({
                                   }
                                   className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
                                 >
-                                  <img
-                                    src={child.favicon || "/icons/ie-site.png"}
-                                    alt=""
-                                    className="w-4 h-4"
-                                    onError={(e) => {
-                                      e.currentTarget.src =
-                                        "/icons/ie-site.png";
-                                    }}
-                                  />
+                                  {child.favicon && !isOffline ? (
+                                    <img
+                                      src={child.favicon}
+                                      alt=""
+                                      className="w-4 h-4"
+                                      onError={(e) => {
+                                        e.currentTarget.src = "/icons/default/ie-site.png";
+                                      }}
+                                    />
+                                  ) : (
+                                    <ThemedIcon
+                                      name="ie-site.png"
+                                      alt=""
+                                      className="w-4 h-4 [image-rendering:pixelated]"
+                                    />
+                                  )}
                                   {child.title}
                                   {child.year && child.year !== "current" && (
                                     <span className="text-xs text-gray-500 ml-1">
@@ -2461,14 +2489,22 @@ export function InternetExplorerAppComponent({
                               });
                             }}
                           >
-                            <img
-                              src={favorite.favicon || "/icons/ie-site.png"}
-                              alt="Site"
-                              className="w-4 h-4 mr-1"
-                              onError={(e) => {
-                                e.currentTarget.src = "/icons/ie-site.png";
-                              }}
-                            />
+                            {favorite.favicon && !isOffline ? (
+                              <img
+                                src={favorite.favicon}
+                                alt="Site"
+                                className="w-4 h-4 mr-1"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/icons/default/ie-site.png";
+                                }}
+                              />
+                            ) : (
+                              <ThemedIcon
+                                name="ie-site.png"
+                                alt="Site"
+                                className="w-4 h-4 mr-1 [image-rendering:pixelated]"
+                              />
+                            )}
                             <span className="truncate">{favorite.title}</span>
                           </Button>
                         );

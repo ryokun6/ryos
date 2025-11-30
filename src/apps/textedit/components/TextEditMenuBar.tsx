@@ -11,11 +11,12 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import React from "react";
-import { toast } from "sonner";
+import React, { useState } from "react";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import { appRegistry } from "@/config/appRegistry";
 
 interface TextEditMenuBarProps {
   editor: Editor | null;
@@ -44,6 +45,9 @@ export function TextEditMenuBar({
   currentFilePath,
   handleFileSelect,
 }: TextEditMenuBarProps) {
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const appId = "textedit";
+  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -367,22 +371,7 @@ export function TextEditMenuBar({
             TextEdit Help
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={async () => {
-              const appId = "textedit"; // Specific app ID
-              const shareUrl = generateAppShareUrl(appId);
-              if (!shareUrl) return;
-              try {
-                await navigator.clipboard.writeText(shareUrl);
-                toast.success("App link copied!", {
-                  description: `Link to ${appId} copied to clipboard.`,
-                });
-              } catch (err) {
-                console.error("Failed to copy app link: ", err);
-                toast.error("Failed to copy link", {
-                  description: "Could not copy link to clipboard.",
-                });
-              }
-            }}
+            onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             Share App...
@@ -396,6 +385,14 @@ export function TextEditMenuBar({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ShareItemDialog
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+        itemType="App"
+        itemIdentifier={appId}
+        title={appName}
+        generateShareUrl={generateAppShareUrl}
+      />
     </MenuBar>
   );
 }

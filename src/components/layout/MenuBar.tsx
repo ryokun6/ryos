@@ -23,6 +23,8 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useFilesStore } from "@/stores/useFilesStore";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
+import { useOffline } from "@/hooks/useOffline";
+import { WifiOff } from "lucide-react";
 
 // Helper function to get app name
 const getAppName = (appId: string): string => {
@@ -941,6 +943,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
               paddingTop: currentTheme === "xp" ? "1px" : "0px",
             }}
           >
+            <OfflineIndicator />
             <div className="hidden sm:flex">
               <VolumeControl />
             </div>
@@ -998,11 +1001,43 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       <AppleMenu apps={apps} />
       {hasActiveApp ? children : <DefaultMenuItems />}
       <div className="ml-auto flex items-center">
+        <OfflineIndicator />
         <div className="hidden sm:flex">
           <VolumeControl />
         </div>
         <Clock />
       </div>
+    </div>
+  );
+}
+
+function OfflineIndicator() {
+  const isOffline = useOffline();
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+
+  if (!isOffline) return null;
+
+  return (
+    <div
+      className="flex items-center"
+      style={{
+        marginRight: isXpTheme ? "4px" : "8px",
+        color:
+          currentTheme === "win98"
+            ? "#000000"
+            : isXpTheme
+            ? "#ffffff"
+            : "var(--os-color-menubar-text)",
+      }}
+      title="You are currently offline"
+    >
+      <WifiOff
+        className={isXpTheme ? "h-3 w-3" : "h-4 w-4"}
+        style={{
+          opacity: 0.7,
+        }}
+      />
     </div>
   );
 }

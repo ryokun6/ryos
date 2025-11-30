@@ -8,6 +8,7 @@ import {
   LocationOption,
 } from "@/stores/useInternetExplorerStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { checkOfflineAndShowError } from "@/utils/offline";
 
 interface UseAiGenerationProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -260,6 +261,11 @@ export function useAiGeneration({
     prefetchedTitle?: string | null,
     currentHtmlContent?: string | null
   ) => {
+    // Check if offline and show error
+    if (checkOfflineAndShowError("AI website generation requires an internet connection")) {
+      return;
+    }
+
     // Generate a unique ID for this generation request
     const generationId = `${url}-${year}-${Date.now()}`;
     currentGenerationId.current = generationId;

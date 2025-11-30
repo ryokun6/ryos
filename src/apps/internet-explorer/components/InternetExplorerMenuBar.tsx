@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,10 +19,11 @@ import {
   LocationOption,
 } from "@/stores/useInternetExplorerStore";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import { appRegistry } from "@/config/appRegistry";
 
 interface InternetExplorerMenuBarProps extends Omit<AppProps, "onClose"> {
   onRefresh?: () => void;
@@ -88,14 +90,22 @@ const renderFavoriteItem = (
         onClick={() => onNavigate(favorite.url!, favorite.year)}
         className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
       >
-        <img
-          src={favorite.favicon || "/icons/ie-site.png"}
-          alt=""
-          className="w-4 h-4"
-          onError={(e) => {
-            e.currentTarget.src = "/icons/ie-site.png";
-          }}
-        />
+        {favorite.favicon && typeof navigator !== "undefined" && "onLine" in navigator && navigator.onLine ? (
+          <img
+            src={favorite.favicon}
+            alt=""
+            className="w-4 h-4"
+            onError={(e) => {
+              e.currentTarget.src = "/icons/default/ie-site.png";
+            }}
+          />
+        ) : (
+          <ThemedIcon
+            name="ie-site.png"
+            alt=""
+            className="w-4 h-4 [image-rendering:pixelated]"
+          />
+        )}
         {favorite.title}
         {favorite.year && favorite.year !== "current" && (
           <span className="text-xs text-gray-500 ml-1">({favorite.year})</span>
@@ -139,6 +149,8 @@ export function InternetExplorerMenuBar({
   onYearChange,
   onSharePage,
 }: InternetExplorerMenuBarProps) {
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const appId = "internet-explorer";
   // Get current year for generating year lists
   const currentYear = new Date().getFullYear();
 
@@ -691,14 +703,22 @@ export function InternetExplorerMenuBar({
                   }
                   className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
                 >
-                  <img
-                    src={entry.favicon || "/icons/ie-site.png"}
-                    alt=""
-                    className="w-4 h-4"
-                    onError={(e) => {
-                      e.currentTarget.src = "/icons/ie-site.png";
-                    }}
-                  />
+                  {entry.favicon && typeof navigator !== "undefined" && "onLine" in navigator && navigator.onLine ? (
+                    <img
+                      src={entry.favicon}
+                      alt=""
+                      className="w-4 h-4"
+                      onError={(e) => {
+                        e.currentTarget.src = "/icons/default/ie-site.png";
+                      }}
+                    />
+                  ) : (
+                    <ThemedIcon
+                      name="ie-site.png"
+                      alt=""
+                      className="w-4 h-4 [image-rendering:pixelated]"
+                    />
+                  )}
                   <span className="truncate">
                     {entry.title}
                     {entry.year && entry.year !== "current" && (
@@ -740,22 +760,7 @@ export function InternetExplorerMenuBar({
             Internet Explorer Help
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={async () => {
-              const appId = "internet-explorer";
-              const shareUrl = generateAppShareUrl(appId);
-              if (!shareUrl) return;
-              try {
-                await navigator.clipboard.writeText(shareUrl);
-                toast.success("App link copied!", {
-                  description: `Link to ${appId} copied to clipboard.`,
-                });
-              } catch (err) {
-                console.error("Failed to copy app link: ", err);
-                toast.error("Failed to copy link", {
-                  description: "Could not copy link to clipboard.",
-                });
-              }
-            }}
+            onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             Share App...
@@ -769,6 +774,14 @@ export function InternetExplorerMenuBar({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ShareItemDialog
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+        itemType="App"
+        itemIdentifier={appId}
+        title={appRegistry[appId as keyof typeof appRegistry]?.name || appId}
+        generateShareUrl={generateAppShareUrl}
+      />
     </MenuBar>
   );
 }

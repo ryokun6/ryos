@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { getSupportedMimeType } from "@/utils/audio";
+import { checkOfflineAndShowError } from "@/utils/offline";
 
 // Constants
 const DEFAULT_SILENCE_THRESHOLD = 2000; // ms
@@ -84,6 +85,12 @@ export function useAudioTranscription({
   const sendAudioForTranscription = useCallback(
     async (chunks: Blob[]) => {
       if (chunks.length === 0) return;
+
+      // Check if offline and show error
+      if (checkOfflineAndShowError("Audio transcription requires an internet connection")) {
+        onError?.(new Error("Audio transcription requires an internet connection"));
+        return;
+      }
 
       try {
         // Validate audio content

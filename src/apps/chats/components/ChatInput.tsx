@@ -17,6 +17,7 @@ import {
 import { AI_MODELS } from "@/types/aiModels";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { CHAT_ANALYTICS } from "@/utils/analytics";
+import { checkOfflineAndShowError } from "@/utils/offline";
 
 // Animated ellipsis component (copied from TerminalAppComponent)
 function AnimatedEllipsis() {
@@ -63,6 +64,7 @@ interface ChatInputProps {
     message: string;
   } | null;
   needsUsername?: boolean;
+  isOffline?: boolean;
 }
 
 export function ChatInput({
@@ -80,6 +82,7 @@ export function ChatInput({
   isSpeechPlaying = false,
   rateLimitError,
   needsUsername = false,
+  isOffline = false,
 }: ChatInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -299,6 +302,11 @@ export function ChatInput({
       >
         <form
           onSubmit={(e) => {
+            if (isOffline) {
+              e.preventDefault();
+              checkOfflineAndShowError("Chat requires an internet connection");
+              return;
+            }
             if (input.trim() !== "") {
               track(CHAT_ANALYTICS.TEXT_MESSAGE, {
                 message: input,
@@ -345,7 +353,7 @@ export function ChatInput({
                 onTouchStart={(e) => {
                   e.preventDefault();
                 }}
-                disabled={needsUsername && !isInChatRoom}
+                disabled={(needsUsername && !isInChatRoom) || isOffline}
               />
               <AnimatePresence>
                 {isLoading && input.trim() === "" && (
@@ -554,7 +562,7 @@ export function ChatInput({
                         }
                       : {}
                   }
-                  disabled={isLoading}
+                  disabled={isLoading || isOffline}
                 >
                   {isMacTheme && (
                     <>

@@ -29,6 +29,7 @@ import { LyricsAlignment, KoreanDisplay } from "@/types/lyrics";
 import { isMobileSafari } from "@/utils/device";
 import { track } from "@vercel/analytics";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
+import { useOffline } from "@/hooks/useOffline";
 // Globe icon removed; using text label "Aあ" for translate
 
 // Add this component definition before the IpodAppComponent
@@ -45,6 +46,7 @@ interface FullScreenPortalProps {
   previousTrack: () => void;
   seekTime: (delta: number) => void;
   showStatus: (message: string) => void;
+  showOfflineStatus: () => void;
   registerActivity: () => void;
   isPlaying: boolean;
   statusMessage: string | null;
@@ -67,6 +69,7 @@ function FullScreenPortal({
   previousTrack,
   seekTime,
   showStatus,
+  showOfflineStatus,
   registerActivity,
   isPlaying,
   statusMessage,
@@ -82,6 +85,7 @@ function FullScreenPortal({
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const hideControlsTimeoutRef = useRef<number | null>(null);
+  const isOffline = useOffline();
   // Removed pointer coarse check; controls now autohide on all devices
   
   // Track if user has interacted to enable gesture handling after first interaction
@@ -432,8 +436,12 @@ function FullScreenPortal({
         handlers.onClose();
       } else if (e.key === " ") {
         e.preventDefault(); // Prevent scrolling if space is pressed
-        handlers.togglePlay();
-        handlers.showStatus(isPlaying ? "⏸" : "▶");
+        if (isOffline) {
+          showOfflineStatus();
+        } else {
+          handlers.togglePlay();
+          handlers.showStatus(isPlaying ? "⏸" : "▶");
+        }
       } else if (e.key === "ArrowLeft") {
         // Seek backward instead of previous track
         handlers.seekTime(-5);
@@ -503,8 +511,12 @@ function FullScreenPortal({
         if (!shouldDisableClick && !actuallyPlaying) {
           const handlers = handlersRef.current;
           handlers.registerActivity();
-          handlers.togglePlay();
-          handlers.showStatus("▶");
+          if (isOffline) {
+            showOfflineStatus();
+          } else {
+            handlers.togglePlay();
+            handlers.showStatus("▶");
+          }
         }
         
         // Special case: On mobile Safari, if we just entered fullscreen and expect to be playing
@@ -630,13 +642,17 @@ function FullScreenPortal({
                 e.stopPropagation();
                 registerActivity();
                 const wasPlaying = getActualPlayerState();
-                togglePlay();
-                // Use actual player state for status message
-                const actuallyPlaying = getActualPlayerState();
-                showStatus(actuallyPlaying ? "⏸" : "▶");
-                // Restart auto-hide timer when switching from pause to play
-                if (!wasPlaying) {
-                  setTimeout(() => restartAutoHideTimer(), 100);
+                if (isOffline) {
+                  showOfflineStatus();
+                } else {
+                  togglePlay();
+                  // Use actual player state for status message
+                  const actuallyPlaying = getActualPlayerState();
+                  showStatus(actuallyPlaying ? "⏸" : "▶");
+                  // Restart auto-hide timer when switching from pause to play
+                  if (!wasPlaying) {
+                    setTimeout(() => restartAutoHideTimer(), 100);
+                  }
                 }
               }}
               aria-label="Play/Pause"
@@ -858,6 +874,7 @@ export function IpodAppComponent({
   const { play: playClickSound } = useSound(Sounds.BUTTON_CLICK);
   const { play: playScrollSound } = useSound(Sounds.IPOD_CLICK_WHEEL);
   const vibrate = useVibration(100, 50);
+  const isOffline = useOffline();
 
   const {
     tracks,
@@ -1014,6 +1031,14 @@ export function IpodAppComponent({
       setStatusMessage(null);
     }, 2000);
   }, []);
+
+  const showOfflineStatus = useCallback(() => {
+    toast.error("You're offline", {
+      id: "ipod-offline",
+      description: "iPod requires an internet connection",
+    });
+    showStatus("🚫");
+  }, [showStatus]);
 
   const registerActivity = useCallback(() => {
     setLastActivityTime(Date.now());
@@ -1196,6 +1221,10 @@ export function IpodAppComponent({
               label: track.title,
               action: () => {
                 registerActivity();
+                if (isOffline) {
+                  showOfflineStatus();
+                  return;
+                }
                 setCurrentIndex(index);
                 setIsPlaying(true);
                 setMenuDirection("forward");
@@ -1609,7 +1638,7 @@ export function IpodAppComponent({
           `[iPod] Video ID ${videoId} not found. Adding and playing.`
         );
         await handleAddAndPlayTrackByVideoId(videoId);
-        if (shouldAutoplay) {
+        if (shouldAutoplay && !isOffline) {
           const newIndex = useIpodStore.getState().currentIndex;
           const addedTrack = useIpodStore.getState().tracks[newIndex];
           if (addedTrack?.id === videoId) {
@@ -1619,6 +1648,8 @@ export function IpodAppComponent({
               "[iPod] Index mismatch after adding track, autoplay skipped."
             );
           }
+        } else if (isOffline) {
+          showOfflineStatus();
         }
       }
     },
@@ -1979,18 +2010,30 @@ export function IpodAppComponent({
           handleMenuButton();
           break;
         case "right":
-          skipOperationRef.current = true;
-          nextTrack();
-          showStatus("⏭");
+          if (isOffline) {
+            showOfflineStatus();
+          } else {
+            skipOperationRef.current = true;
+            nextTrack();
+            showStatus("⏭");
+          }
           break;
         case "bottom":
-          togglePlay();
-          showStatus(useIpodStore.getState().isPlaying ? "▶" : "⏸");
+          if (isOffline) {
+            showOfflineStatus();
+          } else {
+            togglePlay();
+            showStatus(useIpodStore.getState().isPlaying ? "▶" : "⏸");
+          }
           break;
         case "left":
-          skipOperationRef.current = true;
-          previousTrack();
-          showStatus("⏮");
+          if (isOffline) {
+            showOfflineStatus();
+          } else {
+            skipOperationRef.current = true;
+            previousTrack();
+            showStatus("⏮");
+          }
           break;
         case "center":
           if (menuMode) {
@@ -2001,15 +2044,23 @@ export function IpodAppComponent({
           } else {
             if (tracks[currentIndex]) {
               if (!isPlaying) {
-                togglePlay();
-                showStatus("▶");
-                setTimeout(() => {
-                  if (!useIpodStore.getState().showVideo) {
-                    toggleVideo();
-                  }
-                }, 200);
+                if (isOffline) {
+                  showOfflineStatus();
+                } else {
+                  togglePlay();
+                  showStatus("▶");
+                  setTimeout(() => {
+                    if (!useIpodStore.getState().showVideo) {
+                      toggleVideo();
+                    }
+                  }, 200);
+                }
               } else {
-                toggleVideo();
+                if (isOffline) {
+                  showOfflineStatus();
+                } else {
+                  toggleVideo();
+                }
               }
             }
           }
@@ -2032,6 +2083,8 @@ export function IpodAppComponent({
       isPlaying,
       toggleVideo,
       handleMenuButton,
+      isOffline,
+      showOfflineStatus,
     ]
   );
 
@@ -2466,6 +2519,7 @@ export function IpodAppComponent({
             }}
             seekTime={seekTime}
             showStatus={showStatus}
+            showOfflineStatus={showOfflineStatus}
             registerActivity={registerActivity}
             isPlaying={isPlaying}
             statusMessage={statusMessage}

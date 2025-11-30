@@ -10,9 +10,10 @@ import { cn } from "@/lib/utils";
 import { AppProps } from "../../base/types";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import { appRegistry } from "@/config/appRegistry";
 
 interface SoundboardMenuBarProps extends Omit<AppProps, "onClose"> {
   onClose: () => void;
@@ -49,6 +50,9 @@ export function SoundboardMenuBar({
   onToggleEmojis,
   onClose,
 }: SoundboardMenuBarProps) {
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const appId = "soundboard";
+  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const [isOptionPressed, setIsOptionPressed] = useState(false);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -213,22 +217,7 @@ export function SoundboardMenuBar({
             Soundboard Help
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={async () => {
-              const appId = "soundboard";
-              const shareUrl = generateAppShareUrl(appId);
-              if (!shareUrl) return;
-              try {
-                await navigator.clipboard.writeText(shareUrl);
-                toast.success("App link copied!", {
-                  description: `Link to ${appId} copied to clipboard.`,
-                });
-              } catch (err) {
-                console.error("Failed to copy app link: ", err);
-                toast.error("Failed to copy link", {
-                  description: "Could not copy link to clipboard.",
-                });
-              }
-            }}
+            onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             Share App...
@@ -242,6 +231,14 @@ export function SoundboardMenuBar({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ShareItemDialog
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+        itemType="App"
+        itemIdentifier={appId}
+        title={appName}
+        generateShareUrl={generateAppShareUrl}
+      />
     </MenuBar>
   );
 }

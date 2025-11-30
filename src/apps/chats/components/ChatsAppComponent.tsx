@@ -30,6 +30,8 @@ import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useOffline } from "@/hooks/useOffline";
+import { checkOfflineAndShowError } from "@/utils/offline";
 
 // Define the expected message structure locally, matching ChatMessages internal type
 interface DisplayMessage extends Omit<AIChatMessage, "role"> {
@@ -217,6 +219,11 @@ export function ChatsAppComponent({
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
+
+      // Check if offline and show error
+      if (checkOfflineAndShowError("Chat requires an internet connection")) {
+        return;
+      }
 
       if (currentRoomId && username) {
         const trimmedInput = input.trim();
@@ -448,6 +455,7 @@ export function ChatsAppComponent({
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isWindowsLegacyTheme = isXpTheme;
   const isMacTheme = currentTheme === "macosx";
+  const isOffline = useOffline();
 
   const menuBar = (
     <ChatsMenuBar
@@ -819,6 +827,7 @@ export function ChatsAppComponent({
                           showNudgeButton={!currentRoomId}
                           isInChatRoom={!!currentRoomId}
                           rateLimitError={rateLimitError}
+                          isOffline={isOffline}
                           needsUsername={needsUsername && !username}
                         />
                       );
