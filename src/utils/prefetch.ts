@@ -177,7 +177,7 @@ async function runPrefetchWithToast(
         }),
         {
           id: toastId,
-          duration: 5000,
+          duration: Infinity,
           action: {
             label: "Reload",
             onClick: reloadPage,
