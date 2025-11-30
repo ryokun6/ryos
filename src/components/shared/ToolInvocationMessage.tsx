@@ -61,6 +61,49 @@ export function ToolInvocationMessage({
   // Handle loading states (input-streaming or input-available without output)
   if (state === "input-streaming" || (state === "input-available" && !output)) {
     switch (toolName) {
+      // Unified VFS tools
+      case "list": {
+        const path = typeof input?.path === "string" ? input.path : "";
+        if (path === "/iPod/Library") {
+          displayCallMessage = "Loading iPod library…";
+        } else if (path === "/Store/Applets") {
+          displayCallMessage = "Listing shared applets…";
+        } else if (path === "/Applications") {
+          displayCallMessage = "Listing applications…";
+        } else {
+          displayCallMessage = "Finding files…";
+        }
+        break;
+      }
+      case "open": {
+        const path = typeof input?.path === "string" ? input.path : "";
+        if (path.startsWith("/iPod/Library/")) {
+          displayCallMessage = "Playing song…";
+        } else if (path.startsWith("/Store/Applets/")) {
+          displayCallMessage = "Opening applet preview…";
+        } else if (path.startsWith("/Applications/")) {
+          displayCallMessage = "Launching app…";
+        } else {
+          displayCallMessage = "Opening file…";
+        }
+        break;
+      }
+      case "read": {
+        const path = typeof input?.path === "string" ? input.path : "";
+        if (path.startsWith("/Store/Applets/")) {
+          displayCallMessage = "Fetching applet…";
+        } else {
+          displayCallMessage = "Reading file…";
+        }
+        break;
+      }
+      case "write":
+        displayCallMessage = "Writing content…";
+        break;
+      case "searchReplace":
+        displayCallMessage = "Replacing text…";
+        break;
+      // Legacy tools
       case "listSharedApplets":
         displayCallMessage = "Listing shared applets…";
         break;
@@ -122,7 +165,69 @@ export function ToolInvocationMessage({
 
   // Handle success states
   if (state === "output-available") {
-    if (toolName === "launchApp" && input?.id === "internet-explorer") {
+    // Unified VFS tools
+    if (toolName === "list") {
+      if (typeof output === "string") {
+        const songMatch = output.match(/Found (\d+) songs?/);
+        const appletMatch = output.match(/Found (\d+) (?:shared )?applets?/i);
+        const documentMatch = output.match(/Found (\d+) documents?/);
+        const applicationMatch = output.match(/Found (\d+) applications?/);
+
+        if (songMatch) {
+          const count = parseInt(songMatch[1], 10);
+          displayResultMessage = `Found ${count} song${count === 1 ? "" : "s"}`;
+        } else if (appletMatch) {
+          const count = parseInt(appletMatch[1], 10);
+          displayResultMessage = `Found ${count} applet${count === 1 ? "" : "s"}`;
+        } else if (documentMatch) {
+          const count = parseInt(documentMatch[1], 10);
+          displayResultMessage = `Found ${count} document${count === 1 ? "" : "s"}`;
+        } else if (applicationMatch) {
+          const count = parseInt(applicationMatch[1], 10);
+          displayResultMessage = `Found ${count} application${count === 1 ? "" : "s"}`;
+        } else if (output.includes("empty") || output.includes("No ")) {
+          displayResultMessage = "No items found";
+        } else {
+          displayResultMessage = "Listed items";
+        }
+      }
+    } else if (toolName === "open") {
+      if (typeof output === "string") {
+        if (output.includes("Playing")) {
+          displayResultMessage = output;
+        } else if (output.includes("Opened") || output.includes("Launched")) {
+          displayResultMessage = output;
+        } else {
+          displayResultMessage = "Opened";
+        }
+      }
+    } else if (toolName === "read") {
+      const path = typeof input?.path === "string" ? input.path : "";
+      const fileName = path.split("/").filter(Boolean).pop() || "file";
+      displayResultMessage = `Read ${fileName}`;
+    } else if (toolName === "write") {
+      if (typeof output === "string") {
+        if (output.includes("Successfully")) {
+          displayResultMessage = "Content written";
+        } else {
+          displayResultMessage = output;
+        }
+      } else {
+        displayResultMessage = "Content written";
+      }
+    } else if (toolName === "searchReplace") {
+      if (typeof output === "string") {
+        if (output.includes("No matches")) {
+          displayResultMessage = "No matches found";
+        } else if (output.includes("Successfully")) {
+          displayResultMessage = "Text replaced";
+        } else {
+          displayResultMessage = output;
+        }
+      } else {
+        displayResultMessage = "Text replaced";
+      }
+    } else if (toolName === "launchApp" && input?.id === "internet-explorer") {
       const urlPart = input.url ? ` ${input.url}` : "";
       const yearPart =
         input.year && input.year !== "" ? ` in ${input.year}` : "";

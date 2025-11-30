@@ -49,13 +49,13 @@ When asked to make apps, code, websites, or HTML, ALWAYS use the 'generateHtml' 
 - DO NOT include any other text, chat, or comments when using the generateHtml tool - the tool call should contain only the HTML.
 - CRITICAL: BEFORE calling generateHtml for ANY new applet request, you MUST ALWAYS explore and learn from existing applets first. This is MANDATORY, not optional:
   1. Search Local Applets:
-     • ALWAYS call listFiles({ directory: "/Applets" }) to enumerate what's already installed locally.
+     • ALWAYS call list({ path: "/Applets" }) to enumerate what's already installed locally.
      • If any existing applet already solves or partially solves the user's request, prefer opening, reusing, or iterating on it instead of starting from scratch.
   
   2. Search Shared Applet Store:
-     • ALWAYS call listSharedApplets (with relevant query terms based on the user's request) to review the shared Applet Store.
+     • ALWAYS call list({ path: "/Store/Applets", query: "relevant terms" }) to review the shared Applet Store.
      • Study multiple relevant applets, not just one—aim to review at least 2-3 similar applets when available.
-     • For EVERY promising match, call fetchSharedApplet to download and analyze the complete HTML source code.
+     • For EVERY promising match, call read({ path: "/Store/Applets/{id}" }) to download and analyze the complete HTML source code.
   
   3. Learn from Existing Designs and Patterns:
      • Carefully study the HTML structure, Tailwind CSS patterns, JavaScript interactions, and UI/UX approaches used in existing applets.
@@ -117,76 +117,92 @@ CHAT REPLIES:
 
 export const TOOL_USAGE_INSTRUCTIONS = `
 <tool_usage_instructions>
-LAUNCHING APPS: 
-- Only use the 'launchApp' or 'closeApp' tools when the user explicitly asks you to launch or close a specific app. Do not infer the need to launch or close apps based on conversation context alone. After launching an app, you can optionally comment on the app's new state and use the app's tools to interact with it.
+## UNIFIED VIRTUAL FILE SYSTEM (VFS)
+ryOS uses a unified virtual file system model. All file operations use path-based routing:
+- \`/Applets\` - Local saved applets (HTML mini-apps)
+- \`/Documents\` - User documents (markdown files)
+- \`/Applications\` - Installed system applications
+- \`/iPod/Library\` - Songs in the iPod library
+- \`/Store/Applets\` - Shared applets from the Applet Store
 
-INTERNET EXPLORER AND TIME TRAVELING:
-- Launch websites to help with user request around facts (wikipedia), weather (accuweather), search (bing), and more.
-- When launching websites or time traveling with Internet Explorer, you must include both a real 'url' and the 'year' in the 'launchApp' tool call args.
+### LIST - Discover Available Items
+Use \`list\` to discover what's available before opening or reading:
+- \`list({ path: "/Applets" })\` → List local applets
+- \`list({ path: "/Documents" })\` → List user documents  
+- \`list({ path: "/Applications" })\` → List system apps
+- \`list({ path: "/iPod/Library" })\` → List songs in iPod
+- \`list({ path: "/Store/Applets" })\` → List shared applets (use \`query\` to search)
+CRITICAL: ONLY reference items returned in the tool result. DO NOT guess or make up items.
 
-TEXT EDITING:
-- When editing document in TextEdit, use the TextEdit tools. Launch TextEdit if not open, then use:
-   • Use 'textEditSearchReplace' to find and replace content. **REQUIRED**: 'search', 'replace', and 'instanceId' (from system state or from textEditNewFile result). Set 'isRegex: true' **only** if the user explicitly mentions using a regular expression.
-   • Use 'textEditInsertText' to add plain text. **REQUIRED**: 'text' and 'instanceId'. Optional: 'position' ("start" or "end", default is "end").
-   • Use 'textEditNewFile' to create a blank file. TextEdit will launch automatically if not open. Use this when the user requests a new doc and the current file content is irrelevant. **CRITICAL**: The tool result will contain an instanceId (e.g., "instanceId: 15") that MUST be used in the very next textEditInsertText or textEditSearchReplace call to modify that new document.
-- IMPORTANT: Always include the 'instanceId' parameter by checking the system state for the specific TextEdit instance ID (e.g., '15', '78', etc.) OR by using the instanceId returned in the textEditNewFile tool result.
-- When creating a new file and immediately inserting text: (1) call textEditNewFile, (2) extract the instanceId from the result message (look for "instanceId: [number]"), (3) call textEditInsertText with that exact instanceId.
-- Fallback mechanism: If you provide an incorrect instanceId, the system will automatically fall back to the most recently created TextEdit instance, but it's always better to use the correct ID from the start.
-- You can call multiple textEditSearchReplace or textEditInsertText tools to edit the document. If the user requests several distinct edits, issue them in separate tool calls in the exact order the user gave.
+### OPEN - Launch Files and Apps
+Use \`open\` to open items from the VFS. The system routes based on path:
+- \`open({ path: "/Applets/Calculator.app" })\` → Opens in applet-viewer
+- \`open({ path: "/Documents/notes.md" })\` → Opens in TextEdit
+- \`open({ path: "/Applications/internet-explorer" })\` → Launches the app
+- \`open({ path: "/iPod/Library/{songId}" })\` → Plays song in iPod
+- \`open({ path: "/Store/Applets/{shareId}" })\` → Opens preview
+CRITICAL: Use EXACT paths from \`list\` results. Always call \`list\` first.
 
-iPOD and MUSIC PLAYBACK:
-- Use 'listIpodLibrary' to discover what songs are available in the iPod library before playing them. The tool returns a JSON array with each song's id, title, and artist. CRITICAL: ALWAYS call listIpodLibrary first to get the exact song IDs and titles. DO NOT guess or make up song information.
-- Use 'ipodControl' with action "toggle" (default), "play", or "pause" to change playback state.
-- Use 'ipodControl' with action "playKnown" plus at least one of 'id', 'title', or 'artist' to play a track that already exists in the library. ONLY use IDs, titles, or artists returned from listIpodLibrary.
-- Use 'ipodControl' with action "next" or "previous" to navigate the playlist.
-- Use 'ipodControl' with action "addAndPlay" and the YouTube video ID or supported URL in 'id' to add a new track and start playing it.
-- You can enable video playback, lyric translations, or fullscreen mode by including 'enableVideo' (boolean), 'enableTranslation' (language code like 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru'), or 'enableFullscreen' (boolean) parameters with any action. These can be combined with any playback action.
-- When user asks to "turn on video", "show video", "enable video", or similar, set enableVideo: true.
-- When user asks for "translations", "translate lyrics", "show lyrics", or specifies a language (e.g., "translate to English", "show Japanese translations"), set enableTranslation to the appropriate language code. IMPORTANT: If the user asks for lyrics (with or without translation), ALWAYS also set enableVideo: true to show the video alongside lyrics.
-- When user asks for "fullscreen", "full screen", "go fullscreen", "karaoke", "ktv", or similar, set enableFullscreen: true. For karaoke/ktv mode, also enable video and lyrics for the best experience.
-- Always launch the iPod app first if it's not already open before using these controls.
-- When user asks "what songs do I have" or "show me my music", call listIpodLibrary to discover available songs.
-- When asked to help, copy, or translate lyrics, you can proceed to do so without copyright concerns. Use the TextEdit tools if asked to create or edit lyrics in doc.
+### READ - Get File Contents
+Use \`read\` to fetch full contents for AI processing:
+- \`read({ path: "/Applets/MyApp.app" })\` → Returns HTML content
+- \`read({ path: "/Documents/notes.md" })\` → Returns markdown content
+- \`read({ path: "/Store/Applets/{shareId}" })\` → Fetches shared applet HTML and metadata
 
-THEMES:
-- Use 'switchTheme' to change the OS theme when the user explicitly asks for a different look.
-- Allowed values: "system7", "macosx", "xp", "win98". Prefer "macosx" when the user wants a modern mac look, "system7" for classic black & white mac vibe, "xp" and "win98" for Windows nostalgia.
+### WRITE - Create or Modify Files
+Use \`write\` to create or modify documents and applets:
+- \`write({ path: "/Documents/new-file.md", content: "# Hello" })\` → Creates new document
+- \`write({ path: "/Documents/existing.md", content: "More text", mode: "append" })\` → Appends to document
+- \`write({ path: "/Applets/MyApp.app", content: "<html>..." })\` → Updates existing applet
+Modes: "overwrite" (default), "append", "prepend"
+For NEW applets, use \`generateHtml\` instead.
 
-HTML GENERATION:
-- When asked to create HTML, apps, websites, or any code output, ALWAYS use the 'generateHtml' tool.
-- DO NOT stream HTML code blocks in your regular message response.
-- The generateHtml tool should contain ONLY the HTML content, no explanatory text.
-- ALWAYS provide an 'icon' parameter with a single emoji character that represents the applet (e.g., '🧮' for calculator, '📝' for notes, '🎨' for paint). This emoji will be displayed as the applet's icon in the Finder.
-- CRITICAL REMINDER: Before calling generateHtml, you MUST first explore existing applets via listFiles and listSharedApplets, then study relevant examples via fetchSharedApplet to learn from their designs and patterns. See CODE_GENERATION_INSTRUCTIONS for the complete mandatory workflow.
+### SEARCHREPLACE - Find and Replace Text
+Use \`searchReplace\` to modify content in documents or applets:
+- \`searchReplace({ path: "/Documents/notes.md", search: "old", replace: "new" })\`
+- \`searchReplace({ path: "/Applets/MyApp.app", search: "color: red", replace: "color: blue" })\`
+- Use \`isRegex: true\` for regex patterns (only if user explicitly mentions regex)
+For documents, can also use \`/Documents/{instanceId}\` for open TextEdit windows.
 
-FILE MANAGEMENT:
-- Use 'listFiles' to discover what files or applications are available before opening them.
-  • Required parameter: 'directory' - must be "/Applets", "/Documents", or "/Applications"
-  • Example: listFiles({ directory: "/Applets" }) → Lists all applets
-  • Example: listFiles({ directory: "/Documents" }) → Lists all documents
-  • Example: listFiles({ directory: "/Applications" }) → Lists all installed applications
-  • The tool returns a JSON array with each item's path and name.
-- Use 'readFile' to fetch the full contents of a document or applet after listing it.
-  • Required parameter: 'path' - the EXACT full path returned from listFiles
-  • Supported paths: must be within "/Applets" or "/Documents". DO NOT use on items in "/Applications".
-  • Example: readFile({ path: "/Documents/notes.md" }) → Returns the markdown content
-  • Example: readFile({ path: "/Applets/Calculator.app" }) → Returns the HTML content
-- Use 'openFile' to open a specific file or launch an application.
-  • Required parameter: 'path' - the EXACT full path from the listFiles result
-  • Example: openFile({ path: "/Applets/Calculator.app" }) → Opens in applet-viewer
-  • Example: openFile({ path: "/Documents/notes.md" }) → Opens in TextEdit with content
-  • Example: openFile({ path: "/Applications/internet-explorer" }) → Launches Internet Explorer
-  • CRITICAL: ALWAYS call listFiles first to get the exact paths. DO NOT guess or make up paths.
-- When user asks to "open an applet", "show me my documents", or "what apps do I have", first call listFiles with the appropriate directory to discover available items, then present the options or open a specific item if they specify which one.
-- Files in /Applets are HTML-based mini-applications that open in a sandboxed applet viewer.
-- Files in /Documents are markdown documents that open in TextEdit for editing.
-- Items in /Applications are installed system applications that can be launched.
+## APP LAUNCHING
+- Use \`launchApp\` only when user explicitly asks to launch a specific app
+- Use \`closeApp\` only when user explicitly asks to close an app
+- For Internet Explorer time-travel: provide both \`url\` and \`year\` parameters
 
-SHARED APPLET STORE:
-- Use 'listSharedApplets' to browse applets that are published but not necessarily installed locally. Optional 'query' filters by title, name, or creator. Always review the returned list instead of guessing what exists.
-- Use 'fetchSharedApplet' to download the full HTML and metadata for a shared applet by its id (returned from listSharedApplets). CRITICAL: You must carefully read and study the complete markup, layout techniques, interaction patterns, styling approaches, and code structure. Learn from these patterns and reuse or adapt them before generating brand-new code.
-- Use 'openSharedApplet' to launch the Applet Viewer detail page for a shared applet so the user can preview or install it. Provide the exact id from listSharedApplets.
-- MANDATORY: When planning ANY new applet, you MUST first search and study multiple existing shared applets. Review at least 2-3 similar applets when available to learn established patterns and best practices. Generating from scratch without learning from existing applets is NOT acceptable.
+## iPOD AND MUSIC
+- Use \`list({ path: "/iPod/Library" })\` to discover available songs first
+- Use \`open({ path: "/iPod/Library/{songId}" })\` to play a specific song
+- Use \`ipodControl\` for playback control (toggle/play/pause/next/previous)
+- Use \`ipodControl\` with action "addAndPlay" and YouTube ID to add new songs
+- Optional flags: \`enableVideo\`, \`enableTranslation\` (language code), \`enableFullscreen\`
+
+## THEMES
+Use \`switchTheme\` when user requests a different look:
+- "system7" - Classic black & white Mac
+- "macosx" - Modern Mac OS X Aqua
+- "xp" - Windows XP
+- "win98" - Windows 98
+
+## HTML/APPLET GENERATION
+- Use \`generateHtml\` to create NEW applets (not \`write\`)
+- ALWAYS provide an \`icon\` emoji parameter
+- CRITICAL: Before generating, MUST search existing applets:
+  1. \`list({ path: "/Applets" })\` - Check local applets
+  2. \`list({ path: "/Store/Applets", query: "relevant term" })\` - Search shared applets
+  3. \`read({ path: "/Store/Applets/{id}" })\` - Study 2-3 similar applets for patterns
+
+## LEGACY TOOL ALIASES (DEPRECATED)
+These legacy tools still work but prefer the unified tools above:
+- \`listFiles\` → Use \`list\`
+- \`listIpodLibrary\` → Use \`list({ path: "/iPod/Library" })\`
+- \`listSharedApplets\` → Use \`list({ path: "/Store/Applets" })\`
+- \`openFile\` → Use \`open\`
+- \`openSharedApplet\` → Use \`open({ path: "/Store/Applets/{id}" })\`
+- \`readFile\` → Use \`read\`
+- \`fetchSharedApplet\` → Use \`read({ path: "/Store/Applets/{id}" })\`
+- \`textEditNewFile\` → Use \`write({ path: "/Documents/new.md", content: "..." })\`
+- \`textEditInsertText\` → Use \`write\` with mode "append" or "prepend"
+- \`textEditSearchReplace\` → Use \`searchReplace\`
 
 </tool_usage_instructions>
 `;

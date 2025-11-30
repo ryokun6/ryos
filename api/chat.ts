@@ -755,61 +755,31 @@ export default async function handler(req: Request) {
               ),
           }),
         },
+        // TextEdit tools - kept for backward compatibility, prefer unified tools
         textEditSearchReplace: {
           description:
-            "Search and replace text in a specific TextEdit document. You MUST always provide 'search', 'replace', and 'instanceId'. Set 'isRegex: true' ONLY if the user explicitly mentions using a regular expression. Use the instanceId from the tool result of textEditNewFile or from the system state TextEdit Windows list. If the specified instanceId doesn't exist, the system will fall back to the most recently created TextEdit instance.",
+            "DEPRECATED: Use 'searchReplace' tool instead. Search and replace text in a TextEdit document.",
           inputSchema: z.object({
-            search: z
-              .string()
-              .describe(
-                "REQUIRED: The text or regular expression to search for"
-              ),
-            replace: z
-              .string()
-              .describe(
-                "REQUIRED: The text that will replace each match of 'search'"
-              ),
-            isRegex: z
-              .boolean()
-              .optional()
-              .describe(
-                "Set to true if the 'search' field should be treated as a JavaScript regular expression (without flags). Defaults to false."
-              ),
-            instanceId: z
-              .string()
-              .describe(
-                "REQUIRED: The specific TextEdit instance ID to modify (e.g., '15'). Get this from the system state TextEdit Windows list."
-              ),
+            search: z.string().describe("The text or regex to search for"),
+            replace: z.string().describe("The replacement text"),
+            isRegex: z.boolean().optional().describe("Treat search as regex"),
+            instanceId: z.string().describe("TextEdit instance ID"),
           }),
         },
         textEditInsertText: {
           description:
-            "Insert plain text into a specific TextEdit document. You MUST always provide 'text' and 'instanceId'. Appends to the end by default; use position 'start' to prepend. Use the instanceId from the tool result of textEditNewFile or from the system state TextEdit Windows list. If the specified instanceId doesn't exist, the system will fall back to the most recently created TextEdit instance.",
+            "DEPRECATED: Use 'write' tool instead. Insert text into a TextEdit document.",
           inputSchema: z.object({
-            text: z.string().describe("REQUIRED: The text to insert"),
-            position: z
-              .enum(["start", "end"])
-              .optional()
-              .describe(
-                "Where to insert the text: 'start' to prepend, 'end' to append. Default is 'end'."
-              ),
-            instanceId: z
-              .string()
-              .describe(
-                "REQUIRED: The specific TextEdit instance ID to modify (e.g., '15'). Get this from the system state TextEdit Windows list."
-              ),
+            text: z.string().describe("The text to insert"),
+            position: z.enum(["start", "end"]).optional().describe("Insert position"),
+            instanceId: z.string().describe("TextEdit instance ID"),
           }),
         },
         textEditNewFile: {
           description:
-            "Create a new blank document in a new TextEdit instance. Returns an instanceId that MUST be used in subsequent textEditInsertText or textEditSearchReplace calls to modify this document. Use when the user explicitly requests a new or untitled file.",
+            "DEPRECATED: Use 'write' tool with a new path instead. Create a new TextEdit document.",
           inputSchema: z.object({
-            title: z
-              .string()
-              .optional()
-              .describe(
-                "Optional title for the new TextEdit window. If not provided, defaults to 'Untitled'."
-              ),
+            title: z.string().optional().describe("Window title"),
           }),
         },
         // Add iPod control tools
@@ -982,90 +952,181 @@ export default async function handler(req: Request) {
             "Render a playful emoji aquarium inside the chat bubble. Use when the user asks for an aquarium / fish tank / fishes / sam's aquarium.",
           inputSchema: z.object({}),
         },
-        // --- File Management ---
-        listFiles: {
+        // --- Unified Virtual File System Tools ---
+        list: {
           description:
-            "List files from a specific directory (/Applets, /Documents, or /Applications). Returns a JSON array with metadata for each item. CRITICAL: You MUST ONLY reference items that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate items that are not in the returned list. If the list is empty or contains only one item, you must acknowledge that reality - do not make up additional items.",
+            "List items from the ryOS virtual file system. Supports multiple directories and virtual paths. Returns a JSON array with metadata for each item. CRITICAL: You MUST ONLY reference items that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate items that are not in the returned list.",
           inputSchema: z.object({
-            directory: z
-              .enum(["/Applets", "/Documents", "/Applications"])
+            path: z
+              .string()
               .describe(
-                "The directory to list files from. Use '/Applets' for applets, '/Documents' for documents, or '/Applications' for installed applications."
+                "The directory path to list. Supported paths:\n" +
+                "- '/Applets' - Local saved applets\n" +
+                "- '/Documents' - User documents\n" +
+                "- '/Applications' - Installed system applications\n" +
+                "- '/iPod/Library' - Songs in iPod library\n" +
+                "- '/Store/Applets' - Shared applets from the Applet Store"
+              ),
+            query: z
+              .string()
+              .max(200)
+              .optional()
+              .describe(
+                "Optional search query to filter results (only used for '/Store/Applets' path). Case-insensitive substring match on title, name, or creator."
+              ),
+            limit: z
+              .number()
+              .int()
+              .min(1)
+              .max(50)
+              .optional()
+              .describe(
+                "Optional maximum number of results to return (default 25, only used for '/Store/Applets' path)."
               ),
           }),
         },
-          listSharedApplets: {
-            description:
-              "List shared applets that are published to the Applet Store but may not be installed locally. Use this to discover reusable applets before generating new code.",
-            inputSchema: z.object({
-              query: z
-                .string()
-                .min(1)
-                .max(200)
-                .optional()
-                .describe(
-                  "Optional case-insensitive substring to filter by title, name, or creator. Omit to list the latest shared applets."
-                ),
-              limit: z
-                .number()
-                .int()
-                .min(1)
-                .max(50)
-                .optional()
-                .describe(
-                  "Optional maximum number of results to return (default 25)."
-                ),
-            }),
-          },
-          fetchSharedApplet: {
-            description:
-              "Fetch the HTML content and metadata for a shared applet by id (returned from listSharedApplets). Use to inspect or reuse an existing shared applet.",
-            inputSchema: z.object({
-              id: z
-                .string()
-                .min(1)
-                .describe(
-                  "The shared applet id returned from listSharedApplets."
-                ),
-            }),
-          },
-          openSharedApplet: {
-            description:
-              "Open the Applet Viewer detail view for a shared applet so the user can preview or install it. Provide the id from listSharedApplets.",
-            inputSchema: z.object({
-              id: z
-                .string()
-                .min(1)
-                .describe(
-                  "The shared applet id returned from listSharedApplets."
-                ),
-            }),
-          },
+        open: {
+          description:
+            "Open a file, application, or media item from the virtual file system. Routes to the appropriate app based on path:\n" +
+            "- Applets → applet-viewer\n" +
+            "- Documents → TextEdit\n" +
+            "- Applications → launches the app\n" +
+            "- iPod songs → plays in iPod\n" +
+            "- Store applets → opens preview\n" +
+            "CRITICAL: Use exact paths from 'list' results. Always call 'list' first.",
+          inputSchema: z.object({
+            path: z
+              .string()
+              .describe(
+                "The EXACT path from list results. Examples:\n" +
+                "- '/Applets/Calculator.app' - Open local applet\n" +
+                "- '/Documents/notes.md' - Open document in TextEdit\n" +
+                "- '/Applications/internet-explorer' - Launch app\n" +
+                "- '/iPod/Library/{id}' - Play song by ID\n" +
+                "- '/Store/Applets/{id}' - Preview shared applet"
+              ),
+          }),
+        },
+        read: {
+          description:
+            "Read the full contents of a file from the virtual file system. Returns the complete text content for AI processing. Supports:\n" +
+            "- '/Applets/*' - Read applet HTML content\n" +
+            "- '/Documents/*' - Read document markdown content\n" +
+            "- '/Store/Applets/{id}' - Fetch shared applet content and metadata",
+          inputSchema: z.object({
+            path: z
+              .string()
+              .describe(
+                "The file path to read. Must be from /Applets, /Documents, or /Store/Applets. Use exact path from list results or store applet ID for shared applets."
+              ),
+          }),
+        },
+        write: {
+          description:
+            "Write or modify content in a document or applet. Creates a new file if it doesn't exist. For documents, opens in TextEdit. Supports:\n" +
+            "- '/Documents/*' - Create or modify markdown documents\n" +
+            "- '/Applets/*' - Modify existing applet HTML (use generateHtml for new applets)",
+          inputSchema: z.object({
+            path: z
+              .string()
+              .describe(
+                "The file path to write to. For new documents use '/Documents/filename.md'. For applets use '/Applets/name.app'."
+              ),
+            content: z
+              .string()
+              .describe(
+                "The content to write. For documents: markdown text. For applets: HTML content."
+              ),
+            mode: z
+              .enum(["overwrite", "append", "prepend"])
+              .optional()
+              .describe(
+                "Write mode: 'overwrite' replaces content (default), 'append' adds to end, 'prepend' adds to start."
+              ),
+            title: z
+              .string()
+              .optional()
+              .describe(
+                "Optional window title. For documents defaults to filename, for applets defaults to 'Applet'."
+              ),
+          }),
+        },
+        searchReplace: {
+          description:
+            "Search and replace text in a document or applet. Works on files that are currently open or opens them automatically. Supports regex patterns.",
+          inputSchema: z.object({
+            path: z
+              .string()
+              .describe(
+                "The file path to search/replace in. Must be in /Documents or /Applets. Use '/Documents/{instanceId}' for open TextEdit windows."
+              ),
+            search: z
+              .string()
+              .describe(
+                "The text or regular expression pattern to search for."
+              ),
+            replace: z
+              .string()
+              .describe(
+                "The text to replace matches with."
+              ),
+            isRegex: z
+              .boolean()
+              .optional()
+              .describe(
+                "Set to true to treat 'search' as a JavaScript regular expression. Defaults to false (literal text match)."
+              ),
+          }),
+        },
+        // Legacy aliases for backward compatibility - mapped to unified tools
+        listFiles: {
+          description:
+            "DEPRECATED: Use 'list' tool instead. List files from a directory.",
+          inputSchema: z.object({
+            directory: z
+              .enum(["/Applets", "/Documents", "/Applications"])
+              .describe("The directory to list."),
+          }),
+        },
+        listSharedApplets: {
+          description:
+            "DEPRECATED: Use list({ path: '/Store/Applets' }) instead. List shared applets from the store.",
+          inputSchema: z.object({
+            query: z.string().max(200).optional(),
+            limit: z.number().int().min(1).max(50).optional(),
+          }),
+        },
+        fetchSharedApplet: {
+          description:
+            "DEPRECATED: Use read({ path: '/Store/Applets/{id}' }) instead. Fetch shared applet content.",
+          inputSchema: z.object({
+            id: z.string().min(1),
+          }),
+        },
+        openSharedApplet: {
+          description:
+            "DEPRECATED: Use open({ path: '/Store/Applets/{id}' }) instead. Open shared applet preview.",
+          inputSchema: z.object({
+            id: z.string().min(1),
+          }),
+        },
         listIpodLibrary: {
           description:
-            "List all songs in the iPod library. Returns a JSON array with each song's id, title, and artist. CRITICAL: You MUST ONLY reference songs that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate songs that are not in the returned list. If the library is empty, acknowledge that reality.",
+            "DEPRECATED: Use list({ path: '/iPod/Library' }) instead. List iPod library songs.",
           inputSchema: z.object({}),
         },
         openFile: {
           description:
-            "Open a specific file or application. Applets open in applet-viewer, documents open in TextEdit, applications launch as apps. CRITICAL: You MUST use the exact path returned from listFiles - do not modify or guess paths. Always call listFiles first to get the exact available items.",
+            "DEPRECATED: Use 'open' tool instead. Open a file or application.",
           inputSchema: z.object({
-            path: z
-              .string()
-              .describe(
-                "The EXACT full path from the listFiles result (e.g., '/Applets/Calculator.app', '/Documents/notes.md', or '/Applications/internet-explorer'). Must be copied exactly as returned by listFiles."
-              ),
+            path: z.string(),
           }),
         },
         readFile: {
           description:
-            "Read the full contents of a saved document or applet. MUST be used only with paths returned from listFiles. Returns the complete text content for AI processing. Do NOT use on applications.",
+            "DEPRECATED: Use 'read' tool instead. Read file contents.",
           inputSchema: z.object({
-            path: z
-              .string()
-              .describe(
-                "The EXACT file path from listFiles (e.g., '/Applets/Calculator.app' or '/Documents/notes.md'). Only supports paths within /Applets or /Documents."
-              ),
+            path: z.string(),
           }),
         },
       },

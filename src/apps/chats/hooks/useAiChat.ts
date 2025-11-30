@@ -2282,6 +2282,823 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
             break;
           }
+          // === Unified VFS Tools ===
+          case "list": {
+            const { path, query, limit } = toolCall.input as {
+              path: string;
+              query?: string;
+              limit?: number;
+            };
+
+            if (!path) {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No path provided",
+              });
+              result = "";
+              break;
+            }
+
+            console.log("[ToolCall] list:", { path, query, limit });
+
+            try {
+              // Route based on path
+              if (path === "/iPod/Library") {
+                // List iPod library
+                const ipodStore = useIpodStore.getState();
+                const library = ipodStore.tracks.map((track) => ({
+                  path: `/iPod/Library/${track.id}`,
+                  id: track.id,
+                  title: track.title,
+                  artist: track.artist,
+                }));
+
+                const resultMessage =
+                  library.length > 0
+                    ? `Found ${library.length} song${library.length === 1 ? "" : "s"} in iPod library:\n${JSON.stringify(library, null, 2)}`
+                    : "iPod library is empty";
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: resultMessage,
+                });
+                result = "";
+              } else if (path === "/Store/Applets") {
+                // List shared applets from store
+                const normalizedKeyword = query
+                  ? normalizeSearchText(query.trim())
+                  : "";
+                const keywordTokens = normalizedKeyword
+                  ? normalizedKeyword.split(/\s+/).filter(Boolean)
+                  : [];
+                const hasKeyword = normalizedKeyword.length > 0;
+                const maxResults = limit
+                  ? Math.min(Math.max(limit, 1), 100)
+                  : 50;
+
+                const response = await fetch("/api/share-applet?list=true");
+                if (!response.ok) {
+                  throw new Error(`Failed to list shared applets (HTTP ${response.status})`);
+                }
+
+                const data = await response.json();
+                const allApplets: Array<{
+                  id: string;
+                  title?: string;
+                  name?: string;
+                  icon?: string;
+                  createdAt?: number;
+                  createdBy?: string;
+                }> = Array.isArray(data?.applets) ? data.applets : [];
+
+                const scoreThreshold = hasKeyword
+                  ? deriveScoreThreshold(normalizedKeyword.length)
+                  : 0;
+
+                const scoredApplets = allApplets.map((applet) => {
+                  const normalizedFields = [
+                    typeof applet.title === "string" ? normalizeSearchText(applet.title) : "",
+                    typeof applet.name === "string" ? normalizeSearchText(applet.name) : "",
+                    typeof applet.createdBy === "string" ? normalizeSearchText(applet.createdBy) : "",
+                  ].filter((value) => value.length > 0);
+
+                  const score = hasKeyword
+                    ? normalizedFields.reduce((best, field) => {
+                        const fieldScore = computeMatchScore(field, normalizedKeyword, keywordTokens);
+                        return fieldScore > best ? fieldScore : best;
+                      }, 0)
+                    : 1;
+
+                  return { applet, score };
+                });
+
+                const filteredApplets = hasKeyword
+                  ? scoredApplets.filter(({ score }) => score >= scoreThreshold)
+                  : scoredApplets;
+
+                filteredApplets.sort((a, b) => {
+                  if (hasKeyword && b.score !== a.score) return b.score - a.score;
+                  return (b.applet.createdAt ?? 0) - (a.applet.createdAt ?? 0);
+                });
+
+                const limitedApplets = filteredApplets.slice(0, maxResults).map(({ applet }) => ({
+                  path: `/Store/Applets/${applet.id}`,
+                  id: applet.id,
+                  title: applet.title ?? applet.name ?? "Untitled",
+                  name: applet.name,
+                }));
+
+                const resultMessage = limitedApplets.length > 0
+                  ? `Found ${limitedApplets.length} shared applet${limitedApplets.length === 1 ? "" : "s"}:\n${JSON.stringify(limitedApplets, null, 2)}`
+                  : hasKeyword
+                    ? `No shared applets matched "${query}"`
+                    : "No shared applets available";
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: resultMessage,
+                });
+                result = "";
+              } else if (path === "/Applications") {
+                // List installed applications
+                const apps = Object.entries(appRegistry)
+                  .filter(([id]) => id !== "finder")
+                  .map(([id, app]) => ({
+                    path: `/Applications/${id}`,
+                    name: app.name,
+                  }));
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Found ${apps.length} application${apps.length === 1 ? "" : "s"}:\n${JSON.stringify(apps, null, 2)}`,
+                });
+                result = "";
+              } else if (path === "/Applets" || path === "/Documents") {
+                // List files from file system
+                const filesStore = useFilesStore.getState();
+                const allItems = Object.values(filesStore.items);
+
+                const files = allItems.filter(
+                  (item) =>
+                    item.status === "active" &&
+                    item.path.startsWith(`${path}/`) &&
+                    !item.isDirectory &&
+                    item.path !== `${path}/`,
+                );
+
+                const fileList = files.map((file) => ({
+                  path: file.path,
+                  name: file.name,
+                  type: file.type,
+                }));
+
+                const fileType = path === "/Applets" ? "applet" : "document";
+                const resultMessage = fileList.length > 0
+                  ? `Found ${fileList.length} ${fileType}${fileList.length === 1 ? "" : "s"}:\n${JSON.stringify(fileList, null, 2)}`
+                  : `No ${fileType}s found in ${path} directory`;
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: resultMessage,
+                });
+                result = "";
+              } else {
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: `Invalid path: ${path}. Supported paths: /Applets, /Documents, /Applications, /iPod/Library, /Store/Applets`,
+                });
+                result = "";
+              }
+            } catch (err) {
+              console.error("list error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: err instanceof Error ? err.message : "Failed to list items",
+              });
+              result = "";
+            }
+            break;
+          }
+          case "open": {
+            const { path } = toolCall.input as { path: string };
+
+            if (!path) {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No path provided",
+              });
+              result = "";
+              break;
+            }
+
+            console.log("[ToolCall] open:", { path });
+
+            try {
+              // Route based on path prefix
+              if (path.startsWith("/iPod/Library/")) {
+                // Play iPod song by ID
+                const songId = path.replace("/iPod/Library/", "");
+                const ipodState = useIpodStore.getState();
+                const trackIndex = ipodState.tracks.findIndex((t) => t.id === songId);
+
+                if (trackIndex === -1) {
+                  throw new Error(`Song not found: ${songId}`);
+                }
+
+                // Ensure iPod is open
+                const appState = useAppStore.getState();
+                const ipodInstances = appState.getInstancesByAppId("ipod");
+                if (!ipodInstances.some((inst) => inst.isOpen)) {
+                  launchApp("ipod");
+                }
+
+                ipodState.setCurrentIndex(trackIndex);
+                ipodState.setIsPlaying(true);
+
+                const track = ipodState.tracks[trackIndex];
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Playing ${track.title}${track.artist ? ` by ${track.artist}` : ""}`,
+                });
+                result = "";
+              } else if (path.startsWith("/Store/Applets/")) {
+                // Open shared applet preview
+                const shareId = path.replace("/Store/Applets/", "");
+                launchApp("applet-viewer", {
+                  initialData: { path: "", content: "", shareCode: shareId },
+                });
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: "Opened applet preview",
+                });
+                result = "";
+              } else if (path.startsWith("/Applications/")) {
+                // Launch application
+                const appId = path.replace("/Applications/", "") as AppId;
+                if (!appRegistry[appId]) {
+                  throw new Error(`Application not found: ${appId}`);
+                }
+
+                launchApp(appId);
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Launched ${appRegistry[appId].name}`,
+                });
+                result = "";
+              } else if (path.startsWith("/Applets/")) {
+                // Open applet in viewer
+                const filesStore = useFilesStore.getState();
+                const fileItem = filesStore.items[path];
+
+                if (!fileItem || fileItem.status !== "active") {
+                  throw new Error(`Applet not found: ${path}`);
+                }
+
+                if (!fileItem.uuid) {
+                  throw new Error(`Applet missing content: ${path}`);
+                }
+
+                const contentData = await dbOperations.get<DocumentContent>(
+                  STORES.APPLETS,
+                  fileItem.uuid,
+                );
+
+                if (!contentData || !contentData.content) {
+                  throw new Error(`Failed to read applet content: ${path}`);
+                }
+
+                let content: string;
+                if (contentData.content instanceof Blob) {
+                  content = await contentData.content.text();
+                } else {
+                  content = contentData.content;
+                }
+
+                launchApp("applet-viewer", {
+                  initialData: { path, content },
+                });
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Opened applet: ${fileItem.name}`,
+                });
+                result = "";
+              } else if (path.startsWith("/Documents/")) {
+                // Open document in TextEdit
+                const filesStore = useFilesStore.getState();
+                const fileItem = filesStore.items[path];
+
+                if (!fileItem || fileItem.status !== "active") {
+                  throw new Error(`Document not found: ${path}`);
+                }
+
+                if (!fileItem.uuid) {
+                  throw new Error(`Document missing content: ${path}`);
+                }
+
+                const contentData = await dbOperations.get<DocumentContent>(
+                  STORES.DOCUMENTS,
+                  fileItem.uuid,
+                );
+
+                if (!contentData || !contentData.content) {
+                  throw new Error(`Failed to read document content: ${path}`);
+                }
+
+                let content: string;
+                if (contentData.content instanceof Blob) {
+                  content = await contentData.content.text();
+                } else {
+                  content = contentData.content;
+                }
+
+                const htmlContent = markdownToHtml(content);
+                const contentJson = generateJSON(htmlContent, [
+                  StarterKit,
+                  Underline,
+                  TextAlign.configure({ types: ["heading", "paragraph"] }),
+                  TaskList,
+                  TaskItem.configure({ nested: true }),
+                ] as AnyExtension[]);
+
+                const instanceId = launchApp("textedit", { multiWindow: true });
+                await new Promise((resolve) => setTimeout(resolve, 100));
+
+                const textEditStore = useTextEditStore.getState();
+                textEditStore.updateInstance(instanceId, {
+                  filePath: path,
+                  contentJson,
+                  hasUnsavedChanges: false,
+                });
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Opened document: ${fileItem.name}`,
+                });
+                result = "";
+              } else {
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: `Invalid path: ${path}`,
+                });
+                result = "";
+              }
+            } catch (err) {
+              console.error("open error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: err instanceof Error ? err.message : "Failed to open",
+              });
+              result = "";
+            }
+            break;
+          }
+          case "read": {
+            const { path } = toolCall.input as { path: string };
+
+            if (!path) {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No path provided",
+              });
+              result = "";
+              break;
+            }
+
+            console.log("[ToolCall] read:", { path });
+
+            try {
+              if (path.startsWith("/Store/Applets/")) {
+                // Fetch shared applet content
+                const shareId = path.replace("/Store/Applets/", "");
+                const response = await fetch(`/api/share-applet?id=${encodeURIComponent(shareId)}`);
+
+                if (!response.ok) {
+                  throw new Error(`Failed to fetch shared applet (HTTP ${response.status})`);
+                }
+
+                const data = await response.json();
+                const filesStore = useFilesStore.getState();
+                const installedEntry = Object.values(filesStore.items).find(
+                  (item) =>
+                    item.status === "active" &&
+                    typeof item.shareId === "string" &&
+                    item.shareId.toLowerCase() === shareId.toLowerCase(),
+                );
+
+                const payload = {
+                  id: shareId,
+                  title: data?.title ?? null,
+                  name: data?.name ?? null,
+                  icon: data?.icon ?? null,
+                  createdBy: data?.createdBy ?? null,
+                  installedPath: installedEntry?.path ?? null,
+                  content: typeof data?.content === "string" ? data.content : "",
+                };
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: JSON.stringify(payload, null, 2),
+                });
+                result = "";
+              } else if (path.startsWith("/Applets/") || path.startsWith("/Documents/")) {
+                // Read local file content
+                const isApplet = path.startsWith("/Applets/");
+                const filesStore = useFilesStore.getState();
+                const fileItem = filesStore.items[path];
+
+                if (!fileItem || fileItem.status !== "active") {
+                  throw new Error(`File not found: ${path}`);
+                }
+
+                if (!fileItem.uuid) {
+                  throw new Error(`File missing content: ${path}`);
+                }
+
+                const storeName = isApplet ? STORES.APPLETS : STORES.DOCUMENTS;
+                const contentData = await dbOperations.get<DocumentContent>(storeName, fileItem.uuid);
+
+                if (!contentData || contentData.content == null) {
+                  throw new Error(`Failed to read file content: ${path}`);
+                }
+
+                let content: string;
+                if (typeof contentData.content === "string") {
+                  content = contentData.content;
+                } else if (contentData.content instanceof Blob) {
+                  content = await contentData.content.text();
+                } else {
+                  throw new Error("Unsupported content type");
+                }
+
+                const fileLabel = isApplet ? "Applet" : "Document";
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `${fileLabel} content: ${fileItem.name} (${content.length} characters)\n\n${content}`,
+                });
+                result = "";
+              } else {
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: `Invalid path for read: ${path}. Use /Applets/*, /Documents/*, or /Store/Applets/*`,
+                });
+                result = "";
+              }
+            } catch (err) {
+              console.error("read error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: err instanceof Error ? err.message : "Failed to read file",
+              });
+              result = "";
+            }
+            break;
+          }
+          case "write": {
+            const { path, content, mode = "overwrite", title } = toolCall.input as {
+              path: string;
+              content: string;
+              mode?: "overwrite" | "append" | "prepend";
+              title?: string;
+            };
+
+            if (!path) {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No path provided",
+              });
+              result = "";
+              break;
+            }
+
+            if (!content && mode === "overwrite") {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "No content provided",
+              });
+              result = "";
+              break;
+            }
+
+            console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
+
+            try {
+              if (path.startsWith("/Documents/")) {
+                // Write to document (via TextEdit)
+                const appStore = useAppStore.getState();
+                const textEditStore = useTextEditStore.getState();
+                const filesStore = useFilesStore.getState();
+                const fileItem = filesStore.items[path];
+
+                // Find existing TextEdit instance with this file
+                let targetInstanceId: string | null = null;
+                for (const [instanceId, instance] of Object.entries(textEditStore.instances)) {
+                  if (instance.filePath === path) {
+                    targetInstanceId = instanceId;
+                    break;
+                  }
+                }
+
+                // Create new instance if not found
+                if (!targetInstanceId) {
+                  const windowTitle = title || path.split("/").pop()?.replace(/\.md$/, "") || "Untitled";
+                  targetInstanceId = appStore.launchApp("textedit", undefined, windowTitle, true);
+                  trackNewTextEditInstance(targetInstanceId);
+                  await new Promise((resolve) => setTimeout(resolve, 200));
+                }
+
+                const targetInstance = textEditStore.instances[targetInstanceId];
+                const htmlFragment = markdownToHtml(content || "");
+                const parsedJson = generateJSON(htmlFragment, [
+                  StarterKit,
+                  Underline,
+                  TextAlign.configure({ types: ["heading", "paragraph"] }),
+                  TaskList,
+                  TaskItem.configure({ nested: true }),
+                ] as AnyExtension[]);
+
+                let newDocJson: JSONContent;
+                const nodesToInsert = Array.isArray(parsedJson.content) ? parsedJson.content : [];
+
+                if (mode === "overwrite" || !targetInstance?.contentJson) {
+                  newDocJson = parsedJson;
+                } else {
+                  const cloned = JSON.parse(JSON.stringify(targetInstance.contentJson));
+                  if (mode === "prepend") {
+                    cloned.content = [...nodesToInsert, ...cloned.content];
+                  } else {
+                    cloned.content = [...cloned.content, ...nodesToInsert];
+                  }
+                  newDocJson = cloned;
+                }
+
+                textEditStore.updateInstance(targetInstanceId, {
+                  filePath: path,
+                  contentJson: newDocJson,
+                  hasUnsavedChanges: true,
+                });
+
+                appStore.bringInstanceToForeground(targetInstanceId);
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Successfully wrote to document: ${path} (instanceId: ${targetInstanceId})`,
+                });
+                result = "";
+              } else if (path.startsWith("/Applets/")) {
+                // Modify existing applet (new applets should use generateHtml)
+                const filesStore = useFilesStore.getState();
+                const fileItem = filesStore.items[path];
+
+                if (!fileItem || fileItem.status !== "active") {
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    state: "output-error",
+                    errorText: `Applet not found: ${path}. Use generateHtml to create new applets.`,
+                  });
+                  result = "";
+                  break;
+                }
+
+                if (!fileItem.uuid) {
+                  throw new Error(`Applet missing UUID: ${path}`);
+                }
+
+                // Get existing content for append/prepend modes
+                let finalContent = content;
+                if (mode !== "overwrite") {
+                  const existingData = await dbOperations.get<DocumentContent>(STORES.APPLETS, fileItem.uuid);
+                  if (existingData?.content) {
+                    const existingContent = typeof existingData.content === "string"
+                      ? existingData.content
+                      : await existingData.content.text();
+                    finalContent = mode === "prepend"
+                      ? content + existingContent
+                      : existingContent + content;
+                  }
+                }
+
+                // Save updated content
+                await dbOperations.put<DocumentContent>(
+                  STORES.APPLETS,
+                  { name: fileItem.uuid, content: finalContent },
+                  fileItem.uuid,
+                );
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Successfully updated applet: ${path}`,
+                });
+                result = "";
+              } else {
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: `Invalid path for write: ${path}. Use /Documents/* or /Applets/*`,
+                });
+                result = "";
+              }
+            } catch (err) {
+              console.error("write error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: err instanceof Error ? err.message : "Failed to write file",
+              });
+              result = "";
+            }
+            break;
+          }
+          case "searchReplace": {
+            const { path, search, replace, isRegex } = toolCall.input as {
+              path: string;
+              search: string;
+              replace: string;
+              isRegex?: boolean;
+            };
+
+            if (!path || typeof search !== "string" || typeof replace !== "string") {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: "Missing required parameters: path, search, and replace",
+              });
+              result = "";
+              break;
+            }
+
+            console.log("[ToolCall] searchReplace:", { path, search, replace, isRegex });
+
+            const normalizedSearch = search.replace(/\r\n?/g, "\n");
+            const normalizedReplace = replace.replace(/\r\n?/g, "\n");
+            const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+            try {
+              if (path.startsWith("/Documents/")) {
+                // Search/replace in document (same as textEditSearchReplace)
+                const textEditState = useTextEditStore.getState();
+
+                // Try to find instance by file path or instanceId
+                let targetInstanceId: string | null = null;
+                const instanceIdMatch = path.match(/^\/Documents\/(\d+)$/);
+
+                if (instanceIdMatch) {
+                  targetInstanceId = instanceIdMatch[1];
+                } else {
+                  for (const [instanceId, instance] of Object.entries(textEditState.instances)) {
+                    if (instance.filePath === path) {
+                      targetInstanceId = instanceId;
+                      break;
+                    }
+                  }
+                }
+
+                if (!targetInstanceId || !textEditState.instances[targetInstanceId]) {
+                  // Fall back to most recent instance
+                  targetInstanceId = getMostRecentTextEditInstance();
+                }
+
+                if (!targetInstanceId || !textEditState.instances[targetInstanceId]) {
+                  throw new Error(`No TextEdit instance found for: ${path}`);
+                }
+
+                const targetInstance = textEditState.instances[targetInstanceId];
+                const currentContentJson = targetInstance.contentJson || {
+                  type: "doc",
+                  content: [{ type: "paragraph", content: [] }],
+                };
+
+                const htmlStr = generateHTML(currentContentJson, [
+                  StarterKit,
+                  Underline,
+                  TextAlign.configure({ types: ["heading", "paragraph"] }),
+                  TaskList,
+                  TaskItem.configure({ nested: true }),
+                ] as AnyExtension[]);
+
+                const markdownStr = htmlToMarkdown(htmlStr);
+                const pattern = isRegex ? normalizedSearch : escapeRegExp(normalizedSearch);
+                const regex = new RegExp(pattern, "gm");
+                const updatedMarkdown = markdownStr.replace(regex, normalizedReplace);
+
+                if (updatedMarkdown === markdownStr) {
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output: "No matches found to replace",
+                  });
+                  result = "";
+                  break;
+                }
+
+                const updatedHtml = markdownToHtml(updatedMarkdown);
+                const updatedJson = generateJSON(updatedHtml, [
+                  StarterKit,
+                  Underline,
+                  TextAlign.configure({ types: ["heading", "paragraph"] }),
+                  TaskList,
+                  TaskItem.configure({ nested: true }),
+                ] as AnyExtension[]);
+
+                textEditState.updateInstance(targetInstanceId, {
+                  contentJson: updatedJson,
+                  hasUnsavedChanges: true,
+                });
+
+                const appStore = useAppStore.getState();
+                appStore.bringInstanceToForeground(targetInstanceId);
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Successfully replaced text in document (instanceId: ${targetInstanceId})`,
+                });
+                result = "";
+              } else if (path.startsWith("/Applets/")) {
+                // Search/replace in applet HTML
+                const filesStore = useFilesStore.getState();
+                const fileItem = filesStore.items[path];
+
+                if (!fileItem || fileItem.status !== "active" || !fileItem.uuid) {
+                  throw new Error(`Applet not found: ${path}`);
+                }
+
+                const contentData = await dbOperations.get<DocumentContent>(STORES.APPLETS, fileItem.uuid);
+                if (!contentData?.content) {
+                  throw new Error(`Failed to read applet content: ${path}`);
+                }
+
+                const existingContent = typeof contentData.content === "string"
+                  ? contentData.content
+                  : await contentData.content.text();
+
+                const pattern = isRegex ? normalizedSearch : escapeRegExp(normalizedSearch);
+                const regex = new RegExp(pattern, "gm");
+                const updatedContent = existingContent.replace(regex, normalizedReplace);
+
+                if (updatedContent === existingContent) {
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output: "No matches found to replace",
+                  });
+                  result = "";
+                  break;
+                }
+
+                await dbOperations.put<DocumentContent>(
+                  STORES.APPLETS,
+                  { name: fileItem.uuid, content: updatedContent },
+                  fileItem.uuid,
+                );
+
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  output: `Successfully replaced text in applet: ${path}`,
+                });
+                result = "";
+              } else {
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: `Invalid path for searchReplace: ${path}. Use /Documents/* or /Applets/*`,
+                });
+                result = "";
+              }
+            } catch (err) {
+              console.error("searchReplace error:", err);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: err instanceof Error ? err.message : "Failed to search/replace",
+              });
+              result = "";
+            }
+            break;
+          }
           default:
             console.warn("Unhandled tool call:", toolCall.toolName);
             result = "Tool executed";
