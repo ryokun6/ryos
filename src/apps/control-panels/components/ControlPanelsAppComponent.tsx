@@ -27,7 +27,7 @@ import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
-import { clearPrefetchFlag } from "@/utils/prefetch";
+import { clearPrefetchFlag, prefetchAssets } from "@/utils/prefetch";
 import { AIModel, AI_MODEL_METADATA } from "@/types/aiModels";
 import { VolumeMixer } from "./VolumeMixer";
 import { v4 as uuidv4 } from "uuid";
@@ -1789,6 +1789,23 @@ export function ControlPanelsAppComponent({
                   <p className="text-[11px] text-gray-600 font-geneva-12">
                     This will clear all saved settings and restore default
                     states.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Button
+                    variant="retro"
+                    onClick={() => {
+                      clearPrefetchFlag();
+                      prefetchAssets();
+                    }}
+                    className="w-full"
+                  >
+                    Reset System Cache
+                  </Button>
+                  <p className="text-[11px] text-gray-600 font-geneva-12">
+                    Clear cached assets and re-download icons, sounds, and
+                    scripts.
                   </p>
                 </div>
 
