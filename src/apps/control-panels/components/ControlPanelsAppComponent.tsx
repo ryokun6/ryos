@@ -27,6 +27,7 @@ import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
+import { clearPrefetchFlag } from "@/utils/prefetch";
 import { AIModel, AI_MODEL_METADATA } from "@/types/aiModels";
 import { VolumeMixer } from "./VolumeMixer";
 import { v4 as uuidv4 } from "uuid";
@@ -483,6 +484,7 @@ export function ControlPanelsAppComponent({
     const authTokenRecovery = localStorage.getItem("_auth_recovery_key_");
 
     clearAllAppStates();
+    clearPrefetchFlag(); // Force re-prefetch on next boot
 
     if (fileMetadataStore) {
       localStorage.setItem("ryos:files", fileMetadataStore);
@@ -1432,6 +1434,7 @@ export function ControlPanelsAppComponent({
     // Reset wallpaper to default before formatting
     setCurrentWallpaper("/wallpapers/photos/aqua/water.jpg");
     await formatFileSystem();
+    clearPrefetchFlag(); // Force re-prefetch on next boot
     setNextBootMessage("Formatting File System...");
     window.location.reload();
   };

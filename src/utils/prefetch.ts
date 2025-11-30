@@ -14,6 +14,19 @@ const PREFETCH_KEY = 'ryos-prefetch-version';
 // Use build version - automatically updates on each build
 const PREFETCH_VERSION = BUILD_VERSION;
 
+/**
+ * Clear the prefetch flag to force re-prefetch on next boot
+ * Call this when resetting settings or formatting file system
+ */
+export function clearPrefetchFlag(): void {
+  try {
+    localStorage.removeItem(PREFETCH_KEY);
+    console.log('[Prefetch] Flag cleared, will re-prefetch on next boot');
+  } catch {
+    // localStorage might not be available
+  }
+}
+
 // App component chunks to prefetch (these are the lazy-loaded app bundles)
 const APP_COMPONENT_PATTERNS = [
   'ChatsAppComponent',
