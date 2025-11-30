@@ -38,7 +38,7 @@ export function clearPrefetchFlag(): void {
 
 /**
  * Force clear all caches and immediately re-prefetch with toast
- * Use this for manual "Reset System Cache" action
+ * Use this for manual "Check for Updates" action
  * This bypasses service worker checks and always shows the toast
  */
 export async function forceRefreshCache(): Promise<void> {
@@ -607,14 +607,80 @@ export async function prefetchAssets(): Promise<void> {
 }
 
 /**
+ * Check if a newer version is available by fetching index.html without cache
+ * This runs on every app load to detect updates even if the user has cached assets
+ */
+export async function checkForVersionUpdate(): Promise<void> {
+  try {
+    // Fetch index.html without cache to get the latest version
+    const response = await fetch('/index.html', { 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+      }
+    });
+    
+    if (!response.ok) {
+      console.log('[Prefetch] Could not fetch index.html for version check');
+      return;
+    }
+    
+    const html = await response.text();
+    
+    // Extract the main bundle hash from the HTML
+    // The bundle looks like: /assets/index-XXXX.js
+    const bundleMatch = html.match(/\/assets\/index-([A-Za-z0-9_-]+)\.js/);
+    if (!bundleMatch || !bundleMatch[1]) {
+      console.log('[Prefetch] Could not find bundle hash in index.html');
+      return;
+    }
+    
+    const serverBundleHash = bundleMatch[1];
+    
+    // Get the current bundle hash from the running app
+    // We can find this by checking the script tags that are already loaded
+    const currentScripts = Array.from(document.querySelectorAll('script[src*="/assets/index-"]'));
+    const currentBundleMatch = currentScripts[0]?.getAttribute('src')?.match(/\/assets\/index-([A-Za-z0-9_-]+)\.js/);
+    const currentBundleHash = currentBundleMatch?.[1];
+    
+    if (!currentBundleHash) {
+      console.log('[Prefetch] Could not determine current bundle hash');
+      return;
+    }
+    
+    console.log(`[Prefetch] Version check: current=${currentBundleHash}, server=${serverBundleHash}`);
+    
+    // If the hashes are different, a new version is available
+    if (serverBundleHash !== currentBundleHash) {
+      console.log('[Prefetch] New version detected, triggering update...');
+      // Clear the prefetch flag to force re-prefetch
+      clearPrefetchFlag();
+      // Run the prefetch with toast to show update progress
+      await runPrefetchWithToast();
+    } else {
+      console.log('[Prefetch] Already running latest version');
+    }
+  } catch (error) {
+    console.warn('[Prefetch] Version check failed:', error);
+  }
+}
+
+/**
  * Initialize prefetching after the app has loaded
  * Automatically handles first-time prefetch and version updates
+ * Also checks for new versions without cache on every load
  */
 export function initPrefetch(): void {
   if (document.readyState === 'complete') {
+    // Check for version updates without cache first
+    setTimeout(checkForVersionUpdate, 2000);
+    // Then run regular prefetch for first-time users
     setTimeout(prefetchAssets, 3000);
   } else {
     window.addEventListener('load', () => {
+      // Check for version updates without cache first
+      setTimeout(checkForVersionUpdate, 2000);
+      // Then run regular prefetch for first-time users
       setTimeout(prefetchAssets, 3000);
     }, { once: true });
   }

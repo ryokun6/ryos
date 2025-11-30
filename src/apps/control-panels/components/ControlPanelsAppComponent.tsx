@@ -28,6 +28,7 @@ import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
+import { BUILD_VERSION, COMMIT_SHA_SHORT } from "@/config/buildVersion";
 import { AIModel, AI_MODEL_METADATA } from "@/types/aiModels";
 import { VolumeMixer } from "./VolumeMixer";
 import { v4 as uuidv4 } from "uuid";
@@ -1800,11 +1801,10 @@ export function ControlPanelsAppComponent({
                     }}
                     className="w-full"
                   >
-                    Reset System Cache
+                    Check for Updates
                   </Button>
                   <p className="text-[11px] text-gray-600 font-geneva-12">
-                    Clear cached assets and re-download icons, sounds, and
-                    scripts.
+                    ryOS v{BUILD_VERSION} ({COMMIT_SHA_SHORT})
                   </p>
                 </div>
 
