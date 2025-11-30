@@ -5,6 +5,11 @@
  * 
  * Update checking uses version.json as the single source of truth.
  * Version is stored in useAppStore after successful prefetch.
+ * 
+ * Unified flow handles:
+ * 1. First-time load (no stored version) - prefetch silently
+ * 2. Returning user with update - clear caches, prefetch, show reload toast
+ * 3. Periodic checks (every 5 min) - same as #2
  */
 
 import { toast } from "sonner";
@@ -18,6 +23,9 @@ const MANIFEST_KEY = 'ryos-manifest-timestamp';
 // Periodic update check interval (5 minutes)
 const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
 let updateCheckIntervalId: ReturnType<typeof setInterval> | null = null;
+
+// Flag to prevent concurrent operations
+let isUpdateInProgress = false;
 
 /**
  * Get the currently stored version from the app store
@@ -59,47 +67,137 @@ export function clearPrefetchFlag(): void {
 }
 
 /**
+ * Fetch version info from version.json
+ * This is the single source of truth for version checking
+ */
+async function fetchServerVersion(): Promise<{ version: string; buildNumber: string; buildTime?: string } | null> {
+  try {
+    const response = await fetch('/version.json', { 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      }
+    });
+    
+    if (!response.ok) {
+      console.warn('[Prefetch] Could not fetch version.json');
+      return null;
+    }
+    
+    const data = await response.json();
+    if (data.version && data.buildNumber) {
+      return {
+        version: data.version,
+        buildNumber: data.buildNumber,
+        buildTime: data.buildTime,
+      };
+    }
+    
+    console.warn('[Prefetch] version.json missing required fields');
+    return null;
+  } catch (error) {
+    console.warn('[Prefetch] Failed to fetch server version:', error);
+    return null;
+  }
+}
+
+type CheckResult = 
+  | { action: 'none' }  // Already up to date
+  | { action: 'first-time'; server: { version: string; buildNumber: string; buildTime?: string } }
+  | { action: 'update'; server: { version: string; buildNumber: string; buildTime?: string } };
+
+/**
+ * Check what action is needed based on stored vs server version
+ */
+async function determineUpdateAction(): Promise<CheckResult> {
+  const serverVersion = await fetchServerVersion();
+  
+  if (!serverVersion) {
+    return { action: 'none' };
+  }
+  
+  const stored = getStoredVersion();
+  
+  // First-time user (no stored version)
+  if (!stored.buildNumber) {
+    console.log('[Prefetch] First-time user detected');
+    return { action: 'first-time', server: serverVersion };
+  }
+  
+  // Check if versions differ
+  if (serverVersion.buildNumber !== stored.buildNumber) {
+    console.log(`[Prefetch] Update available: ${stored.buildNumber} → ${serverVersion.buildNumber}`);
+    return { action: 'update', server: serverVersion };
+  }
+  
+  console.log('[Prefetch] Already on latest version');
+  return { action: 'none' };
+}
+
+/**
+ * Unified check and update function
+ * Handles first-time load, updates on load, and periodic checks
+ * 
+ * @param isManual - If true, shows toast feedback even when already up-to-date
+ */
+async function checkAndUpdate(isManual: boolean = false): Promise<void> {
+  if (isUpdateInProgress) {
+    console.log('[Prefetch] Update already in progress, skipping');
+    return;
+  }
+  
+  const result = await determineUpdateAction();
+  
+  if (result.action === 'none') {
+    if (isManual) {
+      const stored = getStoredVersion();
+      toast.success('Already running the latest version', {
+        description: stored.version ? `ryOS ${stored.version} (${stored.buildNumber})` : undefined,
+      });
+    }
+    return;
+  }
+  
+  isUpdateInProgress = true;
+  
+  try {
+    // For updates (not first-time), clear caches first
+    if (result.action === 'update') {
+      toast.dismiss('prefetch-progress');
+      clearPrefetchFlag();
+      await clearSwCaches();
+    }
+    
+    // Run prefetch - show reload toast for updates, dismiss silently for first-time
+    const showReloadToast = result.action === 'update';
+    await runPrefetchWithToast(showReloadToast, result.server);
+    
+  } finally {
+    isUpdateInProgress = false;
+  }
+}
+
+/**
  * Force check for updates and refresh cache
  * Use this for manual "Check for Updates" action
  */
 export async function forceRefreshCache(): Promise<void> {
   console.log('[Prefetch] Manual update check triggered...');
-  
-  const serverVersion = await fetchServerVersion();
-  
-  if (!serverVersion) {
-    toast.error('Could not check for updates');
-    return;
-  }
-  
-  // Check if already on latest version (compare with stored version)
-  const stored = getStoredVersion();
-  if (stored.buildNumber && serverVersion.buildNumber === stored.buildNumber) {
-    toast.success('Already running the latest version', {
-      description: `ryOS ${serverVersion.version} (${serverVersion.buildNumber})`,
-    });
-    return;
-  }
-  
-  // New version available - trigger update
-  await triggerUpdate(serverVersion.version, serverVersion.buildNumber, serverVersion.buildTime);
+  await checkAndUpdate(true);
 }
 
 /**
  * Run the prefetch logic with toast
  * @param showVersionToast - If true, shows "Updated to version X" with reload button. 
  *                           If false, just dismisses the toast on completion.
- * @param serverVersion - Version from version.json (stored after successful prefetch)
- * @param serverBuildNumber - Build number from version.json
- * @param serverBuildTime - Build time from version.json
+ * @param server - Version info from version.json
  */
 async function runPrefetchWithToast(
-  showVersionToast: boolean = true,
-  serverVersion?: string,
-  serverBuildNumber?: string,
-  serverBuildTime?: string
+  showVersionToast: boolean,
+  server: { version: string; buildNumber: string; buildTime?: string }
 ): Promise<void> {
-  console.log('[Prefetch] Starting prefetch with toast...');
+  console.log('[Prefetch] Starting prefetch...');
   
   // Fetch manifest first
   const manifest = await fetchIconManifest();
@@ -183,18 +281,16 @@ async function runPrefetchWithToast(
     storeManifestTimestamp(manifest);
     
     // Store version in app store after successful prefetch
-    if (serverVersion && serverBuildNumber) {
-      storeVersion(serverVersion, serverBuildNumber, serverBuildTime);
-    }
+    storeVersion(server.version, server.buildNumber, server.buildTime);
     
     // Show completion toast - with version/reload for updates, just dismiss for first-time
-    if (showVersionToast && serverVersion && serverBuildNumber) {
-      console.log(`[Prefetch] Showing update toast with version: ${serverVersion} (${serverBuildNumber})`);
+    if (showVersionToast) {
+      console.log(`[Prefetch] Showing update toast: ${server.version} (${server.buildNumber})`);
       
       toast.success(
         createElement(PrefetchCompleteToast, {
-          version: serverVersion,
-          buildNumber: serverBuildNumber,
+          version: server.version,
+          buildNumber: server.buildNumber,
         }),
         {
           id: toastId,
@@ -206,7 +302,7 @@ async function runPrefetchWithToast(
         }
       );
     } else {
-      // First-time prefetch or no version info - just dismiss the progress toast
+      // First-time prefetch - just dismiss the progress toast
       toast.dismiss(toastId);
     }
     
@@ -427,43 +523,6 @@ async function discoverAllJsChunks(): Promise<string[]> {
 }
 
 /**
- * Fetch version info from version.json
- * This is the single source of truth for version checking
- * Note: Does NOT store version - that happens after successful prefetch
- */
-async function fetchServerVersion(): Promise<{ version: string; buildNumber: string; buildTime?: string } | null> {
-  try {
-    const response = await fetch('/version.json', { 
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-      }
-    });
-    
-    if (!response.ok) {
-      console.warn('[Prefetch] Could not fetch version.json');
-      return null;
-    }
-    
-    const data = await response.json();
-    if (data.version && data.buildNumber) {
-      return {
-        version: data.version,
-        buildNumber: data.buildNumber,
-        buildTime: data.buildTime,
-      };
-    }
-    
-    console.warn('[Prefetch] version.json missing required fields');
-    return null;
-  } catch (error) {
-    console.warn('[Prefetch] Failed to fetch server version:', error);
-    return null;
-  }
-}
-
-/**
  * Helper to create toast content using createElement
  */
 function createToastContent(props: {
@@ -478,78 +537,7 @@ function createToastContent(props: {
 }
 
 /**
- * Check if prefetching has been completed (version is stored)
- */
-function isPrefetchComplete(): boolean {
-  const stored = getStoredVersion();
-  return stored.buildNumber !== null;
-}
-
-// Flag to prevent concurrent prefetch operations
-let isPrefetchInProgress = false;
-
-/**
- * Check if a newer version is available by comparing version.json with stored version
- * Returns true if an update was found and triggered
- */
-async function checkForVersionUpdate(silent: boolean = false): Promise<boolean> {
-  try {
-    const serverVersion = await fetchServerVersion();
-    
-    if (!serverVersion) {
-      if (!silent) console.log('[Prefetch] Could not fetch server version');
-      return false;
-    }
-    
-    const stored = getStoredVersion();
-    const storedBuildNumber = stored.buildNumber;
-    const serverBuildNumber = serverVersion.buildNumber;
-    
-    // First-time user (no stored version) - not an update, let initPrefetch handle it
-    if (!storedBuildNumber) {
-      if (!silent) console.log('[Prefetch] First-time user, no stored version');
-      return false;
-    }
-    
-    console.log(`[Prefetch] Version check: stored=${storedBuildNumber}, server=${serverBuildNumber}`);
-    
-    // If build numbers differ, a new version is available
-    if (serverBuildNumber !== storedBuildNumber) {
-      console.log('[Prefetch] New version detected, triggering update...');
-      await triggerUpdate(serverVersion.version, serverVersion.buildNumber, serverVersion.buildTime);
-      return true;
-    } else {
-      if (!silent) console.log('[Prefetch] Already running latest version');
-      return false;
-    }
-  } catch (error) {
-    console.warn('[Prefetch] Version check failed:', error);
-    return false;
-  }
-}
-
-/**
- * Trigger the update process: clear caches and prefetch new assets
- */
-async function triggerUpdate(version: string, buildNumber: string, buildTime?: string): Promise<void> {
-  // Dismiss any existing prefetch toasts
-  toast.dismiss('prefetch-progress');
-  
-  // Clear caches
-  clearPrefetchFlag();
-  await clearSwCaches();
-  
-  // Run prefetch with toast
-  isPrefetchInProgress = true;
-  try {
-    await runPrefetchWithToast(true, version, buildNumber, buildTime);
-  } finally {
-    isPrefetchInProgress = false;
-  }
-}
-
-/**
- * Start periodic update checking
+ * Start periodic update checking (every 5 minutes)
  */
 function startPeriodicUpdateCheck(): void {
   if (updateCheckIntervalId) return; // Already running
@@ -557,10 +545,8 @@ function startPeriodicUpdateCheck(): void {
   console.log(`[Prefetch] Starting periodic update checks every ${UPDATE_CHECK_INTERVAL / 1000}s`);
   
   updateCheckIntervalId = setInterval(async () => {
-    if (isPrefetchInProgress) return; // Skip if already updating
-    
     console.log('[Prefetch] Periodic update check...');
-    await checkForVersionUpdate(true); // Silent check
+    await checkAndUpdate(false);
   }, UPDATE_CHECK_INTERVAL);
 }
 
@@ -577,44 +563,17 @@ export function stopPeriodicUpdateCheck(): void {
 
 /**
  * Initialize prefetching after the app has loaded
- * - Checks for new versions on load
- * - Handles first-time prefetch
- * - Starts periodic update checking
+ * 
+ * Unified flow:
+ * 1. First-time load → prefetch silently, store version
+ * 2. Returning user with update → clear caches, prefetch, show reload toast
+ * 3. Returning user, no update → do nothing
+ * 4. Start periodic checks every 5 minutes
  */
 export function initPrefetch(): void {
   const runPrefetchFlow = async () => {
-    // First, check for version updates (returns false for first-time users)
-    const updateTriggered = await checkForVersionUpdate();
-    
-    // If an update was already triggered, skip the regular prefetch
-    if (updateTriggered) {
-      console.log('[Prefetch] Update already triggered, skipping regular prefetch');
-      startPeriodicUpdateCheck();
-      return;
-    }
-    
-    // If no update was triggered, check if this is a first-time user
-    // who needs initial prefetch (no stored version)
-    if (!isPrefetchInProgress && !isPrefetchComplete()) {
-      console.log('[Prefetch] First-time user, starting initial prefetch...');
-      
-      // Fetch server version for first-time users (to store after prefetch)
-      const serverVersion = await fetchServerVersion();
-      
-      isPrefetchInProgress = true;
-      try {
-        // Use same function but don't show version/reload toast for first-time users
-        // Pass version info so it gets stored after successful prefetch
-        await runPrefetchWithToast(
-          false, 
-          serverVersion?.version, 
-          serverVersion?.buildNumber,
-          serverVersion?.buildTime
-        );
-      } finally {
-        isPrefetchInProgress = false;
-      }
-    }
+    // Single unified check handles first-time, updates, and no-op
+    await checkAndUpdate(false);
     
     // Start periodic update checking
     startPeriodicUpdateCheck();
