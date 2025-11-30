@@ -371,9 +371,7 @@ const getSystemState = () => {
 
   return {
     username: chatsStore.username,
-    userOS: {
-      current: userOS,
-    },
+    userOS,
     userLocalTime: {
       timeString: userTimeString,
       dateString: userDateString,

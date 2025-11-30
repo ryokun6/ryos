@@ -36,10 +36,8 @@ const themeIds = ["system7", "macosx", "xp", "win98"] as const;
 // Update SystemState type to match new store structure
 interface SystemState {
   username?: string | null;
-  /** User's operating system info */
-  userOS?: {
-    current: string; // e.g., "iOS", "Android", "macOS", "Windows", "Linux"
-  };
+  /** User's operating system (e.g., "iOS", "Android", "macOS", "Windows", "Linux") */
+  userOS?: string;
   internetExplorer: {
     url: string;
     year: string;
@@ -190,9 +188,9 @@ Ryo Time: ${timeString} on ${dateString} (${ryoTimeZone})`;
 User Time: ${systemState.userLocalTime.timeString} on ${systemState.userLocalTime.dateString} (${systemState.userLocalTime.timeZone})`;
   }
 
-  if (systemState.userOS?.current) {
+  if (systemState.userOS) {
     prompt += `
-User OS: ${systemState.userOS.current}`;
+User OS: ${systemState.userOS}`;
   }
 
   if (systemState.requestGeo) {
