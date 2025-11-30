@@ -74,14 +74,28 @@ export default defineConfig({
         // Cache strategy for different asset types
         runtimeCaching: [
           {
-            // Cache JS/CSS chunks - stale-while-revalidate for fast loads
-            // Match .js/.css with optional query params (e.g., ?v=123)
-            urlPattern: /\.(?:js|css)(?:\?.*)?$/i,
-            handler: "StaleWhileRevalidate",
+            // Cache JS chunks - network first for freshness (code changes often)
+            // Falls back to cache if network is slow/unavailable
+            urlPattern: /\.js(?:\?.*)?$/i,
+            handler: "NetworkFirst",
             options: {
-              cacheName: "static-resources",
+              cacheName: "js-resources",
               expiration: {
                 maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+              networkTimeoutSeconds: 3, // Fall back to cache after 3s
+            },
+          },
+          {
+            // Cache CSS - stale-while-revalidate (CSS changes less often)
+            // Serves cached immediately, updates in background
+            urlPattern: /\.css(?:\?.*)?$/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "css-resources",
+              expiration: {
+                maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
               },
             },
