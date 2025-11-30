@@ -14,7 +14,7 @@ interface PrefetchToastProps {
 const phaseLabels: Record<string, string> = {
   icons: 'Caching icons',
   sounds: 'Caching sounds',
-  components: 'Caching apps',
+  scripts: 'Caching scripts',
 };
 
 export function PrefetchToast({ 

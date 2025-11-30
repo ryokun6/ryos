@@ -73,7 +73,8 @@ export default defineConfig({
         runtimeCaching: [
           {
             // Cache JS/CSS chunks - stale-while-revalidate for fast loads
-            urlPattern: /\.(?:js|css)$/i,
+            // Match .js/.css with optional query params (e.g., ?v=123)
+            urlPattern: /\.(?:js|css)(?:\?.*)?$/i,
             handler: "StaleWhileRevalidate",
             options: {
               cacheName: "static-resources",
@@ -85,7 +86,8 @@ export default defineConfig({
           },
           {
             // Cache images aggressively
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+            // Match image extensions with optional query params (e.g., icon.png?v=theme-123)
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)(?:\?.*)?$/i,
             handler: "CacheFirst",
             options: {
               cacheName: "images",
@@ -93,11 +95,15 @@ export default defineConfig({
                 maxEntries: 200,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
+              // Ignore query params for cache matching (e.g., ?v=theme-123)
+              matchOptions: {
+                ignoreSearch: true,
+              },
             },
           },
           {
             // Cache fonts
-            urlPattern: /\.(?:woff|woff2|ttf|otf|eot)$/i,
+            urlPattern: /\.(?:woff|woff2|ttf|otf|eot)(?:\?.*)?$/i,
             handler: "CacheFirst",
             options: {
               cacheName: "fonts",
@@ -108,8 +114,9 @@ export default defineConfig({
             },
           },
           {
-            // Cache audio files
-            urlPattern: /\.(?:mp3|wav|ogg|m4a)$/i,
+            // Cache audio files (used by useSound.ts)
+            // Match audio extensions with optional query params
+            urlPattern: /\.(?:mp3|wav|ogg|m4a)(?:\?.*)?$/i,
             handler: "CacheFirst",
             options: {
               cacheName: "audio",
@@ -135,7 +142,7 @@ export default defineConfig({
           {
             // Cache wallpaper images (photos and tiles only, NOT videos)
             // Videos need range request support which CacheFirst doesn't handle well
-            urlPattern: /\/wallpapers\/(?:photos|tiles)\/.+\.(?:jpg|jpeg|png|webp)$/i,
+            urlPattern: /\/wallpapers\/(?:photos|tiles)\/.+\.(?:jpg|jpeg|png|webp)(?:\?.*)?$/i,
             handler: "CacheFirst",
             options: {
               cacheName: "wallpapers",

@@ -9,8 +9,9 @@ import { createElement } from "react";
 import { PrefetchToast } from "@/components/shared/PrefetchToast";
 import { COMMIT_SHA_SHORT } from "@/config/buildVersion";
 
-// Storage key for tracking prefetch status
+// Storage keys for tracking prefetch status
 const PREFETCH_KEY = 'ryos-prefetch-version';
+const MANIFEST_KEY = 'ryos-manifest-timestamp';
 // Use commit SHA - automatically updates on each deployment
 const PREFETCH_VERSION = COMMIT_SHA_SHORT;
 
@@ -21,29 +22,21 @@ const PREFETCH_VERSION = COMMIT_SHA_SHORT;
 export function clearPrefetchFlag(): void {
   try {
     localStorage.removeItem(PREFETCH_KEY);
+    localStorage.removeItem(MANIFEST_KEY);
     console.log('[Prefetch] Flag cleared, will re-prefetch on next boot');
   } catch {
     // localStorage might not be available
   }
 }
 
-// App component chunks to prefetch (these are the lazy-loaded app bundles)
-const APP_COMPONENT_PATTERNS = [
-  'ChatsAppComponent',
-  'FinderAppComponent',
-  'InternetExplorerAppComponent',
-  'IpodAppComponent',
-  'MinesweeperAppComponent',
-  'PaintAppComponent',
-  'PhotoBoothComponent',
-  'SoundboardAppComponent',
-  'SynthAppComponent',
-  'TerminalAppComponent',
-  'TextEditAppComponent',
-  'VideosAppComponent',
-  'ControlPanelsAppComponent',
-  'AppletViewerAppComponent',
-  'PcAppComponent',
+// Cache names used by the service worker (from vite.config.ts workbox config)
+const SW_CACHE_NAMES = [
+  'static-resources',  // JS/CSS
+  'images',
+  'fonts', 
+  'audio',
+  'data-files',
+  'wallpapers',
 ];
 
 // UI sound files in /sounds/ directory
@@ -125,30 +118,64 @@ async function prefetchUrlsWithProgress(
   return succeeded;
 }
 
+interface IconManifest {
+  version: number;
+  generatedAt: string;
+  themes: Record<string, string[]>;
+}
+
+/**
+ * Fetch and parse the icon manifest
+ */
+async function fetchIconManifest(): Promise<IconManifest | null> {
+  try {
+    const response = await fetch('/icons/manifest.json');
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.warn('[Prefetch] Failed to load icon manifest:', error);
+    return null;
+  }
+}
+
 /**
  * Get all icon URLs from the icon manifest
  */
-async function getIconUrls(): Promise<string[]> {
-  try {
-    const response = await fetch('/icons/manifest.json');
-    if (!response.ok) return [];
-    
-    const manifest = await response.json();
-    const urls: string[] = [];
-    
-    if (manifest.themes && typeof manifest.themes === 'object') {
-      for (const [themeName, icons] of Object.entries(manifest.themes)) {
-        if (Array.isArray(icons)) {
-          const prefix = themeName === 'default' ? '/icons/default/' : `/icons/${themeName}/`;
-          urls.push(...icons.map((icon: string) => `${prefix}${icon}`));
-        }
+function getIconUrlsFromManifest(manifest: IconManifest): string[] {
+  const urls: string[] = [];
+  
+  if (manifest.themes && typeof manifest.themes === 'object') {
+    for (const [themeName, icons] of Object.entries(manifest.themes)) {
+      if (Array.isArray(icons)) {
+        const prefix = themeName === 'default' ? '/icons/default/' : `/icons/${themeName}/`;
+        urls.push(...icons.map((icon: string) => `${prefix}${icon}`));
       }
     }
-    
-    return urls;
-  } catch (error) {
-    console.warn('[Prefetch] Failed to load icon manifest:', error);
-    return [];
+  }
+  
+  return urls;
+}
+
+/**
+ * Check if manifest has been updated since last prefetch
+ */
+function isManifestUpdated(manifest: IconManifest): boolean {
+  try {
+    const storedTimestamp = localStorage.getItem(MANIFEST_KEY);
+    return storedTimestamp !== manifest.generatedAt;
+  } catch {
+    return true; // Assume updated if we can't check
+  }
+}
+
+/**
+ * Store the manifest timestamp after successful prefetch
+ */
+function storeManifestTimestamp(manifest: IconManifest): void {
+  try {
+    localStorage.setItem(MANIFEST_KEY, manifest.generatedAt);
+  } catch {
+    // localStorage might not be available
   }
 }
 
@@ -160,9 +187,26 @@ function getSoundUrls(): string[] {
 }
 
 /**
- * Discover app component chunks by fetching the main bundle and parsing for dynamic imports
+ * Clear service worker caches to ensure fresh prefetch
  */
-async function discoverAppComponentChunks(): Promise<string[]> {
+async function clearSwCaches(): Promise<void> {
+  try {
+    const cacheNames = await caches.keys();
+    const swCaches = cacheNames.filter(name => 
+      SW_CACHE_NAMES.some(swName => name.includes(swName))
+    );
+    
+    await Promise.all(swCaches.map(name => caches.delete(name)));
+    console.log(`[Prefetch] Cleared ${swCaches.length} caches`);
+  } catch (error) {
+    console.warn('[Prefetch] Failed to clear caches:', error);
+  }
+}
+
+/**
+ * Discover all JS chunks by fetching the main bundle and parsing for dynamic imports
+ */
+async function discoverAllJsChunks(): Promise<string[]> {
   try {
     // First, get the main bundle URL from index.html
     const indexResponse = await fetch('/index.html');
@@ -195,19 +239,14 @@ async function discoverAppComponentChunks(): Promise<string[]> {
       allAssets.push(`/assets/${filename}`);
     }
     
-    // Dedupe
+    // Dedupe and return all JS chunks
     const uniqueAssets = [...new Set(allAssets)];
     
-    // Filter to only app component chunks
-    const appChunks = uniqueAssets.filter(url => 
-      APP_COMPONENT_PATTERNS.some(pattern => url.includes(pattern))
-    );
-    
-    console.log(`[Prefetch] Discovered ${appChunks.length} app component chunks from main bundle`);
-    return appChunks;
+    console.log(`[Prefetch] Discovered ${uniqueAssets.length} JS chunks from main bundle`);
+    return uniqueAssets;
     
   } catch (error) {
-    console.warn('[Prefetch] Failed to discover app chunks:', error);
+    console.warn('[Prefetch] Failed to discover JS chunks:', error);
     return [];
   }
 }
@@ -273,14 +312,27 @@ export async function prefetchAssets(): Promise<void> {
   
   console.log('[Prefetch] Starting background prefetch...');
   
-  // Gather all URLs first
-  const [iconUrls, componentUrls] = await Promise.all([
-    getIconUrls(),
-    discoverAppComponentChunks(),
-  ]);
+  // Fetch manifest first to check if assets have changed
+  const manifest = await fetchIconManifest();
+  if (!manifest) {
+    console.log('[Prefetch] Could not fetch manifest, skipping');
+    return;
+  }
+  
+  // Only clear caches if manifest has been updated
+  if (isManifestUpdated(manifest)) {
+    console.log('[Prefetch] Manifest updated, clearing old caches...');
+    await clearSwCaches();
+  } else {
+    console.log('[Prefetch] Manifest unchanged, keeping existing caches');
+  }
+  
+  // Gather all URLs
+  const iconUrls = getIconUrlsFromManifest(manifest);
+  const jsUrls = await discoverAllJsChunks();
   const soundUrls = getSoundUrls();
   
-  const totalItems = iconUrls.length + soundUrls.length + componentUrls.length;
+  const totalItems = iconUrls.length + soundUrls.length + jsUrls.length;
   
   if (totalItems === 0) {
     console.log('[Prefetch] No assets to prefetch');
@@ -335,17 +387,18 @@ export async function prefetchAssets(): Promise<void> {
       });
     }
     
-    // Prefetch app components
-    if (componentUrls.length > 0) {
+    // Prefetch JS chunks
+    if (jsUrls.length > 0) {
       const baseCompleted = overallCompleted;
-      await prefetchUrlsWithProgress(componentUrls, 'App Components', (completed, total) => {
+      await prefetchUrlsWithProgress(jsUrls, 'Scripts', (completed, total) => {
         overallCompleted = baseCompleted + completed;
-        updateToast('components', completed, total);
+        updateToast('scripts', completed, total);
       });
     }
     
-    // Mark as complete and show success toast
+    // Mark as complete and store manifest timestamp
     markPrefetchComplete();
+    storeManifestTimestamp(manifest);
     toast.success('Assets cached for offline use', {
       id: toastId,
       duration: 2000,
