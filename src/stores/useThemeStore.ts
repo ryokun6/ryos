@@ -48,15 +48,27 @@ async function ensureLegacyCss(theme: OsThemeId) {
   }
 }
 
-export const useThemeStore = create<ThemeState>((set) => ({
+export const useThemeStore = create<ThemeState>((set, get) => ({
   current: "macosx",
   setTheme: (theme) => {
+    const previousTheme = get().current;
+    const wasWindowsTheme = previousTheme === "xp" || previousTheme === "win98";
+    const isNonWindowsTheme = theme !== "xp" && theme !== "win98";
+    
     set({ current: theme });
     localStorage.setItem("os_theme", theme);
     document.documentElement.dataset.osTheme = theme;
     ensureLegacyCss(theme);
     // Force-refresh icon URLs so newly themed assets fetch fresh, bypassing any stale cache.
     invalidateIconCache(`theme-${theme}`);
+    
+    // Restore all minimized windows when switching from Windows to non-Windows theme
+    if (wasWindowsTheme && isNonWindowsTheme) {
+      // Import and call restoreAllInstances from app store
+      import("@/stores/useAppStore").then(({ useAppStore }) => {
+        useAppStore.getState().restoreAllInstances();
+      });
+    }
   },
   hydrate: () => {
     const saved = localStorage.getItem("os_theme") as OsThemeId | null;
