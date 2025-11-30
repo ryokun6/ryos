@@ -1,13 +1,6 @@
 {
   "videos": [
     {
-      "id": "dpP_C_LnA1c",
-      "url": "https://www.youtube.com/watch?v=dpP_C_LnA1c",
-      "title": "X",
-      "artist": "Lexie Liu",
-      "lyricOffset": -350
-    },
-    {
       "id": "eET3YAZp4rI",
       "url": "https://www.youtube.com/watch?v=eET3YAZp4rI",
       "title": "Ketchup And Lemonade",
@@ -15,11 +8,11 @@
       "lyricOffset": -2350
     },
     {
-      "id": "hz4kvS7_iR8",
-      "url": "https://www.youtube.com/watch?v=hz4kvS7_iR8",
-      "title": "Dopamine",
-      "artist": "GISELLE",
-      "lyricOffset": 1600
+      "id": "dpP_C_LnA1c",
+      "url": "https://www.youtube.com/watch?v=dpP_C_LnA1c",
+      "title": "X",
+      "artist": "Lexie Liu",
+      "lyricOffset": -350
     },
     {
       "id": "fXivMSJm_kA",
@@ -134,6 +127,13 @@
       "title": "香車豪宅",
       "artist": "攬佬",
       "lyricOffset": 1000
+    },
+    {
+      "id": "hz4kvS7_iR8",
+      "url": "https://www.youtube.com/watch?v=hz4kvS7_iR8",
+      "title": "Dopamine",
+      "artist": "GISELLE",
+      "lyricOffset": 1600
     },
     {
       "id": "kKsivrgoyDw",
