@@ -737,7 +737,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   right: 12px !important;
 }
 
-/* Slide from right animation for right-positioned toasts */
+/* Slide from right animation for right-positioned toasts (desktop only) */
 @keyframes toast-slide-in-right {
   from {
     transform: translateX(calc(100% + 12px));
@@ -749,8 +749,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 }
 
-[data-sonner-toaster][data-x-position="right"] [data-sonner-toast][data-mounted="true"]:not([data-expanded="false"][data-front="false"]) {
-  animation: toast-slide-in-right 0.3s ease-out;
+@media (min-width: 768px) and (hover: hover) {
+  [data-sonner-toaster][data-x-position="right"] [data-sonner-toast][data-mounted="true"]:not([data-expanded="false"][data-front="false"]) {
+    animation: toast-slide-in-right 0.3s ease-out;
+  }
 }
 
 /* System 7 theme: square corners, black border, drop shadow, smaller body text */
@@ -758,21 +760,77 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   border-radius: 0 !important;
   border: 1px solid #000 !important;
   box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5) !important;
-  font-size: 11px !important;
 }
 
-/* Keep button text size normal in System 7 toasts */
-:root[data-os-theme="system7"] [data-sonner-toast] button {
+/* Smaller body text for System 7 toasts */
+:root[data-os-theme="system7"] [data-sonner-toast] .text-sm,
+:root[data-os-theme="system7"] [data-sonner-toast] [data-content] {
   font-size: 12px !important;
 }
 
-/* Disable hover lift/expand effects for System 7 */
-:root[data-os-theme="system7"] [data-sonner-toaster] [data-sonner-toast] {
-  --lift-amount: 0 !important;
-  --lift: 0 !important;
+/* Retro button style for System 7 toasts */
+:root[data-os-theme="system7"] [data-sonner-toast] button {
+  font-size: 12px !important;
+  border: 5px solid transparent !important;
+  border-image: url('/assets/button.svg') 30 stretch !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: #000 !important;
 }
 
-:root[data-os-theme="system7"] [data-sonner-toaster][data-expanded="true"] [data-sonner-toast]:hover {
-  --lift-amount: 0 !important;
-  --lift: 0 !important;
+:root[data-os-theme="system7"] [data-sonner-toast] button:active {
+  border-image: url('/assets/button-default.svg') 60 stretch !important;
+}
+
+
+
+/* Windows XP theme: yellow XP background, no shadows, rgba black border */
+:root[data-os-theme="xp"] [data-sonner-toast] {
+  background: #ECE9D8 !important;
+  border-radius: 0 !important;
+  border: 1px solid rgba(0, 0, 0, 0.3) !important;
+  box-shadow: none !important;
+  color: #000 !important;
+}
+
+:root[data-os-theme="xp"] [data-sonner-toast] [data-title],
+:root[data-os-theme="xp"] [data-sonner-toast] [data-description],
+:root[data-os-theme="xp"] [data-sonner-toast] .text-sm,
+:root[data-os-theme="xp"] [data-sonner-toast] [data-content] {
+  color: #000 !important;
+  font-size: 12px !important;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
+}
+
+:root[data-os-theme="xp"] [data-sonner-toast] button {
+  font-size: 12px !important;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
+}
+
+/* Windows 98 theme: silver background, classic beveled 3D effect */
+:root[data-os-theme="win98"] [data-sonner-toast] {
+  background: #C0C0C0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf !important;
+  color: #000 !important;
+}
+
+:root[data-os-theme="win98"] [data-sonner-toast] [data-title],
+:root[data-os-theme="win98"] [data-sonner-toast] [data-description],
+:root[data-os-theme="win98"] [data-sonner-toast] .text-sm,
+:root[data-os-theme="win98"] [data-sonner-toast] [data-content] {
+  color: #000 !important;
+  font-size: 12px !important;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
+}
+
+:root[data-os-theme="win98"] [data-sonner-toast] button {
+  font-size: 12px !important;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
 }
