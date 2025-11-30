@@ -851,7 +851,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               // On iOS, don't auto-play - inform user to press play manually
               if (isIOS && (normalizedAction === "play" || normalizedAction === "toggle")) {
                 const stateChanges = applyIpodSettings();
-                const resultParts = ["iPod is ready. Please press the center button or play button on the iPod to start playing (iOS browser restriction)"];
+                const resultParts = ["iPod is ready. Press the center button or play button on the iPod to start playing"];
                 if (stateChanges.length > 0) {
                   resultParts.push(...stateChanges);
                 }
@@ -993,7 +993,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               // On iOS, don't auto-play - just select the track
               if (isIOS) {
                 const stateChanges = applyIpodSettings();
-                const resultParts = [`Selected ${trackDesc}. Please press the center button or play button on the iPod to start playing (iOS browser restriction)`];
+                const resultParts = [`Selected ${trackDesc}. Press the center button or play button on the iPod to start playing`];
                 if (stateChanges.length > 0) {
                   resultParts.push(...stateChanges);
                 }
@@ -1054,7 +1054,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   
                   // Different message for iOS vs other platforms
                   const resultParts = isIOS
-                    ? [`Added '${addedTrack.title}' to iPod. Please press the center button or play button on the iPod to start playing (iOS browser restriction)`]
+                    ? [`Added '${addedTrack.title}' to iPod. Press the center button or play button on the iPod to start playing`]
                     : [`Added '${addedTrack.title}' to iPod and started playing`];
                   
                   if (stateChanges.length > 0) {
