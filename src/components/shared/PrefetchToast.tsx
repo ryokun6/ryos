@@ -12,7 +12,6 @@ interface PrefetchToastProps {
 }
 
 interface PrefetchCompleteToastProps {
-  hasUpdate?: boolean;
   onReload: () => void;
   buildNumber?: string;
 }
@@ -20,7 +19,7 @@ interface PrefetchCompleteToastProps {
 const phaseLabels: Record<string, string> = {
   icons: 'Updating icons',
   sounds: 'Updating sounds',
-  scripts: 'Updating scripts',
+  scripts: 'Updating system files',
 };
 
 export function PrefetchToast({ 
@@ -58,7 +57,7 @@ export function PrefetchToast({
   );
 }
 
-export function PrefetchCompleteToast({ hasUpdate, onReload, buildNumber }: PrefetchCompleteToastProps) {
+export function PrefetchCompleteToast({ onReload, buildNumber }: PrefetchCompleteToastProps) {
   const buildText = buildNumber ? ` (build ${buildNumber})` : '';
   
   return (
