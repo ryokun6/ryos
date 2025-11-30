@@ -7,7 +7,7 @@
 import { toast } from "sonner";
 import { createElement } from "react";
 import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/PrefetchToast";
-import { COMMIT_SHA_SHORT } from "@/config/buildVersion";
+import { BUILD_VERSION, COMMIT_SHA_SHORT } from "@/config/buildVersion";
 
 // Storage keys for tracking prefetch status
 const PREFETCH_KEY = 'ryos-prefetch-version';
@@ -15,28 +15,6 @@ const MANIFEST_KEY = 'ryos-manifest-timestamp';
 const LAST_KNOWN_VERSION_KEY = 'ryos-last-known-version';
 // Use commit SHA - automatically updates on each deployment
 const PREFETCH_VERSION = COMMIT_SHA_SHORT;
-
-/**
- * Check if there's a new version available (current build differs from last known)
- */
-function checkForNewVersion(): boolean {
-  try {
-    const lastKnownVersion = localStorage.getItem(LAST_KNOWN_VERSION_KEY);
-    // If no stored version, this is first run - not an "update"
-    if (!lastKnownVersion) {
-      localStorage.setItem(LAST_KNOWN_VERSION_KEY, COMMIT_SHA_SHORT);
-      return false;
-    }
-    // Check if version changed
-    const hasUpdate = lastKnownVersion !== COMMIT_SHA_SHORT;
-    if (hasUpdate) {
-      console.log(`[Prefetch] New version detected: ${lastKnownVersion} -> ${COMMIT_SHA_SHORT}`);
-    }
-    return hasUpdate;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Update the stored version after reload/update
@@ -195,12 +173,16 @@ async function runPrefetchWithToast(): Promise<void> {
     // Show completion toast with reload button
     toast.success(
       createElement(PrefetchCompleteToast, {
-        hasUpdate: false,
-        onReload: reloadPage,
+        version: BUILD_VERSION,
+        buildNumber: COMMIT_SHA_SHORT,
       }),
       {
         id: toastId,
         duration: 5000,
+        action: {
+          label: "Reload",
+          onClick: reloadPage,
+        },
       }
     );
     
@@ -581,18 +563,19 @@ export async function prefetchAssets(): Promise<void> {
     markPrefetchComplete();
     storeManifestTimestamp(manifest);
     
-    // Check if there's a new version available
-    const hasUpdate = checkForNewVersion();
-    
     // Show completion toast with reload button
     toast.success(
       createElement(PrefetchCompleteToast, {
-        hasUpdate,
-        onReload: reloadPage,
+        version: BUILD_VERSION,
+        buildNumber: COMMIT_SHA_SHORT,
       }),
       {
         id: toastId,
-        duration: hasUpdate ? 10000 : 5000, // Longer duration if update available
+        duration: 5000,
+        action: {
+          label: "Reload",
+          onClick: reloadPage,
+        },
       }
     );
     
@@ -651,12 +634,16 @@ async function checkForUpdatesRemote(): Promise<boolean> {
 function showUpdateToast(): void {
   toast.info(
     createElement(PrefetchCompleteToast, {
-      hasUpdate: true,
-      onReload: reloadPage,
+      version: BUILD_VERSION,
+      buildNumber: COMMIT_SHA_SHORT,
     }),
     {
       id: 'update-available',
       duration: 15000,
+      action: {
+        label: "Reload",
+        onClick: reloadPage,
+      },
     }
   );
 }
