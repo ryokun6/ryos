@@ -1270,6 +1270,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 toolCallId: toolCall.toolCallId,
                 output: resultMessage,
               });
+              result = ""; // Clear result to prevent duplicate
               
               console.log(
                 `[ToolCall] iPod is now ${nowPlaying ? "playing" : "paused"}.`,
@@ -1347,6 +1348,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   toolCallId: toolCall.toolCallId,
                   output: errorMsg,
                 });
+                result = ""; // Clear result to prevent duplicate
                 console.log(`[ToolCall] ${errorMsg}`);
                 break;
               }
@@ -1377,6 +1379,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 toolCallId: toolCall.toolCallId,
                 output: resultMessage,
               });
+              result = ""; // Clear result to prevent duplicate
               
               console.log(`[ToolCall] Playing ${trackDesc}.`);
               break;
@@ -1390,6 +1393,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   toolCallId: toolCall.toolCallId,
                   output: errorMsg,
                 });
+                result = ""; // Clear result to prevent duplicate
                 console.error(`[ToolCall] ${errorMsg}`);
                 break;
               }
@@ -1412,6 +1416,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     toolCallId: toolCall.toolCallId,
                     output: resultMessage,
                   });
+                  result = ""; // Clear result to prevent duplicate
                   
                   console.log(
                     `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`,
@@ -1424,6 +1429,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     toolCallId: toolCall.toolCallId,
                     output: errorMsg,
                   });
+                  result = ""; // Clear result to prevent duplicate
                   console.error(`[ToolCall] ${errorMsg}`);
                   break;
                 }
@@ -1444,6 +1450,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   toolCallId: toolCall.toolCallId,
                   output: errorMsg,
                 });
+                result = ""; // Clear result to prevent duplicate
                 
                 console.error(`[ToolCall] ${errorMsg}`);
                 break;
@@ -1483,6 +1490,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   toolCallId: toolCall.toolCallId,
                   output: resultMessage,
                 });
+                result = ""; // Clear result to prevent duplicate
                 
                 console.log(`[ToolCall] ${verb} ${desc}.`);
                 break;
@@ -1503,6 +1511,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 toolCallId: toolCall.toolCallId,
                 output: resultMessage,
               });
+              result = ""; // Clear result to prevent duplicate
               
               console.log(
                 `[ToolCall] ${
@@ -1524,6 +1533,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 toolCallId: toolCall.toolCallId,
                 output: resultMessage,
               });
+              result = ""; // Clear result to prevent duplicate
             }
             
             console.warn(
