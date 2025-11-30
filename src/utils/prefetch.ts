@@ -296,7 +296,7 @@ async function runPrefetchWithToast(
           id: toastId,
           duration: Infinity,
           action: {
-            label: "Reload",
+            label: "Reboot",
             onClick: reloadPage,
           },
         }

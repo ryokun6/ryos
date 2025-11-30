@@ -54,7 +54,7 @@ export function PrefetchToast({
 export function PrefetchCompleteToast({ version, buildNumber }: PrefetchCompleteToastProps) {
   return (
     <div className="text-sm">
-      Updated to version {version} ({buildNumber})
+      Update ready for {version} ({buildNumber})
     </div>
   );
 }

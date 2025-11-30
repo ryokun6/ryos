@@ -73,7 +73,7 @@ export function BootScreen({
           style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
         />
         <DialogContent
-          className=" bg-neutral-100 p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none"
+          className="bg-neutral-100 p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none rounded-none"
           style={{ position: "fixed", zIndex: 80 }}
         >
           <VisuallyHidden>
