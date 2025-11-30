@@ -1656,12 +1656,24 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
 
             try {
-              const filesStore = useFilesStore.getState();
               const appStore = useAppStore.getState();
               const textEditStore = useTextEditStore.getState();
 
-              // Check if file exists
-              const existingItem = filesStore.items[path];
+              // Ensure /Documents directory exists
+              const filesStoreState = useFilesStore.getState();
+              if (!filesStoreState.items["/Documents"]) {
+                // Create the Documents directory if it doesn't exist
+                filesStoreState.addItem({
+                  path: "/Documents",
+                  name: "Documents",
+                  isDirectory: true,
+                  type: "directory",
+                  icon: "📁",
+                });
+              }
+
+              // Check if file exists (get fresh state after potential directory creation)
+              const existingItem = useFilesStore.getState().items[path];
               const isNewFile = !existingItem || existingItem.status !== "active";
 
               // Determine final content based on mode
@@ -1682,13 +1694,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const fileSize = new Blob([finalContent]).size;
               const now = Date.now();
 
-              // Create/update file metadata
-              const metadata: FileSystemItem = {
+              // Create/update file metadata (addItem will generate UUID for new files)
+              const metadata: Omit<FileSystemItem, "status"> = {
                 path,
                 name: fileName,
                 isDirectory: false,
                 type: "markdown",
-                status: "active",
                 uuid: existingItem?.uuid, // Preserve existing UUID if updating
                 createdAt: existingItem?.createdAt || now,
                 modifiedAt: now,
@@ -1697,12 +1708,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               };
 
               // Save metadata to file store
-              filesStore.addItem(metadata);
+              useFilesStore.getState().addItem(metadata);
 
-              // Get the saved item to get UUID (in case it was newly generated)
-              const savedItem = filesStore.items[path];
+              // Get fresh state to get the saved item with UUID
+              const savedItem = useFilesStore.getState().items[path];
               if (!savedItem?.uuid) {
-                throw new Error("Failed to get UUID for saved document");
+                // Log debug info
+                console.error("[ToolCall] write: Failed to save file metadata", {
+                  path,
+                  documentsExists: !!useFilesStore.getState().items["/Documents"],
+                  allItems: Object.keys(useFilesStore.getState().items),
+                });
+                throw new Error("Failed to save document. Check if /Documents directory exists.");
               }
 
               // Save content to IndexedDB
