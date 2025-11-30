@@ -2,8 +2,6 @@
  * Toast component for showing prefetch progress
  */
 
-import { BUILD_VERSION } from "@/config/buildVersion";
-
 interface PrefetchToastProps {
   phase: string;
   completed: number;
@@ -14,8 +12,8 @@ interface PrefetchToastProps {
 }
 
 interface PrefetchCompleteToastProps {
-  version?: string;
-  buildNumber?: string;
+  version: string;
+  buildNumber: string;
 }
 
 const phaseLabels: Record<string, string> = {
@@ -54,13 +52,9 @@ export function PrefetchToast({
 }
 
 export function PrefetchCompleteToast({ version, buildNumber }: PrefetchCompleteToastProps) {
-  // Always use provided values (from JSON), fallback only if not provided
-  const versionText = version || BUILD_VERSION;
-  const buildText = buildNumber ? ` (${buildNumber})` : '';
-  
   return (
     <div className="text-sm">
-      Updated to version {versionText}{buildText}
+      Updated to version {version} ({buildNumber})
     </div>
   );
 }

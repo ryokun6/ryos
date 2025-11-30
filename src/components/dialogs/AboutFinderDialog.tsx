@@ -8,10 +8,10 @@ import {
 import { getNonFinderApps } from "@/config/appRegistry";
 import { useAppContext } from "@/contexts/AppContext";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
-import { BUILD_VERSION, BUILD_TIME, COMMIT_SHA_SHORT } from "@/config/buildVersion";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -30,6 +30,9 @@ export function AboutFinderDialog({
 }: AboutFinderDialogProps) {
   const { appStates } = useAppContext();
   const currentTheme = useThemeStore((state) => state.current);
+  const version = useAppStore((state) => state.ryOSVersion);
+  const buildNumber = useAppStore((state) => state.ryOSBuildNumber);
+  const buildTime = useAppStore((state) => state.ryOSBuildTime);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const [versionDisplayMode, setVersionDisplayMode] = useState(0); // 0: version, 1: commit, 2: date
 
@@ -106,10 +109,10 @@ export function AboutFinderDialog({
                 title="Click to toggle"
               >
                 {versionDisplayMode === 0
-                  ? BUILD_VERSION
+                  ? (version || "...")
                   : versionDisplayMode === 1
-                  ? COMMIT_SHA_SHORT
-                  : new Date(BUILD_TIME).toLocaleDateString()
+                  ? (buildNumber || "...")
+                  : (buildTime ? new Date(buildTime).toLocaleDateString() : "...")
                 }
               </div>
             </div>

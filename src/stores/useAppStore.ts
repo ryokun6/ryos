@@ -130,6 +130,12 @@ interface AppStoreState extends AppManagerState {
   masterVolume: number;
   setMasterVolume: (v: number) => void;
   _debugCheckInstanceIntegrity: () => void;
+  
+  // ryOS version (fetched from version.json)
+  ryOSVersion: string | null;
+  ryOSBuildNumber: string | null;
+  ryOSBuildTime: string | null;
+  setRyOSVersion: (version: string, buildNumber: string, buildTime?: string) => void;
 }
 
 const CURRENT_APP_STORE_VERSION = 3; // bump for instanceOrder unification
@@ -174,6 +180,17 @@ export const useAppStore = create<AppStoreState>()(
       setHasBooted: () => set({ isFirstBoot: false }),
       masterVolume: 1,
       setMasterVolume: (vol) => set({ masterVolume: vol }),
+
+      // ryOS version (fetched from version.json)
+      ryOSVersion: null,
+      ryOSBuildNumber: null,
+      ryOSBuildTime: null,
+      setRyOSVersion: (version, buildNumber, buildTime) =>
+        set({
+          ryOSVersion: version,
+          ryOSBuildNumber: buildNumber,
+          ryOSBuildTime: buildTime || null,
+        }),
 
       updateWindowState: (appId, position, size) =>
         set((state) => ({
@@ -780,6 +797,9 @@ export const useAppStore = create<AppStoreState>()(
         ttsVoice: state.ttsVoice,
         ipodVolume: state.ipodVolume,
         masterVolume: state.masterVolume,
+        ryOSVersion: state.ryOSVersion,
+        ryOSBuildNumber: state.ryOSBuildNumber,
+        ryOSBuildTime: state.ryOSBuildTime,
         instances: Object.fromEntries(
           Object.entries(state.instances)
             .filter(([, inst]) => inst.isOpen)

@@ -1,5 +1,5 @@
 /**
- * Generates a build version file with commit SHA
+ * Generates a version.json file with build information
  * Format: MAJOR.MINOR (e.g., 10.1) + commit SHA
  * 
  * Uses VERCEL_GIT_COMMIT_SHA in production builds, falls back to 'dev' locally.
@@ -20,7 +20,6 @@ const MINOR_VERSION = 1;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const versionPath = join(__dirname, '../.version');
-const outputPath = join(__dirname, '../src/config/buildVersion.ts');
 const publicVersionPath = join(__dirname, '../public/version.json');
 
 // Check if this is a manual version bump (called directly via version:bump)
@@ -65,18 +64,7 @@ const buildTime = new Date().toISOString();
 // Version format: MAJOR.MINOR
 const version = `${majorVersion}.${minorVersion}`;
 
-const content = `// Auto-generated build version - do not edit manually
-export const BUILD_VERSION = '${version}';
-export const BUILD_TIME = '${buildTime}';
-export const MAJOR_VERSION = ${majorVersion};
-export const MINOR_VERSION = ${minorVersion};
-export const COMMIT_SHA = '${commitSha}';
-export const COMMIT_SHA_SHORT = '${shortSha}';
-`;
-
-writeFileSync(outputPath, content);
-
-// Also write version.json to public folder for runtime version fetching
+// Write version.json to public folder for runtime version fetching
 const versionJson = {
   version,
   buildNumber: shortSha,

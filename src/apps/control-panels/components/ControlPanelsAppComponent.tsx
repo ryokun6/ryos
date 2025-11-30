@@ -28,7 +28,6 @@ import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
-import { BUILD_VERSION, COMMIT_SHA_SHORT } from "@/config/buildVersion";
 import { AIModel, AI_MODEL_METADATA } from "@/types/aiModels";
 import { VolumeMixer } from "./VolumeMixer";
 import { v4 as uuidv4 } from "uuid";
@@ -181,6 +180,23 @@ const base64ToBlob = (dataUrl: string): Blob => {
   const array = Uint8Array.from(binary, (c) => c.charCodeAt(0));
   return new Blob([array], { type: mime });
 };
+
+// Version display component that reads from app store
+function VersionDisplay() {
+  const { ryOSVersion, ryOSBuildNumber } = useAppStoreShallow((state) => ({
+    ryOSVersion: state.ryOSVersion,
+    ryOSBuildNumber: state.ryOSBuildNumber,
+  }));
+  
+  const displayVersion = ryOSVersion || "...";
+  const displayBuild = ryOSBuildNumber ? ` (${ryOSBuildNumber})` : "";
+  
+  return (
+    <p className="text-[11px] text-gray-600 font-geneva-12">
+      Current version: ryOS {displayVersion}{displayBuild}
+    </p>
+  );
+}
 
 export function ControlPanelsAppComponent({
   isWindowOpen,
@@ -1760,9 +1776,7 @@ export function ControlPanelsAppComponent({
                   >
                     Check for Updates
                   </Button>
-                  <p className="text-[11px] text-gray-600 font-geneva-12">
-                    Current version: ryOS {BUILD_VERSION} ({COMMIT_SHA_SHORT})
-                  </p>
+                  <VersionDisplay />
                 </div>
 
                 <div className="space-y-2">
