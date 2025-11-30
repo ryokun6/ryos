@@ -48,9 +48,13 @@ function storeVersion(version: string, buildNumber: string, buildTime?: string):
 
 /**
  * Reload the page to apply updates
+ * Uses cache-busting to ensure Safari fetches fresh index.html
  */
 function reloadPage(): void {
-  window.location.reload();
+  // Add cache-busting query param to force fresh index.html fetch
+  const url = new URL(window.location.href);
+  url.searchParams.set('_reload', Date.now().toString());
+  window.location.href = url.toString();
 }
 
 /**
@@ -166,7 +170,7 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
     if (result.action === 'update') {
       toast.dismiss('prefetch-progress');
       clearPrefetchFlag();
-      await clearSwCaches();
+      await clearAllCaches();
     }
     
     // Run prefetch - show reload toast for updates, dismiss silently for first-time
@@ -179,12 +183,38 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
 }
 
 /**
- * Force check for updates and refresh cache
+ * Force refresh cache and show update ready toast
  * Use this for manual "Check for Updates" action
+ * Always clears cache and refetches, regardless of version
  */
 export async function forceRefreshCache(): Promise<void> {
   console.log('[Prefetch] Manual update check triggered...');
-  await checkAndUpdate(true);
+  
+  if (isUpdateInProgress) {
+    console.log('[Prefetch] Update already in progress, skipping');
+    return;
+  }
+  
+  const serverVersion = await fetchServerVersion();
+  
+  if (!serverVersion) {
+    toast.error('Could not check for updates');
+    return;
+  }
+  
+  isUpdateInProgress = true;
+  
+  try {
+    // Always clear caches for manual refresh
+    toast.dismiss('prefetch-progress');
+    clearPrefetchFlag();
+    await clearAllCaches();
+    
+    // Always show update ready toast for manual refresh
+    await runPrefetchWithToast(true, serverVersion);
+  } finally {
+    isUpdateInProgress = false;
+  }
 }
 
 /**
@@ -311,16 +341,6 @@ async function runPrefetchWithToast(
     toast.error('Failed to cache assets', { id: toastId });
   }
 }
-
-// Cache names used by the service worker (from vite.config.ts workbox config)
-const SW_CACHE_NAMES = [
-  'static-resources',  // JS/CSS
-  'images',
-  'fonts', 
-  'audio',
-  'data-files',
-  'wallpapers',
-];
 
 // UI sound files in /sounds/ directory
 const UI_SOUNDS = [
@@ -458,17 +478,25 @@ function getSoundUrls(): string[] {
 }
 
 /**
- * Clear service worker caches to ensure fresh prefetch
+ * Clear ALL caches and update service worker to ensure fresh assets
  */
-async function clearSwCaches(): Promise<void> {
+async function clearAllCaches(): Promise<void> {
   try {
+    // Clear ALL Cache Storage caches (not just filtered ones)
     const cacheNames = await caches.keys();
-    const swCaches = cacheNames.filter(name => 
-      SW_CACHE_NAMES.some(swName => name.includes(swName))
-    );
+    await Promise.all(cacheNames.map(name => caches.delete(name)));
+    console.log(`[Prefetch] Cleared ${cacheNames.length} caches:`, cacheNames);
     
-    await Promise.all(swCaches.map(name => caches.delete(name)));
-    console.log(`[Prefetch] Cleared ${swCaches.length} caches`);
+    // Tell service worker to skip waiting and activate new version
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration?.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+      // Force update check
+      await registration?.update();
+      console.log('[Prefetch] Service worker update triggered');
+    }
   } catch (error) {
     console.warn('[Prefetch] Failed to clear caches:', error);
   }
@@ -571,6 +599,13 @@ export function stopPeriodicUpdateCheck(): void {
  * 4. Start periodic checks every 5 minutes
  */
 export function initPrefetch(): void {
+  // Clean up cache-busting param from URL after reload
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('_reload')) {
+    url.searchParams.delete('_reload');
+    window.history.replaceState({}, '', url.toString());
+  }
+  
   const runPrefetchFlow = async () => {
     // Single unified check handles first-time, updates, and no-op
     await checkAndUpdate(false);

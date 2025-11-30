@@ -9,6 +9,14 @@ import { preloadIpodData } from "./stores/useIpodStore";
 import { initPrefetch } from "./utils/prefetch";
 
 // ============================================================================
+// CHUNK LOAD ERROR HANDLING - Reload when old assets 404 after deployment
+// ============================================================================
+window.addEventListener("vite:preloadError", (event) => {
+  console.warn("[ryOS] Chunk load failed, reloading for fresh assets...", event);
+  window.location.reload();
+});
+
+// ============================================================================
 // PRELOADING - Start fetching JSON data early (non-blocking)
 // These run in parallel before React even mounts
 // ============================================================================
