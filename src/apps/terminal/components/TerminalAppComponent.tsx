@@ -213,7 +213,9 @@ const getSystemState = () => {
     // Keep legacy apps for backward compatibility, but mark that instances are preferred
     apps: appStore.apps,
     username,
-    userOS,
+    userOS: {
+      current: userOS,
+    },
     userLocalTime: {
       timeString: userTimeString,
       dateString: userDateString,
