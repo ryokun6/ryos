@@ -38,7 +38,7 @@ export function clearPrefetchFlag(): void {
 
 /**
  * Force clear all caches and immediately re-prefetch with toast
- * Use this for manual "Reset System Cache" action
+ * Use this for manual "Check for Updates" action
  * This bypasses service worker checks and always shows the toast
  */
 export async function forceRefreshCache(): Promise<void> {
@@ -69,10 +69,11 @@ export async function forceRefreshCache(): Promise<void> {
 }
 
 /**
- * Run the prefetch logic with toast - used by forceRefreshCache
- * This bypasses service worker requirement checks
+ * Run the prefetch logic with toast
+ * @param showVersionToast - If true, shows "Updated to version X" with reload button. 
+ *                           If false, just dismisses the toast on completion.
  */
-async function runPrefetchWithToast(): Promise<void> {
+async function runPrefetchWithToast(showVersionToast: boolean = true): Promise<void> {
   console.log('[Prefetch] Starting prefetch with toast...');
   
   // Fetch manifest first
@@ -157,21 +158,26 @@ async function runPrefetchWithToast(): Promise<void> {
     markPrefetchComplete();
     storeManifestTimestamp(manifest);
     
-    // Show completion toast with reload button
-    toast.success(
-      createElement(PrefetchCompleteToast, {
-        version: BUILD_VERSION,
-        buildNumber: COMMIT_SHA_SHORT,
-      }),
-      {
-        id: toastId,
-        duration: 5000,
-        action: {
-          label: "Reload",
-          onClick: reloadPage,
-        },
-      }
-    );
+    // Show completion toast - with version/reload for updates, just dismiss for first-time
+    if (showVersionToast) {
+      toast.success(
+        createElement(PrefetchCompleteToast, {
+          version: BUILD_VERSION,
+          buildNumber: COMMIT_SHA_SHORT,
+        }),
+        {
+          id: toastId,
+          duration: 5000,
+          action: {
+            label: "Reload",
+            onClick: reloadPage,
+          },
+        }
+      );
+    } else {
+      // First-time prefetch - just dismiss the progress toast
+      toast.dismiss(toastId);
+    }
     
   } catch (error) {
     console.error('[Prefetch] Error during prefetch:', error);
@@ -307,18 +313,6 @@ function getIconUrlsFromManifest(manifest: IconManifest): string[] {
 }
 
 /**
- * Check if manifest has been updated since last prefetch
- */
-function isManifestUpdated(manifest: IconManifest): boolean {
-  try {
-    const storedTimestamp = localStorage.getItem(MANIFEST_KEY);
-    return storedTimestamp !== manifest.generatedAt;
-  } catch {
-    return true; // Assume updated if we can't check
-  }
-}
-
-/**
  * Store the manifest timestamp after successful prefetch
  */
 function storeManifestTimestamp(manifest: IconManifest): void {
@@ -427,23 +421,6 @@ function isPrefetchComplete(): boolean {
 }
 
 /**
- * Check if version has changed (first time or new version)
- */
-function hasVersionChanged(): boolean {
-  try {
-    const storedVersion = localStorage.getItem(PREFETCH_KEY);
-    // First time: no stored version
-    if (!storedVersion) {
-      return true;
-    }
-    // Version changed: stored version doesn't match current version
-    return storedVersion !== PREFETCH_VERSION;
-  } catch {
-    return true; // Assume changed if we can't check
-  }
-}
-
-/**
  * Mark prefetching as complete
  */
 function markPrefetchComplete(): void {
@@ -454,168 +431,113 @@ function markPrefetchComplete(): void {
   }
 }
 
+// Flag to prevent concurrent prefetch operations
+let isPrefetchInProgress = false;
+
 /**
- * Main prefetch function with progress toast
- * Handles both first-time prefetch and version updates
+ * Check if a newer version is available by fetching index.html without cache
+ * This runs on every app load to detect updates even if the user has cached assets
+ * Returns true if an update was found and triggered
  */
-export async function prefetchAssets(): Promise<void> {
-  // Skip if already prefetched this version
-  if (isPrefetchComplete()) {
-    console.log('[Prefetch] Already completed for this version, skipping');
-    return;
-  }
-  
-  // Check if version changed (first time or new version)
-  const versionChanged = hasVersionChanged();
-  
-  // Only run if service worker is active
-  if (!('serviceWorker' in navigator)) {
-    console.log('[Prefetch] Service worker not available, skipping');
-    return;
-  }
-  
-  // Wait for service worker to be ready
-  const registration = await navigator.serviceWorker.ready;
-  if (!registration.active) {
-    console.log('[Prefetch] No active service worker, skipping');
-    return;
-  }
-  
-  if (versionChanged) {
-    console.log('[Prefetch] Version changed, clearing caches and starting prefetch...');
-    // Clear caches when version changes to ensure fresh prefetch
-    await clearSwCaches();
-  } else {
-    console.log('[Prefetch] Starting background prefetch...');
-  }
-  
-  // Fetch manifest first to check if assets have changed
-  const manifest = await fetchIconManifest();
-  if (!manifest) {
-    console.log('[Prefetch] Could not fetch manifest, skipping');
-    return;
-  }
-  
-  // If version didn't change but manifest updated, clear caches
-  if (!versionChanged && isManifestUpdated(manifest)) {
-    console.log('[Prefetch] Manifest updated, clearing old caches...');
-    await clearSwCaches();
-  }
-  
-  // Gather all URLs
-  const iconUrls = getIconUrlsFromManifest(manifest);
-  const jsUrls = await discoverAllJsChunks();
-  const soundUrls = getSoundUrls();
-  
-  const totalItems = iconUrls.length + soundUrls.length + jsUrls.length;
-  
-  if (totalItems === 0) {
-    console.log('[Prefetch] No assets to prefetch');
-    return;
-  }
-  
-  let overallCompleted = 0;
-  
-  // Only show toast if version changed
-  let toastId: string | number | undefined;
-  if (versionChanged) {
-    // Create a toast with progress
-    toastId = toast.loading(
-      createToastContent({ 
-        phase: 'icons', 
-        completed: 0, 
-        total: totalItems 
-      }),
-      {
-        duration: Infinity,
-        id: 'prefetch-progress',
-      }
-    );
-  }
-  
-  const updateToast = (phase: string, phaseCompleted: number, phaseTotal: number) => {
-    if (!versionChanged || !toastId) return;
-    const percentage = Math.round((overallCompleted / totalItems) * 100);
-    toast.loading(
-      createToastContent({
-        phase,
-        completed: overallCompleted,
-        total: totalItems,
-        phaseCompleted,
-        phaseTotal,
-        percentage,
-      }),
-      { id: toastId, duration: Infinity }
-    );
-  };
-  
+async function checkForVersionUpdate(): Promise<boolean> {
   try {
-    // Prefetch icons
-    if (iconUrls.length > 0) {
-      await prefetchUrlsWithProgress(iconUrls, 'Icons', (completed, total) => {
-        overallCompleted = completed;
-        updateToast('icons', completed, total);
-      });
+    // Fetch index.html without cache to get the latest version
+    const response = await fetch('/index.html', { 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+      }
+    });
+    
+    if (!response.ok) {
+      console.log('[Prefetch] Could not fetch index.html for version check');
+      return false;
     }
     
-    // Prefetch sounds
-    if (soundUrls.length > 0) {
-      const baseCompleted = overallCompleted;
-      await prefetchUrlsWithProgress(soundUrls, 'Sounds', (completed, total) => {
-        overallCompleted = baseCompleted + completed;
-        updateToast('sounds', completed, total);
-      });
+    const html = await response.text();
+    
+    // Extract the main bundle hash from the HTML
+    // The bundle looks like: /assets/index-XXXX.js
+    const bundleMatch = html.match(/\/assets\/index-([A-Za-z0-9_-]+)\.js/);
+    if (!bundleMatch || !bundleMatch[1]) {
+      console.log('[Prefetch] Could not find bundle hash in index.html');
+      return false;
     }
     
-    // Prefetch JS chunks
-    if (jsUrls.length > 0) {
-      const baseCompleted = overallCompleted;
-      await prefetchUrlsWithProgress(jsUrls, 'Scripts', (completed, total) => {
-        overallCompleted = baseCompleted + completed;
-        updateToast('scripts', completed, total);
-      });
+    const serverBundleHash = bundleMatch[1];
+    
+    // Get the current bundle hash from the running app
+    // We can find this by checking the script tags that are already loaded
+    const currentScripts = Array.from(document.querySelectorAll('script[src*="/assets/index-"]'));
+    const currentBundleMatch = currentScripts[0]?.getAttribute('src')?.match(/\/assets\/index-([A-Za-z0-9_-]+)\.js/);
+    const currentBundleHash = currentBundleMatch?.[1];
+    
+    if (!currentBundleHash) {
+      console.log('[Prefetch] Could not determine current bundle hash');
+      return false;
     }
     
-    // Mark as complete and store manifest timestamp
-    markPrefetchComplete();
-    storeManifestTimestamp(manifest);
+    console.log(`[Prefetch] Version check: current=${currentBundleHash}, server=${serverBundleHash}`);
     
-    // Only show completion toast if version changed
-    if (versionChanged && toastId) {
-      toast.success(
-        createElement(PrefetchCompleteToast, {
-          version: BUILD_VERSION,
-          buildNumber: COMMIT_SHA_SHORT,
-        }),
-        {
-          id: toastId,
-          duration: 5000,
-          action: {
-            label: "Reload",
-            onClick: reloadPage,
-          },
-        }
-      );
+    // If the hashes are different, a new version is available
+    if (serverBundleHash !== currentBundleHash) {
+      console.log('[Prefetch] New version detected, triggering update...');
+      // Clear the prefetch flag and caches to force re-prefetch
+      clearPrefetchFlag();
+      await clearSwCaches();
+      // Run the prefetch with toast to show update progress
+      isPrefetchInProgress = true;
+      try {
+        await runPrefetchWithToast(true);
+      } finally {
+        isPrefetchInProgress = false;
+      }
+      return true;
+    } else {
+      console.log('[Prefetch] Already running latest version');
+      return false;
     }
-    
   } catch (error) {
-    console.error('[Prefetch] Error during prefetch:', error);
-    if (toastId) {
-      toast.dismiss(toastId);
-    }
+    console.warn('[Prefetch] Version check failed:', error);
+    return false;
   }
 }
 
 /**
  * Initialize prefetching after the app has loaded
- * Automatically handles first-time prefetch and version updates
+ * Checks for new versions without cache on every load, then handles first-time prefetch
  */
 export function initPrefetch(): void {
+  const runPrefetchFlow = async () => {
+    // First, check for version updates without cache
+    const updateTriggered = await checkForVersionUpdate();
+    
+    // If an update was already triggered, skip the regular prefetch
+    if (updateTriggered) {
+      console.log('[Prefetch] Update already triggered, skipping regular prefetch');
+      return;
+    }
+    
+    // If no update was triggered, check if this is a first-time user
+    // who needs initial prefetch (no prefetch flag stored)
+    if (!isPrefetchInProgress && !isPrefetchComplete()) {
+      console.log('[Prefetch] First-time user, starting initial prefetch...');
+      isPrefetchInProgress = true;
+      try {
+        // Use same function but don't show version/reload toast for first-time users
+        await runPrefetchWithToast(false);
+      } finally {
+        isPrefetchInProgress = false;
+      }
+    }
+  };
+  
   if (document.readyState === 'complete') {
-    setTimeout(prefetchAssets, 3000);
+    // Delay to not interfere with initial render
+    setTimeout(runPrefetchFlow, 2000);
   } else {
     window.addEventListener('load', () => {
-      setTimeout(prefetchAssets, 3000);
+      setTimeout(runPrefetchFlow, 2000);
     }, { once: true });
   }
 }
