@@ -3,40 +3,40 @@ import { ChatsAppComponent } from "./components/ChatsAppComponent";
 
 export const helpItems = [
   {
-    icon: "📦",
-    title: "Create & Edit Files & Applets",
+    icon: "💬",
+    title: "Chat with Ryo",
     description:
-      "Generate HTML applets, create/edit markdown documents, read/write files, search Applets Store.",
+      "Type your message to chat with Ryo, generate code, or get help with ryOS.",
   },
   {
-    icon: "🎮",
-    title: "System Control",
+    icon: "📝",
+    title: "Create & Edit Files",
     description:
-      "Launch/close apps, switch themes, control iPod playback, full ryOS integration.",
+      "Ask Ryo to create HTML applets, edit documents, read files, or search the Applets Store.",
+  },
+  {
+    icon: "🚀",
+    title: "Control Apps",
+    description:
+      "Ask Ryo to launch or close apps, switch themes, or control iPod playback.",
   },
   {
     icon: "#️⃣",
-    title: "Chat Rooms & @ryo Mentions",
+    title: "Join Chat Rooms",
     description:
-      "Join public/private rooms, mention @ryo for AI responses in IRC-style chat.",
+      "Connect with others in public chat rooms. Mention @ryo for AI responses.",
   },
   {
     icon: "🎤",
-    title: "Voice & Speech",
+    title: "Push to Talk",
     description:
-      "Push-to-talk voice messages with transcription, text-to-speech with word highlighting.",
+      "Hold Space or tap the microphone button to record and send voice messages.",
   },
   {
     icon: "👋",
     title: "Nudge & DJ Mode",
     description:
-      "👋 nudge for context-aware interactions, ryOS FM DJ mode when music is playing.",
-  },
-  {
-    icon: "📁",
-    title: "File System Management",
-    description:
-      "List/search files, open from Applets Store/Documents/Music, manage virtual file system.",
+      "Send 👋 nudge for context-aware tips. Ryo becomes a DJ when music is playing.",
   },
 ];
 
