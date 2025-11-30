@@ -648,7 +648,7 @@ export function ControlPanelsAppComponent({
       }
 
       // Combine chunks into a single blob
-      const compressedBlob = new Blob(chunks, { type: "application/gzip" });
+      const compressedBlob = new Blob(chunks as BlobPart[], { type: "application/gzip" });
 
       // Create download link
       const url = URL.createObjectURL(compressedBlob);
