@@ -79,7 +79,7 @@ async function reloadPage(version?: string, buildNumber?: string): Promise<void>
   
   // Add cache-busting query param to force fresh index.html fetch
   const url = new URL(window.location.href);
-  url.searchParams.set('_reload', Date.now().toString());
+  url.searchParams.set('_cb', Date.now().toString());
   window.location.href = url.toString();
 }
 
@@ -672,30 +672,17 @@ export function stopPeriodicUpdateCheck(): void {
  * 4. Start periodic checks every 5 minutes
  */
 export function initPrefetch(): void {
-  // Clean up cache-busting params from URL after reload
+  // Clean up cache-busting param from URL after reload
   const url = new URL(window.location.href);
-  let urlModified = false;
-  
-  // _reload is added by manual update flow
-  if (url.searchParams.has('_reload')) {
-    url.searchParams.delete('_reload');
-    urlModified = true;
-  }
-  
-  // _cb is added by stale bundle detection in index.html
   if (url.searchParams.has('_cb')) {
     url.searchParams.delete('_cb');
-    urlModified = true;
+    window.history.replaceState({}, '', url.toString());
     // Clear the stale reload flag since we successfully loaded fresh content
     try {
       sessionStorage.removeItem('ryos-stale-reload');
     } catch {
       // sessionStorage might not be available
     }
-  }
-  
-  if (urlModified) {
-    window.history.replaceState({}, '', url.toString());
   }
   
   const runPrefetchFlow = async () => {
