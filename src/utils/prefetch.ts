@@ -12,26 +12,13 @@ import { BUILD_VERSION, COMMIT_SHA_SHORT } from "@/config/buildVersion";
 // Storage keys for tracking prefetch status
 const PREFETCH_KEY = 'ryos-prefetch-version';
 const MANIFEST_KEY = 'ryos-manifest-timestamp';
-const LAST_KNOWN_VERSION_KEY = 'ryos-last-known-version';
 // Use commit SHA - automatically updates on each deployment
 const PREFETCH_VERSION = COMMIT_SHA_SHORT;
-
-/**
- * Update the stored version after reload/update
- */
-function updateStoredVersion(): void {
-  try {
-    localStorage.setItem(LAST_KNOWN_VERSION_KEY, COMMIT_SHA_SHORT);
-  } catch {
-    // localStorage might not be available
-  }
-}
 
 /**
  * Reload the page to apply updates
  */
 function reloadPage(): void {
-  updateStoredVersion();
   window.location.reload();
 }
 
@@ -429,13 +416,30 @@ function createToastContent(props: {
 }
 
 /**
- * Check if prefetching has already been completed
+ * Check if prefetching has already been completed for the current version
  */
 function isPrefetchComplete(): boolean {
   try {
     return localStorage.getItem(PREFETCH_KEY) === PREFETCH_VERSION;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Check if version has changed (first time or new version)
+ */
+function hasVersionChanged(): boolean {
+  try {
+    const storedVersion = localStorage.getItem(PREFETCH_KEY);
+    // First time: no stored version
+    if (!storedVersion) {
+      return true;
+    }
+    // Version changed: stored version doesn't match current version
+    return storedVersion !== PREFETCH_VERSION;
+  } catch {
+    return true; // Assume changed if we can't check
   }
 }
 
@@ -452,13 +456,17 @@ function markPrefetchComplete(): void {
 
 /**
  * Main prefetch function with progress toast
+ * Handles both first-time prefetch and version updates
  */
 export async function prefetchAssets(): Promise<void> {
   // Skip if already prefetched this version
   if (isPrefetchComplete()) {
-    console.log('[Prefetch] Already completed, skipping');
+    console.log('[Prefetch] Already completed for this version, skipping');
     return;
   }
+  
+  // Check if version changed (first time or new version)
+  const versionChanged = hasVersionChanged();
   
   // Only run if service worker is active
   if (!('serviceWorker' in navigator)) {
@@ -473,7 +481,13 @@ export async function prefetchAssets(): Promise<void> {
     return;
   }
   
-  console.log('[Prefetch] Starting background prefetch...');
+  if (versionChanged) {
+    console.log('[Prefetch] Version changed, clearing caches and starting prefetch...');
+    // Clear caches when version changes to ensure fresh prefetch
+    await clearSwCaches();
+  } else {
+    console.log('[Prefetch] Starting background prefetch...');
+  }
   
   // Fetch manifest first to check if assets have changed
   const manifest = await fetchIconManifest();
@@ -482,12 +496,10 @@ export async function prefetchAssets(): Promise<void> {
     return;
   }
   
-  // Only clear caches if manifest has been updated
-  if (isManifestUpdated(manifest)) {
+  // If version didn't change but manifest updated, clear caches
+  if (!versionChanged && isManifestUpdated(manifest)) {
     console.log('[Prefetch] Manifest updated, clearing old caches...');
     await clearSwCaches();
-  } else {
-    console.log('[Prefetch] Manifest unchanged, keeping existing caches');
   }
   
   // Gather all URLs
@@ -586,107 +598,15 @@ export async function prefetchAssets(): Promise<void> {
 }
 
 /**
- * Check for updates by fetching the latest index.html and comparing build version
- * This fetches fresh from the server to detect new deployments
- */
-async function checkForUpdatesRemote(): Promise<boolean> {
-  try {
-    // Fetch index.html with cache-busting to get the latest version
-    const response = await fetch('/index.html', {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' },
-    });
-    if (!response.ok) return false;
-    
-    const html = await response.text();
-    
-    // Find the main bundle hash in the HTML
-    // The main bundle looks like: /assets/index-XXXX.js
-    const bundleMatch = html.match(/\/assets\/index-([A-Za-z0-9_-]+)\.js/);
-    if (!bundleMatch) return false;
-    
-    const remoteBundleHash = bundleMatch[1];
-    
-    // Get current page's bundle hash
-    const scripts = document.querySelectorAll('script[src*="/assets/index-"]');
-    for (const script of scripts) {
-      const src = script.getAttribute('src') || '';
-      const currentMatch = src.match(/\/assets\/index-([A-Za-z0-9_-]+)\.js/);
-      if (currentMatch) {
-        const currentBundleHash = currentMatch[1];
-        if (currentBundleHash !== remoteBundleHash) {
-          console.log(`[Prefetch] Remote update detected: ${currentBundleHash} -> ${remoteBundleHash}`);
-          return true;
-        }
-      }
-    }
-    
-    return false;
-  } catch (error) {
-    console.warn('[Prefetch] Failed to check for remote updates:', error);
-    return false;
-  }
-}
-
-/**
- * Show update available toast with reload button
- */
-function showUpdateToast(): void {
-  toast.info(
-    createElement(PrefetchCompleteToast, {
-      version: BUILD_VERSION,
-      buildNumber: COMMIT_SHA_SHORT,
-    }),
-    {
-      id: 'update-available',
-      duration: 15000,
-      action: {
-        label: "Reload",
-        onClick: reloadPage,
-      },
-    }
-  );
-}
-
-/**
- * Periodically check for updates (every 5 minutes)
- */
-let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
-
-function startUpdateChecker(): void {
-  // Check immediately on start (after a short delay)
-  setTimeout(async () => {
-    const hasUpdate = await checkForUpdatesRemote();
-    if (hasUpdate) {
-      showUpdateToast();
-    }
-  }, 10000); // Wait 10 seconds after load
-  
-  // Then check every 5 minutes
-  updateCheckInterval = setInterval(async () => {
-    const hasUpdate = await checkForUpdatesRemote();
-    if (hasUpdate) {
-      showUpdateToast();
-      // Stop checking once we've detected an update
-      if (updateCheckInterval) {
-        clearInterval(updateCheckInterval);
-        updateCheckInterval = null;
-      }
-    }
-  }, 5 * 60 * 1000); // 5 minutes
-}
-
-/**
  * Initialize prefetching after the app has loaded
+ * Automatically handles first-time prefetch and version updates
  */
 export function initPrefetch(): void {
   if (document.readyState === 'complete') {
     setTimeout(prefetchAssets, 3000);
-    startUpdateChecker();
   } else {
     window.addEventListener('load', () => {
       setTimeout(prefetchAssets, 3000);
-      startUpdateChecker();
     }, { once: true });
   }
 }
