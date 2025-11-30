@@ -195,13 +195,16 @@ async function runPrefetchWithToast(): Promise<void> {
     // Show completion toast with reload button
     toast.success(
       createElement(PrefetchCompleteToast, {
-        onReload: reloadPage,
         version: BUILD_VERSION,
         buildNumber: COMMIT_SHA_SHORT,
       }),
       {
         id: toastId,
         duration: 5000,
+        action: {
+          label: "Reload",
+          onClick: reloadPage,
+        },
       }
     );
     
@@ -585,13 +588,16 @@ export async function prefetchAssets(): Promise<void> {
     // Show completion toast with reload button
     toast.success(
       createElement(PrefetchCompleteToast, {
-        onReload: reloadPage,
         version: BUILD_VERSION,
         buildNumber: COMMIT_SHA_SHORT,
       }),
       {
         id: toastId,
         duration: 5000,
+        action: {
+          label: "Reload",
+          onClick: reloadPage,
+        },
       }
     );
     
@@ -650,13 +656,16 @@ async function checkForUpdatesRemote(): Promise<boolean> {
 function showUpdateToast(): void {
   toast.info(
     createElement(PrefetchCompleteToast, {
-      onReload: reloadPage,
       version: BUILD_VERSION,
       buildNumber: COMMIT_SHA_SHORT,
     }),
     {
       id: 'update-available',
       duration: 15000,
+      action: {
+        label: "Reload",
+        onClick: reloadPage,
+      },
     }
   );
 }

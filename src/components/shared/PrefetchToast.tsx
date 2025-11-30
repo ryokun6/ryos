@@ -14,7 +14,6 @@ interface PrefetchToastProps {
 }
 
 interface PrefetchCompleteToastProps {
-  onReload: () => void;
   version?: string;
   buildNumber?: string;
 }
@@ -60,21 +59,13 @@ export function PrefetchToast({
   );
 }
 
-export function PrefetchCompleteToast({ onReload, version, buildNumber }: PrefetchCompleteToastProps) {
+export function PrefetchCompleteToast({ version, buildNumber }: PrefetchCompleteToastProps) {
   const versionText = version || BUILD_VERSION;
   const buildText = buildNumber ? ` (build ${buildNumber})` : '';
   
   return (
-    <div className="flex flex-col gap-2 w-full min-w-[200px]">
-      <div className="text-sm">
-        Updated to version {versionText}{buildText}
-      </div>
-      <button
-        onClick={onReload}
-        className="w-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-      >
-        Reload
-      </button>
+    <div className="text-sm">
+      Updated to version {versionText}{buildText}
     </div>
   );
 }
