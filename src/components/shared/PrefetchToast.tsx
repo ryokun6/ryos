@@ -37,17 +37,11 @@ export function PrefetchToast({
   
   return (
     <div className="flex flex-col gap-1.5 w-full min-w-[200px]">
-      <div className="flex justify-between items-center text-sm">
+      <div className="flex justify-between items-center text-sm w-full">
         <span>{label}...</span>
         <span className="text-xs text-muted-foreground tabular-nums">
           {displayPercentage}%
         </span>
-      </div>
-      <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-        <div 
-          className="h-full bg-primary transition-all duration-200 ease-out rounded-full"
-          style={{ width: `${displayPercentage}%` }}
-        />
       </div>
       <div className="text-xs text-muted-foreground">
         {phaseTotal > 0 

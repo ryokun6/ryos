@@ -1751,6 +1751,21 @@ export function ControlPanelsAppComponent({
                 />
 
                 <div className="space-y-2">
+                  <Button
+                    variant="retro"
+                    onClick={() => {
+                      forceRefreshCache();
+                    }}
+                    className="w-full"
+                  >
+                    Check for Updates
+                  </Button>
+                  <p className="text-[11px] text-gray-600 font-geneva-12">
+                    Current version: ryOS {BUILD_VERSION} ({COMMIT_SHA_SHORT})
+                  </p>
+                </div>
+
+                <div className="space-y-2">
                   <div className="flex gap-2">
                     <Button
                       variant="retro"
@@ -1775,7 +1790,7 @@ export function ControlPanelsAppComponent({
                     />
                   </div>
                   <p className="text-[11px] text-gray-600 font-geneva-12">
-                    Backup or restore all app settings and files
+                    Backup or restore all app settings and files.
                   </p>
                 </div>
 
@@ -1788,23 +1803,7 @@ export function ControlPanelsAppComponent({
                     Reset All Settings
                   </Button>
                   <p className="text-[11px] text-gray-600 font-geneva-12">
-                    This will clear all saved settings and restore default
-                    states.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Button
-                    variant="retro"
-                    onClick={() => {
-                      forceRefreshCache();
-                    }}
-                    className="w-full"
-                  >
-                    Check for Updates
-                  </Button>
-                  <p className="text-[11px] text-gray-600 font-geneva-12">
-                    ryOS v{BUILD_VERSION} ({COMMIT_SHA_SHORT})
+                    This will clear all saved settings and restore defaults.
                   </p>
                 </div>
 
