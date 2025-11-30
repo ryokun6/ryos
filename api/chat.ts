@@ -36,6 +36,8 @@ const themeIds = ["system7", "macosx", "xp", "win98"] as const;
 // Update SystemState type to match new store structure
 interface SystemState {
   username?: string | null;
+  /** User's operating system (e.g., "iOS", "Android", "macOS", "Windows", "Linux") */
+  userOS?: string;
   internetExplorer: {
     url: string;
     year: string;
@@ -184,6 +186,11 @@ Ryo Time: ${timeString} on ${dateString} (${ryoTimeZone})`;
   if (systemState.userLocalTime) {
     prompt += `
 User Time: ${systemState.userLocalTime.timeString} on ${systemState.userLocalTime.dateString} (${systemState.userLocalTime.timeZone})`;
+  }
+
+  if (systemState.userOS) {
+    prompt += `
+User OS: ${systemState.userOS}`;
   }
 
   if (systemState.requestGeo) {
@@ -772,7 +779,7 @@ export default async function handler(req: Request) {
         // Add iPod control tools
         ipodControl: {
           description:
-            "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video, lyric translations, or fullscreen mode with enableVideo, enableTranslation, or enableFullscreen.",
+            "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video, lyric translations, or fullscreen mode with enableVideo, enableTranslation, or enableFullscreen. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to press the center button or play button on the iPod themselves to start playing.",
           inputSchema: z
             .object({
               action: z
