@@ -1034,7 +1034,7 @@ export function FinderAppComponent({
         ref={fileInputRef}
         className="hidden"
         accept={
-          currentPath === "/Applets" ? ".app,.html,.htm" : ".txt,.md,text/*"
+          currentPath === "/Applets" ? ".app,.html,.htm,.gz" : ".txt,.md,text/*"
         }
         onChange={handleFileInputChange}
       />
