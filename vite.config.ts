@@ -69,6 +69,7 @@ export default defineConfig({
         navigateFallbackDenylist: [
           /^\/api\//,  // API routes
           /^\/iframe-check/,  // iframe proxy endpoint
+          /^\/404/,  // Don't intercept 404 redirects
         ],
         // Cache strategy for different asset types
         runtimeCaching: [

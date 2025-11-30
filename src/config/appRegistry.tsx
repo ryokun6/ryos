@@ -54,7 +54,7 @@ const LoadSignal = ({ instanceId }: { instanceId?: string }) => {
       } else {
         const timer = setTimeout(() => {
           markInstanceAsLoaded(instanceId);
-        }, 200); 
+        }, 50); 
         return () => clearTimeout(timer);
       }
     }
