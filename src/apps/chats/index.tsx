@@ -6,12 +6,25 @@ export const helpItems = [
     icon: "💬",
     title: "Chat with Ryo",
     description:
-      "Type your message to chat with Ryo, generate code, or help with ryOS.",
+      "Type your message to chat with Ryo, generate code, or get help with ryOS.",
+  },
+  {
+    icon: "📝",
+    title: "Create & Edit Files",
+    description:
+      "Ask Ryo to create HTML applets, edit documents, read files, or search the Applets Store.",
+  },
+  {
+    icon: "🚀",
+    title: "Control Apps",
+    description:
+      "Ask Ryo to launch or close apps, switch themes, or control iPod playback.",
   },
   {
     icon: "#️⃣",
     title: "Join Chat Rooms",
-    description: "Connect with netizens in public chat rooms.",
+    description:
+      "Connect with others in public chat rooms. Mention @ryo for AI responses.",
   },
   {
     icon: "🎤",
@@ -20,22 +33,10 @@ export const helpItems = [
       "Hold Space or tap the microphone button to record and send voice messages.",
   },
   {
-    icon: "📝",
-    title: "Control TextEdit",
+    icon: "👋",
+    title: "Nudge & DJ Mode",
     description:
-      "Ask Ryo to read, insert, replace, or delete lines in your open TextEdit document.",
-  },
-  {
-    icon: "🚀",
-    title: "Control Apps",
-    description:
-      "Ask Ryo to launch or close other applications like Internet Explorer or Video Player.",
-  },
-  {
-    icon: "💾",
-    title: "Save Transcript",
-    description:
-      "Save your current chat conversation with Ryo as a Markdown file.",
+      "Send 👋 nudge for context-aware tips. Ryo becomes a DJ when music is playing.",
   },
 ];
 
