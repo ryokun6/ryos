@@ -1380,7 +1380,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Opened applet: ${appletName}`,
+                  output: `Opened ${appletName}`,
                 });
                 result = "";
               } else if (path.startsWith("/Applications/")) {
@@ -1433,7 +1433,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Opened applet: ${fileItem.name}`,
+                  output: `Opened ${fileItem.name}`,
                 });
                 result = "";
               } else if (path.startsWith("/Documents/")) {
