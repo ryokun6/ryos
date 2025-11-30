@@ -48,9 +48,23 @@ function storeVersion(version: string, buildNumber: string, buildTime?: string):
 
 /**
  * Reload the page to apply updates
- * Uses cache-busting to ensure Safari fetches fresh index.html
+ * Unregisters service worker first to avoid Safari "redirections from worker" errors
  */
-function reloadPage(): void {
+async function reloadPage(): Promise<void> {
+  try {
+    // Unregister service worker before reloading to avoid Safari navigation issues
+    // Safari can error with "redirections from worker" when SW is in transitional state
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        await registration.unregister();
+        console.log('[Prefetch] Service worker unregistered for clean reload');
+      }
+    }
+  } catch (error) {
+    console.warn('[Prefetch] Failed to unregister service worker:', error);
+  }
+  
   // Add cache-busting query param to force fresh index.html fetch
   const url = new URL(window.location.href);
   url.searchParams.set('_reload', Date.now().toString());
