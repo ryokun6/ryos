@@ -512,10 +512,18 @@ export const useIpodStore = create<IpodState>()(
       setShowVideo: (show) => set({ showVideo: show }),
       toggleLyrics: () => set((state) => ({ showLyrics: !state.showLyrics })),
       refreshLyrics: () =>
-        set((state) => ({
-          lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
-          currentLyrics: null,
-        })),
+        set((state) => {
+          // If translation is enabled, also trigger a retranslation by updating the translation request
+          const newTranslationRequest = state.lyricsTranslationLanguage && state.tracks[state.currentIndex]?.id
+            ? { language: state.lyricsTranslationLanguage, songId: state.tracks[state.currentIndex].id }
+            : null;
+
+          return {
+            lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
+            currentLyrics: null,
+            lyricsTranslationRequest: newTranslationRequest,
+          };
+        }),
       adjustLyricOffset: (trackIndex, deltaMs) =>
         set((state) => {
           if (
