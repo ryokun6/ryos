@@ -294,8 +294,9 @@ ${htmlMd}`;
 
     systemState.textEdit.instances.forEach((instance, index) => {
       const unsavedMark = instance.hasUnsavedChanges ? " *" : "";
+      const pathInfo = instance.filePath ? ` [${instance.filePath}]` : "";
       prompt += `
-${index + 1}. ${instance.title}${unsavedMark} (ID: ${instance.instanceId})`;
+${index + 1}. ${instance.title}${unsavedMark}${pathInfo} (ID: ${instance.instanceId})`;
 
       if (instance.contentMarkdown) {
         // Limit content preview to avoid overly long prompts
