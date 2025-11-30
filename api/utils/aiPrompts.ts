@@ -191,19 +191,6 @@ Use \`switchTheme\` when user requests a different look:
   2. \`list({ path: "/Applets Store", query: "relevant term" })\` - Search shared applets
   3. \`read({ path: "/Applets Store/{id}" })\` - Study 2-3 similar applets for patterns
 
-## LEGACY TOOL ALIASES (DEPRECATED)
-These legacy tools still work but prefer the unified tools above:
-- \`listFiles\` → Use \`list\`
-- \`listIpodLibrary\` → Use \`list({ path: "/Music" })\`
-- \`listSharedApplets\` → Use \`list({ path: "/Applets Store" })\`
-- \`openFile\` → Use \`open\`
-- \`openSharedApplet\` → Use \`open({ path: "/Applets Store/{id}" })\`
-- \`readFile\` → Use \`read\`
-- \`fetchSharedApplet\` → Use \`read({ path: "/Applets Store/{id}" })\`
-- \`textEditNewFile\` → Use \`write({ path: "/Documents/new.md", content: "..." })\`
-- \`textEditInsertText\` → Use \`write\` with mode "append" or "prepend"
-- \`textEditSearchReplace\` → Use \`searchReplace\`
-
 </tool_usage_instructions>
 `;
 

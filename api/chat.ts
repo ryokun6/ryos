@@ -755,33 +755,6 @@ export default async function handler(req: Request) {
               ),
           }),
         },
-        // TextEdit tools - kept for backward compatibility, prefer unified tools
-        textEditSearchReplace: {
-          description:
-            "DEPRECATED: Use 'searchReplace' tool instead. Search and replace text in a TextEdit document.",
-          inputSchema: z.object({
-            search: z.string().describe("The text or regex to search for"),
-            replace: z.string().describe("The replacement text"),
-            isRegex: z.boolean().optional().describe("Treat search as regex"),
-            instanceId: z.string().describe("TextEdit instance ID"),
-          }),
-        },
-        textEditInsertText: {
-          description:
-            "DEPRECATED: Use 'write' tool instead. Insert text into a TextEdit document.",
-          inputSchema: z.object({
-            text: z.string().describe("The text to insert"),
-            position: z.enum(["start", "end"]).optional().describe("Insert position"),
-            instanceId: z.string().describe("TextEdit instance ID"),
-          }),
-        },
-        textEditNewFile: {
-          description:
-            "DEPRECATED: Use 'write' tool with a new path instead. Create a new TextEdit document.",
-          inputSchema: z.object({
-            title: z.string().optional().describe("Window title"),
-          }),
-        },
         // Add iPod control tools
         ipodControl: {
           description:
@@ -1071,57 +1044,6 @@ export default async function handler(req: Request) {
               .describe(
                 "Set to true to treat 'search' as a JavaScript regular expression. Defaults to false (literal text match)."
               ),
-          }),
-        },
-        // Legacy aliases for backward compatibility - mapped to unified tools
-        listFiles: {
-          description:
-            "DEPRECATED: Use 'list' tool instead. List files from a directory.",
-          inputSchema: z.object({
-            directory: z
-              .enum(["/Applets", "/Documents", "/Applications"])
-              .describe("The directory to list."),
-          }),
-        },
-        listSharedApplets: {
-          description:
-            "DEPRECATED: Use list({ path: '/Applets Store' }) instead. List shared applets from the store.",
-          inputSchema: z.object({
-            query: z.string().max(200).optional(),
-            limit: z.number().int().min(1).max(50).optional(),
-          }),
-        },
-        fetchSharedApplet: {
-          description:
-            "DEPRECATED: Use read({ path: '/Applets Store/{id}' }) instead. Fetch shared applet content.",
-          inputSchema: z.object({
-            id: z.string().min(1),
-          }),
-        },
-        openSharedApplet: {
-          description:
-            "DEPRECATED: Use open({ path: '/Applets Store/{id}' }) instead. Open shared applet preview.",
-          inputSchema: z.object({
-            id: z.string().min(1),
-          }),
-        },
-        listIpodLibrary: {
-          description:
-            "DEPRECATED: Use list({ path: '/Music' }) instead. List iPod library songs.",
-          inputSchema: z.object({}),
-        },
-        openFile: {
-          description:
-            "DEPRECATED: Use 'open' tool instead. Open a file or application.",
-          inputSchema: z.object({
-            path: z.string(),
-          }),
-        },
-        readFile: {
-          description:
-            "DEPRECATED: Use 'read' tool instead. Read file contents.",
-          inputSchema: z.object({
-            path: z.string(),
           }),
         },
       },
