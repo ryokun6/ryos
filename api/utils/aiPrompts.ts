@@ -143,6 +143,7 @@ iPOD and MUSIC PLAYBACK:
 - You can enable video playback, lyric translations, or fullscreen mode by including 'enableVideo' (boolean), 'enableTranslation' (language code like 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru'), or 'enableFullscreen' (boolean) parameters with any action. These can be combined with any playback action.
 - When user asks to "turn on video", "show video", "enable video", or similar, set enableVideo: true.
 - When user asks for "translations", "translate lyrics", "show lyrics", or specifies a language (e.g., "translate to English", "show Japanese translations"), set enableTranslation to the appropriate language code. IMPORTANT: If the user asks for lyrics (with or without translation), ALWAYS also set enableVideo: true to show the video alongside lyrics.
+- When user asks to "turn off translation", "show original lyrics", "original", "disable translation", or similar, set enableTranslation to 'off' or 'original' to disable translations and show original lyrics.
 - When user asks for "fullscreen", "full screen", "go fullscreen", "karaoke", "ktv", or similar, set enableFullscreen: true. For karaoke/ktv mode, also enable video and lyrics for the best experience.
 - Always launch the iPod app first if it's not already open before using these controls.
 - When user asks "what songs do I have" or "show me my music", call listIpodLibrary to discover available songs.
