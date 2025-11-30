@@ -173,6 +173,20 @@ export default defineConfig({
             },
           },
           {
+            // Cache icon and wallpaper manifests for offline theming support
+            // These are critical for resolving themed icon paths when offline
+            urlPattern: /\/(icons|wallpapers)\/manifest\.json$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "manifests",
+              expiration: {
+                maxEntries: 5,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+              networkTimeoutSeconds: 3, // Fall back to cache after 3s
+            },
+          },
+          {
             // Cache wallpaper images (photos and tiles only, NOT videos)
             // Videos need range request support which CacheFirst doesn't handle well
             urlPattern: /\/wallpapers\/(?:photos|tiles)\/.+\.(?:jpg|jpeg|png|webp)(?:\?.*)?$/i,
@@ -194,6 +208,7 @@ export default defineConfig({
           "index.html",
           "**/*.css",
           "fonts/*.{woff,woff2,otf,ttf}",
+          "icons/manifest.json",
         ],
         // Exclude large data files from precaching (they'll be cached at runtime)
         globIgnores: [
