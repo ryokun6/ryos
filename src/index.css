@@ -727,3 +727,52 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 :root[data-os-theme="macosx"] video {
   image-rendering: auto !important;
 }
+
+/* ------------------------------------------------------------------------- */
+/* Sonner toast positioning and animations                                   */
+/* ------------------------------------------------------------------------- */
+
+/* Reduce right margin for right-positioned toasts */
+[data-sonner-toaster][data-x-position="right"] {
+  right: 12px !important;
+}
+
+/* Slide from right animation for right-positioned toasts */
+@keyframes toast-slide-in-right {
+  from {
+    transform: translateX(calc(100% + 12px));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+[data-sonner-toaster][data-x-position="right"] [data-sonner-toast][data-mounted="true"]:not([data-expanded="false"][data-front="false"]) {
+  animation: toast-slide-in-right 0.3s ease-out;
+}
+
+/* System 7 theme: square corners, black border, drop shadow, smaller body text */
+:root[data-os-theme="system7"] [data-sonner-toast] {
+  border-radius: 0 !important;
+  border: 1px solid #000 !important;
+  box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5) !important;
+  font-size: 11px !important;
+}
+
+/* Keep button text size normal in System 7 toasts */
+:root[data-os-theme="system7"] [data-sonner-toast] button {
+  font-size: 12px !important;
+}
+
+/* Disable hover lift/expand effects for System 7 */
+:root[data-os-theme="system7"] [data-sonner-toaster] [data-sonner-toast] {
+  --lift-amount: 0 !important;
+  --lift: 0 !important;
+}
+
+:root[data-os-theme="system7"] [data-sonner-toaster][data-expanded="true"] [data-sonner-toast]:hover {
+  --lift-amount: 0 !important;
+  --lift: 0 !important;
+}
