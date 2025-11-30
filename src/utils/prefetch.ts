@@ -7,12 +7,12 @@
 import { toast } from "sonner";
 import { createElement } from "react";
 import { PrefetchToast } from "@/components/shared/PrefetchToast";
-import { BUILD_VERSION } from "@/config/buildVersion";
+import { COMMIT_SHA_SHORT } from "@/config/buildVersion";
 
 // Storage key for tracking prefetch status
 const PREFETCH_KEY = 'ryos-prefetch-version';
-// Use build version - automatically updates on each build
-const PREFETCH_VERSION = BUILD_VERSION;
+// Use commit SHA - automatically updates on each deployment
+const PREFETCH_VERSION = COMMIT_SHA_SHORT;
 
 /**
  * Clear the prefetch flag to force re-prefetch on next boot

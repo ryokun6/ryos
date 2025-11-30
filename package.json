@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite --port $PORT",
     "dev:vercel": "vercel dev",
-    "version:bump": "bun run scripts/generate-build-version.ts",
+    "version:bump": "bun run scripts/generate-build-version.ts --bump",
+    "prebuild": "bun run scripts/generate-build-version.ts",
     "build": "tsc -b && vite build && cp dist/sw.js dist/workbox-*.js .vercel/output/static/",
-    "build:release": "bun run version:bump && bun run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "generate:icons": "bun run scripts/generate-icon-manifest.ts",

@@ -1,9 +1,13 @@
 /**
- * Generates a build version file with auto-incrementing build number
- * Format: MAJOR.MINOR.BUILD (e.g., 10.1.42)
+ * Generates a build version file with commit SHA
+ * Format: MAJOR.MINOR (e.g., 10.1) + commit SHA
+ * 
+ * Uses VERCEL_GIT_COMMIT_SHA in production builds, falls back to 'dev' locally.
+ * Run manually with `bun run version:bump` to increment MAJOR/MINOR.
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { execSync } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -15,37 +19,60 @@ const MINOR_VERSION = 1;
 // ============================================================================
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const buildNumberPath = join(__dirname, '../.build-number');
+const versionPath = join(__dirname, '../.version');
 const outputPath = join(__dirname, '../src/config/buildVersion.ts');
 
-// Read current build number or start at 0
-let buildNumber = 0;
-if (existsSync(buildNumberPath)) {
+// Check if this is a manual version bump (called directly via version:bump)
+const isManualBump = process.argv.includes('--bump');
+
+// Read current version or use defaults
+let majorVersion = MAJOR_VERSION;
+let minorVersion = MINOR_VERSION;
+
+if (existsSync(versionPath)) {
   try {
-    buildNumber = parseInt(readFileSync(buildNumberPath, 'utf-8').trim(), 10) || 0;
+    const versionData = JSON.parse(readFileSync(versionPath, 'utf-8'));
+    majorVersion = versionData.major ?? MAJOR_VERSION;
+    minorVersion = versionData.minor ?? MINOR_VERSION;
   } catch {
-    buildNumber = 0;
+    // Use defaults
   }
 }
 
-// Increment build number
-buildNumber++;
+// If manual bump, increment minor version (or handle major bump via editing constants)
+if (isManualBump) {
+  minorVersion++;
+  writeFileSync(versionPath, JSON.stringify({ major: majorVersion, minor: minorVersion }, null, 2));
+  console.log(`[Version] Bumped to ${majorVersion}.${minorVersion}`);
+}
 
-// Save new build number
-writeFileSync(buildNumberPath, buildNumber.toString());
+// Get commit SHA from environment or git
+let commitSha = process.env.VERCEL_GIT_COMMIT_SHA || '';
 
-// Generate version string
-const version = `${MAJOR_VERSION}.${MINOR_VERSION}.${buildNumber}`;
+if (!commitSha) {
+  // Try to get from git locally
+  try {
+    commitSha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
+  } catch {
+    commitSha = 'dev';
+  }
+}
+
+const shortSha = commitSha === 'dev' ? 'dev' : commitSha.substring(0, 7);
 const buildTime = new Date().toISOString();
+
+// Version format: MAJOR.MINOR
+const version = `${majorVersion}.${minorVersion}`;
 
 const content = `// Auto-generated build version - do not edit manually
 export const BUILD_VERSION = '${version}';
 export const BUILD_TIME = '${buildTime}';
-export const MAJOR_VERSION = ${MAJOR_VERSION};
-export const MINOR_VERSION = ${MINOR_VERSION};
-export const BUILD_NUMBER = ${buildNumber};
+export const MAJOR_VERSION = ${majorVersion};
+export const MINOR_VERSION = ${minorVersion};
+export const COMMIT_SHA = '${commitSha}';
+export const COMMIT_SHA_SHORT = '${shortSha}';
 `;
 
 writeFileSync(outputPath, content);
 
-console.log(`[Build] Generated version: ${version} (${buildTime})`);
+console.log(`[Build] Generated version: ${version} (${shortSha}) at ${buildTime}`);

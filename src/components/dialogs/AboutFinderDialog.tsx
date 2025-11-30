@@ -11,7 +11,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
-import { BUILD_VERSION, BUILD_TIME } from "@/config/buildVersion";
+import { BUILD_VERSION, BUILD_TIME, COMMIT_SHA_SHORT } from "@/config/buildVersion";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export function AboutFinderDialog({
   const { appStates } = useAppContext();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const [showBuildDate, setShowBuildDate] = useState(false);
+  const [versionDisplayMode, setVersionDisplayMode] = useState(0); // 0: version, 1: commit, 2: date
 
   const memoryUsage = useMemo(() => {
     const totalMemory = 32; // 32MB total memory
@@ -102,12 +102,14 @@ export function AboutFinderDialog({
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
                     : "font-geneva-12 text-[10px]"
                 )}
-                onClick={() => setShowBuildDate(!showBuildDate)}
+                onClick={() => setVersionDisplayMode((prev) => (prev + 1) % 3)}
                 title="Click to toggle"
               >
-                {showBuildDate 
-                  ? new Date(BUILD_TIME).toLocaleDateString()
-                  : BUILD_VERSION
+                {versionDisplayMode === 0
+                  ? BUILD_VERSION
+                  : versionDisplayMode === 1
+                  ? COMMIT_SHA_SHORT
+                  : new Date(BUILD_TIME).toLocaleDateString()
                 }
               </div>
             </div>
