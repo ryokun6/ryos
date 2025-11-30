@@ -35,25 +35,26 @@ export function PrefetchToast({
   const label = phaseLabels[phase] || 'Updating assets';
   const displayPercentage = percentage || Math.round((completed / total) * 100);
   
+  const fileCount = phaseTotal > 0 
+    ? `${phaseCompleted}/${phaseTotal} files`
+    : `${completed}/${total} total`;
+  
   return (
     <div className="flex flex-col gap-1.5 w-full min-w-[200px]">
-      <div className="flex justify-between items-center text-sm w-full">
-        <span>{label}...</span>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {displayPercentage}%
-        </span>
+      <div className="text-sm">
+        {label}...
       </div>
       <div className="text-xs text-muted-foreground">
-        {phaseTotal > 0 
-          ? `${phaseCompleted}/${phaseTotal} files`
-          : `${completed}/${total} total`
-        }
+        <span className="tabular-nums">{displayPercentage}%</span>
+        {' · '}
+        {fileCount}
       </div>
     </div>
   );
 }
 
 export function PrefetchCompleteToast({ version, buildNumber }: PrefetchCompleteToastProps) {
+  // Always use provided values (from JSON), fallback only if not provided
   const versionText = version || BUILD_VERSION;
   const buildText = buildNumber ? ` (${buildNumber})` : '';
   

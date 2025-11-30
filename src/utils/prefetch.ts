@@ -164,9 +164,11 @@ async function runPrefetchWithToast(
     
     // Show completion toast - with version/reload for updates, just dismiss for first-time
     if (showVersionToast) {
-      // Use server version if available, otherwise fall back to current build version
+      // Always prefer server version from JSON if available
       const versionToShow = serverVersion || BUILD_VERSION;
       const buildNumberToShow = serverBuildNumber || COMMIT_SHA_SHORT;
+      
+      console.log(`[Prefetch] Showing update toast with version: ${versionToShow} (${buildNumberToShow})`);
       
       toast.success(
         createElement(PrefetchCompleteToast, {
@@ -421,12 +423,14 @@ async function fetchServerVersion(): Promise<{ version: string; buildNumber: str
       try {
         const data = await response.json();
         if (data.version && data.buildNumber) {
+          console.log(`[Prefetch] Fetched version from JSON: ${data.version} (${data.buildNumber})`);
           return {
             version: data.version,
             buildNumber: data.buildNumber,
           };
         }
-      } catch {
+      } catch (error) {
+        console.warn('[Prefetch] Failed to parse version.json:', error);
         // Not valid JSON, continue to next method
       }
     }
@@ -552,6 +556,9 @@ async function checkForVersionUpdate(): Promise<boolean> {
     // If the hashes are different, a new version is available
     if (serverBundleHash !== currentBundleHash) {
       console.log('[Prefetch] New version detected, triggering update...');
+      // Dismiss any existing prefetch toasts first
+      toast.dismiss('prefetch-progress');
+      
       // Fetch the new version info from the server
       const serverVersionInfo = await fetchServerVersion();
       
@@ -572,6 +579,8 @@ async function checkForVersionUpdate(): Promise<boolean> {
       return true;
     } else {
       console.log('[Prefetch] Already running latest version');
+      // Dismiss any lingering prefetch toasts if we're already on latest version
+      toast.dismiss('prefetch-progress');
       return false;
     }
   } catch (error) {
