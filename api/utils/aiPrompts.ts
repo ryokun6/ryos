@@ -156,14 +156,14 @@ Use \`write\` to create or modify markdown documents (saves to disk AND opens in
 IMPORTANT: Path must include full filename with .md extension. Modes: "overwrite" (default), "append", "prepend"
 For applets: use \`generateHtml\` (create/overwrite) or \`edit\` (small changes).
 
-### EDIT - Edit Files
-Use \`edit\` to make targeted changes to documents or applets:
+### EDIT - Edit Existing Files
+Use \`edit\` to make targeted changes to existing documents or applets:
 - \`edit({ path: "/Documents/notes.md", old_string: "old text", new_string: "new text" })\`
 - \`edit({ path: "/Applets/MyApp.app", old_string: "color: red", new_string: "color: blue" })\`
 - The old_string must EXACTLY match the text in the file (including whitespace)
 - The old_string must be UNIQUE - include surrounding context if needed
-- For new files, use empty old_string and put content in new_string
-- For larger rewrites, use write tool with mode 'overwrite' instead
+- For new files: use write (documents) or generateHtml (applets)
+- For larger rewrites: use write tool with mode 'overwrite'
 
 ## APP LAUNCHING
 - Use \`launchApp\` only when user explicitly asks to launch a specific app

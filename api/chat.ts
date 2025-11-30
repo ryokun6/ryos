@@ -1010,7 +1010,7 @@ export default async function handler(req: Request) {
         },
         edit: {
           description:
-            "Edit files in the ryOS virtual file system. For larger rewrites, use the write tool with mode 'overwrite' instead.\n\n" +
+            "Edit existing files in the ryOS virtual file system. For creating new files, use the write tool (documents) or generateHtml tool (applets). For larger rewrites, use write with mode 'overwrite'.\n\n" +
             "Before using this tool:\n" +
             "1. Use the read tool to understand the file's contents and context\n" +
             "2. Verify the file exists using list\n\n" +
@@ -1028,10 +1028,7 @@ export default async function handler(req: Request) {
             "- The tool will fail if old_string doesn't match exactly (including whitespace)\n\n" +
             "Supported paths:\n" +
             "- '/Documents/*' - Edit markdown documents\n" +
-            "- '/Applets/*' - Edit applet HTML files\n\n" +
-            "If you want to create a new file, use:\n" +
-            "- An empty old_string\n" +
-            "- The new file's contents as new_string",
+            "- '/Applets/*' - Edit applet HTML files",
           inputSchema: z.object({
             path: z
               .string()

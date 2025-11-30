@@ -1780,48 +1780,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const filesStore = useFilesStore.getState();
                 const fileItem = filesStore.items[path];
 
-                // Check if file exists
-                const isNewFile = !fileItem || fileItem.status !== "active";
-                
-                // Handle new file creation with empty old_string
-                if (isNewFile && normalizedOldString === "") {
-                  // Create new document
-                  const fileName = path.split("/").pop() || "Untitled.md";
-                  
-                  // Save metadata to file store
-                  useFilesStore.getState().addItem({
-                    path,
-                    name: fileName,
-                    isDirectory: false,
-                    type: "markdown",
-                    size: new Blob([normalizedNewString]).size,
-                    icon: "📄",
-                  });
-
-                  // Get the saved item with UUID
-                  const savedItem = useFilesStore.getState().items[path];
-                  if (!savedItem?.uuid) {
-                    throw new Error("Failed to save document metadata");
-                  }
-
-                  // Save content to IndexedDB
-                  await dbOperations.put<DocumentContent>(
-                    STORES.DOCUMENTS,
-                    { name: fileName, content: normalizedNewString },
-                    savedItem.uuid,
-                  );
-
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    output: `Created new document: ${path}`,
-                  });
-                  result = "";
-                  break;
-                }
-
                 if (!fileItem || fileItem.status !== "active" || !fileItem.uuid) {
-                  throw new Error(`Document not found: ${path}. Use list({ path: "/Documents" }) to see available files.`);
+                  throw new Error(`Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`);
                 }
 
                 // Read existing content from IndexedDB
@@ -1910,47 +1870,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const filesStore = useFilesStore.getState();
                 const fileItem = filesStore.items[path];
 
-                // Handle new file creation with empty old_string
-                const isNewFile = !fileItem || fileItem.status !== "active";
-                
-                if (isNewFile && normalizedOldString === "") {
-                  // Create new applet
-                  const fileName = path.split("/").pop() || "Untitled.app";
-                  
-                  // Save metadata to file store
-                  useFilesStore.getState().addItem({
-                    path,
-                    name: fileName,
-                    isDirectory: false,
-                    type: "applet",
-                    size: new Blob([normalizedNewString]).size,
-                    icon: "📦",
-                  });
-
-                  // Get the saved item with UUID
-                  const savedItem = useFilesStore.getState().items[path];
-                  if (!savedItem?.uuid) {
-                    throw new Error("Failed to save applet metadata");
-                  }
-
-                  // Save content to IndexedDB
-                  await dbOperations.put<DocumentContent>(
-                    STORES.APPLETS,
-                    { name: fileName, content: normalizedNewString },
-                    savedItem.uuid,
-                  );
-
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    output: `Created new applet: ${path}`,
-                  });
-                  result = "";
-                  break;
-                }
-
                 if (!fileItem || fileItem.status !== "active" || !fileItem.uuid) {
-                  throw new Error(`Applet not found: ${path}. Use list({ path: "/Applets" }) to see available files.`);
+                  throw new Error(`Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`);
                 }
 
                 const contentData = await dbOperations.get<DocumentContent>(STORES.APPLETS, fileItem.uuid);
