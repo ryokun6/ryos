@@ -119,7 +119,6 @@ export default defineConfig({
           },
           {
             // Cache images aggressively
-            // Match image extensions with optional query params (e.g., icon.png?v=theme-123)
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)(?:\?.*)?$/i,
             handler: "CacheFirst",
             options: {
@@ -128,7 +127,9 @@ export default defineConfig({
                 maxEntries: 200,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
-              // Ignore query params for cache matching (e.g., ?v=theme-123)
+              // Ignore query params for cache matching.
+              // Icon URLs no longer use ?v= cache busting (prefetch uses cache: 'reload' instead).
+              // This setting is kept for any external images that might have query params.
               matchOptions: {
                 ignoreSearch: true,
               },

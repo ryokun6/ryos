@@ -1,6 +1,11 @@
 // Utility for resolving themed icon paths using a pre-generated manifest.
 // Generated manifest: public/icons/manifest.json
 // Initial implementation supports only the 'default' theme.
+//
+// Note: Icon cache busting via ?v= query params was removed because:
+// 1. Service worker uses ignoreSearch: true for images (query params are ignored)
+// 2. Prefetching now uses cache: 'reload' to bypass browser HTTP cache
+// 3. On updates, all caches are cleared before prefetching fresh icons
 
 export interface IconManifest {
   version: number;
@@ -10,17 +15,6 @@ export interface IconManifest {
 
 let manifestCache: IconManifest | null = null;
 let manifestPromise: Promise<IconManifest> | null = null;
-let iconUrlVersion: string | null = null;
-
-function bumpIconVersion(tag?: string) {
-  iconUrlVersion = tag || String(Date.now());
-}
-
-function withVersion(url: string): string {
-  if (!iconUrlVersion) return url;
-  const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}v=${iconUrlVersion}`;
-}
 
 async function loadManifest(): Promise<IconManifest> {
   if (manifestCache) return manifestCache;
@@ -32,24 +26,19 @@ async function loadManifest(): Promise<IconManifest> {
       })
       .then((data) => {
         manifestCache = data;
-        // If no version set yet, derive one from manifest timestamp for stability across sessions.
-        if (!iconUrlVersion && data?.generatedAt) {
-          iconUrlVersion = String(new Date(data.generatedAt).getTime());
-        }
         return data;
       });
   }
   return manifestPromise;
 }
 
-export function invalidateIconCache(tag?: string) {
+/**
+ * Clear the cached manifest to force a reload on next access.
+ * Useful when themes or icons may have changed.
+ */
+export function invalidateIconCache() {
   manifestCache = null;
   manifestPromise = null;
-  bumpIconVersion(tag);
-}
-
-export function getIconCacheVersion() {
-  return iconUrlVersion;
 }
 
 export interface GetIconPathOptions {
@@ -64,22 +53,22 @@ export function pickIconPath(
 ): string {
   // No theme provided: always fallback.
   if (!theme) {
-    return withVersion(`/icons/${fallbackTheme}/${name}`);
+    return `/icons/${fallbackTheme}/${name}`;
   }
   // If theme explicitly equals fallback, just return fallback path.
   if (theme === fallbackTheme) {
-    return withVersion(`/icons/${fallbackTheme}/${name}`);
+    return `/icons/${fallbackTheme}/${name}`;
   }
   const m = manifestCache || manifest; // allow pre-supplied
   // If manifest not yet loaded, optimistically return themed path to avoid flash.
   if (!m) {
-    return withVersion(`/icons/${theme}/${name}`);
+    return `/icons/${theme}/${name}`;
   }
   if (m.themes[theme] && m.themes[theme].includes(name)) {
-    return withVersion(`/icons/${theme}/${name}`);
+    return `/icons/${theme}/${name}`;
   }
   // Fallback if manifest knows the theme or icon missing.
-  return withVersion(`/icons/${fallbackTheme}/${name}`);
+  return `/icons/${fallbackTheme}/${name}`;
 }
 
 // React helper hook (lazy, no suspense) to resolve icon path.
@@ -108,7 +97,7 @@ export function resolveIconLegacyAware(
       (m && m.themes[maybeTheme]) || KNOWN_THEMES.includes(maybeTheme);
     if (isKnownTheme) {
       const relative = parts.slice(1).join("/");
-      if (!relative) return withVersion(iconOrName); // nothing after theme
+      if (!relative) return iconOrName; // nothing after theme
       return pickIconPath(relative, { theme });
     }
     // Not a known theme folder; treat whole rest as a logical name (already relative).
