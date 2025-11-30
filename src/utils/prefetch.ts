@@ -516,20 +516,25 @@ export async function prefetchAssets(): Promise<void> {
   
   let overallCompleted = 0;
   
-  // Create a toast with progress
-  const toastId = toast.loading(
-    createToastContent({ 
-      phase: 'icons', 
-      completed: 0, 
-      total: totalItems 
-    }),
-    {
-      duration: Infinity,
-      id: 'prefetch-progress',
-    }
-  );
+  // Only show toast if version changed
+  let toastId: string | number | undefined;
+  if (versionChanged) {
+    // Create a toast with progress
+    toastId = toast.loading(
+      createToastContent({ 
+        phase: 'icons', 
+        completed: 0, 
+        total: totalItems 
+      }),
+      {
+        duration: Infinity,
+        id: 'prefetch-progress',
+      }
+    );
+  }
   
   const updateToast = (phase: string, phaseCompleted: number, phaseTotal: number) => {
+    if (!versionChanged || !toastId) return;
     const percentage = Math.round((overallCompleted / totalItems) * 100);
     toast.loading(
       createToastContent({
@@ -575,25 +580,29 @@ export async function prefetchAssets(): Promise<void> {
     markPrefetchComplete();
     storeManifestTimestamp(manifest);
     
-    // Show completion toast with reload button
-    toast.success(
-      createElement(PrefetchCompleteToast, {
-        version: BUILD_VERSION,
-        buildNumber: COMMIT_SHA_SHORT,
-      }),
-      {
-        id: toastId,
-        duration: 5000,
-        action: {
-          label: "Reload",
-          onClick: reloadPage,
-        },
-      }
-    );
+    // Only show completion toast if version changed
+    if (versionChanged && toastId) {
+      toast.success(
+        createElement(PrefetchCompleteToast, {
+          version: BUILD_VERSION,
+          buildNumber: COMMIT_SHA_SHORT,
+        }),
+        {
+          id: toastId,
+          duration: 5000,
+          action: {
+            label: "Reload",
+            onClick: reloadPage,
+          },
+        }
+      );
+    }
     
   } catch (error) {
     console.error('[Prefetch] Error during prefetch:', error);
-    toast.dismiss(toastId);
+    if (toastId) {
+      toast.dismiss(toastId);
+    }
   }
 }
 
