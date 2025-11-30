@@ -17,28 +17,6 @@ const LAST_KNOWN_VERSION_KEY = 'ryos-last-known-version';
 const PREFETCH_VERSION = COMMIT_SHA_SHORT;
 
 /**
- * Check if there's a new version available (current build differs from last known)
- */
-function checkForNewVersion(): boolean {
-  try {
-    const lastKnownVersion = localStorage.getItem(LAST_KNOWN_VERSION_KEY);
-    // If no stored version, this is first run - not an "update"
-    if (!lastKnownVersion) {
-      localStorage.setItem(LAST_KNOWN_VERSION_KEY, COMMIT_SHA_SHORT);
-      return false;
-    }
-    // Check if version changed
-    const hasUpdate = lastKnownVersion !== COMMIT_SHA_SHORT;
-    if (hasUpdate) {
-      console.log(`[Prefetch] New version detected: ${lastKnownVersion} -> ${COMMIT_SHA_SHORT}`);
-    }
-    return hasUpdate;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Update the stored version after reload/update
  */
 function updateStoredVersion(): void {
