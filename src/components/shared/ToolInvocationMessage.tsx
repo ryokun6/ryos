@@ -100,8 +100,8 @@ export function ToolInvocationMessage({
       case "write":
         displayCallMessage = "Writing content…";
         break;
-      case "searchReplace":
-        displayCallMessage = "Replacing text…";
+      case "edit":
+        displayCallMessage = "Editing file…";
         break;
       case "launchApp":
         displayCallMessage = `Launching ${getAppName(input?.id)}…`;
@@ -184,17 +184,21 @@ export function ToolInvocationMessage({
       } else {
         displayResultMessage = "Content written";
       }
-    } else if (toolName === "searchReplace") {
+    } else if (toolName === "edit") {
       if (typeof output === "string") {
-        if (output.includes("No matches")) {
-          displayResultMessage = "No matches found";
-        } else if (output.includes("Successfully")) {
-          displayResultMessage = "Text replaced";
+        if (output.includes("not found")) {
+          displayResultMessage = "Text not found";
+        } else if (output.includes("matches") && output.includes("locations")) {
+          displayResultMessage = "Multiple matches found";
+        } else if (output.includes("Successfully") || output.includes("edited")) {
+          displayResultMessage = "File edited";
+        } else if (output.includes("Created")) {
+          displayResultMessage = "File created";
         } else {
           displayResultMessage = output;
         }
       } else {
-        displayResultMessage = "Text replaced";
+        displayResultMessage = "File edited";
       }
     } else if (toolName === "launchApp" && input?.id === "internet-explorer") {
       const urlPart = input.url ? ` ${input.url}` : "";

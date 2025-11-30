@@ -154,14 +154,16 @@ Use \`write\` to create or modify markdown documents (saves to disk AND opens in
 - \`write({ path: "/Documents/my-notes.md", content: "# Hello" })\` → Creates new document
 - \`write({ path: "/Documents/meeting-notes.md", content: "More text", mode: "append" })\` → Appends to document
 IMPORTANT: Path must include full filename with .md extension. Modes: "overwrite" (default), "append", "prepend"
-For applets: use \`generateHtml\` (create/overwrite) or \`searchReplace\` (quick edits).
+For applets: use \`generateHtml\` (create/overwrite) or \`edit\` (small changes).
 
-### SEARCHREPLACE - Find and Replace Text
-Use \`searchReplace\` to modify content in documents or applets:
-- \`searchReplace({ path: "/Documents/notes.md", search: "old", replace: "new" })\`
-- \`searchReplace({ path: "/Applets/MyApp.app", search: "color: red", replace: "color: blue" })\`
-- Use \`isRegex: true\` for regex patterns (only if user explicitly mentions regex)
-For documents, can also use \`/Documents/{instanceId}\` for open TextEdit windows.
+### EDIT - Edit Existing Files
+Use \`edit\` to make targeted changes to existing documents or applets:
+- \`edit({ path: "/Documents/notes.md", old_string: "old text", new_string: "new text" })\`
+- \`edit({ path: "/Applets/MyApp.app", old_string: "color: red", new_string: "color: blue" })\`
+- The old_string must EXACTLY match the text in the file (including whitespace)
+- The old_string must be UNIQUE - include surrounding context if needed
+- For new files: use write (documents) or generateHtml (applets)
+- For larger rewrites: use write tool with mode 'overwrite'
 
 ## APP LAUNCHING
 - Use \`launchApp\` only when user explicitly asks to launch a specific app

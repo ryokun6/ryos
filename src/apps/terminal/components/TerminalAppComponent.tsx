@@ -285,11 +285,47 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
     if (toolName === "aquarium") return null;
     let msg = "";
     switch (toolName) {
-      case "textEditSearchReplace":
-        msg = "Replacing text…";
+      // Unified VFS tools
+      case "list": {
+        const path = typeof args?.path === "string" ? args.path : "";
+        if (path === "/Music") {
+          msg = "Loading music library…";
+        } else if (path === "/Applets Store") {
+          msg = "Listing shared applets…";
+        } else if (path === "/Applications") {
+          msg = "Listing applications…";
+        } else {
+          msg = "Finding files…";
+        }
         break;
-      case "textEditInsertText":
-        msg = "Inserting text…";
+      }
+      case "open": {
+        const path = typeof args?.path === "string" ? args.path : "";
+        if (path.startsWith("/Music/")) {
+          msg = "Playing song…";
+        } else if (path.startsWith("/Applets Store/")) {
+          msg = "Opening applet preview…";
+        } else if (path.startsWith("/Applications/")) {
+          msg = "Launching app…";
+        } else {
+          msg = "Opening file…";
+        }
+        break;
+      }
+      case "read": {
+        const path = typeof args?.path === "string" ? args.path : "";
+        if (path.startsWith("/Applets Store/")) {
+          msg = "Fetching applet…";
+        } else {
+          msg = "Reading file…";
+        }
+        break;
+      }
+      case "write":
+        msg = "Writing content…";
+        break;
+      case "edit":
+        msg = "Editing file…";
         break;
       case "launchApp":
         msg = `Launching ${getAppName(args?.id as string)}…`;
@@ -297,8 +333,26 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
       case "closeApp":
         msg = `Closing ${getAppName(args?.id as string)}…`;
         break;
-      case "textEditNewFile":
-        msg = "Creating new document…";
+      case "ipodControl": {
+        const action = args?.action || "toggle";
+        if (action === "next") {
+          msg = "Skipping to next…";
+        } else if (action === "previous") {
+          msg = "Skipping to previous…";
+        } else if (action === "addAndPlay") {
+          msg = "Adding song…";
+        } else if (action === "playKnown") {
+          msg = "Playing song…";
+        } else {
+          msg = "Controlling playback…";
+        }
+        break;
+      }
+      case "switchTheme":
+        msg = "Switching theme…";
+        break;
+      case "generateHtml":
+        msg = "Generating applet…";
         break;
       default:
         msg = `Running ${formatToolName(toolName)}…`;
@@ -310,7 +364,66 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
     // Aquarium renders visually; no textual result
     if (toolName === "aquarium") return null;
     let msg: string | null = null;
-    if (toolName === "launchApp" && args?.id === "internet-explorer") {
+    
+    // Unified VFS tools
+    if (toolName === "list") {
+      if (typeof result === "string") {
+        const songMatch = result.match(/Found (\d+) songs?/);
+        const appletMatch = result.match(/Found (\d+) (?:shared )?applets?/i);
+        const documentMatch = result.match(/Found (\d+) documents?/);
+        const applicationMatch = result.match(/Found (\d+) applications?/);
+
+        if (songMatch) {
+          const count = parseInt(songMatch[1], 10);
+          msg = `Found ${count} song${count === 1 ? "" : "s"}`;
+        } else if (appletMatch) {
+          const count = parseInt(appletMatch[1], 10);
+          msg = `Found ${count} applet${count === 1 ? "" : "s"}`;
+        } else if (documentMatch) {
+          const count = parseInt(documentMatch[1], 10);
+          msg = `Found ${count} document${count === 1 ? "" : "s"}`;
+        } else if (applicationMatch) {
+          const count = parseInt(applicationMatch[1], 10);
+          msg = `Found ${count} application${count === 1 ? "" : "s"}`;
+        } else if (result.includes("empty") || result.includes("No ")) {
+          msg = "No items found";
+        } else {
+          msg = "Listed items";
+        }
+      }
+    } else if (toolName === "open") {
+      if (typeof result === "string") {
+        msg = result.includes("Playing") || result.includes("Opened") || result.includes("Launched")
+          ? result
+          : "Opened";
+      }
+    } else if (toolName === "read") {
+      const path = typeof args?.path === "string" ? args.path : "";
+      const fileName = path.split("/").filter(Boolean).pop() || "file";
+      msg = `Read ${fileName}`;
+    } else if (toolName === "write") {
+      if (typeof result === "string") {
+        msg = result.includes("Successfully") ? "Content written" : result;
+      } else {
+        msg = "Content written";
+      }
+    } else if (toolName === "edit") {
+      if (typeof result === "string") {
+        if (result.includes("not found")) {
+          msg = "Text not found";
+        } else if (result.includes("matches") && result.includes("locations")) {
+          msg = "Multiple matches found";
+        } else if (result.includes("Successfully") || result.includes("edited")) {
+          msg = "File edited";
+        } else if (result.includes("Created")) {
+          msg = "File created";
+        } else {
+          msg = result;
+        }
+      } else {
+        msg = "File edited";
+      }
+    } else if (toolName === "launchApp" && args?.id === "internet-explorer") {
       const urlPart = args.url ? ` ${args.url}` : "";
       const yearPart = args.year && args.year !== "" ? ` in ${args.year}` : "";
       msg = `Launched${urlPart}${yearPart}`;
@@ -318,6 +431,26 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
       msg = `Launched ${getAppName(args?.id as string)}`;
     } else if (toolName === "closeApp") {
       msg = `Closed ${getAppName(args?.id as string)}`;
+    } else if (toolName === "ipodControl") {
+      if (typeof result === "string" && result.trim().length > 0) {
+        msg = result;
+      } else {
+        const action = args?.action || "toggle";
+        if (action === "addAndPlay") {
+          msg = "Added and started playing new song";
+        } else if (action === "playKnown") {
+          msg = "Playing song";
+        } else if (action === "next") {
+          msg = "Skipped to next track";
+        } else if (action === "previous") {
+          msg = "Skipped to previous track";
+        } else {
+          msg = action === "play" ? "Playing iPod" : action === "pause" ? "Paused iPod" : "Toggled iPod playback";
+        }
+      }
+    } else if (toolName === "switchTheme") {
+      const theme = args?.theme || "theme";
+      msg = `Switched to ${theme}`;
     } else if (
       toolName === "generateHtml" &&
       typeof result === "string" &&
