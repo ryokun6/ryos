@@ -7,7 +7,7 @@
 import { toast } from "sonner";
 import { createElement } from "react";
 import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/PrefetchToast";
-import { COMMIT_SHA_SHORT } from "@/config/buildVersion";
+import { BUILD_VERSION, COMMIT_SHA_SHORT } from "@/config/buildVersion";
 
 // Storage keys for tracking prefetch status
 const PREFETCH_KEY = 'ryos-prefetch-version';
@@ -196,6 +196,7 @@ async function runPrefetchWithToast(): Promise<void> {
     toast.success(
       createElement(PrefetchCompleteToast, {
         onReload: reloadPage,
+        version: BUILD_VERSION,
         buildNumber: COMMIT_SHA_SHORT,
       }),
       {
@@ -585,6 +586,7 @@ export async function prefetchAssets(): Promise<void> {
     toast.success(
       createElement(PrefetchCompleteToast, {
         onReload: reloadPage,
+        version: BUILD_VERSION,
         buildNumber: COMMIT_SHA_SHORT,
       }),
       {
@@ -649,6 +651,7 @@ function showUpdateToast(): void {
   toast.info(
     createElement(PrefetchCompleteToast, {
       onReload: reloadPage,
+      version: BUILD_VERSION,
       buildNumber: COMMIT_SHA_SHORT,
     }),
     {
