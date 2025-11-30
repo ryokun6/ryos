@@ -92,6 +92,92 @@ function stripParentheses(str: string): string {
   return str.replace(/\s*\([^)]*\)\s*/g, " ").trim();
 }
 
+/**
+ * Normalize a string for comparison: lowercase, remove accents, strip extra spaces
+ */
+function normalizeForComparison(str: string): string {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/[^\w\s]/g, " ") // Replace non-word chars with space
+    .replace(/\s+/g, " ") // Collapse multiple spaces
+    .trim();
+}
+
+/**
+ * Calculate a similarity score between two strings (0-1)
+ * Uses multiple heuristics: exact match, contains, word overlap
+ */
+function calculateSimilarity(query: string, target: string): number {
+  const normQuery = normalizeForComparison(query);
+  const normTarget = normalizeForComparison(target);
+
+  if (!normQuery || !normTarget) return 0;
+
+  // Exact match
+  if (normQuery === normTarget) return 1.0;
+
+  // One contains the other
+  if (normTarget.includes(normQuery)) return 0.9;
+  if (normQuery.includes(normTarget)) return 0.85;
+
+  // Word overlap scoring
+  const queryWords = new Set(normQuery.split(" ").filter(Boolean));
+  const targetWords = new Set(normTarget.split(" ").filter(Boolean));
+
+  if (queryWords.size === 0) return 0;
+
+  let matchingWords = 0;
+  for (const word of queryWords) {
+    if (targetWords.has(word)) {
+      matchingWords++;
+    } else {
+      // Check partial word matches (for words > 3 chars)
+      if (word.length > 3) {
+        for (const targetWord of targetWords) {
+          if (targetWord.includes(word) || word.includes(targetWord)) {
+            matchingWords += 0.5;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return matchingWords / queryWords.size * 0.8; // Scale to max 0.8 for word overlap
+}
+
+/**
+ * Score a song result based on how well it matches the requested title and artist
+ */
+function scoreSongMatch(
+  song: { songname: string; singername: string },
+  requestedTitle: string,
+  requestedArtist: string
+): number {
+  const titleScore = calculateSimilarity(
+    stripParentheses(requestedTitle),
+    stripParentheses(song.songname)
+  );
+  const artistScore = calculateSimilarity(
+    stripParentheses(requestedArtist),
+    stripParentheses(song.singername)
+  );
+
+  // Weight title slightly higher than artist
+  // Both title and artist matching well should boost the score significantly
+  const combinedScore = titleScore * 0.55 + artistScore * 0.45;
+
+  // Bonus if both are good matches
+  if (titleScore >= 0.7 && artistScore >= 0.7) {
+    return combinedScore + 0.1;
+  }
+
+  return combinedScore;
+}
+
 // ------------------------------------------------------------------
 // Redis cache helpers
 // ------------------------------------------------------------------
@@ -255,13 +341,13 @@ export default async function handler(req: Request) {
       content?: string;
     };
 
-    // 1. Search song
+    // 1. Search song (fetch more results to find best match)
     const keyword = encodeURIComponent(
       [stripParentheses(title), stripParentheses(artist), album]
         .filter(Boolean)
         .join(" ")
     );
-    const searchUrl = `http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=${keyword}&page=1&pagesize=2&showtype=1`;
+    const searchUrl = `http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=${keyword}&page=1&pagesize=20&showtype=1`;
 
     const searchRes = await fetch(searchUrl, { headers: kugouHeaders });
     if (!searchRes.ok) {
@@ -281,8 +367,24 @@ export default async function handler(req: Request) {
       );
     }
 
-    // Iterate through results until we successfully fetch lyrics
-    for (const song of infoList) {
+    // Score and sort results by how well they match title/artist
+    const scoredResults = infoList.map((song) => ({
+      song,
+      score: scoreSongMatch(song, title, artist),
+    }));
+    scoredResults.sort((a, b) => b.score - a.score);
+
+    logInfo(requestId, "Kugou search results scored", {
+      totalResults: scoredResults.length,
+      topMatches: scoredResults.slice(0, 3).map((r) => ({
+        title: r.song.songname,
+        artist: r.song.singername,
+        score: r.score.toFixed(3),
+      })),
+    });
+
+    // Iterate through sorted results until we successfully fetch lyrics
+    for (const { song } of scoredResults) {
       const songHash: string = song.hash;
       const albumId = song.album_id;
 

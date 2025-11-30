@@ -1,6 +1,13 @@
 {
   "videos": [
     {
+      "id": "dpP_C_LnA1c",
+      "url": "https://www.youtube.com/watch?v=dpP_C_LnA1c",
+      "title": "X",
+      "artist": "Lexie Liu",
+      "lyricOffset": -350
+    },
+    {
       "id": "eET3YAZp4rI",
       "url": "https://www.youtube.com/watch?v=eET3YAZp4rI",
       "title": "Ketchup And Lemonade",
@@ -103,7 +110,7 @@
     {
       "id": "HeqsjDF7Lw0",
       "url": "https://www.youtube.com/watch?v=HeqsjDF7Lw0",
-      "title": "時よ止まれ",
+      "title": "Toki Yo Tomare",
       "artist": "ILLIT",
       "lyricOffset": -9800
     },
