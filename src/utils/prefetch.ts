@@ -307,13 +307,18 @@ async function runPrefetchWithToast(
     );
   };
   
+  // Skip browser HTTP cache when prefetching to ensure fresh resources.
+  // The service worker will cache these responses, and ignoreSearch: true
+  // means we don't need ?v= cache busting params anymore.
+  const prefetchOptions = { skipCache: true };
+  
   try {
     // Prefetch icons
     if (iconUrls.length > 0) {
       await prefetchUrlsWithProgress(iconUrls, 'Icons', (completed, total) => {
         overallCompleted = completed;
         updateToast('icons', completed, total);
-      });
+      }, prefetchOptions);
     }
     
     // Prefetch sounds
@@ -322,7 +327,7 @@ async function runPrefetchWithToast(
       await prefetchUrlsWithProgress(soundUrls, 'Sounds', (completed, total) => {
         overallCompleted = baseCompleted + completed;
         updateToast('sounds', completed, total);
-      });
+      }, prefetchOptions);
     }
     
     // Prefetch JS chunks
@@ -331,7 +336,7 @@ async function runPrefetchWithToast(
       await prefetchUrlsWithProgress(jsUrls, 'Scripts', (completed, total) => {
         overallCompleted = baseCompleted + completed;
         updateToast('scripts', completed, total);
-      });
+      }, prefetchOptions);
     }
     
     // Prefetch static assets (textures, splash screens, etc.)
@@ -340,7 +345,7 @@ async function runPrefetchWithToast(
       await prefetchUrlsWithProgress(assetUrls, 'Assets', (completed, total) => {
         overallCompleted = baseCompleted + completed;
         updateToast('assets', completed, total);
-      });
+      }, prefetchOptions);
     }
     
     // Store manifest timestamp
@@ -452,7 +457,8 @@ const UI_SOUNDS = [
 async function prefetchUrlsWithProgress(
   urls: string[], 
   label: string,
-  onProgress: (completed: number, total: number) => void
+  onProgress: (completed: number, total: number) => void,
+  options?: { skipCache?: boolean }
 ): Promise<number> {
   let completed = 0;
   const total = urls.length;
@@ -462,7 +468,10 @@ async function prefetchUrlsWithProgress(
       try {
         await fetch(url, { 
           method: 'GET',
-          cache: 'force-cache',
+          // Use 'reload' when skipCache is true (e.g., after cache clear on updates)
+          // to bypass browser HTTP cache and fetch fresh from network.
+          // Otherwise use 'default' to let browser decide (respects cache headers).
+          cache: options?.skipCache ? 'reload' : 'default',
         });
         completed++;
         onProgress(completed, total);
