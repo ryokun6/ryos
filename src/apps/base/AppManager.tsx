@@ -348,7 +348,7 @@ export function AppManager({ apps }: AppManagerProps) {
           <div
             key={instance.instanceId}
             style={{ zIndex }}
-            className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
+            className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto max-w-full"
             onMouseDown={() => {
               if (!instance.isForeground) {
                 bringInstanceToForeground(instance.instanceId);
