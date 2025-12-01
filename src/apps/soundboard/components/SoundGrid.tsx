@@ -55,7 +55,7 @@ export function SoundGrid({
             </h1>
           )}
           <div className="grid grid-cols-3 gap-2 md:gap-4 flex-1">
-            {board.slots.map((slot, index) => (
+            {board.slots && board.slots.map((slot, index) => (
               <SoundSlot
                 key={index}
                 slot={slot}

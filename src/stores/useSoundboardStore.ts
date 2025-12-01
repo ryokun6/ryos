@@ -6,11 +6,11 @@ import { Soundboard, SoundSlot, PlaybackState } from "@/types/types";
 const createDefaultBoard = (): Soundboard => ({
   id: Date.now().toString() + Math.random().toString(36).slice(2),
   name: "New Soundboard",
-  slots: Array(9).fill({
+  slots: Array(9).fill(null).map(() => ({
     audioData: null,
     emoji: undefined,
     title: undefined,
-  }) as SoundSlot[],
+  })) as SoundSlot[],
 });
 
 export interface SoundboardStoreState {
