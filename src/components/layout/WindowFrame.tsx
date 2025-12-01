@@ -642,16 +642,10 @@ export function WindowFrame({
   const shouldShow = !isMinimized && isOpen;
 
   // Shake/nudge animation using Framer Motion
-  const shakeAnimation = useMemo(() => {
-    if (!isShaking) return {};
-    return {
-      x: [0, -5, 5, -5, 5, -3, 3, 0],
-      transition: {
-        duration: 0.4,
-        ease: "easeInOut",
-      }
-    };
-  }, [isShaking]);
+  const shakeTransition = {
+    duration: 0.4,
+    ease: "easeInOut" as const,
+  };
 
   // Determine animation variants
   const getInitialAnimation = () => {
@@ -699,13 +693,13 @@ export function WindowFrame({
       return {
         scale: 1,
         opacity: 1,
+        x: [0, -5, 5, -5, 5, -3, 3, 0],
         y: 0,
-        ...shakeAnimation,
         transition: {
           scale: { duration: 0 },
           opacity: { duration: 0 },
           y: { duration: 0 },
-          x: shakeAnimation.transition,
+          x: shakeTransition,
         }
       };
     }
