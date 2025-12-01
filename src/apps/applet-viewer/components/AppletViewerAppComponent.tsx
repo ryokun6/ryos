@@ -1358,9 +1358,19 @@ export function AppletViewerAppComponent({
     }
   }, [shareCode]); // Only depend on shareCode - will re-run whenever it changes
 
+  // Wrapper to dispatch close event for animation and sound
+  const handleMenuBarClose = () => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+    } else {
+      // Fallback to direct close if no instanceId
+      onClose();
+    }
+  };
+
   const menuBar = (
     <AppletViewerMenuBar
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onExportAsApp={handleExportAsApp}

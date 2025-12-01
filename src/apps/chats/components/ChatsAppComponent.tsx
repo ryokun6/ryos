@@ -457,9 +457,19 @@ export function ChatsAppComponent({
   const isMacTheme = currentTheme === "macosx";
   const isOffline = useOffline();
 
+  // Wrapper to dispatch close event for animation and sound
+  const handleMenuBarClose = () => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+    } else {
+      // Fallback to direct close if no instanceId
+      onClose();
+    }
+  };
+
   const menuBar = (
     <ChatsMenuBar
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onClearChats={() => setIsClearDialogOpen(true)}

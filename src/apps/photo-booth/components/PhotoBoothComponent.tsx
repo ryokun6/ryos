@@ -376,10 +376,20 @@ export function PhotoBoothComponent({
       [startCamera]
     );
 
+    // Wrapper to dispatch close event for animation and sound
+    const handleMenuBarClose = () => {
+      if (instanceId) {
+        window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+      } else {
+        // Fallback to direct close if no instanceId
+        onClose();
+      }
+    };
+
     // Component render with menu bar
     const menuBar = (
       <PhotoBoothMenuBar
-        onClose={onClose}
+        onClose={handleMenuBarClose}
         onShowHelp={() => setShowHelp(true)}
         onShowAbout={() => setShowAbout(true)}
         onClearPhotos={handleClearPhotos}

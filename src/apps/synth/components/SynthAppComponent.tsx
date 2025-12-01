@@ -830,13 +830,23 @@ export function SynthAppComponent({
   const isClassicTheme = currentTheme === "macosx" || isXpTheme;
   const isMacOSTheme = currentTheme === "macosx";
 
+  // Wrapper to dispatch close event for animation and sound
+  const handleMenuBarClose = () => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+    } else {
+      // Fallback to direct close if no instanceId
+      onClose();
+    }
+  };
+
   const menuBar = (
     <SynthMenuBar
       onAddPreset={addPreset}
       onShowHelp={() => setIsHelpOpen(true)}
       onShowAbout={() => setIsAboutOpen(true)}
       onReset={resetSynth}
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       presets={presets}
       currentPresetId={currentPreset.id}
       onLoadPresetById={(id) => {

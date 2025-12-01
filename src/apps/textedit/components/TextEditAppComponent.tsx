@@ -452,11 +452,17 @@ function TextEditContent({
 
       dialogControls?.openCloseSaveDialog();
     } else {
-      window.dispatchEvent(
-        new CustomEvent(`closeWindow-${instanceId || "textedit"}`, {
-          detail: { onComplete: onClose },
-        })
-      );
+      // No unsaved changes - use normal close flow with animation and sound
+      if (instanceId) {
+        window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+      } else {
+        // Fallback for legacy support
+        window.dispatchEvent(
+          new CustomEvent(`closeWindow-${instanceId || "textedit"}`, {
+            detail: { onComplete: onClose },
+          })
+        );
+      }
     }
   };
 
