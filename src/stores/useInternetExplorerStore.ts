@@ -18,6 +18,7 @@ export const DIRECT_PASSTHROUGH_DOMAINS = [
   "hcsimulator.com",
   "os.rocorgi.wang",
   "iso-city.com",
+  "shaoruu.io",
 ];
 
 export interface HistoryEntry {

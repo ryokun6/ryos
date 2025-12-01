@@ -194,9 +194,13 @@ export function WindowFrame({
       setIsOpen(false);
       isClosingRef.current = false;
       exitAnimationRef.current = 'minimize'; // Reset to default
-      onClose?.();
+      // Don't call onClose when interceptClose is true, as the completion callback
+      // is already handled by the event listener in handlePerformClose
+      if (!interceptClose) {
+        onClose?.();
+      }
     }
-  }, [isClosing, onClose]);
+  }, [isClosing, onClose, interceptClose]);
 
   const handleMinimize = () => {
     if (instanceId) {
