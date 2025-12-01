@@ -297,11 +297,12 @@ const Divider = forwardRef<HTMLDivElement, { idKey: string }>(
 
 function MacDock() {
   const isPhone = useIsPhone();
-  const { instances, instanceOrder, bringInstanceToForeground } =
+  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance } =
     useAppStoreShallow((s) => ({
       instances: s.instances,
       instanceOrder: s.instanceOrder,
       bringInstanceToForeground: s.bringInstanceToForeground,
+      restoreInstance: s.restoreInstance,
     }));
 
   const launchApp = useLaunchApp();
@@ -466,7 +467,24 @@ function MacDock() {
   }, [instances]);
 
   const focusMostRecentInstanceOfApp = (appId: AppId) => {
-    // Walk instanceOrder from end to find most recent open instance for appId
+    // First, restore all minimized instances of this app
+    let hasMinimized = false;
+    let lastRestoredId: string | null = null;
+    Object.values(instances).forEach((inst) => {
+      if (inst.appId === appId && inst.isOpen && inst.isMinimized) {
+        restoreInstance(inst.instanceId);
+        hasMinimized = true;
+        lastRestoredId = inst.instanceId;
+      }
+    });
+    
+    // If we restored any, bring the last one to foreground
+    if (hasMinimized && lastRestoredId) {
+      bringInstanceToForeground(lastRestoredId);
+      return;
+    }
+    
+    // Otherwise, walk instanceOrder from end to find most recent open instance for appId
     for (let i = instanceOrder.length - 1; i >= 0; i--) {
       const id = instanceOrder[i];
       const inst = instances[id];
@@ -480,6 +498,23 @@ function MacDock() {
 
   const focusOrLaunchApp = useCallback(
     (appId: AppId, initialData?: unknown) => {
+      // First, restore all minimized instances of this app
+      let hasMinimized = false;
+      let lastRestoredId: string | null = null;
+      Object.values(instances).forEach((inst) => {
+        if (inst.appId === appId && inst.isOpen && inst.isMinimized) {
+          restoreInstance(inst.instanceId);
+          hasMinimized = true;
+          lastRestoredId = inst.instanceId;
+        }
+      });
+      
+      // If we restored any, bring the last one to foreground
+      if (hasMinimized && lastRestoredId) {
+        bringInstanceToForeground(lastRestoredId);
+        return;
+      }
+      
       // Try focusing existing instance of this app
       for (let i = instanceOrder.length - 1; i >= 0; i--) {
         const id = instanceOrder[i];
@@ -492,12 +527,29 @@ function MacDock() {
       // Launch new
       launchApp(appId, initialData !== undefined ? { initialData } : undefined);
     },
-    [instanceOrder, instances, bringInstanceToForeground, launchApp]
+    [instanceOrder, instances, bringInstanceToForeground, restoreInstance, launchApp]
   );
 
   // Finder-specific: bring existing to foreground, otherwise launch one
   const focusOrLaunchFinder = useCallback(
     (initialPath?: string) => {
+      // First, restore all minimized Finder instances
+      let hasMinimized = false;
+      let lastRestoredId: string | null = null;
+      Object.values(instances).forEach((inst) => {
+        if (inst.appId === "finder" && inst.isOpen && inst.isMinimized) {
+          restoreInstance(inst.instanceId);
+          hasMinimized = true;
+          lastRestoredId = inst.instanceId;
+        }
+      });
+      
+      // If we restored any, bring the last one to foreground
+      if (hasMinimized && lastRestoredId) {
+        bringInstanceToForeground(lastRestoredId);
+        return;
+      }
+      
       // Try focusing existing Finder instance
       for (let i = instanceOrder.length - 1; i >= 0; i--) {
         const id = instanceOrder[i];
@@ -511,7 +563,7 @@ function MacDock() {
       if (initialPath) launchApp("finder", { initialPath });
       else launchApp("finder", { initialPath: "/" });
     },
-    [instances, instanceOrder, bringInstanceToForeground, launchApp]
+    [instances, instanceOrder, bringInstanceToForeground, restoreInstance, launchApp]
   );
 
   // Focus a Finder window already at targetPath (or its subpath); otherwise launch new Finder at targetPath
@@ -527,7 +579,12 @@ function MacDock() {
             (fi.currentPath === targetPath ||
               fi.currentPath.startsWith(targetPath + "/"))
           ) {
-            bringInstanceToForeground(id);
+            // If minimized, restore it; otherwise just bring to foreground
+            if (inst.isMinimized) {
+              restoreInstance(id);
+            } else {
+              bringInstanceToForeground(id);
+            }
             return;
           }
         }
@@ -542,6 +599,7 @@ function MacDock() {
       instances,
       finderInstances,
       bringInstanceToForeground,
+      restoreInstance,
       launchApp,
     ]
   );
@@ -740,7 +798,14 @@ function MacDock() {
                       label={label}
                       icon={icon}
                       idKey={item.instanceId}
-                      onClick={() => bringInstanceToForeground(item.instanceId!)}
+                      onClick={() => {
+                        // If minimized, restore it; otherwise just bring to foreground
+                        if (instance.isMinimized) {
+                          restoreInstance(item.instanceId!);
+                        } else {
+                          bringInstanceToForeground(item.instanceId!);
+                        }
+                      }}
                       showIndicator
                       isLoading={instance.isLoading}
                       isEmoji={isEmoji}

@@ -14,6 +14,7 @@ import { useAppStoreShallow } from "@/stores/helpers";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface WindowFrameProps {
   children: React.ReactNode;
@@ -71,7 +72,7 @@ export function WindowFrame({
   };
 
   const [isOpen, setIsOpen] = useState(true);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isClosing, setIsClosing] = useState(false);
   const [isInitialMount, setIsInitialMount] = useState(true);
   const { bringToForeground } = useAppContext();
   const {
@@ -79,12 +80,19 @@ export function WindowFrame({
     debugMode,
     updateWindowState,
     updateInstanceWindowState,
+    minimizeInstance,
+    instances,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     debugMode: state.debugMode,
     updateWindowState: state.updateWindowState,
     updateInstanceWindowState: state.updateInstanceWindowState,
+    minimizeInstance: state.minimizeInstance,
+    instances: state.instances,
   }));
+  
+  // Check if this instance is minimized
+  const isMinimized = instanceId ? instances[instanceId]?.isMinimized ?? false : false;
   const { play: playWindowOpen } = useSound(Sounds.WINDOW_OPEN);
   const { play: playWindowClose } = useSound(Sounds.WINDOW_CLOSE);
   const { play: playWindowExpand } = useSound(Sounds.WINDOW_EXPAND);
@@ -152,23 +160,16 @@ export function WindowFrame({
     return () => clearTimeout(timer);
   }, []); // Play sound when component mounts
 
-  const handleTransitionEnd = useCallback(
-    (e: React.TransitionEvent) => {
-      if (
-        e.target === e.currentTarget &&
-        !isOpen &&
-        e.propertyName === "opacity"
-      ) {
-        setIsVisible(false);
-        // For normal closes (non-intercepted), call onClose here
-        if (!interceptClose) {
-          onClose?.();
-        }
-        isClosingRef.current = false;
-      }
-    },
-    [isOpen, interceptClose, onClose]
-  );
+  // Track previous minimized state to play sound on restore
+  const wasMinimizedRef = useRef(isMinimized);
+  const shouldAnimateRestore = wasMinimizedRef.current && !isMinimized;
+  useEffect(() => {
+    if (wasMinimizedRef.current && !isMinimized) {
+      // Window was just restored from minimized state
+      playWindowExpand();
+    }
+    wasMinimizedRef.current = isMinimized;
+  }, [isMinimized, playWindowExpand]);
 
   const handleClose = () => {
     if (interceptClose) {
@@ -179,7 +180,23 @@ export function WindowFrame({
       isClosingRef.current = true;
       vibrateClose();
       playWindowClose();
+      setIsClosing(true);
+    }
+  };
+
+  // Called when close animation completes
+  const handleCloseAnimationComplete = useCallback(() => {
+    if (isClosing) {
       setIsOpen(false);
+      isClosingRef.current = false;
+      onClose?.();
+    }
+  }, [isClosing, onClose]);
+
+  const handleMinimize = () => {
+    if (instanceId) {
+      playWindowCollapse();
+      minimizeInstance(instanceId);
     }
   };
 
@@ -189,8 +206,8 @@ export function WindowFrame({
     isClosingRef.current = true;
     vibrateClose();
     playWindowClose();
-    setIsOpen(false);
-  }, [vibrateClose, playWindowClose, setIsOpen]);
+    setIsClosing(true);
+  }, [vibrateClose, playWindowClose]);
 
   // Expose performClose to parent component through a custom event (only for intercepted closes)
   useEffect(() => {
@@ -202,10 +219,10 @@ export function WindowFrame({
 
       // Call the completion callback after the close animation finishes
       if (onComplete) {
-        // Wait for the transition to complete (200ms as per the transition duration)
+        // Wait for the animation to complete (300ms)
         setTimeout(() => {
           onComplete();
-        }, 200);
+        }, 300);
       }
     };
 
@@ -535,8 +552,6 @@ export function WindowFrame({
     };
   }, []);
 
-  if (!isVisible) return null;
-
   // Calculate dynamic style for swipe animation feedback
   const getSwipeStyle = () => {
     if (!isPhone || !isSwiping || !swipeDirection) {
@@ -551,42 +566,83 @@ export function WindowFrame({
     };
   };
 
+  // Determine if window should be visible
+  const shouldShow = !isMinimized && !isClosing && isOpen;
+
+  // Determine animation variants
+  const getInitialAnimation = () => {
+    if (shouldAnimateRestore) {
+      // Restoring from minimized - animate from dock
+      return { scale: 0.5, opacity: 0, y: 200 };
+    }
+    if (isInitialMount) {
+      // Initial window open
+      return { scale: 0.95, opacity: 0 };
+    }
+    return false;
+  };
+
+  const getExitAnimation = () => {
+    if (isClosing) {
+      // Close animation - shrink to center
+      return { 
+        scale: 0.95, 
+        opacity: 0,
+        transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] }
+      };
+    }
+    // Minimize animation - shrink to dock
+    return { 
+      scale: 0.5, 
+      opacity: 0,
+      y: 200,
+      transition: { duration: 0.3, ease: [0.32, 0, 0.67, 0] }
+    };
+  };
+
   return (
-    <div
-      className={cn(
-        "absolute p-2 md:p-0 w-full md:h-full md:mt-0 select-none",
-        "transition-all duration-200 ease-in-out",
-        isInitialMount && "animate-in fade-in-0 zoom-in-95 duration-200",
-        isShaking && "animate-shake",
-        // Disable all pointer events when window is closing
-        !isOpen && "pointer-events-none"
-      )}
-      onClick={() => {
-        if (!isForeground) {
-          if (instanceId) {
-            bringInstanceToForeground(instanceId);
-          } else {
-            bringToForeground(appId);
-          }
-        }
-      }}
-      onTransitionEnd={handleTransitionEnd}
-      style={{
-        left: windowPosition.x,
-        top: Math.max(0, windowPosition.y),
-        width: window.innerWidth >= 768 ? windowSize.width : "100%",
-        height: Math.max(windowSize.height, mergedConstraints.minHeight || 0),
-        minWidth:
-          window.innerWidth >= 768 ? mergedConstraints.minWidth : "100%",
-        minHeight: mergedConstraints.minHeight,
-        maxWidth: mergedConstraints.maxWidth || undefined,
-        maxHeight: mergedConstraints.maxHeight || undefined,
-        transition: isDragging || resizeType ? "none" : undefined,
-        transform: !isInitialMount && !isOpen ? "scale(0.95)" : undefined,
-        opacity: !isInitialMount && !isOpen ? 0 : undefined,
-        transformOrigin: "center",
-      }}
-    >
+    <AnimatePresence onExitComplete={isClosing ? handleCloseAnimationComplete : undefined}>
+      {shouldShow && (
+        <motion.div
+          key={instanceId || appId}
+          initial={getInitialAnimation()}
+          animate={{ 
+            scale: 1, 
+            opacity: 1,
+            y: 0,
+            transition: shouldAnimateRestore 
+              ? { duration: 0.3, ease: [0.33, 1, 0.68, 1] }
+              : { duration: 0.2, ease: [0.33, 1, 0.68, 1] }
+          }}
+          exit={getExitAnimation()}
+          className={cn(
+            "absolute p-2 md:p-0 w-full md:h-full md:mt-0 select-none",
+            isShaking && "animate-shake",
+            // Disable all pointer events when window is closing
+            isClosing && "pointer-events-none"
+          )}
+          onClick={() => {
+            if (!isForeground) {
+              if (instanceId) {
+                bringInstanceToForeground(instanceId);
+              } else {
+                bringToForeground(appId);
+              }
+            }
+          }}
+          style={{
+            left: windowPosition.x,
+            top: Math.max(0, windowPosition.y),
+            width: window.innerWidth >= 768 ? windowSize.width : "100%",
+            height: Math.max(windowSize.height, mergedConstraints.minHeight || 0),
+            minWidth:
+              window.innerWidth >= 768 ? mergedConstraints.minWidth : "100%",
+            minHeight: mergedConstraints.minHeight,
+            maxWidth: mergedConstraints.maxWidth || undefined,
+            maxHeight: mergedConstraints.maxHeight || undefined,
+            transformOrigin: "center",
+          }}
+        >
       <div className="relative w-full h-full">
         {/* Resize handles - positioned outside main content */}
         <div
@@ -818,7 +874,7 @@ export function WindowFrame({
                   aria-label="Minimize"
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Minimize functionality could be added here
+                    handleMinimize();
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   onTouchStart={(e) => e.stopPropagation()}
@@ -967,54 +1023,66 @@ export function WindowFrame({
                 </div>
 
                 {/* Minimize Button (Yellow) */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Minimize functionality could be added here
-                  }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
-                  style={{
-                    width: "13px",
-                    height: "13px",
-                    background: isForeground
-                      ? "linear-gradient(rgb(202, 130, 13), rgb(253, 253, 149))"
-                      : "linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625))",
-                    boxShadow: isForeground
-                      ? "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(223, 161, 35, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgb(155, 78, 21) 0px 1px 3px inset, rgb(241, 157, 20) 0px 2px 3px 1px inset"
-                      : "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb",
-                  }}
-                  aria-label="Minimize"
+                <div
+                  className="relative"
+                  style={{ width: "13px", height: "13px" }}
                 >
-                  {/* Top shine */}
                   <div
-                    className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+                    aria-hidden="true"
+                    className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
                     style={{
-                      height: "28%",
-                      background:
-                        "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
-                      width: "calc(100% - 6px)",
-                      borderRadius: "6px 6px 0 0",
-                      top: "1px",
-                      filter: "blur(0.2px)",
-                      zIndex: 2,
+                      width: "13px",
+                      height: "13px",
+                      background: isForeground
+                        ? "linear-gradient(rgb(202, 130, 13), rgb(253, 253, 149))"
+                        : "linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625))",
+                      boxShadow: isForeground
+                        ? "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(223, 161, 35, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgb(155, 78, 21) 0px 1px 3px inset, rgb(241, 157, 20) 0px 2px 3px 1px inset"
+                        : "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb",
                     }}
-                  />
-                  {/* Bottom glow */}
-                  <div
-                    className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-                    style={{
-                      height: "33%",
-                      background:
-                        "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
-                      width: "calc(100% - 3px)",
-                      borderRadius: "0 0 6px 6px",
-                      bottom: "1px",
-                      filter: "blur(0.3px)",
+                  >
+                    {/* Top shine */}
+                    <div
+                      className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+                      style={{
+                        height: "28%",
+                        background:
+                          "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
+                        width: "calc(100% - 6px)",
+                        borderRadius: "6px 6px 0 0",
+                        top: "1px",
+                        filter: "blur(0.2px)",
+                        zIndex: 2,
+                      }}
+                    />
+                    {/* Bottom glow */}
+                    <div
+                      className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
+                      style={{
+                        height: "33%",
+                        background:
+                          "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
+                        width: "calc(100% - 3px)",
+                        borderRadius: "0 0 6px 6px",
+                        bottom: "1px",
+                        filter: "blur(0.3px)",
+                      }}
+                    />
+                  </div>
+                  <button
+                    aria-label="Minimize"
+                    className={cn(
+                      "absolute -inset-2 z-10 rounded-none outline-none cursor-default",
+                      debugMode ? "bg-red-500/50" : "opacity-0"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMinimize();
                     }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
                   />
-                </button>
+                </div>
 
                 {/* Maximize Button (Green) */}
                 <div
@@ -1217,6 +1285,8 @@ export function WindowFrame({
           </div>
         </div>
       </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
