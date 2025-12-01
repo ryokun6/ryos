@@ -121,13 +121,14 @@ export const useWindowManager = ({
     };
   }, [currentTheme, isXpTheme, getSafeAreaBottomInset]);
 
-  const { play: playMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
+  const { playLoop: playMoveLoop, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
   const { play: playMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);
-  const { play: playResizeResizing } = useSound(Sounds.WINDOW_RESIZE_RESIZING);
+  const { playLoop: playResizeLoop, stop: stopResizeResizing } = useSound(Sounds.WINDOW_RESIZE_RESIZING);
   const { play: playResizeStop } = useSound(Sounds.WINDOW_RESIZE_STOP);
 
-  const moveAudioRef = useRef<NodeJS.Timeout | null>(null);
-  const resizeAudioRef = useRef<NodeJS.Timeout | null>(null);
+  // Track if sound is currently playing
+  const isMovePlayingRef = useRef(false);
+  const isResizePlayingRef = useRef(false);
 
   const updateWindowState = useAppStore((state) => state.updateWindowState);
   const updateInstanceWindowState = useAppStore(
@@ -234,10 +235,10 @@ export const useWindowManager = ({
 
         const { topInset: menuBarHeight, bottomInset } = computeInsets();
 
-        // Start playing move sound in a loop when actual movement starts
-        if (!moveAudioRef.current && !isMobile) {
-          playMoveMoving();
-          moveAudioRef.current = setInterval(playMoveMoving, 300);
+        // Start looping move sound when movement begins
+        if (!isMobile && !isMovePlayingRef.current) {
+          playMoveLoop();
+          isMovePlayingRef.current = true;
         }
 
         if (isMobile) {
@@ -330,13 +331,10 @@ export const useWindowManager = ({
         setWindowSize({ width: newWidth, height: newHeight });
         setWindowPosition({ x: newLeft, y: Math.max(menuBarHeight, newTop) });
 
-        // Start playing resize sound when actual movement starts
-        if (
-          !resizeAudioRef.current &&
-          (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2)
-        ) {
-          playResizeResizing();
-          resizeAudioRef.current = setInterval(playResizeResizing, 300);
+        // Start looping resize sound when movement begins
+        if (!isResizePlayingRef.current && (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2)) {
+          playResizeLoop();
+          isResizePlayingRef.current = true;
         }
       }
     };
@@ -349,10 +347,10 @@ export const useWindowManager = ({
         } else {
           updateWindowState(appId, windowPosition, windowSize);
         }
-        // Stop move sound loop and play stop sound
-        if (moveAudioRef.current) {
-          clearInterval(moveAudioRef.current);
-          moveAudioRef.current = null;
+        // Stop move sound immediately and play stop sound
+        if (isMovePlayingRef.current) {
+          stopMoveMoving();
+          isMovePlayingRef.current = false;
           playMoveStop();
         }
       }
@@ -363,10 +361,10 @@ export const useWindowManager = ({
         } else {
           updateWindowState(appId, windowPosition, windowSize);
         }
-        // Stop resize sound loop and play stop sound
-        if (resizeAudioRef.current) {
-          clearInterval(resizeAudioRef.current);
-          resizeAudioRef.current = null;
+        // Stop resize sound immediately and play stop sound
+        if (isResizePlayingRef.current) {
+          stopResizeResizing();
+          isResizePlayingRef.current = false;
           playResizeStop();
         }
       }
@@ -384,13 +382,6 @@ export const useWindowManager = ({
       document.removeEventListener("mouseup", handleEnd);
       document.removeEventListener("touchmove", handleMove);
       document.removeEventListener("touchend", handleEnd);
-      // Clean up any ongoing sound loops
-      if (moveAudioRef.current) {
-        clearInterval(moveAudioRef.current);
-      }
-      if (resizeAudioRef.current) {
-        clearInterval(resizeAudioRef.current);
-      }
     };
   }, [
     isDragging,
@@ -401,14 +392,17 @@ export const useWindowManager = ({
     windowSize,
     appId,
     isMobile,
+    playMoveLoop,
     playMoveStop,
+    stopMoveMoving,
+    playResizeLoop,
     playResizeStop,
+    stopResizeResizing,
     config,
-    getSafeAreaBottomInset,
     updateWindowState,
     updateInstanceWindowState,
     instanceId,
-    isXpTheme,
+    computeInsets,
   ]);
 
   return {

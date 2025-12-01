@@ -44,6 +44,8 @@ export const preloadSounds = async (sounds: string[]) => {
 
 export function useSound(soundPath: string, volume: number = 0.3) {
   const gainNodeRef = useRef<GainNode | null>(null);
+  // Track active sources for this specific hook instance so we can stop them
+  const instanceSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   // Reactively track global UI volume
   const uiVolume = useAppStore((s) => s.uiVolume);
   const masterVolume = useAppStore((s) => s.masterVolume); // Get masterVolume
@@ -60,13 +62,23 @@ export function useSound(soundPath: string, volume: number = 0.3) {
       if (gainNodeRef.current) {
         gainNodeRef.current.disconnect();
       }
+      // Stop all instance sources on cleanup
+      instanceSourcesRef.current.forEach((source) => {
+        try {
+          source.stop();
+        } catch {
+          // Source may have already ended
+        }
+      });
+      instanceSourcesRef.current.clear();
     };
   }, [volume, uiVolume, masterVolume]);
 
-  const play = useCallback(async () => {
+  // Internal function to create and play a source
+  const createAndPlaySource = useCallback(async (loop: boolean = false) => {
     // Check if UI sounds are enabled via global store
     if (!useAppStore.getState().uiSoundsEnabled) {
-      return;
+      return null;
     }
 
     try {
@@ -87,46 +99,75 @@ export function useSound(soundPath: string, volume: number = 0.3) {
           }
         }
         gainNodeRef.current = getAudioContext().createGain();
-        gainNodeRef.current.gain.value = volume * uiVolume * masterVolume; // Apply masterVolume
+        gainNodeRef.current.gain.value = volume * uiVolume * masterVolume;
         gainNodeRef.current.connect(getAudioContext().destination);
       }
 
       const source = getAudioContext().createBufferSource();
       source.buffer = audioBuffer;
+      source.loop = loop;
 
       // Connect to (possibly re-created) gain node
       source.connect(gainNodeRef.current);
 
-      // Set volume (apply global scaling)
-      gainNodeRef.current.gain.value = volume * uiVolume * masterVolume; // Apply masterVolume
+      // Set volume (apply global scaling) - use setValueAtTime to override any scheduled changes
+      const targetVolume = volume * uiVolume * masterVolume;
+      gainNodeRef.current.gain.setValueAtTime(targetVolume, getAudioContext().currentTime);
 
       // If too many concurrent sources are active, skip to avoid audio congestion
       if (activeSources.size > 32) {
         console.debug("Skipping sound – too many concurrent sources");
-        return;
+        return null;
       }
 
       // Play the sound
       source.start(0);
 
-      // Add to active sources
+      // Add to active sources (global and instance)
       activeSources.add(source);
+      instanceSourcesRef.current.add(source);
 
-      // Clean up when done
+      // Clean up when done (only for non-looping sounds)
       source.onended = () => {
         activeSources.delete(source);
+        instanceSourcesRef.current.delete(source);
       };
+
+      return source;
     } catch (error) {
       console.error("Error playing sound:", error);
+      return null;
     }
   }, [volume, soundPath, uiVolume, masterVolume]);
 
-  // Additional control methods
+  // Stop all currently playing sounds from this hook instance
   const stop = useCallback(() => {
+    // Immediately cut gain to 0 for instant silence
     if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = 0;
+      gainNodeRef.current.gain.setValueAtTime(0, getAudioContext().currentTime);
     }
+    // Then stop all sources
+    instanceSourcesRef.current.forEach((source) => {
+      try {
+        source.stop();
+        source.disconnect();
+      } catch {
+        // Source may have already ended
+      }
+    });
+    instanceSourcesRef.current.clear();
   }, []);
+
+  const play = useCallback(async () => {
+    await createAndPlaySource(false);
+  }, [createAndPlaySource]);
+
+  // Play sound in a loop (must call stop() to end)
+  const playLoop = useCallback(async () => {
+    // Stop any existing sounds first to avoid overlapping
+    stop();
+    await createAndPlaySource(true);
+  }, [createAndPlaySource, stop]);
 
   const fadeOut = useCallback(
     (duration: number = 0.5) => {
@@ -160,7 +201,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
     [volume]
   );
 
-  return { play, stop, fadeOut, fadeIn };
+  return { play, playLoop, stop, fadeOut, fadeIn };
 }
 
 // Predefined sound paths for easy access
