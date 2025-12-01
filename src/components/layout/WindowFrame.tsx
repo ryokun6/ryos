@@ -645,6 +645,12 @@ export function WindowFrame({
   // If keepMountedWhenMinimized is true, keep content mounted but visually hidden (useful for audio/video apps)
   const shouldShow = keepMountedWhenMinimized ? isOpen : (!isMinimized && isOpen);
 
+  // Shake/nudge animation using Framer Motion
+  const shakeTransition = {
+    duration: 0.4,
+    ease: "easeInOut" as const,
+  };
+
   // Determine animation variants
   const getInitialAnimation = () => {
     if (shouldAnimateRestore) {
@@ -686,7 +692,7 @@ export function WindowFrame({
     };
   };
 
-  // Get the animate state based on current state
+  // Get the animate state based on current conditions
   const getAnimateState = () => {
     if (isClosing) {
       return { 
@@ -709,6 +715,22 @@ export function WindowFrame({
         transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const }
       };
     }
+    
+    if (isShaking) {
+      return {
+        scale: 1,
+        opacity: 1,
+        x: [0, -5, 5, -5, 5, -3, 3, 0],
+        y: 0,
+        transition: {
+          scale: { duration: 0 },
+          opacity: { duration: 0 },
+          y: { duration: 0 },
+          x: shakeTransition,
+        }
+      };
+    }
+    
     // Normal visible state
     return { 
       scale: 1, 
@@ -736,7 +758,6 @@ export function WindowFrame({
           exit={getExitAnimation()}
           className={cn(
             "absolute p-2 md:p-0 w-full md:h-full md:mt-0 select-none",
-            isShaking && "animate-shake",
             // Disable all pointer events when window is closing
             isClosing && "pointer-events-none",
             // For keepMountedWhenMinimized apps, also disable pointer events when minimized
