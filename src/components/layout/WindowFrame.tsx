@@ -3,7 +3,7 @@ import { ResizeType } from "@/types/types";
 import { useAppContext } from "@/contexts/AppContext";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, useImperativeHandle, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import { getWindowConfig, getAppIconPath } from "@/config/appRegistry";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -15,6 +15,11 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { getTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { motion, AnimatePresence } from "framer-motion";
+import { useWindowFrameRegistry } from "@/contexts/WindowFrameContext";
+
+export interface WindowFrameHandle {
+  handleClose: () => void;
+}
 
 interface WindowFrameProps {
   children: React.ReactNode;
@@ -40,7 +45,7 @@ interface WindowFrameProps {
   menuBar?: React.ReactNode; // Add menuBar prop
 }
 
-export function WindowFrame({
+export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(({
   children,
   title,
   onClose,
@@ -55,7 +60,7 @@ export function WindowFrame({
   onNavigatePrevious,
   interceptClose = false,
   menuBar, // Add menuBar to destructured props
-}: WindowFrameProps) {
+}, ref) => {
   const config = getWindowConfig(appId);
   const defaultConstraints = {
     minWidth: config.minSize?.width,
@@ -178,7 +183,7 @@ export function WindowFrame({
     wasMinimizedRef.current = isMinimized;
   }, [isMinimized, playZoomMaximize]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (interceptClose) {
       // Call the parent's onClose handler for interception (like confirmation dialogs)
       onClose?.();
@@ -190,7 +195,23 @@ export function WindowFrame({
       playWindowClose();
       setIsClosing(true);
     }
-  };
+  }, [interceptClose, onClose, vibrateClose, playWindowClose]);
+
+  // Expose handleClose via ref so it can be called from outside (menubar, right-click menu, etc.)
+  useImperativeHandle(ref, () => ({
+    handleClose,
+  }), [handleClose]);
+
+  // Register this WindowFrame in the registry so it can be accessed from Dock/menubars
+  const windowFrameRegistry = useWindowFrameRegistry();
+  useEffect(() => {
+    const instanceIdToUse = instanceId || appId;
+    const handle: WindowFrameHandle = { handleClose };
+    windowFrameRegistry.register(instanceIdToUse, handle);
+    return () => {
+      windowFrameRegistry.unregister(instanceIdToUse);
+    };
+  }, [instanceId, appId, handleClose, windowFrameRegistry]);
 
   // Called when close animation completes
   const handleCloseAnimationComplete = useCallback(() => {
@@ -1349,4 +1370,4 @@ export function WindowFrame({
       )}
     </AnimatePresence>
   );
-}
+});

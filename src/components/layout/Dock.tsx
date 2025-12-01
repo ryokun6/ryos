@@ -19,6 +19,7 @@ import { useLongPress } from "@/hooks/useLongPress";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
+import { useWindowFrameRegistry } from "@/contexts/WindowFrameContext";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import {
   AnimatePresence,
@@ -317,6 +318,7 @@ const MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
 
 function MacDock() {
   const isPhone = useIsPhone();
+  const windowFrameRegistry = useWindowFrameRegistry();
   const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
     useAppStoreShallow((s) => ({
       instances: s.instances,
@@ -707,7 +709,13 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
-              closeAppInstance(specificInstanceId);
+              const handleClose = windowFrameRegistry.getHandleClose(specificInstanceId);
+              if (handleClose) {
+                handleClose();
+              } else {
+                // Fallback to direct close if registry doesn't have it
+                closeAppInstance(specificInstanceId);
+              }
             },
           });
           
@@ -802,7 +810,13 @@ function MacDock() {
         label: "Quit",
         onSelect: () => {
           appInstances.forEach((inst) => {
-            closeAppInstance(inst.instanceId);
+            const handleClose = windowFrameRegistry.getHandleClose(inst.instanceId);
+            if (handleClose) {
+              handleClose();
+            } else {
+              // Fallback to direct close if registry doesn't have it
+              closeAppInstance(inst.instanceId);
+            }
           });
         },
         disabled: appInstances.length === 0,
@@ -810,7 +824,7 @@ function MacDock() {
       
       return items;
     },
-    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, launchApp]
+    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, launchApp, windowFrameRegistry]
   );
 
   // Handle app context menu

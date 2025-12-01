@@ -9,6 +9,7 @@ import { AppId, getAppComponent, appRegistry } from "@/config/appRegistry";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { extractCodeFromPath } from "@/utils/sharedUrl";
 import { toast } from "sonner";
+import { WindowFrameProvider, useWindowFrameRegistry } from "@/contexts/WindowFrameContext";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -16,13 +17,93 @@ interface AppManagerProps {
 
 const BASE_Z_INDEX = 1;
 
+// Inner component that can use WindowFrameRegistry hook
+function AppInstancesRenderer({
+  instances,
+  apps,
+  isInitialMount,
+  getZIndexForInstance,
+  bringInstanceToForeground,
+  navigateToNextInstance,
+  navigateToPreviousInstance,
+}: {
+  instances: Record<string, any>;
+  apps: AnyApp[];
+  isInitialMount: boolean;
+  getZIndexForInstance: (instanceId: string) => number;
+  bringInstanceToForeground: (instanceId: string) => void;
+  navigateToNextInstance: (instanceId: string) => void;
+  navigateToPreviousInstance: (instanceId: string) => void;
+}) {
+  const windowFrameRegistry = useWindowFrameRegistry();
+  const { closeAppInstance } = useAppStoreShallow((state) => ({
+    closeAppInstance: state.closeAppInstance,
+  }));
+
+  return (
+    <>
+      {Object.values(instances).map((instance: any) => {
+        if (!instance.isOpen) return null;
+
+        const appId = instance.appId as AppId;
+        const zIndex = getZIndexForInstance(instance.instanceId);
+        const AppComponent = getAppComponent(appId);
+
+        // Create a handleClose function that uses the registry
+        const handleClose = () => {
+          const windowHandleClose = windowFrameRegistry.getHandleClose(instance.instanceId);
+          if (windowHandleClose) {
+            windowHandleClose();
+          } else {
+            // Fallback to direct close if registry doesn't have it yet
+            closeAppInstance(instance.instanceId);
+          }
+        };
+
+        return (
+          <div
+            key={instance.instanceId}
+            style={{ zIndex }}
+            className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
+            onMouseDown={() => {
+              if (!instance.isForeground) {
+                bringInstanceToForeground(instance.instanceId);
+              }
+            }}
+            onTouchStart={() => {
+              if (!instance.isForeground) {
+                bringInstanceToForeground(instance.instanceId);
+              }
+            }}
+          >
+            <AppComponent
+              isWindowOpen={instance.isOpen}
+              isForeground={instance.isForeground}
+              onClose={handleClose}
+              className="pointer-events-auto"
+              helpItems={apps.find((app) => app.id === appId)?.helpItems}
+              skipInitialSound={isInitialMount}
+              initialData={instance.initialData}
+              instanceId={instance.instanceId}
+              title={instance.title}
+              onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
+              onNavigatePrevious={() =>
+                navigateToPreviousInstance(instance.instanceId)
+              }
+            />
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 export function AppManager({ apps }: AppManagerProps) {
   // Instance-based state
   const {
     instances,
     instanceOrder,
     launchApp,
-    closeAppInstance,
     bringInstanceToForeground,
     navigateToNextInstance,
     navigateToPreviousInstance,
@@ -31,7 +112,6 @@ export function AppManager({ apps }: AppManagerProps) {
     instances: state.instances,
     instanceOrder: state.instanceOrder,
     launchApp: state.launchApp,
-    closeAppInstance: state.closeAppInstance,
     bringInstanceToForeground: state.bringInstanceToForeground,
     navigateToNextInstance: state.navigateToNextInstance,
     navigateToPreviousInstance: state.navigateToPreviousInstance,
@@ -318,16 +398,17 @@ export function AppManager({ apps }: AppManagerProps) {
   }, [instances, launchApp]);
 
   return (
-    <AppContext.Provider
-      value={{
-        appStates: legacyAppStates,
-        toggleApp: launchApp,
-        bringToForeground: bringAppToForeground,
-        apps,
-        navigateToNextApp: navigateToNextInstance,
-        navigateToPreviousApp: navigateToPreviousInstance,
-      }}
-    >
+    <WindowFrameProvider>
+      <AppContext.Provider
+        value={{
+          appStates: legacyAppStates,
+          toggleApp: launchApp,
+          bringToForeground: bringAppToForeground,
+          apps,
+          navigateToNextApp: navigateToNextInstance,
+          navigateToPreviousApp: navigateToPreviousInstance,
+        }}
+      >
       {(() => {
         const hasForeground = Boolean(getForegroundInstance());
         // XP/Win98: always render global MenuBar (taskbar)
@@ -337,48 +418,15 @@ export function AppManager({ apps }: AppManagerProps) {
       {/* macOS Dock */}
       <Dock />
       {/* App Instances */}
-      {Object.values(instances).map((instance) => {
-        if (!instance.isOpen) return null;
-
-        const appId = instance.appId as AppId;
-        const zIndex = getZIndexForInstance(instance.instanceId);
-        const AppComponent = getAppComponent(appId);
-
-        return (
-          <div
-            key={instance.instanceId}
-            style={{ zIndex }}
-            className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
-            onMouseDown={() => {
-              if (!instance.isForeground) {
-                bringInstanceToForeground(instance.instanceId);
-              }
-            }}
-            onTouchStart={() => {
-              if (!instance.isForeground) {
-                bringInstanceToForeground(instance.instanceId);
-              }
-            }}
-          >
-            <AppComponent
-              isWindowOpen={instance.isOpen}
-              isForeground={instance.isForeground}
-              onClose={() => closeAppInstance(instance.instanceId)}
-              className="pointer-events-auto"
-              helpItems={apps.find((app) => app.id === appId)?.helpItems}
-              skipInitialSound={isInitialMount}
-              // @ts-expect-error - Dynamic component system with different initialData types per app
-              initialData={instance.initialData}
-              instanceId={instance.instanceId}
-              title={instance.title}
-              onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
-              onNavigatePrevious={() =>
-                navigateToPreviousInstance(instance.instanceId)
-              }
-            />
-          </div>
-        );
-      })}
+      <AppInstancesRenderer
+        instances={instances}
+        apps={apps}
+        isInitialMount={isInitialMount}
+        getZIndexForInstance={getZIndexForInstance}
+        bringInstanceToForeground={bringInstanceToForeground}
+        navigateToNextInstance={navigateToNextInstance}
+        navigateToPreviousInstance={navigateToPreviousInstance}
+      />
 
       <Desktop
         apps={apps}
@@ -387,6 +435,7 @@ export function AppManager({ apps }: AppManagerProps) {
         }}
         appStates={{ windowOrder: instanceOrder, apps: legacyAppStates }}
       />
-    </AppContext.Provider>
+      </AppContext.Provider>
+    </WindowFrameProvider>
   );
 }
