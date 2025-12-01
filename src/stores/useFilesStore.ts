@@ -463,8 +463,8 @@ export const useFilesStore = create<FilesStoreState>()(
         const newItem: FileSystemItem = {
           ...itemData,
           status: "active",
-          // Generate UUID for files (not directories)
-          uuid: !itemData.isDirectory ? uuidv4() : undefined,
+          // Preserve existing UUID if passed, otherwise generate new one for files (not directories)
+          uuid: itemData.uuid || (!itemData.isDirectory ? uuidv4() : undefined),
           // Set timestamps
           createdAt: itemData.createdAt || now,
           modifiedAt: itemData.modifiedAt || now,
@@ -497,6 +497,10 @@ export const useFilesStore = create<FilesStoreState>()(
               uuid: existingItem.uuid || newItem.uuid, // Preserve existing UUID
               createdAt: existingItem.createdAt || newItem.createdAt, // Preserve original creation time
               modifiedAt: newItem.modifiedAt || now, // Always update modification time
+              // Preserve shareId and createdBy - use nullish coalescing to only fall back if undefined/null
+              shareId: newItem.shareId ?? existingItem.shareId,
+              createdBy: newItem.createdBy ?? existingItem.createdBy,
+              storeCreatedAt: newItem.storeCreatedAt ?? existingItem.storeCreatedAt,
             };
 
             return {

@@ -336,12 +336,13 @@ export default async function handler(req: Request) {
               id = generateId();
             }
           } catch (parseError) {
-            // If we can't parse, treat as new share
+            // If we can't parse, we can't verify author - generate new ID for security
             id = generateId();
           }
         } else {
-          // Applet doesn't exist, create new share
-          id = generateId();
+          // Applet doesn't exist on server, but client has shareId - reuse it to recreate
+          // This handles cases where the applet was deleted from server but local file still has the ID
+          id = shareId;
         }
       } else {
         // No shareId provided, generate new ID

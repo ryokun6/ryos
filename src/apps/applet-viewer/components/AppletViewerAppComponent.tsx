@@ -31,6 +31,8 @@ import { generateAppletShareUrl } from "@/utils/sharedUrl";
 import { STORES } from "@/utils/indexedDB";
 import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
+import { extractMetadataFromHtml } from "@/utils/appletMetadata";
+import { exportAppletAsHtml } from "@/utils/appletImportExport";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -895,8 +897,20 @@ export function AppletViewerAppComponent({
           }
         } catch {
           // Not JSON, treat as plain HTML/App file
-          content = fileText;
+          // Try to extract metadata from HTML comments
+          const { metadata, content: extractedContent } = extractMetadataFromHtml(fileText);
+          content = extractedContent;
           importFileName = file.name;
+          
+          // Use metadata from HTML comments if available
+          if (metadata.shareId) shareId = metadata.shareId;
+          if (metadata.name) importFileName = metadata.name;
+          if (metadata.icon) icon = metadata.icon;
+          if (metadata.createdBy) createdBy = metadata.createdBy;
+          if (metadata.windowWidth !== undefined) windowWidth = metadata.windowWidth;
+          if (metadata.windowHeight !== undefined) windowHeight = metadata.windowHeight;
+          if (metadata.createdAt !== undefined) createdAt = metadata.createdAt;
+          if (metadata.modifiedAt !== undefined) modifiedAt = metadata.modifiedAt;
         }
 
         // Extract emoji from filename BEFORE processing extension
@@ -1052,7 +1066,7 @@ export function AppletViewerAppComponent({
       }
 
       // Combine chunks into a single blob
-      const compressedBlob = new Blob(chunks, { type: "application/gzip" });
+      const compressedBlob = new Blob(chunks as BlobPart[], { type: "application/gzip" });
 
       // Create download link
       const url = URL.createObjectURL(compressedBlob);
@@ -1080,28 +1094,7 @@ export function AppletViewerAppComponent({
   // Export as HTML handler (without emoji prefix)
   const handleExportAsHtml = () => {
     if (!hasAppletContent) return;
-
-    // Get base filename without extension
-    const filename = appletPath
-      ? appletPath
-          .split("/")
-          .pop()
-          ?.replace(/\.(html|app)$/i, "") || "Untitled"
-      : "Untitled";
-
-    const blob = new Blob([htmlContent], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${filename}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast.success("HTML exported!", {
-      description: `${filename}.html exported successfully.`,
-    });
+    exportAppletAsHtml(htmlContent, appletPath);
   };
 
   // Share applet handler
@@ -1176,16 +1169,21 @@ export function AppletViewerAppComponent({
       setIsShareDialogOpen(true);
 
       // Update the file metadata with the shareId (preserve existing createdBy)
+      // Only update shareId if: (1) this was an update (user is author), or (2) there was no existing shareId
+      // This preserves the original shareId from imported .app files when user is not the author
       if (appletPath && data.id) {
         const currentFileItem = fileStore.getItem(appletPath);
         if (currentFileItem) {
+          // Only update shareId if it was successfully updated (user is author) or if there was no existing shareId
+          const shouldUpdateShareId = data.updated || !existingShareId;
+          
           await saveFile({
             path: appletPath,
             name: currentFileItem.name,
             content: htmlContent,
             type: "html",
             icon: currentFileItem.icon,
-            shareId: data.id,
+            shareId: shouldUpdateShareId ? data.id : existingShareId || data.id,
             createdBy: currentFileItem.createdBy || username,
           });
           

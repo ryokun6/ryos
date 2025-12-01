@@ -26,6 +26,7 @@ import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { toast } from "sonner";
+import { importAppletFile } from "@/utils/appletImportExport";
 
 // Type for Finder initial data
 interface FinderInitialData {
@@ -469,19 +470,80 @@ export function FinderAppComponent({
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check if we're in Applets directory
+      const fileExtension = file.name.toLowerCase();
+      const isAppletFile = fileExtension.endsWith(".app") || fileExtension.endsWith(".gz");
       const isAppletsDir = currentPath === "/Applets";
+      
+      // .app and .gz files always go to /Applets, regardless of current directory
+      if (isAppletFile) {
+        try {
+          // Use shared import function
+          const importedData = await importAppletFile(file);
 
-      // Accept different file types based on current directory
+          const filePath = `/Applets/${importedData.name}`;
+          const fileStore = useFilesStore.getState();
+
+          await saveFile({
+            name: importedData.name,
+            path: filePath,
+            content: importedData.content,
+            type: "html",
+            icon: importedData.icon,
+            shareId: importedData.shareId,
+            createdBy: importedData.createdBy,
+          });
+          
+          // Update additional metadata if present
+          if (importedData.windowWidth || importedData.windowHeight || importedData.createdAt || importedData.modifiedAt) {
+            fileStore.updateItemMetadata(filePath, {
+              ...(importedData.windowWidth !== undefined && { windowWidth: importedData.windowWidth }),
+              ...(importedData.windowHeight !== undefined && { windowHeight: importedData.windowHeight }),
+              ...(importedData.createdAt !== undefined && { createdAt: importedData.createdAt }),
+              ...(importedData.modifiedAt !== undefined && { modifiedAt: importedData.modifiedAt }),
+            });
+          }
+
+          // Notify file was added
+          const event = new CustomEvent("saveFile", {
+            detail: {
+              name: importedData.name,
+              path: filePath,
+              content: importedData.content,
+              icon: importedData.icon,
+            },
+          });
+          window.dispatchEvent(event);
+
+          toast.success("Applet imported!", {
+            description: `${importedData.name} saved to /Applets${
+              importedData.icon ? ` with ${importedData.icon} icon` : ""
+            }`,
+          });
+          
+          // Navigate to /Applets if not already there
+          if (!isAppletsDir) {
+            navigateToPath("/Applets");
+          }
+        } catch (error) {
+          console.error("Import failed:", error);
+          toast.error("Import failed", {
+            description: "Could not import the applet file.",
+          });
+        } finally {
+          e.target.value = "";
+        }
+        return;
+      }
+
+      // Check if we're in Applets directory for HTML files
       if (isAppletsDir) {
-        // In Applets: accept .app and .html files
+        // In Applets: accept .html and .htm files
         if (
-          !file.name.endsWith(".app") &&
-          !file.name.endsWith(".html") &&
-          !file.name.endsWith(".htm")
+          !fileExtension.endsWith(".html") &&
+          !fileExtension.endsWith(".htm")
         ) {
           toast.error("Invalid file type", {
-            description: "Only .app and .html files can be imported to Applets",
+            description: "Only .app, .gz, and .html files can be imported to Applets",
           });
           e.target.value = "";
           return;
@@ -495,58 +557,54 @@ export function FinderAppComponent({
       }
 
       try {
-        const text = await file.text();
-        let fileName = file.name;
-
-        // Handle applet files
+        // Handle applet HTML files (when in /Applets directory)
         if (isAppletsDir) {
-          // Extract emoji from filename for use as icon
-          const emojiRegex =
-            /^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}]+)\s*/u;
-          const match = fileName.match(emojiRegex);
-          const emoji = match ? match[1] : null;
-          const remainingText = match
-            ? fileName.slice(match[0].length)
-            : fileName;
+          // Use shared import function
+          const importedData = await importAppletFile(file);
 
-          // Use remaining text as filename
-          fileName = remainingText;
-
-          // Convert to .app extension if needed
-          if (fileName.endsWith(".html") || fileName.endsWith(".htm")) {
-            fileName = fileName.replace(/\.(html|htm)$/i, ".app");
-          } else if (!fileName.endsWith(".app")) {
-            fileName = `${fileName}.app`;
-          }
-
-          const filePath = `/Applets/${fileName}`;
+          const filePath = `/Applets/${importedData.name}`;
+          const fileStore = useFilesStore.getState();
 
           await saveFile({
-            name: fileName,
+            name: importedData.name,
             path: filePath,
-            content: text,
+            content: importedData.content,
             type: "html",
-            icon: emoji || undefined,
+            icon: importedData.icon,
+            shareId: importedData.shareId,
+            createdBy: importedData.createdBy,
           });
+          
+          // Update additional metadata if present
+          if (importedData.windowWidth || importedData.windowHeight || importedData.createdAt || importedData.modifiedAt) {
+            fileStore.updateItemMetadata(filePath, {
+              ...(importedData.windowWidth !== undefined && { windowWidth: importedData.windowWidth }),
+              ...(importedData.windowHeight !== undefined && { windowHeight: importedData.windowHeight }),
+              ...(importedData.createdAt !== undefined && { createdAt: importedData.createdAt }),
+              ...(importedData.modifiedAt !== undefined && { modifiedAt: importedData.modifiedAt }),
+            });
+          }
 
           // Notify file was added
           const event = new CustomEvent("saveFile", {
             detail: {
-              name: fileName,
+              name: importedData.name,
               path: filePath,
-              content: text,
-              icon: emoji || undefined,
+              content: importedData.content,
+              icon: importedData.icon,
             },
           });
           window.dispatchEvent(event);
 
           toast.success("Applet imported!", {
-            description: `${fileName} saved to /Applets${
-              emoji ? ` with ${emoji} icon` : ""
+            description: `${importedData.name} saved to /Applets${
+              importedData.icon ? ` with ${importedData.icon} icon` : ""
             }`,
           });
         } else {
           // Handle regular text files
+          const text = await file.text();
+          const fileName = file.name;
           const basePath = currentPath === "/" ? "" : currentPath;
           const filePath = `${basePath}/${fileName}`;
 
@@ -956,7 +1014,9 @@ export function FinderAppComponent({
         ref={fileInputRef}
         className="hidden"
         accept={
-          currentPath === "/Applets" ? ".app,.html,.htm" : ".txt,.md,text/*"
+          currentPath === "/Applets" 
+            ? ".app,.gz,.html,.htm" 
+            : ".app,.gz,.txt,.md,text/*"
         }
         onChange={handleFileInputChange}
       />
