@@ -175,9 +175,6 @@ export function WindowFrame({
   }, [isMinimized, playWindowExpand]);
 
   const handleClose = () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:handleClose',message:'handleClose called',data:{interceptClose,isClosingBefore:isClosing,instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     if (interceptClose) {
       // Call the parent's onClose handler for interception (like confirmation dialogs)
       onClose?.();
@@ -188,9 +185,6 @@ export function WindowFrame({
       vibrateClose();
       playWindowClose();
       setIsClosing(true);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:handleClose',message:'setIsClosing(true) called',data:{instanceId,exitAnimationRef:exitAnimationRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
     }
   };
 
@@ -593,12 +587,9 @@ export function WindowFrame({
     };
   };
 
-  // For close: keep showing but animate to closed state, then unmount
+  // For close: keep showing but animate to closed state, then unmount via onAnimationComplete
   // For minimize: use AnimatePresence exit animation
   const shouldShow = !isMinimized && isOpen;
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:render',message:'shouldShow calculated',data:{shouldShow,isMinimized,isClosing,isOpen,instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-  // #endregion
 
   // Determine animation variants
   const getInitialAnimation = () => {
@@ -619,28 +610,8 @@ export function WindowFrame({
   };
 
   const getExitAnimation = () => {
-    // Use exitAnimationRef - set synchronously BEFORE state change triggers exit
-    const animationType = exitAnimationRef.current;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:getExitAnimation',message:'getExitAnimation called',data:{exitAnimationRef:animationType,isClosing,isMinimized,isOpen,instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
-    if (animationType === 'close') {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:getExitAnimation',message:'returning CLOSE animation',data:{instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
-      // Close animation - shrink to center
-      return { 
-        scale: 0.95, 
-        opacity: 0,
-        x: 0,
-        y: 0,
-        transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
-      };
-    }
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:getExitAnimation',message:'returning MINIMIZE animation',data:{instanceId,dockIconOffset},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     // Minimize animation - shrink to dock icon position
+    // Note: Close animation is handled via the animate prop, not exit
     return { 
       scale: 0.1, 
       opacity: 0,
@@ -651,7 +622,7 @@ export function WindowFrame({
   };
 
   return (
-    <AnimatePresence onExitComplete={!isClosing ? undefined : undefined}>
+    <AnimatePresence>
       {shouldShow && (
         <motion.div
           key={instanceId || appId}
@@ -675,9 +646,6 @@ export function WindowFrame({
               }
           }
           onAnimationComplete={() => {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:onAnimationComplete',message:'animation complete',data:{isClosing,instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-            // #endregion
             if (isClosing) {
               handleCloseAnimationComplete();
             }
