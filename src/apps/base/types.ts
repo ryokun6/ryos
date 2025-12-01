@@ -3,7 +3,6 @@ import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 export interface AppProps<TInitialData = unknown> {
   isWindowOpen: boolean;
   onClose: () => void;
-  onCloseComplete?: () => void; // Called after close animation completes
   isForeground?: boolean;
   className?: string;
   skipInitialSound?: boolean;

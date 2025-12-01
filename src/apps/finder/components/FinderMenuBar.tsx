@@ -15,6 +15,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
+import { useWindowFrameClose } from "@/components/layout/WindowFrame";
 
 export type ViewType = "small" | "large" | "list";
 export type SortType = "name" | "date" | "size" | "kind";
@@ -74,6 +75,8 @@ export function FinderMenuBar({
   rootFolders,
   onNewWindow,
 }: FinderMenuBarProps) {
+  // Use wrapped close from WindowFrame if available (for animated close), otherwise fall back to prop
+  const wrappedOnClose = useWindowFrameClose() || onClose;
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "finder";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
@@ -167,7 +170,7 @@ export function FinderMenuBar({
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
-            onClick={onClose}
+            onClick={wrappedOnClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             Close

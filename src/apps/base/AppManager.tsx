@@ -364,13 +364,8 @@ export function AppManager({ apps }: AppManagerProps) {
               isWindowOpen={instance.isOpen}
               isForeground={instance.isForeground}
               onClose={() => {
-                // Dispatch close event to trigger animated close in WindowFrame
-                const event = new CustomEvent(`closeWindow-${instance.instanceId}`);
-                window.dispatchEvent(event);
-              }}
-              onCloseComplete={() => {
-                // This is called after the close animation completes
-                // Dispatch the actual close to the store
+                // This will be wrapped by WindowFrame to trigger animated close
+                // The actual closeAppInstance happens after animation completes
                 closeAppInstance(instance.instanceId);
               }}
               className="pointer-events-auto"

@@ -3,7 +3,7 @@ import { ResizeType } from "@/types/types";
 import { useAppContext } from "@/contexts/AppContext";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
-import { useEffect, useState, useCallback, useRef, useMemo, useImperativeHandle, forwardRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, useImperativeHandle, forwardRef, createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
 import { getWindowConfig, getAppIconPath } from "@/config/appRegistry";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -19,8 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface WindowFrameProps {
   children: React.ReactNode;
   title: string;
-  onClose?: () => void; // Called when close is requested (dispatches event)
-  onCloseComplete?: () => void; // Called after close animation completes (actual close)
+  onClose?: () => void; // Called after close animation completes (actual close)
   isForeground?: boolean;
   appId: AppId;
   isShaking?: boolean;
@@ -45,11 +44,14 @@ export interface WindowFrameHandle {
   handleClose: () => void;
 }
 
+// Context to expose wrappedOnClose to child components (like menubars)
+const WindowFrameCloseContext = createContext<(() => void) | undefined>(undefined);
+export const useWindowFrameClose = () => useContext(WindowFrameCloseContext);
+
 export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(({
   children,
   title,
   onClose,
-  onCloseComplete,
   isForeground = true,
   isShaking = false,
   appId,
@@ -184,11 +186,18 @@ export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(({
     wasMinimizedRef.current = isMinimized;
   }, [isMinimized, playZoomMaximize]);
 
+  // Store the actual close callback (called after animation completes)
+  const actualCloseCallbackRef = useRef<(() => void) | undefined>(onClose);
+  useEffect(() => {
+    actualCloseCallbackRef.current = onClose;
+  }, [onClose]);
+
+  // The animated close handler - always triggers animation + sound
   const handleClose = useCallback(() => {
     if (interceptClose) {
       // Call the parent's onClose handler for interception (like confirmation dialogs)
-      onClose?.();
-    } else {
+      actualCloseCallbackRef.current?.();
+    } else if (!isClosingRef.current) {
       // Set exit animation ref BEFORE state change - this is read synchronously by Framer Motion
       exitAnimationRef.current = 'close';
       isClosingRef.current = true;
@@ -196,39 +205,17 @@ export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(({
       playWindowClose();
       setIsClosing(true);
     }
-  }, [interceptClose, onClose, vibrateClose, playWindowClose]);
+  }, [interceptClose, vibrateClose, playWindowClose]);
 
-  // Expose handleClose via ref so external code can trigger the animated close
+  // Expose handleClose via ref
   useImperativeHandle(ref, () => ({
     handleClose,
   }), [handleClose]);
 
-  // Listen for close events from external sources (menubar, right-click menus, tool calls)
-  useEffect(() => {
-    if (!instanceId && !appId) return;
-
-    const eventName = instanceId 
-      ? `closeWindow-${instanceId}` 
-      : `closeWindow-${appId}`;
-
-    const handleCloseEvent = () => {
-      // Only trigger animated close if not already closing and not intercepting
-      if (!isClosingRef.current && !interceptClose) {
-        handleClose();
-      }
-    };
-
-    window.addEventListener(eventName, handleCloseEvent);
-    return () => {
-      window.removeEventListener(eventName, handleCloseEvent);
-    };
-  }, [instanceId, appId, handleClose, interceptClose]);
-
-  // Store the close completion callback (called after animation completes)
-  const closeCompleteCallbackRef = useRef<(() => void) | undefined>(onCloseComplete);
-  useEffect(() => {
-    closeCompleteCallbackRef.current = onCloseComplete;
-  }, [onCloseComplete]);
+  // Wrap onClose so external calls (menubar/right-click/tool calls) trigger animated close
+  const wrappedOnClose = useCallback(() => {
+    handleClose();
+  }, [handleClose]);
 
   // Called when close animation completes
   const handleCloseAnimationComplete = useCallback(() => {
@@ -236,10 +223,9 @@ export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(({
       setIsOpen(false);
       isClosingRef.current = false;
       exitAnimationRef.current = 'minimize'; // Reset to default
-      // Don't call onCloseComplete when interceptClose is true, as the completion callback
-      // is already handled by the event listener in handlePerformClose
+      // Call the actual close callback after animation completes
       if (!interceptClose) {
-        closeCompleteCallbackRef.current?.();
+        actualCloseCallbackRef.current?.();
       }
     }
   }, [isClosing, interceptClose]);
@@ -684,6 +670,7 @@ export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(({
   };
 
   return (
+    <WindowFrameCloseContext.Provider value={wrappedOnClose}>
     <AnimatePresence>
       {shouldShow && (
         <motion.div
@@ -1386,5 +1373,6 @@ export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(({
         </motion.div>
       )}
     </AnimatePresence>
+    </WindowFrameCloseContext.Provider>
   );
 });
