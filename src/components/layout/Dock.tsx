@@ -317,14 +317,13 @@ const MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
 
 function MacDock() {
   const isPhone = useIsPhone();
-  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
+  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance } =
     useAppStoreShallow((s) => ({
       instances: s.instances,
       instanceOrder: s.instanceOrder,
       bringInstanceToForeground: s.bringInstanceToForeground,
       restoreInstance: s.restoreInstance,
       minimizeInstance: s.minimizeInstance,
-      closeAppInstance: s.closeAppInstance,
     }));
 
   const launchApp = useLaunchApp();
@@ -707,7 +706,8 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
-              closeAppInstance(specificInstanceId);
+              // Dispatch event to trigger WindowFrame's close animation and sound
+              window.dispatchEvent(new CustomEvent(`requestCloseInstance-${specificInstanceId}`));
             },
           });
           
@@ -801,8 +801,9 @@ function MacDock() {
         type: "item",
         label: "Quit",
         onSelect: () => {
+          // Dispatch events to trigger WindowFrame's close animation and sound for each instance
           appInstances.forEach((inst) => {
-            closeAppInstance(inst.instanceId);
+            window.dispatchEvent(new CustomEvent(`requestCloseInstance-${inst.instanceId}`));
           });
         },
         disabled: appInstances.length === 0,
@@ -810,7 +811,7 @@ function MacDock() {
       
       return items;
     },
-    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, launchApp]
+    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, launchApp]
   );
 
   // Handle app context menu

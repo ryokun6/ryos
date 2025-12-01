@@ -974,9 +974,18 @@ export function FinderAppComponent({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
+  // Create a wrapper that dispatches the close event to trigger animation and sound
+  const handleMenuBarClose = () => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestCloseInstance-${instanceId}`));
+    } else {
+      onClose();
+    }
+  };
+
   const menuBar = (
     <FinderMenuBar
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       viewType={viewType}
