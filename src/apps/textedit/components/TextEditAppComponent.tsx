@@ -18,6 +18,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { markdownToHtml } from "@/utils/markdown";
+import { requestCloseApp } from "@/utils/closeApp";
 
 // Inner component that has access to editor context
 function TextEditContent({
@@ -498,7 +499,15 @@ function TextEditContent({
   const menuBar = (
     <TextEditMenuBar
       editor={editor}
-      onClose={handleClose}
+      onClose={() => {
+        // Dispatch close event to trigger animation and sound
+        if (instanceId) {
+          requestCloseApp(instanceId);
+        } else {
+          // Fallback to handleClose if no instanceId
+          handleClose();
+        }
+      }}
       isWindowOpen={isWindowOpen}
       onShowHelp={() => dialogControls?.openHelpDialog()}
       onShowAbout={() => dialogControls?.openAboutDialog()}

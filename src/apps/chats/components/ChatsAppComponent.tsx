@@ -18,6 +18,7 @@ import { ChatInput } from "./ChatInput";
 import { ChatRoomSidebar } from "./ChatRoomSidebar";
 import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
+import { requestCloseApp } from "@/utils/closeApp";
 import {
   type ChatMessage as AppChatMessage,
   type ChatRoom,
@@ -459,7 +460,15 @@ export function ChatsAppComponent({
 
   const menuBar = (
     <ChatsMenuBar
-      onClose={onClose}
+      onClose={() => {
+        // Dispatch close event to trigger animation and sound
+        if (instanceId) {
+          requestCloseApp(instanceId);
+        } else {
+          // Fallback to direct close if no instanceId
+          onClose();
+        }
+      }}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onClearChats={() => setIsClearDialogOpen(true)}

@@ -253,6 +253,41 @@ export function WindowFrame({
     };
   }, [instanceId, appId, performClose, interceptClose]);
 
+  // Listen for external close requests (from right-click menus, menubar, tool calls)
+  // This ensures all closes go through the same animation and sound handler
+  useEffect(() => {
+    const handleRequestClose = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const targetInstanceId = customEvent.detail?.instanceId;
+      
+      // Only handle if this event is for this specific instance
+      // If we have an instanceId, the event must match it
+      if (instanceId) {
+        if (targetInstanceId !== instanceId) return;
+      } else {
+        // If we don't have an instanceId, we shouldn't receive instance-specific events
+        if (targetInstanceId) return;
+      }
+      
+      // Don't close if already closing or if interceptClose is true (let parent handle it)
+      if (isClosingRef.current || interceptClose) return;
+      
+      // Trigger the close animation with sound
+      handleClose();
+    };
+
+    // Listen for close requests using instanceId if available, otherwise appId
+    const eventName = instanceId 
+      ? `requestCloseInstance-${instanceId}`
+      : `requestCloseApp-${appId}`;
+    
+    window.addEventListener(eventName, handleRequestClose);
+
+    return () => {
+      window.removeEventListener(eventName, handleRequestClose);
+    };
+  }, [instanceId, appId, interceptClose, handleClose]);
+
   const {
     windowPosition,
     windowSize,

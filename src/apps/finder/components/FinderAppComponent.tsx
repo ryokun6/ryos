@@ -27,6 +27,7 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
+import { requestCloseApp } from "@/utils/closeApp";
 
 // Type for Finder initial data
 interface FinderInitialData {
@@ -976,7 +977,15 @@ export function FinderAppComponent({
 
   const menuBar = (
     <FinderMenuBar
-      onClose={onClose}
+      onClose={() => {
+        // Dispatch close event to trigger animation and sound
+        if (instanceId) {
+          requestCloseApp(instanceId);
+        } else {
+          // Fallback to direct close if no instanceId
+          onClose();
+        }
+      }}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       viewType={viewType}

@@ -34,6 +34,7 @@ import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
 import { AnyExtension } from "@tiptap/core";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
+import { requestCloseApp } from "@/utils/closeApp";
 
 // TODO: Move relevant state and logic from ChatsAppComponent here
 // - AI chat state (useChat hook)
@@ -702,8 +703,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             }
 
             // Close all open instances of this app
+            // Use requestCloseApp to trigger animation and sound
             openInstances.forEach((instance) => {
-              appStore.closeAppInstance(instance.instanceId);
+              requestCloseApp(instance.instanceId);
             });
 
             // Also close the legacy app state for backward compatibility
