@@ -40,6 +40,8 @@ import { useVideoStore } from "@/stores/useVideoStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 // Import new components and utilities
 import { CommandHistory, CommandContext } from "../types";
@@ -2941,7 +2943,7 @@ export function TerminalAppComponent({
 
   const menuBar = (
     <TerminalMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "terminal" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onClear={() => {

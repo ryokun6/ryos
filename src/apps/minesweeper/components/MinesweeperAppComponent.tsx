@@ -10,6 +10,8 @@ import { helpItems, appMetadata } from "..";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { isMobileDevice } from "@/utils/device";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 const BOARD_SIZE = 9;
 const MINES_COUNT = 10;
@@ -445,7 +447,7 @@ export function MinesweeperAppComponent({
 
   const menuBar = (
     <MinesweeperMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "minesweeper" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onNewGame={() => setIsNewGameDialogOpen(true)}

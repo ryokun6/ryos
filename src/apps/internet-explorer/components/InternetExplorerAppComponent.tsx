@@ -48,6 +48,8 @@ import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 import { track } from "@vercel/analytics";
 import { useAppStore } from "@/stores/useAppStore";
 import TimeMachineView from "./TimeMachineView";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 import {
   Tooltip,
   TooltipContent,
@@ -1967,7 +1969,7 @@ export function InternetExplorerAppComponent({
       canGoForward={historyIndex > 0}
       onClearHistory={() => setClearHistoryDialogOpen(true)}
       onOpenTimeMachine={() => setTimeMachineViewOpen(true)}
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "internet-explorer" as AppId)}
       onEditFuture={() => setFutureSettingsDialogOpen(true)}
       language={language}
       location={location}

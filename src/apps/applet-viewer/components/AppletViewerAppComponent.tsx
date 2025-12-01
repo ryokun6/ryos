@@ -33,6 +33,8 @@ import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
 import { extractMetadataFromHtml } from "@/utils/appletMetadata";
 import { exportAppletAsHtml } from "@/utils/appletImportExport";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -1360,7 +1362,7 @@ export function AppletViewerAppComponent({
 
   const menuBar = (
     <AppletViewerMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "applet-viewer" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onExportAsApp={handleExportAsApp}

@@ -14,6 +14,8 @@ import { SoundboardMenuBar } from "./SoundboardMenuBar";
 import { appMetadata } from "..";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 interface ImportedSlot {
   audioData: string | null;
@@ -325,7 +327,7 @@ export function SoundboardAppComponent({
 
   const menuBar = (
     <SoundboardMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "soundboard" as AppId)}
       isWindowOpen={isWindowOpen}
       onNewBoard={addNewBoard}
       onImportBoard={() => importInputRef.current?.click()}

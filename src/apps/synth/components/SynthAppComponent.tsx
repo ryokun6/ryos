@@ -28,6 +28,8 @@ import { Dial } from "@/components/ui/dial";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Waveform3D } from "./Waveform3D";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 // Define oscillator type
 type OscillatorType = "sine" | "square" | "triangle" | "sawtooth";
@@ -836,7 +838,7 @@ export function SynthAppComponent({
       onShowHelp={() => setIsHelpOpen(true)}
       onShowAbout={() => setIsAboutOpen(true)}
       onReset={resetSynth}
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "synth" as AppId)}
       presets={presets}
       currentPresetId={currentPreset.id}
       onLoadPresetById={(id) => {

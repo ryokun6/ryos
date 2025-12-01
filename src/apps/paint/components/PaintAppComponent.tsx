@@ -15,6 +15,8 @@ import { useFileSystem, dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { usePaintStore } from "@/stores/usePaintStore";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 import { Filter } from "./PaintFiltersMenu";
 import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
@@ -419,7 +421,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     <PaintMenuBar
       isWindowOpen={isWindowOpen}
       isForeground={isForeground}
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "paint" as AppId)}
       canUndo={canUndo}
       canRedo={canRedo}
       onUndo={handleUndo}

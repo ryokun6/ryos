@@ -38,6 +38,8 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { themes } from "@/themes";
 import { OsThemeId } from "@/themes/types";
 import { getTabStyles } from "@/utils/tabStyles";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 interface StoreItem {
   name: string;
@@ -1472,7 +1474,7 @@ export function ControlPanelsAppComponent({
 
   const menuBar = (
     <ControlPanelsMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "control-panels" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
     />

@@ -10,6 +10,8 @@ import { Game, loadGames } from "@/stores/usePcStore";
 import { motion } from "framer-motion";
 import { useJsDos, DosProps, DosEvent } from "../hooks/useJsDos";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 export function PcAppComponent({
   isWindowOpen,
@@ -234,7 +236,7 @@ export function PcAppComponent({
 
   const menuBar = (
     <PcMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "pc" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onSaveState={handleSaveState}
