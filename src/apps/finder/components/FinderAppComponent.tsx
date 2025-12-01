@@ -974,9 +974,19 @@ export function FinderAppComponent({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
+  // Create animated close handler for menubar
+  const handleAnimatedClose = useCallback(() => {
+    if (instanceId) {
+      const event = new CustomEvent(`triggerAnimatedClose-${instanceId}`);
+      window.dispatchEvent(event);
+    } else {
+      onClose();
+    }
+  }, [instanceId, onClose]);
+
   const menuBar = (
     <FinderMenuBar
-      onClose={onClose}
+      onClose={handleAnimatedClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       viewType={viewType}

@@ -456,7 +456,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const { aiMessages, setAiMessages, username, authToken, ensureAuthToken } =
     useChatsStore();
   const launchApp = useLaunchApp();
-  const closeApp = useAppStore((state) => state.closeApp);
+  // Note: closeApp is no longer used here since we use the instance system
+  // Each WindowFrame will call closeAppInstance via its onClose handler after animation
   const aiModel = useAppStore((state) => state.aiModel);
   const speechEnabled = useAppStore((state) => state.speechEnabled);
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
@@ -701,13 +702,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
-            // Close all open instances of this app
+            // Close all open instances of this app with animation and sound
             openInstances.forEach((instance) => {
-              appStore.closeAppInstance(instance.instanceId);
+              // Trigger animated close (with sound and animation)
+              const event = new CustomEvent(`triggerAnimatedClose-${instance.instanceId}`);
+              window.dispatchEvent(event);
             });
 
             // Also close the legacy app state for backward compatibility
-            closeApp(id as AppId);
+            // (This will be called by WindowFrame after animation completes)
+            // Note: We don't call closeApp here since closeAppInstance will be called
+            // by WindowFrame's onClose handler after the animation completes
 
             console.log(
               `[ToolCall] Closed ${appName} (${openInstances.length} window${

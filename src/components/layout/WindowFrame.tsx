@@ -178,7 +178,9 @@ export function WindowFrame({
     wasMinimizedRef.current = isMinimized;
   }, [isMinimized, playZoomMaximize]);
 
-  const handleClose = () => {
+  const handleCloseRef = useRef<() => void>();
+  
+  const handleClose = useCallback(() => {
     if (interceptClose) {
       // Call the parent's onClose handler for interception (like confirmation dialogs)
       onClose?.();
@@ -190,7 +192,12 @@ export function WindowFrame({
       playWindowClose();
       setIsClosing(true);
     }
-  };
+  }, [interceptClose, onClose, vibrateClose, playWindowClose]);
+  
+  // Keep ref in sync
+  useEffect(() => {
+    handleCloseRef.current = handleClose;
+  }, [handleClose]);
 
   // Called when close animation completes
   const handleCloseAnimationComplete = useCallback(() => {
@@ -252,6 +259,24 @@ export function WindowFrame({
       );
     };
   }, [instanceId, appId, performClose, interceptClose]);
+
+  // Listen for animated close requests from outside (right-click menu, menubar, tool calls)
+  useEffect(() => {
+    const eventName = `triggerAnimatedClose-${instanceId || appId}`;
+    
+    const handleAnimatedClose = () => {
+      // Only trigger if not already closing and window is open
+      if (!isClosingRef.current && isOpen && !isMinimized && handleCloseRef.current) {
+        handleCloseRef.current();
+      }
+    };
+
+    window.addEventListener(eventName, handleAnimatedClose);
+
+    return () => {
+      window.removeEventListener(eventName, handleAnimatedClose);
+    };
+  }, [instanceId, appId, isOpen, isMinimized]);
 
   const {
     windowPosition,

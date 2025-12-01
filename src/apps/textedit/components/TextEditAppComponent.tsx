@@ -495,10 +495,20 @@ function TextEditContent({
         editor.getText().trim().length > 0 ||
         editor.getHTML() !== "<p></p>"));
 
+  // Create animated close handler for menubar
+  const handleAnimatedClose = useCallback(() => {
+    if (instanceId) {
+      const event = new CustomEvent(`triggerAnimatedClose-${instanceId}`);
+      window.dispatchEvent(event);
+    } else {
+      handleClose();
+    }
+  }, [instanceId, handleClose]);
+
   const menuBar = (
     <TextEditMenuBar
       editor={editor}
-      onClose={handleClose}
+      onClose={handleAnimatedClose}
       isWindowOpen={isWindowOpen}
       onShowHelp={() => dialogControls?.openHelpDialog()}
       onShowAbout={() => dialogControls?.openAboutDialog()}
