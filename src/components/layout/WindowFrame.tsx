@@ -248,7 +248,6 @@ export function WindowFrame({
   const {
     windowPosition,
     windowSize,
-    isDragging,
     resizeType,
     handleMouseDown,
     handleResizeStart,
