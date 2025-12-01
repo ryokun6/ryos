@@ -2418,6 +2418,7 @@ export function IpodAppComponent({
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
+        keepMountedWhenMinimized
       >
         <div
           ref={containerRef}
