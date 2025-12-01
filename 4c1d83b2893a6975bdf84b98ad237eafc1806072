@@ -6,4 +6,4 @@ src/components/layout/WindowFrame.tsx: +260[0],+262[0],+275-286[0],+287-288[1],+
 Conversations:
 
 [0]: 3110be86-2e99-4d46-90c0-6e4b733d0fa1; Implement animations for taskbar items; claude-4.5-opus-high-thinking;
-[1]: 29422871-79a9-48e2-9ed0-3bb336f4ae31; Fix double close sound in text edit; composer-1;
+[1]: 29422871-79a9-48e2-9ed0-3bb336f4ae31; Fix double close sound in text edit; claude-4.5-opus-high-thinking;
