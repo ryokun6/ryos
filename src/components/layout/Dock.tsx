@@ -17,7 +17,7 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
-import { RightClickMenu } from "@/components/ui/right-click-menu";
+import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import {
   AnimatePresence,
@@ -296,14 +296,19 @@ const Divider = forwardRef<HTMLDivElement, { idKey: string }>(
   )
 );
 
+// Apps that support multi-window
+const MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
+
 function MacDock() {
   const isPhone = useIsPhone();
-  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance } =
+  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
     useAppStoreShallow((s) => ({
       instances: s.instances,
       instanceOrder: s.instanceOrder,
       bringInstanceToForeground: s.bringInstanceToForeground,
       restoreInstance: s.restoreInstance,
+      minimizeInstance: s.minimizeInstance,
+      closeAppInstance: s.closeAppInstance,
     }));
 
   const launchApp = useLaunchApp();
@@ -320,6 +325,14 @@ function MacDock() {
   } | null>(null);
   const [isEmptyTrashDialogOpen, setIsEmptyTrashDialogOpen] = useState(false);
   const dockContainerRef = useRef<HTMLDivElement | null>(null);
+  
+  // App context menu state
+  const [appContextMenu, setAppContextMenu] = useState<{
+    x: number;
+    y: number;
+    appId: AppId;
+    instanceId?: string; // For applet instances
+  } | null>(null);
   
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isSwapping, setIsSwapping] = useState(false);
@@ -605,6 +618,191 @@ function MacDock() {
     ]
   );
 
+  // Generate context menu items for an app
+  const getAppContextMenuItems = useCallback(
+    (appId: AppId, specificInstanceId?: string): MenuItem[] => {
+      const items: MenuItem[] = [];
+      
+      // Get all open instances of this app
+      const appInstances = Object.values(instances).filter(
+        (inst) => inst.appId === appId && inst.isOpen
+      );
+      
+      // For applet-viewer with a specific instance, only show that applet's menu
+      if (appId === "applet-viewer" && specificInstanceId) {
+        const instance = instances[specificInstanceId];
+        if (instance) {
+          // Single applet instance - show its window
+          const { label } = getAppletInfo(instance);
+          const isForeground = instance.isForeground && !instance.isMinimized;
+          items.push({
+            type: "item",
+            label: `${isForeground ? "✓ " : ""}${label}${instance.isMinimized ? " (minimized)" : ""}`,
+            onSelect: () => {
+              if (instance.isMinimized) {
+                restoreInstance(specificInstanceId);
+              }
+              bringInstanceToForeground(specificInstanceId);
+            },
+          });
+          
+          items.push({ type: "separator" });
+          
+          // Show All Windows
+          items.push({
+            type: "item",
+            label: "Show All Windows",
+            onSelect: () => {
+              if (instance.isMinimized) {
+                restoreInstance(specificInstanceId);
+              }
+              bringInstanceToForeground(specificInstanceId);
+            },
+          });
+          
+          // Hide
+          items.push({
+            type: "item",
+            label: "Hide",
+            onSelect: () => {
+              minimizeInstance(specificInstanceId);
+            },
+            disabled: instance.isMinimized,
+          });
+          
+          // Quit
+          items.push({
+            type: "item",
+            label: "Quit",
+            onSelect: () => {
+              closeAppInstance(specificInstanceId);
+            },
+          });
+          
+          return items;
+        }
+      }
+      
+      // List existing windows if any
+      if (appInstances.length > 0) {
+        appInstances.forEach((inst) => {
+          let windowLabel = inst.title || appRegistry[appId]?.name || appId;
+          
+          // For Finder, show the current path
+          if (appId === "finder") {
+            const finderState = finderInstances[inst.instanceId];
+            if (finderState?.currentPath) {
+              const pathParts = finderState.currentPath.split("/");
+              windowLabel = pathParts[pathParts.length - 1] || "Root";
+            }
+          }
+          
+          const isForeground = inst.isForeground && !inst.isMinimized;
+          items.push({
+            type: "item",
+            label: `${isForeground ? "✓ " : ""}${windowLabel}${inst.isMinimized ? " (minimized)" : ""}`,
+            onSelect: () => {
+              if (inst.isMinimized) {
+                restoreInstance(inst.instanceId);
+              }
+              bringInstanceToForeground(inst.instanceId);
+            },
+          });
+        });
+        
+        items.push({ type: "separator" });
+      }
+      
+      // New Window option for multi-instance apps
+      if (MULTI_WINDOW_APPS.includes(appId)) {
+        items.push({
+          type: "item",
+          label: "New Window",
+          onSelect: () => {
+            if (appId === "finder") {
+              launchApp("finder", { initialPath: "/" });
+            } else {
+              launchApp(appId);
+            }
+          },
+        });
+        
+        items.push({ type: "separator" });
+      }
+      
+      // Show All Windows
+      items.push({
+        type: "item",
+        label: "Show All Windows",
+        onSelect: () => {
+          // Restore all minimized instances and bring the last one to foreground
+          let lastRestoredId: string | null = null;
+          appInstances.forEach((inst) => {
+            if (inst.isMinimized) {
+              restoreInstance(inst.instanceId);
+            }
+            lastRestoredId = inst.instanceId;
+          });
+          if (lastRestoredId) {
+            bringInstanceToForeground(lastRestoredId);
+          }
+        },
+        disabled: appInstances.length === 0,
+      });
+      
+      // Hide (minimize all)
+      items.push({
+        type: "item",
+        label: "Hide",
+        onSelect: () => {
+          appInstances.forEach((inst) => {
+            if (!inst.isMinimized) {
+              minimizeInstance(inst.instanceId);
+            }
+          });
+        },
+        disabled: appInstances.length === 0 || appInstances.every((inst) => inst.isMinimized),
+      });
+      
+      // Quit (close all)
+      items.push({
+        type: "item",
+        label: "Quit",
+        onSelect: () => {
+          appInstances.forEach((inst) => {
+            closeAppInstance(inst.instanceId);
+          });
+        },
+        disabled: appInstances.length === 0,
+      });
+      
+      return items;
+    },
+    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, launchApp]
+  );
+
+  // Handle app context menu
+  const handleAppContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>, appId: AppId, instanceId?: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const containerRect = dockContainerRef.current?.getBoundingClientRect();
+      if (!containerRect) {
+        setAppContextMenu({ x: e.clientX, y: e.clientY, appId, instanceId });
+        return;
+      }
+      
+      setAppContextMenu({
+        x: e.clientX - containerRect.left,
+        y: e.clientY - containerRect.top,
+        appId,
+        instanceId,
+      });
+    },
+    []
+  );
+
   // Dock magnification state/logic driven by Framer motion value at container level
   const mouseX = useMotionValue<number>(Infinity);
 
@@ -736,12 +934,12 @@ function MacDock() {
             },
           }}
           onMouseMove={
-            magnifyEnabled && !trashContextMenuPos
+            magnifyEnabled && !trashContextMenuPos && !appContextMenu
               ? (e) => mouseX.set(e.clientX)
               : undefined
           }
           onMouseLeave={
-            magnifyEnabled && !trashContextMenuPos
+            magnifyEnabled && !trashContextMenuPos && !appContextMenu
               ? () => {
                   mouseX.set(Infinity);
                   handleIconLeave();
@@ -772,6 +970,7 @@ function MacDock() {
                         focusOrLaunchApp(appId);
                       }
                     }}
+                    onContextMenu={(e) => handleAppContextMenu(e, appId)}
                     showIndicator={isOpen}
                     isLoading={isLoading}
                     mouseX={mouseX}
@@ -807,6 +1006,7 @@ function MacDock() {
                           bringInstanceToForeground(item.instanceId!);
                         }
                       }}
+                      onContextMenu={(e) => handleAppContextMenu(e, "applet-viewer", item.instanceId)}
                       showIndicator
                       isLoading={instance.isLoading}
                       isEmoji={isEmoji}
@@ -833,6 +1033,7 @@ function MacDock() {
                       icon={icon}
                       idKey={item.appId}
                       onClick={() => focusMostRecentInstanceOfApp(item.appId)}
+                      onContextMenu={(e) => handleAppContextMenu(e, item.appId)}
                       showIndicator
                       isLoading={isLoading}
                       mouseX={mouseX}
@@ -983,6 +1184,16 @@ function MacDock() {
           mouseX.set(Infinity);
         }}
       />
+      {appContextMenu && (
+        <RightClickMenu
+          items={getAppContextMenuItems(appContextMenu.appId, appContextMenu.instanceId)}
+          position={appContextMenu}
+          onClose={() => {
+            setAppContextMenu(null);
+            mouseX.set(Infinity);
+          }}
+        />
+      )}
       <ConfirmDialog
         isOpen={isEmptyTrashDialogOpen}
         onOpenChange={setIsEmptyTrashDialogOpen}
