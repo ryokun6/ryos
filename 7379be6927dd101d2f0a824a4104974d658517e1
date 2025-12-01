@@ -1,0 +1,9 @@
+AI Notes:
+
+src/components/layout/WindowFrame.tsx: +197-201[0],+203[0] -197[0],-199[0]
+src/stores/useInternetExplorerStore.ts: +21[1]
+
+Conversations:
+
+[0]: 29422871-79a9-48e2-9ed0-3bb336f4ae31; Fix double close sound in text edit; composer-1;
+[1]: 0eba592b-9cad-49e2-b28b-38fbc7e8bcd0; Add iso-city.com to IE bookmarks; default;
