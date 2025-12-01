@@ -26,9 +26,15 @@ import type { OsThemeId } from "../src/themes/types.js";
 import {
   checkAndIncrementAIMessageCount,
   AI_LIMIT_PER_5_HOURS,
-  } from "./utils/rate-limit.js";
-import { Redis } from "@upstash/redis";
+} from "./utils/rate-limit.js";
 import { getEffectiveOrigin, isAllowedOrigin } from "./utils/cors.js";
+import {
+  AUTH_TOKEN_PREFIX,
+  TOKEN_GRACE_PERIOD,
+  TOKEN_LAST_PREFIX,
+  USER_TTL_SECONDS,
+} from "./chat-lib/constants.js";
+import { getRedisClient } from "./chat-lib/redis.js";
 
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
@@ -358,16 +364,7 @@ const buildContextAwarePrompts = () => {
 };
 
 // Add Redis client for auth validation
-const redis = new Redis({
-  url: process.env.REDIS_KV_REST_API_URL,
-  token: process.env.REDIS_KV_REST_API_TOKEN,
-});
-
-// Add auth validation function
-const AUTH_TOKEN_PREFIX = "chat:token:";
-const TOKEN_LAST_PREFIX = "chat:token:last:";
-const USER_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days (for tokens only)
-const TOKEN_GRACE_PERIOD = 365 * 24 * 60 * 60; // 365 days (1 year)
+const redis = getRedisClient();
 
 async function validateAuthToken(
   username: string | undefined | null,

@@ -1,164 +1,64 @@
-import { Redis } from "@upstash/redis";
-// Using leo-profanity exclusively for profanity detection/cleaning
-import Pusher from "pusher";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import leoProfanity from "leo-profanity";
-// Inlined minimal Ryo prompt to avoid importing TS from JS during dev
+import {
+  AUTH_TOKEN_PREFIX,
+  CHAT_BURST_LONG_LIMIT,
+  CHAT_BURST_LONG_WINDOW_SECONDS,
+  CHAT_BURST_PREFIX,
+  CHAT_BURST_SHORT_LIMIT,
+  CHAT_BURST_SHORT_WINDOW_SECONDS,
+  CHAT_MESSAGES_PREFIX,
+  CHAT_MIN_INTERVAL_SECONDS,
+  CHAT_ROOM_PREFIX,
+  CHAT_ROOM_PRESENCE_PREFIX,
+  CHAT_ROOM_PRESENCE_ZSET_PREFIX,
+  CHAT_ROOM_USERS_PREFIX,
+  CHAT_ROOMS_SET,
+  CHAT_USERS_PREFIX,
+  CREATE_USER_BLOCK_TTL_SECONDS,
+  MAX_MESSAGE_LENGTH,
+  MAX_USERNAME_LENGTH,
+  MIN_USERNAME_LENGTH,
+  PASSWORD_BCRYPT_ROUNDS,
+  PASSWORD_HASH_PREFIX,
+  PASSWORD_MIN_LENGTH,
+  RATE_LIMIT_ATTEMPTS,
+  RATE_LIMIT_BLOCK_PREFIX,
+  RATE_LIMIT_PREFIX,
+  RATE_LIMIT_WINDOW_SECONDS,
+  ROOM_ID_REGEX,
+  ROOM_PRESENCE_TTL_SECONDS,
+  TOKEN_GRACE_PERIOD,
+  TOKEN_LAST_PREFIX,
+  TOKEN_LENGTH,
+  USERNAME_REGEX,
+  USER_EXPIRATION_TIME,
+  USER_TTL_SECONDS,
+} from "./chat-lib/constants.js";
+import {
+  filterProfanityPreservingUrls,
+  isProfaneUsername,
+} from "./chat-lib/profanity.js";
+import { getRedisClient } from "./chat-lib/redis.js";
+import { getPusherClient } from "./chat-lib/pusher.js";
+import {
+  generateRequestId,
+  logError,
+  logInfo,
+  logRequest,
+} from "./chat-lib/logging.js";
+import { createErrorResponse } from "./chat-lib/responses.js";
 
-// Legacy bad-words usage removed in favor of leo-profanity
-
-// Initialize leo-profanity for stronger, substring-based checks
-try {
-  // Ensure a deterministic dictionary state
-  leoProfanity.clearList();
-  leoProfanity.loadDictionary("en");
-  leoProfanity.add(["badword1", "badword2", "chink"]);
-} catch (_) {
-  // Fail open; leo-profanity might not be loaded in some envs
-}
-
-/** Robust username profanity check (substring-aware, simple leet bypasses) */
-const isProfaneUsername = (name) => {
-  if (!name) return false;
-  const lower = String(name).toLowerCase();
-  // Collapse common separators to catch joined variations like f_u-c.k
-  let normalized = lower.replace(/[\s_\-.]+/g, "");
-  // Replace simple leetspeak characters to improve detection
-  normalized = normalized
-    .replace(/\$/g, "s")
-    .replace(/@/g, "a")
-    .replace(/0/g, "o")
-    .replace(/[1!]/g, "i")
-    .replace(/3/g, "e")
-    .replace(/4/g, "a")
-    .replace(/5/g, "s")
-    .replace(/7/g, "t");
-
-  // 1) Use leo-profanity's own check first (word-aware)
-  if (
-    typeof leoProfanity?.check === "function" &&
-    leoProfanity.check(normalized)
-  ) {
-    return true;
-  }
-
-  // 2) Substring fallback: flag if any dictionary term appears inside the username
-  try {
-    const dict =
-      typeof leoProfanity?.list === "function" ? leoProfanity.list() : [];
-    for (const term of dict) {
-      if (term && term.length >= 3 && normalized.includes(term)) {
-        return true;
-      }
-    }
-  } catch (_) {}
-
-  return false;
-};
-
-// Set up Redis client
-const redis = new Redis({
-  url: process.env.REDIS_KV_REST_API_URL,
-  token: process.env.REDIS_KV_REST_API_TOKEN,
-});
-
-// Initialize Pusher
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID,
-  key: process.env.PUSHER_KEY,
-  secret: process.env.PUSHER_SECRET,
-  cluster: process.env.PUSHER_CLUSTER,
-  useTLS: true,
-});
-
-// Logging utilities
-const logRequest = (method, url, action, id) => {
-  console.log(`[${id}] ${method} ${url} - Action: ${action || "none"}`);
-};
-
-const logInfo = (id, message, data) => {
-  console.log(`[${id}] INFO: ${message}`, data ? data : "");
-};
-
-const logError = (id, message, error) => {
-  console.error(`[${id}] ERROR: ${message}`, error);
-};
-
-const generateRequestId = () => {
-  return Math.random().toString(36).substring(2, 10);
-};
+const redis = getRedisClient();
+const pusher = getPusherClient();
 
 // API runtime config
 export const runtime = "nodejs";
 export const maxDuration = 15;
 
-// Redis key prefixes
-const CHAT_ROOM_PREFIX = "chat:room:";
-const CHAT_MESSAGES_PREFIX = "chat:messages:";
-const CHAT_USERS_PREFIX = "chat:users:";
-const CHAT_ROOM_USERS_PREFIX = "chat:room:users:";
-const CHAT_ROOM_PRESENCE_PREFIX = "chat:presence:"; // New: for tracking user presence in rooms with TTL
-// Optimized presence: per-room ZSET (score = last heartbeat) to avoid SCANs
-const CHAT_ROOM_PRESENCE_ZSET_PREFIX = "chat:presencez:";
-
-// Registry of all room ids to avoid scanning keys
-const CHAT_ROOMS_SET = "chat:rooms";
-
-// TOKEN TTL (in seconds) – tokens expire after 90 days
-const USER_TTL_SECONDS = 7776000; // 90 days (kept for token expiry)
-
-// Token expiration time in seconds (90 days)
-const USER_EXPIRATION_TIME = 7776000; // 90 days
-
-// Note: User records no longer expire - they persist forever
-
-// Room presence TTL (in seconds) – after this period of inactivity, user is considered offline in room
-const ROOM_PRESENCE_TTL_SECONDS = 86400; // 1 day (24 hours)
-
-// Add constants for max message and username length
-const MAX_MESSAGE_LENGTH = 1000;
-const MAX_USERNAME_LENGTH = 30;
-const MIN_USERNAME_LENGTH = 3; // Minimum username length (must be more than 2 characters)
-
-// Token constants
-const AUTH_TOKEN_PREFIX = "chat:token:";
-const TOKEN_LENGTH = 32; // 32 bytes = 256 bits
-const TOKEN_GRACE_PERIOD = 86400 * 365; // 365 days (1 year) grace period for refresh after expiry
-
-// Password constants
-const PASSWORD_HASH_PREFIX = "chat:password:";
-const PASSWORD_MIN_LENGTH = 8;
-const PASSWORD_BCRYPT_ROUNDS = 10;
-
-// Rate limiting constants
-const RATE_LIMIT_WINDOW_SECONDS = 60; // 1 minute window
-const RATE_LIMIT_ATTEMPTS = 10; // Max attempts per window
-const RATE_LIMIT_PREFIX = "rl:"; // Rate limit key prefix
-const RATE_LIMIT_BLOCK_PREFIX = "rl:block:"; // Blocklist key prefix
-const CREATE_USER_BLOCK_TTL_SECONDS = 24 * 60 * 60; // 24 hours
-
-// Chat burst limiter (public rooms): limit quick bursts
-const CHAT_BURST_PREFIX = "rl:chat:b:";
-const CHAT_BURST_SHORT_WINDOW_SECONDS = 10; // short window to stop bursts
-const CHAT_BURST_SHORT_LIMIT = 3; // tighter cap on short bursts
-const CHAT_BURST_LONG_WINDOW_SECONDS = 60; // longer window to cap sustained spam
-const CHAT_BURST_LONG_LIMIT = 20; // max messages per minute
-const CHAT_MIN_INTERVAL_SECONDS = 2; // minimum seconds between messages
-
-// ------------------------------
 // Input-validation / sanitization helpers
-// ------------------------------
-
-// Usernames: 3-30 chars, start with a letter, letters/numbers,
-// optional single hyphen/underscore between alphanumerics (no leading/trailing or consecutive separators)
-// Examples: ok -> "alice", "john_doe", "foo-bar"; not ok -> "_joe", "joe_", "a--b", "a__b", "a b", "a@b"
-const USERNAME_REGEX = /^[a-z](?:[a-z0-9]|[-_](?=[a-z0-9])){2,29}$/i;
-
-// Room IDs generated internally are base-36 alphanumerics; still validate when received from client
-const ROOM_ID_REGEX = /^[a-z0-9]+$/i;
 
 /** Simple HTML-escaping to mitigate XSS when rendering messages */
 const escapeHTML = (str = "") =>
@@ -173,67 +73,6 @@ const escapeHTML = (str = "") =>
         "'": "&#39;",
       }[ch])
   );
-
-// Helper: clean profanity to fixed '███' blocks (not per-character), preserving input length semantics where possible
-const cleanProfanityToTripleBlocks = (text) => {
-  try {
-    const cleaned =
-      typeof leoProfanity?.clean === "function"
-        ? leoProfanity.clean(text, "█")
-        : text;
-    // Collapse any contiguous run of mask characters into a fixed triple block
-    return cleaned.replace(/█+/g, "███");
-  } catch {
-    return text;
-  }
-};
-
-// Filter profanity while preserving URLs (especially underscores in URLs)
-const filterProfanityPreservingUrls = (content) => {
-  // URL regex pattern to match HTTP/HTTPS URLs
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-
-  // Extract URLs and their positions
-  const urls = [];
-  let match;
-  const urlMatches = [];
-
-  while ((match = urlRegex.exec(content)) !== null) {
-    urlMatches.push({
-      url: match[1],
-      start: match.index,
-      end: match.index + match[1].length,
-    });
-  }
-
-  // If no URLs found, apply profanity filter and collapse masks per word
-  if (urlMatches.length === 0) {
-    return cleanProfanityToTripleBlocks(content);
-  }
-
-  // Split content into URL and non-URL parts
-  let result = "";
-  let lastIndex = 0;
-
-  for (const urlMatch of urlMatches) {
-    // Add filtered non-URL part before this URL
-    const beforeUrl = content.substring(lastIndex, urlMatch.start);
-    result += cleanProfanityToTripleBlocks(beforeUrl);
-
-    // Add the URL unchanged
-    result += urlMatch.url;
-
-    lastIndex = urlMatch.end;
-  }
-
-  // Add any remaining non-URL content after the last URL
-  if (lastIndex < content.length) {
-    const afterLastUrl = content.substring(lastIndex);
-    result += cleanProfanityToTripleBlocks(afterLastUrl);
-  }
-
-  return result;
-};
 
 /** Validate a username string. Throws on failure. */
 function assertValidUsername(username, requestId) {
@@ -426,7 +265,7 @@ const deleteAllUserTokens = async (username) => {
   // 3. Grace-period token store: chat:token:last:{username}
   //    Removing this prevents refresh using old tokens after a full logout.
   // ------------------------------------------------------------
-  const lastTokenKey = `${AUTH_TOKEN_PREFIX}last:${normalizedUsername}`;
+  const lastTokenKey = `${TOKEN_LAST_PREFIX}${normalizedUsername}`;
   const lastDeleted = await redis.del(lastTokenKey);
   deletedCount += lastDeleted;
 
@@ -501,7 +340,7 @@ const validateAuth = async (
   // 4. Grace-period path – allow refresh of recently expired tokens
   // ---------------------------
   if (allowExpired) {
-    const lastTokenKey = `${AUTH_TOKEN_PREFIX}last:${normalizedUsername}`;
+    const lastTokenKey = `${TOKEN_LAST_PREFIX}${normalizedUsername}`;
     const lastTokenData = await redis.get(lastTokenKey);
 
     if (lastTokenData) {
@@ -538,7 +377,7 @@ const storeLastValidToken = async (
   expiredAtMs = Date.now(),
   ttlSeconds = TOKEN_GRACE_PERIOD
 ) => {
-  const lastTokenKey = `${AUTH_TOKEN_PREFIX}last:${username.toLowerCase()}`;
+  const lastTokenKey = `${TOKEN_LAST_PREFIX}${username.toLowerCase()}`;
   const tokenData = {
     token,
     expiredAt: expiredAtMs,
@@ -763,14 +602,6 @@ const generateId = () => {
 
 const getCurrentTimestamp = () => {
   return Date.now();
-};
-
-// Error response helper
-const createErrorResponse = (message, status) => {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
 };
 
 // Utility to ensure user data is an object
@@ -3242,7 +3073,7 @@ async function handleVerifyToken(request, requestId) {
     }
 
     // Grace-period path: scan last token records
-    const lastPattern = `${AUTH_TOKEN_PREFIX}last:*`;
+    const lastPattern = `${TOKEN_LAST_PREFIX}*`;
     cursor = 0;
     let graceUsername = null;
     let expiredAt = 0;
