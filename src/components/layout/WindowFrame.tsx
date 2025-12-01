@@ -38,6 +38,8 @@ interface WindowFrameProps {
   // Close interception support
   interceptClose?: boolean;
   menuBar?: React.ReactNode; // Add menuBar prop
+  // Keep content mounted when minimized (useful for audio/video apps)
+  keepMountedWhenMinimized?: boolean;
 }
 
 export function WindowFrame({
@@ -55,6 +57,7 @@ export function WindowFrame({
   onNavigatePrevious,
   interceptClose = false,
   menuBar, // Add menuBar to destructured props
+  keepMountedWhenMinimized = false,
 }: WindowFrameProps) {
   const config = getWindowConfig(appId);
   const defaultConstraints = {
@@ -638,8 +641,9 @@ export function WindowFrame({
   };
 
   // For close: keep showing but animate to closed state, then unmount via onAnimationComplete
-  // For minimize: use AnimatePresence exit animation
-  const shouldShow = !isMinimized && isOpen;
+  // For minimize: by default unmount via AnimatePresence exit animation
+  // If keepMountedWhenMinimized is true, keep content mounted but visually hidden (useful for audio/video apps)
+  const shouldShow = keepMountedWhenMinimized ? isOpen : (!isMinimized && isOpen);
 
   // Shake/nudge animation using Framer Motion
   const shakeTransition = {
@@ -666,8 +670,19 @@ export function WindowFrame({
   };
 
   const getExitAnimation = () => {
-    // Minimize animation - shrink to dock icon position
-    // Note: Close animation is handled via the animate prop, not exit
+    // For apps with keepMountedWhenMinimized, exit is only for close
+    // For other apps, exit handles both close and minimize (minimize animates to dock)
+    if (keepMountedWhenMinimized) {
+      // Only close animation - minimize is handled via animate prop
+      return { 
+        scale: 0.95, 
+        opacity: 0,
+        x: 0,
+        y: 0,
+        transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
+      };
+    }
+    // Default behavior: minimize animation - shrink to dock icon position
     return { 
       scale: 0.1, 
       opacity: 0,
@@ -688,6 +703,18 @@ export function WindowFrame({
         transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
       };
     }
+    // Only apply minimize animation via animate prop when keepMountedWhenMinimized is true
+    // Otherwise, the exit animation handles minimize
+    if (keepMountedWhenMinimized && isMinimized) {
+      // Minimize animation - shrink to dock icon position
+      return { 
+        scale: 0.1, 
+        opacity: 0,
+        x: dockIconOffset.x,
+        y: dockIconOffset.y,
+        transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const }
+      };
+    }
     
     if (isShaking) {
       return {
@@ -704,6 +731,7 @@ export function WindowFrame({
       };
     }
     
+    // Normal visible state
     return { 
       scale: 1, 
       opacity: 1,
@@ -731,7 +759,9 @@ export function WindowFrame({
           className={cn(
             "absolute p-2 md:p-0 w-full md:h-full md:mt-0 select-none",
             // Disable all pointer events when window is closing
-            isClosing && "pointer-events-none"
+            isClosing && "pointer-events-none",
+            // For keepMountedWhenMinimized apps, also disable pointer events when minimized
+            (keepMountedWhenMinimized && isMinimized) && "pointer-events-none"
           )}
           onClick={() => {
             if (!isForeground) {
