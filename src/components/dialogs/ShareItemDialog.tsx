@@ -23,6 +23,8 @@ interface ShareItemDialogProps {
   title?: string; // e.g., Webpage title, Song title
   details?: string; // e.g., Artist for Song
   generateShareUrl: (identifier: string, secondary?: string) => string;
+  contentClassName?: string; // Additional className for DialogContent (e.g., for z-index overrides)
+  overlayClassName?: string; // Additional className for Dialog overlay (e.g., for z-index overrides)
 }
 
 export function ShareItemDialog({
@@ -34,6 +36,8 @@ export function ShareItemDialog({
   title,
   details,
   generateShareUrl,
+  contentClassName,
+  overlayClassName,
 }: ShareItemDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
@@ -243,8 +247,10 @@ export function ShareItemDialog({
         <DialogContent
           className={cn(
             "p-0 overflow-hidden max-w-xs border-0", // Remove border but keep box-shadow
-            currentTheme === "xp" ? "window" : "window" // Use window class for both themes
+            currentTheme === "xp" ? "window" : "window", // Use window class for both themes
+            contentClassName
           )}
+          overlayClassName={overlayClassName}
           style={{
             fontSize: "11px",
           }}
@@ -268,7 +274,11 @@ export function ShareItemDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="bg-os-window-bg border-[length:var(--os-metrics-border-width)] border-os-window rounded-os shadow-os-window max-w-xs"
+        className={cn(
+          "bg-os-window-bg border-[length:var(--os-metrics-border-width)] border-os-window rounded-os shadow-os-window max-w-xs",
+          contentClassName
+        )}
+        overlayClassName={overlayClassName}
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
         {isMacOsxTheme ? (

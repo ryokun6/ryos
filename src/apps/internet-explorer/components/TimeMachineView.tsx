@@ -1108,7 +1108,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="bg-black border-[#3a3a3a] text-white"
+                    className="z-[10001]"
                   >
                     {[...Object.values(ShaderType), "off"].map((type) => {
                       const isSelected =
@@ -1141,22 +1141,25 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                 </DropdownMenu>
               </div>
             </div>
+
+                  {/* Share Dialog - Uses high z-index to appear above Time Machine overlay */}
+                  <ShareItemDialog
+                    isOpen={isShareDialogOpen}
+                    onClose={() => setIsShareDialogOpen(false)}
+                    itemType="Page"
+                    itemIdentifier={currentUrl}
+                    secondaryIdentifier={activeYear || currentSelectedYear}
+                    title={getHostname(currentUrl)} // Using hostname as title
+                    generateShareUrl={timeMachineGenerateShareUrl}
+                    contentClassName="z-[10001]"
+                    overlayClassName="z-[10001]"
+                  />
                 </motion.div>
               )}
             </AnimatePresence>,
             document.body
           )
         : null}
-
-      <ShareItemDialog
-        isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
-        itemType="Page"
-        itemIdentifier={currentUrl}
-        secondaryIdentifier={activeYear || currentSelectedYear}
-        title={getHostname(currentUrl)} // Using hostname as title
-        generateShareUrl={timeMachineGenerateShareUrl}
-      />
     </>
   );
 };
