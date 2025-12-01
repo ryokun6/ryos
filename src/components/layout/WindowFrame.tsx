@@ -3,7 +3,7 @@ import { ResizeType } from "@/types/types";
 import { useAppContext } from "@/contexts/AppContext";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { getWindowConfig, getAppIconPath } from "@/config/appRegistry";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -74,6 +74,8 @@ export function WindowFrame({
   const [isOpen, setIsOpen] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
   const [isInitialMount, setIsInitialMount] = useState(true);
+  // Ref to store the exit animation - updated synchronously before state changes
+  const exitAnimationRef = useRef<'close' | 'minimize'>('minimize');
   const { bringToForeground } = useAppContext();
   const {
     bringInstanceToForeground,
@@ -163,6 +165,7 @@ export function WindowFrame({
   // Track previous minimized state to play sound on restore
   const wasMinimizedRef = useRef(isMinimized);
   const shouldAnimateRestore = wasMinimizedRef.current && !isMinimized;
+  
   useEffect(() => {
     if (wasMinimizedRef.current && !isMinimized) {
       // Window was just restored from minimized state
@@ -172,15 +175,22 @@ export function WindowFrame({
   }, [isMinimized, playWindowExpand]);
 
   const handleClose = () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:handleClose',message:'handleClose called',data:{interceptClose,isClosingBefore:isClosing,instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     if (interceptClose) {
       // Call the parent's onClose handler for interception (like confirmation dialogs)
       onClose?.();
     } else {
-      // Normal close behavior with animation and sounds
+      // Set exit animation ref BEFORE state change - this is read synchronously by Framer Motion
+      exitAnimationRef.current = 'close';
       isClosingRef.current = true;
       vibrateClose();
       playWindowClose();
       setIsClosing(true);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:handleClose',message:'setIsClosing(true) called',data:{instanceId,exitAnimationRef:exitAnimationRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     }
   };
 
@@ -189,6 +199,7 @@ export function WindowFrame({
     if (isClosing) {
       setIsOpen(false);
       isClosingRef.current = false;
+      exitAnimationRef.current = 'minimize'; // Reset to default
       onClose?.();
     }
   }, [isClosing, onClose]);
@@ -251,6 +262,22 @@ export function WindowFrame({
     setWindowPosition,
     getSafeAreaBottomInset,
   } = useWindowManager({ appId, instanceId });
+
+  // Calculate dock icon position relative to window center (used for both minimize and restore animations)
+  const dockIconOffset = useMemo(() => {
+    const dockIcon = document.querySelector(`[data-dock-icon="${appId}"]`);
+    if (dockIcon) {
+      const rect = dockIcon.getBoundingClientRect();
+      // Calculate offset from window center to dock icon center
+      const windowCenterX = windowPosition.x + windowSize.width / 2;
+      const windowCenterY = windowPosition.y + windowSize.height / 2;
+      return {
+        x: rect.left + rect.width / 2 - windowCenterX,
+        y: rect.top + rect.height / 2 - windowCenterY,
+      };
+    }
+    return { x: 0, y: window.innerHeight - windowPosition.y }; // Fallback to bottom of screen
+  }, [appId, windowPosition, windowSize]);
 
   // Centralized insets per theme
   const computeInsets = useCallback(() => {
@@ -566,14 +593,23 @@ export function WindowFrame({
     };
   };
 
-  // Determine if window should be visible
-  const shouldShow = !isMinimized && !isClosing && isOpen;
+  // For close: keep showing but animate to closed state, then unmount
+  // For minimize: use AnimatePresence exit animation
+  const shouldShow = !isMinimized && isOpen;
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:render',message:'shouldShow calculated',data:{shouldShow,isMinimized,isClosing,isOpen,instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
 
   // Determine animation variants
   const getInitialAnimation = () => {
     if (shouldAnimateRestore) {
-      // Restoring from minimized - animate from dock
-      return { scale: 0.5, opacity: 0, y: 200 };
+      // Restoring from minimized - animate from dock icon position
+      return { 
+        scale: 0.1, 
+        opacity: 0, 
+        x: dockIconOffset.x,
+        y: dockIconOffset.y 
+      };
     }
     if (isInitialMount) {
       // Initial window open
@@ -583,36 +619,68 @@ export function WindowFrame({
   };
 
   const getExitAnimation = () => {
-    if (isClosing) {
+    // Use exitAnimationRef - set synchronously BEFORE state change triggers exit
+    const animationType = exitAnimationRef.current;
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:getExitAnimation',message:'getExitAnimation called',data:{exitAnimationRef:animationType,isClosing,isMinimized,isOpen,instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    if (animationType === 'close') {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:getExitAnimation',message:'returning CLOSE animation',data:{instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       // Close animation - shrink to center
       return { 
         scale: 0.95, 
         opacity: 0,
-        transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] }
+        x: 0,
+        y: 0,
+        transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
       };
     }
-    // Minimize animation - shrink to dock
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:getExitAnimation',message:'returning MINIMIZE animation',data:{instanceId,dockIconOffset},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    // Minimize animation - shrink to dock icon position
     return { 
-      scale: 0.5, 
+      scale: 0.1, 
       opacity: 0,
-      y: 200,
-      transition: { duration: 0.3, ease: [0.32, 0, 0.67, 0] }
+      x: dockIconOffset.x,
+      y: dockIconOffset.y,
+      transition: { duration: 0.4, ease: [0.32, 0, 0.67, 0] as const }
     };
   };
 
   return (
-    <AnimatePresence onExitComplete={isClosing ? handleCloseAnimationComplete : undefined}>
+    <AnimatePresence onExitComplete={!isClosing ? undefined : undefined}>
       {shouldShow && (
         <motion.div
           key={instanceId || appId}
           initial={getInitialAnimation()}
-          animate={{ 
-            scale: 1, 
-            opacity: 1,
-            y: 0,
-            transition: shouldAnimateRestore 
-              ? { duration: 0.3, ease: [0.33, 1, 0.68, 1] }
-              : { duration: 0.2, ease: [0.33, 1, 0.68, 1] }
+          animate={isClosing 
+            ? { 
+                scale: 0.95, 
+                opacity: 0,
+                x: 0,
+                y: 0,
+                transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
+              }
+            : { 
+                scale: 1, 
+                opacity: 1,
+                x: 0,
+                y: 0,
+                transition: shouldAnimateRestore 
+                  ? { duration: 0.4, ease: [0.33, 1, 0.68, 1] as const }
+                  : { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const }
+              }
+          }
+          onAnimationComplete={() => {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WindowFrame.tsx:onAnimationComplete',message:'animation complete',data:{isClosing,instanceId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+            // #endregion
+            if (isClosing) {
+              handleCloseAnimationComplete();
+            }
           }}
           exit={getExitAnimation()}
           className={cn(

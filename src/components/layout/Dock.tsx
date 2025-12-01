@@ -126,6 +126,7 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
         ref={setCombinedRef}
         layout
         layoutId={`dock-icon-${idKey}`}
+        data-dock-icon={idKey}
         initial={isNew ? { scale: 0, opacity: 0 } : undefined}
         animate={{ scale: 1, opacity: 1 }}
         exit={{
