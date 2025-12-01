@@ -948,12 +948,15 @@ export function IpodAppComponent({
   );
 
   const prevIsForeground = useRef(isForeground);
-  const { bringToForeground, clearIpodInitialData } = useAppStoreShallow(
+  const { bringToForeground, clearIpodInitialData, instances } = useAppStoreShallow(
     (state) => ({
       bringToForeground: state.bringToForeground,
       clearIpodInitialData: state.clearInstanceInitialData,
+      instances: state.instances,
     })
   );
+  // Track minimized state for this instance
+  const isMinimized = instanceId ? instances[instanceId]?.isMinimized ?? false : false;
   // Track the last processed initialData to avoid duplicates
   const lastProcessedInitialDataRef = useRef<unknown>(null);
 
@@ -2167,6 +2170,9 @@ export function IpodAppComponent({
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
+  // Track previous minimized state to detect restore
+  const prevMinimizedRef = useRef(isMinimized);
+
   useEffect(() => {
     let timeoutId: number;
 
@@ -2201,6 +2207,17 @@ export function IpodAppComponent({
     // Initial resize with a small delay to ensure DOM is ready
     timeoutId = window.setTimeout(handleResize, 10);
 
+    // Detect restore from minimize - trigger resize with longer delays
+    // to ensure the window has fully animated back to its position
+    if (prevMinimizedRef.current && !isMinimized) {
+      // Schedule multiple resize attempts after restore
+      const delays = [50, 100, 200, 300, 500];
+      delays.forEach((delay) => {
+        window.setTimeout(handleResize, delay);
+      });
+    }
+    prevMinimizedRef.current = isMinimized;
+
     const resizeObserver = new ResizeObserver(() => {
       // Debounce resize events
       clearTimeout(timeoutId);
@@ -2215,7 +2232,7 @@ export function IpodAppComponent({
       clearTimeout(timeoutId);
       resizeObserver.disconnect();
     };
-  }, [isWindowOpen]);
+  }, [isWindowOpen, isMinimized]);
 
   const handleShareSong = useCallback(() => {
     if (tracks.length > 0 && currentIndex >= 0) {

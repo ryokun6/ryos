@@ -638,8 +638,8 @@ export function WindowFrame({
   };
 
   // For close: keep showing but animate to closed state, then unmount via onAnimationComplete
-  // For minimize: use AnimatePresence exit animation
-  const shouldShow = !isMinimized && isOpen;
+  // For minimize: keep content mounted but visually hidden (allows audio/video to keep playing)
+  const shouldShow = isOpen;
 
   // Determine animation variants
   const getInitialAnimation = () => {
@@ -660,14 +660,46 @@ export function WindowFrame({
   };
 
   const getExitAnimation = () => {
-    // Minimize animation - shrink to dock icon position
-    // Note: Close animation is handled via the animate prop, not exit
+    // Exit animation only for close now (minimize stays mounted)
     return { 
-      scale: 0.1, 
+      scale: 0.95, 
       opacity: 0,
-      x: dockIconOffset.x,
-      y: dockIconOffset.y,
-      transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const }
+      x: 0,
+      y: 0,
+      transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
+    };
+  };
+
+  // Get the animate state based on current state
+  const getAnimateState = () => {
+    if (isClosing) {
+      return { 
+        scale: 0.95, 
+        opacity: 0,
+        x: 0,
+        y: 0,
+        transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
+      };
+    }
+    if (isMinimized) {
+      // Minimize animation - shrink to dock icon position
+      return { 
+        scale: 0.1, 
+        opacity: 0,
+        x: dockIconOffset.x,
+        y: dockIconOffset.y,
+        transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const }
+      };
+    }
+    // Normal visible state
+    return { 
+      scale: 1, 
+      opacity: 1,
+      x: 0,
+      y: 0,
+      transition: shouldAnimateRestore 
+        ? { duration: 0.25, ease: [0.33, 1, 0.68, 1] as const }
+        : { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const }
     };
   };
 
@@ -677,24 +709,7 @@ export function WindowFrame({
         <motion.div
           key={instanceId || appId}
           initial={getInitialAnimation()}
-          animate={isClosing 
-            ? { 
-                scale: 0.95, 
-                opacity: 0,
-                x: 0,
-                y: 0,
-                transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
-              }
-            : { 
-                scale: 1, 
-                opacity: 1,
-                x: 0,
-                y: 0,
-                transition: shouldAnimateRestore 
-                  ? { duration: 0.25, ease: [0.33, 1, 0.68, 1] as const }
-                  : { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const }
-              }
-          }
+          animate={getAnimateState()}
           onAnimationComplete={() => {
             if (isClosing) {
               handleCloseAnimationComplete();
@@ -704,8 +719,8 @@ export function WindowFrame({
           className={cn(
             "absolute p-2 md:p-0 w-full md:h-full md:mt-0 select-none",
             isShaking && "animate-shake",
-            // Disable all pointer events when window is closing
-            isClosing && "pointer-events-none"
+            // Disable all pointer events when window is closing or minimized
+            (isClosing || isMinimized) && "pointer-events-none"
           )}
           onClick={() => {
             if (!isForeground) {
