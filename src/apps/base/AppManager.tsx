@@ -363,7 +363,16 @@ export function AppManager({ apps }: AppManagerProps) {
             <AppComponent
               isWindowOpen={instance.isOpen}
               isForeground={instance.isForeground}
-              onClose={() => closeAppInstance(instance.instanceId)}
+              onClose={() => {
+                // Dispatch close event to trigger animated close in WindowFrame
+                const event = new CustomEvent(`closeWindow-${instance.instanceId}`);
+                window.dispatchEvent(event);
+              }}
+              onCloseComplete={() => {
+                // This is called after the close animation completes
+                // Dispatch the actual close to the store
+                closeAppInstance(instance.instanceId);
+              }}
               className="pointer-events-auto"
               helpItems={apps.find((app) => app.id === appId)?.helpItems}
               skipInitialSound={isInitialMount}

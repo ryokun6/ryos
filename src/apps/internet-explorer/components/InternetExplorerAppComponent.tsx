@@ -307,6 +307,7 @@ const normalizeUrlForHistory = (url: string): string => {
 export function InternetExplorerAppComponent({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground,
   skipInitialSound,
   helpItems,
@@ -1992,6 +1993,7 @@ export function InternetExplorerAppComponent({
         <WindowFrame
           title={displayTitle}
           onClose={onClose}
+          onCloseComplete={onCloseComplete}
           isForeground={isForeground}
           appId="internet-explorer"
           skipInitialSound={skipInitialSound}

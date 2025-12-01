@@ -106,6 +106,7 @@ function useSwipeDetection(onSwipeLeft: () => void, onSwipeRight: () => void) {
 export function PhotoBoothComponent({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground,
   skipInitialSound,
   instanceId,
@@ -840,6 +841,7 @@ export function PhotoBoothComponent({
       <WindowFrame
         title="Photo Booth"
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="photo-booth"
         skipInitialSound={skipInitialSound}

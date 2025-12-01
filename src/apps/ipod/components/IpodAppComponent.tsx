@@ -864,6 +864,7 @@ function FullScreenPortal({
 export function IpodAppComponent({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground,
   skipInitialSound,
   initialData,
@@ -2393,6 +2394,7 @@ export function IpodAppComponent({
       <WindowFrame
         title="iPod"
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="ipod"
         transparentBackground

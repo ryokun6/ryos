@@ -84,6 +84,7 @@ const getFileType = (file: FileItem): string => {
 
 export function FinderAppComponent({
   onClose,
+  onCloseComplete,
   isWindowOpen,
   isForeground = true,
   skipInitialSound,
@@ -1036,6 +1037,7 @@ export function FinderAppComponent({
               })()
         }
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="finder"
         skipInitialSound={skipInitialSound}

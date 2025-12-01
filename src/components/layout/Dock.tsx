@@ -707,7 +707,9 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
-              closeAppInstance(specificInstanceId);
+              // Dispatch close event to trigger animated close in WindowFrame
+              const event = new CustomEvent(`closeWindow-${specificInstanceId}`);
+              window.dispatchEvent(event);
             },
           });
           
@@ -801,8 +803,10 @@ function MacDock() {
         type: "item",
         label: "Quit",
         onSelect: () => {
+          // Dispatch close events to trigger animated close in WindowFrame
           appInstances.forEach((inst) => {
-            closeAppInstance(inst.instanceId);
+            const event = new CustomEvent(`closeWindow-${inst.instanceId}`);
+            window.dispatchEvent(event);
           });
         },
         disabled: appInstances.length === 0,

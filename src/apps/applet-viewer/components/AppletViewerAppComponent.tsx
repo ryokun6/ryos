@@ -36,6 +36,7 @@ import { exportAppletAsHtml } from "@/utils/appletImportExport";
 
 export function AppletViewerAppComponent({
   onClose,
+  onCloseComplete,
   isWindowOpen,
   isForeground = true,
   skipInitialSound,
@@ -1458,6 +1459,7 @@ export function AppletViewerAppComponent({
       <WindowFrame
         title={windowTitle}
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="applet-viewer"
         skipInitialSound={skipInitialSound}

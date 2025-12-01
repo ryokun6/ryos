@@ -3,7 +3,7 @@ import { ResizeType } from "@/types/types";
 import { useAppContext } from "@/contexts/AppContext";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, useImperativeHandle, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import { getWindowConfig, getAppIconPath } from "@/config/appRegistry";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -19,7 +19,8 @@ import { motion, AnimatePresence } from "framer-motion";
 interface WindowFrameProps {
   children: React.ReactNode;
   title: string;
-  onClose?: () => void;
+  onClose?: () => void; // Called when close is requested (dispatches event)
+  onCloseComplete?: () => void; // Called after close animation completes (actual close)
   isForeground?: boolean;
   appId: AppId;
   isShaking?: boolean;
@@ -40,10 +41,15 @@ interface WindowFrameProps {
   menuBar?: React.ReactNode; // Add menuBar prop
 }
 
-export function WindowFrame({
+export interface WindowFrameHandle {
+  handleClose: () => void;
+}
+
+export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(({
   children,
   title,
   onClose,
+  onCloseComplete,
   isForeground = true,
   isShaking = false,
   appId,
@@ -55,7 +61,7 @@ export function WindowFrame({
   onNavigatePrevious,
   interceptClose = false,
   menuBar, // Add menuBar to destructured props
-}: WindowFrameProps) {
+}, ref) => {
   const config = getWindowConfig(appId);
   const defaultConstraints = {
     minWidth: config.minSize?.width,
@@ -178,7 +184,7 @@ export function WindowFrame({
     wasMinimizedRef.current = isMinimized;
   }, [isMinimized, playZoomMaximize]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (interceptClose) {
       // Call the parent's onClose handler for interception (like confirmation dialogs)
       onClose?.();
@@ -190,7 +196,39 @@ export function WindowFrame({
       playWindowClose();
       setIsClosing(true);
     }
-  };
+  }, [interceptClose, onClose, vibrateClose, playWindowClose]);
+
+  // Expose handleClose via ref so external code can trigger the animated close
+  useImperativeHandle(ref, () => ({
+    handleClose,
+  }), [handleClose]);
+
+  // Listen for close events from external sources (menubar, right-click menus, tool calls)
+  useEffect(() => {
+    if (!instanceId && !appId) return;
+
+    const eventName = instanceId 
+      ? `closeWindow-${instanceId}` 
+      : `closeWindow-${appId}`;
+
+    const handleCloseEvent = () => {
+      // Only trigger animated close if not already closing and not intercepting
+      if (!isClosingRef.current && !interceptClose) {
+        handleClose();
+      }
+    };
+
+    window.addEventListener(eventName, handleCloseEvent);
+    return () => {
+      window.removeEventListener(eventName, handleCloseEvent);
+    };
+  }, [instanceId, appId, handleClose, interceptClose]);
+
+  // Store the close completion callback (called after animation completes)
+  const closeCompleteCallbackRef = useRef<(() => void) | undefined>(onCloseComplete);
+  useEffect(() => {
+    closeCompleteCallbackRef.current = onCloseComplete;
+  }, [onCloseComplete]);
 
   // Called when close animation completes
   const handleCloseAnimationComplete = useCallback(() => {
@@ -198,13 +236,13 @@ export function WindowFrame({
       setIsOpen(false);
       isClosingRef.current = false;
       exitAnimationRef.current = 'minimize'; // Reset to default
-      // Don't call onClose when interceptClose is true, as the completion callback
+      // Don't call onCloseComplete when interceptClose is true, as the completion callback
       // is already handled by the event listener in handlePerformClose
       if (!interceptClose) {
-        onClose?.();
+        closeCompleteCallbackRef.current?.();
       }
     }
-  }, [isClosing, onClose, interceptClose]);
+  }, [isClosing, interceptClose]);
 
   const handleMinimize = () => {
     if (instanceId) {
@@ -1349,4 +1387,4 @@ export function WindowFrame({
       )}
     </AnimatePresence>
   );
-}
+});

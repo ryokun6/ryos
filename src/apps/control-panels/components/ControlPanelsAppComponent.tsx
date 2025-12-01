@@ -201,6 +201,7 @@ function VersionDisplay() {
 export function ControlPanelsAppComponent({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground,
   skipInitialSound,
   initialData,
@@ -1486,6 +1487,7 @@ export function ControlPanelsAppComponent({
       <WindowFrame
         title="Control Panels"
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="control-panels"
         skipInitialSound={skipInitialSound}

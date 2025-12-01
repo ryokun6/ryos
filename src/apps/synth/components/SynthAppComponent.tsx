@@ -143,6 +143,7 @@ const PianoKey: React.FC<{
 export function SynthAppComponent({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground,
   skipInitialSound,
   instanceId,
@@ -856,6 +857,7 @@ export function SynthAppComponent({
       <WindowFrame
         title="Synth"
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="synth"
         skipInitialSound={skipInitialSound}

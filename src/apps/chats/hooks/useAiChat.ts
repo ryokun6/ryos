@@ -701,9 +701,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
-            // Close all open instances of this app
+            // Close all open instances of this app by dispatching close events
+            // This triggers the animated close in WindowFrame
             openInstances.forEach((instance) => {
-              appStore.closeAppInstance(instance.instanceId);
+              const event = new CustomEvent(`closeWindow-${instance.instanceId}`);
+              window.dispatchEvent(event);
             });
 
             // Also close the legacy app state for backward compatibility
