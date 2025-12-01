@@ -1,0 +1,8 @@
+AI Notes:
+
+src/components/layout/Dock.tsx: +322[0],+329[0],+717-718[0],+719[1],+721[1],+819-820[0],+821[1],+823[1]
+
+Conversations:
+
+[0]: ded08e84-eb05-4bd1-9fe9-f7cfe74b472d; Create right-click menu for dock icons; default;
+[1]: f03e6865-f4d5-4ea9-90d8-b025754c6fa6; Modify dock icon right-click menu; default;
