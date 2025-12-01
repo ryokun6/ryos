@@ -1,7 +1,8 @@
 AI Notes:
 
-src/components/layout/WindowFrame.tsx: +590[0],+614[0],+625[0] -638-639[0]
+src/components/layout/WindowFrame.tsx: +590[0],+614[0],+625[0] -638-639[1]
 
 Conversations:
 
 [0]: 89f0f481-ff35-4d06-8097-b981134305c4; Implement minimize feature for macOS theme; claude-4.5-opus-high-thinking;
+[1]: 29422871-79a9-48e2-9ed0-3bb336f4ae31; Fix double close sound in text edit; composer-1;
