@@ -641,6 +641,18 @@ export function WindowFrame({
   // For minimize: use AnimatePresence exit animation
   const shouldShow = !isMinimized && isOpen;
 
+  // Shake/nudge animation using Framer Motion
+  const shakeAnimation = useMemo(() => {
+    if (!isShaking) return {};
+    return {
+      x: [0, -5, 5, -5, 5, -3, 3, 0],
+      transition: {
+        duration: 0.4,
+        ease: "easeInOut",
+      }
+    };
+  }, [isShaking]);
+
   // Determine animation variants
   const getInitialAnimation = () => {
     if (shouldAnimateRestore) {
@@ -671,30 +683,51 @@ export function WindowFrame({
     };
   };
 
+  // Get the animate state based on current conditions
+  const getAnimateState = () => {
+    if (isClosing) {
+      return { 
+        scale: 0.95, 
+        opacity: 0,
+        x: 0,
+        y: 0,
+        transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
+      };
+    }
+    
+    if (isShaking) {
+      return {
+        scale: 1,
+        opacity: 1,
+        y: 0,
+        ...shakeAnimation,
+        transition: {
+          scale: { duration: 0 },
+          opacity: { duration: 0 },
+          y: { duration: 0 },
+          x: shakeAnimation.transition,
+        }
+      };
+    }
+    
+    return { 
+      scale: 1, 
+      opacity: 1,
+      x: 0,
+      y: 0,
+      transition: shouldAnimateRestore 
+        ? { duration: 0.25, ease: [0.33, 1, 0.68, 1] as const }
+        : { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const }
+    };
+  };
+
   return (
     <AnimatePresence>
       {shouldShow && (
         <motion.div
           key={instanceId || appId}
           initial={getInitialAnimation()}
-          animate={isClosing 
-            ? { 
-                scale: 0.95, 
-                opacity: 0,
-                x: 0,
-                y: 0,
-                transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const }
-              }
-            : { 
-                scale: 1, 
-                opacity: 1,
-                x: 0,
-                y: 0,
-                transition: shouldAnimateRestore 
-                  ? { duration: 0.25, ease: [0.33, 1, 0.68, 1] as const }
-                  : { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const }
-              }
-          }
+          animate={getAnimateState()}
           onAnimationComplete={() => {
             if (isClosing) {
               handleCloseAnimationComplete();
@@ -703,7 +736,6 @@ export function WindowFrame({
           exit={getExitAnimation()}
           className={cn(
             "absolute p-2 md:p-0 w-full md:h-full md:mt-0 select-none",
-            isShaking && "animate-shake",
             // Disable all pointer events when window is closing
             isClosing && "pointer-events-none"
           )}
