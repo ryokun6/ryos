@@ -1,0 +1,8 @@
+AI Notes:
+
+src/components/layout/WindowFrame.tsx: +100[0],+103-105[0],+175-176[0],+179[0],+211[0] -171-172[0],-175[0],-207[0]
+src/hooks/useSound.ts: +214-215[0]
+
+Conversations:
+
+[0]: 29422871-79a9-48e2-9ed0-3bb336f4ae31; Fix double close sound in text edit; claude-4.5-opus-high-thinking;
