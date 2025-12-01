@@ -1,0 +1,8 @@
+AI Notes:
+
+src/hooks/useLaunchApp.ts: +18[0],+119-123[0],+125-127[0],+129-137[0],+139-148[0]
+src/stores/useAppStore.ts: +799-803[0],+805-807[0],+809-817[0],+819-837[0]
+
+Conversations:
+
+[0]: 163fbc4c-4465-442e-b62b-1568d00bc0c8; Check bun run build for errors; claude-4.5-opus-high-thinking;
