@@ -132,7 +132,15 @@ export default async function handler(req: Request) {
         } while (cursor !== 0);
         
         // Fetch applet metadata for all IDs
-        let applets = [];
+        const applets: {
+          id: string;
+          title?: string;
+          name?: string;
+          icon?: string;
+          createdAt: number;
+          featured: boolean;
+          createdBy?: string;
+        }[] = [];
         
         if (appletIds.length > 0) {
           const appletKeys = appletIds.map((id) => `${APPLET_SHARE_PREFIX}${id}`);
