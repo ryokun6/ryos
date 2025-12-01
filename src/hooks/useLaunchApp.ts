@@ -15,6 +15,7 @@ export const useLaunchApp = () => {
   const bringInstanceToForeground = useAppStore(
     (state) => state.bringInstanceToForeground
   );
+  const restoreInstance = useAppStore((state) => state.restoreInstance);
 
   const launchApp = (appId: AppId, options?: LaunchAppOptions) => {
     console.log(`[useLaunchApp] Launch event received for ${appId}`, options);
@@ -112,6 +113,37 @@ export const useLaunchApp = () => {
         console.log(
           `[useLaunchApp] No applet store window found, creating new one`
         );
+      }
+    }
+
+    // Check if all instances of this app are minimized
+    // If so, restore them instead of creating a new instance
+    const appInstances = Object.values(instances).filter(
+      (inst) => inst.appId === appId && inst.isOpen
+    );
+    
+    if (appInstances.length > 0) {
+      // Check if all instances are minimized
+      const allMinimized = appInstances.every((inst) => inst.isMinimized);
+      
+      if (allMinimized) {
+        // Restore all minimized instances
+        let lastRestoredId: string | null = null;
+        appInstances.forEach((inst) => {
+          if (inst.isMinimized) {
+            restoreInstance(inst.instanceId);
+            lastRestoredId = inst.instanceId;
+          }
+        });
+        
+        // Bring the most recently restored instance to foreground
+        if (lastRestoredId) {
+          console.log(
+            `[useLaunchApp] All instances of ${appId} were minimized, restored and bringing ${lastRestoredId} to foreground`
+          );
+          bringInstanceToForeground(lastRestoredId);
+          return lastRestoredId;
+        }
       }
     }
 

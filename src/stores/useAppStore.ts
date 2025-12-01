@@ -795,6 +795,47 @@ export const useAppStore = create<AppStoreState>()(
       },
       launchApp: (appId, initialData, title, multiWindow = false) => {
         const state = get();
+        
+        // Check if all instances of this app are minimized
+        // If so, restore them instead of creating a new instance
+        const appInstances = Object.values(state.instances).filter(
+          (inst) => inst.appId === appId && inst.isOpen
+        );
+        
+        if (appInstances.length > 0) {
+          // Check if all instances are minimized
+          const allMinimized = appInstances.every((inst) => inst.isMinimized);
+          
+          if (allMinimized) {
+            // Restore all minimized instances
+            let lastRestoredId: string | null = null;
+            appInstances.forEach((inst) => {
+              if (inst.isMinimized) {
+                state.restoreInstance(inst.instanceId);
+                lastRestoredId = inst.instanceId;
+              }
+            });
+            
+            // Bring the most recently restored instance to foreground
+            if (lastRestoredId) {
+              state.bringInstanceToForeground(lastRestoredId);
+              // Update initialData if provided
+              if (initialData) {
+                set((s) => ({
+                  instances: {
+                    ...s.instances,
+                    [lastRestoredId!]: {
+                      ...s.instances[lastRestoredId!],
+                      initialData,
+                    },
+                  },
+                }));
+              }
+              return lastRestoredId;
+            }
+          }
+        }
+        
         const supportsMultiWindow =
           multiWindow ||
           appId === "textedit" ||
