@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { useAppStore } from "@/stores/useAppStore";
 import { SeekBar } from "./SeekBar";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 interface Video {
   id: string;
@@ -976,7 +978,7 @@ export function VideosAppComponent({
 
   const menuBar = (
     <VideosMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "videos" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       videos={videos}

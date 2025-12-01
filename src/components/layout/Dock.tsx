@@ -20,6 +20,7 @@ import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { triggerWindowClose } from "@/utils/windowClose";
 import {
   AnimatePresence,
   motion,
@@ -707,7 +708,8 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
-              closeAppInstance(specificInstanceId);
+              // Use triggerWindowClose to trigger animation and sound
+              triggerWindowClose(specificInstanceId, appId);
             },
           });
           
@@ -801,8 +803,9 @@ function MacDock() {
         type: "item",
         label: "Quit",
         onSelect: () => {
+          // Use triggerWindowClose to trigger animation and sound
           appInstances.forEach((inst) => {
-            closeAppInstance(inst.instanceId);
+            triggerWindowClose(inst.instanceId, appId);
           });
         },
         disabled: appInstances.length === 0,

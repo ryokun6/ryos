@@ -32,6 +32,8 @@ import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 // Define the expected message structure locally, matching ChatMessages internal type
 interface DisplayMessage extends Omit<AIChatMessage, "role"> {
@@ -459,7 +461,7 @@ export function ChatsAppComponent({
 
   const menuBar = (
     <ChatsMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "chats" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onClearChats={() => setIsClearDialogOpen(true)}

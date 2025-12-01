@@ -30,6 +30,8 @@ import { isMobileSafari } from "@/utils/device";
 import { track } from "@vercel/analytics";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { useOffline } from "@/hooks/useOffline";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 // Globe icon removed; using text label "Aあ" for translate
 
 // Add this component definition before the IpodAppComponent
@@ -2373,7 +2375,7 @@ export function IpodAppComponent({
 
   const menuBar = (
     <IpodMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "ipod" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onClearLibrary={() => {
