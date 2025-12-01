@@ -707,7 +707,9 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
-              closeAppInstance(specificInstanceId);
+              // Trigger animated close (with sound and animation)
+              const event = new CustomEvent(`triggerAnimatedClose-${specificInstanceId}`);
+              window.dispatchEvent(event);
             },
           });
           
@@ -801,8 +803,10 @@ function MacDock() {
         type: "item",
         label: "Quit",
         onSelect: () => {
+          // Trigger animated close for each instance (with sound and animation)
           appInstances.forEach((inst) => {
-            closeAppInstance(inst.instanceId);
+            const event = new CustomEvent(`triggerAnimatedClose-${inst.instanceId}`);
+            window.dispatchEvent(event);
           });
         },
         disabled: appInstances.length === 0,

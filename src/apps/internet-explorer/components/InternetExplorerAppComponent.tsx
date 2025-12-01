@@ -1941,6 +1941,16 @@ export function InternetExplorerAppComponent({
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isOffline = useOffline();
 
+  // Create animated close handler for menubar
+  const handleAnimatedClose = useCallback(() => {
+    if (instanceId) {
+      const event = new CustomEvent(`triggerAnimatedClose-${instanceId}`);
+      window.dispatchEvent(event);
+    } else {
+      onClose();
+    }
+  }, [instanceId, onClose]);
+
   const menuBar = (
     <InternetExplorerMenuBar
       isWindowOpen={isWindowOpen}
@@ -1967,7 +1977,7 @@ export function InternetExplorerAppComponent({
       canGoForward={historyIndex > 0}
       onClearHistory={() => setClearHistoryDialogOpen(true)}
       onOpenTimeMachine={() => setTimeMachineViewOpen(true)}
-      onClose={onClose}
+      onClose={handleAnimatedClose}
       onEditFuture={() => setFutureSettingsDialogOpen(true)}
       language={language}
       location={location}
