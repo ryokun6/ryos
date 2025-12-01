@@ -15,7 +15,7 @@ import { fileURLToPath } from 'url';
 // VERSION CONSTANTS - Manually increment these for releases
 // ============================================================================
 const MAJOR_VERSION = 10;
-const MINOR_VERSION = 1;
+const MINOR_VERSION = 3;
 // ============================================================================
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
