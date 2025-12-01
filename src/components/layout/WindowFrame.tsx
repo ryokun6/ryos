@@ -287,7 +287,7 @@ export function WindowFrame({
     }
     
     return { x: 0, y: window.innerHeight - windowPosition.y }; // Fallback to bottom of screen
-  }, [appId, instanceId, windowPosition, windowSize]);
+  }, [appId, instanceId, windowPosition, windowSize, currentTheme]);
 
   // Centralized insets per theme
   const computeInsets = useCallback(() => {
