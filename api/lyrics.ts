@@ -130,13 +130,13 @@ function calculateSimilarity(query: string, target: string): number {
   if (queryWords.size === 0) return 0;
 
   let matchingWords = 0;
-  for (const word of queryWords) {
+  for (const word of Array.from(queryWords)) {
     if (targetWords.has(word)) {
       matchingWords++;
     } else {
       // Check partial word matches (for words > 3 chars)
       if (word.length > 3) {
-        for (const targetWord of targetWords) {
+        for (const targetWord of Array.from(targetWords)) {
           if (targetWord.includes(word) || word.includes(targetWord)) {
             matchingWords += 0.5;
             break;
