@@ -16,6 +16,7 @@ import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useLongPress } from "@/hooks/useLongPress";
+import { useSound, Sounds } from "@/hooks/useSound";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
@@ -318,14 +319,18 @@ const MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
 
 function MacDock() {
   const isPhone = useIsPhone();
-  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance } =
+  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
     useAppStoreShallow((s) => ({
       instances: s.instances,
       instanceOrder: s.instanceOrder,
       bringInstanceToForeground: s.bringInstanceToForeground,
       restoreInstance: s.restoreInstance,
       minimizeInstance: s.minimizeInstance,
+      closeAppInstance: s.closeAppInstance,
     }));
+  
+  // Sound for hide/minimize action from dock context menu
+  const { play: playZoomMinimize } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE);
 
   const launchApp = useLaunchApp();
   const files = useFilesStore((s) => s.items);
@@ -697,6 +702,7 @@ function MacDock() {
             type: "item",
             label: "Hide",
             onSelect: () => {
+              playZoomMinimize();
               minimizeInstance(specificInstanceId);
             },
             disabled: instance.isMinimized,
@@ -707,7 +713,12 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
-              requestCloseWindow(specificInstanceId);
+              // If minimized, close directly without animation/sound (window isn't visible)
+              if (instance.isMinimized) {
+                closeAppInstance(specificInstanceId);
+              } else {
+                requestCloseWindow(specificInstanceId);
+              }
             },
           });
           
@@ -787,6 +798,8 @@ function MacDock() {
         type: "item",
         label: "Hide",
         onSelect: () => {
+          // Play sound once for the hide action
+          playZoomMinimize();
           appInstances.forEach((inst) => {
             if (!inst.isMinimized) {
               minimizeInstance(inst.instanceId);
@@ -802,7 +815,12 @@ function MacDock() {
         label: "Quit",
         onSelect: () => {
           appInstances.forEach((inst) => {
-            requestCloseWindow(inst.instanceId);
+            // If minimized, close directly without animation/sound (window isn't visible)
+            if (inst.isMinimized) {
+              closeAppInstance(inst.instanceId);
+            } else {
+              requestCloseWindow(inst.instanceId);
+            }
           });
         },
         disabled: appInstances.length === 0,
@@ -810,7 +828,7 @@ function MacDock() {
       
       return items;
     },
-    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, launchApp]
+    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, playZoomMinimize, launchApp]
   );
 
   // Handle app context menu
