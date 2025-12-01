@@ -253,6 +253,29 @@ export function WindowFrame({
     };
   }, [instanceId, appId, performClose, interceptClose]);
 
+  // Listen for external close requests (from right-click menus, tool calls, etc.)
+  // This ensures the close animation and sound play even when closing from outside WindowFrame
+  useEffect(() => {
+    if (interceptClose) return; // Skip for intercepted closes (handled above)
+
+    const eventName = instanceId 
+      ? `requestCloseInstance-${instanceId}`
+      : `requestCloseApp-${appId}`;
+
+    const handleRequestClose = () => {
+      // Only trigger if window is still open and not already closing
+      if (isOpen && !isClosing) {
+        handleClose();
+      }
+    };
+
+    window.addEventListener(eventName, handleRequestClose);
+
+    return () => {
+      window.removeEventListener(eventName, handleRequestClose);
+    };
+  }, [instanceId, appId, isOpen, isClosing, interceptClose, handleClose]);
+
   const {
     windowPosition,
     windowSize,
