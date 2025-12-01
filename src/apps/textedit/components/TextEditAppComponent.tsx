@@ -498,7 +498,14 @@ function TextEditContent({
   const menuBar = (
     <TextEditMenuBar
       editor={editor}
-      onClose={handleClose}
+      onClose={() => {
+        // Trigger close animation with sound
+        if (instanceId) {
+          window.dispatchEvent(new CustomEvent(`triggerClose-${instanceId || "textedit"}`));
+        } else {
+          handleClose();
+        }
+      }}
       isWindowOpen={isWindowOpen}
       onShowHelp={() => dialogControls?.openHelpDialog()}
       onShowAbout={() => dialogControls?.openAboutDialog()}

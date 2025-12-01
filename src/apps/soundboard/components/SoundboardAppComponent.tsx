@@ -325,7 +325,14 @@ export function SoundboardAppComponent({
 
   const menuBar = (
     <SoundboardMenuBar
-      onClose={onClose}
+      onClose={() => {
+        // Trigger close animation with sound
+        if (instanceId) {
+          window.dispatchEvent(new CustomEvent(`triggerClose-${instanceId}`));
+        } else {
+          onClose();
+        }
+      }}
       isWindowOpen={isWindowOpen}
       onNewBoard={addNewBoard}
       onImportBoard={() => importInputRef.current?.click()}

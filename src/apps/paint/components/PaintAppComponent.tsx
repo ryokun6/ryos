@@ -419,7 +419,14 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     <PaintMenuBar
       isWindowOpen={isWindowOpen}
       isForeground={isForeground}
-      onClose={onClose}
+      onClose={() => {
+        // Trigger close animation with sound
+        if (instanceId) {
+          window.dispatchEvent(new CustomEvent(`triggerClose-${instanceId}`));
+        } else {
+          onClose();
+        }
+      }}
       canUndo={canUndo}
       canRedo={canRedo}
       onUndo={handleUndo}

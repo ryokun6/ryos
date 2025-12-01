@@ -234,7 +234,14 @@ export function PcAppComponent({
 
   const menuBar = (
     <PcMenuBar
-      onClose={onClose}
+      onClose={() => {
+        // Trigger close animation with sound
+        if (instanceId) {
+          window.dispatchEvent(new CustomEvent(`triggerClose-${instanceId}`));
+        } else {
+          onClose();
+        }
+      }}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onSaveState={handleSaveState}

@@ -379,7 +379,14 @@ export function PhotoBoothComponent({
     // Component render with menu bar
     const menuBar = (
       <PhotoBoothMenuBar
-        onClose={onClose}
+        onClose={() => {
+          // Trigger close animation with sound
+          if (instanceId) {
+            window.dispatchEvent(new CustomEvent(`triggerClose-${instanceId}`));
+          } else {
+            onClose();
+          }
+        }}
         onShowHelp={() => setShowHelp(true)}
         onShowAbout={() => setShowAbout(true)}
         onClearPhotos={handleClearPhotos}

@@ -253,6 +253,24 @@ export function WindowFrame({
     };
   }, [instanceId, appId, performClose, interceptClose]);
 
+  // Listen for close animation trigger from outside (right-click menus, menubar, tool calls)
+  // This allows external code to trigger the close animation with sound
+  useEffect(() => {
+    const handleTriggerClose = () => {
+      // Only trigger if not already closing and not intercepted
+      if (!isClosingRef.current && !interceptClose) {
+        handleClose();
+      }
+    };
+
+    const eventName = `triggerClose-${instanceId || appId}`;
+    window.addEventListener(eventName, handleTriggerClose);
+
+    return () => {
+      window.removeEventListener(eventName, handleTriggerClose);
+    };
+  }, [instanceId, appId, interceptClose]);
+
   const {
     windowPosition,
     windowSize,

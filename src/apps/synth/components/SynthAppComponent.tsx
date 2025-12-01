@@ -836,7 +836,14 @@ export function SynthAppComponent({
       onShowHelp={() => setIsHelpOpen(true)}
       onShowAbout={() => setIsAboutOpen(true)}
       onReset={resetSynth}
-      onClose={onClose}
+      onClose={() => {
+        // Trigger close animation with sound
+        if (instanceId) {
+          window.dispatchEvent(new CustomEvent(`triggerClose-${instanceId}`));
+        } else {
+          onClose();
+        }
+      }}
       presets={presets}
       currentPresetId={currentPreset.id}
       onLoadPresetById={(id) => {

@@ -976,7 +976,14 @@ export function VideosAppComponent({
 
   const menuBar = (
     <VideosMenuBar
-      onClose={onClose}
+      onClose={() => {
+        // Trigger close animation with sound
+        if (instanceId) {
+          window.dispatchEvent(new CustomEvent(`triggerClose-${instanceId}`));
+        } else {
+          onClose();
+        }
+      }}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       videos={videos}
