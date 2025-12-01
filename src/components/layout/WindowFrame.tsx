@@ -3,7 +3,7 @@ import { ResizeType } from "@/types/types";
 import { useAppContext } from "@/contexts/AppContext";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, useImperativeHandle, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import { getWindowConfig, getAppIconPath } from "@/config/appRegistry";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -15,6 +15,10 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { getTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { motion, AnimatePresence } from "framer-motion";
+
+export interface WindowFrameHandle {
+  handleClose: () => void;
+}
 
 interface WindowFrameProps {
   children: React.ReactNode;
@@ -40,7 +44,7 @@ interface WindowFrameProps {
   menuBar?: React.ReactNode; // Add menuBar prop
 }
 
-export function WindowFrame({
+export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(function WindowFrame({
   children,
   title,
   onClose,
@@ -55,7 +59,7 @@ export function WindowFrame({
   onNavigatePrevious,
   interceptClose = false,
   menuBar, // Add menuBar to destructured props
-}: WindowFrameProps) {
+}, ref) {
   const config = getWindowConfig(appId);
   const defaultConstraints = {
     minWidth: config.minSize?.width,
@@ -178,7 +182,7 @@ export function WindowFrame({
     wasMinimizedRef.current = isMinimized;
   }, [isMinimized, playZoomMaximize]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (interceptClose) {
       // Call the parent's onClose handler for interception (like confirmation dialogs)
       onClose?.();
@@ -190,7 +194,12 @@ export function WindowFrame({
       playWindowClose();
       setIsClosing(true);
     }
-  };
+  }, [interceptClose, onClose, vibrateClose, playWindowClose]);
+
+  // Expose handleClose to parent components via ref
+  useImperativeHandle(ref, () => ({
+    handleClose,
+  }), [handleClose]);
 
   // Called when close animation completes
   const handleCloseAnimationComplete = useCallback(() => {
@@ -222,13 +231,19 @@ export function WindowFrame({
     setIsClosing(true);
   }, [vibrateClose, playWindowClose]);
 
-  // Expose performClose to parent component through a custom event (only for intercepted closes)
+  // Listen for close events from external sources (Dock, tool calls, etc.)
+  // This allows animated closing from anywhere, not just the close button
   useEffect(() => {
-    if (!interceptClose) return;
-
     const handlePerformClose = (event: CustomEvent) => {
       const onComplete = event.detail?.onComplete;
-      performClose();
+      
+      if (interceptClose) {
+        // For intercepted closes, use performClose (which triggers animation)
+        performClose();
+      } else {
+        // For normal closes, use handleClose (which triggers animation)
+        handleClose();
+      }
 
       // Call the completion callback after the close animation finishes
       if (onComplete) {
@@ -239,19 +254,14 @@ export function WindowFrame({
       }
     };
 
-    // Listen for close confirmation from parent
-    window.addEventListener(
-      `closeWindow-${instanceId || appId}`,
-      handlePerformClose as EventListener
-    );
+    // Listen for close events from external sources
+    const eventName = `closeWindow-${instanceId || appId}`;
+    window.addEventListener(eventName, handlePerformClose as EventListener);
 
     return () => {
-      window.removeEventListener(
-        `closeWindow-${instanceId || appId}`,
-        handlePerformClose as EventListener
-      );
+      window.removeEventListener(eventName, handlePerformClose as EventListener);
     };
-  }, [instanceId, appId, performClose, interceptClose]);
+  }, [instanceId, appId, performClose, handleClose, interceptClose]);
 
   const {
     windowPosition,
@@ -1349,4 +1359,4 @@ export function WindowFrame({
       )}
     </AnimatePresence>
   );
-}
+});

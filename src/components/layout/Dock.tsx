@@ -707,7 +707,17 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
-              closeAppInstance(specificInstanceId);
+              // Dispatch custom event to trigger animated close
+              const instance = instances[specificInstanceId];
+              if (instance) {
+                window.dispatchEvent(
+                  new CustomEvent(`closeWindow-${specificInstanceId}`, {
+                    detail: { onComplete: () => closeAppInstance(specificInstanceId) },
+                  })
+                );
+              } else {
+                closeAppInstance(specificInstanceId);
+              }
             },
           });
           
@@ -802,7 +812,12 @@ function MacDock() {
         label: "Quit",
         onSelect: () => {
           appInstances.forEach((inst) => {
-            closeAppInstance(inst.instanceId);
+            // Dispatch custom event to trigger animated close
+            window.dispatchEvent(
+              new CustomEvent(`closeWindow-${inst.instanceId}`, {
+                detail: { onComplete: () => closeAppInstance(inst.instanceId) },
+              })
+            );
           });
         },
         disabled: appInstances.length === 0,

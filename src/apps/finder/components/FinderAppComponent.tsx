@@ -1,4 +1,4 @@
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { WindowFrame, WindowFrameHandle } from "@/components/layout/WindowFrame";
 import { FinderMenuBar, ViewType, SortType } from "./FinderMenuBar";
 import { AppProps } from "@/apps/base/types";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -107,6 +107,7 @@ export function FinderAppComponent({
     y: number;
   } | null>(null);
   const [contextMenuFile, setContextMenuFile] = useState<FileItem | null>(null);
+  const windowFrameRef = useRef<WindowFrameHandle>(null);
 
   // Use instance-based store management
   const createFinderInstance = useFinderStore((state) => state.createInstance);
@@ -976,7 +977,7 @@ export function FinderAppComponent({
 
   const menuBar = (
     <FinderMenuBar
-      onClose={onClose}
+      onClose={() => windowFrameRef.current?.handleClose()}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       viewType={viewType}
@@ -1021,6 +1022,7 @@ export function FinderAppComponent({
         onChange={handleFileInputChange}
       />
       <WindowFrame
+        ref={windowFrameRef}
         title={
           currentPath === "/"
             ? "Macintosh HD"

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
 import { AppProps, IpodInitialData } from "../../base/types";
-import { WindowFrame } from "@/components/layout/WindowFrame";
+import { WindowFrame, WindowFrameHandle } from "@/components/layout/WindowFrame";
 import { IpodMenuBar } from "./IpodMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -948,6 +948,7 @@ export function IpodAppComponent({
   );
 
   const prevIsForeground = useRef(isForeground);
+  const windowFrameRef = useRef<WindowFrameHandle>(null);
   const { bringToForeground, clearIpodInitialData } = useAppStoreShallow(
     (state) => ({
       bringToForeground: state.bringToForeground,
@@ -2373,7 +2374,7 @@ export function IpodAppComponent({
 
   const menuBar = (
     <IpodMenuBar
-      onClose={onClose}
+      onClose={() => windowFrameRef.current?.handleClose()}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onClearLibrary={() => {
@@ -2391,6 +2392,7 @@ export function IpodAppComponent({
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
+        ref={windowFrameRef}
         title="iPod"
         onClose={onClose}
         isForeground={isForeground}
