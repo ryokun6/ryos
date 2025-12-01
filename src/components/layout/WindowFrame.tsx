@@ -97,8 +97,12 @@ export function WindowFrame({
   const isMinimized = instanceId ? instances[instanceId]?.isMinimized ?? false : false;
   const { play: playWindowOpen } = useSound(Sounds.WINDOW_OPEN);
   const { play: playWindowClose } = useSound(Sounds.WINDOW_CLOSE);
+  // For green button zoom (maximize/restore window size)
   const { play: playWindowExpand } = useSound(Sounds.WINDOW_EXPAND);
   const { play: playWindowCollapse } = useSound(Sounds.WINDOW_COLLAPSE);
+  // For dock minimize/restore
+  const { play: playZoomMinimize } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE);
+  const { play: playZoomMaximize } = useSound(Sounds.WINDOW_ZOOM_MAXIMIZE);
   const { play: playWindowMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);
   const vibrateMaximize = useVibration(50, 100);
   const vibrateClose = useVibration(50, 50);
@@ -168,11 +172,11 @@ export function WindowFrame({
   
   useEffect(() => {
     if (wasMinimizedRef.current && !isMinimized) {
-      // Window was just restored from minimized state
-      playWindowExpand();
+      // Window was just restored from minimized state (from dock)
+      playZoomMaximize();
     }
     wasMinimizedRef.current = isMinimized;
-  }, [isMinimized, playWindowExpand]);
+  }, [isMinimized, playZoomMaximize]);
 
   const handleClose = () => {
     if (interceptClose) {
@@ -204,7 +208,7 @@ export function WindowFrame({
 
   const handleMinimize = () => {
     if (instanceId) {
-      playWindowCollapse();
+      playZoomMinimize();
       minimizeInstance(instanceId);
     }
   };
