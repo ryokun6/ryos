@@ -14,6 +14,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 export function PcAppComponent({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground,
   skipInitialSound,
   instanceId,
@@ -261,6 +262,7 @@ export function PcAppComponent({
       <WindowFrame
         title="Virtual PC"
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="pc"
         skipInitialSound={skipInitialSound}

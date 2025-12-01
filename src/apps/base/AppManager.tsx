@@ -363,7 +363,11 @@ export function AppManager({ apps }: AppManagerProps) {
             <AppComponent
               isWindowOpen={instance.isOpen}
               isForeground={instance.isForeground}
-              onClose={() => closeAppInstance(instance.instanceId)}
+              onClose={() => {
+                // This will be wrapped by WindowFrame to trigger animated close
+                // The actual closeAppInstance happens after animation completes
+                closeAppInstance(instance.instanceId);
+              }}
               className="pointer-events-auto"
               helpItems={apps.find((app) => app.id === appId)?.helpItems}
               skipInitialSound={isInitialMount}

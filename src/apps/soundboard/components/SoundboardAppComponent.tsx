@@ -29,6 +29,7 @@ interface ImportedBoard {
 
 export function SoundboardAppComponent({
   onClose,
+  onCloseComplete,
   isWindowOpen,
   isForeground,
   helpItems = [],
@@ -380,6 +381,7 @@ export function SoundboardAppComponent({
       <WindowFrame
         title="Soundboard"
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="soundboard"
         skipInitialSound={skipInitialSound}

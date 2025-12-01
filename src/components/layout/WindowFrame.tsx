@@ -3,7 +3,7 @@ import { ResizeType } from "@/types/types";
 import { useAppContext } from "@/contexts/AppContext";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, useImperativeHandle, forwardRef, createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
 import { getWindowConfig, getAppIconPath } from "@/config/appRegistry";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface WindowFrameProps {
   children: React.ReactNode;
   title: string;
-  onClose?: () => void;
+  onClose?: () => void; // Called after close animation completes (actual close)
   isForeground?: boolean;
   appId: AppId;
   isShaking?: boolean;
@@ -40,7 +40,15 @@ interface WindowFrameProps {
   menuBar?: React.ReactNode; // Add menuBar prop
 }
 
-export function WindowFrame({
+export interface WindowFrameHandle {
+  handleClose: () => void;
+}
+
+// Context to expose wrappedOnClose to child components (like menubars)
+const WindowFrameCloseContext = createContext<(() => void) | undefined>(undefined);
+export const useWindowFrameClose = () => useContext(WindowFrameCloseContext);
+
+export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(({
   children,
   title,
   onClose,
@@ -55,7 +63,7 @@ export function WindowFrame({
   onNavigatePrevious,
   interceptClose = false,
   menuBar, // Add menuBar to destructured props
-}: WindowFrameProps) {
+}, ref) => {
   const config = getWindowConfig(appId);
   const defaultConstraints = {
     minWidth: config.minSize?.width,
@@ -178,11 +186,18 @@ export function WindowFrame({
     wasMinimizedRef.current = isMinimized;
   }, [isMinimized, playZoomMaximize]);
 
-  const handleClose = () => {
+  // Store the actual close callback (called after animation completes)
+  const actualCloseCallbackRef = useRef<(() => void) | undefined>(onClose);
+  useEffect(() => {
+    actualCloseCallbackRef.current = onClose;
+  }, [onClose]);
+
+  // The animated close handler - always triggers animation + sound
+  const handleClose = useCallback(() => {
     if (interceptClose) {
       // Call the parent's onClose handler for interception (like confirmation dialogs)
-      onClose?.();
-    } else {
+      actualCloseCallbackRef.current?.();
+    } else if (!isClosingRef.current) {
       // Set exit animation ref BEFORE state change - this is read synchronously by Framer Motion
       exitAnimationRef.current = 'close';
       isClosingRef.current = true;
@@ -190,7 +205,17 @@ export function WindowFrame({
       playWindowClose();
       setIsClosing(true);
     }
-  };
+  }, [interceptClose, vibrateClose, playWindowClose]);
+
+  // Expose handleClose via ref
+  useImperativeHandle(ref, () => ({
+    handleClose,
+  }), [handleClose]);
+
+  // Wrap onClose so external calls (menubar/right-click/tool calls) trigger animated close
+  const wrappedOnClose = useCallback(() => {
+    handleClose();
+  }, [handleClose]);
 
   // Called when close animation completes
   const handleCloseAnimationComplete = useCallback(() => {
@@ -198,13 +223,12 @@ export function WindowFrame({
       setIsOpen(false);
       isClosingRef.current = false;
       exitAnimationRef.current = 'minimize'; // Reset to default
-      // Don't call onClose when interceptClose is true, as the completion callback
-      // is already handled by the event listener in handlePerformClose
+      // Call the actual close callback after animation completes
       if (!interceptClose) {
-        onClose?.();
+        actualCloseCallbackRef.current?.();
       }
     }
-  }, [isClosing, onClose, interceptClose]);
+  }, [isClosing, interceptClose]);
 
   const handleMinimize = () => {
     if (instanceId) {
@@ -646,6 +670,7 @@ export function WindowFrame({
   };
 
   return (
+    <WindowFrameCloseContext.Provider value={wrappedOnClose}>
     <AnimatePresence>
       {shouldShow && (
         <motion.div
@@ -1348,5 +1373,6 @@ export function WindowFrame({
         </motion.div>
       )}
     </AnimatePresence>
+    </WindowFrameCloseContext.Provider>
   );
-}
+});

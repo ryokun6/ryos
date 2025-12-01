@@ -707,6 +707,7 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
+              // Close instance - WindowFrame will wrap onClose to trigger animation
               closeAppInstance(specificInstanceId);
             },
           });
@@ -801,6 +802,7 @@ function MacDock() {
         type: "item",
         label: "Quit",
         onSelect: () => {
+          // Close instances - WindowFrame will wrap onClose to trigger animation
           appInstances.forEach((inst) => {
             closeAppInstance(inst.instanceId);
           });

@@ -273,6 +273,7 @@ function StatusDisplay({ message }: { message: string }) {
 export function VideosAppComponent({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground,
   skipInitialSound,
   initialData,
@@ -1020,6 +1021,7 @@ export function VideosAppComponent({
       <WindowFrame
         title="Videos"
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="videos"
         skipInitialSound={skipInitialSound}

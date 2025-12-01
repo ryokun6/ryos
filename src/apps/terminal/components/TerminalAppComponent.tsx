@@ -535,6 +535,7 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
 
 export function TerminalAppComponent({
   onClose,
+  onCloseComplete,
   isWindowOpen,
   isForeground = true,
   skipInitialSound,
@@ -2968,6 +2969,7 @@ export function TerminalAppComponent({
         appId="terminal"
         title="Terminal"
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         transparentBackground={true}
         skipInitialSound={skipInitialSound}

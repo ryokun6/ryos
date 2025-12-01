@@ -701,7 +701,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
-            // Close all open instances of this app
+            // Close all open instances - trigger animated close via store
+            // The store will call onClose which WindowFrame wraps to trigger animation
             openInstances.forEach((instance) => {
               appStore.closeAppInstance(instance.instanceId);
             });

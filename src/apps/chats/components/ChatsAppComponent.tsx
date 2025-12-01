@@ -43,6 +43,7 @@ interface DisplayMessage extends Omit<AIChatMessage, "role"> {
 export function ChatsAppComponent({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground,
   skipInitialSound,
   instanceId,
@@ -523,6 +524,7 @@ export function ChatsAppComponent({
             : "@ryo"
         }
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="chats"
         skipInitialSound={skipInitialSound}

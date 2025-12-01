@@ -23,6 +23,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground = false,
   skipInitialSound,
   initialData,
@@ -453,6 +454,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
             : `Untitled${hasUnsavedChanges ? " •" : ""}`
         }
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="paint"
         skipInitialSound={skipInitialSound}

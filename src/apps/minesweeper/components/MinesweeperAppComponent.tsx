@@ -174,6 +174,7 @@ function Cell({
 export function MinesweeperAppComponent({
   isWindowOpen,
   onClose,
+  onCloseComplete,
   isForeground,
   skipInitialSound,
   instanceId,
@@ -461,6 +462,7 @@ export function MinesweeperAppComponent({
       <WindowFrame
         title="Minesweeper"
         onClose={onClose}
+        onCloseComplete={onCloseComplete}
         isForeground={isForeground}
         appId="minesweeper"
         skipInitialSound={skipInitialSound}
