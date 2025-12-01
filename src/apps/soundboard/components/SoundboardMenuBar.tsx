@@ -164,6 +164,8 @@ export function SoundboardMenuBar({
           >
             Delete Soundboard
           </DropdownMenuItem>
+          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+
         </DropdownMenuContent>
       </DropdownMenu>
 

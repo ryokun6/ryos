@@ -86,6 +86,7 @@ export function SoundboardAppComponent({
     (state) => state.setSelectedDeviceId
   );
 
+
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [dialogState, setDialogState] = useState<DialogState>({
     type: null,
@@ -107,6 +108,8 @@ export function SoundboardAppComponent({
   const [showWaveforms, setShowWaveforms] = useState(!isMobileSafari);
   const [showEmojis, setShowEmojis] = useState(true);
   const activeSlotRef = useRef<number | null>(null);
+
+
 
   const handleRecordingComplete = (base64Data: string) => {
     const activeSlot = activeSlotRef.current;
@@ -210,6 +213,9 @@ export function SoundboardAppComponent({
       try {
         const importedData = JSON.parse(e.target?.result as string);
         const importedBoardsRaw = importedData.boards || [importedData];
+        
+
+        
         const newBoardsFromFile: Soundboard[] = importedBoardsRaw.map(
           (board: ImportedBoard) => ({
             id:
@@ -231,6 +237,7 @@ export function SoundboardAppComponent({
         }
       } catch (err) {
         console.error("Failed to import soundboards:", err);
+
       }
     };
     reader.readAsText(file);
