@@ -76,6 +76,8 @@ export function WindowFrame({
   const [isInitialMount, setIsInitialMount] = useState(true);
   // Ref to store the exit animation - updated synchronously before state changes
   const exitAnimationRef = useRef<'close' | 'minimize'>('minimize');
+  // Track if close was triggered via external event (menu bar, dock, etc.)
+  const closeViaEventRef = useRef(false);
   const { bringToForeground } = useAppContext();
   const {
     bringInstanceToForeground,
@@ -84,6 +86,7 @@ export function WindowFrame({
     updateInstanceWindowState,
     minimizeInstance,
     instances,
+    closeAppInstance,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     debugMode: state.debugMode,
@@ -91,6 +94,7 @@ export function WindowFrame({
     updateInstanceWindowState: state.updateInstanceWindowState,
     minimizeInstance: state.minimizeInstance,
     instances: state.instances,
+    closeAppInstance: state.closeAppInstance,
   }));
   
   // Check if this instance is minimized
@@ -198,13 +202,18 @@ export function WindowFrame({
       setIsOpen(false);
       isClosingRef.current = false;
       exitAnimationRef.current = 'minimize'; // Reset to default
-      // Don't call onClose when interceptClose is true, as the completion callback
-      // is already handled by the event listener in handlePerformClose
-      if (!interceptClose) {
+      closeViaEventRef.current = false;
+      
+      // For instance-based windows, always use closeAppInstance directly
+      // This handles both normal closes and interceptClose closes uniformly
+      if (instanceId) {
+        closeAppInstance(instanceId);
+      } else {
+        // Fallback for non-instance-based windows (legacy support)
         onClose?.();
       }
     }
-  }, [isClosing, onClose, interceptClose]);
+  }, [isClosing, onClose, instanceId, closeAppInstance]);
 
   const handleMinimize = () => {
     if (instanceId) {
@@ -223,20 +232,13 @@ export function WindowFrame({
   }, [vibrateClose, playWindowClose]);
 
   // Expose performClose to parent component through a custom event (only for intercepted closes)
+  // This allows apps like TextEdit to show confirmation dialogs before closing
   useEffect(() => {
     if (!interceptClose) return;
 
-    const handlePerformClose = (event: CustomEvent) => {
-      const onComplete = event.detail?.onComplete;
+    const handlePerformClose = () => {
+      // The actual cleanup (closeAppInstance) is handled in handleCloseAnimationComplete
       performClose();
-
-      // Call the completion callback after the close animation finishes
-      if (onComplete) {
-        // Wait for the animation to complete (300ms)
-        setTimeout(() => {
-          onComplete();
-        }, 300);
-      }
     };
 
     // Listen for close confirmation from parent
@@ -252,6 +254,30 @@ export function WindowFrame({
       );
     };
   }, [instanceId, appId, performClose, interceptClose]);
+
+  // Listen for close requests from external sources (menu bars, dock, etc.)
+  // This allows them to trigger the animated close with sound instead of immediately closing
+  useEffect(() => {
+    if (!instanceId) return;
+
+    const handleCloseRequest = () => {
+      // Mark that this close was triggered externally so we use closeAppInstance directly
+      closeViaEventRef.current = true;
+      handleClose();
+    };
+
+    window.addEventListener(
+      `requestCloseWindow-${instanceId}`,
+      handleCloseRequest
+    );
+
+    return () => {
+      window.removeEventListener(
+        `requestCloseWindow-${instanceId}`,
+        handleCloseRequest
+      );
+    };
+  }, [instanceId]);
 
   const {
     windowPosition,

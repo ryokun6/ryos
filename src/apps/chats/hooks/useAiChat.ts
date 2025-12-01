@@ -15,6 +15,7 @@ import { toast } from "@/hooks/useToast";
 import { useLaunchApp, type LaunchAppOptions } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
 import { appRegistry } from "@/config/appRegistry";
+import { requestCloseWindow } from "@/utils/windowUtils";
 import {
   useFileSystem,
   dbOperations,
@@ -701,9 +702,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
 
-            // Close all open instances of this app
+            // Close all open instances of this app (with animation and sound)
             openInstances.forEach((instance) => {
-              appStore.closeAppInstance(instance.instanceId);
+              requestCloseWindow(instance.instanceId);
             });
 
             // Also close the legacy app state for backward compatibility

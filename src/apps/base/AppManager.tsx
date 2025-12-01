@@ -9,6 +9,7 @@ import { AppId, getAppComponent, appRegistry } from "@/config/appRegistry";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { extractCodeFromPath } from "@/utils/sharedUrl";
 import { toast } from "sonner";
+import { requestCloseWindow } from "@/utils/windowUtils";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -22,7 +23,6 @@ export function AppManager({ apps }: AppManagerProps) {
     instances,
     instanceOrder,
     launchApp,
-    closeAppInstance,
     bringInstanceToForeground,
     navigateToNextInstance,
     navigateToPreviousInstance,
@@ -31,7 +31,6 @@ export function AppManager({ apps }: AppManagerProps) {
     instances: state.instances,
     instanceOrder: state.instanceOrder,
     launchApp: state.launchApp,
-    closeAppInstance: state.closeAppInstance,
     bringInstanceToForeground: state.bringInstanceToForeground,
     navigateToNextInstance: state.navigateToNextInstance,
     navigateToPreviousInstance: state.navigateToPreviousInstance,
@@ -363,7 +362,7 @@ export function AppManager({ apps }: AppManagerProps) {
             <AppComponent
               isWindowOpen={instance.isOpen}
               isForeground={instance.isForeground}
-              onClose={() => closeAppInstance(instance.instanceId)}
+              onClose={() => requestCloseWindow(instance.instanceId)}
               className="pointer-events-auto"
               helpItems={apps.find((app) => app.id === appId)?.helpItems}
               skipInitialSound={isInitialMount}

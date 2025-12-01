@@ -20,6 +20,7 @@ import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { requestCloseWindow } from "@/utils/windowUtils";
 import {
   AnimatePresence,
   motion,
@@ -317,14 +318,13 @@ const MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
 
 function MacDock() {
   const isPhone = useIsPhone();
-  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
+  const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance } =
     useAppStoreShallow((s) => ({
       instances: s.instances,
       instanceOrder: s.instanceOrder,
       bringInstanceToForeground: s.bringInstanceToForeground,
       restoreInstance: s.restoreInstance,
       minimizeInstance: s.minimizeInstance,
-      closeAppInstance: s.closeAppInstance,
     }));
 
   const launchApp = useLaunchApp();
@@ -707,7 +707,7 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
-              closeAppInstance(specificInstanceId);
+              requestCloseWindow(specificInstanceId);
             },
           });
           
@@ -802,7 +802,7 @@ function MacDock() {
         label: "Quit",
         onSelect: () => {
           appInstances.forEach((inst) => {
-            closeAppInstance(inst.instanceId);
+            requestCloseWindow(inst.instanceId);
           });
         },
         disabled: appInstances.length === 0,
@@ -810,7 +810,7 @@ function MacDock() {
       
       return items;
     },
-    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, launchApp]
+    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, launchApp]
   );
 
   // Handle app context menu
