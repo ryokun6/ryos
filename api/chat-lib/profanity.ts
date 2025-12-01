@@ -10,7 +10,7 @@ try {
   // Non-fatal during environments where dictionaries are unavailable
 }
 
-export const isProfaneUsername = (name) => {
+export const isProfaneUsername = (name: string | null | undefined): boolean => {
   if (!name) return false;
   const lower = String(name).toLowerCase();
   let normalized = lower.replace(/[\s_\-.]+/g, "");
@@ -43,7 +43,7 @@ export const isProfaneUsername = (name) => {
   return false;
 };
 
-const cleanProfanityToTripleBlocks = (text) => {
+const cleanProfanityToTripleBlocks = (text: string): string => {
   try {
     const cleaned =
       typeof leoProfanity?.clean === "function"
@@ -55,10 +55,10 @@ const cleanProfanityToTripleBlocks = (text) => {
   }
 };
 
-export const filterProfanityPreservingUrls = (content) => {
+export const filterProfanityPreservingUrls = (content: string): string => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const urlMatches = [];
-  let match;
+  const urlMatches: Array<{ url: string; start: number; end: number }> = [];
+  let match: RegExpExecArray | null;
 
   while ((match = urlRegex.exec(content)) !== null) {
     urlMatches.push({

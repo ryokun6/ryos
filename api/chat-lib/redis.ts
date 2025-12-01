@@ -1,8 +1,8 @@
 import { Redis } from "@upstash/redis";
 
-let redisClient = null;
+let redisClient: Redis | null = null;
 
-export const getRedisClient = () => {
+export const getRedisClient = (): Redis => {
   if (redisClient) {
     return redisClient;
   }

@@ -1,8 +1,8 @@
 import Pusher from "pusher";
 
-let pusherClient = null;
+let pusherClient: Pusher | null = null;
 
-export const getPusherClient = () => {
+export const getPusherClient = (): Pusher => {
   if (pusherClient) {
     return pusherClient;
   }
