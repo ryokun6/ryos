@@ -5,5 +5,5 @@ src/stores/useInternetExplorerStore.ts: +21[1]
 
 Conversations:
 
-[0]: 29422871-79a9-48e2-9ed0-3bb336f4ae31; Fix double close sound in text edit; composer-1;
+[0]: 29422871-79a9-48e2-9ed0-3bb336f4ae31; Fix double close sound in text edit; claude-4.5-opus-high-thinking;
 [1]: 0eba592b-9cad-49e2-b28b-38fbc7e8bcd0; Add iso-city.com to IE bookmarks; default;
