@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { BoardList } from "./BoardList";
 import { SoundGrid } from "./SoundGrid";
@@ -323,9 +323,19 @@ export function SoundboardAppComponent({
     }
   };
 
+  // Wrapper to dispatch close event for animation and sound
+  const handleMenuBarClose = useCallback(() => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+    } else {
+      // Fallback to direct close if no instanceId
+      onClose();
+    }
+  }, [instanceId, onClose]);
+
   const menuBar = (
     <SoundboardMenuBar
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       isWindowOpen={isWindowOpen}
       onNewBoard={addNewBoard}
       onImportBoard={() => importInputRef.current?.click()}

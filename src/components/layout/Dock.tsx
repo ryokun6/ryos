@@ -707,7 +707,8 @@ function MacDock() {
             type: "item",
             label: "Quit",
             onSelect: () => {
-              closeAppInstance(specificInstanceId);
+              // Dispatch event to trigger WindowFrame's close animation and sound
+              window.dispatchEvent(new CustomEvent(`requestClose-${specificInstanceId}`));
             },
           });
           
@@ -801,8 +802,9 @@ function MacDock() {
         type: "item",
         label: "Quit",
         onSelect: () => {
+          // Dispatch events to trigger WindowFrame's close animation and sound for each instance
           appInstances.forEach((inst) => {
-            closeAppInstance(inst.instanceId);
+            window.dispatchEvent(new CustomEvent(`requestClose-${inst.instanceId}`));
           });
         },
         disabled: appInstances.length === 0,

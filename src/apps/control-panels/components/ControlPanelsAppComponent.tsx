@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { ControlPanelsMenuBar } from "./ControlPanelsMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -1470,9 +1470,19 @@ export function ControlPanelsAppComponent({
 
   const tabStyles = getTabStyles(currentTheme);
 
+  // Wrapper to dispatch close event for animation and sound
+  const handleMenuBarClose = useCallback(() => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+    } else {
+      // Fallback to direct close if no instanceId
+      onClose();
+    }
+  }, [instanceId, onClose]);
+
   const menuBar = (
     <ControlPanelsMenuBar
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
     />

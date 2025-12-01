@@ -974,9 +974,19 @@ export function VideosAppComponent({
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOSTheme = currentTheme === "macosx";
 
+  // Wrapper to dispatch close event for animation and sound
+  const handleMenuBarClose = useCallback(() => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+    } else {
+      // Fallback to direct close if no instanceId
+      onClose();
+    }
+  }, [instanceId, onClose]);
+
   const menuBar = (
     <VideosMenuBar
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       videos={videos}

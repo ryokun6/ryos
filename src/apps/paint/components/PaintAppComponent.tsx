@@ -415,11 +415,21 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
+  // Wrapper to dispatch close event for animation and sound
+  const handleMenuBarClose = useCallback(() => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+    } else {
+      // Fallback to direct close if no instanceId
+      onClose();
+    }
+  }, [instanceId, onClose]);
+
   const menuBar = (
     <PaintMenuBar
       isWindowOpen={isWindowOpen}
       isForeground={isForeground}
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       canUndo={canUndo}
       canRedo={canRedo}
       onUndo={handleUndo}

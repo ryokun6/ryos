@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { PcMenuBar } from "./PcMenuBar";
@@ -232,9 +232,19 @@ export function PcAppComponent({
     setIsResetDialogOpen(false);
   };
 
+  // Wrapper to dispatch close event for animation and sound
+  const handleMenuBarClose = useCallback(() => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+    } else {
+      // Fallback to direct close if no instanceId
+      onClose();
+    }
+  }, [instanceId, onClose]);
+
   const menuBar = (
     <PcMenuBar
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onSaveState={handleSaveState}
