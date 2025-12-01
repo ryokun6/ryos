@@ -633,7 +633,7 @@ export function WindowFrame({
       opacity: 0,
       x: dockIconOffset.x,
       y: dockIconOffset.y,
-      transition: { duration: 0.4, ease: [0.32, 0, 0.67, 0] as const }
+      transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const }
     };
   };
 
@@ -657,7 +657,7 @@ export function WindowFrame({
                 x: 0,
                 y: 0,
                 transition: shouldAnimateRestore 
-                  ? { duration: 0.4, ease: [0.33, 1, 0.68, 1] as const }
+                  ? { duration: 0.25, ease: [0.33, 1, 0.68, 1] as const }
                   : { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const }
               }
           }
