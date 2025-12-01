@@ -1,0 +1,8 @@
+AI Notes:
+
+scripts/generate-build-version.ts: +18[0] -18[0]
+src/stores/useInternetExplorerStore.ts: +20[0],+129-135[0],+344[0] -336[0]
+
+Conversations:
+
+[0]: 0eba592b-9cad-49e2-b28b-38fbc7e8bcd0; Add iso-city.com to IE bookmarks; default;
