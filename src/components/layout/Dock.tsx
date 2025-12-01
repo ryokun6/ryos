@@ -15,6 +15,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
+import { useLongPress } from "@/hooks/useLongPress";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
@@ -107,6 +108,20 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
     // Scale factor for emoji to match magnification (relative to baseButtonSize)
     const emojiScale = useTransform(sizeSpring, (val) => val / baseButtonSize);
 
+    // Add long-press support for context menu on mobile
+    const longPressHandlers = useLongPress<HTMLButtonElement>((touchEvent) => {
+      if (onContextMenu) {
+        const touch = touchEvent.touches[0];
+        const syntheticEvent = {
+          preventDefault: () => {},
+          stopPropagation: () => {},
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+        } as unknown as React.MouseEvent<HTMLButtonElement>;
+        onContextMenu(syntheticEvent);
+      }
+    });
+
     const setCombinedRef = useCallback(
       (node: HTMLDivElement | null) => {
         wrapperRef.current = node;
@@ -190,6 +205,7 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
           {...(onDragOver && { onDragOver })}
           {...(onDrop && { onDrop })}
           {...(onDragLeave && { onDragLeave })}
+          {...longPressHandlers}
           className="relative flex items-end justify-center w-full h-full"
           style={{
             willChange: "transform",
@@ -627,6 +643,22 @@ function MacDock() {
       const appInstances = Object.values(instances).filter(
         (inst) => inst.appId === appId && inst.isOpen
       );
+      
+      // For non-opened apps, show only "Open"
+      if (appInstances.length === 0 && !specificInstanceId) {
+        items.push({
+          type: "item",
+          label: "Open",
+          onSelect: () => {
+            if (appId === "finder") {
+              launchApp("finder", { initialPath: "/" });
+            } else {
+              launchApp(appId);
+            }
+          },
+        });
+        return items;
+      }
       
       // For applet-viewer with a specific instance, only show that applet's menu
       if (appId === "applet-viewer" && specificInstanceId) {
@@ -1168,6 +1200,15 @@ function MacDock() {
       </div>
       <RightClickMenu
         items={[
+          {
+            type: "item",
+            label: "Open",
+            onSelect: () => {
+              focusFinderAtPathOrLaunch("/Trash");
+              setTrashContextMenuPos(null);
+            },
+          },
+          { type: "separator" },
           {
             type: "item",
             label: "Empty Trash...",
