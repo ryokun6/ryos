@@ -253,6 +253,30 @@ export function WindowFrame({
     };
   }, [instanceId, appId, performClose, interceptClose]);
 
+  // Listen for external close requests (from menubar, right-click menu, tool calls, etc.)
+  // This ensures all close actions use the same animation and sound
+  useEffect(() => {
+    const eventName = `requestClose-${instanceId || appId}`;
+    
+    const handleRequestClose = () => {
+      // Only trigger if not already closing
+      if (!isClosingRef.current && !interceptClose) {
+        // Set exit animation ref BEFORE state change - this is read synchronously by Framer Motion
+        exitAnimationRef.current = 'close';
+        isClosingRef.current = true;
+        vibrateClose();
+        playWindowClose();
+        setIsClosing(true);
+      }
+    };
+
+    window.addEventListener(eventName, handleRequestClose);
+
+    return () => {
+      window.removeEventListener(eventName, handleRequestClose);
+    };
+  }, [instanceId, appId, interceptClose, vibrateClose, playWindowClose]);
+
   const {
     windowPosition,
     windowSize,

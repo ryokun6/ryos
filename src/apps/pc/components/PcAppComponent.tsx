@@ -232,9 +232,19 @@ export function PcAppComponent({
     setIsResetDialogOpen(false);
   };
 
+  // Wrapper to dispatch close event for animation and sound
+  const handleMenuBarClose = () => {
+    if (instanceId) {
+      window.dispatchEvent(new CustomEvent(`requestClose-${instanceId}`));
+    } else {
+      // Fallback to direct close if no instanceId
+      onClose();
+    }
+  };
+
   const menuBar = (
     <PcMenuBar
-      onClose={onClose}
+      onClose={handleMenuBarClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onSaveState={handleSaveState}
