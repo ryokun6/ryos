@@ -35,6 +35,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import React from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 import { themes } from "@/themes";
 import { OsThemeId } from "@/themes/types";
 import { getTabStyles } from "@/utils/tabStyles";
@@ -1472,7 +1474,7 @@ export function ControlPanelsAppComponent({
 
   const menuBar = (
     <ControlPanelsMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "control-panels" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
     />

@@ -45,6 +45,8 @@ import {
 } from "@/stores/useInternetExplorerStore";
 import FutureSettingsDialog from "@/components/dialogs/FutureSettingsDialog";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 import { track } from "@vercel/analytics";
 import { useAppStore } from "@/stores/useAppStore";
 import TimeMachineView from "./TimeMachineView";
@@ -1951,6 +1953,7 @@ export function InternetExplorerAppComponent({
       onHome={handleHome}
       onShowHelp={() => setHelpDialogOpen(true)}
       onShowAbout={() => setAboutDialogOpen(true)}
+      onClose={() => triggerWindowClose(instanceId, "internet-explorer" as AppId)}
       isLoading={isLoading}
       favorites={favorites}
       history={history}
