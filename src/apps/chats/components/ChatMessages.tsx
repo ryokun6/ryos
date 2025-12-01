@@ -63,20 +63,36 @@ const getUserColorClass = (username?: string): string => {
 // Helper to decode common HTML entities so they render correctly
 const decodeHtmlEntities = (str: string): string => {
   if (!str) return str;
-  // Prefer DOM-based decoding when available (browser environment)
-  if (typeof window !== "undefined" && typeof document !== "undefined") {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = str;
-    return txt.value;
-  }
-  // Fallback: basic replacements (covers most common entities)
+  
+  // Safe and comprehensive entity decoding without XSS risk
   return str
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, "\u00A0")
+    .replace(/&copy;/g, "©")
+    .replace(/&reg;/g, "®")
+    .replace(/&trade;/g, "™")
+    // Safely decode numeric entities with bounds checking
+    .replace(/&#(\d+);/g, (match, dec) => {
+      const code = parseInt(dec, 10);
+      // Only decode valid Unicode code points to prevent potential issues
+      if (code >= 32 && code <= 126 || code >= 160 && code <= 65535) {
+        return String.fromCharCode(code);
+      }
+      return match; // Return original if invalid
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => {
+      const code = parseInt(hex, 16);
+      // Only decode valid Unicode code points to prevent potential issues
+      if (code >= 32 && code <= 126 || code >= 160 && code <= 65535) {
+        return String.fromCharCode(code);
+      }
+      return match; // Return original if invalid
+    });
 };
 
 // Helper function to parse markdown and segment text
