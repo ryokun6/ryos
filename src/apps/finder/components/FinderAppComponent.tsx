@@ -27,6 +27,8 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 // Type for Finder initial data
 interface FinderInitialData {
@@ -976,7 +978,7 @@ export function FinderAppComponent({
 
   const menuBar = (
     <FinderMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "finder" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       viewType={viewType}

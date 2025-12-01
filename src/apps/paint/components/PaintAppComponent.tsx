@@ -13,6 +13,8 @@ import { InputDialog } from "@/components/dialogs/InputDialog";
 import { helpItems, appMetadata } from "..";
 import { useFileSystem, dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { usePaintStore } from "@/stores/usePaintStore";
 import { Filter } from "./PaintFiltersMenu";
@@ -419,7 +421,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     <PaintMenuBar
       isWindowOpen={isWindowOpen}
       isForeground={isForeground}
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "paint" as AppId)}
       canUndo={canUndo}
       canRedo={canRedo}
       onUndo={handleUndo}

@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import { Dial } from "@/components/ui/dial";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 import { Waveform3D } from "./Waveform3D";
 import { useThemeStore } from "@/stores/useThemeStore";
 
@@ -836,7 +838,7 @@ export function SynthAppComponent({
       onShowHelp={() => setIsHelpOpen(true)}
       onShowAbout={() => setIsAboutOpen(true)}
       onReset={resetSynth}
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "synth" as AppId)}
       presets={presets}
       currentPresetId={currentPreset.id}
       onLoadPresetById={(id) => {

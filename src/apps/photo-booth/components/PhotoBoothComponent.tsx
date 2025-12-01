@@ -13,6 +13,8 @@ import { Webcam } from "@/components/Webcam";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { usePhotoBoothStore } from "@/stores/usePhotoBoothStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 interface Effect {
   name: string;
@@ -379,7 +381,7 @@ export function PhotoBoothComponent({
     // Component render with menu bar
     const menuBar = (
       <PhotoBoothMenuBar
-        onClose={onClose}
+        onClose={() => triggerWindowClose(instanceId, "photo-booth" as AppId)}
         onShowHelp={() => setShowHelp(true)}
         onShowAbout={() => setShowAbout(true)}
         onClearPhotos={handleClearPhotos}

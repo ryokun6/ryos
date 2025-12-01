@@ -18,6 +18,8 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { markdownToHtml } from "@/utils/markdown";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 
 // Inner component that has access to editor context
 function TextEditContent({
@@ -498,7 +500,7 @@ function TextEditContent({
   const menuBar = (
     <TextEditMenuBar
       editor={editor}
-      onClose={handleClose}
+      onClose={() => triggerWindowClose(instanceId, "textedit" as AppId)}
       isWindowOpen={isWindowOpen}
       onShowHelp={() => dialogControls?.openHelpDialog()}
       onShowAbout={() => dialogControls?.openAboutDialog()}

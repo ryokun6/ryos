@@ -28,6 +28,8 @@ import {
 } from "@/apps/finder/hooks/useFileSystem";
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { generateAppletShareUrl } from "@/utils/sharedUrl";
+import { triggerWindowClose } from "@/utils/windowClose";
+import { AppId } from "@/config/appIds";
 import { STORES } from "@/utils/indexedDB";
 import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
@@ -1360,7 +1362,7 @@ export function AppletViewerAppComponent({
 
   const menuBar = (
     <AppletViewerMenuBar
-      onClose={onClose}
+      onClose={() => triggerWindowClose(instanceId, "applet-viewer" as AppId)}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onExportAsApp={handleExportAsApp}
