@@ -257,8 +257,9 @@ export function WindowFrame({
     getSafeAreaBottomInset,
   } = useWindowManager({ appId, instanceId });
 
-  // Calculate dock icon position relative to window center (used for both minimize and restore animations)
+  // Calculate dock icon or taskbar item position relative to window center (used for both minimize and restore animations)
   const dockIconOffset = useMemo(() => {
+    // First try to find the dock icon (macOS theme)
     const dockIcon = document.querySelector(`[data-dock-icon="${appId}"]`);
     if (dockIcon) {
       const rect = dockIcon.getBoundingClientRect();
@@ -270,8 +271,24 @@ export function WindowFrame({
         y: rect.top + rect.height / 2 - windowCenterY,
       };
     }
+    
+    // Try to find the taskbar item (Windows XP/98 theme)
+    const taskbarItem = instanceId 
+      ? document.querySelector(`[data-taskbar-item="${instanceId}"]`)
+      : null;
+    if (taskbarItem) {
+      const rect = taskbarItem.getBoundingClientRect();
+      // Calculate offset from window center to taskbar item center
+      const windowCenterX = windowPosition.x + windowSize.width / 2;
+      const windowCenterY = windowPosition.y + windowSize.height / 2;
+      return {
+        x: rect.left + rect.width / 2 - windowCenterX,
+        y: rect.top + rect.height / 2 - windowCenterY,
+      };
+    }
+    
     return { x: 0, y: window.innerHeight - windowPosition.y }; // Fallback to bottom of screen
-  }, [appId, windowPosition, windowSize]);
+  }, [appId, instanceId, windowPosition, windowSize]);
 
   // Centralized insets per theme
   const computeInsets = useCallback(() => {

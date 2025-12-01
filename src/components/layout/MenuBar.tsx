@@ -25,6 +25,7 @@ import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { useOffline } from "@/hooks/useOffline";
 import { WifiOff } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Helper function to get app name
 const getAppName = (appId: string): string => {
@@ -526,12 +527,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     instances,
 
     bringInstanceToForeground,
+    restoreInstance,
     foregroundInstanceId, // Add this to get the foreground instance ID
   } = useAppStoreShallow((s) => ({
     getForegroundInstance: s.getForegroundInstance,
     instances: s.instances,
 
     bringInstanceToForeground: s.bringInstanceToForeground,
+    restoreInstance: s.restoreInstance,
     foregroundInstanceId: s.foregroundInstanceId, // Add this
   }));
 
@@ -694,6 +697,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
             ref={runningAreaRef}
             className="flex-1 flex items-center gap-0.5 px-2 overflow-hidden h-full"
           >
+            <AnimatePresence mode="popLayout">
             {(() => {
               const idsToRender =
                 visibleTaskbarIds.length > 0 || overflowTaskbarIds.length > 0
@@ -705,6 +709,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                 if (!instance || !instance.isOpen) return null;
 
                 const isForeground = instanceId === foregroundInstanceId;
+                const isMinimized = instance.isMinimized ?? false;
                 const isApplet = instance.appId === "applet-viewer";
                 
                 // Get icon and label based on app type
@@ -714,17 +719,35 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                 const isEmoji = appletInfo?.isEmoji || false;
 
                 return (
-                  <button
+                  <motion.button
                     key={instanceId}
+                    data-taskbar-item={instanceId}
+                    layout
+                    initial={{ scale: 0.8, opacity: 0, width: 0 }}
+                    animate={{ scale: 1, opacity: 1, width: "auto" }}
+                    exit={{ scale: 0.8, opacity: 0, width: 0 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30,
+                      mass: 0.8,
+                    }}
                     className="px-2 gap-1 border-t border-y rounded-sm flex items-center justify-start"
-                    onClick={() => bringInstanceToForeground(instanceId)}
+                    onClick={() => {
+                      // If minimized, restore it; otherwise just bring to foreground
+                      if (isMinimized) {
+                        restoreInstance(instanceId);
+                      } else {
+                        bringInstanceToForeground(instanceId);
+                      }
+                    }}
                     style={{
                       height: "85%",
                       flex: "0 1 160px",
                       minWidth: "110px",
                       marginTop: "2px",
                       marginRight: "2px",
-                      background: isForeground
+                      background: isForeground && !isMinimized
                         ? currentTheme === "xp"
                           ? "#3980f4"
                           : "#c0c0c0"
@@ -733,7 +756,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                         : "#c0c0c0",
                       border:
                         currentTheme === "xp"
-                          ? isForeground
+                          ? isForeground && !isMinimized
                             ? "1px solid #255be1"
                             : "1px solid #255be1"
                           : "none",
@@ -742,35 +765,35 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       boxShadow:
                         currentTheme === "xp"
                           ? "2px 2px 5px rgba(255, 255, 255, 0.267) inset"
-                          : isForeground
+                          : isForeground && !isMinimized
                           ? "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey"
                           : "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf",
-                      transition: "all 0.1s ease",
+                      transition: "background 0.1s ease, box-shadow 0.1s ease, border-color 0.1s ease",
                     }}
                     onMouseEnter={(e) => {
                       if (currentTheme === "xp") {
-                        if (isForeground) {
+                        if (isForeground && !isMinimized) {
                           e.currentTarget.style.background = "#4a92f9";
                           e.currentTarget.style.borderColor = "#2c64e3";
                         } else {
                           e.currentTarget.style.background = "#2a6ef1";
                           e.currentTarget.style.borderColor = "#1e56c9";
                         }
-                      } else if (currentTheme === "win98" && !isForeground) {
+                      } else if (currentTheme === "win98" && (!isForeground || isMinimized)) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentTheme === "xp") {
-                        if (isForeground) {
+                        if (isForeground && !isMinimized) {
                           e.currentTarget.style.background = "#3980f4";
                           e.currentTarget.style.borderColor = "#255be1";
                         } else {
                           e.currentTarget.style.background = "#1658dd";
                           e.currentTarget.style.borderColor = "#255be1";
                         }
-                      } else if (currentTheme === "win98" && !isForeground) {
+                      } else if (currentTheme === "win98" && (!isForeground || isMinimized)) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
                       }
@@ -797,10 +820,11 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                     <span className="truncate text-xs">
                       {displayLabel}
                     </span>
-                  </button>
+                  </motion.button>
                 );
               });
             })()}
+            </AnimatePresence>
 
             {/* Overflow menu button */}
             {overflowTaskbarIds.length > 0 && (
@@ -876,6 +900,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                     const instance = instances[instanceId];
                     if (!instance || !instance.isOpen) return null;
                     
+                    const isMinimized = instance.isMinimized ?? false;
                     const isApplet = instance.appId === "applet-viewer";
                     const appletInfo = isApplet ? getAppletInfo(instance) : null;
                     const displayIcon = appletInfo?.icon || getAppIconPath(instance.appId);
@@ -885,7 +910,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                     return (
                       <DropdownMenuItem
                         key={instanceId}
-                        onClick={() => bringInstanceToForeground(instanceId)}
+                        onClick={() => {
+                          // If minimized, restore it; otherwise just bring to foreground
+                          if (isMinimized) {
+                            restoreInstance(instanceId);
+                          } else {
+                            bringInstanceToForeground(instanceId);
+                          }
+                        }}
                         className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
                       >
                         {isEmoji ? (
