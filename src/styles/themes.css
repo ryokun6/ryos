@@ -182,6 +182,21 @@
   --os-color-selection-text: #000000;
 }
 
+/* Ensure all UI elements in Windows 98 theme use the theme font with ArkPixel fallback */
+:root[data-os-theme="win98"] button,
+:root[data-os-theme="win98"] input,
+:root[data-os-theme="win98"] label,
+:root[data-os-theme="win98"] select,
+:root[data-os-theme="win98"] textarea,
+:root[data-os-theme="win98"] [role="menuitem"],
+:root[data-os-theme="win98"] [role="menuitemcheckbox"],
+:root[data-os-theme="win98"] [role="menuitemradio"],
+:root[data-os-theme="win98"] [role="option"] {
+  font-family: var(--os-font-ui) !important;
+  font-smooth: antialiased !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
 /* Windows XP Theme */
 :root[data-os-theme="xp"] {
   --os-font-ui: Tahoma, "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
@@ -218,6 +233,21 @@
 :root[data-os-theme="xp"] .window:not(.is-foreground) {
   --os-color-selection-bg: #ece9da; /* soft gray */
   --os-color-selection-text: #000000;
+}
+
+/* Ensure all UI elements in Windows XP theme use the theme font with ArkPixel fallback */
+:root[data-os-theme="xp"] button,
+:root[data-os-theme="xp"] input,
+:root[data-os-theme="xp"] label,
+:root[data-os-theme="xp"] select,
+:root[data-os-theme="xp"] textarea,
+:root[data-os-theme="xp"] [role="menuitem"],
+:root[data-os-theme="xp"] [role="menuitemcheckbox"],
+:root[data-os-theme="xp"] [role="menuitemradio"],
+:root[data-os-theme="xp"] [role="option"] {
+  font-family: var(--os-font-ui) !important;
+  font-smooth: antialiased !important;
+  -webkit-font-smoothing: antialiased !important;
 }
 
 /* Backwards compatibility aliases */
