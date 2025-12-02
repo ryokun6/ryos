@@ -1,0 +1,25 @@
+AI Notes:
+
+src/apps/applet-viewer/components/AppletViewerAppComponent.tsx: +1545[0]
+src/apps/chats/components/ChatsAppComponent.tsx: +853[0]
+src/apps/control-panels/components/ControlPanelsAppComponent.tsx: +2076[0]
+src/apps/finder/components/FinderAppComponent.tsx: +1265[0]
+src/apps/internet-explorer/components/InternetExplorerAppComponent.tsx: +2646[0]
+src/apps/ipod/components/IpodAppComponent.tsx: +2721[0]
+src/apps/minesweeper/components/MinesweeperAppComponent.tsx: +569[0]
+src/apps/paint/components/PaintAppComponent.tsx: +565[0]
+src/apps/pc/components/PcAppComponent.tsx: +377[0]
+src/apps/photo-booth/components/PhotoBoothComponent.tsx: +1244[0]
+src/apps/soundboard/components/SoundboardAppComponent.tsx: +519[0]
+src/apps/synth/components/SynthAppComponent.tsx: +1620[0]
+src/apps/terminal/components/TerminalAppComponent.tsx: +3037[0]
+src/apps/textedit/components/DialogManager.tsx: +137[0]
+src/apps/videos/components/VideosAppComponent.tsx: +1388[0]
+src/components/dialogs/AboutDialog.tsx: +12[0],+27[0],+34[0],+40-41[0],+68[0],+99[0] -62[0],-93[0]
+src/components/layout/MenuBar.tsx: +77[0],+79-80[0],+82-83[0],+107-112[0],+115-117[0],+122-131[0],+133-142[0],+144-153[0],+155-162[0],+164-189[0],+501[0] -104-109[0],-111-117[0],-119-124[0],-126-135[0]
+src/styles/themes.css: +1204[1],+1211[1] -1204[1],-1211[1]
+
+Conversations:
+
+[0]: 9757e6d2-1a48-49d8-895c-6bdd43154c3a; Show localized app names in about dialog; composer-1;
+[1]: a1c735af-d5ba-483f-bbdd-9a4f33642a1f; Tab Request a1c735af; unknown;
