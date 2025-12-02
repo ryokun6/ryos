@@ -15,6 +15,7 @@ import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useTranslation } from "react-i18next";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 interface DesktopStyles {
   backgroundImage?: string;
@@ -117,10 +118,14 @@ export function Desktop({
       return a.name.localeCompare(b.name);
     });
 
-  // Remove file extension from display name (for desktop shortcuts)
-  const getDisplayName = (name: string): string => {
-    // Remove common file extensions
-    return name.replace(/\.[^/.]+$/, "");
+  // Get display name for desktop shortcuts (with translation)
+  const getDisplayName = (shortcut: FileSystemItem): string => {
+    // For app aliases, use translated app name
+    if (shortcut.aliasType === "app" && shortcut.aliasTarget) {
+      return getTranslatedAppName(shortcut.aliasTarget as AppId);
+    }
+    // For file aliases, remove file extension
+    return shortcut.name.replace(/\.[^/.]+$/, "");
   };
 
   // Resolve and open alias target
@@ -725,7 +730,7 @@ export function Desktop({
               }}
             >
               <FileIcon
-                name={getDisplayName(shortcut.name)}
+                name={getDisplayName(shortcut)}
                 isDirectory={false}
                 icon={getShortcutIcon(shortcut)}
                 onClick={(e) => {

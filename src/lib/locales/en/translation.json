@@ -230,6 +230,17 @@
       "defaultNames": {
         "untitledFolder": "untitled folder",
         "copy": "copy"
+      },
+      "folders": {
+        "applications": "Applications",
+        "documents": "Documents",
+        "images": "Images",
+        "music": "Music",
+        "videos": "Videos",
+        "sites": "Sites",
+        "applets": "Applets",
+        "trash": "Trash",
+        "desktop": "Desktop"
       }
     },
     "soundboard": {
@@ -631,6 +642,40 @@
         "photoBoothHelp": "Photo Booth Help",
         "aboutPhotoBooth": "About Photo Booth"
       },
+      "effects": {
+        "rainbow": "Rainbow",
+        "vibrant": "Vibrant",
+        "coldBlue": "Cold Blue",
+        "highContrast": "High Contrast",
+        "normal": "Normal",
+        "vintage": "Vintage",
+        "xRay": "X-Ray",
+        "neon": "Neon",
+        "blackAndWhite": "Black & White",
+        "bulge": "Bulge",
+        "stretch": "Stretch",
+        "pinch": "Pinch",
+        "twirl": "Twirl",
+        "fishEye": "Fish Eye",
+        "squeeze": "Squeeze",
+        "kaleidoscope": "Kaleidoscope",
+        "ripple": "Ripple",
+        "glitch": "Glitch"
+      },
+      "buttons": {
+        "effects": "Effects"
+      },
+      "errors": {
+        "couldNotAccessCamera": "Could not access camera",
+        "cameraPermissionDenied": "Camera permission denied",
+        "noCameraFound": "No camera found",
+        "cameraRequiresHttps": "Camera requires HTTPS",
+        "cameraError": "Camera error: {{error}}",
+        "cameraApiNotAvailable": "Camera API not available"
+      },
+      "ariaLabels": {
+        "photo": "Photo {{index}}"
+      },
       "help": {
         "takingPhoto": {
           "title": "Taking a Photo",
@@ -965,6 +1010,7 @@
         "saveState": "Save State",
         "loadState": "Load State",
         "reset": "Reset",
+        "controls": "Controls",
         "fullScreen": "Full Screen",
         "toggleMouseCapture": "Toggle Mouse Capture",
         "mouseSensitivity": "Mouse Sensitivity",

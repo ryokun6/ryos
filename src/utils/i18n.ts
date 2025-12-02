@@ -38,6 +38,63 @@ export function getTranslatedAppDescription(appId: AppId): string {
 }
 
 /**
+ * Get translated folder name
+ * Returns the localized name for a folder path, or the original name if no translation exists
+ */
+export function getTranslatedFolderName(folderPath: string): string {
+  // Map folder paths to translation keys
+  const folderKeyMap: Record<string, string> = {
+    "/Applications": "applications",
+    "/Documents": "documents",
+    "/Images": "images",
+    "/Music": "music",
+    "/Videos": "videos",
+    "/Sites": "sites",
+    "/Applets": "applets",
+    "/Trash": "trash",
+    "/Desktop": "desktop",
+  };
+
+  const key = folderKeyMap[folderPath];
+  if (key) {
+    const translationKey = `apps.finder.folders.${key}`;
+    const translated = i18n.t(translationKey);
+    // If translation doesn't exist, return the key (fallback)
+    return translated !== translationKey ? translated : folderPath.split("/").pop() || folderPath;
+  }
+
+  // For subfolders or unknown folders, return the last segment of the path
+  return folderPath.split("/").pop() || folderPath;
+}
+
+/**
+ * Get translated folder name from folder name (not path)
+ * Useful when you only have the folder name string
+ */
+export function getTranslatedFolderNameFromName(folderName: string): string {
+  const folderNameMap: Record<string, string> = {
+    "Applications": "applications",
+    "Documents": "documents",
+    "Images": "images",
+    "Music": "music",
+    "Videos": "videos",
+    "Sites": "sites",
+    "Applets": "applets",
+    "Trash": "trash",
+    "Desktop": "desktop",
+  };
+
+  const key = folderNameMap[folderName];
+  if (key) {
+    const translationKey = `apps.finder.folders.${key}`;
+    const translated = i18n.t(translationKey);
+    return translated !== translationKey ? translated : folderName;
+  }
+
+  return folderName;
+}
+
+/**
  * Get translated help items for an app
  * Maps help item keys to translation paths
  */

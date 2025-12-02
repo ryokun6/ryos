@@ -340,6 +340,17 @@
         "unknown": "不明",
         "webpImage": "WebP 画像"
       },
+      "folders": {
+        "applets": "アプレット",
+        "applications": "アプリケーション",
+        "desktop": "デスクトップ",
+        "documents": "書類",
+        "images": "画像",
+        "music": "ミュージック",
+        "sites": "サイト",
+        "trash": "ゴミ箱",
+        "videos": "ビデオ"
+      },
       "help": {
         "browseNavigate": {
           "description": "戻る/進むボタン、アドレスバー、移動メニューで素早くナビゲーション",
@@ -804,6 +815,7 @@
       "menu": {
         "aboutVirtualPc": "Virtual PC について",
         "aspectRatio": "アスペクト比",
+        "controls": "コントロール",
         "fullScreen": "フルスクリーン",
         "loadGame": "ゲームを読み込む",
         "loadState": "状態を読み込む",
@@ -816,7 +828,41 @@
       "name": "仮想PC"
     },
     "photo-booth": {
+      "ariaLabels": {
+        "photo": "写真{{index}}"
+      },
+      "buttons": {
+        "effects": "エフェクト"
+      },
       "description": "エフェクト付きで写真を撮影",
+      "effects": {
+        "blackAndWhite": "白黒",
+        "bulge": "膨張",
+        "coldBlue": "コールドブルー",
+        "fishEye": "魚眼",
+        "glitch": "グリッチ",
+        "highContrast": "ハイコントラスト",
+        "kaleidoscope": "カレイドスコープ",
+        "neon": "ネオン",
+        "normal": "通常",
+        "pinch": "ピンチ",
+        "rainbow": "虹",
+        "ripple": "波紋",
+        "squeeze": "スクイーズ",
+        "stretch": "ストレッチ",
+        "twirl": "渦巻き",
+        "vibrant": "鮮やか",
+        "vintage": "ビンテージ",
+        "xRay": "X線"
+      },
+      "errors": {
+        "cameraApiNotAvailable": "カメラAPIが利用できません",
+        "cameraError": "カメラエラー: {{error}}",
+        "cameraPermissionDenied": "カメラのアクセスが拒否されました",
+        "cameraRequiresHttps": "カメラにはHTTPSが必要です",
+        "couldNotAccessCamera": "カメラにアクセスできませんでした",
+        "noCameraFound": "カメラが見つかりません"
+      },
       "help": {
         "applyingEffects": {
           "description": "エフェクトボタン（カメラボタンの右側）をクリックしてエフェクトパネルを開き、ライブカメラビューに楽しいフィルタを適用。",

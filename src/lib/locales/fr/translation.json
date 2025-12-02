@@ -340,6 +340,17 @@
         "unknown": "Inconnu",
         "webpImage": "Image WebP"
       },
+      "folders": {
+        "applets": "Applets",
+        "applications": "Applications",
+        "desktop": "Bureau",
+        "documents": "Documents",
+        "images": "Images",
+        "music": "Musique",
+        "sites": "Sites",
+        "trash": "Corbeille",
+        "videos": "Vidéos"
+      },
       "help": {
         "browseNavigate": {
           "description": "Boutons Précédent/Suivant, barre d'adresse et menu Aller pour une navigation rapide",
@@ -804,6 +815,7 @@
       "menu": {
         "aboutVirtualPc": "À propos de Virtual PC",
         "aspectRatio": "Format d'image",
+        "controls": "Commandes",
         "fullScreen": "Plein écran",
         "loadGame": "Charger la partie",
         "loadState": "Charger l'état",
@@ -816,7 +828,41 @@
       "name": "PC virtuel"
     },
     "photo-booth": {
+      "ariaLabels": {
+        "photo": "Photo {{index}}"
+      },
+      "buttons": {
+        "effects": "Effets"
+      },
       "description": "Prendre des photos avec effets",
+      "effects": {
+        "blackAndWhite": "Noir et blanc",
+        "bulge": "Bombement",
+        "coldBlue": "Bleu froid",
+        "fishEye": "Oeil de poisson",
+        "glitch": "Glitch",
+        "highContrast": "Contraste élevé",
+        "kaleidoscope": "Kaléidoscope",
+        "neon": "Néon",
+        "normal": "Normal",
+        "pinch": "Pincer",
+        "rainbow": "Arc-en-ciel",
+        "ripple": "Ondulation",
+        "squeeze": "Compression",
+        "stretch": "Étirement",
+        "twirl": "Tourbillon",
+        "vibrant": "Vibrant",
+        "vintage": "Vintage",
+        "xRay": "Rayons X"
+      },
+      "errors": {
+        "cameraApiNotAvailable": "API de l'appareil photo non disponible",
+        "cameraError": "Erreur de l'appareil photo : {{error}}",
+        "cameraPermissionDenied": "Autorisation de l'appareil photo refusée",
+        "cameraRequiresHttps": "L'appareil photo nécessite HTTPS",
+        "couldNotAccessCamera": "Impossible d'accéder à l'appareil photo",
+        "noCameraFound": "Aucun appareil photo trouvé"
+      },
       "help": {
         "applyingEffects": {
           "description": "Cliquez sur le bouton 'Effets' (à droite du bouton caméra) pour ouvrir le panneau d'effets et appliquer des filtres amusants à votre vue caméra en direct.",

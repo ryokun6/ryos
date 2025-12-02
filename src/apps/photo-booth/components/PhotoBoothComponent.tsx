@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -14,10 +14,12 @@ import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { usePhotoBoothStore } from "@/stores/usePhotoBoothStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { useTranslation } from "react-i18next";
 
 interface Effect {
   name: string;
   filter: string;
+  translationKey: string;
 }
 
 interface PhotoReference {
@@ -25,44 +27,6 @@ interface PhotoReference {
   path: string;
   timestamp: number;
 }
-
-// Split effects into two categories
-const cssFilters: Effect[] = [
-  { name: "Rainbow", filter: "hue-rotate(180deg) saturate(200%)" },
-  { name: "Vibrant", filter: "saturate(200%) contrast(150%)" },
-  { name: "Cold Blue", filter: "hue-rotate(240deg) saturate(150%)" },
-  { name: "High Contrast", filter: "contrast(200%) brightness(110%)" },
-  { name: "Normal", filter: "none" },
-  { name: "Vintage", filter: "sepia(80%) brightness(90%) contrast(120%)" },
-  {
-    name: "X-Ray",
-    filter: "invert(100%) hue-rotate(180deg) hue-rotate(180deg)",
-  },
-  {
-    name: "Neon",
-    filter: "brightness(120%) contrast(120%) saturate(200%) hue-rotate(310deg)",
-  },
-  {
-    name: "Black & White",
-    filter: "brightness(90%) hue-rotate(20deg) saturate(0%)",
-  },
-];
-
-const distortionFilters: Effect[] = [
-  { name: "Bulge", filter: "bulge(-0.5)" },
-  { name: "Stretch", filter: "stretch(1.0)" },
-  { name: "Pinch", filter: "pinch(2.0)" },
-  { name: "Twirl", filter: "twist(-8.0)" },
-  { name: "Fish Eye", filter: "fisheye(1.5)" },
-  { name: "Squeeze", filter: "squeeze(1.0)" },
-  // New exciting effects
-  { name: "Kaleidoscope", filter: "kaleidoscope(0.5)" },
-  { name: "Ripple", filter: "ripple(1.5)" },
-  { name: "Glitch", filter: "glitch(2.0)" },
-];
-
-// Combined array for compatibility with existing code
-const effects: Effect[] = [...cssFilters, ...distortionFilters];
 
 // Add function to detect swipe gestures
 function useSwipeDetection(onSwipeLeft: () => void, onSwipeRight: () => void) {
@@ -113,6 +77,7 @@ export function PhotoBoothComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps) {
+  const { t } = useTranslation();
   const [showHelp, setShowHelp] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
@@ -122,8 +87,86 @@ export function PhotoBoothComponent({
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isLoadingCamera, setIsLoadingCamera] = useState(false);
+
+  // Split effects into two categories with translations
+  const cssFilters = useMemo<Effect[]>(
+    () => [
+      {
+        name: "Rainbow",
+        filter: "hue-rotate(180deg) saturate(200%)",
+        translationKey: "rainbow",
+      },
+      {
+        name: "Vibrant",
+        filter: "saturate(200%) contrast(150%)",
+        translationKey: "vibrant",
+      },
+      {
+        name: "Cold Blue",
+        filter: "hue-rotate(240deg) saturate(150%)",
+        translationKey: "coldBlue",
+      },
+      {
+        name: "High Contrast",
+        filter: "contrast(200%) brightness(110%)",
+        translationKey: "highContrast",
+      },
+      {
+        name: "Normal",
+        filter: "none",
+        translationKey: "normal",
+      },
+      {
+        name: "Vintage",
+        filter: "sepia(80%) brightness(90%) contrast(120%)",
+        translationKey: "vintage",
+      },
+      {
+        name: "X-Ray",
+        filter: "invert(100%) hue-rotate(180deg) hue-rotate(180deg)",
+        translationKey: "xRay",
+      },
+      {
+        name: "Neon",
+        filter: "brightness(120%) contrast(120%) saturate(200%) hue-rotate(310deg)",
+        translationKey: "neon",
+      },
+      {
+        name: "Black & White",
+        filter: "brightness(90%) hue-rotate(20deg) saturate(0%)",
+        translationKey: "blackAndWhite",
+      },
+    ],
+    []
+  );
+
+  const distortionFilters = useMemo<Effect[]>(
+    () => [
+      { name: "Bulge", filter: "bulge(-0.5)", translationKey: "bulge" },
+      { name: "Stretch", filter: "stretch(1.0)", translationKey: "stretch" },
+      { name: "Pinch", filter: "pinch(2.0)", translationKey: "pinch" },
+      { name: "Twirl", filter: "twist(-8.0)", translationKey: "twirl" },
+      { name: "Fish Eye", filter: "fisheye(1.5)", translationKey: "fishEye" },
+      { name: "Squeeze", filter: "squeeze(1.0)", translationKey: "squeeze" },
+      {
+        name: "Kaleidoscope",
+        filter: "kaleidoscope(0.5)",
+        translationKey: "kaleidoscope",
+      },
+      { name: "Ripple", filter: "ripple(1.5)", translationKey: "ripple" },
+      { name: "Glitch", filter: "glitch(2.0)", translationKey: "glitch" },
+    ],
+    []
+  );
+
+  // Combined array for compatibility with existing code
+  const effects = useMemo<Effect[]>(
+    () => [...cssFilters, ...distortionFilters],
+    [cssFilters, distortionFilters]
+  );
+
   const [selectedEffect, setSelectedEffect] = useState<Effect>(
-    effects.find((effect) => effect.name === "Normal") || effects[0]
+    effects.find((effect) => effect.translationKey === "normal") || effects[0]
   );
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>(
     []
@@ -259,7 +302,7 @@ export function PhotoBoothComponent({
 
         if (!navigator.mediaDevices) {
           console.error("mediaDevices API not available");
-          throw new Error("Camera API not available");
+          throw new Error(t("apps.photo-booth.errors.cameraApiNotAvailable"));
         }
 
         const constraints = {
@@ -321,18 +364,20 @@ export function PhotoBoothComponent({
         }
 
         console.error("Camera error:", error);
-        let errorMessage = "Could not access camera";
+        let errorMessage = t("apps.photo-booth.errors.couldNotAccessCamera");
 
         if (error instanceof DOMException) {
           console.log("DOMException type:", error.name);
           if (error.name === "NotAllowedError") {
-            errorMessage = "Camera permission denied";
+            errorMessage = t("apps.photo-booth.errors.cameraPermissionDenied");
           } else if (error.name === "NotFoundError") {
-            errorMessage = "No camera found";
+            errorMessage = t("apps.photo-booth.errors.noCameraFound");
           } else if (error.name === "SecurityError") {
-            errorMessage = "Camera requires HTTPS";
+            errorMessage = t("apps.photo-booth.errors.cameraRequiresHttps");
           } else {
-            errorMessage = `Camera error: ${error.name}`;
+            errorMessage = t("apps.photo-booth.errors.cameraError", {
+              error: error.name,
+            });
           }
         } else if (error instanceof Error && error.message) {
           errorMessage = error.message;
@@ -963,7 +1008,7 @@ export function PhotoBoothComponent({
                                 "0px 0px 2px black, 0px 0px 2px black, 0px 0px 2px black",
                             }}
                           >
-                            {effect.name}
+                            {t(`apps.photo-booth.effects.${effect.translationKey}`)}
                           </div>
                         </motion.div>
                       ))}
@@ -1050,7 +1095,9 @@ export function PhotoBoothComponent({
                           >
                             <img
                               src={matchingFile.contentUrl}
-                              alt={`Photo ${originalIndex}`}
+                              alt={t("apps.photo-booth.ariaLabels.photo", {
+                                index: originalIndex,
+                              })}
                               className="h-full w-auto object-contain cursor-pointer transition-opacity hover:opacity-80"
                               onClick={() => {
                                 // Create an anchor element to download the image
@@ -1227,7 +1274,7 @@ export function PhotoBoothComponent({
                 }
               }}
             >
-              Effects
+              {t("apps.photo-booth.buttons.effects")}
             </Button>
           </div>
 
@@ -1235,7 +1282,7 @@ export function PhotoBoothComponent({
             isOpen={showHelp}
             onOpenChange={setShowHelp}
             helpItems={helpItems}
-            appName="Photo Booth"
+            appName={t("apps.photo-booth.name")}
           />
           <AboutDialog
             isOpen={showAbout}

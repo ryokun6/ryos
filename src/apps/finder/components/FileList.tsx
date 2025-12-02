@@ -15,6 +15,7 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { isTouchDevice } from "@/utils/device";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
+import { getTranslatedFolderNameFromName, getTranslatedAppName, AppId } from "@/utils/i18n";
 
 export interface FileItem {
   name: string;
@@ -27,6 +28,8 @@ export interface FileItem {
   size?: number; // File size in bytes
   modifiedAt?: Date; // Last modified date
   type?: string;
+  aliasType?: "file" | "app"; // For desktop shortcuts/aliases
+  aliasTarget?: string; // Target path or appId for aliases
 }
 
 interface FileListProps {
@@ -378,9 +381,27 @@ export function FileList({
 
   // Helper to compute display name. For Finder applets in /Applets ending with .app, hide extension
   // Also hide extensions for desktop shortcuts
+  // For folders, use translated names
   const getDisplayName = (file: FileItem): string => {
+    // For directories, use translated folder names
+    if (file.isDirectory) {
+      return getTranslatedFolderNameFromName(file.name);
+    }
+    
+    // For apps in /Applications, use translated app name
+    if (file.path.startsWith("/Applications/") && file.appId) {
+      return getTranslatedAppName(file.appId as AppId);
+    }
+    
     // Hide extension for desktop shortcuts
     if (file.path.startsWith("/Desktop/") && !file.isDirectory) {
+      // For desktop shortcuts, if it's an app alias, use translated app name
+      if (file.aliasType === "app" && file.aliasTarget) {
+        return getTranslatedAppName(file.aliasTarget as AppId);
+      }
+      if (file.appId) {
+        return getTranslatedAppName(file.appId as AppId);
+      }
       return file.name.replace(/\.[^/.]+$/, "");
     }
     // Hide extension for applets

@@ -340,6 +340,17 @@
         "unknown": "Unbekannt",
         "webpImage": "WebP-Bild"
       },
+      "folders": {
+        "applets": "Applets",
+        "applications": "Anwendungen",
+        "desktop": "Schreibtisch",
+        "documents": "Dokumente",
+        "images": "Bilder",
+        "music": "Musik",
+        "sites": "Websites",
+        "trash": "Papierkorb",
+        "videos": "Videos"
+      },
       "help": {
         "browseNavigate": {
           "description": "Zurück/Vor-Buttons, Adressleiste und Gehe-zu-Menü für schnelle Navigation",
@@ -804,6 +815,7 @@
       "menu": {
         "aboutVirtualPc": "Über Virtual PC",
         "aspectRatio": "Seitenverhältnis",
+        "controls": "Steuerung",
         "fullScreen": "Vollbild",
         "loadGame": "Spiel laden",
         "loadState": "Zustand laden",
@@ -816,7 +828,41 @@
       "name": "Virtueller PC"
     },
     "photo-booth": {
+      "ariaLabels": {
+        "photo": "Foto {{index}}"
+      },
+      "buttons": {
+        "effects": "Effekte"
+      },
       "description": "Fotos mit Effekten aufnehmen",
+      "effects": {
+        "blackAndWhite": "Schwarz-Weiß",
+        "bulge": "Wölbung",
+        "coldBlue": "Kaltblau",
+        "fishEye": "Fischauge",
+        "glitch": "Glitch",
+        "highContrast": "Hoher Kontrast",
+        "kaleidoscope": "Kaleidoskop",
+        "neon": "Neon",
+        "normal": "Normal",
+        "pinch": "Zusammenziehen",
+        "rainbow": "Regenbogen",
+        "ripple": "Wellen",
+        "squeeze": "Zusammendrücken",
+        "stretch": "Strecken",
+        "twirl": "Verwirbeln",
+        "vibrant": "Lebendig",
+        "vintage": "Vintage",
+        "xRay": "Röntgen"
+      },
+      "errors": {
+        "cameraApiNotAvailable": "Kamera-API nicht verfügbar",
+        "cameraError": "Kamerafehler: {{error}}",
+        "cameraPermissionDenied": "Kameraberechtigung verweigert",
+        "cameraRequiresHttps": "Kamera erfordert HTTPS",
+        "couldNotAccessCamera": "Zugriff auf Kamera nicht möglich",
+        "noCameraFound": "Keine Kamera gefunden"
+      },
       "help": {
         "applyingEffects": {
           "description": "Klicken Sie auf die Schaltfläche 'Effekte' (rechts von der Kamera-Schaltfläche), um den Effektbereich zu öffnen und lustige Filter auf Ihre Live-Kameraansicht anzuwenden.",

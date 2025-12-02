@@ -340,6 +340,17 @@
         "unknown": "알 수 없음",
         "webpImage": "WebP 이미지"
       },
+      "folders": {
+        "applets": "애플릿",
+        "applications": "응용 프로그램",
+        "desktop": "바탕 화면",
+        "documents": "문서",
+        "images": "이미지",
+        "music": "음악",
+        "sites": "사이트",
+        "trash": "휴지통",
+        "videos": "동영상"
+      },
       "help": {
         "browseNavigate": {
           "description": "뒤로/앞으로 버튼, 주소 표시줄 및 이동 메뉴로 빠르게 탐색",
@@ -804,6 +815,7 @@
       "menu": {
         "aboutVirtualPc": "Virtual PC 정보",
         "aspectRatio": "화면 비율",
+        "controls": "제어",
         "fullScreen": "전체 화면",
         "loadGame": "게임 불러오기",
         "loadState": "상태 불러오기",
@@ -816,7 +828,41 @@
       "name": "가상 PC"
     },
     "photo-booth": {
+      "ariaLabels": {
+        "photo": "사진 {{index}}"
+      },
+      "buttons": {
+        "effects": "효과"
+      },
       "description": "효과와 함께 사진 촬영",
+      "effects": {
+        "blackAndWhite": "흑백",
+        "bulge": "볼록",
+        "coldBlue": "차가운 파랑",
+        "fishEye": "어안",
+        "glitch": "글리치",
+        "highContrast": "고대비",
+        "kaleidoscope": "만화경",
+        "neon": "네온",
+        "normal": "보통",
+        "pinch": "핀치",
+        "rainbow": "무지개",
+        "ripple": "잔물결",
+        "squeeze": "압착",
+        "stretch": "늘이기",
+        "twirl": "소용돌이",
+        "vibrant": "생생한",
+        "vintage": "빈티지",
+        "xRay": "X-레이"
+      },
+      "errors": {
+        "cameraApiNotAvailable": "카메라 API를 사용할 수 없습니다",
+        "cameraError": "카메라 오류: {{error}}",
+        "cameraPermissionDenied": "카메라 권한이 거부되었습니다",
+        "cameraRequiresHttps": "카메라에는 HTTPS가 필요합니다",
+        "couldNotAccessCamera": "카메라에 접근할 수 없습니다",
+        "noCameraFound": "카메라를 찾을 수 없습니다"
+      },
       "help": {
         "applyingEffects": {
           "description": "효과 버튼(카메라 버튼 오른쪽)을 클릭하여 효과 패널을 열고 라이브 카메라 보기에 재미있는 필터 적용.",

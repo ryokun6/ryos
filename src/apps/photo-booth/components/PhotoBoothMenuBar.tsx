@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 interface Effect {
   name: string;
   filter: string;
+  translationKey: string;
 }
 
 interface PhotoBoothMenuBarProps {
@@ -140,7 +141,7 @@ export function PhotoBoothMenuBar({
                 className={cn(selectedEffect.name !== effect.name && "pl-4")}
               >
                 {selectedEffect.name === effect.name ? "✓ " : ""}
-                {effect.name}
+                {t(`apps.photo-booth.effects.${effect.translationKey}`)}
               </span>
             </DropdownMenuItem>
           ))}

@@ -340,6 +340,17 @@
         "unknown": "未知",
         "webpImage": "WebP 影像"
       },
+      "folders": {
+        "applets": "小程式",
+        "applications": "應用程式",
+        "desktop": "桌面",
+        "documents": "文件",
+        "images": "圖片",
+        "music": "音樂",
+        "sites": "網站",
+        "trash": "垃圾桶",
+        "videos": "影片"
+      },
       "help": {
         "browseNavigate": {
           "description": "上一頁/下一頁按鈕、網址列和「前往」選單可快速導航",
@@ -804,6 +815,7 @@
       "menu": {
         "aboutVirtualPc": "關於 Virtual PC",
         "aspectRatio": "長寬比",
+        "controls": "控制",
         "fullScreen": "全螢幕",
         "loadGame": "載入遊戲",
         "loadState": "載入狀態",
@@ -816,7 +828,41 @@
       "name": "虛擬 PC"
     },
     "photo-booth": {
+      "ariaLabels": {
+        "photo": "相片 {{index}}"
+      },
+      "buttons": {
+        "effects": "效果"
+      },
       "description": "使用效果拍照",
+      "effects": {
+        "blackAndWhite": "黑白",
+        "bulge": "凸出",
+        "coldBlue": "冷藍",
+        "fishEye": "魚眼",
+        "glitch": "故障",
+        "highContrast": "高對比",
+        "kaleidoscope": "萬花筒",
+        "neon": "霓虹",
+        "normal": "一般",
+        "pinch": "捏合",
+        "rainbow": "彩虹",
+        "ripple": "波紋",
+        "squeeze": "擠壓",
+        "stretch": "伸展",
+        "twirl": "旋轉",
+        "vibrant": "鮮豔",
+        "vintage": "復古",
+        "xRay": "X 光"
+      },
+      "errors": {
+        "cameraApiNotAvailable": "相機 API 無法使用",
+        "cameraError": "相機錯誤：{{error}}",
+        "cameraPermissionDenied": "相機權限遭拒",
+        "cameraRequiresHttps": "相機需要 HTTPS",
+        "couldNotAccessCamera": "無法存取相機",
+        "noCameraFound": "找不到相機"
+      },
       "help": {
         "applyingEffects": {
           "description": "點擊「效果」按鈕（相機按鈕右側）以開啟效果面板，並在即時相機檢視中套用有趣的濾鏡。",
