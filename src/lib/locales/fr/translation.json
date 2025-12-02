@@ -1733,7 +1733,7 @@
         "shareLinkOrScanToOpen": "Partager le lien ou scanner pour ouvrir ce {{itemType}}"
       },
       "version": "Version",
-      "welcomeTo": "Bienvenue dans"
+      "welcomeTo": "Bienvenue dans {{appName}}"
     },
     "dock": {
       "appletStore": "Magasin d'Applets",
