@@ -11,10 +11,11 @@ src/apps/ipod/components/IpodMenuBar.tsx: +22[0],+43[0],+48-60[0],+154[0],+179[0
 src/apps/ipod/components/IpodScreen.tsx: +10[0],+416[0],+434-435[0] -432-433[0]
 src/apps/ipod/components/IpodWheel.tsx: +3[0],+24[0],+311[0] -309[0]
 src/hooks/useWindowManager.ts: +124[2],+126[2],+132-134[2],+241[2],+243[2],+245-248[2],+341[2],+343[2],+345-348[2],+363-367[2],+382-386[2],+406-414[2],+425[2],+428[2] -124[2],-126[2],-238[2],-240[2],-334[2],-336[2],-395[2],-398[2]
-src/lib/locales/en/translation.json: +367[0],+673-764[0] -655[0]
+src/lib/locales/en/translation.json: +356[3],+367[3],+673-677[0],+678-679[3],+680-698[0],+699-700[3],+701-714[0],+715[3],+716-730[0],+731[3],+732-743[0],+744-745[3],+746-753[0],+754[3],+755-758[0],+759-760[3],+761-764[0] -655[0]
 
 Conversations:
 
 [0]: 3748bced-25f1-4fd2-bbaa-566dca4ce7d7; Localize iPod settings; composer-1;
 [1]: 7fed5429-a03f-40db-af05-5a89637620a1; Check and update localization progress; composer-1;
 [2]: 0ffa2300-9837-44f4-9dfb-48105f204ad7; Stop drag window sound from looping; composer-1;
+[3]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
