@@ -12,7 +12,7 @@ src/apps/ipod/components/IpodScreen.tsx: +10[0],+416[0],+434-435[0] -432-433[0]
 src/apps/ipod/components/IpodWheel.tsx: +3[0],+24[0],+311[0] -309[0]
 src/hooks/useWindowManager.ts: +124[4],+126[4],+132-134[4],+241[4],+243[4],+245-248[4],+341[4],+343[4],+345-348[4],+363-367[4],+382-386[4],+406-414[4],+425[4],+428[4] -124[4],-126[4],-238[4],-240[4],-334[4],-336[4],-395[4],-398[4]
 src/lib/locales/de/translation.json: +517[5]
-src/lib/locales/en/translation.json: +350[6],+356[7],+367[8],+673-674[0],+675[9],+676-677[0],+678[8],+679[6],+680-698[0],+699-700[8],+701-713[0],+714[3],+715[8],+716[0],+717[5],+718-727[0],+728[10],+729[0],+730[3],+731[8],+732-733[0],+734[10],+735-743[0],+744[8],+745[9],+746-752[0],+753-754[8],+755-757[0],+758-759[8],+760[7],+761-764[0] -655[0]
+src/lib/locales/en/translation.json: +350[6],+356[7],+367[8],+673-674[0],+675[9],+676-677[0],+678-679[8],+680-698[0],+699-700[8],+701-713[0],+714[3],+715[8],+716[0],+717[5],+718-727[0],+728[10],+729[0],+730[3],+731[8],+732-733[0],+734[10],+735-743[0],+744[8],+745[9],+746-752[0],+753[11],+754[8],+755-757[0],+758[11],+759[8],+760[7],+761-764[0] -655[0]
 src/lib/locales/fr/translation.json: +499[5]
 src/lib/locales/ja/translation.json: +499[5]
 src/lib/locales/ko/translation.json: +499[5]
@@ -28,6 +28,7 @@ Conversations:
 [5]: 17545cb8-0fb6-421e-b363-f6d42cc18fb8; Localize folder and shortcut names; composer-1;
 [6]: 6c1ceec8-eaa5-4d8a-bb61-9dfe305c8e97; Localize applet viewer; composer-1;
 [7]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
-[8]: f6f580aa-7ad0-46b0-ae7a-99105b7dc4f8; Localize paint application; composer-1;
+[8]: 74d0b3a8-5712-45ed-85ea-082c7f3be13d; Localize virtual PC setup; composer-1;
 [9]: f0606fb6-cb99-4fd4-a02b-b55a736b0562; Localize photo booth setup; composer-1;
 [10]: 31cfb261-366b-4a2f-8c72-e21c3c50a2c0; Localize internet explorer; composer-1;
+[11]: f6f580aa-7ad0-46b0-ae7a-99105b7dc4f8; Localize paint application; composer-1;
