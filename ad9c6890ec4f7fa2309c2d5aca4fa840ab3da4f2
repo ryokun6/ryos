@@ -1,0 +1,19 @@
+AI Notes:
+
+src/apps/finder/components/FileList.tsx: +18[0],+31-32[0],+384[0],+386-389[0],+391-394[0],+398-404[0]
+src/apps/photo-booth/components/PhotoBoothComponent.tsx: +1[1],+17[1],+22[1],+80[1],+91-141[1],+143-160[1],+162-166[1],+169[1],+305[1],+367[1],+372[1],+374[1],+376[1],+378-380[1],+1011[1],+1098-1100[1],+1277[1],+1285[1] -1[1],-29-49[1],-51-62[1],-64-65[1],-126[1],-262[1],-324[1],-329[1],-331[1],-333[1],-335[1],-966[1],-1053[1],-1230[1],-1238[1]
+src/apps/photo-booth/components/PhotoBoothMenuBar.tsx: +21[1],+144[1] -143[1]
+src/components/layout/Desktop.tsx: +18[0],+121-128[0],+733[0] -120-123[0],-728[0]
+src/lib/locales/de/translation.json: +344-352[0],+832[0],+835[0],+839-856[0],+859-864[0]
+src/lib/locales/en/translation.json: +233[1],+234-243[0],+645-678[1],+1013[1]
+src/lib/locales/fr/translation.json: +344-352[0],+832[0],+835[0],+839-856[0],+859-864[0]
+src/lib/locales/ja/translation.json: +344-352[0],+832[0],+835[0],+839-856[0],+859-864[0]
+src/lib/locales/ko/translation.json: +344-352[0],+832[0],+835[0],+839-856[0],+859-864[0]
+src/lib/locales/zh-TW/translation.json: +343[0],+353[0],+818[2],+833[0],+836[0],+857[0],+865[0]
+src/utils/i18n.ts: +40-56[0],+58-64[0],+66-68[0],+70-85[0],+87-92[0],+94-95[0]
+
+Conversations:
+
+[0]: 17545cb8-0fb6-421e-b363-f6d42cc18fb8; Localize folder and shortcut names; composer-1;
+[1]: f0606fb6-cb99-4fd4-a02b-b55a736b0562; Localize photo booth setup; composer-1;
+[2]: 8db2f8ff-4a03-440a-83df-90395d691ce1; Localize iPod components and keys; composer-1;
