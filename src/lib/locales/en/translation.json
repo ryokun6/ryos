@@ -126,6 +126,37 @@
       "noAssetsToCache": "No assets to cache",
       "alreadyLatestVersion": "Already running the latest version",
       "couldNotCheckUpdates": "Could not check for updates"
+    },
+    "auth": {
+      "dialogTitle": "ryOS Login",
+      "username": "Username",
+      "password": "Password",
+      "logIn": "Log In",
+      "createAccount": "Create Account",
+      "loggingIn": "Logging in...",
+      "creatingAccount": "Creating...",
+      "loginDescription": "Log in to your account",
+      "signupDescription": "Create an account to access chat rooms and save your settings"
+    },
+    "htmlPreview": {
+      "toastSaved": "Applet saved successfully",
+      "toastSaveFailed": "Failed to save applet",
+      "toastSaveFailedDescription": "An error occurred while saving the applet.",
+      "toastOpenAction": "Open",
+      "bannerFallbackTitle": "Untitled Applet",
+      "saveApplet": "Save as Applet",
+      "saveAppletDescription": "Enter applet name, existing applet will get overwritten:",
+      "downloadHtml": "Download HTML",
+      "copyHtml": "Copy HTML code",
+      "maximizePreview": "Maximize preview",
+      "minimizePreview": "Minimize preview",
+      "toggleSplitView": "Toggle split view",
+      "split": "Split",
+      "full": "Full",
+      "toggleCode": "Toggle code",
+      "exitFullscreen": "Exit fullscreen",
+      "codePreviewTitle": "ryOS Code Preview",
+      "codePreviewTitleFullscreen": "ryOS Code Preview Fullscreen"
     }
   },
   "apps": {
