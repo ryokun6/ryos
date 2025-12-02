@@ -1,5 +1,6 @@
 import { Loader2, Check } from "lucide-react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
+import { useTranslation } from "react-i18next";
 
 // AI SDK v5 tool invocation structure
 export interface ToolInvocationPart {
@@ -15,6 +16,7 @@ export interface ToolInvocationPart {
     url?: string;
     year?: string;
     html?: string;
+    path?: string;
     [key: string]: unknown;
   };
   output?: unknown;
@@ -51,6 +53,7 @@ export function ToolInvocationMessage({
   stopElevatorMusic,
   playDingSound,
 }: ToolInvocationMessageProps) {
+  const { t } = useTranslation();
   const toolName = getToolName(part);
   const { state, input, output, errorText } = part;
 
@@ -65,70 +68,70 @@ export function ToolInvocationMessage({
       case "list": {
         const path = typeof input?.path === "string" ? input.path : "";
         if (path === "/Music") {
-          displayCallMessage = "Loading music library…";
+          displayCallMessage = t("apps.chats.toolCalls.loadingMusicLibrary");
         } else if (path === "/Applets Store") {
-          displayCallMessage = "Listing shared applets…";
+          displayCallMessage = t("apps.chats.toolCalls.listingSharedApplets");
         } else if (path === "/Applications") {
-          displayCallMessage = "Listing applications…";
+          displayCallMessage = t("apps.chats.toolCalls.listingApplications");
         } else {
-          displayCallMessage = "Finding files…";
+          displayCallMessage = t("apps.chats.toolCalls.findingFiles");
         }
         break;
       }
       case "open": {
         const path = typeof input?.path === "string" ? input.path : "";
         if (path.startsWith("/Music/")) {
-          displayCallMessage = "Playing song…";
+          displayCallMessage = t("apps.chats.toolCalls.playingSong");
         } else if (path.startsWith("/Applets Store/")) {
-          displayCallMessage = "Opening applet preview…";
+          displayCallMessage = t("apps.chats.toolCalls.openingAppletPreview");
         } else if (path.startsWith("/Applications/")) {
-          displayCallMessage = "Launching app…";
+          displayCallMessage = t("apps.chats.toolCalls.launchingApp");
         } else {
-          displayCallMessage = "Opening file…";
+          displayCallMessage = t("apps.chats.toolCalls.openingFile");
         }
         break;
       }
       case "read": {
         const path = typeof input?.path === "string" ? input.path : "";
         if (path.startsWith("/Applets Store/")) {
-          displayCallMessage = "Fetching applet…";
+          displayCallMessage = t("apps.chats.toolCalls.fetchingApplet");
         } else {
-          displayCallMessage = "Reading file…";
+          displayCallMessage = t("apps.chats.toolCalls.readingFile");
         }
         break;
       }
       case "write":
-        displayCallMessage = "Writing content…";
+        displayCallMessage = t("apps.chats.toolCalls.writingContent");
         break;
       case "edit":
-        displayCallMessage = "Editing file…";
+        displayCallMessage = t("apps.chats.toolCalls.editingFile");
         break;
       case "launchApp":
-        displayCallMessage = `Launching ${getAppName(input?.id)}…`;
+        displayCallMessage = t("apps.chats.toolCalls.launching", { appName: getAppName(input?.id) });
         break;
       case "closeApp":
-        displayCallMessage = `Closing ${getAppName(input?.id)}…`;
+        displayCallMessage = t("apps.chats.toolCalls.closing", { appName: getAppName(input?.id) });
         break;
       case "ipodControl": {
         const action = input?.action || "toggle";
         if (action === "next") {
-          displayCallMessage = "Skipping to next…";
+          displayCallMessage = t("apps.chats.toolCalls.skippingToNext");
         } else if (action === "previous") {
-          displayCallMessage = "Skipping to previous…";
+          displayCallMessage = t("apps.chats.toolCalls.skippingToPrevious");
         } else if (action === "addAndPlay") {
-          displayCallMessage = "Adding song…";
+          displayCallMessage = t("apps.chats.toolCalls.addingSong");
         } else if (action === "playKnown") {
-          displayCallMessage = "Playing song…";
+          displayCallMessage = t("apps.chats.toolCalls.playingSong");
         } else {
-          displayCallMessage = "Controlling playback…";
+          displayCallMessage = t("apps.chats.toolCalls.controllingPlayback");
         }
         break;
       }
       case "switchTheme":
-        displayCallMessage = "Switching theme…";
+        displayCallMessage = t("apps.chats.toolCalls.switchingTheme");
         break;
       default:
-        displayCallMessage = `Running ${formatToolName(toolName)}…`;
+        displayCallMessage = t("apps.chats.toolCalls.running", { toolName: formatToolName(toolName) });
     }
   }
 
@@ -137,27 +140,89 @@ export function ToolInvocationMessage({
     // Unified VFS tools
     if (toolName === "list") {
       if (typeof output === "string") {
-        const songMatch = output.match(/Found (\d+) songs?/);
-        const appletMatch = output.match(/Found (\d+) (?:shared )?applets?/i);
-        const documentMatch = output.match(/Found (\d+) documents?/);
-        const applicationMatch = output.match(/Found (\d+) applications?/);
-
-        if (songMatch) {
-          const count = parseInt(songMatch[1], 10);
-          displayResultMessage = `Found ${count} song${count === 1 ? "" : "s"}`;
-        } else if (appletMatch) {
-          const count = parseInt(appletMatch[1], 10);
-          displayResultMessage = `Found ${count} applet${count === 1 ? "" : "s"}`;
-        } else if (documentMatch) {
-          const count = parseInt(documentMatch[1], 10);
-          displayResultMessage = `Found ${count} document${count === 1 ? "" : "s"}`;
-        } else if (applicationMatch) {
-          const count = parseInt(applicationMatch[1], 10);
-          displayResultMessage = `Found ${count} application${count === 1 ? "" : "s"}`;
-        } else if (output.includes("empty") || output.includes("No ")) {
-          displayResultMessage = "No items found";
+        // Try to parse JSON array from output to get accurate count
+        let count: number | null = null;
+        let itemType: "songs" | "applets" | "documents" | "applications" | "sharedApplets" | null = null;
+        
+        // Extract JSON part (after the colon and newline)
+        const jsonMatch = output.match(/:\n(\[.*\])/s);
+        if (jsonMatch) {
+          try {
+            const jsonData = JSON.parse(jsonMatch[1]);
+            if (Array.isArray(jsonData)) {
+              count = jsonData.length;
+            }
+          } catch {
+            // JSON parsing failed, fall back to regex
+          }
+        }
+        
+        // If we couldn't parse JSON, try to extract number from the string
+        if (count === null) {
+          const numberMatch = output.match(/(\d+)/);
+          if (numberMatch) {
+            count = parseInt(numberMatch[1], 10);
+          }
+        }
+        
+        // Determine item type based on path or output content
+        const path = typeof input?.path === "string" ? input.path : "";
+        if (path === "/Music") {
+          itemType = "songs";
+        } else if (path === "/Applets Store") {
+          itemType = "sharedApplets";
+        } else if (path === "/Applications") {
+          itemType = "applications";
+        } else if (path === "/Applets") {
+          itemType = "applets";
+        } else if (path === "/Documents") {
+          itemType = "documents";
         } else {
-          displayResultMessage = "Listed items";
+          // Fall back to checking output content for keywords (case-insensitive)
+          const lowerOutput = output.toLowerCase();
+          if (lowerOutput.includes("song") || lowerOutput.includes("morceau") || lowerOutput.includes("曲") || lowerOutput.includes("곡") || lowerOutput.includes("Lied")) {
+            itemType = "songs";
+          } else if (lowerOutput.includes("shared applet") || lowerOutput.includes("applet partagée") || lowerOutput.includes("共有アプレット") || lowerOutput.includes("공유 앱릿") || lowerOutput.includes("geteiltes applet")) {
+            itemType = "sharedApplets";
+          } else if (lowerOutput.includes("application") || lowerOutput.includes("アプリケーション") || lowerOutput.includes("응용 프로그램") || lowerOutput.includes("Anwendung")) {
+            itemType = "applications";
+          } else if (lowerOutput.includes("document") || lowerOutput.includes("ドキュメント") || lowerOutput.includes("문서") || lowerOutput.includes("Dokument")) {
+            itemType = "documents";
+          } else if (lowerOutput.includes("applet") || lowerOutput.includes("アプレット") || lowerOutput.includes("앱릿")) {
+            itemType = "applets";
+          }
+        }
+        
+        // Display appropriate message based on type and count
+        if (count !== null && count > 0) {
+          if (itemType === "songs") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundSongs", { count })
+              : t("apps.chats.toolCalls.foundSongsPlural", { count });
+          } else if (itemType === "sharedApplets") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundSharedApplets", { count })
+              : t("apps.chats.toolCalls.foundSharedAppletsPlural", { count });
+          } else if (itemType === "applications") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundApplications", { count })
+              : t("apps.chats.toolCalls.foundApplicationsPlural", { count });
+          } else if (itemType === "documents") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundDocuments", { count })
+              : t("apps.chats.toolCalls.foundDocumentsPlural", { count });
+          } else if (itemType === "applets") {
+            displayResultMessage = count === 1
+              ? t("apps.chats.toolCalls.foundApplets", { count })
+              : t("apps.chats.toolCalls.foundAppletsPlural", { count });
+          } else {
+            // Unknown type, use generic message
+            displayResultMessage = t("apps.chats.toolCalls.listedItems");
+          }
+        } else if (output.includes("empty") || output.toLowerCase().includes("no ") || output.toLowerCase().includes("pas de") || output.toLowerCase().includes("없습니다") || output.toLowerCase().includes("ありません") || output.toLowerCase().includes("keine")) {
+          displayResultMessage = t("apps.chats.toolCalls.noItemsFound");
+        } else {
+          displayResultMessage = t("apps.chats.toolCalls.listedItems");
         }
       }
     } else if (toolName === "open") {
@@ -167,7 +232,7 @@ export function ToolInvocationMessage({
         } else if (output.includes("Opened") || output.includes("Launched")) {
           displayResultMessage = output;
         } else {
-          displayResultMessage = "Opened";
+          displayResultMessage = t("apps.chats.toolCalls.opened");
         }
       }
     } else if (toolName === "read") {
@@ -186,46 +251,51 @@ export function ToolInvocationMessage({
         }
       }
       
-      displayResultMessage = `Read ${fileName}`;
+      displayResultMessage = t("apps.chats.toolCalls.read", { fileName });
     } else if (toolName === "write") {
       if (typeof output === "string") {
         if (output.includes("Successfully")) {
-          displayResultMessage = "Content written";
+          displayResultMessage = t("apps.chats.toolCalls.contentWritten");
         } else {
           displayResultMessage = output;
         }
       } else {
-        displayResultMessage = "Content written";
+        displayResultMessage = t("apps.chats.toolCalls.contentWritten");
       }
     } else if (toolName === "edit") {
       if (typeof output === "string") {
         if (output.includes("not found")) {
-          displayResultMessage = "Text not found";
+          displayResultMessage = t("apps.chats.toolCalls.textNotFound");
         } else if (output.includes("matches") && output.includes("locations")) {
-          displayResultMessage = "Multiple matches found";
+          displayResultMessage = t("apps.chats.toolCalls.multipleMatchesFound");
         } else if (output.includes("Successfully") || output.includes("edited")) {
           const path = typeof input?.path === "string" ? input.path : "";
           const fileName = path.split("/").filter(Boolean).pop() || "file";
-          displayResultMessage = `Edited ${fileName}`;
+          displayResultMessage = t("apps.chats.toolCalls.edited", { fileName });
         } else if (output.includes("Created")) {
-          displayResultMessage = "File created";
+          displayResultMessage = t("apps.chats.toolCalls.fileCreated");
         } else {
           displayResultMessage = output;
         }
       } else {
         const path = typeof input?.path === "string" ? input.path : "";
         const fileName = path.split("/").filter(Boolean).pop() || "file";
-        displayResultMessage = `Edited ${fileName}`;
+        displayResultMessage = t("apps.chats.toolCalls.edited", { fileName });
       }
     } else if (toolName === "launchApp" && input?.id === "internet-explorer") {
-      const urlPart = input.url ? ` ${input.url}` : "";
-      const yearPart =
-        input.year && input.year !== "" ? ` in ${input.year}` : "";
-      displayResultMessage = `Launched${urlPart}${yearPart}`;
+      const urlPart = input.url ? String(input.url) : "";
+      const yearPart = input.year && input.year !== "" ? String(input.year) : "";
+      if (urlPart && yearPart) {
+        displayResultMessage = t("apps.chats.toolCalls.launchedWithUrlAndYear", { url: urlPart, year: yearPart });
+      } else if (urlPart) {
+        displayResultMessage = t("apps.chats.toolCalls.launchedWithUrl", { url: urlPart });
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.launched", { appName: getAppName(input?.id) });
+      }
     } else if (toolName === "launchApp") {
-      displayResultMessage = `Launched ${getAppName(input?.id)}`;
+      displayResultMessage = t("apps.chats.toolCalls.launched", { appName: getAppName(input?.id) });
     } else if (toolName === "closeApp") {
-      displayResultMessage = `Closed ${getAppName(input?.id)}`;
+      displayResultMessage = t("apps.chats.toolCalls.closed", { appName: getAppName(input?.id) });
     } else if (toolName === "ipodControl") {
       // Use output directly if available (it contains detailed state information)
       if (typeof output === "string" && output.trim().length > 0) {
@@ -234,44 +304,44 @@ export function ToolInvocationMessage({
         // Fallback to basic messages if output is not available
         const action = input?.action || "toggle";
         if (action === "addAndPlay") {
-          displayResultMessage = "Added and started playing new song";
+          displayResultMessage = t("apps.chats.toolCalls.addedAndStartedPlaying");
         } else if (action === "playKnown") {
           const title = input?.title ? String(input.title) : null;
           const artist = input?.artist ? String(input.artist) : null;
 
           if (title && artist) {
-            displayResultMessage = `Playing ${title} by ${artist}`;
+            displayResultMessage = t("apps.chats.toolCalls.playingByArtist", { title, artist });
           } else if (title) {
-            displayResultMessage = `Playing ${title}`;
+            displayResultMessage = t("apps.chats.toolCalls.playing", { title });
           } else if (artist) {
-            displayResultMessage = `Playing song by ${artist}`;
+            displayResultMessage = t("apps.chats.toolCalls.playingSongByArtist", { artist });
           } else if (input?.id) {
-            displayResultMessage = `Playing song (${String(input.id)})`;
+            displayResultMessage = t("apps.chats.toolCalls.playingSongWithId", { id: String(input.id) });
           } else {
-            displayResultMessage = "Playing song";
+            displayResultMessage = t("apps.chats.toolCalls.playingSongGeneric");
           }
         } else if (action === "next") {
-          displayResultMessage = "Skipped to next track";
+          displayResultMessage = t("apps.chats.toolCalls.skippedToNextTrack");
         } else if (action === "previous") {
-          displayResultMessage = "Skipped to previous track";
+          displayResultMessage = t("apps.chats.toolCalls.skippedToPreviousTrack");
         } else {
           displayResultMessage =
             action === "play"
-              ? "Playing iPod"
+              ? t("apps.chats.toolCalls.playingIpod")
               : action === "pause"
-                ? "Paused iPod"
-                : "Toggled iPod playback";
+                ? t("apps.chats.toolCalls.pausedIpod")
+                : t("apps.chats.toolCalls.toggledIpodPlayback");
         }
       }
     } else if (toolName === "switchTheme") {
       const theme = input?.theme || "theme";
-      displayResultMessage = `Switched to ${theme}`;
+      displayResultMessage = t("apps.chats.toolCalls.switchedTo", { theme: String(theme) });
     }
   }
 
   // Handle error states
   if (state === "output-error" && errorText) {
-    displayResultMessage = `Error: ${errorText}`;
+    displayResultMessage = t("apps.chats.toolCalls.error", { errorText });
   }
 
   // Special handling for generateHtml
@@ -344,7 +414,7 @@ export function ToolInvocationMessage({
           className="mb-0 px-1 py-0.5 text-xs italic text-gray-600 flex items-center gap-1"
         >
           <Loader2 className="h-3 w-3 animate-spin text-gray-500" />
-          <span className="shimmer">Generating...</span>
+          <span className="shimmer">{t("apps.chats.toolCalls.generating")}</span>
         </div>
       );
     } else if (state === "input-available") {
@@ -386,7 +456,7 @@ export function ToolInvocationMessage({
               <span className="shimmer">{displayCallMessage}</span>
             ) : (
               <span>
-                Calling <strong>{formatToolName(toolName)}</strong>…
+                {t("apps.chats.toolCalls.calling", { toolName: formatToolName(toolName) })}
               </span>
             )}
           </div>
@@ -410,7 +480,7 @@ export function ToolInvocationMessage({
       {state === "output-error" && (
         <div className="flex items-center gap-1 text-red-600">
           <span className="text-xs">
-            ⚠️ {errorText || "Tool execution failed"}
+            ⚠️ {errorText || t("apps.chats.toolCalls.toolExecutionFailed")}
           </span>
         </div>
       )}

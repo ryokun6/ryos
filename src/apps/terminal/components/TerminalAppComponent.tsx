@@ -28,7 +28,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { getTranslatedAppName } from "@/utils/i18n";
+import { getTranslatedAppName, type AppId } from "@/utils/i18n";
 import { generateHTML, type AnyExtension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -62,10 +62,16 @@ const formatToolName = (name: string): string =>
     .replace(/^./, (ch) => ch.toUpperCase())
     .trim();
 
+// Helper to map an app id to a user-friendly name (uses translations)
 const getAppName = (id?: string): string => {
   if (!id) return "app";
-  const entry = (appRegistry as Record<string, { name?: string }>)[id];
-  return entry?.name || formatToolName(id);
+  try {
+    return getTranslatedAppName(id as AppId);
+  } catch {
+    // Fallback to formatting the id if translation fails
+    const entry = (appRegistry as Record<string, { name?: string }>)[id];
+    return entry?.name || formatToolName(id);
+  }
 };
 
 // Helper function to detect user's operating system

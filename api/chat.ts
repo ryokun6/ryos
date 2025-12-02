@@ -38,6 +38,8 @@ interface SystemState {
   username?: string | null;
   /** User's operating system (e.g., "iOS", "Android", "macOS", "Windows", "Linux") */
   userOS?: string;
+  /** User's system locale (e.g., "en", "zh-TW", "ja", "ko", "fr", "de") */
+  locale?: string;
   internetExplorer: {
     url: string;
     year: string;
@@ -191,6 +193,11 @@ User Time: ${systemState.userLocalTime.timeString} on ${systemState.userLocalTim
   if (systemState.userOS) {
     prompt += `
 User OS: ${systemState.userOS}`;
+  }
+
+  if (systemState.locale) {
+    prompt += `
+User Locale: ${systemState.locale}`;
   }
 
   if (systemState.requestGeo) {

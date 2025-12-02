@@ -26,6 +26,7 @@ import {
   type ToolInvocationPart,
 } from "@/components/shared/ToolInvocationMessage";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { getTranslatedAppName, type AppId } from "@/utils/i18n";
 import {
   Tooltip,
   TooltipContent,
@@ -204,11 +205,16 @@ const formatToolName = (name: string): string =>
     .trim();
 // --- End helper: prettify tool names ---
 
-// Helper to map an app id to a user-friendly name (falls back to formatting the id)
+// Helper to map an app id to a user-friendly name (uses translations)
 const getAppName = (id?: string): string => {
   if (!id) return "app";
-  const entry = (appRegistry as Record<string, { name?: string }>)[id];
-  return entry?.name || formatToolName(id);
+  try {
+    return getTranslatedAppName(id as AppId);
+  } catch {
+    // Fallback to formatting the id if translation fails
+    const entry = (appRegistry as Record<string, { name?: string }>)[id];
+    return entry?.name || formatToolName(id);
+  }
 };
 
 // Helper to extract text content from v5 UIMessage parts

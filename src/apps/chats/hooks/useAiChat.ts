@@ -25,6 +25,7 @@ import {
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
+import { useLanguageStore } from "@/stores/useLanguageStore";
 import { generateHTML, generateJSON } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -35,6 +36,7 @@ import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
 import { AnyExtension } from "@tiptap/core";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
+import i18n from "@/lib/i18n";
 
 // TODO: Move relevant state and logic from ChatsAppComponent here
 // - AI chat state (useChat hook)
@@ -263,6 +265,7 @@ const getSystemState = () => {
   const textEditStore = useTextEditStore.getState();
   const chatsStore = useChatsStore.getState();
   const themeStore = useThemeStore.getState();
+  const languageStore = useLanguageStore.getState();
 
   const currentVideo = videoStore.getCurrentVideo();
   const currentTrack =
@@ -373,6 +376,7 @@ const getSystemState = () => {
   return {
     username: chatsStore.username,
     userOS,
+    locale: languageStore.current,
     userLocalTime: {
       timeString: userTimeString,
       dateString: userDateString,
@@ -779,11 +783,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (enableVideo !== undefined) {
                 if (enableVideo && !ipod.showVideo) {
                   ipod.setShowVideo(true);
-                  stateChanges.push("Turned on video");
+                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnVideo"));
                   console.log("[ToolCall] Video enabled.");
                 } else if (!enableVideo && ipod.showVideo) {
                   ipod.setShowVideo(false);
-                  stateChanges.push("Turned off video");
+                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffVideo"));
                   console.log("[ToolCall] Video disabled.");
                 }
               }
@@ -797,7 +801,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 
                 if (shouldDisable) {
                   ipod.setLyricsTranslationLanguage(null);
-                  stateChanges.push("Turned off lyrics translation");
+                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffLyricsTranslation"));
                   console.log("[ToolCall] Lyrics translation disabled.");
                 } else {
                   ipod.setLyricsTranslationLanguage(enableTranslation);
@@ -820,7 +824,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     'ru': 'Russian',
                   };
                   const langName = languageNames[enableTranslation] || enableTranslation;
-                  stateChanges.push(`Translated lyrics to ${langName}`);
+                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTranslatedLyricsTo", { langName }));
                   console.log(`[ToolCall] Lyrics translation enabled for language: ${enableTranslation}.`);
                 }
               }
@@ -828,11 +832,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (enableFullscreen !== undefined) {
                 if (enableFullscreen && !ipod.isFullScreen) {
                   ipod.toggleFullScreen();
-                  stateChanges.push("Turned on full screen mode");
+                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnFullScreen"));
                   console.log("[ToolCall] Fullscreen enabled.");
                 } else if (!enableFullscreen && ipod.isFullScreen) {
                   ipod.toggleFullScreen();
-                  stateChanges.push("Turned off full screen mode");
+                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffFullScreen"));
                   console.log("[ToolCall] Fullscreen disabled.");
                 }
               }
@@ -852,12 +856,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               // On iOS, don't auto-play - inform user to press play manually
               if (isIOS && (normalizedAction === "play" || normalizedAction === "toggle")) {
                 const stateChanges = applyIpodSettings();
-                const resultParts = ["iPod is ready. Press the center button or play button on the iPod to start playing"];
+                const resultParts = [i18n.t("apps.chats.toolCalls.ipodReady")];
                 if (stateChanges.length > 0) {
                   resultParts.push(...stateChanges);
                 }
                 
-                const resultMessage = resultParts.join(". ") + ".";
+                // Only add periods when joining multiple sentences
+                const resultMessage = resultParts.length > 1 
+                  ? resultParts.join(". ") + "."
+                  : resultParts[0];
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
@@ -883,13 +890,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const stateChanges = applyIpodSettings();
               const nowPlaying = useIpodStore.getState().isPlaying;
               
-              const playbackState = nowPlaying ? "Playing" : "Paused";
+              const playbackState = nowPlaying 
+                ? i18n.t("apps.chats.toolCalls.ipodPlaying")
+                : i18n.t("apps.chats.toolCalls.ipodPaused");
               const resultParts = [playbackState];
               if (stateChanges.length > 0) {
                 resultParts.push(...stateChanges);
               }
               
-              const resultMessage = resultParts.join(". ") + ".";
+              // Only add periods when joining multiple sentences
+              const resultMessage = resultParts.length > 1 
+                ? resultParts.join(". ") + "."
+                : resultParts[0];
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
@@ -967,7 +979,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
 
               if (finalCandidateIndices.length === 0) {
-                const errorMsg = "Song not found in iPod library.";
+                const errorMsg = i18n.t("apps.chats.toolCalls.ipodSongNotFound");
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
@@ -987,26 +999,33 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               setCurrentIndex(randomIndexFromArray);
               
               const track = tracks[randomIndexFromArray];
-              const trackDesc = `${track.title}${
+              const trackDescForLog = `${track.title}${
                 track.artist ? ` by ${track.artist}` : ""
               }`;
 
               // On iOS, don't auto-play - just select the track
               if (isIOS) {
                 const stateChanges = applyIpodSettings();
-                const resultParts = [`Selected ${trackDesc}. Press the center button or play button on the iPod to start playing`];
+                // Build track description for translation
+                const trackDescForMsg = track.artist 
+                  ? `${track.title} by ${track.artist}`
+                  : track.title;
+                const resultParts = [i18n.t("apps.chats.toolCalls.ipodSelected", { trackDesc: trackDescForMsg })];
                 if (stateChanges.length > 0) {
                   resultParts.push(...stateChanges);
                 }
                 
-                const resultMessage = resultParts.join(". ") + ".";
+                // Only add periods when joining multiple sentences
+                const resultMessage = resultParts.length > 1 
+                  ? resultParts.join(". ") + "."
+                  : resultParts[0];
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   output: resultMessage,
                 });
                 result = "";
-                console.log(`[ToolCall] iOS detected - selected ${trackDesc}, user must manually start playback.`);
+                console.log(`[ToolCall] iOS detected - selected ${trackDescForLog}, user must manually start playback.`);
                 break;
               }
 
@@ -1014,12 +1033,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
               const stateChanges = applyIpodSettings();
               
-              const resultParts = [`Playing ${trackDesc}`];
+              // Build track description for translation
+              const trackDescForMsg = track.artist 
+                ? i18n.t("apps.chats.toolCalls.playingByArtist", { title: track.title, artist: track.artist })
+                : i18n.t("apps.chats.toolCalls.playing", { title: track.title });
+              
+              const resultParts = [trackDescForMsg];
               if (stateChanges.length > 0) {
                 resultParts.push(...stateChanges);
               }
               
-              const resultMessage = resultParts.join(". ") + ".";
+              // Only add periods when joining multiple sentences
+              const resultMessage = resultParts.length > 1 
+                ? resultParts.join(". ") + "."
+                : resultParts[0];
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
@@ -1027,7 +1054,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               });
               result = ""; // Clear result to prevent duplicate
               
-              console.log(`[ToolCall] Playing ${trackDesc}.`);
+              console.log(`[ToolCall] Playing ${trackDescForLog}.`);
               break;
             }
 
@@ -1055,14 +1082,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   
                   // Different message for iOS vs other platforms
                   const resultParts = isIOS
-                    ? [`Added '${addedTrack.title}' to iPod. Press the center button or play button on the iPod to start playing`]
-                    : [`Added '${addedTrack.title}' to iPod and started playing`];
+                    ? [i18n.t("apps.chats.toolCalls.ipodAdded", { title: addedTrack.title })]
+                    : [i18n.t("apps.chats.toolCalls.ipodAddedAndPlaying", { title: addedTrack.title })];
                   
                   if (stateChanges.length > 0) {
                     resultParts.push(...stateChanges);
                   }
                   
-                  const resultMessage = resultParts.join(". ") + ".";
+                  // Only add periods when joining multiple sentences
+                  const resultMessage = resultParts.length > 1 
+                    ? resultParts.join(". ") + "."
+                    : resultParts[0];
                   addToolResult({
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
@@ -1077,7 +1107,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   );
                   break;
                 } else {
-                  const errorMsg = `Failed to add ${id} to iPod.`;
+                  const errorMsg = i18n.t("apps.chats.toolCalls.ipodFailedToAdd", { id });
                   addToolResult({
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
@@ -1094,9 +1124,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 let errorMsg: string;
                 if (errorMessage.includes("Failed to fetch video info")) {
-                  errorMsg = `Cannot add ${id}: Video unavailable or invalid.`;
+                  errorMsg = i18n.t("apps.chats.toolCalls.ipodCannotAdd", { id });
                 } else {
-                  errorMsg = `Failed to add ${id}: ${errorMessage}`;
+                  errorMsg = i18n.t("apps.chats.toolCalls.ipodFailedToAddWithError", { id, error: errorMessage });
                 }
                 
                 addToolResult({
@@ -1130,15 +1160,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const desc = `${track.title}${
                   track.artist ? ` by ${track.artist}` : ""
                 }`;
-                const verb =
-                  normalizedAction === "next" ? "Skipped to" : "Went back to";
-                
-                const resultParts = [`${verb} ${desc}`];
+                const resultParts = [
+                  normalizedAction === "next"
+                    ? i18n.t("apps.chats.toolCalls.ipodSkippedTo", { trackDesc: desc })
+                    : i18n.t("apps.chats.toolCalls.ipodWentBackTo", { trackDesc: desc })
+                ];
                 if (stateChanges.length > 0) {
                   resultParts.push(...stateChanges);
                 }
                 
-                const resultMessage = resultParts.join(". ") + ".";
+                // Only add periods when joining multiple sentences
+                const resultMessage = resultParts.length > 1 
+                  ? resultParts.join(". ") + "."
+                  : resultParts[0];
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
@@ -1146,20 +1180,23 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
                 result = ""; // Clear result to prevent duplicate
                 
-                console.log(`[ToolCall] ${verb} ${desc}.`);
+                console.log(`[ToolCall] ${normalizedAction === "next" ? "Skipped to" : "Went back to"} ${desc}.`);
                 break;
               }
 
               const resultParts = [
                 normalizedAction === "next"
-                  ? "Skipped to next track"
-                  : "Went back to previous track"
+                  ? i18n.t("apps.chats.toolCalls.ipodSkippedToNext")
+                  : i18n.t("apps.chats.toolCalls.ipodWentBackToPrevious")
               ];
               if (stateChanges.length > 0) {
                 resultParts.push(...stateChanges);
               }
               
-              const resultMessage = resultParts.join(". ") + ".";
+              // Only add periods when joining multiple sentences
+              const resultMessage = resultParts.length > 1 
+                ? resultParts.join(". ") + "."
+                : resultParts[0];
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
@@ -1181,7 +1218,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const stateChanges = applyIpodSettings();
             
             if (stateChanges.length > 0) {
-              const resultMessage = stateChanges.join(". ") + ".";
+              // Only add periods when joining multiple sentences
+              const resultMessage = stateChanges.length > 1 
+                ? stateChanges.join(". ") + "."
+                : stateChanges[0];
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
@@ -1252,8 +1292,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 const resultMessage =
                   library.length > 0
-                    ? `Found ${library.length} song${library.length === 1 ? "" : "s"} in Music:\n${JSON.stringify(library, null, 2)}`
-                    : "Music library is empty";
+                    ? `${library.length === 1 
+                        ? i18n.t("apps.chats.toolCalls.foundSongsInMusic", { count: library.length })
+                        : i18n.t("apps.chats.toolCalls.foundSongsInMusicPlural", { count: library.length })}:\n${JSON.stringify(library, null, 2)}`
+                    : i18n.t("apps.chats.toolCalls.musicLibraryEmpty");
 
                 addToolResult({
                   tool: toolCall.toolName,
@@ -1327,10 +1369,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }));
 
                 const resultMessage = limitedApplets.length > 0
-                  ? `Found ${limitedApplets.length} shared applet${limitedApplets.length === 1 ? "" : "s"}:\n${JSON.stringify(limitedApplets, null, 2)}`
+                  ? `${limitedApplets.length === 1
+                      ? i18n.t("apps.chats.toolCalls.foundSharedApplets", { count: limitedApplets.length })
+                      : i18n.t("apps.chats.toolCalls.foundSharedAppletsPlural", { count: limitedApplets.length })}:\n${JSON.stringify(limitedApplets, null, 2)}`
                   : hasKeyword
-                    ? `No shared applets matched "${query}"`
-                    : "No shared applets available";
+                    ? i18n.t("apps.chats.toolCalls.noSharedAppletsMatched", { query })
+                    : i18n.t("apps.chats.toolCalls.noSharedAppletsAvailable");
 
                 addToolResult({
                   tool: toolCall.toolName,
@@ -1347,10 +1391,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     name: app.name,
                   }));
 
+                const appsMessage = apps.length === 1
+                  ? i18n.t("apps.chats.toolCalls.foundApplicationsList", { count: apps.length })
+                  : i18n.t("apps.chats.toolCalls.foundApplicationsListPlural", { count: apps.length });
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Found ${apps.length} application${apps.length === 1 ? "" : "s"}:\n${JSON.stringify(apps, null, 2)}`,
+                  output: `${appsMessage}:\n${JSON.stringify(apps, null, 2)}`,
                 });
                 result = "";
               } else if (path === "/Applets" || path === "/Documents") {
@@ -1374,8 +1421,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 const fileType = path === "/Applets" ? "applet" : "document";
                 const resultMessage = fileList.length > 0
-                  ? `Found ${fileList.length} ${fileType}${fileList.length === 1 ? "" : "s"}:\n${JSON.stringify(fileList, null, 2)}`
-                  : `No ${fileType}s found in ${path} directory`;
+                  ? `${fileList.length === 1
+                      ? i18n.t("apps.chats.toolCalls.foundFileType", { count: fileList.length, fileType })
+                      : i18n.t("apps.chats.toolCalls.foundFileTypePlural", { count: fileList.length, fileType })}:\n${JSON.stringify(fileList, null, 2)}`
+                  : i18n.t("apps.chats.toolCalls.noFileTypeFound", { fileType, path });
 
                 addToolResult({
                   tool: toolCall.toolName,
@@ -1443,10 +1492,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 ipodState.setIsPlaying(true);
 
                 const track = ipodState.tracks[trackIndex];
+                const playingMessage = track.artist
+                  ? i18n.t("apps.chats.toolCalls.playingTrackByArtist", { title: track.title, artist: track.artist })
+                  : i18n.t("apps.chats.toolCalls.playingTrack", { title: track.title });
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Playing ${track.title}${track.artist ? ` by ${track.artist}` : ""}`,
+                  output: playingMessage,
                 });
                 result = "";
               } else if (path.startsWith("/Applets Store/")) {
@@ -1472,7 +1524,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Opened ${appletName}`,
+                  output: i18n.t("apps.chats.toolCalls.openedApplet", { appletName }),
                 });
                 result = "";
               } else if (path.startsWith("/Applications/")) {
@@ -1525,7 +1577,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Opened ${fileItem.name}`,
+                  output: i18n.t("apps.chats.toolCalls.openedFile", { fileName: fileItem.name }),
                 });
                 result = "";
               } else if (path.startsWith("/Documents/")) {
@@ -1579,7 +1631,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Opened document: ${fileItem.name}`,
+                  output: i18n.t("apps.chats.toolCalls.openedDocument", { fileName: fileItem.name }),
                 });
                 result = "";
               } else {
@@ -2536,7 +2588,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     const initialMessage: AIChatMessage = {
       id: "1", // Ensure consistent ID for the initial message
       role: "assistant",
-      parts: [{ type: "text", text: "👋 hey! i'm ryo. ask me anything!" }],
+      parts: [{ type: "text", text: i18n.t("apps.chats.messages.greeting") }],
       metadata: {
         createdAt: new Date(),
       },

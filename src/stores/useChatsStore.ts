@@ -7,6 +7,7 @@ import {
 } from "@/types/chat";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
+import i18n from "@/lib/i18n";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -243,14 +244,14 @@ export interface ChatsStoreState {
   logout: () => Promise<void>; // Logout and clear all user data
 }
 
-const initialAiMessage: AIChatMessage = {
+const getInitialAiMessage = (): AIChatMessage => ({
   id: "1",
   role: "assistant",
-  parts: [{ type: "text" as const, text: "👋 hey! i'm ryo. ask me anything!" }],
+  parts: [{ type: "text" as const, text: i18n.t("apps.chats.messages.greeting") }],
   metadata: {
     createdAt: new Date(),
   },
-};
+});
 
 const getInitialState = (): Omit<
   ChatsStoreState,
@@ -294,7 +295,7 @@ const getInitialState = (): Omit<
   const recoveredAuthToken = getAuthTokenFromRecovery();
 
   return {
-    aiMessages: [initialAiMessage],
+    aiMessages: [getInitialAiMessage()],
     username: recoveredUsername,
     authToken: recoveredAuthToken,
     hasPassword: null, // Unknown until checked
@@ -939,7 +940,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Reset only user-specific data, preserve rooms and messages
           set((state) => ({
             ...state,
-            aiMessages: [initialAiMessage],
+            aiMessages: [getInitialAiMessage()],
             username: null,
             authToken: null,
             hasPassword: null,
