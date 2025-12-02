@@ -861,11 +861,21 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               }
 
               const stateChanges = applyIpodSettings();
-              const nowPlaying = useIpodStore.getState().isPlaying;
+              const updatedIpod = useIpodStore.getState();
+              const nowPlaying = updatedIpod.isPlaying;
+              const track = updatedIpod.tracks[updatedIpod.currentIndex];
               
-              const playbackState = nowPlaying 
-                ? i18n.t("apps.chats.toolCalls.ipodPlaying")
-                : i18n.t("apps.chats.toolCalls.ipodPaused");
+              let playbackState: string;
+              if (track) {
+                const trackDesc = `${track.title}${track.artist ? ` by ${track.artist}` : ""}`;
+                playbackState = nowPlaying 
+                  ? i18n.t("apps.chats.toolCalls.ipodPlayingTrack", { trackDesc })
+                  : i18n.t("apps.chats.toolCalls.ipodPausedTrack", { trackDesc });
+              } else {
+                playbackState = nowPlaying 
+                  ? i18n.t("apps.chats.toolCalls.ipodPlaying")
+                  : i18n.t("apps.chats.toolCalls.ipodPaused");
+              }
               const resultParts = [playbackState];
               if (stateChanges.length > 0) {
                 resultParts.push(...stateChanges);
