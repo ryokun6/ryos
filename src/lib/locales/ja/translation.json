@@ -1733,7 +1733,7 @@
         "shareLinkOrScanToOpen": "リンクを共有するか、スキャンしてこの {{itemType}} を開く"
       },
       "version": "バージョン",
-      "welcomeTo": "へようこそ"
+      "welcomeTo": "{{appName}}へようこそ"
     },
     "dock": {
       "appletStore": "アプレットストア",

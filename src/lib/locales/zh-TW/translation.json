@@ -1733,7 +1733,7 @@
         "shareLinkOrScanToOpen": "分享連結或掃描以開啟此{{itemType}}"
       },
       "version": "版本",
-      "welcomeTo": "歡迎使用"
+      "welcomeTo": "歡迎使用{{appName}}"
     },
     "dock": {
       "appletStore": "小程式商店",

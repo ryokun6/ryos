@@ -97,7 +97,7 @@ export function HelpDialog({
           fontSize: isXpTheme ? "18px" : undefined,
         }}
       >
-        {t("common.dialog.welcomeTo")} {displayAppName}
+        {t("common.dialog.welcomeTo", { appName: displayAppName })}
       </p>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {helpItems.map((item) => (

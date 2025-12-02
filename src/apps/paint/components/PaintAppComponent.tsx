@@ -11,6 +11,7 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { helpItems, appMetadata } from "..";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useFileSystem, dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -32,6 +33,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
   onNavigatePrevious,
 }) => {
   const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("paint", helpItems);
   const [selectedTool, setSelectedTool] = useState<string>("pencil");
   const [selectedPattern, setSelectedPattern] = useState<string>("pattern-1");
   const [strokeWidth, setStrokeWidth] = useState<number>(1);
@@ -557,7 +559,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
       <HelpDialog
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
-        helpItems={helpItems}
+        helpItems={translatedHelpItems}
         appId="paint"
       />
       <AboutDialog

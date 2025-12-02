@@ -4,6 +4,7 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata, helpItems } from "..";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useTranslation } from "react-i18next";
 
 // Export type for the dialog controls
@@ -47,6 +48,7 @@ export function DialogManager({
   isUntitledForClose = false,
 }: DialogManagerProps) {
   const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("textedit", helpItems);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
@@ -128,7 +130,7 @@ export function DialogManager({
       <HelpDialog
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
-        helpItems={helpItems}
+        helpItems={translatedHelpItems}
         appId="textedit"
       />
 

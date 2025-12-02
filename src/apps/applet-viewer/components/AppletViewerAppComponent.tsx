@@ -8,6 +8,7 @@ import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { AppletViewerMenuBar } from "./AppletViewerMenuBar";
 import { AppStore } from "./AppStore";
 import { appMetadata, helpItems, AppletViewerInitialData } from "../index";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { useAppStore } from "@/stores/useAppStore";
@@ -43,6 +44,7 @@ export function AppletViewerAppComponent({
   instanceId,
   initialData,
 }: AppProps<AppletViewerInitialData>) {
+  const translatedHelpItems = useTranslatedHelpItems("applet-viewer", helpItems);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -1538,7 +1540,7 @@ export function AppletViewerAppComponent({
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
         appId="applet-viewer"
-        helpItems={helpItems}
+        helpItems={translatedHelpItems}
       />
       <AboutDialog
         isOpen={isAboutDialogOpen}

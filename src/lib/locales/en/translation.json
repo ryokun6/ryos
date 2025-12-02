@@ -40,7 +40,7 @@
       "delete": "Delete",
       "help": "Help",
       "about": "About",
-      "welcomeTo": "Welcome to",
+      "welcomeTo": "Welcome to {{appName}}",
       "version": "Version",
       "madeBy": "Made by",
       "openInGitHub": "Open in GitHub",

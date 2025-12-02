@@ -28,6 +28,7 @@ import {
 import { ArrowLeft, ArrowRight, History, Search, Share } from "lucide-react";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata } from "..";
@@ -307,6 +308,7 @@ export function InternetExplorerAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps<InternetExplorerInitialData>) {
+  const translatedHelpItems = useTranslatedHelpItems("internet-explorer", helpItems || []);
   const debugMode = useAppStore((state) => state.debugMode);
   const terminalSoundsEnabled = useAppStore(
     (state) => state.terminalSoundsEnabled
@@ -2645,7 +2647,7 @@ export function InternetExplorerAppComponent({
           <HelpDialog
             isOpen={isHelpDialogOpen}
             onOpenChange={setHelpDialogOpen}
-            helpItems={helpItems || []}
+            helpItems={translatedHelpItems}
             appId="internet-explorer"
           />
           <AboutDialog

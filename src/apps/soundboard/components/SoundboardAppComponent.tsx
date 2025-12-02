@@ -11,7 +11,8 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { AppProps } from "../../base/types";
 import { SoundboardMenuBar } from "./SoundboardMenuBar";
-import { appMetadata } from "..";
+import { appMetadata, helpItems as defaultHelpItems } from "..";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -101,6 +102,7 @@ export function SoundboardAppComponent({
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const importInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("soundboard", helpItems.length > 0 ? helpItems : defaultHelpItems);
   // Disable waveforms by default on mobile Safari to prevent initial freeze
   const isMobileSafari =
     typeof navigator !== "undefined" &&
@@ -511,7 +513,7 @@ export function SoundboardAppComponent({
         <HelpDialog
           isOpen={helpDialogOpen}
           onOpenChange={setHelpDialogOpen}
-          helpItems={helpItems}
+          helpItems={translatedHelpItems}
           appId="soundboard"
         />
         <AboutDialog

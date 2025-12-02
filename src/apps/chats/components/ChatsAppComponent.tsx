@@ -9,6 +9,7 @@ import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { CreateRoomDialog } from "./CreateRoomDialog";
 import { helpItems, appMetadata } from "..";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useChatRoom } from "../hooks/useChatRoom";
 import { useAiChat } from "../hooks/useAiChat";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,6 +52,7 @@ export function ChatsAppComponent({
   onNavigatePrevious,
 }: AppProps) {
   const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("chats", helpItems);
   const { aiMessages } = useChatsStore();
 
   // Use auth hook for authentication functionality
@@ -843,7 +845,7 @@ export function ChatsAppComponent({
         <HelpDialog
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
-          helpItems={helpItems}
+          helpItems={translatedHelpItems}
           appId="chats"
         />
         <AboutDialog
