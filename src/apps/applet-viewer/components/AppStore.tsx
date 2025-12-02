@@ -7,6 +7,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { Trash2, Star, ArrowLeft, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
+import { useTranslation } from "react-i18next";
 
 interface AppStoreProps {
   theme?: string;
@@ -15,6 +16,7 @@ interface AppStoreProps {
 }
 
 export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) {
+  const { t } = useTranslation();
   const [applets, setApplets] = useState<Applet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,8 +72,8 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     const updateCount = updates.length;
     const loadingMessage =
       updateCount === 1
-        ? "Updating 1 applet..."
-        : `Updating ${updateCount} applets...`;
+        ? t("apps.applet-viewer.dialogs.updatingAppletSingle")
+        : t("apps.applet-viewer.dialogs.updatingAppletsPlural", { count: updateCount });
     const loadingToastId = toast.loading(loadingMessage, {
       duration: Infinity,
     });
@@ -85,8 +87,8 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
 
       toast.success(
         updateCount === 1
-          ? "Applet updated"
-          : `${updateCount} applets updated`,
+          ? t("apps.applet-viewer.dialogs.appletUpdated")
+          : t("apps.applet-viewer.dialogs.appletsUpdated", { count: updateCount }),
         {
           id: loadingToastId,
           duration: 3000,
@@ -95,9 +97,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       lastUpdateToastKeyRef.current = null;
     } catch (error) {
       console.error("Error updating applets:", error);
-      toast.error("Failed to update applets", {
+      toast.error(t("apps.applet-viewer.dialogs.failedToUpdateApplets"), {
         description:
-          error instanceof Error ? error.message : "Please try again later.",
+          error instanceof Error ? error.message : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
         id: loadingToastId,
       });
     } finally {
@@ -150,14 +152,16 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
 
       const updateCount = updates.length;
       const appletNames = updates
-        .map((applet) => applet.title || applet.name || "Untitled Applet")
+        .map((applet) => applet.title || applet.name || t("apps.applet-viewer.dialogs.untitledApplet"))
         .join(", ");
       const toastId = toast.info(
-        `${updateCount} new applet update${updateCount > 1 ? "s" : ""}`,
+        updateCount === 1
+          ? t("apps.applet-viewer.dialogs.newAppletUpdates", { count: updateCount })
+          : t("apps.applet-viewer.dialogs.newAppletUpdatesPlural", { count: updateCount }),
         {
           description: appletNames,
           action: {
-            label: "Update",
+            label: t("apps.applet-viewer.status.update"),
             onClick: () => handleUpdateAll(updates),
           },
           duration: 8000,
@@ -166,7 +170,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
 
     updateToastIdRef.current = toastId;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applets, isBulkUpdating]);
+  }, [applets, isBulkUpdating, t]);
 
   // If sharedAppletId is provided, fetch and show that applet in detail view
   useEffect(() => {
@@ -188,14 +192,14 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             setSelectedAppletContent(data.content || "");
             setIsSharedApplet(true);
           } else {
-            toast.error("Shared applet not found", {
-              description: "The shared applet may have been deleted or the link is invalid.",
+            toast.error(t("apps.applet-viewer.dialogs.appletNotFound"), {
+              description: t("apps.applet-viewer.dialogs.appletNotFoundDescription"),
             });
           }
         } catch (error) {
           console.error("Error fetching shared applet:", error);
-          toast.error("Failed to load shared applet", {
-            description: "Please check your connection and try again.",
+          toast.error(t("apps.applet-viewer.dialogs.failedToLoadSharedApplet"), {
+            description: t("apps.applet-viewer.dialogs.pleaseCheckConnection"),
           });
         }
       };
@@ -304,7 +308,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   const handleDelete = async (appletId: string) => {
     if (!isAdmin) return;
     
-    if (!confirm("Are you sure you want to delete this applet?")) {
+    if (!confirm(t("apps.applet-viewer.dialogs.areYouSureDeleteApplet"))) {
       return;
     }
 
@@ -321,12 +325,12 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         throw new Error("Failed to delete applet");
       }
 
-      toast.success("Applet deleted");
+      toast.success(t("apps.applet-viewer.dialogs.appletDeleted"));
       fetchApplets(); // Refresh list
     } catch (error) {
       console.error("Error deleting applet:", error);
-      toast.error("Failed to delete applet", {
-        description: "Please try again later.",
+      toast.error(t("apps.applet-viewer.dialogs.failedToDeleteApplet"), {
+        description: t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
       });
     }
   };
@@ -349,12 +353,12 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         throw new Error("Failed to update featured status");
       }
 
-      toast.success(currentFeatured ? "Removed from featured" : "Added to featured");
+      toast.success(currentFeatured ? t("apps.applet-viewer.dialogs.removedFromFeatured") : t("apps.applet-viewer.dialogs.addedToFeatured"));
       fetchApplets(); // Refresh list
     } catch (error) {
       console.error("Error updating featured status:", error);
-      toast.error("Failed to update featured status", {
-        description: "Please try again later.",
+      toast.error(t("apps.applet-viewer.dialogs.failedToUpdateFeaturedStatus"), {
+        description: t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
       });
     }
   };
@@ -365,7 +369,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     return applets.filter((applet) => {
       if (!searchQuery.trim()) return true;
       const query = searchQuery.toLowerCase();
-      const displayName = (applet.title || applet.name || "Untitled Applet").toLowerCase();
+      const displayName = (applet.title || applet.name || t("apps.applet-viewer.dialogs.untitledApplet")).toLowerCase();
       const createdBy = (applet.createdBy || "").toLowerCase();
       return displayName.includes(query) || createdBy.includes(query);
     });
@@ -416,7 +420,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         <style>{appletIconStyles}</style>
         <div className="h-full w-full flex items-center justify-center">
           <div className="text-center">
-            <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
+            <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
           </div>
         </div>
       </>
@@ -439,27 +443,27 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       updateDate.getFullYear() === today.getFullYear();
 
     if (isToday) {
-      if (diffMins < 1) return "Updated just now";
-      if (diffMins < 60) return `Updated ${diffMins}m ago`;
-      return `Updated ${diffHours}h ago`;
+      if (diffMins < 1) return t("apps.applet-viewer.status.updatedJustNow");
+      if (diffMins < 60) return t("apps.applet-viewer.status.updatedMinutesAgo", { minutes: diffMins });
+      return t("apps.applet-viewer.status.updatedHoursAgo", { hours: diffHours });
     }
 
-    if (diffDays === 1) return "Updated yesterday";
-    if (diffDays < 7) return `Updated ${diffDays}d ago`;
+    if (diffDays === 1) return t("apps.applet-viewer.status.updatedYesterday");
+    if (diffDays < 7) return t("apps.applet-viewer.status.updatedDaysAgo", { days: diffDays });
     if (diffDays < 30) {
       const weeks = Math.floor(diffDays / 7);
-      return `Updated ${weeks}w ago`;
+      return t("apps.applet-viewer.status.updatedWeeksAgo", { weeks });
     }
     if (diffDays < 365) {
       const months = Math.floor(diffDays / 30);
-      return `Updated ${months}mo ago`;
+      return t("apps.applet-viewer.status.updatedMonthsAgo", { months });
     }
     const years = Math.floor(diffDays / 365);
-    return `Updated ${years}y ago`;
+    return t("apps.applet-viewer.status.updatedYearsAgo", { years });
   };
 
     const renderAppletItem = (applet: Applet) => {
-      const displayName = applet.title || applet.name || "Untitled Applet";
+      const displayName = applet.title || applet.name || t("apps.applet-viewer.dialogs.untitledApplet");
       const displayIcon = applet.icon || "📱";
       const installed = actions.isAppletInstalled(applet.id);
       const updateAvailable = actions.needsUpdate(applet);
@@ -511,7 +515,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                     handleToggleFeatured(applet.id, applet.featured || false);
                   }}
                   className="p-1 hover:bg-gray-200 rounded transition-all inline-flex md:hidden md:group-hover:inline-flex"
-                  title={applet.featured ? "Remove from featured" : "Add to featured"}
+                  title={applet.featured ? t("apps.applet-viewer.labels.removeFromFeatured") : t("apps.applet-viewer.labels.addToFeatured")}
                 >
                   <Star
                     className={`h-4 w-4 ${applet.featured ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`}
@@ -523,7 +527,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                     handleDelete(applet.id);
                   }}
                   className="p-1 hover:bg-gray-200 rounded transition-all text-gray-400 inline-flex md:hidden md:group-hover:inline-flex"
-                  title="Delete applet"
+                  title={t("apps.applet-viewer.labels.deleteApplet")}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -555,7 +559,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               }}
               disabled={isBulkUpdating}
             >
-              {installed ? (updateAvailable ? "Update" : "Open") : "Get"}
+              {installed ? (updateAvailable ? t("apps.applet-viewer.status.update") : t("apps.applet-viewer.status.open")) : t("apps.applet-viewer.status.get")}
             </Button>
           </div>
         </div>
@@ -569,7 +573,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         <div className="h-full w-full flex items-center justify-center">
           <div className="text-center px-6 font-geneva-12">
             <p className="text-[11px] text-gray-600 font-geneva-12">
-              No applets available at this time.
+              {t("apps.applet-viewer.dialogs.noAppletsAvailable")}
             </p>
           </div>
         </div>
@@ -579,7 +583,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
 
   // Detail view for uninstalled applet
   if (selectedApplet) {
-    const displayName = selectedApplet.title || selectedApplet.name || "Untitled Applet";
+    const displayName = selectedApplet.title || selectedApplet.name || t("apps.applet-viewer.dialogs.untitledApplet");
     const displayIcon = selectedApplet.icon || "📱";
     
     return (
@@ -635,7 +639,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               className="w-[60px]"
               disabled={isBulkUpdating}
             >
-              Get
+              {t("apps.applet-viewer.status.get")}
             </Button>
           </div>
             <div
@@ -661,7 +665,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
+                  <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
                 </div>
               </div>
             )}
@@ -705,7 +709,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 onClick={() => setShowListView(true)}
                 style={{ height: "28px" }}
               >
-                <span className="text-sm font-medium font-geneva-12">Show All</span>
+                <span className="text-sm font-medium font-geneva-12">{t("apps.applet-viewer.labels.showAll")}</span>
               </Button>
               <Button
                 variant={isMacTheme ? "aqua" : "default"}
@@ -743,7 +747,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             >
               <Input
                 type="text"
-                placeholder="Search applets"
+                placeholder={t("apps.applet-viewer.labels.searchApplets")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`flex-1 pl-2 ${
@@ -769,7 +773,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 className="flex items-center gap-1 px-1"
               >
                 <Sparkles className="h-4 w-4" />
-                <span className="text-xs font-geneva-12">Discover</span>
+                <span className="text-xs font-geneva-12">{t("apps.applet-viewer.labels.discover")}</span>
               </Button>
             </div>
             <div className="flex-1 overflow-y-auto bg-white">
@@ -777,7 +781,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 {filteredApplets.length === 0 ? (
                   <div className="px-3 py-4 text-center">
                     <p className="text-[11px] text-gray-600 font-geneva-12">
-                      No applets found matching "{searchQuery}".
+                      {t("apps.applet-viewer.dialogs.noAppletsFound", { query: searchQuery })}
                     </p>
                   </div>
                 ) : (
@@ -786,7 +790,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                       <>
                         <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
                           <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
-                            Updates Available
+                            {t("apps.applet-viewer.sections.updatesAvailable")}
                           </h3>
                         </div>
                         {updatesAvailable.map((applet) => renderAppletItem(applet))}
@@ -796,7 +800,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                       <>
                         <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
                           <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
-                            Featured
+                            {t("apps.applet-viewer.sections.featured")}
                           </h3>
                         </div>
                         {featuredApplets.map((applet) => renderAppletItem(applet))}
@@ -806,7 +810,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                       <>
                         <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
                           <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
-                            New Applets
+                            {t("apps.applet-viewer.sections.newApplets")}
                           </h3>
                         </div>
                         {allApplets.map((applet) => renderAppletItem(applet))}
@@ -816,7 +820,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                       <>
                         <div className="mt-2 px-4 pt-2 pb-1 w-full flex items-center">
                           <h3 className="!text-[11px] uppercase tracking-wide text-black/50 font-geneva-12">
-                            Installed
+                            {t("apps.applet-viewer.sections.installed")}
                           </h3>
                         </div>
                         {installedApplets.map((applet) => renderAppletItem(applet))}

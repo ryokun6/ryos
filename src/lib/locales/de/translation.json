@@ -2,6 +2,63 @@
   "apps": {
     "applet-viewer": {
       "description": "Applets anzeigen und ausführen",
+      "dialogs": {
+        "addedToFeatured": "Zu den Empfehlungen hinzugefügt",
+        "allAppletsUpToDate": "Alle Applets sind auf dem neuesten Stand",
+        "appletAlreadyShared": "Applet bereits geteilt",
+        "appletDeleted": "Applet gelöscht",
+        "appletExported": "Applet exportiert!",
+        "appletExportedDescription": "{{fileName}}.app erfolgreich exportiert.",
+        "appletImported": "Applet importiert!",
+        "appletImportedDescription": "{{fileName}} in /Applets{{iconText}} gespeichert",
+        "appletNotFound": "Applet nicht gefunden",
+        "appletNotFoundDescription": "Das geteilte Applet wurde möglicherweise gelöscht oder der Link ist ungültig.",
+        "appletSaved": "Applet gespeichert",
+        "appletSavedDescription": "Gespeichert in /Applets/{{fileName}}",
+        "appletShared": "Applet geteilt!",
+        "appletStore": "Applet Store",
+        "appletUpdateAvailable": "Applet-Update verfügbar",
+        "appletUpdateAvailableDescription": "Für {{appletName}} ist ein Update verfügbar.",
+        "appletUpdated": "Applet aktualisiert",
+        "appletUpdatedShare": "Applet aktualisiert!",
+        "appletsUpdated": "{{count}} Applets aktualisiert",
+        "areYouSureDeleteApplet": "Möchten Sie dieses Applet wirklich löschen?",
+        "couldNotCompressAppletFile": "Die Applet-Datei konnte nicht komprimiert werden.",
+        "couldNotImportFile": "Die Datei konnte nicht importiert werden.",
+        "exportFailed": "Export fehlgeschlagen",
+        "failedToDeleteApplet": "Applet konnte nicht gelöscht werden.",
+        "failedToFetchSharedApplet": "Das freigegebene Applet konnte nicht abgerufen werden.",
+        "failedToLoadSharedApplet": "Das freigegebene Applet konnte nicht geladen werden.",
+        "failedToSaveApplet": "Applet konnte nicht gespeichert werden.",
+        "failedToShareApplet": "Applet konnte nicht freigegeben werden.",
+        "failedToUpdateApplet": "Applet konnte nicht aktualisiert werden.",
+        "failedToUpdateApplets": "Applets konnten nicht aktualisiert werden.",
+        "failedToUpdateFeaturedStatus": "Der Empfehlungsstatus konnte nicht aktualisiert werden.",
+        "importFailed": "Import fehlgeschlagen",
+        "loading": "Laden...",
+        "loginRequired": "Anmeldung erforderlich",
+        "mustBeLoggedInToShare": "Sie müssen angemeldet sein, um Applets freizugeben.",
+        "newAppletUpdates": "{{count}} neues Applet-Update",
+        "newAppletUpdatesPlural": "{{count}} neue Applet-Updates",
+        "noAppletToShare": "Kein Applet zum Freigeben",
+        "noAppletsAvailable": "Derzeit keine Applets verfügbar.",
+        "noAppletsFound": "Es wurden keine Applets gefunden, die \"{{query}}\" entsprechen.",
+        "pleaseCheckConnection": "Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+        "pleaseOpenAppletFirst": "Bitte öffnen Sie zuerst ein Applet.",
+        "pleaseTryAgainLater": "Bitte versuchen Sie es später erneut.",
+        "removedFromFeatured": "Von den Empfehlungen entfernt",
+        "shareLinkGeneratedSuccessfully": "Teilen-Link erfolgreich generiert.",
+        "shareLinkUpdatedSuccessfully": "Teilen-Link erfolgreich aktualisiert.",
+        "sharedApplet": "Geteiltes Applet",
+        "sharedAppletLoaded": "Geteiltes Applet geladen",
+        "showingExistingShareLink": "Bestehender Teilen-Link wird angezeigt.",
+        "untitled": "Unbenannt",
+        "untitledApplet": "Unbenanntes Applet",
+        "updatingApplet": "Applet wird aktualisiert...",
+        "updatingAppletSingle": "1 Applet wird aktualisiert...",
+        "updatingApplets": "{{count}} Applets werden aktualisiert...",
+        "updatingAppletsPlural": "Aktualisiere {{count}} Applets..."
+      },
       "help": {
         "appletStore": {
           "description": "Durchsuchen und Installieren von Applets aus der Community. Öffnen Sie das Store-Menü, um neue Apps zu entdecken.",
@@ -28,8 +85,17 @@
           "title": "Applets anzeigen"
         }
       },
+      "labels": {
+        "addToFeatured": "Zu den Empfehlungen hinzufügen",
+        "deleteApplet": "Applet löschen",
+        "discover": "Entdecken",
+        "removeFromFeatured": "Aus den Empfehlungen entfernen",
+        "searchApplets": "Applets suchen",
+        "showAll": "Alle anzeigen"
+      },
       "menu": {
         "aboutApplets": "Über Applets",
+        "appletStore": "Applet Store",
         "appletsHelp": "Applets-Hilfe",
         "checkForUpdates": "Nach Updates suchen",
         "createAccount": "Konto erstellen...",
@@ -44,11 +110,32 @@
         "ryosApp": "ryOS App",
         "shareApplet": "Applet teilen...",
         "store": "Store",
+        "untitled": "Unbenannt",
         "updateApplets": "{{count}} Applet aktualisieren",
         "updateAppletsPlural": "{{count}} Applets aktualisieren",
         "window": "Fenster"
       },
-      "name": "Applet-Store"
+      "name": "Applet-Store",
+      "sections": {
+        "featured": "Vorgestellt",
+        "installed": "Installiert",
+        "newApplets": "Neue Applets",
+        "updatesAvailable": "Updates verfügbar"
+      },
+      "status": {
+        "get": "Holen",
+        "open": "Öffnen",
+        "save": "Speichern",
+        "update": "Aktualisieren",
+        "updatedDaysAgo": "Vor {{days}} Tagen aktualisiert",
+        "updatedHoursAgo": "Vor {{hours}} Stunden aktualisiert",
+        "updatedJustNow": "Gerade eben aktualisiert",
+        "updatedMinutesAgo": "Vor {{minutes}} Minuten aktualisiert",
+        "updatedMonthsAgo": "Vor {{months}} Monaten aktualisiert",
+        "updatedWeeksAgo": "Vor {{weeks}} Wochen aktualisiert",
+        "updatedYearsAgo": "Vor {{years}} Jahren aktualisiert",
+        "updatedYesterday": "Gestern aktualisiert"
+      }
     },
     "chats": {
       "ariaLabels": {

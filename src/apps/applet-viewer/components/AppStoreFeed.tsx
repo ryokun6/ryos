@@ -8,6 +8,7 @@ import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
+import { useTranslation } from "react-i18next";
 
 interface AppStoreFeedProps {
   theme?: string;
@@ -22,6 +23,7 @@ export interface AppStoreFeedRef {
 
 export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   ({ theme, focusWindow, onAppletSelect }, ref) => {
+  const { t } = useTranslation();
   const [applets, setApplets] = useState<Applet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -402,7 +404,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     return (
       <div className="h-full w-full flex items-center justify-center">
         <div className="text-center">
-          <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
+          <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
         </div>
       </div>
     );
@@ -413,7 +415,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       <div className="h-full w-full flex items-center justify-center">
         <div className="text-center px-6 font-geneva-12">
           <p className="text-[11px] text-gray-600 font-geneva-12">
-            No applets available at this time.
+            {t("apps.applet-viewer.dialogs.noAppletsAvailable")}
           </p>
         </div>
       </div>
@@ -421,7 +423,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   }
 
   const renderAppletCard = (applet: Applet, index: number) => {
-    const displayName = applet.title || applet.name || "Untitled Applet";
+    const displayName = applet.title || applet.name || t("apps.applet-viewer.dialogs.untitledApplet");
     const displayIcon = applet.icon || "📱";
     const installed = actions.isAppletInstalled(applet.id);
     const updateAvailable = actions.needsUpdate(applet);
@@ -507,7 +509,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
           ) : isLoadingContent ? (
             <div className="flex items-center justify-center h-full bg-gray-50">
               <div className="text-center">
-                <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">Loading...</p>
+                <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
               </div>
             </div>
           ) : (
@@ -577,7 +579,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
             }}
             className="flex-shrink-0 whitespace-nowrap"
           >
-            {installed ? (updateAvailable ? "Update" : "Open") : "Get"}
+            {installed ? (updateAvailable ? t("apps.applet-viewer.status.update") : t("apps.applet-viewer.status.open")) : t("apps.applet-viewer.status.get")}
           </Button>
         </div>
       </div>

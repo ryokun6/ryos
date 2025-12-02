@@ -2,6 +2,63 @@
   "apps": {
     "applet-viewer": {
       "description": "Voir et exécuter des applets",
+      "dialogs": {
+        "addedToFeatured": "Ajouté à la sélection",
+        "allAppletsUpToDate": "Toutes les applets sont à jour",
+        "appletAlreadyShared": "Applet déjà partagée",
+        "appletDeleted": "Applet supprimée",
+        "appletExported": "Applet exportée !",
+        "appletExportedDescription": "{{fileName}}.app exporté avec succès.",
+        "appletImported": "Applet importée !",
+        "appletImportedDescription": "{{fileName}} enregistré dans /Applets{{iconText}}",
+        "appletNotFound": "Applet introuvable",
+        "appletNotFoundDescription": "L'applet partagée a peut-être été supprimée ou le lien est invalide.",
+        "appletSaved": "Applet enregistrée",
+        "appletSavedDescription": "Enregistré dans /Applets/{{fileName}}",
+        "appletShared": "Applet partagée !",
+        "appletStore": "Magasin d'Applets",
+        "appletUpdateAvailable": "Mise à jour d'applet disponible",
+        "appletUpdateAvailableDescription": "Une mise à jour est disponible pour {{appletName}}.",
+        "appletUpdated": "Applet mise à jour",
+        "appletUpdatedShare": "Applet mise à jour !",
+        "appletsUpdated": "{{count}} applets mises à jour",
+        "areYouSureDeleteApplet": "Voulez-vous vraiment supprimer cette applet ?",
+        "couldNotCompressAppletFile": "Impossible de compresser le fichier de l'applet.",
+        "couldNotImportFile": "Impossible d'importer le fichier.",
+        "exportFailed": "Échec de l'exportation",
+        "failedToDeleteApplet": "Échec de la suppression de l'applet",
+        "failedToFetchSharedApplet": "Échec de la récupération de l'applet partagée",
+        "failedToLoadSharedApplet": "Échec du chargement de l'applet partagée",
+        "failedToSaveApplet": "Échec de l'enregistrement de l'applet",
+        "failedToShareApplet": "Échec du partage de l'applet",
+        "failedToUpdateApplet": "Échec de la mise à jour de l'applet",
+        "failedToUpdateApplets": "Échec de la mise à jour des applets",
+        "failedToUpdateFeaturedStatus": "Échec de la mise à jour du statut de mise en avant",
+        "importFailed": "Échec de l'importation",
+        "loading": "Chargement...",
+        "loginRequired": "Connexion requise",
+        "mustBeLoggedInToShare": "Vous devez être connecté(e) pour partager des applets.",
+        "newAppletUpdates": "{{count}} nouvelle mise à jour d'applet",
+        "newAppletUpdatesPlural": "{{count}} nouvelles mises à jour d'applets",
+        "noAppletToShare": "Aucune applet à partager",
+        "noAppletsAvailable": "Aucune applet disponible pour le moment.",
+        "noAppletsFound": "Aucune applet trouvée correspondant à \"{{query}}\".",
+        "pleaseCheckConnection": "Veuillez vérifier votre connexion et réessayer.",
+        "pleaseOpenAppletFirst": "Veuillez d'abord ouvrir une Applet.",
+        "pleaseTryAgainLater": "Veuillez réessayer plus tard.",
+        "removedFromFeatured": "Retiré des sélections",
+        "shareLinkGeneratedSuccessfully": "Lien de partage généré avec succès.",
+        "shareLinkUpdatedSuccessfully": "Lien de partage mis à jour avec succès.",
+        "sharedApplet": "Applet Partagée",
+        "sharedAppletLoaded": "Applet partagée chargée",
+        "showingExistingShareLink": "Affichage du lien de partage existant.",
+        "untitled": "Sans titre",
+        "untitledApplet": "Applet sans titre",
+        "updatingApplet": "Mise à jour de l'Applet...",
+        "updatingAppletSingle": "Mise à jour d'1 Applet...",
+        "updatingApplets": "Mise à jour de {{count}} Applets...",
+        "updatingAppletsPlural": "Mise à jour de {{count}} applets..."
+      },
       "help": {
         "appletStore": {
           "description": "Parcourez et installez des applets de la communauté. Ouvrez le menu Magasin pour découvrir de nouvelles applications.",
@@ -28,8 +85,17 @@
           "title": "Voir les applets"
         }
       },
+      "labels": {
+        "addToFeatured": "Ajouter aux sélections",
+        "deleteApplet": "Supprimer l'Applet",
+        "discover": "Découvrir",
+        "removeFromFeatured": "Retirer des sélections",
+        "searchApplets": "Rechercher des Applets",
+        "showAll": "Afficher tout"
+      },
       "menu": {
         "aboutApplets": "À propos des applets",
+        "appletStore": "Magasin d'Applets",
         "appletsHelp": "Aide sur les applets",
         "checkForUpdates": "Vérifier les mises à jour",
         "createAccount": "Créer un compte...",
@@ -44,11 +110,32 @@
         "ryosApp": "Application ryOS",
         "shareApplet": "Partager l'applet...",
         "store": "Magasin",
+        "untitled": "Sans titre",
         "updateApplets": "Mettre à jour {{count}} applet",
         "updateAppletsPlural": "Mettre à jour {{count}} applets",
         "window": "Fenêtre"
       },
-      "name": "Magasin d'applets"
+      "name": "Magasin d'applets",
+      "sections": {
+        "featured": "En vedette",
+        "installed": "Installé",
+        "newApplets": "Nouvelles applets",
+        "updatesAvailable": "Mises à jour disponibles"
+      },
+      "status": {
+        "get": "Obtenir",
+        "open": "Ouvrir",
+        "save": "Enregistrer",
+        "update": "Mettre à jour",
+        "updatedDaysAgo": "Mis à jour il y a {{days}} j",
+        "updatedHoursAgo": "Mis à jour il y a {{hours}} h",
+        "updatedJustNow": "Mis à jour à l'instant",
+        "updatedMinutesAgo": "Mis à jour il y a {{minutes}} min",
+        "updatedMonthsAgo": "Mis à jour il y a {{months}} mois",
+        "updatedWeeksAgo": "Mis à jour il y a {{weeks}} sem",
+        "updatedYearsAgo": "Mis à jour il y a {{years}} ans",
+        "updatedYesterday": "Mis à jour hier"
+      }
     },
     "chats": {
       "ariaLabels": {

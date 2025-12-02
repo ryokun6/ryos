@@ -33,6 +33,7 @@ import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
 import { extractMetadataFromHtml } from "@/utils/appletMetadata";
 import { exportAppletAsHtml } from "@/utils/appletImportExport";
+import { useTranslation } from "react-i18next";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -56,6 +57,7 @@ export function AppletViewerAppComponent({
   const isMacTheme = currentTheme === "macosx";
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
+  const { t } = useTranslation();
   
   // Use auth hook for authentication functionality
   const authResult = useAuth();
@@ -554,13 +556,13 @@ export function AppletViewerAppComponent({
       const updateApplet = await checkForAppletUpdate(shareId);
       
       if (updateApplet) {
-        const appletName = updateApplet.title || updateApplet.name || "this applet";
-        toast.info("Applet update available", {
-          description: `${appletName} has an update available.`,
+        const appletName = updateApplet.title || updateApplet.name || t("apps.applet-viewer.dialogs.untitledApplet");
+        toast.info(t("apps.applet-viewer.dialogs.appletUpdateAvailable"), {
+          description: t("apps.applet-viewer.dialogs.appletUpdateAvailableDescription", { appletName }),
           action: {
-            label: "Update",
+            label: t("apps.applet-viewer.status.update"),
             onClick: async () => {
-              const loadingToastId = toast.loading("Updating applet...", {
+              const loadingToastId = toast.loading(t("apps.applet-viewer.dialogs.updatingApplet"), {
                 duration: Infinity,
               });
 
@@ -586,7 +588,7 @@ export function AppletViewerAppComponent({
                   }
                 }
 
-                toast.success("Applet updated", {
+                toast.success(t("apps.applet-viewer.dialogs.appletUpdated"), {
                   id: loadingToastId,
                   duration: 3000,
                 });
@@ -595,9 +597,9 @@ export function AppletViewerAppComponent({
                 updateCheckedRef.current.delete(shareId);
               } catch (error) {
                 console.error("Error updating applet:", error);
-                toast.error("Failed to update applet", {
+                toast.error(t("apps.applet-viewer.dialogs.failedToUpdateApplet"), {
                   description:
-                    error instanceof Error ? error.message : "Please try again later.",
+                    error instanceof Error ? error.message : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
                   id: loadingToastId,
                 });
                 // Remove from checked set on error so user can retry
@@ -613,7 +615,7 @@ export function AppletViewerAppComponent({
     // Delay to ensure fileItem is loaded from store (especially when opening from Finder)
     const timeoutId = setTimeout(() => checkUpdate(0), 1000);
     return () => clearTimeout(timeoutId);
-  }, [appletPath, loadedContent, checkForAppletUpdate, actions, fileStore]);
+  }, [appletPath, loadedContent, checkForAppletUpdate, actions, fileStore, t]);
   const { getAppletWindowSize, setAppletWindowSize } = useAppletStore();
   
   // Get saved size from file metadata first, fallback to applet store

@@ -2,6 +2,63 @@
   "apps": {
     "applet-viewer": {
       "description": "アプレットを表示・実行",
+      "dialogs": {
+        "addedToFeatured": "「おすすめ」に追加されました",
+        "allAppletsUpToDate": "すべてのアプレットは最新です",
+        "appletAlreadyShared": "アプレットはすでに共有されています",
+        "appletDeleted": "アプレットが削除されました",
+        "appletExported": "アプレットをエクスポートしました！",
+        "appletExportedDescription": "{{fileName}}.app をエクスポートしました。",
+        "appletImported": "アプレットをインポートしました！",
+        "appletImportedDescription": "{{fileName}} を /Applets{{iconText}} に保存しました",
+        "appletNotFound": "アプレットが見つかりません",
+        "appletNotFoundDescription": "共有されたアプレットが削除されたか、リンクが無効な可能性があります。",
+        "appletSaved": "アプレットを保存しました",
+        "appletSavedDescription": "/Applets/{{fileName}} に保存しました",
+        "appletShared": "アプレットを共有しました！",
+        "appletStore": "アプレットストア",
+        "appletUpdateAvailable": "アプレットの更新があります",
+        "appletUpdateAvailableDescription": "{{appletName}} の更新があります。",
+        "appletUpdated": "アプレットを更新しました",
+        "appletUpdatedShare": "アプレットを更新しました！",
+        "appletsUpdated": "{{count}} 個のアプレットを更新しました",
+        "areYouSureDeleteApplet": "このアプレットを削除してもよろしいですか？",
+        "couldNotCompressAppletFile": "アプレットファイルを圧縮できませんでした。",
+        "couldNotImportFile": "ファイルをインポートできませんでした。",
+        "exportFailed": "エクスポートに失敗しました",
+        "failedToDeleteApplet": "アプレットの削除に失敗しました",
+        "failedToFetchSharedApplet": "共有アプレットの取得に失敗しました",
+        "failedToLoadSharedApplet": "共有アプレットの読み込みに失敗しました",
+        "failedToSaveApplet": "アプレットの保存に失敗しました",
+        "failedToShareApplet": "アプレットの共有に失敗しました",
+        "failedToUpdateApplet": "アプレットの更新に失敗しました",
+        "failedToUpdateApplets": "アプレットの更新に失敗しました",
+        "failedToUpdateFeaturedStatus": "注目のステータスの更新に失敗しました",
+        "importFailed": "インポートに失敗しました",
+        "loading": "読み込み中...",
+        "loginRequired": "ログインが必要です",
+        "mustBeLoggedInToShare": "アプレットを共有するにはログインしている必要があります。",
+        "newAppletUpdates": "{{count}} 件の新しいアプレットの更新",
+        "newAppletUpdatesPlural": "{{count}} 件の新しいアプレットの更新",
+        "noAppletToShare": "共有するアプレットがありません",
+        "noAppletsAvailable": "現在、利用可能なアプレットはありません。",
+        "noAppletsFound": "「{{query}}」に一致するアプレットは見つかりませんでした。",
+        "pleaseCheckConnection": "接続を確認して、もう一度お試しください。",
+        "pleaseOpenAppletFirst": "まずAppletを開いてください。",
+        "pleaseTryAgainLater": "後でもう一度お試しください。",
+        "removedFromFeatured": "おすすめから削除されました",
+        "shareLinkGeneratedSuccessfully": "共有リンクが正常に生成されました。",
+        "shareLinkUpdatedSuccessfully": "共有リンクが正常に更新されました。",
+        "sharedApplet": "共有Applet",
+        "sharedAppletLoaded": "共有Appletが読み込まれました",
+        "showingExistingShareLink": "既存の共有リンクを表示しています。",
+        "untitled": "無題",
+        "untitledApplet": "無題のApplet",
+        "updatingApplet": "Appletを更新中...",
+        "updatingAppletSingle": "1つのAppletを更新中...",
+        "updatingApplets": "{{count}}個のAppletを更新中...",
+        "updatingAppletsPlural": "{{count}} 個のアプレットを更新中..."
+      },
       "help": {
         "appletStore": {
           "description": "コミュニティからアプレットを閲覧・インストール。ストアメニューを開いて新しいアプリを発見。",
@@ -28,8 +85,17 @@
           "title": "アプレットを表示"
         }
       },
+      "labels": {
+        "addToFeatured": "おすすめに追加",
+        "deleteApplet": "Appletを削除",
+        "discover": "発見",
+        "removeFromFeatured": "おすすめから削除",
+        "searchApplets": "Appletを検索",
+        "showAll": "すべて表示"
+      },
       "menu": {
         "aboutApplets": "アプレットについて",
+        "appletStore": "アプレットストア",
         "appletsHelp": "アプレットヘルプ",
         "checkForUpdates": "アップデートを確認",
         "createAccount": "アカウントを作成...",
@@ -44,11 +110,32 @@
         "ryosApp": "ryOSアプリ",
         "shareApplet": "アプレットを共有...",
         "store": "ストア",
+        "untitled": "無題",
         "updateApplets": "{{count}}個のアプレットをアップデート",
         "updateAppletsPlural": "{{count}}個のアプレットをアップデート",
         "window": "ウィンドウ"
       },
-      "name": "アプレットストア"
+      "name": "アプレットストア",
+      "sections": {
+        "featured": "おすすめ",
+        "installed": "インストール済み",
+        "newApplets": "新規Applet",
+        "updatesAvailable": "アップデートがあります"
+      },
+      "status": {
+        "get": "入手",
+        "open": "開く",
+        "save": "保存",
+        "update": "アップデート",
+        "updatedDaysAgo": "{{days}}日前更新",
+        "updatedHoursAgo": "{{hours}}時間前更新",
+        "updatedJustNow": "たった今更新",
+        "updatedMinutesAgo": "{{minutes}}分前更新",
+        "updatedMonthsAgo": "{{months}}ヶ月前更新",
+        "updatedWeeksAgo": "{{weeks}}週間前更新",
+        "updatedYearsAgo": "{{years}}年前更新",
+        "updatedYesterday": "昨日更新"
+      }
     },
     "chats": {
       "ariaLabels": {

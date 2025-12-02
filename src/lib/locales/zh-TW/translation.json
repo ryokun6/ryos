@@ -2,6 +2,63 @@
   "apps": {
     "applet-viewer": {
       "description": "檢視和執行小程式",
+      "dialogs": {
+        "addedToFeatured": "已加入精選",
+        "allAppletsUpToDate": "所有小程式皆為最新版本",
+        "appletAlreadyShared": "小程式已分享",
+        "appletDeleted": "小程式已刪除",
+        "appletExported": "小程式已匯出！",
+        "appletExportedDescription": "{{fileName}}.app 已成功匯出。",
+        "appletImported": "小程式已匯入！",
+        "appletImportedDescription": "{{fileName}} 已儲存至 /Applets{{iconText}}",
+        "appletNotFound": "找不到小程式",
+        "appletNotFoundDescription": "該分享的小程式可能已被刪除或連結無效。",
+        "appletSaved": "小程式已儲存",
+        "appletSavedDescription": "已儲存至 /Applets/{{fileName}}",
+        "appletShared": "小程式已分享！",
+        "appletStore": "小程式商店",
+        "appletUpdateAvailable": "小程式有可用的更新",
+        "appletUpdateAvailableDescription": "{{appletName}} 有可用的更新。",
+        "appletUpdated": "小程式已更新",
+        "appletUpdatedShare": "小程式已更新！",
+        "appletsUpdated": "已更新 {{count}} 個小程式",
+        "areYouSureDeleteApplet": "您確定要刪除此小程式嗎？",
+        "couldNotCompressAppletFile": "無法壓縮小程式檔案。",
+        "couldNotImportFile": "無法匯入檔案。",
+        "exportFailed": "匯出失敗",
+        "failedToDeleteApplet": "無法刪除小程式",
+        "failedToFetchSharedApplet": "無法擷取共享小程式",
+        "failedToLoadSharedApplet": "無法載入共享小程式",
+        "failedToSaveApplet": "無法儲存小程式",
+        "failedToShareApplet": "無法分享小程式",
+        "failedToUpdateApplet": "無法更新小程式",
+        "failedToUpdateApplets": "無法更新小程式",
+        "failedToUpdateFeaturedStatus": "無法更新精選狀態",
+        "importFailed": "匯入失敗",
+        "loading": "載入中...",
+        "loginRequired": "需要登入",
+        "mustBeLoggedInToShare": "您必須登入才能分享小程式。",
+        "newAppletUpdates": "{{count}} 個新的小程式更新",
+        "newAppletUpdatesPlural": "{{count}} 個新的小程式更新",
+        "noAppletToShare": "沒有可供分享的小程式",
+        "noAppletsAvailable": "目前沒有小程式可用。",
+        "noAppletsFound": "找不到符合「{{query}}」的小程式。",
+        "pleaseCheckConnection": "請檢查您的連線並再試一次。",
+        "pleaseOpenAppletFirst": "請先開啟一個 Applet。",
+        "pleaseTryAgainLater": "請稍後再試。",
+        "removedFromFeatured": "已從精選中移除",
+        "shareLinkGeneratedSuccessfully": "分享連結已成功產生。",
+        "shareLinkUpdatedSuccessfully": "分享連結已成功更新。",
+        "sharedApplet": "已分享的 Applet",
+        "sharedAppletLoaded": "已分享的 Applet 已載入",
+        "showingExistingShareLink": "正在顯示現有的分享連結。",
+        "untitled": "未命名",
+        "untitledApplet": "未命名的 Applet",
+        "updatingApplet": "正在更新 Applet...",
+        "updatingAppletSingle": "正在更新 1 個 Applet...",
+        "updatingApplets": "正在更新 {{count}} 個 Applet...",
+        "updatingAppletsPlural": "正在更新 {{count}} 個小程式..."
+      },
       "help": {
         "appletStore": {
           "description": "瀏覽並安裝社群的小程式。開啟「商店」選單以發現新應用程式。",
@@ -28,8 +85,17 @@
           "title": "檢視小程式"
         }
       },
+      "labels": {
+        "addToFeatured": "加入精選",
+        "deleteApplet": "刪除 Applet",
+        "discover": "探索",
+        "removeFromFeatured": "從精選中移除",
+        "searchApplets": "搜尋 Applet",
+        "showAll": "顯示全部"
+      },
       "menu": {
         "aboutApplets": "關於小程式",
+        "appletStore": "小程式商店",
         "appletsHelp": "小程式說明",
         "checkForUpdates": "檢查更新",
         "createAccount": "建立帳號...",
@@ -44,11 +110,32 @@
         "ryosApp": "ryOS 應用程式",
         "shareApplet": "分享小程式...",
         "store": "商店",
+        "untitled": "無標題",
         "updateApplets": "更新 {{count}} 個小程式",
         "updateAppletsPlural": "更新 {{count}} 個小程式",
         "window": "視窗"
       },
-      "name": "小程式商店"
+      "name": "小程式商店",
+      "sections": {
+        "featured": "精選",
+        "installed": "已安裝",
+        "newApplets": "新 Applet",
+        "updatesAvailable": "有可用的更新"
+      },
+      "status": {
+        "get": "取得",
+        "open": "開啟",
+        "save": "儲存",
+        "update": "更新",
+        "updatedDaysAgo": "{{days}} 天前更新",
+        "updatedHoursAgo": "{{hours}} 小時前更新",
+        "updatedJustNow": "剛剛更新",
+        "updatedMinutesAgo": "{{minutes}} 分鐘前更新",
+        "updatedMonthsAgo": "{{months}} 個月前更新",
+        "updatedWeeksAgo": "{{weeks}} 週前更新",
+        "updatedYearsAgo": "{{years}} 年前更新",
+        "updatedYesterday": "昨天更新"
+      }
     },
     "chats": {
       "ariaLabels": {
