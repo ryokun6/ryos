@@ -1,11 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Soundboard, SoundSlot, PlaybackState } from "@/types/types";
+import i18n from "@/lib/i18n";
 
 // Helper to create a default soundboard
 const createDefaultBoard = (): Soundboard => ({
   id: Date.now().toString() + Math.random().toString(36).slice(2),
-  name: "New Soundboard",
+  name: i18n.t("apps.soundboard.newSoundboardDefault"),
   slots: Array(9).fill({
     audioData: null,
     emoji: undefined,
@@ -86,7 +87,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
             id:
               boardData.id ||
               Date.now().toString() + Math.random().toString(36).slice(2),
-            name: boardData.name || "Imported Soundboard",
+            name: boardData.name || i18n.t("apps.soundboard.importedSoundboard"),
             slots: (boardData.slots || Array(9).fill(null)).map(
               (slotData: Partial<SoundSlot>) => ({
                 audioData: slotData?.audioData || null,

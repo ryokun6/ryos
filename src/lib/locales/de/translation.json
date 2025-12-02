@@ -988,6 +988,9 @@
     },
     "soundboard": {
       "description": "Soundeffekte abspielen",
+      "soundboards": "Soundboards",
+      "newSoundboardDefault": "Neues Soundboard",
+      "importedSoundboard": "Importiertes Soundboard",
       "help": {
         "customizeSlot": {
           "description": "Emoji und Titel zu jeder Probe hinzufügen, um schnelle Identifikation zu ermöglichen",

@@ -988,6 +988,9 @@
     },
     "soundboard": {
       "description": "효과음 재생",
+      "soundboards": "사운드보드",
+      "newSoundboardDefault": "새로운 사운드보드",
+      "importedSoundboard": "가져온 사운드보드",
       "help": {
         "customizeSlot": {
           "description": "각 샘플에 이모지 및 제목 추가하여 빠른 식별",
@@ -1015,10 +1018,10 @@
         }
       },
       "menu": {
-        "aboutSoundboard": "Soundboard 정보",
-        "deleteSoundboard": "Soundboard 삭제",
+        "aboutSoundboard": "사운드보드 정보",
+        "deleteSoundboard": "사운드보드 삭제",
         "emojis": "이모티콘",
-        "exportSoundboards": "Soundboard 내보내기...",
+        "exportSoundboards": "사운드보드 내보내기...",
         "importSoundboards": "사운드보드 가져오기...",
         "loadSpecialSoundboards": "특별 사운드보드 로드",
         "newSoundboard": "새로운 사운드보드",

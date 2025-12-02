@@ -10,6 +10,7 @@ import { Plus } from "lucide-react";
 import { Soundboard } from "@/types/types";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useTranslation } from "react-i18next";
 
 interface BoardListProps {
   boards: Soundboard[];
@@ -36,6 +37,7 @@ export function BoardList({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isWindowsLegacyTheme = isXpTheme;
+  const { t } = useTranslation();
 
   return (
     <div
@@ -49,7 +51,7 @@ export function BoardList({
     >
       <div className="py-3 flex flex-col flex-1 overflow-hidden">
         <div className="flex justify-between items-center mb-2 flex-shrink-0 px-3">
-          <h2 className="text-[14px] pl-1">Soundboards</h2>
+          <h2 className="text-[14px] pl-1">{t("apps.soundboard.soundboards")}</h2>
           <Button
             variant="ghost"
             size="sm"

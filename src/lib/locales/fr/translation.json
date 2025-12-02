@@ -988,6 +988,9 @@
     },
     "soundboard": {
       "description": "Lire des effets sonores",
+      "soundboards": "Tableaux sonores",
+      "newSoundboardDefault": "Nouvelle table de sons",
+      "importedSoundboard": "Tableau de sons importé",
       "help": {
         "customizeSlot": {
           "description": "Ajouter un emoji et un titre à chaque échantillon pour une identification rapide",

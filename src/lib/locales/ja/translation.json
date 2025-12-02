@@ -988,6 +988,9 @@
     },
     "soundboard": {
       "description": "効果音を再生",
+      "soundboards": "サウンドボード",
+      "newSoundboardDefault": "新規サウンドボード",
+      "importedSoundboard": "インポートしたサウンドボード",
       "help": {
         "customizeSlot": {
           "description": "各サンプルに絵文字とタイトルを追加して素早く識別",
@@ -1015,7 +1018,7 @@
         }
       },
       "menu": {
-        "aboutSoundboard": "Soundboard について",
+        "aboutSoundboard": "サウンドボードについて",
         "deleteSoundboard": "サウンドボードを削除",
         "emojis": "絵文字",
         "exportSoundboards": "サウンドボードを書き出す...",

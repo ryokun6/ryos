@@ -988,6 +988,9 @@
     },
     "soundboard": {
       "description": "播放音效",
+      "soundboards": "音效板",
+      "newSoundboardDefault": "新增音效板",
+      "importedSoundboard": "已匯入的音效板",
       "help": {
         "customizeSlot": {
           "description": "為每個樣本新增表情符號和標題以便快速識別",
@@ -1015,16 +1018,16 @@
         }
       },
       "menu": {
-        "aboutSoundboard": "關於 Soundboard",
-        "deleteSoundboard": "刪除 Soundboard",
+        "aboutSoundboard": "關於音效板",
+        "deleteSoundboard": "刪除音效板",
         "emojis": "表情符號",
-        "exportSoundboards": "輸出 Soundboard...",
-        "importSoundboards": "輸入 Soundboard...",
-        "loadSpecialSoundboards": "載入特殊 Soundboard",
-        "newSoundboard": "新增音效面板",
-        "renameSoundboard": "重新命名音效面板",
-        "resetSoundboards": "重設音效面板",
-        "soundboardHelp": "音效面板輔助說明",
+        "exportSoundboards": "輸出音效板...",
+        "importSoundboards": "輸入音效板...",
+        "loadSpecialSoundboards": "載入特殊音效板",
+        "newSoundboard": "新增音效板",
+        "renameSoundboard": "重新命名音效板",
+        "resetSoundboards": "重設音效板",
+        "soundboardHelp": "音效板輔助說明",
         "waveforms": "波形"
       },
       "name": "音效板"

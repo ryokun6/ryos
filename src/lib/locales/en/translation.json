@@ -246,6 +246,9 @@
     "soundboard": {
       "name": "Soundboard",
       "description": "Play sound effects",
+      "soundboards": "Soundboards",
+      "newSoundboardDefault": "New Soundboard",
+      "importedSoundboard": "Imported Soundboard",
       "menu": {
         "newSoundboard": "New Soundboard",
         "importSoundboards": "Import Soundboards...",
