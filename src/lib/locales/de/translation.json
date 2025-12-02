@@ -555,6 +555,12 @@
       "france": "Frankreich",
       "french": "Französisch",
       "from": "von",
+      "futureTimeline": {
+        "description": "Einstellungen für die Zukunftstimeline bearbeiten",
+        "reset": "Zurücksetzen",
+        "selectYear": "Jahr auswählen",
+        "title": "Zukunftstimeline bearbeiten"
+      },
       "galaxy": "Galaxie",
       "german": "Deutsch",
       "germany": "Deutschland",
@@ -1169,7 +1175,32 @@
       "soundboards": "Soundboards"
     },
     "synth": {
+      "addPreset": "VOREINSTELLUNG HINZUFÜGEN",
+      "controls": "STEUERUNG",
       "description": "Virtueller Synthesizer",
+      "dialogs": {
+        "enterPresetName": "Geben Sie einen Namen für Ihre Voreinstellung ein",
+        "saveNewPreset": "Neue Voreinstellung speichern",
+        "updatePreset": "Voreinstellung aktualisieren",
+        "updatePresetName": "Aktualisieren Sie den Namen Ihrer Voreinstellung"
+      },
+      "effects": "Effekte",
+      "effectsParams": {
+        "bitcrusher": "Bitcrusher",
+        "chorus": "Chorus",
+        "delay": "Delay",
+        "distortion": "Distortion",
+        "gain": "Gain",
+        "phaser": "Phaser",
+        "reverb": "Hall"
+      },
+      "envelope": "Hüllkurve",
+      "envelopeParams": {
+        "attack": "Attack",
+        "decay": "Decay",
+        "release": "Release",
+        "sustain": "Sustain"
+      },
       "help": {
         "controlsPanel": {
           "description": "STEUERUNGEN umschalten, um Oszillatoren, Hüllkurve und Effekte anzupassen",
@@ -1206,7 +1237,24 @@
         "resetSynth": "Synth zurücksetzen",
         "synthHelp": "Synth-Hilfe"
       },
-      "name": "Synthesizer"
+      "name": "Synth",
+      "noPresetsYet": "Noch keine Voreinstellungen vorhanden. Erstellen Sie eine mit der NEU-Schaltfläche.",
+      "oscillator": "Oszillator",
+      "selectPreset": "Preset auswählen",
+      "status": {
+        "octave": "Oktave {{offset}}",
+        "presetLoaded": "Preset „{{name}}“ geladen",
+        "presetSaved": "Preset „{{name}}“ gespeichert",
+        "presetUpdated": "Preset „{{name}}“ aktualisiert",
+        "synthResetToDefaults": "Synth auf Standardeinstellungen zurückgesetzt"
+      },
+      "waveform": "Wellenform",
+      "waveforms": {
+        "sawtooth": "Sägezahn",
+        "sine": "Sinus",
+        "square": "Rechteck",
+        "triangle": "Dreieck"
+      }
     },
     "terminal": {
       "description": "Kommandozeilen-Schnittstelle",

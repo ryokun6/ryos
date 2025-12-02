@@ -30,12 +30,82 @@ const resources = {
   },
 };
 
-// Get initial language from localStorage or default to "en"
+export const SUPPORTED_LANGUAGES = ["en", "zh-TW", "ja", "ko", "fr", "de"] as const;
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+/**
+ * Maps a browser locale to our supported languages with fuzzy matching.
+ * Examples:
+ * - zh, zh-Hans, zh-CN, zh-Hans-CN, zh-Hant, zh-Hant-TW -> zh-TW
+ * - ja, ja-JP -> ja
+ * - ko, ko-KR -> ko
+ * - fr, fr-FR, fr-CA -> fr
+ * - de, de-DE, de-AT, de-CH -> de
+ * - en, en-US, en-GB -> en
+ */
+export const detectLanguageFromLocale = (locale: string): SupportedLanguage | null => {
+  const normalizedLocale = locale.toLowerCase();
+  
+  // Exact match first (case-insensitive)
+  const exactMatch = SUPPORTED_LANGUAGES.find(
+    lang => lang.toLowerCase() === normalizedLocale
+  );
+  if (exactMatch) return exactMatch;
+  
+  // Extract language code (first part before hyphen)
+  const langCode = normalizedLocale.split("-")[0];
+  
+  // Special case: all Chinese variants map to zh-TW
+  if (langCode === "zh") {
+    return "zh-TW";
+  }
+  
+  // Check if language code matches any supported language
+  const langMatch = SUPPORTED_LANGUAGES.find(
+    lang => lang.toLowerCase() === langCode || lang.toLowerCase().startsWith(langCode + "-")
+  );
+  if (langMatch) return langMatch;
+  
+  return null;
+};
+
+/**
+ * Auto-detects the best matching language from browser settings.
+ * Checks navigator.languages (array of preferred languages) for fuzzy matches.
+ */
+export const autoDetectLanguage = (): SupportedLanguage => {
+  // Get browser's preferred languages
+  const browserLanguages = navigator.languages || [navigator.language];
+  
+  for (const browserLang of browserLanguages) {
+    const matched = detectLanguageFromLocale(browserLang);
+    if (matched) {
+      return matched;
+    }
+  }
+  
+  return "en"; // Default fallback
+};
+
+// Get initial language from localStorage, or auto-detect on first initialization
 const getInitialLanguage = (): string => {
   const saved = localStorage.getItem("ryos_language");
-  if (saved && ["en", "zh-TW", "ja", "ko", "fr", "de"].includes(saved)) {
+  const isInitialized = localStorage.getItem("ryos_language_initialized");
+  
+  // If user has previously set a language, use it
+  if (saved && SUPPORTED_LANGUAGES.includes(saved as SupportedLanguage)) {
     return saved;
   }
+  
+  // If this is first initialization, auto-detect
+  if (!isInitialized) {
+    const detectedLanguage = autoDetectLanguage();
+    // Store the detected language and mark as initialized
+    localStorage.setItem("ryos_language", detectedLanguage);
+    localStorage.setItem("ryos_language_initialized", "true");
+    return detectedLanguage;
+  }
+  
   return "en";
 };
 

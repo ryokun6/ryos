@@ -469,6 +469,12 @@
         "aboutInternetExplorer": "About Internet Explorer",
         "folder": "Folder"
       },
+      "futureTimeline": {
+        "title": "Edit Future Timeline",
+        "description": "Edit settings for the future timeline",
+        "selectYear": "Select year",
+        "reset": "Reset"
+      },
       "help": {
         "browseWeb": {
           "title": "Browse the Web",
@@ -1250,6 +1256,48 @@
           "title": "MIDI Input",
           "description": "Plug in a MIDI keyboard and play instantly"
         }
+      },
+      "selectPreset": "Select Preset",
+      "noPresetsYet": "No presets yet. Create one with the NEW button.",
+      "controls": "CONTROLS",
+      "oscillator": "Oscillator",
+      "addPreset": "ADD PRESET",
+      "waveform": "Waveform",
+      "envelope": "Envelope",
+      "effects": "Effects",
+      "waveforms": {
+        "sine": "Sine",
+        "square": "Square",
+        "triangle": "Triangle",
+        "sawtooth": "Sawtooth"
+      },
+      "envelopeParams": {
+        "attack": "Attack",
+        "decay": "Decay",
+        "sustain": "Sustain",
+        "release": "Release"
+      },
+      "effectsParams": {
+        "gain": "Gain",
+        "reverb": "Reverb",
+        "delay": "Delay",
+        "distortion": "Distortion",
+        "chorus": "Chorus",
+        "phaser": "Phaser",
+        "bitcrusher": "Bitcrusher"
+      },
+      "status": {
+        "presetSaved": "Preset \"{{name}}\" saved",
+        "presetUpdated": "Preset \"{{name}}\" updated",
+        "presetLoaded": "Preset \"{{name}}\" loaded",
+        "synthResetToDefaults": "Synth reset to defaults",
+        "octave": "Octave {{offset}}"
+      },
+      "dialogs": {
+        "saveNewPreset": "Save New Preset",
+        "updatePreset": "Update Preset",
+        "enterPresetName": "Enter a name for your preset",
+        "updatePresetName": "Update the name of your preset"
       }
     },
     "pc": {

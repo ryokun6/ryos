@@ -555,6 +555,12 @@
       "france": "프랑스",
       "french": "프랑스어",
       "from": "에서",
+      "futureTimeline": {
+        "description": "미래 타임라인 설정 편집",
+        "reset": "재설정",
+        "selectYear": "연도 선택",
+        "title": "미래 타임라인 편집"
+      },
       "galaxy": "갤럭시",
       "german": "독일어",
       "germany": "독일",
@@ -1169,7 +1175,32 @@
       "soundboards": "사운드보드"
     },
     "synth": {
+      "addPreset": "프리셋 추가",
+      "controls": "컨트롤",
       "description": "가상 신시사이저",
+      "dialogs": {
+        "enterPresetName": "프리셋 이름을 입력하세요",
+        "saveNewPreset": "새 프리셋 저장",
+        "updatePreset": "프리셋 업데이트",
+        "updatePresetName": "프리셋 이름을 업데이트하세요"
+      },
+      "effects": "효과",
+      "effectsParams": {
+        "bitcrusher": "비트크러셔",
+        "chorus": "코러스",
+        "delay": "딜레이",
+        "distortion": "디스토션",
+        "gain": "게인",
+        "phaser": "페이저",
+        "reverb": "리버브"
+      },
+      "envelope": "엔벨로프",
+      "envelopeParams": {
+        "attack": "어택",
+        "decay": "디케이",
+        "release": "릴리즈",
+        "sustain": "서스테인"
+      },
       "help": {
         "controlsPanel": {
           "description": "CONTROLS를 전환하여 오실레이터, 엔벨로프 및 효과 조정",
@@ -1206,7 +1237,24 @@
         "resetSynth": "Synth 재설정",
         "synthHelp": "Synth 도움말"
       },
-      "name": "신시사이저"
+      "name": "Synth",
+      "noPresetsYet": "아직 프리셋이 없습니다. NEW 버튼으로 새로 만드세요.",
+      "oscillator": "오실레이터",
+      "selectPreset": "프리셋 선택",
+      "status": {
+        "octave": "옥타브 {{offset}}",
+        "presetLoaded": "프리셋 \"{{name}}\" 로드됨",
+        "presetSaved": "프리셋 \"{{name}}\" 저장됨",
+        "presetUpdated": "프리셋 \"{{name}}\" 업데이트됨",
+        "synthResetToDefaults": "신스 기본값으로 초기화됨"
+      },
+      "waveform": "파형",
+      "waveforms": {
+        "sawtooth": "톱니파",
+        "sine": "사인파",
+        "square": "구형파",
+        "triangle": "삼각파"
+      }
     },
     "terminal": {
       "description": "명령줄 인터페이스",

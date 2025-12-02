@@ -61,6 +61,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { IE_ANALYTICS } from "@/utils/analytics";
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
+import { useTranslation } from "react-i18next";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
@@ -249,18 +250,6 @@ const formatTitle = (title: string): string => {
     : title;
 };
 
-const getLoadingTitle = (baseTitle: string): string => {
-  // If it looks like a URL, extract the hostname
-  const titleToUse =
-    baseTitle.includes("/") || baseTitle.includes(".")
-      ? getHostnameFromUrl(baseTitle)
-      : baseTitle;
-
-  const formattedTitle = formatTitle(titleToUse);
-  return formattedTitle === "Internet Explorer"
-    ? "Internet Explorer - Loading"
-    : `${formattedTitle} - Loading`;
-};
 
 // Helper function to decode Base64 data (client-side)
 function decodeData(code: string): { url: string; year: string } | null {
@@ -378,6 +367,21 @@ export function InternetExplorerAppComponent({
     setTimeMachineViewOpen,
     fetchCachedYears,
   } = useInternetExplorerStore();
+
+  const { t } = useTranslation();
+
+  const getLoadingTitle = useCallback((baseTitle: string): string => {
+    // If it looks like a URL, extract the hostname
+    const titleToUse =
+      baseTitle.includes("/") || baseTitle.includes(".")
+        ? getHostnameFromUrl(baseTitle)
+        : baseTitle;
+
+    const formattedTitle = formatTitle(titleToUse);
+    return formattedTitle === "Internet Explorer"
+      ? t("apps.internet-explorer.loadingTitle")
+      : t("apps.internet-explorer.loadingTitleWithSite", { site: formattedTitle });
+  }, [t]);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const [hasMoreToScroll] = useState(false);
@@ -617,8 +621,8 @@ export function InternetExplorerAppComponent({
       const formattedTitle = formatTitle(titleToUse);
       newTitle =
         formattedTitle === "Internet Explorer"
-          ? "Internet Explorer - Travelling"
-          : `${formattedTitle} - Travelling`;
+          ? t("apps.internet-explorer.travellingTitle")
+          : t("apps.internet-explorer.travellingTitleWithSite", { site: formattedTitle });
     } else if (status === "loading") {
       newTitle = getLoadingTitle(baseTitle);
     } else if (currentPageTitle) {
@@ -654,7 +658,7 @@ export function InternetExplorerAppComponent({
     }
 
     setDisplayTitle(newTitle);
-  }, [status, currentPageTitle, finalUrl, url, year]);
+  }, [status, currentPageTitle, finalUrl, url, year, t, getLoadingTitle]);
 
   const getWaybackUrl = async (targetUrl: string, year: string) => {
     const now = new Date();
@@ -1875,8 +1879,8 @@ export function InternetExplorerAppComponent({
     if (isFetchingWebsiteContent) {
       return (
         <div className="flex items-center gap-1">
-          {debugMode && <span className="text-gray-500">Fetch</span>}
-          <span>{`Fetching content of ${hostname} for reconstruction...`}</span>
+          {debugMode && <span className="text-gray-500">{t("apps.internet-explorer.fetch")}</span>}
+          <span>{t("apps.internet-explorer.fetchingContentForReconstruction", { hostname })}</span>
         </div>
       );
     }
@@ -1892,7 +1896,7 @@ export function InternetExplorerAppComponent({
                 {location !== "auto" && ` ${locationDisplayName}`}
               </span>
             )}
-            <span>{`Reimagining ${hostname} for year ${year}...`}</span>
+            <span>{t("apps.internet-explorer.reimaginingForYear", { hostname, year })}</span>
           </div>
         );
       case "past":
@@ -1906,15 +1910,15 @@ export function InternetExplorerAppComponent({
                   {location !== "auto" && ` ${locationDisplayName}`}
                 </span>
               )}
-              <span>{`Reconstructing history of ${hostname} for year ${year}...`}</span>
+              <span>{t("apps.internet-explorer.reconstructingHistoryForYear", { hostname, year })}</span>
             </div>
           );
         }
-        return `Fetching ${hostname} from year ${year}...`;
+        return t("apps.internet-explorer.fetchingFromYear", { hostname, year });
       case "now":
-        return `Loading ${hostname}...`;
+        return t("apps.internet-explorer.loading", { hostname });
       default:
-        return `Loading ${hostname}...`;
+        return t("apps.internet-explorer.loading", { hostname });
     }
   };
 
@@ -2380,7 +2384,7 @@ export function InternetExplorerAppComponent({
                         value="current"
                         className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
                       >
-                        Now
+                        {t("apps.internet-explorer.now")}
                       </SelectItem>
                       {pastYears.map((y) => (
                         <SelectItem

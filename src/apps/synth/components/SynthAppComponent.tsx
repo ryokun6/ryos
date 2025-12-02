@@ -29,6 +29,8 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Waveform3D } from "./Waveform3D";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { useTranslation } from "react-i18next";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 
 // Define oscillator type
 type OscillatorType = "sine" | "square" | "triangle" | "sawtooth";
@@ -557,7 +559,7 @@ export function SynthAppComponent({
 
       setPresets((prev) => [...prev, newPreset]);
       setCurrentPreset(newPreset);
-      showStatus(`Preset "${name}" saved`);
+      showStatus(t("apps.synth.status.presetSaved", { name }));
     } else {
       // Update existing preset
       const updatedPreset: SynthPreset = {
@@ -571,7 +573,7 @@ export function SynthAppComponent({
         )
       );
       setCurrentPreset(updatedPreset);
-      showStatus(`Preset "${name}" updated`);
+      showStatus(t("apps.synth.status.presetUpdated", { name }));
     }
     setIsPresetDialogOpen(false);
   };
@@ -579,7 +581,7 @@ export function SynthAppComponent({
   const loadPreset = (preset: SynthPreset) => {
     setCurrentPreset(preset);
     updateSynthParams(preset);
-    showStatus(`Preset "${preset.name}" loaded`);
+    showStatus(t("apps.synth.status.presetLoaded", { name: preset.name }));
     play();
   };
 
@@ -592,7 +594,7 @@ export function SynthAppComponent({
 
     // Store updates handled automatically by Zustand
 
-    showStatus("Synth reset to defaults");
+    showStatus(t("apps.synth.status.synthResetToDefaults"));
     play();
   };
 
@@ -678,14 +680,14 @@ export function SynthAppComponent({
       e.preventDefault();
       setOctaveOffset((prevOffset) => {
         const newOffset = Math.max(-2, prevOffset - 1);
-        showStatus(`Octave ${newOffset}`);
+        showStatus(t("apps.synth.status.octave", { offset: newOffset }));
         return newOffset;
       });
     } else if (e.key === "=" || e.key === "+") {
       e.preventDefault();
       setOctaveOffset((prevOffset) => {
         const newOffset = Math.min(2, prevOffset + 1);
-        showStatus(`Octave ${newOffset}`);
+        showStatus(t("apps.synth.status.octave", { offset: newOffset }));
         return newOffset;
       });
     }
@@ -825,6 +827,8 @@ export function SynthAppComponent({
     };
   }, [isWindowOpen, releaseNote]);
 
+  const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("synth", helpItems);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isSystem7Theme = currentTheme === "system7";
@@ -897,7 +901,7 @@ export function SynthAppComponent({
                             "bg-black border-[#3a3a3a] text-white"
                         )}
                       >
-                        <SelectValue placeholder="Select Preset" />
+                        <SelectValue placeholder={t("apps.synth.selectPreset")} />
                       </SelectTrigger>
                       <SelectContent
                         className={cn(
@@ -943,7 +947,7 @@ export function SynthAppComponent({
                       ))
                     ) : (
                       <p className="text-xs text-gray-400 font-geneva-12 select-none">
-                        No presets yet. Create one with the NEW button.
+                        {t("apps.synth.noPresetsYet")}
                       </p>
                     )}
                   </div>
@@ -954,7 +958,7 @@ export function SynthAppComponent({
                     onClick={() =>
                       setOctaveOffset((prev) => {
                         const next = Math.max(-2, prev - 1);
-                        showStatus(`Octave ${next}`);
+                        showStatus(t("apps.synth.status.octave", { offset: next }));
                         return next;
                       })
                     }
@@ -971,7 +975,7 @@ export function SynthAppComponent({
                     onClick={() =>
                       setOctaveOffset((prev) => {
                         const next = Math.min(2, prev + 1);
-                        showStatus(`Octave ${next}`);
+                        showStatus(t("apps.synth.status.octave", { offset: next }));
                         return next;
                       })
                     }
@@ -996,7 +1000,7 @@ export function SynthAppComponent({
                       "select-none"
                     )}
                   >
-                    CONTROLS
+                    {t("apps.synth.controls")}
                   </Button>
                 </div>
               </div>
@@ -1022,7 +1026,7 @@ export function SynthAppComponent({
                       <div className="md:min-w-[200px] md:flex-grow md:flex-1 md:flex-basis-0">
                         <div className="flex justify-between items-center mb-2">
                           <h3 className="font-semibold text-[#ff00ff] font-geneva-12 text-[10px] select-none">
-                            Oscillator
+                            {t("apps.synth.oscillator")}
                           </h3>
                           <Button
                             variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
@@ -1032,7 +1036,7 @@ export function SynthAppComponent({
                               isXpTheme && "text-black"
                             )}
                           >
-                            ADD PRESET
+                            {t("apps.synth.addPreset")}
                           </Button>
                         </div>
                         <Select
@@ -1049,7 +1053,7 @@ export function SynthAppComponent({
                                 "bg-black border-[#3a3a3a] text-white"
                             )}
                           >
-                            <SelectValue placeholder="Waveform" />
+                            <SelectValue placeholder={t("apps.synth.waveform")} />
                           </SelectTrigger>
                           <SelectContent
                             className={cn(
@@ -1065,7 +1069,7 @@ export function SynthAppComponent({
                                 isClassicTheme && "text-black"
                               )}
                             >
-                              Sine
+                              {t("apps.synth.waveforms.sine")}
                             </SelectItem>
                             <SelectItem
                               value="square"
@@ -1074,7 +1078,7 @@ export function SynthAppComponent({
                                 isClassicTheme && "text-black"
                               )}
                             >
-                              Square
+                              {t("apps.synth.waveforms.square")}
                             </SelectItem>
                             <SelectItem
                               value="triangle"
@@ -1083,7 +1087,7 @@ export function SynthAppComponent({
                                 isClassicTheme && "text-black"
                               )}
                             >
-                              Triangle
+                              {t("apps.synth.waveforms.triangle")}
                             </SelectItem>
                             <SelectItem
                               value="sawtooth"
@@ -1092,7 +1096,7 @@ export function SynthAppComponent({
                                 isClassicTheme && "text-black"
                               )}
                             >
-                              Sawtooth
+                              {t("apps.synth.waveforms.sawtooth")}
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -1118,7 +1122,7 @@ export function SynthAppComponent({
                         <div className="flex flex-nowrap gap-6 min-w-max pb-2">
                           <div>
                             <h3 className="font-semibold mb-2 text-[#ff00ff] font-geneva-12 text-[10px] select-none">
-                              Envelope
+                              {t("apps.synth.envelope")}
                             </h3>
                             <div className="flex flex-nowrap gap-1">
                               <div className="w-16">
@@ -1130,7 +1134,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEnvelopeChange("attack", value)
                                   }
-                                  label="Attack"
+                                  label={t("apps.synth.envelopeParams.attack")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1144,7 +1148,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEnvelopeChange("decay", value)
                                   }
-                                  label="Decay"
+                                  label={t("apps.synth.envelopeParams.decay")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1158,7 +1162,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEnvelopeChange("sustain", value)
                                   }
-                                  label="Sustain"
+                                  label={t("apps.synth.envelopeParams.sustain")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1172,7 +1176,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEnvelopeChange("release", value)
                                   }
-                                  label="Release"
+                                  label={t("apps.synth.envelopeParams.release")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1182,7 +1186,7 @@ export function SynthAppComponent({
 
                           <div>
                             <h3 className="font-semibold mb-2 text-[#ff00ff] font-geneva-12 text-[10px] select-none">
-                              Effects
+                              {t("apps.synth.effects")}
                             </h3>
                             <div className="flex flex-nowrap gap-1">
                               <div className="w-16">
@@ -1194,7 +1198,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEffectChange("gain", value)
                                   }
-                                  label="Gain"
+                                  label={t("apps.synth.effectsParams.gain")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1208,7 +1212,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEffectChange("reverb", value)
                                   }
-                                  label="Reverb"
+                                  label={t("apps.synth.effectsParams.reverb")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1222,7 +1226,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEffectChange("delay", value)
                                   }
-                                  label="Delay"
+                                  label={t("apps.synth.effectsParams.delay")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1236,7 +1240,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEffectChange("distortion", value)
                                   }
-                                  label="Distortion"
+                                  label={t("apps.synth.effectsParams.distortion")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1250,7 +1254,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEffectChange("chorus", value)
                                   }
-                                  label="Chorus"
+                                  label={t("apps.synth.effectsParams.chorus")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1264,7 +1268,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEffectChange("phaser", value)
                                   }
-                                  label="Phaser"
+                                  label={t("apps.synth.effectsParams.phaser")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1278,7 +1282,7 @@ export function SynthAppComponent({
                                   onChange={(value) =>
                                     handleEffectChange("bitcrusher", value)
                                   }
-                                  label="Bitcrusher"
+                                  label={t("apps.synth.effectsParams.bitcrusher")}
                                   color="#ff00ff"
                                   size="sm"
                                 />
@@ -1291,7 +1295,7 @@ export function SynthAppComponent({
                       {/* Desktop: Original separate sections */}
                       <div className="hidden md:block md:flex-grow-0 md:flex-shrink-0 md:w-[140px]">
                         <h3 className="font-semibold mb-2 text-[#ff00ff] font-geneva-12 text-[10px] select-none">
-                          Envelope
+                          {t("apps.synth.envelope")}
                         </h3>
                         <div className="flex flex-col gap-2">
                           <div className="flex flex-nowrap gap-2 py-0.5 overflow-x-auto">
@@ -1304,7 +1308,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEnvelopeChange("attack", value)
                                 }
-                                label="Attack"
+                                label={t("apps.synth.envelopeParams.attack")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1318,7 +1322,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEnvelopeChange("decay", value)
                                 }
-                                label="Decay"
+                                label={t("apps.synth.envelopeParams.decay")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1334,7 +1338,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEnvelopeChange("sustain", value)
                                 }
-                                label="Sustain"
+                                label={t("apps.synth.envelopeParams.sustain")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1348,7 +1352,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEnvelopeChange("release", value)
                                 }
-                                label="Release"
+                                label={t("apps.synth.envelopeParams.release")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1359,7 +1363,7 @@ export function SynthAppComponent({
 
                       <div className="hidden md:block md:flex-shrink-0 md:w-[280px]">
                         <h3 className="font-semibold mb-2 text-[#ff00ff] font-geneva-12 text-[10px] select-none">
-                          Effects
+                          {t("apps.synth.effects")}
                         </h3>
                         <div className="flex flex-col gap-2">
                           <div className="flex flex-nowrap gap-2 py-0.5 overflow-x-auto">
@@ -1372,7 +1376,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEffectChange("gain", value)
                                 }
-                                label="Gain"
+                                label={t("apps.synth.effectsParams.gain")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1386,7 +1390,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEffectChange("reverb", value)
                                 }
-                                label="Reverb"
+                                label={t("apps.synth.effectsParams.reverb")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1400,7 +1404,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEffectChange("delay", value)
                                 }
-                                label="Delay"
+                                label={t("apps.synth.effectsParams.delay")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1414,7 +1418,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEffectChange("distortion", value)
                                 }
-                                label="Distortion"
+                                label={t("apps.synth.effectsParams.distortion")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1430,7 +1434,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEffectChange("chorus", value)
                                 }
-                                label="Chorus"
+                                label={t("apps.synth.effectsParams.chorus")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1444,7 +1448,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEffectChange("phaser", value)
                                 }
-                                label="Phaser"
+                                label={t("apps.synth.effectsParams.phaser")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1458,7 +1462,7 @@ export function SynthAppComponent({
                                 onChange={(value) =>
                                   handleEffectChange("bitcrusher", value)
                                 }
-                                label="Bitcrusher"
+                                label={t("apps.synth.effectsParams.bitcrusher")}
                                 color="#ff00ff"
                                 size="sm"
                               />
@@ -1609,7 +1613,7 @@ export function SynthAppComponent({
       <HelpDialog
         isOpen={isHelpOpen}
         onOpenChange={setIsHelpOpen}
-        helpItems={helpItems}
+        helpItems={translatedHelpItems}
         appId="synth"
       />
 
@@ -1624,11 +1628,11 @@ export function SynthAppComponent({
         isOpen={isPresetDialogOpen}
         onOpenChange={setIsPresetDialogOpen}
         onSubmit={savePreset}
-        title={isSavingNewPreset ? "Save New Preset" : "Update Preset"}
+        title={isSavingNewPreset ? t("apps.synth.dialogs.saveNewPreset") : t("apps.synth.dialogs.updatePreset")}
         description={
           isSavingNewPreset
-            ? "Enter a name for your preset"
-            : "Update the name of your preset"
+            ? t("apps.synth.dialogs.enterPresetName")
+            : t("apps.synth.dialogs.updatePresetName")
         }
         value={presetName}
         onChange={setPresetName}

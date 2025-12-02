@@ -555,6 +555,12 @@
       "france": "フランス",
       "french": "フランス語",
       "from": "から",
+      "futureTimeline": {
+        "description": "未来のタイムラインの設定を編集",
+        "reset": "リセット",
+        "selectYear": "年を選択",
+        "title": "未来のタイムラインを編集"
+      },
       "galaxy": "銀河",
       "german": "ドイツ語",
       "germany": "ドイツ",
@@ -1169,7 +1175,32 @@
       "soundboards": "サウンドボード"
     },
     "synth": {
+      "addPreset": "プリセットを追加",
+      "controls": "コントロール",
       "description": "仮想シンセサイザー",
+      "dialogs": {
+        "enterPresetName": "プリセット名を入力",
+        "saveNewPreset": "新しいプリセットを保存",
+        "updatePreset": "プリセットを更新",
+        "updatePresetName": "プリセット名を更新"
+      },
+      "effects": "エフェクト",
+      "effectsParams": {
+        "bitcrusher": "ビットクラッシャー",
+        "chorus": "コーラス",
+        "delay": "ディレイ",
+        "distortion": "ディストーション",
+        "gain": "ゲイン",
+        "phaser": "フェイザー",
+        "reverb": "リバーブ"
+      },
+      "envelope": "エンベロープ",
+      "envelopeParams": {
+        "attack": "アタック",
+        "decay": "ディケイ",
+        "release": "リリース",
+        "sustain": "サスティン"
+      },
       "help": {
         "controlsPanel": {
           "description": "CONTROLSを切り替えてオシレーター、エンベロープ、エフェクトを調整",
@@ -1206,7 +1237,24 @@
         "resetSynth": "シンセをリセット",
         "synthHelp": "シンセのヘルプ"
       },
-      "name": "シンセ"
+      "name": "Synth",
+      "noPresetsYet": "プリセットがありません。「新規」ボタンで作成してください。",
+      "oscillator": "オシレーター",
+      "selectPreset": "プリセットを選択",
+      "status": {
+        "octave": "オクターブ {{offset}}",
+        "presetLoaded": "プリセット「{{name}}」を読み込みました",
+        "presetSaved": "プリセット「{{name}}」を保存しました",
+        "presetUpdated": "プリセット「{{name}}」を更新しました",
+        "synthResetToDefaults": "シンセをデフォルトにリセットしました"
+      },
+      "waveform": "波形",
+      "waveforms": {
+        "sawtooth": "ノコギリ波",
+        "sine": "サイン波",
+        "square": "矩形波",
+        "triangle": "三角波"
+      }
     },
     "terminal": {
       "description": "コマンドラインインターフェース",

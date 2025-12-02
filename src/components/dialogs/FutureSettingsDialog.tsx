@@ -15,6 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { useThemeStore } from "@/stores/useThemeStore";
+import { cn } from "@/lib/utils";
 import {
   useInternetExplorerStore,
   DEFAULT_TIMELINE,
@@ -29,6 +32,10 @@ const FutureSettingsDialog = ({
   isOpen,
   onOpenChange,
 }: FutureSettingsDialogProps) => {
+  const { t } = useTranslation();
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacTheme = currentTheme === "macosx";
   const [selectedYear, setSelectedYear] = useState<string>("2030");
   const saveButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -86,76 +93,150 @@ const FutureSettingsDialog = ({
     setTimelineSettings(newSettings);
   };
 
+  const dialogContent = (
+    <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "text-gray-900",
+              isXpTheme
+                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                : "font-geneva-12 text-[12px]"
+            )}
+            style={{
+              fontFamily: isXpTheme
+                ? '"Pixelated MS Sans Serif", Arial'
+                : undefined,
+              fontSize: isXpTheme ? "11px" : undefined,
+            }}
+          >
+            {t("apps.internet-explorer.year")}:
+          </span>
+          <Select value={selectedYear} onValueChange={handleYearChange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue
+                placeholder={t("apps.internet-explorer.futureTimeline.selectYear")}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {futureYears.map((year) => (
+                <SelectItem key={year} value={year}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Textarea
+          value={
+            timelineSettings[selectedYear] ||
+            getDefaultTimelineText(selectedYear)
+          }
+          onChange={(e) => {
+            const newSettings = {
+              ...timelineSettings,
+              [selectedYear]: e.target.value,
+            };
+            setTimelineSettings(newSettings);
+          }}
+          placeholder={getDefaultTimelineText(selectedYear)}
+          className={cn(
+            "min-h-[200px]",
+            isXpTheme
+              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+              : "font-geneva-12 text-[12px]"
+          )}
+          style={{
+            fontFamily: isXpTheme
+              ? '"Pixelated MS Sans Serif", Arial'
+              : undefined,
+            fontSize: isXpTheme ? "11px" : undefined,
+          }}
+        />
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="retro"
+            onClick={handleReset}
+            className={cn(
+              "h-7",
+              isXpTheme
+                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                : "font-geneva-12 text-[12px]"
+            )}
+            style={{
+              fontFamily: isXpTheme
+                ? '"Pixelated MS Sans Serif", Arial'
+                : undefined,
+              fontSize: isXpTheme ? "11px" : undefined,
+            }}
+          >
+            {t("apps.internet-explorer.futureTimeline.reset")}
+          </Button>
+          <Button
+            variant={isMacTheme ? "default" : "retro"}
+            onClick={() => onOpenChange(false)}
+            ref={saveButtonRef}
+            className={cn(
+              !isMacTheme && "h-7",
+              isXpTheme
+                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                : "font-geneva-12 text-[12px]"
+            )}
+            style={{
+              fontFamily: isXpTheme
+                ? '"Pixelated MS Sans Serif", Arial'
+                : undefined,
+              fontSize: isXpTheme ? "11px" : undefined,
+            }}
+          >
+            {t("common.dialog.close")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className="bg-os-window-bg border-[length:var(--os-metrics-border-width)] border-os-window rounded-os shadow-os-window"
+        className={cn(
+          "bg-os-window-bg border-[length:var(--os-metrics-border-width)] border-os-window rounded-os shadow-os-window",
+          isXpTheme && "p-0 overflow-hidden"
+        )}
+        style={isXpTheme ? { fontSize: "11px" } : undefined}
         onOpenAutoFocus={(e) => {
           e.preventDefault();
           saveButtonRef.current?.focus();
         }}
       >
-        <DialogHeader>
-          <DialogTitle className="font-normal text-[16px]">
-            Edit Future Timeline
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Edit settings for the future timeline
-          </DialogDescription>
-        </DialogHeader>
-        <div className="p-4 px-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-900 font-geneva-12 text-[12px]">
-                Year:
-              </span>
-              <Select value={selectedYear} onValueChange={handleYearChange}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {futureYears.map((year) => (
-                    <SelectItem key={year} value={year}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Textarea
-              value={
-                timelineSettings[selectedYear] ||
-                getDefaultTimelineText(selectedYear)
-              }
-              onChange={(e) => {
-                const newSettings = {
-                  ...timelineSettings,
-                  [selectedYear]: e.target.value,
-                };
-                setTimelineSettings(newSettings);
-              }}
-              placeholder={getDefaultTimelineText(selectedYear)}
-              className="min-h-[200px] font-geneva-12 text-[12px]"
-            />
-            <div className="flex justify-end gap-1">
-              <Button
-                variant="retro"
-                onClick={handleReset}
-                className="h-7 font-geneva-12 text-[12px]"
-              >
-                Reset
-              </Button>
-              <Button
-                variant="retro"
-                onClick={() => onOpenChange(false)}
-                ref={saveButtonRef}
-                className="h-7 font-geneva-12 text-[12px]"
-              >
-                Done
-              </Button>
-            </div>
-          </div>
-        </div>
+        {isXpTheme ? (
+          <>
+            <DialogHeader>
+              {t("apps.internet-explorer.futureTimeline.title")}
+            </DialogHeader>
+            <div className="window-body">{dialogContent}</div>
+          </>
+        ) : isMacTheme ? (
+          <>
+            <DialogHeader>
+              {t("apps.internet-explorer.futureTimeline.title")}
+            </DialogHeader>
+            {dialogContent}
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-normal text-[16px]">
+                {t("apps.internet-explorer.futureTimeline.title")}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                {t("apps.internet-explorer.futureTimeline.description")}
+              </DialogDescription>
+            </DialogHeader>
+            {dialogContent}
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

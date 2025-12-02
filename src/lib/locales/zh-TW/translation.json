@@ -555,6 +555,12 @@
       "france": "法國",
       "french": "法文",
       "from": "從",
+      "futureTimeline": {
+        "description": "編輯未來時間軸的設定",
+        "reset": "重設",
+        "selectYear": "選擇年份",
+        "title": "編輯未來時間軸"
+      },
       "galaxy": "銀河",
       "german": "德文",
       "germany": "德國",
@@ -1169,7 +1175,32 @@
       "soundboards": "音效板"
     },
     "synth": {
+      "addPreset": "新增預設",
+      "controls": "控制項",
       "description": "虛擬合成器",
+      "dialogs": {
+        "enterPresetName": "輸入預設名稱",
+        "saveNewPreset": "儲存新預設",
+        "updatePreset": "更新預設",
+        "updatePresetName": "更新預設名稱"
+      },
+      "effects": "效果",
+      "effectsParams": {
+        "bitcrusher": "位元粉碎器",
+        "chorus": "合唱",
+        "delay": "延遲",
+        "distortion": "失真",
+        "gain": "增益",
+        "phaser": "移相器",
+        "reverb": "殘響"
+      },
+      "envelope": "音量包絡",
+      "envelopeParams": {
+        "attack": "起音",
+        "decay": "衰減",
+        "release": "釋放",
+        "sustain": "延音"
+      },
       "help": {
         "controlsPanel": {
           "description": "切換「控制」以調整振盪器、包絡和效果",
@@ -1206,7 +1237,24 @@
         "resetSynth": "重設 Synth",
         "synthHelp": "Synth 輔助說明"
       },
-      "name": "合成器"
+      "name": "Synth",
+      "noPresetsYet": "尚無預設。請使用「新增」按鈕建立一個。",
+      "oscillator": "振盪器",
+      "selectPreset": "選擇預設",
+      "status": {
+        "octave": "八度 {{offset}}",
+        "presetLoaded": "預設「{{name}}」已載入",
+        "presetSaved": "預設「{{name}}」已儲存",
+        "presetUpdated": "預設「{{name}}」已更新",
+        "synthResetToDefaults": "合成器已重設為預設值"
+      },
+      "waveform": "波形",
+      "waveforms": {
+        "sawtooth": "鋸齒波",
+        "sine": "正弦波",
+        "square": "方波",
+        "triangle": "三角波"
+      }
     },
     "terminal": {
       "description": "命令列介面",

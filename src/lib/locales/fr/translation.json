@@ -555,6 +555,12 @@
       "france": "France",
       "french": "Français",
       "from": "de",
+      "futureTimeline": {
+        "description": "Modifier les paramètres de la chronologie future",
+        "reset": "Réinitialiser",
+        "selectYear": "Sélectionner l'année",
+        "title": "Modifier la chronologie future"
+      },
       "galaxy": "Galaxie",
       "german": "Allemand",
       "germany": "Allemagne",
@@ -1169,7 +1175,32 @@
       "soundboards": "Tableaux sonores"
     },
     "synth": {
+      "addPreset": "AJOUTER PRÉRÉGLAGE",
+      "controls": "COMMANDES",
       "description": "Synthétiseur virtuel",
+      "dialogs": {
+        "enterPresetName": "Entrez un nom pour votre préréglage",
+        "saveNewPreset": "Enregistrer le nouveau préréglage",
+        "updatePreset": "Mettre à jour le préréglage",
+        "updatePresetName": "Mettre à jour le nom de votre préréglage"
+      },
+      "effects": "Effets",
+      "effectsParams": {
+        "bitcrusher": "Bitcrusher",
+        "chorus": "Chorus",
+        "delay": "Délai",
+        "distortion": "Distorsion",
+        "gain": "Gain",
+        "phaser": "Phaser",
+        "reverb": "Réverbération"
+      },
+      "envelope": "Enveloppe",
+      "envelopeParams": {
+        "attack": "Attaque",
+        "decay": "Déclin",
+        "release": "Relâchement",
+        "sustain": "Maintien"
+      },
       "help": {
         "controlsPanel": {
           "description": "Basculer CONTROLES pour ajuster les oscillateurs, l'enveloppe et les effets",
@@ -1206,7 +1237,24 @@
         "resetSynth": "Réinitialiser Synth",
         "synthHelp": "Aide Synth"
       },
-      "name": "Synthé"
+      "name": "Synth",
+      "noPresetsYet": "Aucun préréglage pour l'instant. Créez-en un avec le bouton NOUVEAU.",
+      "oscillator": "Oscillateur",
+      "selectPreset": "Sélectionner un préréglage",
+      "status": {
+        "octave": "Octave {{offset}}",
+        "presetLoaded": "Préréglage \"{{name}}\" chargé",
+        "presetSaved": "Préréglage \"{{name}}\" enregistré",
+        "presetUpdated": "Préréglage \"{{name}}\" mis à jour",
+        "synthResetToDefaults": "Synthé réinitialisé aux valeurs par défaut"
+      },
+      "waveform": "Forme d'onde",
+      "waveforms": {
+        "sawtooth": "Dent de scie",
+        "sine": "Sinus",
+        "square": "Carré",
+        "triangle": "Triangle"
+      }
     },
     "terminal": {
       "description": "Interface de ligne de commande",
