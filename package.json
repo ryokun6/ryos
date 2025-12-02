@@ -13,7 +13,14 @@
     "preview": "vite preview",
     "generate:icons": "bun run scripts/generate-icon-manifest.ts",
     "generate:wallpapers": "bun run scripts/generate-wallpaper-manifest.ts",
-    "launch-kiosk": "bash scripts/launch-kiosk.sh"
+    "launch-kiosk": "bash scripts/launch-kiosk.sh",
+    "i18n:extract": "bun run scripts/extract-strings.ts",
+    "i18n:sync": "bun run scripts/sync-translations.ts",
+    "i18n:sync:dry-run": "bun run scripts/sync-translations.ts --dry-run",
+    "i18n:sync:mark-todo": "bun run scripts/sync-translations.ts --mark-untranslated",
+    "i18n:find-untranslated": "bun run scripts/find-untranslated-strings.ts",
+    "i18n:translate": "bun run scripts/machine-translate.ts",
+    "i18n:translate:dry-run": "bun run scripts/machine-translate.ts --dry-run"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.0",

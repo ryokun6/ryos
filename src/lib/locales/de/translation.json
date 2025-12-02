@@ -1,99 +1,802 @@
 {
-  "common": {
-    "menu": {
-      "file": "Ablage",
-      "edit": "Bearbeiten",
-      "view": "Darstellung",
-      "go": "Gehe zu",
-      "help": "Hilfe",
-      "newFinderWindow": "Neues Finder-Fenster",
-      "newFolder": "Neuer Ordner",
-      "moveToTrash": "In den Papierkorb verschieben",
-      "emptyTrash": "Papierkorb leeren...",
-      "close": "Schließen",
-      "undo": "Rückgängig",
-      "cut": "Ausschneiden",
-      "copy": "Kopieren",
-      "paste": "Einsetzen",
-      "clear": "Löschen",
-      "selectAll": "Alles auswählen",
-      "bySmallIcon": "Kleine Symbole",
-      "byIcon": "Symbole",
-      "byList": "Liste",
-      "byName": "Name",
-      "byDate": "Datum",
-      "bySize": "Größe",
-      "byKind": "Art",
-      "back": "Zurück",
-      "forward": "Vor",
-      "applications": "Programme",
-      "documents": "Dokumente",
-      "images": "Bilder",
-      "music": "Musik",
-      "sites": "Websites",
-      "videos": "Filme",
-      "trash": "Papierkorb",
-      "finderHelp": "Finder-Hilfe",
-      "aboutFinder": "Über Finder"
+  "apps": {
+    "applet-viewer": {
+      "description": "Applets anzeigen und ausführen",
+      "help": {
+        "appletStore": {
+          "description": "Durchsuchen und Installieren von Applets aus der Community. Öffnen Sie das Store-Menü, um neue Apps zu entdecken.",
+          "title": "Applet-Store"
+        },
+        "createWithRyosChat": {
+          "description": "Bitten Sie ryOS Chat, benutzerdefinierte Apps und Applets für Sie zu erstellen. Teilen Sie Ihre Ideen und erhalten Sie sofort funktionierende Apps.",
+          "title": "Mit ryOS Chat erstellen"
+        },
+        "keepUpdated": {
+          "description": "Überprüfen Sie Updates im Store-Menü, um die neuesten Versionen Ihrer installierten Applets zu erhalten.",
+          "title": "Aktuell halten"
+        },
+        "openFromFinder": {
+          "description": "Durchsuchen und Öffnen von Applets, die auf Ihrem System gespeichert sind, über das Ablage-Menü.",
+          "title": "Von Finder öffnen"
+        },
+        "shareApplets": {
+          "description": "Teilen Sie Ihre Lieblings-Applets mit anderen über die Option Applet teilen im Ablage-Menü.",
+          "title": "Applets teilen"
+        },
+        "viewApplets": {
+          "description": "Applets öffnen und ausführen, die von ryOS Chat gespeichert oder aus dem Store heruntergeladen wurden.",
+          "title": "Applets anzeigen"
+        }
+      },
+      "menu": {
+        "aboutApplets": "[TODO] About Applets",
+        "appletsHelp": "[TODO] Applets Help",
+        "checkForUpdates": "[TODO] Check for updates",
+        "createAccount": "[TODO] Create Account...",
+        "exportAs": "[TODO] Export As...",
+        "html": "[TODO] HTML",
+        "importFromDevice": "[TODO] Import from Device...",
+        "logOut": "[TODO] Log Out",
+        "login": "[TODO] Login...",
+        "noAppletsOpen": "[TODO] No applets open",
+        "open": "[TODO] Open...",
+        "openAppletStore": "[TODO] Open Applet Store",
+        "ryosApp": "[TODO] ryOS App",
+        "shareApplet": "[TODO] Share Applet...",
+        "store": "[TODO] Store",
+        "updateApplets": "[TODO] Update {{count}} applet",
+        "updateAppletsPlural": "[TODO] Update {{count}} applets",
+        "window": "[TODO] Window"
+      },
+      "name": "Applet-Store"
     },
-    "dialog": {
-      "save": "Sichern",
-      "cancel": "Abbrechen",
-      "confirm": "Bestätigen",
-      "close": "Schließen",
-      "adding": "Hinzufügen...",
-      "saveFile": "Datei sichern",
-      "enterFileName": "Geben Sie einen Namen für Ihre Datei ein",
-      "discardChanges": "Änderungen verwerfen",
-      "discardChangesDesc": "Möchten Sie Ihre Änderungen verwerfen und eine neue Datei erstellen?",
-      "keepNewDocument": "Neues Dokument behalten",
-      "saveChanges": "Änderungen sichern",
-      "enterFilenameToSave": "Geben Sie einen Dateinamen zum Sichern ein oder löschen Sie ihn vor dem Schließen.",
-      "saveBeforeClosing": "Sichern Sie Ihre Änderungen vor dem Schließen.",
-      "delete": "Löschen",
-      "help": "Hilfe",
-      "about": "Über",
-      "welcomeTo": "Willkommen bei",
-      "version": "Version",
-      "madeBy": "Erstellt von",
-      "openInGitHub": "In GitHub öffnen",
-      "informationAboutApp": "Informationen zur Anwendung"
+    "chats": {
+      "description": "Mit KI chatten",
+      "help": {
+        "chatWithRyo": {
+          "description": "Geben Sie Ihre Nachricht ein, um mit Ryo zu chatten, Code zu generieren oder Hilfe zu ryOS zu erhalten.",
+          "title": "Mit Ryo chatten"
+        },
+        "controlApps": {
+          "description": "Bitten Sie Ryo, Apps zu starten oder zu schließen, Designs zu wechseln oder die iPod-Wiedergabe zu steuern.",
+          "title": "Apps steuern"
+        },
+        "createEditFiles": {
+          "description": "Bitten Sie Ryo, HTML-Applets zu erstellen, Dokumente zu bearbeiten, Dateien zu lesen oder im Applet-Store zu suchen.",
+          "title": "Dateien erstellen und bearbeiten"
+        },
+        "joinChatRooms": {
+          "description": "Verbinden Sie sich mit anderen in öffentlichen Chaträumen. Erwähnen Sie @ryo für KI-Antworten.",
+          "title": "Chaträumen beitreten"
+        },
+        "nudgeDjMode": {
+          "description": "Senden Sie 👋 Anstoß für kontextbezogene Tipps. Ryo wird zu einem DJ, wenn Musik abgespielt wird.",
+          "title": "Anstoßen und DJ-Modus"
+        },
+        "pushToTalk": {
+          "description": "Halten Sie die Leertaste gedrückt oder tippen Sie auf die Mikrofontaste, um Sprachnachrichten aufzunehmen und zu senden.",
+          "title": "Drücken zum Sprechen"
+        }
+      },
+      "name": "Chats"
     },
-    "system": {
-      "systemRestoring": "System wird wiederhergestellt...",
-      "resetAllSettings": "Alle Einstellungen zurücksetzen",
-      "resetAllSettingsDesc": "Möchten Sie wirklich alle Einstellungen zurücksetzen? Dies löscht alle gespeicherten Einstellungen und stellt die Standardzustände wieder her. ryOS startet nach dem Zurücksetzen neu.",
-      "formatFileSystem": "Dateisystem formatieren",
-      "formatFileSystemDesc": "Möchten Sie wirklich das Dateisystem formatieren? Dies löscht dauerhaft alle Dokumente (außer Beispieldokumenten), Bilder und benutzerdefinierte Hintergrundbilder. ryOS startet nach dem Formatieren neu."
+    "control-panels": {
+      "description": "Systemeinstellungen",
+      "help": {
+        "aiModel": {
+          "description": "Wählen Sie das KI-Modell aus, das von Chats und Terminal-Assistent verwendet wird",
+          "title": "KI-Modell"
+        },
+        "appearance": {
+          "description": "Wählen Sie Fotos, Muster oder Shader-Effekte für Ihr Desktop-Hintergrundbild",
+          "title": "Darstellung"
+        },
+        "backupRestore": {
+          "description": "Alle Einstellungen und Dateien exportieren oder wiederherstellen",
+          "title": "Sichern und Wiederherstellen"
+        },
+        "shaderEffects": {
+          "description": "CRT-, Galaxy- oder Aurora-Visualeffekte aktivieren",
+          "title": "Shader-Effekte"
+        },
+        "sounds": {
+          "description": "UI-Sounds, Tipp-Synthesizer und Terminal-/IE-Effekte umschalten",
+          "title": "Sounds"
+        },
+        "system": {
+          "description": "Einstellungen zurücksetzen oder virtuelles Dateisystem formatieren",
+          "title": "System"
+        }
+      },
+      "name": "Systemeinstellungen"
+    },
+    "finder": {
+      "description": "Dateien durchsuchen und verwalten",
+      "help": {
+        "browseNavigate": {
+          "description": "Zurück/Vor-Buttons, Adressleiste und Gehe-zu-Menü für schnelle Navigation",
+          "title": "Durchsuchen und navigieren"
+        },
+        "fileManagement": {
+          "description": "Ordner erstellen, umbenennen, verschieben und Elemente ziehen, um Dateien zu organisieren",
+          "title": "Dateiverwaltung"
+        },
+        "quickAccess": {
+          "description": "Sofort zu Dokumenten, Programmen oder Papierkorb aus dem Gehe-zu-Menü springen",
+          "title": "Schnellzugriff"
+        },
+        "storageInfo": {
+          "description": "Freien Speicherplatz und Anzahl der Elemente in der Fensterfußzeile anzeigen",
+          "title": "Speicherinformationen"
+        },
+        "trash": {
+          "description": "Dateien in den Papierkorb ziehen und leeren, um dauerhaft zu löschen",
+          "title": "Papierkorb"
+        },
+        "viewSort": {
+          "description": "Symbolgrößen wechseln und nach Name, Art, Größe oder Datum sortieren",
+          "title": "Darstellung und Sortierung"
+        }
+      },
+      "menu": {
+        "aboutFinder": "[TODO] About Finder",
+        "back": "[TODO] Back",
+        "byDate": "[TODO] by Date",
+        "byIcon": "[TODO] by Icon",
+        "byKind": "[TODO] by Kind",
+        "byList": "[TODO] by List",
+        "byName": "[TODO] by Name",
+        "bySize": "[TODO] by Size",
+        "bySmallIcon": "[TODO] by Small Icon",
+        "duplicate": "[TODO] Duplicate",
+        "emptyTrash": "[TODO] Empty Trash...",
+        "finderHelp": "[TODO] Finder Help",
+        "forward": "[TODO] Forward",
+        "importFromDevice": "[TODO] Import from Device...",
+        "moveToTrash": "[TODO] Move to Trash",
+        "newFinderWindow": "[TODO] New Finder Window",
+        "newFolder": "[TODO] New Folder...",
+        "putBack": "[TODO] Put Back",
+        "rename": "[TODO] Rename..."
+      },
+      "name": "Finder"
+    },
+    "internet-explorer": {
+      "description": "Im Web surfen",
+      "help": {
+        "browseWeb": {
+          "description": "URLs eingeben und Navigationsschaltflächen verwenden (Zurück, Vor, Aktualisieren, Stopp).",
+          "title": "Im Web surfen"
+        },
+        "exploreTimeNodes": {
+          "description": "Klicken Sie auf das Uhrensymbol in der Adressleiste, um verfügbare Momentaufnahmen der aktuellen Website über die Zeit hinweg anzuzeigen.",
+          "title": "Zeitknoten erkunden"
+        },
+        "historyReimagined": {
+          "description": "KI rekonstruiert sehr alte Websites (vor 1996) und stellt sich zukünftige Web-Erlebnisse vor.",
+          "title": "Geschichte neu gedacht"
+        },
+        "saveFavorites": {
+          "description": "Websites und bestimmte Jahre zu Ihrer Favoritenleiste hinzufügen, um einfachen Zugriff zu ermöglichen.",
+          "title": "Favoriten speichern"
+        },
+        "shareJourney": {
+          "description": "Verwenden Sie die Teilen-Schaltfläche, um einen Link zur genauen Seite und dem Jahr zu generieren, das Sie anzeigen.",
+          "title": "Ihre Reise teilen"
+        },
+        "travelThroughTime": {
+          "description": "Wählen Sie ein Jahr aus dem Dropdown-Menü, um Websites aus der Vergangenheit oder Zukunft anzuzeigen.",
+          "title": "Durch die Zeit reisen"
+        }
+      },
+      "menu": {
+        "aboutInternetExplorer": "[TODO] About Internet Explorer",
+        "addToFavorites": "[TODO] Add to Favorites...",
+        "aiLanguage": "[TODO] AI Language",
+        "alien": "[TODO] Alien",
+        "australia": "[TODO] Australia",
+        "auto": "[TODO] Auto",
+        "back": "[TODO] Back",
+        "brazil": "[TODO] Brazil",
+        "canada": "[TODO] Canada",
+        "china": "[TODO] China",
+        "chinese": "[TODO] Chinese",
+        "clearFavorites": "[TODO] Clear Favorites...",
+        "clearHistory": "[TODO] Clear History...",
+        "digitalBeing": "[TODO] Digital Being",
+        "editFuture": "[TODO] Edit Future...",
+        "english": "[TODO] English",
+        "favorites": "[TODO] Favorites",
+        "forward": "[TODO] Forward",
+        "france": "[TODO] France",
+        "french": "[TODO] French",
+        "german": "[TODO] German",
+        "germany": "[TODO] Germany",
+        "goHome": "[TODO] Go Home",
+        "goToUrl": "[TODO] Go to URL",
+        "history": "[TODO] History",
+        "india": "[TODO] India",
+        "internetExplorerHelp": "[TODO] Internet Explorer Help",
+        "italian": "[TODO] Italian",
+        "japan": "[TODO] Japan",
+        "japanese": "[TODO] Japanese",
+        "korea": "[TODO] Korea",
+        "korean": "[TODO] Korean",
+        "language": "[TODO] Language",
+        "latin": "[TODO] Latin",
+        "location": "[TODO] Location",
+        "now": "[TODO] Now",
+        "openTimeMachine": "[TODO] Open Time Machine",
+        "portugal": "[TODO] Portugal",
+        "portuguese": "[TODO] Portuguese",
+        "refresh": "[TODO] Refresh",
+        "resetFavorites": "[TODO] Reset Favorites...",
+        "russia": "[TODO] Russia",
+        "russian": "[TODO] Russian",
+        "sanskrit": "[TODO] Sanskrit",
+        "sharePage": "[TODO] Share Page...",
+        "spain": "[TODO] Spain",
+        "spanish": "[TODO] Spanish",
+        "stop": "[TODO] Stop",
+        "unitedKingdom": "[TODO] United Kingdom",
+        "unitedStates": "[TODO] United States",
+        "welsh": "[TODO] Welsh",
+        "year": "[TODO] Year"
+      },
+      "name": "Internet Explorer"
+    },
+    "ipod": {
+      "description": "Musikplayer",
+      "help": {
+        "addSongs": {
+          "description": "YouTube-URLs einfügen, um Musik zu Ihrem iPod hinzuzufügen.",
+          "title": "Lieder hinzufügen"
+        },
+        "displayFullscreen": {
+          "description": "Hintergrundbeleuchtung, Designs anpassen und zu Vollbild-Video wechseln.",
+          "title": "Anzeige und Vollbild"
+        },
+        "playbackControls": {
+          "description": "Wiedergabe, Pause, Titel überspringen und Ihr aktuelles Lied steuern.",
+          "title": "Wiedergabe-Steuerung"
+        },
+        "playbackModes": {
+          "description": "Mischen aktivieren, Lieder oder Wiedergabelisten wiederholen und mehr.",
+          "title": "Wiedergabemodi"
+        },
+        "syncedLyrics": {
+          "description": "Zeitlich synchronisierte Texte anzeigen und sofortige Übersetzungen erhalten.",
+          "title": "Synchronisierte Texte"
+        },
+        "wheelNavigation": {
+          "description": "Verwenden Sie das Klickrad, um Menüs und Ihre Musikbibliothek zu durchsuchen.",
+          "title": "Rad-Navigation"
+        }
+      },
+      "menu": {
+        "aboutIpod": "[TODO] About iPod",
+        "addSong": "[TODO] Add Song...",
+        "addToLibrary": "[TODO] Add to Library...",
+        "allSongs": "[TODO] All Songs",
+        "alternating": "[TODO] Alternating",
+        "backlight": "[TODO] Backlight",
+        "black": "[TODO] Black",
+        "classic": "[TODO] Classic",
+        "clearLibrary": "[TODO] Clear Library...",
+        "exportLibrary": "[TODO] Export Library...",
+        "fullScreen": "[TODO] Full Screen",
+        "importLibrary": "[TODO] Import Library...",
+        "ipodHelp": "[TODO] iPod Help",
+        "korean": "[TODO] 한글",
+        "lcdFilter": "[TODO] LCD Filter",
+        "library": "[TODO] Library",
+        "lyrics": "[TODO] Lyrics",
+        "multi": "[TODO] Multi",
+        "next": "[TODO] Next",
+        "pause": "[TODO] Pause",
+        "play": "[TODO] Play",
+        "previous": "[TODO] Previous",
+        "refreshLyrics": "[TODO] Refresh Lyrics",
+        "repeatAll": "[TODO] Repeat All",
+        "repeatOne": "[TODO] Repeat One",
+        "shareSong": "[TODO] Share Song...",
+        "showLyrics": "[TODO] Show Lyrics",
+        "shuffle": "[TODO] Shuffle",
+        "single": "[TODO] Single",
+        "syncLibrary": "[TODO] Sync Library...",
+        "traditionalChinese": "[TODO] 繁體",
+        "translate": "[TODO] Translate",
+        "u2": "[TODO] U2",
+        "unknownArtist": "[TODO] Unknown Artist",
+        "video": "[TODO] Video"
+      },
+      "name": "iPod"
+    },
+    "minesweeper": {
+      "description": "Klassisches Puzzlespiel",
+      "help": {
+        "desktopControls": {
+          "description": "Linksklick zum Aufdecken, Rechtsklick zum Markieren, Doppelklick auf Zahlen, um Nachbarn automatisch aufzudecken",
+          "title": "Desktop-Steuerung"
+        },
+        "gameRules": {
+          "description": "Zahlen zeigen benachbarte Minen an. Markieren Sie jede Mine und decken Sie alle sicheren Zellen auf, um zu gewinnen.",
+          "title": "Spielregeln"
+        },
+        "mobileControls": {
+          "description": "Tippen zum Aufdecken, lange drücken, um eine Mine zu markieren",
+          "title": "Mobile Steuerung"
+        },
+        "restart": {
+          "description": "Drücken Sie das lächelnde Gesicht oder wählen Sie Spiel ▸ Neu, um ein neues Spielfeld zu starten",
+          "title": "Neustart"
+        },
+        "timerCounter": {
+          "description": "Die obere Leiste zeigt die verstrichene Zeit und die verbleibenden nicht markierten Minen an",
+          "title": "Timer und Zähler"
+        }
+      },
+      "menu": {
+        "aboutMinesweeper": "[TODO] About Minesweeper",
+        "minesweeperHelp": "[TODO] Minesweeper Help",
+        "newGame": "[TODO] New Game"
+      },
+      "name": "Minenräumer"
+    },
+    "paint": {
+      "description": "Bilder zeichnen und bearbeiten",
+      "help": {
+        "colors": {
+          "description": "Wählen Sie Farben aus der Palette unter den Werkzeugen aus, um Ihre Zeichenfarbe zu ändern.",
+          "title": "Farben"
+        },
+        "drawingTools": {
+          "description": "Verwenden Sie die Symbolleiste links, um verschiedene Zeichenwerkzeuge wie Bleistift, Pinsel, Formen und mehr auszuwählen.",
+          "title": "Zeichenwerkzeuge"
+        },
+        "filters": {
+          "description": "Wenden Sie Invertieren, Graustufen, Helligkeit und mehr aus dem Filter-Menü an.",
+          "title": "Filter"
+        },
+        "patterns": {
+          "description": "Wählen Sie aus verschiedenen Mustern in der unteren Palette, um Formen und Bereiche zu füllen.",
+          "title": "Muster"
+        },
+        "saving": {
+          "description": "Verwenden Sie Ablage > Sichern, um Ihr Werk zu sichern, oder Ablage > Sichern unter, um es unter einem neuen Namen zu sichern.",
+          "title": "Sichern"
+        },
+        "undo": {
+          "description": "Drücken Sie ⌘Z oder verwenden Sie Bearbeiten > Rückgängig, um Ihre letzte Aktion rückgängig zu machen.",
+          "title": "Rückgängig"
+        }
+      },
+      "menu": {
+        "aboutPaint": "[TODO] About Paint",
+        "export": "[TODO] Export",
+        "filterBlur": "[TODO] Blur",
+        "filterBrightnessMinus": "[TODO] Brightness -",
+        "filterBrightnessPlus": "[TODO] Brightness +",
+        "filterCategoryArtistic": "[TODO] Artistic",
+        "filterCategoryBlur": "[TODO] Blur",
+        "filterCategoryColor": "[TODO] Color",
+        "filterCategoryRetro": "[TODO] Retro",
+        "filterCrt": "[TODO] CRT",
+        "filterDither": "[TODO] Dither",
+        "filterEdgeDetect": "[TODO] Edge Detect",
+        "filterGaussianBlur": "[TODO] Gaussian Blur",
+        "filterGlitch": "[TODO] Glitch",
+        "filterGrayscale": "[TODO] Grayscale",
+        "filterInvert": "[TODO] Invert",
+        "filterMotionBlur": "[TODO] Motion Blur",
+        "filterNoise": "[TODO] Noise",
+        "filterOldPhoto": "[TODO] Old Photo",
+        "filterPixelate": "[TODO] Pixelate",
+        "filterRadialBlur": "[TODO] Radial Blur",
+        "filterSepia": "[TODO] Sepia",
+        "filterSharpen": "[TODO] Sharpen",
+        "filterVhs": "[TODO] VHS",
+        "filters": "[TODO] Filters",
+        "importFromDevice": "[TODO] Import from Device...",
+        "newFile": "[TODO] New File",
+        "open": "[TODO] Open...",
+        "paintHelp": "[TODO] Paint Help",
+        "save": "[TODO] Save",
+        "saveEllipsis": "[TODO] Save..."
+      },
+      "name": "Malprogramm"
+    },
+    "pc": {
+      "description": "3D-PC-Simulation",
+      "help": {
+        "aspectRatio": {
+          "description": "Zwischen 4:3 oder Breitbild wechseln, um zu Ihrem Monitor zu passen",
+          "title": "Seitenverhältnis"
+        },
+        "fullscreenMode": {
+          "description": "Darstellung ▸ Vollbild umschalten für eine immersive Anzeige",
+          "title": "Vollbildmodus"
+        },
+        "keyboardControls": {
+          "description": "Verwenden Sie Ihre physische Tastatur für die Eingabe im Spiel",
+          "title": "Tastatursteuerung"
+        },
+        "mouseCapture": {
+          "description": "Klicken Sie im Fenster, um die Maus zu erfassen/freizugeben",
+          "title": "Maus-Erfassung"
+        },
+        "pcEmulator": {
+          "description": "Führt klassische DOS-Spiele und Apps direkt in Ihrem Browser aus",
+          "title": "PC-Emulator"
+        },
+        "saveStates": {
+          "description": "Spielstand jederzeit aus dem Ablage-Menü speichern oder laden",
+          "title": "Speicherstände"
+        }
+      },
+      "menu": {
+        "aboutVirtualPc": "[TODO] About Virtual PC",
+        "aspectRatio": "[TODO] Aspect Ratio",
+        "fullScreen": "[TODO] Full Screen",
+        "loadGame": "[TODO] Load Game",
+        "loadState": "[TODO] Load State",
+        "mouseSensitivity": "[TODO] Mouse Sensitivity",
+        "reset": "[TODO] Reset",
+        "saveState": "[TODO] Save State",
+        "toggleMouseCapture": "[TODO] Toggle Mouse Capture",
+        "virtualPcHelp": "[TODO] Virtual PC Help"
+      },
+      "name": "Virtueller PC"
+    },
+    "photo-booth": {
+      "description": "Fotos mit Effekten aufnehmen",
+      "help": {
+        "applyingEffects": {
+          "description": "Klicken Sie auf die Schaltfläche 'Effekte' (rechts von der Kamera-Schaltfläche), um den Effektbereich zu öffnen und lustige Filter auf Ihre Live-Kameraansicht anzuwenden.",
+          "title": "Effekte anwenden"
+        },
+        "downloadingPhotos": {
+          "description": "Fotos werden automatisch gespeichert. Klicken Sie auf ein Foto im Foto-Streifen, um es herunterzuladen.",
+          "title": "Fotos herunterladen"
+        },
+        "quickSnaps": {
+          "description": "Klicken Sie auf die Timer-Schaltfläche (links von der Kamera-Schaltfläche), um eine Sequenz von vier Fotos zu starten, die im Abstand von einer Sekunde aufgenommen werden.",
+          "title": "Schnappschüsse"
+        },
+        "switchingCameras": {
+          "description": "Verwenden Sie das Menü 'Darstellung' in der Menüleiste, um zwischen verfügbaren Kameras zu wechseln, wenn Sie mehr als eine angeschlossen haben.",
+          "title": "Kameras wechseln"
+        },
+        "takingPhoto": {
+          "description": "Klicken Sie auf die große rote Kamera-Schaltfläche, um ein einzelnes Bild aufzunehmen.",
+          "title": "Foto aufnehmen"
+        },
+        "viewingPhotos": {
+          "description": "Klicken Sie auf die Foto-Stapel-Schaltfläche (ganz links), um den Foto-Streifen unten anzuzeigen oder auszublenden, der alle Ihre gespeicherten Fotos anzeigt.",
+          "title": "Fotos anzeigen"
+        }
+      },
+      "menu": {
+        "aboutPhotoBooth": "[TODO] About Photo Booth",
+        "camera": "[TODO] Camera",
+        "clearAllPhotos": "[TODO] Clear All Photos",
+        "effects": "[TODO] Effects",
+        "exportPhotos": "[TODO] Export Photos",
+        "photoBoothHelp": "[TODO] Photo Booth Help"
+      },
+      "name": "Photo Booth"
+    },
+    "soundboard": {
+      "description": "Soundeffekte abspielen",
+      "help": {
+        "customizeSlot": {
+          "description": "Emoji und Titel zu jeder Probe hinzufügen, um schnelle Identifikation zu ermöglichen",
+          "title": "Slot anpassen"
+        },
+        "importExport": {
+          "description": "Boards als Dateien teilen; per Drag & Drop importieren",
+          "title": "Importieren / Exportieren"
+        },
+        "keyboardPlay": {
+          "description": "1-9 drücken, um Sounds sofort auszulösen",
+          "title": "Tastaturwiedergabe"
+        },
+        "multipleBoards": {
+          "description": "Boards für Sound-Sets erstellen, umbenennen und wechseln",
+          "title": "Mehrere Boards"
+        },
+        "recordSlot": {
+          "description": "Auf einen Slot klicken, um Audio aufzunehmen; erneut klicken, um zu stoppen",
+          "title": "Slot aufnehmen"
+        },
+        "waveformView": {
+          "description": "Live-Wellenform während der Aufnahme oder Wiedergabe anzeigen",
+          "title": "Wellenformansicht"
+        }
+      },
+      "menu": {
+        "aboutSoundboard": "[TODO] About Soundboard",
+        "deleteSoundboard": "[TODO] Delete Soundboard",
+        "emojis": "[TODO] Emojis",
+        "exportSoundboards": "[TODO] Export Soundboards...",
+        "importSoundboards": "[TODO] Import Soundboards...",
+        "loadSpecialSoundboards": "[TODO] Load Special Soundboards",
+        "newSoundboard": "[TODO] New Soundboard",
+        "renameSoundboard": "[TODO] Rename Soundboard",
+        "resetSoundboards": "[TODO] Reset Soundboards",
+        "soundboardHelp": "[TODO] Soundboard Help",
+        "waveforms": "[TODO] Waveforms"
+      },
+      "name": "Soundboard"
+    },
+    "synth": {
+      "description": "Virtueller Synthesizer",
+      "help": {
+        "controlsPanel": {
+          "description": "STEUERUNGEN umschalten, um Oszillatoren, Hüllkurve und Effekte anzupassen",
+          "title": "Steuerungsbereich"
+        },
+        "effects": {
+          "description": "Hall, Verzögerung, Verzerrung, Chorus, Phaser und Bit-Crusher",
+          "title": "Effekte"
+        },
+        "midiInput": {
+          "description": "MIDI-Tastatur anschließen und sofort spielen",
+          "title": "MIDI-Eingabe"
+        },
+        "presets": {
+          "description": "Benutzerdefinierte Sound-Voreinstellungen speichern, laden und verwalten",
+          "title": "Voreinstellungen"
+        },
+        "virtualKeyboard": {
+          "description": "Noten mit Bildschirmtasten oder Computertastatur spielen",
+          "title": "Virtuelle Tastatur"
+        },
+        "waveform3d": {
+          "description": "Live animierte Wellenform, wenn der Steuerungsbereich geöffnet ist",
+          "title": "3D-Wellenform"
+        }
+      },
+      "menu": {
+        "aboutSynth": "[TODO] About Synth",
+        "keyLabels": "[TODO] Key Labels",
+        "newPreset": "[TODO] New Preset",
+        "noLabels": "[TODO] No Labels",
+        "noteLabels": "[TODO] Note Labels",
+        "presets": "[TODO] Presets",
+        "resetSynth": "[TODO] Reset Synth",
+        "synthHelp": "[TODO] Synth Help"
+      },
+      "name": "Synthesizer"
+    },
+    "terminal": {
+      "description": "Kommandozeilen-Schnittstelle",
+      "help": {
+        "aiAssistant": {
+          "description": "Geben Sie \"ryo <Eingabeaufforderung>\" ein, um direkt im Terminal mit Ryo KI zu chatten.",
+          "title": "KI-Assistent"
+        },
+        "basicCommands": {
+          "description": "Verwenden Sie Befehle wie ls, cd, cat, pwd, clear und touch, um Dateien zu navigieren und zu verwalten.",
+          "title": "Grundbefehle"
+        },
+        "commandHistory": {
+          "description": "Drücken Sie die Pfeile ↑ / ↓, um durch vorherige Befehle zu blättern und sie schnell erneut auszuführen.",
+          "title": "Befehlsverlauf"
+        },
+        "fileEditing": {
+          "description": "Dokumente direkt von der Eingabeaufforderung in Textbearbeitung (edit) oder Vim-ähnlichem Editor (vim) öffnen.",
+          "title": "Dateibearbeitung"
+        },
+        "navigation": {
+          "description": "Durchsuchen Sie dasselbe virtuelle Dateisystem wie Finder mit vertrauten Unix-Befehlen.",
+          "title": "Navigation"
+        },
+        "terminalSounds": {
+          "description": "Unterschiedliche Sounds für Ausgabe, Fehler und KI-Antworten. In Darstellung ▸ Sounds umschalten.",
+          "title": "Terminal-Sounds"
+        }
+      },
+      "menu": {
+        "aboutTerminal": "[TODO] About Terminal",
+        "clearTerminal": "[TODO] Clear Terminal",
+        "decreaseFontSize": "[TODO] Decrease Font Size",
+        "increaseFontSize": "[TODO] Increase Font Size",
+        "muteSounds": "[TODO] Mute Sounds",
+        "resetFontSize": "[TODO] Reset Font Size",
+        "terminalHelp": "[TODO] Terminal Help"
+      },
+      "name": "Terminal"
+    },
+    "textedit": {
+      "description": "Ein einfacher Rich-Text-Editor",
+      "help": {
+        "fileManagement": {
+          "description": "Dateien erstellen, öffnen, sichern und exportieren (HTML, MD, TXT)",
+          "title": "Dateiverwaltung"
+        },
+        "formatting": {
+          "description": "Fett, kursiv, unterstrichen, Überschriften und Ausrichtungsoptionen",
+          "title": "Formatierung"
+        },
+        "listsTasks": {
+          "description": "Aufzählungs-, nummerierte und Kontrollkästchen-Aufgabenlisten erstellen",
+          "title": "Listen und Aufgaben"
+        },
+        "richEditing": {
+          "description": "Text einfach eingeben, kopieren, ausschneiden, einfügen, rückgängig machen und wiederholen",
+          "title": "Rich-Bearbeitung"
+        },
+        "slashCommands": {
+          "description": "Geben Sie / für schnelle Aktionen ein oder lassen Sie Ryo KI Zeilen remote bearbeiten",
+          "title": "Schrägstrich-Befehle"
+        },
+        "voiceDictation": {
+          "description": "Text freihändig direkt in das Dokument diktieren",
+          "title": "Sprachdiktat"
+        }
+      },
+      "menu": {
+        "aboutTextEdit": "[TODO] About TextEdit",
+        "alignCenter": "[TODO] Align Center",
+        "alignLeft": "[TODO] Align Left",
+        "alignRight": "[TODO] Align Right",
+        "bold": "[TODO] Bold",
+        "bulletList": "[TODO] Bullet List",
+        "exportAs": "[TODO] Export As...",
+        "format": "[TODO] Format",
+        "heading1": "[TODO] Heading 1",
+        "heading2": "[TODO] Heading 2",
+        "heading3": "[TODO] Heading 3",
+        "html": "[TODO] HTML",
+        "importFromDevice": "[TODO] Import from Device...",
+        "italic": "[TODO] Italic",
+        "markdown": "[TODO] Markdown",
+        "newFile": "[TODO] New File",
+        "numberedList": "[TODO] Numbered List",
+        "open": "[TODO] Open...",
+        "plainText": "[TODO] Plain Text",
+        "save": "[TODO] Save",
+        "saveEllipsis": "[TODO] Save...",
+        "taskList": "[TODO] Task List",
+        "text": "[TODO] Text",
+        "texteditHelp": "[TODO] TextEdit Help",
+        "underline": "[TODO] Underline"
+      },
+      "name": "Textbearbeitung"
+    },
+    "videos": {
+      "description": "Videos ansehen",
+      "help": {
+        "addVideo": {
+          "description": "Beliebige YouTube-URL einfügen, um zur Wiedergabeliste hinzuzufügen",
+          "title": "Video hinzufügen"
+        },
+        "loop": {
+          "description": "Aktuelles Video oder gesamte Wiedergabeliste wiederholen",
+          "title": "Wiederholen"
+        },
+        "playback": {
+          "description": "Wiedergabe-, Pause-, Nächste-, Vorherige-Steuerung",
+          "title": "Wiedergabe"
+        },
+        "playlist": {
+          "description": "Ihre Video-Wiedergabeliste verwalten und organisieren",
+          "title": "Wiedergabeliste"
+        },
+        "retroUi": {
+          "description": "Klassische QuickTime-Player-Ästhetik",
+          "title": "Retro-UI"
+        },
+        "shuffle": {
+          "description": "Wiedergabelisten-Reihenfolge zufällig anordnen",
+          "title": "Mischen"
+        }
+      },
+      "menu": {
+        "aboutVideos": "[TODO] About Videos",
+        "addToLibrary": "[TODO] Add to Library...",
+        "allVideos": "[TODO] All Videos",
+        "clearLibrary": "[TODO] Clear Library...",
+        "controls": "[TODO] Controls",
+        "fullScreen": "[TODO] Full Screen",
+        "library": "[TODO] Library",
+        "next": "[TODO] Next",
+        "openVideo": "[TODO] Open Video...",
+        "pause": "[TODO] Pause",
+        "play": "[TODO] Play",
+        "previous": "[TODO] Previous",
+        "repeatAll": "[TODO] Repeat All",
+        "repeatOne": "[TODO] Repeat One",
+        "resetLibrary": "[TODO] Reset Library...",
+        "shareVideo": "[TODO] Share Video...",
+        "shuffle": "[TODO] Shuffle",
+        "unknownArtist": "[TODO] Unknown Artist",
+        "videosHelp": "[TODO] Videos Help"
+      },
+      "name": "Filme"
     }
   },
-  "apps": {
-    "finder": {"name": "Finder", "description": "Dateien durchsuchen und verwalten", "help": {"browseNavigate": {"title": "Durchsuchen und navigieren", "description": "Zurück/Vor-Buttons, Adressleiste und Gehe-zu-Menü für schnelle Navigation"}, "fileManagement": {"title": "Dateiverwaltung", "description": "Ordner erstellen, umbenennen, verschieben und Elemente ziehen, um Dateien zu organisieren"}, "viewSort": {"title": "Darstellung und Sortierung", "description": "Symbolgrößen wechseln und nach Name, Art, Größe oder Datum sortieren"}, "quickAccess": {"title": "Schnellzugriff", "description": "Sofort zu Dokumenten, Programmen oder Papierkorb aus dem Gehe-zu-Menü springen"}, "storageInfo": {"title": "Speicherinformationen", "description": "Freien Speicherplatz und Anzahl der Elemente in der Fensterfußzeile anzeigen"}, "trash": {"title": "Papierkorb", "description": "Dateien in den Papierkorb ziehen und leeren, um dauerhaft zu löschen"}}},
-    "soundboard": {"name": "Soundboard", "description": "Soundeffekte abspielen", "help": {"recordSlot": {"title": "Slot aufnehmen", "description": "Auf einen Slot klicken, um Audio aufzunehmen; erneut klicken, um zu stoppen"}, "keyboardPlay": {"title": "Tastaturwiedergabe", "description": "1-9 drücken, um Sounds sofort auszulösen"}, "waveformView": {"title": "Wellenformansicht", "description": "Live-Wellenform während der Aufnahme oder Wiedergabe anzeigen"}, "customizeSlot": {"title": "Slot anpassen", "description": "Emoji und Titel zu jeder Probe hinzufügen, um schnelle Identifikation zu ermöglichen"}, "multipleBoards": {"title": "Mehrere Boards", "description": "Boards für Sound-Sets erstellen, umbenennen und wechseln"}, "importExport": {"title": "Importieren / Exportieren", "description": "Boards als Dateien teilen; per Drag & Drop importieren"}}},
-    "internet-explorer": {"name": "Internet Explorer", "description": "Im Web surfen", "help": {"browseWeb": {"title": "Im Web surfen", "description": "URLs eingeben und Navigationsschaltflächen verwenden (Zurück, Vor, Aktualisieren, Stopp)."}, "travelThroughTime": {"title": "Durch die Zeit reisen", "description": "Wählen Sie ein Jahr aus dem Dropdown-Menü, um Websites aus der Vergangenheit oder Zukunft anzuzeigen."}, "historyReimagined": {"title": "Geschichte neu gedacht", "description": "KI rekonstruiert sehr alte Websites (vor 1996) und stellt sich zukünftige Web-Erlebnisse vor."}, "saveFavorites": {"title": "Favoriten speichern", "description": "Websites und bestimmte Jahre zu Ihrer Favoritenleiste hinzufügen, um einfachen Zugriff zu ermöglichen."}, "exploreTimeNodes": {"title": "Zeitknoten erkunden", "description": "Klicken Sie auf das Uhrensymbol in der Adressleiste, um verfügbare Momentaufnahmen der aktuellen Website über die Zeit hinweg anzuzeigen."}, "shareJourney": {"title": "Ihre Reise teilen", "description": "Verwenden Sie die Teilen-Schaltfläche, um einen Link zur genauen Seite und dem Jahr zu generieren, das Sie anzeigen."}}},
-    "chats": {"name": "Chats", "description": "Mit KI chatten", "help": {"chatWithRyo": {"title": "Mit Ryo chatten", "description": "Geben Sie Ihre Nachricht ein, um mit Ryo zu chatten, Code zu generieren oder Hilfe zu ryOS zu erhalten."}, "createEditFiles": {"title": "Dateien erstellen und bearbeiten", "description": "Bitten Sie Ryo, HTML-Applets zu erstellen, Dokumente zu bearbeiten, Dateien zu lesen oder im Applet-Store zu suchen."}, "controlApps": {"title": "Apps steuern", "description": "Bitten Sie Ryo, Apps zu starten oder zu schließen, Designs zu wechseln oder die iPod-Wiedergabe zu steuern."}, "joinChatRooms": {"title": "Chaträumen beitreten", "description": "Verbinden Sie sich mit anderen in öffentlichen Chaträumen. Erwähnen Sie @ryo für KI-Antworten."}, "pushToTalk": {"title": "Drücken zum Sprechen", "description": "Halten Sie die Leertaste gedrückt oder tippen Sie auf die Mikrofontaste, um Sprachnachrichten aufzunehmen und zu senden."}, "nudgeDjMode": {"title": "Anstoßen und DJ-Modus", "description": "Senden Sie 👋 Anstoß für kontextbezogene Tipps. Ryo wird zu einem DJ, wenn Musik abgespielt wird."}}},
-    "textedit": {"name": "Textbearbeitung", "description": "Ein einfacher Rich-Text-Editor", "help": {"richEditing": {"title": "Rich-Bearbeitung", "description": "Text einfach eingeben, kopieren, ausschneiden, einfügen, rückgängig machen und wiederholen"}, "formatting": {"title": "Formatierung", "description": "Fett, kursiv, unterstrichen, Überschriften und Ausrichtungsoptionen"}, "listsTasks": {"title": "Listen und Aufgaben", "description": "Aufzählungs-, nummerierte und Kontrollkästchen-Aufgabenlisten erstellen"}, "fileManagement": {"title": "Dateiverwaltung", "description": "Dateien erstellen, öffnen, sichern und exportieren (HTML, MD, TXT)"}, "voiceDictation": {"title": "Sprachdiktat", "description": "Text freihändig direkt in das Dokument diktieren"}, "slashCommands": {"title": "Schrägstrich-Befehle", "description": "Geben Sie / für schnelle Aktionen ein oder lassen Sie Ryo KI Zeilen remote bearbeiten"}}},
-    "paint": {"name": "Malprogramm", "description": "Bilder zeichnen und bearbeiten", "help": {"drawingTools": {"title": "Zeichenwerkzeuge", "description": "Verwenden Sie die Symbolleiste links, um verschiedene Zeichenwerkzeuge wie Bleistift, Pinsel, Formen und mehr auszuwählen."}, "colors": {"title": "Farben", "description": "Wählen Sie Farben aus der Palette unter den Werkzeugen aus, um Ihre Zeichenfarbe zu ändern."}, "undo": {"title": "Rückgängig", "description": "Drücken Sie ⌘Z oder verwenden Sie Bearbeiten > Rückgängig, um Ihre letzte Aktion rückgängig zu machen."}, "saving": {"title": "Sichern", "description": "Verwenden Sie Ablage > Sichern, um Ihr Werk zu sichern, oder Ablage > Sichern unter, um es unter einem neuen Namen zu sichern."}, "patterns": {"title": "Muster", "description": "Wählen Sie aus verschiedenen Mustern in der unteren Palette, um Formen und Bereiche zu füllen."}, "filters": {"title": "Filter", "description": "Wenden Sie Invertieren, Graustufen, Helligkeit und mehr aus dem Filter-Menü an."}}},
-    "photo-booth": {"name": "Photo Booth", "description": "Fotos mit Effekten aufnehmen", "help": {"takingPhoto": {"title": "Foto aufnehmen", "description": "Klicken Sie auf die große rote Kamera-Schaltfläche, um ein einzelnes Bild aufzunehmen."}, "quickSnaps": {"title": "Schnappschüsse", "description": "Klicken Sie auf die Timer-Schaltfläche (links von der Kamera-Schaltfläche), um eine Sequenz von vier Fotos zu starten, die im Abstand von einer Sekunde aufgenommen werden."}, "applyingEffects": {"title": "Effekte anwenden", "description": "Klicken Sie auf die Schaltfläche 'Effekte' (rechts von der Kamera-Schaltfläche), um den Effektbereich zu öffnen und lustige Filter auf Ihre Live-Kameraansicht anzuwenden."}, "viewingPhotos": {"title": "Fotos anzeigen", "description": "Klicken Sie auf die Foto-Stapel-Schaltfläche (ganz links), um den Foto-Streifen unten anzuzeigen oder auszublenden, der alle Ihre gespeicherten Fotos anzeigt."}, "downloadingPhotos": {"title": "Fotos herunterladen", "description": "Fotos werden automatisch gespeichert. Klicken Sie auf ein Foto im Foto-Streifen, um es herunterzuladen."}, "switchingCameras": {"title": "Kameras wechseln", "description": "Verwenden Sie das Menü 'Darstellung' in der Menüleiste, um zwischen verfügbaren Kameras zu wechseln, wenn Sie mehr als eine angeschlossen haben."}}},
-    "minesweeper": {"name": "Minenräumer", "description": "Klassisches Puzzlespiel", "help": {"desktopControls": {"title": "Desktop-Steuerung", "description": "Linksklick zum Aufdecken, Rechtsklick zum Markieren, Doppelklick auf Zahlen, um Nachbarn automatisch aufzudecken"}, "mobileControls": {"title": "Mobile Steuerung", "description": "Tippen zum Aufdecken, lange drücken, um eine Mine zu markieren"}, "gameRules": {"title": "Spielregeln", "description": "Zahlen zeigen benachbarte Minen an. Markieren Sie jede Mine und decken Sie alle sicheren Zellen auf, um zu gewinnen."}, "timerCounter": {"title": "Timer und Zähler", "description": "Die obere Leiste zeigt die verstrichene Zeit und die verbleibenden nicht markierten Minen an"}, "restart": {"title": "Neustart", "description": "Drücken Sie das lächelnde Gesicht oder wählen Sie Spiel ▸ Neu, um ein neues Spielfeld zu starten"}}},
-    "videos": {"name": "Filme", "description": "Videos ansehen", "help": {"addVideo": {"title": "Video hinzufügen", "description": "Beliebige YouTube-URL einfügen, um zur Wiedergabeliste hinzuzufügen"}, "playback": {"title": "Wiedergabe", "description": "Wiedergabe-, Pause-, Nächste-, Vorherige-Steuerung"}, "loop": {"title": "Wiederholen", "description": "Aktuelles Video oder gesamte Wiedergabeliste wiederholen"}, "shuffle": {"title": "Mischen", "description": "Wiedergabelisten-Reihenfolge zufällig anordnen"}, "playlist": {"title": "Wiedergabeliste", "description": "Ihre Video-Wiedergabeliste verwalten und organisieren"}, "retroUi": {"title": "Retro-UI", "description": "Klassische QuickTime-Player-Ästhetik"}}},
-    "ipod": {"name": "iPod", "description": "Musikplayer", "help": {"addSongs": {"title": "Lieder hinzufügen", "description": "YouTube-URLs einfügen, um Musik zu Ihrem iPod hinzuzufügen."}, "wheelNavigation": {"title": "Rad-Navigation", "description": "Verwenden Sie das Klickrad, um Menüs und Ihre Musikbibliothek zu durchsuchen."}, "playbackControls": {"title": "Wiedergabe-Steuerung", "description": "Wiedergabe, Pause, Titel überspringen und Ihr aktuelles Lied steuern."}, "syncedLyrics": {"title": "Synchronisierte Texte", "description": "Zeitlich synchronisierte Texte anzeigen und sofortige Übersetzungen erhalten."}, "playbackModes": {"title": "Wiedergabemodi", "description": "Mischen aktivieren, Lieder oder Wiedergabelisten wiederholen und mehr."}, "displayFullscreen": {"title": "Anzeige und Vollbild", "description": "Hintergrundbeleuchtung, Designs anpassen und zu Vollbild-Video wechseln."}}},
-    "synth": {"name": "Synthesizer", "description": "Virtueller Synthesizer", "help": {"virtualKeyboard": {"title": "Virtuelle Tastatur", "description": "Noten mit Bildschirmtasten oder Computertastatur spielen"}, "controlsPanel": {"title": "Steuerungsbereich", "description": "STEUERUNGEN umschalten, um Oszillatoren, Hüllkurve und Effekte anzupassen"}, "presets": {"title": "Voreinstellungen", "description": "Benutzerdefinierte Sound-Voreinstellungen speichern, laden und verwalten"}, "waveform3d": {"title": "3D-Wellenform", "description": "Live animierte Wellenform, wenn der Steuerungsbereich geöffnet ist"}, "effects": {"title": "Effekte", "description": "Hall, Verzögerung, Verzerrung, Chorus, Phaser und Bit-Crusher"}, "midiInput": {"title": "MIDI-Eingabe", "description": "MIDI-Tastatur anschließen und sofort spielen"}}},
-    "pc": {"name": "Virtueller PC", "description": "3D-PC-Simulation", "help": {"pcEmulator": {"title": "PC-Emulator", "description": "Führt klassische DOS-Spiele und Apps direkt in Ihrem Browser aus"}, "keyboardControls": {"title": "Tastatursteuerung", "description": "Verwenden Sie Ihre physische Tastatur für die Eingabe im Spiel"}, "mouseCapture": {"title": "Maus-Erfassung", "description": "Klicken Sie im Fenster, um die Maus zu erfassen/freizugeben"}, "fullscreenMode": {"title": "Vollbildmodus", "description": "Darstellung ▸ Vollbild umschalten für eine immersive Anzeige"}, "saveStates": {"title": "Speicherstände", "description": "Spielstand jederzeit aus dem Ablage-Menü speichern oder laden"}, "aspectRatio": {"title": "Seitenverhältnis", "description": "Zwischen 4:3 oder Breitbild wechseln, um zu Ihrem Monitor zu passen"}}},
-    "terminal": {"name": "Terminal", "description": "Kommandozeilen-Schnittstelle", "help": {"basicCommands": {"title": "Grundbefehle", "description": "Verwenden Sie Befehle wie ls, cd, cat, pwd, clear und touch, um Dateien zu navigieren und zu verwalten."}, "navigation": {"title": "Navigation", "description": "Durchsuchen Sie dasselbe virtuelle Dateisystem wie Finder mit vertrauten Unix-Befehlen."}, "commandHistory": {"title": "Befehlsverlauf", "description": "Drücken Sie die Pfeile ↑ / ↓, um durch vorherige Befehle zu blättern und sie schnell erneut auszuführen."}, "aiAssistant": {"title": "KI-Assistent", "description": "Geben Sie \"ryo <Eingabeaufforderung>\" ein, um direkt im Terminal mit Ryo KI zu chatten."}, "fileEditing": {"title": "Dateibearbeitung", "description": "Dokumente direkt von der Eingabeaufforderung in Textbearbeitung (edit) oder Vim-ähnlichem Editor (vim) öffnen."}, "terminalSounds": {"title": "Terminal-Sounds", "description": "Unterschiedliche Sounds für Ausgabe, Fehler und KI-Antworten. In Darstellung ▸ Sounds umschalten."}}},
-    "applet-viewer": {"name": "Applet-Store", "description": "Applets anzeigen und ausführen", "help": {"appletStore": {"title": "Applet-Store", "description": "Durchsuchen und Installieren von Applets aus der Community. Öffnen Sie das Store-Menü, um neue Apps zu entdecken."}, "createWithRyosChat": {"title": "Mit ryOS Chat erstellen", "description": "Bitten Sie ryOS Chat, benutzerdefinierte Apps und Applets für Sie zu erstellen. Teilen Sie Ihre Ideen und erhalten Sie sofort funktionierende Apps."}, "viewApplets": {"title": "Applets anzeigen", "description": "Applets öffnen und ausführen, die von ryOS Chat gespeichert oder aus dem Store heruntergeladen wurden."}, "shareApplets": {"title": "Applets teilen", "description": "Teilen Sie Ihre Lieblings-Applets mit anderen über die Option Applet teilen im Ablage-Menü."}, "openFromFinder": {"title": "Von Finder öffnen", "description": "Durchsuchen und Öffnen von Applets, die auf Ihrem System gespeichert sind, über das Ablage-Menü."}, "keepUpdated": {"title": "Aktuell halten", "description": "Überprüfen Sie Updates im Store-Menü, um die neuesten Versionen Ihrer installierten Applets zu erhalten."}}},
-    "control-panels": {"name": "Systemeinstellungen", "description": "Systemeinstellungen", "help": {"appearance": {"title": "Darstellung", "description": "Wählen Sie Fotos, Muster oder Shader-Effekte für Ihr Desktop-Hintergrundbild"}, "sounds": {"title": "Sounds", "description": "UI-Sounds, Tipp-Synthesizer und Terminal-/IE-Effekte umschalten"}, "aiModel": {"title": "KI-Modell", "description": "Wählen Sie das KI-Modell aus, das von Chats und Terminal-Assistent verwendet wird"}, "shaderEffects": {"title": "Shader-Effekte", "description": "CRT-, Galaxy- oder Aurora-Visualeffekte aktivieren"}, "backupRestore": {"title": "Sichern und Wiederherstellen", "description": "Alle Einstellungen und Dateien exportieren oder wiederherstellen"}, "system": {"title": "System", "description": "Einstellungen zurücksetzen oder virtuelles Dateisystem formatieren"}}}
+  "common": {
+    "dialog": {
+      "about": "Über",
+      "adding": "Hinzufügen...",
+      "cancel": "Abbrechen",
+      "close": "Schließen",
+      "confirm": "Bestätigen",
+      "delete": "Löschen",
+      "discardChanges": "Änderungen verwerfen",
+      "discardChangesDesc": "Möchten Sie Ihre Änderungen verwerfen und eine neue Datei erstellen?",
+      "enterFileName": "Geben Sie einen Namen für Ihre Datei ein",
+      "enterFilenameToSave": "Geben Sie einen Dateinamen zum Sichern ein oder löschen Sie ihn vor dem Schließen.",
+      "help": "Hilfe",
+      "informationAboutApp": "Informationen zur Anwendung",
+      "keepNewDocument": "Neues Dokument behalten",
+      "madeBy": "Erstellt von",
+      "openInGitHub": "In GitHub öffnen",
+      "save": "Sichern",
+      "saveBeforeClosing": "Sichern Sie Ihre Änderungen vor dem Schließen.",
+      "saveChanges": "Änderungen sichern",
+      "saveFile": "Datei sichern",
+      "version": "Version",
+      "welcomeTo": "Willkommen bei"
+    },
+    "menu": {
+      "aboutFinder": "Über Finder",
+      "applications": "Programme",
+      "back": "Zurück",
+      "byDate": "Datum",
+      "byIcon": "Symbole",
+      "byKind": "Art",
+      "byList": "Liste",
+      "byName": "Name",
+      "bySize": "Größe",
+      "bySmallIcon": "Kleine Symbole",
+      "clear": "Löschen",
+      "close": "Schließen",
+      "copy": "Kopieren",
+      "cut": "Ausschneiden",
+      "documents": "Dokumente",
+      "edit": "Bearbeiten",
+      "emptyTrash": "Papierkorb leeren...",
+      "file": "Ablage",
+      "finderHelp": "Finder-Hilfe",
+      "forward": "Vor",
+      "go": "Gehe zu",
+      "help": "Hilfe",
+      "images": "Bilder",
+      "moveToTrash": "In den Papierkorb verschieben",
+      "music": "Musik",
+      "newFinderWindow": "Neues Finder-Fenster",
+      "newFolder": "Neuer Ordner",
+      "paste": "Einsetzen",
+      "redo": "[TODO] Redo",
+      "selectAll": "Alles auswählen",
+      "shareApp": "[TODO] Share App...",
+      "sites": "Websites",
+      "trash": "Papierkorb",
+      "undo": "Rückgängig",
+      "videos": "Filme",
+      "view": "Darstellung"
+    },
+    "system": {
+      "formatFileSystem": "Dateisystem formatieren",
+      "formatFileSystemDesc": "Möchten Sie wirklich das Dateisystem formatieren? Dies löscht dauerhaft alle Dokumente (außer Beispieldokumenten), Bilder und benutzerdefinierte Hintergrundbilder. ryOS startet nach dem Formatieren neu.",
+      "resetAllSettings": "Alle Einstellungen zurücksetzen",
+      "resetAllSettingsDesc": "Möchten Sie wirklich alle Einstellungen zurücksetzen? Dies löscht alle gespeicherten Einstellungen und stellt die Standardzustände wieder her. ryOS startet nach dem Zurücksetzen neu.",
+      "systemRestoring": "System wird wiederhergestellt..."
+    }
   },
   "settings": {
     "language": {
-      "title": "Sprache",
+      "chineseTraditional": "中文 (繁體中文)",
       "description": "Wählen Sie Ihre bevorzugte Sprache für die ryOS-Oberfläche",
       "english": "English",
-      "chineseTraditional": "中文 (繁體中文)",
+      "french": "Français",
+      "german": "Deutsch",
       "japanese": "日本語",
       "korean": "한국어",
-      "french": "Français",
-      "german": "Deutsch"
+      "title": "Sprache"
     }
   }
 }

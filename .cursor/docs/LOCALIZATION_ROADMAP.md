@@ -10,10 +10,14 @@
 - [x] System menu translated (MenuBar.tsx - File, Edit, View, Go, Help)
 - [x] Language switcher in Control Panels → Appearance tab
 - [x] Helper utilities created (`src/utils/i18n.ts`, `src/hooks/useTranslatedHelpItems.ts`)
+- [x] Translation sync script (`scripts/sync-translations.ts`)
+- [x] Machine translation script (`scripts/machine-translate.ts`) using Gemini 2.5 Flash
+- [x] String extraction script (`scripts/extract-menu-strings.ts`)
+- [x] Chinese Traditional (zh-TW) translation file fully translated (246 keys)
 
 ### 🔄 In Progress / Remaining
 
-#### 1. App Menu Bars (14 apps)
+#### 1. App Menu Bars (15 apps)
 Each app has a `*MenuBar.tsx` file that needs translation. Common patterns:
 - File menu: New File, Open, Save, Close, etc.
 - Edit menu: Undo, Redo, Cut, Copy, Paste, Select All
@@ -21,22 +25,26 @@ Each app has a `*MenuBar.tsx` file that needs translation. Common patterns:
 - View menu: Various view options
 - App-specific menus
 
-**Files to update:**
-- [ ] `src/apps/finder/components/FinderMenuBar.tsx`
-- [ ] `src/apps/textedit/components/TextEditMenuBar.tsx`
-- [ ] `src/apps/paint/components/PaintMenuBar.tsx`
-- [ ] `src/apps/ipod/components/IpodMenuBar.tsx`
-- [ ] `src/apps/chats/components/ChatsMenuBar.tsx`
-- [ ] `src/apps/terminal/components/TerminalMenuBar.tsx`
-- [ ] `src/apps/videos/components/VideosMenuBar.tsx`
-- [ ] `src/apps/soundboard/components/SoundboardMenuBar.tsx`
-- [ ] `src/apps/internet-explorer/components/InternetExplorerMenuBar.tsx`
-- [ ] `src/apps/synth/components/SynthMenuBar.tsx`
-- [ ] `src/apps/pc/components/PcMenuBar.tsx`
-- [ ] `src/apps/photo-booth/components/PhotoBoothMenuBar.tsx`
-- [ ] `src/apps/minesweeper/components/MinesweeperMenuBar.tsx`
-- [ ] `src/apps/applet-viewer/components/AppletViewerMenuBar.tsx`
-- [ ] `src/apps/control-panels/components/ControlPanelsMenuBar.tsx`
+**Progress: 8/15 completed (53%)**
+
+**Files completed:**
+- [x] `src/apps/finder/components/FinderMenuBar.tsx` ✅
+- [x] `src/apps/textedit/components/TextEditMenuBar.tsx` ✅
+- [x] `src/apps/terminal/components/TerminalMenuBar.tsx` ✅
+- [x] `src/apps/videos/components/VideosMenuBar.tsx` ✅
+- [x] `src/apps/soundboard/components/SoundboardMenuBar.tsx` ✅
+- [x] `src/apps/pc/components/PcMenuBar.tsx` ✅
+- [x] `src/apps/photo-booth/components/PhotoBoothMenuBar.tsx` ✅
+- [x] `src/apps/minesweeper/components/MinesweeperMenuBar.tsx` ✅
+
+**Files remaining (7):**
+- [ ] `src/apps/paint/components/PaintMenuBar.tsx` (18 strings)
+- [ ] `src/apps/ipod/components/IpodMenuBar.tsx` (25 strings)
+- [ ] `src/apps/chats/components/ChatsMenuBar.tsx` (4 strings)
+- [ ] `src/apps/internet-explorer/components/InternetExplorerMenuBar.tsx` (32 strings)
+- [ ] `src/apps/synth/components/SynthMenuBar.tsx` (1 string)
+- [ ] `src/apps/applet-viewer/components/AppletViewerMenuBar.tsx` (4 strings)
+- [ ] `src/apps/control-panels/components/ControlPanelsMenuBar.tsx` (1 string)
 
 #### 2. Help Items Translation
 Each app's help items need to use translations. Use the `useTranslatedHelpItems` hook.
@@ -149,10 +157,41 @@ After translating each component:
 - [ ] Test on mobile if applicable
 - [ ] Check RTL languages if added later
 
+## Translation File Status
+
+### Current Translation Coverage
+- ✅ **English (en)**: Complete (507 keys) - Source of truth
+- ✅ **Chinese Traditional (zh-TW)**: Complete (0 [TODO] keys) - Fully machine translated
+- ⏳ **Japanese (ja)**: 246 [TODO] keys remaining
+- ⏳ **Korean (ko)**: 246 [TODO] keys remaining
+- ⏳ **French (fr)**: 246 [TODO] keys remaining
+- ⏳ **German (de)**: 246 [TODO] keys remaining
+
+### Translation Tools Available
+- `bun run i18n:extract` - Extract untranslated strings from menu bars
+- `bun run i18n:sync` - Sync English keys to other languages
+- `bun run i18n:sync:mark-todo` - Sync and mark untranslated keys with [TODO]
+- `bun run i18n:translate` - Machine translate all [TODO] keys using Gemini 2.5 Flash
+- `bun run i18n:translate:dry-run` - Preview translations without applying
+- `bun run i18n:find-untranslated` - Find hardcoded English strings in codebase
+
 ## Next Steps
 
-1. **Start with one app** - Pick a simple app (e.g., Minesweeper) and fully translate it
-2. **Create a template** - Use that as a template for other apps
-3. **Batch similar items** - Translate all menu bars together, then all help items
-4. **Test incrementally** - Test each app after translation
+1. **Translate remaining menu bars** (7 apps, ~85 strings total)
+   - Start with simple ones: Synth (1), Control Panels (1)
+   - Then medium: Chats (4), Applet Viewer (4)
+   - Finally complex: Paint (18), iPod (25), Internet Explorer (32)
+
+2. **Machine translate remaining languages**
+   - `bun run i18n:translate --lang ja` (Japanese)
+   - `bun run i18n:translate --lang ko` (Korean)
+   - `bun run i18n:translate --lang fr` (French)
+   - `bun run i18n:translate --lang de` (German)
+   - Or translate all: `bun run i18n:translate`
+
+3. **Review and refine translations** - Check machine translations for accuracy
+
+4. **Update help items** - Use `useTranslatedHelpItems` hook in all apps
+
+5. **Update app names/descriptions** - Use `getTranslatedAppName()` and `getTranslatedAppDescription()`
 

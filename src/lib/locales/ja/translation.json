@@ -1,531 +1,802 @@
 {
-  "common": {
-    "menu": {
-      "file": "ファイル",
-      "edit": "編集",
-      "view": "表示",
-      "go": "移動",
-      "help": "ヘルプ",
-      "newFinderWindow": "新規Finderウィンドウ",
-      "newFolder": "新規フォルダ",
-      "moveToTrash": "ゴミ箱へ移動",
-      "emptyTrash": "ゴミ箱を空にする...",
-      "close": "閉じる",
-      "undo": "取り消す",
-      "cut": "カット",
-      "copy": "コピー",
-      "paste": "ペースト",
-      "clear": "クリア",
-      "selectAll": "すべてを選択",
-      "bySmallIcon": "小さいアイコン",
-      "byIcon": "アイコン",
-      "byList": "リスト",
-      "byName": "名前",
-      "byDate": "日付",
-      "bySize": "サイズ",
-      "byKind": "種類",
-      "back": "戻る",
-      "forward": "進む",
-      "applications": "アプリケーション",
-      "documents": "書類",
-      "images": "画像",
-      "music": "ミュージック",
-      "sites": "サイト",
-      "videos": "ムービー",
-      "trash": "ゴミ箱",
-      "finderHelp": "Finderヘルプ",
-      "aboutFinder": "Finderについて"
-    },
-    "dialog": {
-      "save": "保存",
-      "cancel": "キャンセル",
-      "confirm": "確認",
-      "close": "閉じる",
-      "adding": "追加中...",
-      "saveFile": "ファイルを保存",
-      "enterFileName": "ファイル名を入力してください",
-      "discardChanges": "変更を破棄",
-      "discardChangesDesc": "変更を破棄して新しいファイルを作成しますか？",
-      "keepNewDocument": "新規書類を保持",
-      "saveChanges": "変更を保存",
-      "enterFilenameToSave": "保存するファイル名を入力するか、閉じる前に削除してください。",
-      "saveBeforeClosing": "閉じる前に変更を保存してください。",
-      "delete": "削除",
-      "help": "ヘルプ",
-      "about": "について",
-      "welcomeTo": "へようこそ",
-      "version": "バージョン",
-      "madeBy": "作成者：",
-      "openInGitHub": "GitHubで開く",
-      "informationAboutApp": "アプリケーションについての情報"
-    },
-    "system": {
-      "systemRestoring": "システムを復元中...",
-      "resetAllSettings": "すべての設定をリセット",
-      "resetAllSettingsDesc": "すべての設定をリセットしてもよろしいですか？これにより、保存されたすべての設定がクリアされ、デフォルト状態に復元されます。リセット後、ryOSが再起動します。",
-      "formatFileSystem": "ファイルシステムをフォーマット",
-      "formatFileSystemDesc": "ファイルシステムをフォーマットしてもよろしいですか？これにより、すべての書類（サンプル書類を除く）、画像、カスタム壁紙が永久に削除されます。フォーマット後、ryOSが再起動します。"
-    }
-  },
   "apps": {
-    "finder": {
-      "name": "Finder",
-      "description": "ファイルを閲覧・管理",
-      "help": {
-        "browseNavigate": {
-          "title": "閲覧とナビゲーション",
-          "description": "戻る/進むボタン、アドレスバー、移動メニューで素早くナビゲーション"
-        },
-        "fileManagement": {
-          "title": "ファイル管理",
-          "description": "フォルダの作成、名前の変更、移動、ドラッグでファイルを整理"
-        },
-        "viewSort": {
-          "title": "表示と並べ替え",
-          "description": "アイコンサイズを切り替え、名前、種類、サイズ、日付で並べ替え"
-        },
-        "quickAccess": {
-          "title": "クイックアクセス",
-          "description": "移動メニューから書類、アプリケーション、ゴミ箱に即座にジャンプ"
-        },
-        "storageInfo": {
-          "title": "ストレージ情報",
-          "description": "ウィンドウのフッターで空き容量とアイテム数を確認"
-        },
-        "trash": {
-          "title": "ゴミ箱",
-          "description": "ファイルをゴミ箱にドラッグして空にすると永久に削除"
-        }
-      }
-    },
-    "soundboard": {
-      "name": "サウンドボード",
-      "description": "効果音を再生",
-      "help": {
-        "recordSlot": {
-          "title": "録音スロット",
-          "description": "スロットをクリックして録音開始；再度クリックで停止"
-        },
-        "keyboardPlay": {
-          "title": "キーボード再生",
-          "description": "1-9キーを押して即座に音を再生"
-        },
-        "waveformView": {
-          "title": "波形表示",
-          "description": "録音または再生中にライブ波形を表示"
-        },
-        "customizeSlot": {
-          "title": "スロットのカスタマイズ",
-          "description": "各サンプルに絵文字とタイトルを追加して素早く識別"
-        },
-        "multipleBoards": {
-          "title": "複数のボード",
-          "description": "音のセット用にボードを作成、名前変更、切り替え"
-        },
-        "importExport": {
-          "title": "インポート / エクスポート",
-          "description": "ボードをファイルとして共有；ドラッグ＆ドロップでインポート"
-        }
-      }
-    },
-    "internet-explorer": {
-      "name": "Internet Explorer",
-      "description": "ウェブを閲覧",
-      "help": {
-        "browseWeb": {
-          "title": "ウェブの閲覧",
-          "description": "URLを入力し、ナビゲーションボタン（戻る、進む、更新、停止）を使用。"
-        },
-        "travelThroughTime": {
-          "title": "時を旅する",
-          "description": "ドロップダウンから年を選択して、過去または未来のウェブサイトを表示。"
-        },
-        "historyReimagined": {
-          "title": "歴史の再構築",
-          "description": "AIが非常に古いサイト（1996年以前）を再構築し、未来のウェブ体験を想像します。"
-        },
-        "saveFavorites": {
-          "title": "お気に入りを保存",
-          "description": "サイトと特定の年をお気に入りバーに追加して簡単にアクセス。"
-        },
-        "exploreTimeNodes": {
-          "title": "タイムノードを探索",
-          "description": "アドレスバーの時計アイコンをクリックして、現在のサイトの時間をまたいだ利用可能なスナップショットを表示。"
-        },
-        "shareJourney": {
-          "title": "旅を共有",
-          "description": "共有ボタンを使用して、表示中の正確なページと年のリンクを生成。"
-        }
-      }
-    },
-    "chats": {
-      "name": "チャット",
-      "description": "AIとチャット",
-      "help": {
-        "chatWithRyo": {
-          "title": "Ryoとチャット",
-          "description": "メッセージを入力してRyoとチャット、コードを生成、またはryOSのヘルプを取得。"
-        },
-        "createEditFiles": {
-          "title": "ファイルの作成と編集",
-          "description": "RyoにHTMLアプレットの作成、書類の編集、ファイルの読み取り、アプレットストアの検索を依頼。"
-        },
-        "controlApps": {
-          "title": "アプリの制御",
-          "description": "Ryoにアプリの起動または終了、テーマの切り替え、iPodの再生制御を依頼。"
-        },
-        "joinChatRooms": {
-          "title": "チャットルームに参加",
-          "description": "公開チャットルームで他のユーザーと接続。@ryoに言及してAI応答を取得。"
-        },
-        "pushToTalk": {
-          "title": "プッシュトゥトーク",
-          "description": "スペースキーを長押しするか、マイクボタンをタップして音声メッセージを録音・送信。"
-        },
-        "nudgeDjMode": {
-          "title": "ナッジとDJモード",
-          "description": "👋ナッジを送信してコンテキスト対応のヒントを取得。音楽が再生中の場合、RyoがDJになります。"
-        }
-      }
-    },
-    "textedit": {
-      "name": "テキストエディット",
-      "description": "シンプルなリッチテキストエディタ",
-      "help": {
-        "richEditing": {
-          "title": "リッチ編集",
-          "description": "テキストの入力、コピー、カット、ペースト、取り消し、やり直しが簡単"
-        },
-        "formatting": {
-          "title": "フォーマット",
-          "description": "太字、斜体、下線、見出し、配置オプション"
-        },
-        "listsTasks": {
-          "title": "リストとタスク",
-          "description": "箇条書き、番号付き、チェックボックスタスクリストを作成"
-        },
-        "fileManagement": {
-          "title": "ファイル管理",
-          "description": "ファイルの作成、開く、保存、エクスポート（HTML、MD、TXT）"
-        },
-        "voiceDictation": {
-          "title": "音声入力",
-          "description": "ハンズフリーで書類に直接テキストを入力"
-        },
-        "slashCommands": {
-          "title": "スラッシュコマンド",
-          "description": "/を入力してクイックアクション、またはRyo AIにリモートで行を編集させる"
-        }
-      }
-    },
-    "paint": {
-      "name": "ペイント",
-      "description": "画像を描画・編集",
-      "help": {
-        "drawingTools": {
-          "title": "描画ツール",
-          "description": "左側のツールバーを使用して、鉛筆、ブラシ、図形などのさまざまな描画ツールを選択。"
-        },
-        "colors": {
-          "title": "色",
-          "description": "ツールの下のパレットから色を選択して描画色を変更。"
-        },
-        "undo": {
-          "title": "取り消す",
-          "description": "⌘Zを押すか、編集 > 取り消すを使用して最後の操作を取り消し。"
-        },
-        "saving": {
-          "title": "保存",
-          "description": "ファイル > 保存を使用して作品を保存、またはファイル > 別名で保存を使用して新しい名前で保存。"
-        },
-        "patterns": {
-          "title": "パターン",
-          "description": "下部のパレットからさまざまなパターンを選択して図形と領域を塗りつぶし。"
-        },
-        "filters": {
-          "title": "フィルタ",
-          "description": "フィルタメニューから反転、グレースケール、明るさなどを適用。"
-        }
-      }
-    },
-    "photo-booth": {
-      "name": "Photo Booth",
-      "description": "エフェクト付きで写真を撮影",
-      "help": {
-        "takingPhoto": {
-          "title": "写真を撮る",
-          "description": "大きな赤いカメラボタンをクリックして単一の画像をキャプチャ。"
-        },
-        "quickSnaps": {
-          "title": "クイックスナップ",
-          "description": "タイマーボタン（カメラボタンの左側）をクリックして、1秒間隔で4枚の写真を連続撮影。"
-        },
-        "applyingEffects": {
-          "title": "エフェクトの適用",
-          "description": "エフェクトボタン（カメラボタンの右側）をクリックしてエフェクトパネルを開き、ライブカメラビューに楽しいフィルタを適用。"
-        },
-        "viewingPhotos": {
-          "title": "写真の表示",
-          "description": "写真スタックボタン（左端）をクリックして、下部の写真ストリップを表示または非表示にし、保存されたすべての写真を表示。"
-        },
-        "downloadingPhotos": {
-          "title": "写真のダウンロード",
-          "description": "写真は自動的に保存されます。写真ストリップの写真をクリックしてダウンロード。"
-        },
-        "switchingCameras": {
-          "title": "カメラの切り替え",
-          "description": "複数のカメラが接続されている場合、メニューバーの「表示」メニューを使用して利用可能なカメラを切り替え。"
-        }
-      }
-    },
-    "minesweeper": {
-      "name": "マインスイーパー",
-      "description": "クラシックなパズルゲーム",
-      "help": {
-        "desktopControls": {
-          "title": "デスクトップコントロール",
-          "description": "左クリックで表示、右クリックでフラグ、数字をダブルクリックで隣接セルを自動表示"
-        },
-        "mobileControls": {
-          "title": "モバイルコントロール",
-          "description": "タップで表示、長押しで地雷にフラグ"
-        },
-        "gameRules": {
-          "title": "ゲームルール",
-          "description": "数字は隣接する地雷の数を示します。すべての地雷にフラグを立て、すべての安全なセルを表示して勝利。"
-        },
-        "timerCounter": {
-          "title": "タイマーとカウンター",
-          "description": "上部バーに経過時間と残りの未フラグ地雷を表示"
-        },
-        "restart": {
-          "title": "再開",
-          "description": "笑顔アイコンを押すか、ゲーム ▸ 新規を選択して新しいボードを開始"
-        }
-      }
-    },
-    "videos": {
-      "name": "ムービー",
-      "description": "動画を視聴",
-      "help": {
-        "addVideo": {
-          "title": "動画を追加",
-          "description": "任意のYouTube URLを貼り付けてプレイリストに追加"
-        },
-        "playback": {
-          "title": "再生",
-          "description": "再生、一時停止、次、前のコントロール"
-        },
-        "loop": {
-          "title": "ループ",
-          "description": "現在の動画またはプレイリスト全体をループ"
-        },
-        "shuffle": {
-          "title": "シャッフル",
-          "description": "プレイリストの順序をランダム化"
-        },
-        "playlist": {
-          "title": "プレイリスト",
-          "description": "動画プレイリストを管理・整理"
-        },
-        "retroUi": {
-          "title": "レトロUI",
-          "description": "クラシックなQuickTimeプレーヤーの美学"
-        }
-      }
-    },
-    "ipod": {
-      "name": "iPod",
-      "description": "ミュージックプレーヤー",
-      "help": {
-        "addSongs": {
-          "title": "曲を追加",
-          "description": "YouTube URLを貼り付けてiPodに音楽を追加。"
-        },
-        "wheelNavigation": {
-          "title": "ホイールナビゲーション",
-          "description": "クリックホイールを使用してメニューとミュージックライブラリを閲覧。"
-        },
-        "playbackControls": {
-          "title": "再生コントロール",
-          "description": "再生、一時停止、トラックのスキップ、現在の曲の制御。"
-        },
-        "syncedLyrics": {
-          "title": "同期歌詞",
-          "description": "時間同期された歌詞を表示し、即座に翻訳を取得。"
-        },
-        "playbackModes": {
-          "title": "再生モード",
-          "description": "シャッフル、曲またはプレイリストのリピートなどを有効化。"
-        },
-        "displayFullscreen": {
-          "title": "表示とフルスクリーン",
-          "description": "バックライト、テーマを調整し、フルスクリーン動画に切り替え。"
-        }
-      }
-    },
-    "synth": {
-      "name": "シンセ",
-      "description": "仮想シンセサイザー",
-      "help": {
-        "virtualKeyboard": {
-          "title": "仮想キーボード",
-          "description": "画面上のキーまたはコンピュータキーボードで音符を演奏"
-        },
-        "controlsPanel": {
-          "title": "コントロールパネル",
-          "description": "CONTROLSを切り替えてオシレーター、エンベロープ、エフェクトを調整"
-        },
-        "presets": {
-          "title": "プリセット",
-          "description": "カスタムサウンドプリセットを保存、読み込み、管理"
-        },
-        "waveform3d": {
-          "title": "3D波形",
-          "description": "コントロールパネルが開いているときにライブアニメーション波形を表示"
-        },
-        "effects": {
-          "title": "エフェクト",
-          "description": "リバーブ、ディレイ、ディストーション、コーラス、フェイザー、ビットクラッシャー"
-        },
-        "midiInput": {
-          "title": "MIDI入力",
-          "description": "MIDIキーボードを接続して即座に演奏"
-        }
-      }
-    },
-    "pc": {
-      "name": "仮想PC",
-      "description": "3D PCシミュレーション",
-      "help": {
-        "pcEmulator": {
-          "title": "PCエミュレーター",
-          "description": "ブラウザでクラシックなDOSゲームとアプリを直接実行"
-        },
-        "keyboardControls": {
-          "title": "キーボードコントロール",
-          "description": "物理キーボードを使用してゲーム内入力"
-        },
-        "mouseCapture": {
-          "title": "マウスキャプチャ",
-          "description": "ウィンドウ内をクリックしてマウスをキャプチャ/解放"
-        },
-        "fullscreenMode": {
-          "title": "フルスクリーンモード",
-          "description": "表示 ▸ フルスクリーンを切り替えて没入感のある表示"
-        },
-        "saveStates": {
-          "title": "セーブステート",
-          "description": "ファイルメニューからいつでもゲームの進行状況を保存または読み込み"
-        },
-        "aspectRatio": {
-          "title": "アスペクト比",
-          "description": "モニターに合わせて4:3またはワイドスクリーンに切り替え"
-        }
-      }
-    },
-    "terminal": {
-      "name": "ターミナル",
-      "description": "コマンドラインインターフェース",
-      "help": {
-        "basicCommands": {
-          "title": "基本コマンド",
-          "description": "ls、cd、cat、pwd、clear、touchなどのコマンドを使用してファイルをナビゲートおよび管理。"
-        },
-        "navigation": {
-          "title": "ナビゲーション",
-          "description": "Finderと同じ仮想ファイルシステムを、おなじみのUnixコマンドで閲覧。"
-        },
-        "commandHistory": {
-          "title": "コマンド履歴",
-          "description": "↑ / ↓矢印キーを押して以前のコマンドを循環し、素早く再実行。"
-        },
-        "aiAssistant": {
-          "title": "AIアシスタント",
-          "description": "「ryo <プロンプト>」と入力して、ターミナル内で直接Ryo AIとチャット。"
-        },
-        "fileEditing": {
-          "title": "ファイル編集",
-          "description": "プロンプトから直接テキストエディット（edit）またはVimスタイルエディタ（vim）で書類を開く。"
-        },
-        "terminalSounds": {
-          "title": "ターミナルサウンド",
-          "description": "出力、エラー、AI応答の独特なサウンド。表示 ▸ サウンドで切り替え。"
-        }
-      }
-    },
     "applet-viewer": {
-      "name": "アプレットストア",
       "description": "アプレットを表示・実行",
       "help": {
         "appletStore": {
-          "title": "アプレットストア",
-          "description": "コミュニティからアプレットを閲覧・インストール。ストアメニューを開いて新しいアプリを発見。"
+          "description": "コミュニティからアプレットを閲覧・インストール。ストアメニューを開いて新しいアプリを発見。",
+          "title": "アプレットストア"
         },
         "createWithRyosChat": {
-          "title": "ryOSチャットで作成",
-          "description": "ryOSチャットにカスタムアプリとアプレットの作成を依頼。アイデアを共有して即座に動作するアプリを取得。"
-        },
-        "viewApplets": {
-          "title": "アプレットを表示",
-          "description": "ryOSチャットから保存したアプレットまたはストアからダウンロードしたアプレットを開いて実行。"
-        },
-        "shareApplets": {
-          "title": "アプレットを共有",
-          "description": "ファイルメニューのアプレットを共有オプションを使用して、お気に入りのアプレットを他のユーザーと共有。"
-        },
-        "openFromFinder": {
-          "title": "Finderから開く",
-          "description": "ファイルメニューを使用して、システムに保存されたアプレットを閲覧・開く。"
+          "description": "ryOSチャットにカスタムアプリとアプレットの作成を依頼。アイデアを共有して即座に動作するアプリを取得。",
+          "title": "ryOSチャットで作成"
         },
         "keepUpdated": {
-          "title": "最新の状態を保つ",
-          "description": "ストアメニューで更新を確認して、インストール済みアプレットの最新バージョンを取得。"
+          "description": "ストアメニューで更新を確認して、インストール済みアプレットの最新バージョンを取得。",
+          "title": "最新の状態を保つ"
+        },
+        "openFromFinder": {
+          "description": "ファイルメニューを使用して、システムに保存されたアプレットを閲覧・開く。",
+          "title": "Finderから開く"
+        },
+        "shareApplets": {
+          "description": "ファイルメニューのアプレットを共有オプションを使用して、お気に入りのアプレットを他のユーザーと共有。",
+          "title": "アプレットを共有"
+        },
+        "viewApplets": {
+          "description": "ryOSチャットから保存したアプレットまたはストアからダウンロードしたアプレットを開いて実行。",
+          "title": "アプレットを表示"
         }
-      }
+      },
+      "menu": {
+        "aboutApplets": "[TODO] About Applets",
+        "appletsHelp": "[TODO] Applets Help",
+        "checkForUpdates": "[TODO] Check for updates",
+        "createAccount": "[TODO] Create Account...",
+        "exportAs": "[TODO] Export As...",
+        "html": "[TODO] HTML",
+        "importFromDevice": "[TODO] Import from Device...",
+        "logOut": "[TODO] Log Out",
+        "login": "[TODO] Login...",
+        "noAppletsOpen": "[TODO] No applets open",
+        "open": "[TODO] Open...",
+        "openAppletStore": "[TODO] Open Applet Store",
+        "ryosApp": "[TODO] ryOS App",
+        "shareApplet": "[TODO] Share Applet...",
+        "store": "[TODO] Store",
+        "updateApplets": "[TODO] Update {{count}} applet",
+        "updateAppletsPlural": "[TODO] Update {{count}} applets",
+        "window": "[TODO] Window"
+      },
+      "name": "アプレットストア"
+    },
+    "chats": {
+      "description": "AIとチャット",
+      "help": {
+        "chatWithRyo": {
+          "description": "メッセージを入力してRyoとチャット、コードを生成、またはryOSのヘルプを取得。",
+          "title": "Ryoとチャット"
+        },
+        "controlApps": {
+          "description": "Ryoにアプリの起動または終了、テーマの切り替え、iPodの再生制御を依頼。",
+          "title": "アプリの制御"
+        },
+        "createEditFiles": {
+          "description": "RyoにHTMLアプレットの作成、書類の編集、ファイルの読み取り、アプレットストアの検索を依頼。",
+          "title": "ファイルの作成と編集"
+        },
+        "joinChatRooms": {
+          "description": "公開チャットルームで他のユーザーと接続。@ryoに言及してAI応答を取得。",
+          "title": "チャットルームに参加"
+        },
+        "nudgeDjMode": {
+          "description": "👋ナッジを送信してコンテキスト対応のヒントを取得。音楽が再生中の場合、RyoがDJになります。",
+          "title": "ナッジとDJモード"
+        },
+        "pushToTalk": {
+          "description": "スペースキーを長押しするか、マイクボタンをタップして音声メッセージを録音・送信。",
+          "title": "プッシュトゥトーク"
+        }
+      },
+      "name": "チャット"
     },
     "control-panels": {
-      "name": "コントロールパネル",
       "description": "システム設定",
       "help": {
-        "appearance": {
-          "title": "外観",
-          "description": "デスクトップの壁紙に写真、パターン、またはシェーダーエフェクトを選択"
-        },
-        "sounds": {
-          "title": "サウンド",
-          "description": "UIサウンド、タイピングシンセ、ターミナル/IEエフェクトを切り替え"
-        },
         "aiModel": {
-          "title": "AIモデル",
-          "description": "チャットとターミナルアシスタントで使用するAIモデルを選択"
+          "description": "チャットとターミナルアシスタントで使用するAIモデルを選択",
+          "title": "AIモデル"
         },
-        "shaderEffects": {
-          "title": "シェーダーエフェクト",
-          "description": "CRT、銀河、またはオーロラの視覚効果を有効化"
+        "appearance": {
+          "description": "デスクトップの壁紙に写真、パターン、またはシェーダーエフェクトを選択",
+          "title": "外観"
         },
         "backupRestore": {
-          "title": "バックアップと復元",
-          "description": "すべての設定とファイルをエクスポートまたは復元"
+          "description": "すべての設定とファイルをエクスポートまたは復元",
+          "title": "バックアップと復元"
+        },
+        "shaderEffects": {
+          "description": "CRT、銀河、またはオーロラの視覚効果を有効化",
+          "title": "シェーダーエフェクト"
+        },
+        "sounds": {
+          "description": "UIサウンド、タイピングシンセ、ターミナル/IEエフェクトを切り替え",
+          "title": "サウンド"
         },
         "system": {
-          "title": "システム",
-          "description": "設定をリセットまたは仮想ファイルシステムをフォーマット"
+          "description": "設定をリセットまたは仮想ファイルシステムをフォーマット",
+          "title": "システム"
         }
-      }
+      },
+      "name": "コントロールパネル"
+    },
+    "finder": {
+      "description": "ファイルを閲覧・管理",
+      "help": {
+        "browseNavigate": {
+          "description": "戻る/進むボタン、アドレスバー、移動メニューで素早くナビゲーション",
+          "title": "閲覧とナビゲーション"
+        },
+        "fileManagement": {
+          "description": "フォルダの作成、名前の変更、移動、ドラッグでファイルを整理",
+          "title": "ファイル管理"
+        },
+        "quickAccess": {
+          "description": "移動メニューから書類、アプリケーション、ゴミ箱に即座にジャンプ",
+          "title": "クイックアクセス"
+        },
+        "storageInfo": {
+          "description": "ウィンドウのフッターで空き容量とアイテム数を確認",
+          "title": "ストレージ情報"
+        },
+        "trash": {
+          "description": "ファイルをゴミ箱にドラッグして空にすると永久に削除",
+          "title": "ゴミ箱"
+        },
+        "viewSort": {
+          "description": "アイコンサイズを切り替え、名前、種類、サイズ、日付で並べ替え",
+          "title": "表示と並べ替え"
+        }
+      },
+      "menu": {
+        "aboutFinder": "[TODO] About Finder",
+        "back": "[TODO] Back",
+        "byDate": "[TODO] by Date",
+        "byIcon": "[TODO] by Icon",
+        "byKind": "[TODO] by Kind",
+        "byList": "[TODO] by List",
+        "byName": "[TODO] by Name",
+        "bySize": "[TODO] by Size",
+        "bySmallIcon": "[TODO] by Small Icon",
+        "duplicate": "[TODO] Duplicate",
+        "emptyTrash": "[TODO] Empty Trash...",
+        "finderHelp": "[TODO] Finder Help",
+        "forward": "[TODO] Forward",
+        "importFromDevice": "[TODO] Import from Device...",
+        "moveToTrash": "[TODO] Move to Trash",
+        "newFinderWindow": "[TODO] New Finder Window",
+        "newFolder": "[TODO] New Folder...",
+        "putBack": "[TODO] Put Back",
+        "rename": "[TODO] Rename..."
+      },
+      "name": "Finder"
+    },
+    "internet-explorer": {
+      "description": "ウェブを閲覧",
+      "help": {
+        "browseWeb": {
+          "description": "URLを入力し、ナビゲーションボタン（戻る、進む、更新、停止）を使用。",
+          "title": "ウェブの閲覧"
+        },
+        "exploreTimeNodes": {
+          "description": "アドレスバーの時計アイコンをクリックして、現在のサイトの時間をまたいだ利用可能なスナップショットを表示。",
+          "title": "タイムノードを探索"
+        },
+        "historyReimagined": {
+          "description": "AIが非常に古いサイト（1996年以前）を再構築し、未来のウェブ体験を想像します。",
+          "title": "歴史の再構築"
+        },
+        "saveFavorites": {
+          "description": "サイトと特定の年をお気に入りバーに追加して簡単にアクセス。",
+          "title": "お気に入りを保存"
+        },
+        "shareJourney": {
+          "description": "共有ボタンを使用して、表示中の正確なページと年のリンクを生成。",
+          "title": "旅を共有"
+        },
+        "travelThroughTime": {
+          "description": "ドロップダウンから年を選択して、過去または未来のウェブサイトを表示。",
+          "title": "時を旅する"
+        }
+      },
+      "menu": {
+        "aboutInternetExplorer": "[TODO] About Internet Explorer",
+        "addToFavorites": "[TODO] Add to Favorites...",
+        "aiLanguage": "[TODO] AI Language",
+        "alien": "[TODO] Alien",
+        "australia": "[TODO] Australia",
+        "auto": "[TODO] Auto",
+        "back": "[TODO] Back",
+        "brazil": "[TODO] Brazil",
+        "canada": "[TODO] Canada",
+        "china": "[TODO] China",
+        "chinese": "[TODO] Chinese",
+        "clearFavorites": "[TODO] Clear Favorites...",
+        "clearHistory": "[TODO] Clear History...",
+        "digitalBeing": "[TODO] Digital Being",
+        "editFuture": "[TODO] Edit Future...",
+        "english": "[TODO] English",
+        "favorites": "[TODO] Favorites",
+        "forward": "[TODO] Forward",
+        "france": "[TODO] France",
+        "french": "[TODO] French",
+        "german": "[TODO] German",
+        "germany": "[TODO] Germany",
+        "goHome": "[TODO] Go Home",
+        "goToUrl": "[TODO] Go to URL",
+        "history": "[TODO] History",
+        "india": "[TODO] India",
+        "internetExplorerHelp": "[TODO] Internet Explorer Help",
+        "italian": "[TODO] Italian",
+        "japan": "[TODO] Japan",
+        "japanese": "[TODO] Japanese",
+        "korea": "[TODO] Korea",
+        "korean": "[TODO] Korean",
+        "language": "[TODO] Language",
+        "latin": "[TODO] Latin",
+        "location": "[TODO] Location",
+        "now": "[TODO] Now",
+        "openTimeMachine": "[TODO] Open Time Machine",
+        "portugal": "[TODO] Portugal",
+        "portuguese": "[TODO] Portuguese",
+        "refresh": "[TODO] Refresh",
+        "resetFavorites": "[TODO] Reset Favorites...",
+        "russia": "[TODO] Russia",
+        "russian": "[TODO] Russian",
+        "sanskrit": "[TODO] Sanskrit",
+        "sharePage": "[TODO] Share Page...",
+        "spain": "[TODO] Spain",
+        "spanish": "[TODO] Spanish",
+        "stop": "[TODO] Stop",
+        "unitedKingdom": "[TODO] United Kingdom",
+        "unitedStates": "[TODO] United States",
+        "welsh": "[TODO] Welsh",
+        "year": "[TODO] Year"
+      },
+      "name": "Internet Explorer"
+    },
+    "ipod": {
+      "description": "ミュージックプレーヤー",
+      "help": {
+        "addSongs": {
+          "description": "YouTube URLを貼り付けてiPodに音楽を追加。",
+          "title": "曲を追加"
+        },
+        "displayFullscreen": {
+          "description": "バックライト、テーマを調整し、フルスクリーン動画に切り替え。",
+          "title": "表示とフルスクリーン"
+        },
+        "playbackControls": {
+          "description": "再生、一時停止、トラックのスキップ、現在の曲の制御。",
+          "title": "再生コントロール"
+        },
+        "playbackModes": {
+          "description": "シャッフル、曲またはプレイリストのリピートなどを有効化。",
+          "title": "再生モード"
+        },
+        "syncedLyrics": {
+          "description": "時間同期された歌詞を表示し、即座に翻訳を取得。",
+          "title": "同期歌詞"
+        },
+        "wheelNavigation": {
+          "description": "クリックホイールを使用してメニューとミュージックライブラリを閲覧。",
+          "title": "ホイールナビゲーション"
+        }
+      },
+      "menu": {
+        "aboutIpod": "[TODO] About iPod",
+        "addSong": "[TODO] Add Song...",
+        "addToLibrary": "[TODO] Add to Library...",
+        "allSongs": "[TODO] All Songs",
+        "alternating": "[TODO] Alternating",
+        "backlight": "[TODO] Backlight",
+        "black": "[TODO] Black",
+        "classic": "[TODO] Classic",
+        "clearLibrary": "[TODO] Clear Library...",
+        "exportLibrary": "[TODO] Export Library...",
+        "fullScreen": "[TODO] Full Screen",
+        "importLibrary": "[TODO] Import Library...",
+        "ipodHelp": "[TODO] iPod Help",
+        "korean": "[TODO] 한글",
+        "lcdFilter": "[TODO] LCD Filter",
+        "library": "[TODO] Library",
+        "lyrics": "[TODO] Lyrics",
+        "multi": "[TODO] Multi",
+        "next": "[TODO] Next",
+        "pause": "[TODO] Pause",
+        "play": "[TODO] Play",
+        "previous": "[TODO] Previous",
+        "refreshLyrics": "[TODO] Refresh Lyrics",
+        "repeatAll": "[TODO] Repeat All",
+        "repeatOne": "[TODO] Repeat One",
+        "shareSong": "[TODO] Share Song...",
+        "showLyrics": "[TODO] Show Lyrics",
+        "shuffle": "[TODO] Shuffle",
+        "single": "[TODO] Single",
+        "syncLibrary": "[TODO] Sync Library...",
+        "traditionalChinese": "[TODO] 繁體",
+        "translate": "[TODO] Translate",
+        "u2": "[TODO] U2",
+        "unknownArtist": "[TODO] Unknown Artist",
+        "video": "[TODO] Video"
+      },
+      "name": "iPod"
+    },
+    "minesweeper": {
+      "description": "クラシックなパズルゲーム",
+      "help": {
+        "desktopControls": {
+          "description": "左クリックで表示、右クリックでフラグ、数字をダブルクリックで隣接セルを自動表示",
+          "title": "デスクトップコントロール"
+        },
+        "gameRules": {
+          "description": "数字は隣接する地雷の数を示します。すべての地雷にフラグを立て、すべての安全なセルを表示して勝利。",
+          "title": "ゲームルール"
+        },
+        "mobileControls": {
+          "description": "タップで表示、長押しで地雷にフラグ",
+          "title": "モバイルコントロール"
+        },
+        "restart": {
+          "description": "笑顔アイコンを押すか、ゲーム ▸ 新規を選択して新しいボードを開始",
+          "title": "再開"
+        },
+        "timerCounter": {
+          "description": "上部バーに経過時間と残りの未フラグ地雷を表示",
+          "title": "タイマーとカウンター"
+        }
+      },
+      "menu": {
+        "aboutMinesweeper": "[TODO] About Minesweeper",
+        "minesweeperHelp": "[TODO] Minesweeper Help",
+        "newGame": "[TODO] New Game"
+      },
+      "name": "マインスイーパー"
+    },
+    "paint": {
+      "description": "画像を描画・編集",
+      "help": {
+        "colors": {
+          "description": "ツールの下のパレットから色を選択して描画色を変更。",
+          "title": "色"
+        },
+        "drawingTools": {
+          "description": "左側のツールバーを使用して、鉛筆、ブラシ、図形などのさまざまな描画ツールを選択。",
+          "title": "描画ツール"
+        },
+        "filters": {
+          "description": "フィルタメニューから反転、グレースケール、明るさなどを適用。",
+          "title": "フィルタ"
+        },
+        "patterns": {
+          "description": "下部のパレットからさまざまなパターンを選択して図形と領域を塗りつぶし。",
+          "title": "パターン"
+        },
+        "saving": {
+          "description": "ファイル > 保存を使用して作品を保存、またはファイル > 別名で保存を使用して新しい名前で保存。",
+          "title": "保存"
+        },
+        "undo": {
+          "description": "⌘Zを押すか、編集 > 取り消すを使用して最後の操作を取り消し。",
+          "title": "取り消す"
+        }
+      },
+      "menu": {
+        "aboutPaint": "[TODO] About Paint",
+        "export": "[TODO] Export",
+        "filterBlur": "[TODO] Blur",
+        "filterBrightnessMinus": "[TODO] Brightness -",
+        "filterBrightnessPlus": "[TODO] Brightness +",
+        "filterCategoryArtistic": "[TODO] Artistic",
+        "filterCategoryBlur": "[TODO] Blur",
+        "filterCategoryColor": "[TODO] Color",
+        "filterCategoryRetro": "[TODO] Retro",
+        "filterCrt": "[TODO] CRT",
+        "filterDither": "[TODO] Dither",
+        "filterEdgeDetect": "[TODO] Edge Detect",
+        "filterGaussianBlur": "[TODO] Gaussian Blur",
+        "filterGlitch": "[TODO] Glitch",
+        "filterGrayscale": "[TODO] Grayscale",
+        "filterInvert": "[TODO] Invert",
+        "filterMotionBlur": "[TODO] Motion Blur",
+        "filterNoise": "[TODO] Noise",
+        "filterOldPhoto": "[TODO] Old Photo",
+        "filterPixelate": "[TODO] Pixelate",
+        "filterRadialBlur": "[TODO] Radial Blur",
+        "filterSepia": "[TODO] Sepia",
+        "filterSharpen": "[TODO] Sharpen",
+        "filterVhs": "[TODO] VHS",
+        "filters": "[TODO] Filters",
+        "importFromDevice": "[TODO] Import from Device...",
+        "newFile": "[TODO] New File",
+        "open": "[TODO] Open...",
+        "paintHelp": "[TODO] Paint Help",
+        "save": "[TODO] Save",
+        "saveEllipsis": "[TODO] Save..."
+      },
+      "name": "ペイント"
+    },
+    "pc": {
+      "description": "3D PCシミュレーション",
+      "help": {
+        "aspectRatio": {
+          "description": "モニターに合わせて4:3またはワイドスクリーンに切り替え",
+          "title": "アスペクト比"
+        },
+        "fullscreenMode": {
+          "description": "表示 ▸ フルスクリーンを切り替えて没入感のある表示",
+          "title": "フルスクリーンモード"
+        },
+        "keyboardControls": {
+          "description": "物理キーボードを使用してゲーム内入力",
+          "title": "キーボードコントロール"
+        },
+        "mouseCapture": {
+          "description": "ウィンドウ内をクリックしてマウスをキャプチャ/解放",
+          "title": "マウスキャプチャ"
+        },
+        "pcEmulator": {
+          "description": "ブラウザでクラシックなDOSゲームとアプリを直接実行",
+          "title": "PCエミュレーター"
+        },
+        "saveStates": {
+          "description": "ファイルメニューからいつでもゲームの進行状況を保存または読み込み",
+          "title": "セーブステート"
+        }
+      },
+      "menu": {
+        "aboutVirtualPc": "[TODO] About Virtual PC",
+        "aspectRatio": "[TODO] Aspect Ratio",
+        "fullScreen": "[TODO] Full Screen",
+        "loadGame": "[TODO] Load Game",
+        "loadState": "[TODO] Load State",
+        "mouseSensitivity": "[TODO] Mouse Sensitivity",
+        "reset": "[TODO] Reset",
+        "saveState": "[TODO] Save State",
+        "toggleMouseCapture": "[TODO] Toggle Mouse Capture",
+        "virtualPcHelp": "[TODO] Virtual PC Help"
+      },
+      "name": "仮想PC"
+    },
+    "photo-booth": {
+      "description": "エフェクト付きで写真を撮影",
+      "help": {
+        "applyingEffects": {
+          "description": "エフェクトボタン（カメラボタンの右側）をクリックしてエフェクトパネルを開き、ライブカメラビューに楽しいフィルタを適用。",
+          "title": "エフェクトの適用"
+        },
+        "downloadingPhotos": {
+          "description": "写真は自動的に保存されます。写真ストリップの写真をクリックしてダウンロード。",
+          "title": "写真のダウンロード"
+        },
+        "quickSnaps": {
+          "description": "タイマーボタン（カメラボタンの左側）をクリックして、1秒間隔で4枚の写真を連続撮影。",
+          "title": "クイックスナップ"
+        },
+        "switchingCameras": {
+          "description": "複数のカメラが接続されている場合、メニューバーの「表示」メニューを使用して利用可能なカメラを切り替え。",
+          "title": "カメラの切り替え"
+        },
+        "takingPhoto": {
+          "description": "大きな赤いカメラボタンをクリックして単一の画像をキャプチャ。",
+          "title": "写真を撮る"
+        },
+        "viewingPhotos": {
+          "description": "写真スタックボタン（左端）をクリックして、下部の写真ストリップを表示または非表示にし、保存されたすべての写真を表示。",
+          "title": "写真の表示"
+        }
+      },
+      "menu": {
+        "aboutPhotoBooth": "[TODO] About Photo Booth",
+        "camera": "[TODO] Camera",
+        "clearAllPhotos": "[TODO] Clear All Photos",
+        "effects": "[TODO] Effects",
+        "exportPhotos": "[TODO] Export Photos",
+        "photoBoothHelp": "[TODO] Photo Booth Help"
+      },
+      "name": "Photo Booth"
+    },
+    "soundboard": {
+      "description": "効果音を再生",
+      "help": {
+        "customizeSlot": {
+          "description": "各サンプルに絵文字とタイトルを追加して素早く識別",
+          "title": "スロットのカスタマイズ"
+        },
+        "importExport": {
+          "description": "ボードをファイルとして共有；ドラッグ＆ドロップでインポート",
+          "title": "インポート / エクスポート"
+        },
+        "keyboardPlay": {
+          "description": "1-9キーを押して即座に音を再生",
+          "title": "キーボード再生"
+        },
+        "multipleBoards": {
+          "description": "音のセット用にボードを作成、名前変更、切り替え",
+          "title": "複数のボード"
+        },
+        "recordSlot": {
+          "description": "スロットをクリックして録音開始；再度クリックで停止",
+          "title": "録音スロット"
+        },
+        "waveformView": {
+          "description": "録音または再生中にライブ波形を表示",
+          "title": "波形表示"
+        }
+      },
+      "menu": {
+        "aboutSoundboard": "[TODO] About Soundboard",
+        "deleteSoundboard": "[TODO] Delete Soundboard",
+        "emojis": "[TODO] Emojis",
+        "exportSoundboards": "[TODO] Export Soundboards...",
+        "importSoundboards": "[TODO] Import Soundboards...",
+        "loadSpecialSoundboards": "[TODO] Load Special Soundboards",
+        "newSoundboard": "[TODO] New Soundboard",
+        "renameSoundboard": "[TODO] Rename Soundboard",
+        "resetSoundboards": "[TODO] Reset Soundboards",
+        "soundboardHelp": "[TODO] Soundboard Help",
+        "waveforms": "[TODO] Waveforms"
+      },
+      "name": "サウンドボード"
+    },
+    "synth": {
+      "description": "仮想シンセサイザー",
+      "help": {
+        "controlsPanel": {
+          "description": "CONTROLSを切り替えてオシレーター、エンベロープ、エフェクトを調整",
+          "title": "コントロールパネル"
+        },
+        "effects": {
+          "description": "リバーブ、ディレイ、ディストーション、コーラス、フェイザー、ビットクラッシャー",
+          "title": "エフェクト"
+        },
+        "midiInput": {
+          "description": "MIDIキーボードを接続して即座に演奏",
+          "title": "MIDI入力"
+        },
+        "presets": {
+          "description": "カスタムサウンドプリセットを保存、読み込み、管理",
+          "title": "プリセット"
+        },
+        "virtualKeyboard": {
+          "description": "画面上のキーまたはコンピュータキーボードで音符を演奏",
+          "title": "仮想キーボード"
+        },
+        "waveform3d": {
+          "description": "コントロールパネルが開いているときにライブアニメーション波形を表示",
+          "title": "3D波形"
+        }
+      },
+      "menu": {
+        "aboutSynth": "[TODO] About Synth",
+        "keyLabels": "[TODO] Key Labels",
+        "newPreset": "[TODO] New Preset",
+        "noLabels": "[TODO] No Labels",
+        "noteLabels": "[TODO] Note Labels",
+        "presets": "[TODO] Presets",
+        "resetSynth": "[TODO] Reset Synth",
+        "synthHelp": "[TODO] Synth Help"
+      },
+      "name": "シンセ"
+    },
+    "terminal": {
+      "description": "コマンドラインインターフェース",
+      "help": {
+        "aiAssistant": {
+          "description": "「ryo <プロンプト>」と入力して、ターミナル内で直接Ryo AIとチャット。",
+          "title": "AIアシスタント"
+        },
+        "basicCommands": {
+          "description": "ls、cd、cat、pwd、clear、touchなどのコマンドを使用してファイルをナビゲートおよび管理。",
+          "title": "基本コマンド"
+        },
+        "commandHistory": {
+          "description": "↑ / ↓矢印キーを押して以前のコマンドを循環し、素早く再実行。",
+          "title": "コマンド履歴"
+        },
+        "fileEditing": {
+          "description": "プロンプトから直接テキストエディット（edit）またはVimスタイルエディタ（vim）で書類を開く。",
+          "title": "ファイル編集"
+        },
+        "navigation": {
+          "description": "Finderと同じ仮想ファイルシステムを、おなじみのUnixコマンドで閲覧。",
+          "title": "ナビゲーション"
+        },
+        "terminalSounds": {
+          "description": "出力、エラー、AI応答の独特なサウンド。表示 ▸ サウンドで切り替え。",
+          "title": "ターミナルサウンド"
+        }
+      },
+      "menu": {
+        "aboutTerminal": "[TODO] About Terminal",
+        "clearTerminal": "[TODO] Clear Terminal",
+        "decreaseFontSize": "[TODO] Decrease Font Size",
+        "increaseFontSize": "[TODO] Increase Font Size",
+        "muteSounds": "[TODO] Mute Sounds",
+        "resetFontSize": "[TODO] Reset Font Size",
+        "terminalHelp": "[TODO] Terminal Help"
+      },
+      "name": "ターミナル"
+    },
+    "textedit": {
+      "description": "シンプルなリッチテキストエディタ",
+      "help": {
+        "fileManagement": {
+          "description": "ファイルの作成、開く、保存、エクスポート（HTML、MD、TXT）",
+          "title": "ファイル管理"
+        },
+        "formatting": {
+          "description": "太字、斜体、下線、見出し、配置オプション",
+          "title": "フォーマット"
+        },
+        "listsTasks": {
+          "description": "箇条書き、番号付き、チェックボックスタスクリストを作成",
+          "title": "リストとタスク"
+        },
+        "richEditing": {
+          "description": "テキストの入力、コピー、カット、ペースト、取り消し、やり直しが簡単",
+          "title": "リッチ編集"
+        },
+        "slashCommands": {
+          "description": "/を入力してクイックアクション、またはRyo AIにリモートで行を編集させる",
+          "title": "スラッシュコマンド"
+        },
+        "voiceDictation": {
+          "description": "ハンズフリーで書類に直接テキストを入力",
+          "title": "音声入力"
+        }
+      },
+      "menu": {
+        "aboutTextEdit": "[TODO] About TextEdit",
+        "alignCenter": "[TODO] Align Center",
+        "alignLeft": "[TODO] Align Left",
+        "alignRight": "[TODO] Align Right",
+        "bold": "[TODO] Bold",
+        "bulletList": "[TODO] Bullet List",
+        "exportAs": "[TODO] Export As...",
+        "format": "[TODO] Format",
+        "heading1": "[TODO] Heading 1",
+        "heading2": "[TODO] Heading 2",
+        "heading3": "[TODO] Heading 3",
+        "html": "[TODO] HTML",
+        "importFromDevice": "[TODO] Import from Device...",
+        "italic": "[TODO] Italic",
+        "markdown": "[TODO] Markdown",
+        "newFile": "[TODO] New File",
+        "numberedList": "[TODO] Numbered List",
+        "open": "[TODO] Open...",
+        "plainText": "[TODO] Plain Text",
+        "save": "[TODO] Save",
+        "saveEllipsis": "[TODO] Save...",
+        "taskList": "[TODO] Task List",
+        "text": "[TODO] Text",
+        "texteditHelp": "[TODO] TextEdit Help",
+        "underline": "[TODO] Underline"
+      },
+      "name": "テキストエディット"
+    },
+    "videos": {
+      "description": "動画を視聴",
+      "help": {
+        "addVideo": {
+          "description": "任意のYouTube URLを貼り付けてプレイリストに追加",
+          "title": "動画を追加"
+        },
+        "loop": {
+          "description": "現在の動画またはプレイリスト全体をループ",
+          "title": "ループ"
+        },
+        "playback": {
+          "description": "再生、一時停止、次、前のコントロール",
+          "title": "再生"
+        },
+        "playlist": {
+          "description": "動画プレイリストを管理・整理",
+          "title": "プレイリスト"
+        },
+        "retroUi": {
+          "description": "クラシックなQuickTimeプレーヤーの美学",
+          "title": "レトロUI"
+        },
+        "shuffle": {
+          "description": "プレイリストの順序をランダム化",
+          "title": "シャッフル"
+        }
+      },
+      "menu": {
+        "aboutVideos": "[TODO] About Videos",
+        "addToLibrary": "[TODO] Add to Library...",
+        "allVideos": "[TODO] All Videos",
+        "clearLibrary": "[TODO] Clear Library...",
+        "controls": "[TODO] Controls",
+        "fullScreen": "[TODO] Full Screen",
+        "library": "[TODO] Library",
+        "next": "[TODO] Next",
+        "openVideo": "[TODO] Open Video...",
+        "pause": "[TODO] Pause",
+        "play": "[TODO] Play",
+        "previous": "[TODO] Previous",
+        "repeatAll": "[TODO] Repeat All",
+        "repeatOne": "[TODO] Repeat One",
+        "resetLibrary": "[TODO] Reset Library...",
+        "shareVideo": "[TODO] Share Video...",
+        "shuffle": "[TODO] Shuffle",
+        "unknownArtist": "[TODO] Unknown Artist",
+        "videosHelp": "[TODO] Videos Help"
+      },
+      "name": "ムービー"
+    }
+  },
+  "common": {
+    "dialog": {
+      "about": "について",
+      "adding": "追加中...",
+      "cancel": "キャンセル",
+      "close": "閉じる",
+      "confirm": "確認",
+      "delete": "削除",
+      "discardChanges": "変更を破棄",
+      "discardChangesDesc": "変更を破棄して新しいファイルを作成しますか？",
+      "enterFileName": "ファイル名を入力してください",
+      "enterFilenameToSave": "保存するファイル名を入力するか、閉じる前に削除してください。",
+      "help": "ヘルプ",
+      "informationAboutApp": "アプリケーションについての情報",
+      "keepNewDocument": "新規書類を保持",
+      "madeBy": "作成者：",
+      "openInGitHub": "GitHubで開く",
+      "save": "保存",
+      "saveBeforeClosing": "閉じる前に変更を保存してください。",
+      "saveChanges": "変更を保存",
+      "saveFile": "ファイルを保存",
+      "version": "バージョン",
+      "welcomeTo": "へようこそ"
+    },
+    "menu": {
+      "aboutFinder": "Finderについて",
+      "applications": "アプリケーション",
+      "back": "戻る",
+      "byDate": "日付",
+      "byIcon": "アイコン",
+      "byKind": "種類",
+      "byList": "リスト",
+      "byName": "名前",
+      "bySize": "サイズ",
+      "bySmallIcon": "小さいアイコン",
+      "clear": "クリア",
+      "close": "閉じる",
+      "copy": "コピー",
+      "cut": "カット",
+      "documents": "書類",
+      "edit": "編集",
+      "emptyTrash": "ゴミ箱を空にする...",
+      "file": "ファイル",
+      "finderHelp": "Finderヘルプ",
+      "forward": "進む",
+      "go": "移動",
+      "help": "ヘルプ",
+      "images": "画像",
+      "moveToTrash": "ゴミ箱へ移動",
+      "music": "ミュージック",
+      "newFinderWindow": "新規Finderウィンドウ",
+      "newFolder": "新規フォルダ",
+      "paste": "ペースト",
+      "redo": "[TODO] Redo",
+      "selectAll": "すべてを選択",
+      "shareApp": "[TODO] Share App...",
+      "sites": "サイト",
+      "trash": "ゴミ箱",
+      "undo": "取り消す",
+      "videos": "ムービー",
+      "view": "表示"
+    },
+    "system": {
+      "formatFileSystem": "ファイルシステムをフォーマット",
+      "formatFileSystemDesc": "ファイルシステムをフォーマットしてもよろしいですか？これにより、すべての書類（サンプル書類を除く）、画像、カスタム壁紙が永久に削除されます。フォーマット後、ryOSが再起動します。",
+      "resetAllSettings": "すべての設定をリセット",
+      "resetAllSettingsDesc": "すべての設定をリセットしてもよろしいですか？これにより、保存されたすべての設定がクリアされ、デフォルト状態に復元されます。リセット後、ryOSが再起動します。",
+      "systemRestoring": "システムを復元中..."
     }
   },
   "settings": {
     "language": {
-      "title": "言語",
+      "chineseTraditional": "中文 (繁體中文)",
       "description": "ryOSインターフェースの優先言語を選択",
       "english": "English",
-      "chineseTraditional": "中文 (繁體中文)",
+      "french": "Français",
+      "german": "Deutsch",
       "japanese": "日本語",
       "korean": "한국어",
-      "french": "Français",
-      "german": "Deutsch"
+      "title": "言語"
     }
   }
 }
-

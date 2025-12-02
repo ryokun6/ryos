@@ -16,6 +16,7 @@ import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
+import { useTranslation } from "react-i18next";
 
 interface PcMenuBarProps {
   onClose: () => void;
@@ -54,6 +55,7 @@ export function PcMenuBar({
   currentRenderAspect,
   mouseSensitivity,
 }: PcMenuBarProps) {
+  const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "pc";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
@@ -72,13 +74,13 @@ export function PcMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            File
+            {t("common.menu.file")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-              Load Game
+              {t("apps.pc.menu.loadGame")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="px-0">
               {availableGames.map((game) => (
@@ -99,27 +101,27 @@ export function PcMenuBar({
             onClick={onSaveState}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Save State
+            {t("apps.pc.menu.saveState")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onLoadState}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Load State
+            {t("apps.pc.menu.loadState")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onReset}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Reset
+            {t("apps.pc.menu.reset")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Close
+            {t("common.menu.close")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -131,7 +133,7 @@ export function PcMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Controls
+            {t("apps.pc.menu.controls")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -139,18 +141,18 @@ export function PcMenuBar({
             onClick={() => onSetFullScreen(!isFullScreen)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Full Screen
+            {t("apps.pc.menu.fullScreen")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={() => onSetMouseCapture(!isMouseCaptured)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Toggle Mouse Capture
+            {t("apps.pc.menu.toggleMouseCapture")}
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-              Mouse Sensitivity
+              {t("apps.pc.menu.mouseSensitivity")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="px-0">
               {sensitivityOptions.map((sensitivity) => (
@@ -169,7 +171,7 @@ export function PcMenuBar({
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-              Aspect Ratio
+              {t("apps.pc.menu.aspectRatio")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="px-0">
               {renderAspects.map((aspect) => (
@@ -195,7 +197,7 @@ export function PcMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Help
+            {t("common.menu.help")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -203,20 +205,20 @@ export function PcMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Virtual PC Help
+            {t("apps.pc.menu.virtualPcHelp")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Share App...
+            {t("common.menu.shareApp")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About Virtual PC
+            {t("apps.pc.menu.aboutVirtualPc")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

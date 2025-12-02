@@ -15,11 +15,19 @@ Complete localization of ryOS for 6 languages: English, Chinese Traditional, Jap
 - ✅ Core dialogs (HelpDialog, AboutDialog, InputDialog, ConfirmDialog)
 - ✅ System menu (MenuBar.tsx - File, Edit, View, Go, Help menus)
 - ✅ Helper utilities (`getTranslatedAppName`, `useTranslatedHelpItems`)
+- ✅ 8/15 App Menu Bars translated (53% complete)
+  - Finder, TextEdit, Terminal, Videos, Soundboard, PC, Photo Booth, Minesweeper
+
+### Translation Tools Created
+- ✅ `scripts/extract-menu-strings.ts` - Extract untranslated strings
+- ✅ `scripts/sync-translations.ts` - Sync English keys to other languages
+- ✅ `scripts/machine-translate.ts` - Machine translate using Gemini 2.5 Flash
+- ✅ `scripts/find-untranslated-strings.ts` - Find hardcoded English strings
 
 ## 📋 What's Remaining
 
-### 1. App Menu Bars (14 files)
-**Estimated time:** 2-3 hours
+### 1. App Menu Bars (15 files)
+**Progress: 8/15 completed (53%)**
 
 Each app has a menu bar component that needs translation. Most follow similar patterns:
 - File menu: New, Open, Save, Close
@@ -27,24 +35,24 @@ Each app has a menu bar component that needs translation. Most follow similar pa
 - View menu: Various options
 - App-specific menus
 
-**Files:**
-```
-src/apps/finder/components/FinderMenuBar.tsx
-src/apps/textedit/components/TextEditMenuBar.tsx
-src/apps/paint/components/PaintMenuBar.tsx
-src/apps/ipod/components/IpodMenuBar.tsx
-src/apps/chats/components/ChatsMenuBar.tsx
-src/apps/terminal/components/TerminalMenuBar.tsx
-src/apps/videos/components/VideosMenuBar.tsx
-src/apps/soundboard/components/SoundboardMenuBar.tsx
-src/apps/internet-explorer/components/InternetExplorerMenuBar.tsx
-src/apps/synth/components/SynthMenuBar.tsx
-src/apps/pc/components/PcMenuBar.tsx
-src/apps/photo-booth/components/PhotoBoothMenuBar.tsx
-src/apps/minesweeper/components/MinesweeperMenuBar.tsx
-src/apps/applet-viewer/components/AppletViewerMenuBar.tsx
-src/apps/control-panels/components/ControlPanelsMenuBar.tsx
-```
+**Completed (8):**
+- ✅ FinderMenuBar.tsx
+- ✅ TextEditMenuBar.tsx
+- ✅ TerminalMenuBar.tsx
+- ✅ VideosMenuBar.tsx
+- ✅ SoundboardMenuBar.tsx
+- ✅ PcMenuBar.tsx
+- ✅ PhotoBoothMenuBar.tsx
+- ✅ MinesweeperMenuBar.tsx
+
+**Remaining (7):**
+- ⏳ PaintMenuBar.tsx (18 strings)
+- ⏳ IpodMenuBar.tsx (25 strings)
+- ⏳ ChatsMenuBar.tsx (4 strings)
+- ⏳ InternetExplorerMenuBar.tsx (32 strings)
+- ⏳ SynthMenuBar.tsx (1 string)
+- ⏳ AppletViewerMenuBar.tsx (4 strings)
+- ⏳ ControlPanelsMenuBar.tsx (1 string)
 
 **Process:**
 1. Open file
@@ -156,6 +164,18 @@ After each component:
 5. **Repeat for next app**
 
 ## 📊 Progress Tracking
+
+### Translation Files Status
+- ✅ **English (en)**: Complete (507 keys)
+- ✅ **Chinese Traditional (zh-TW)**: Complete (0 [TODO] keys) - Machine translated
+- ⏳ **Japanese (ja)**: 246 [TODO] keys remaining
+- ⏳ **Korean (ko)**: 246 [TODO] keys remaining
+- ⏳ **French (fr)**: 246 [TODO] keys remaining
+- ⏳ **German (de)**: 246 [TODO] keys remaining
+
+### Menu Bars Status
+- ✅ **8/15 completed** (53%)
+- ⏳ **7 remaining** (~85 strings total)
 
 Track your progress in `LOCALIZATION_ROADMAP.md`:
 - Check off completed menu bars

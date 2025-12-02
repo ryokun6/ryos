@@ -16,6 +16,7 @@ import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
+import { useTranslation } from "react-i18next";
 
 interface Video {
   id: string;
@@ -73,6 +74,7 @@ export function VideosMenuBar({
   onFullScreen,
   onShareVideo,
 }: VideosMenuBarProps) {
+  const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "videos";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
@@ -82,7 +84,7 @@ export function VideosMenuBar({
   // Group videos by artist
   const videosByArtist = videos.reduce<Record<string, Video[]>>(
     (acc, video) => {
-      const artist = video.artist || 'Unknown Artist';
+      const artist = video.artist || t("apps.videos.menu.unknownArtist");
       if (!acc[artist]) {
         acc[artist] = [];
       }
@@ -105,7 +107,7 @@ export function VideosMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            File
+            {t("common.menu.file")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -113,21 +115,21 @@ export function VideosMenuBar({
             onClick={onOpenVideo}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Open Video...
+            {t("apps.videos.menu.openVideo")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onShareVideo}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={videos.length === 0}
           >
-            Share Video...
+            {t("apps.videos.menu.shareVideo")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Close
+            {t("common.menu.close")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -140,7 +142,7 @@ export function VideosMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Controls
+            {t("apps.videos.menu.controls")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -149,28 +151,28 @@ export function VideosMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={videos.length === 0}
           >
-            {isPlaying ? "Pause" : "Play"}
+            {isPlaying ? t("apps.videos.menu.pause") : t("apps.videos.menu.play")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onPrevious}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={videos.length === 0}
           >
-            Previous
+            {t("apps.videos.menu.previous")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onNext}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={videos.length === 0}
           >
-            Next
+            {t("apps.videos.menu.next")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onFullScreen}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Full Screen
+            {t("apps.videos.menu.fullScreen")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -178,7 +180,7 @@ export function VideosMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isShuffled && "pl-4")}>
-              {isShuffled ? "✓ Shuffle" : "Shuffle"}
+              {isShuffled ? `✓ ${t("apps.videos.menu.shuffle")}` : t("apps.videos.menu.shuffle")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -186,7 +188,7 @@ export function VideosMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isLoopAll && "pl-4")}>
-              {isLoopAll ? "✓ Repeat All" : "Repeat All"}
+              {isLoopAll ? `✓ ${t("apps.videos.menu.repeatAll")}` : t("apps.videos.menu.repeatAll")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -194,7 +196,7 @@ export function VideosMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isLoopCurrent && "pl-4")}>
-              {isLoopCurrent ? "✓ Repeat One" : "Repeat One"}
+              {isLoopCurrent ? `✓ ${t("apps.videos.menu.repeatOne")}` : t("apps.videos.menu.repeatOne")}
             </span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -208,7 +210,7 @@ export function VideosMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Library
+            {t("apps.videos.menu.library")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0 max-w-[180px] sm:max-w-[220px]">
@@ -216,7 +218,7 @@ export function VideosMenuBar({
             onClick={onAddVideo}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Add to Library...
+            {t("apps.videos.menu.addToLibrary")}
           </DropdownMenuItem>
           
           {videos.length > 0 && (
@@ -227,7 +229,7 @@ export function VideosMenuBar({
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
                   <div className="flex justify-between w-full items-center overflow-hidden">
-                    <span className="truncate min-w-0">All Videos</span>
+                    <span className="truncate min-w-0">{t("apps.videos.menu.allVideos")}</span>
                   </div>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px]">
@@ -299,13 +301,13 @@ export function VideosMenuBar({
             onClick={onClearPlaylist}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Clear Library...
+            {t("apps.videos.menu.clearLibrary")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onResetPlaylist}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Reset Library...
+            {t("apps.videos.menu.resetLibrary")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -318,7 +320,7 @@ export function VideosMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Help
+            {t("common.menu.help")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -326,20 +328,20 @@ export function VideosMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Videos Help
+            {t("apps.videos.menu.videosHelp")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Share App...
+            {t("common.menu.shareApp")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About Videos
+            {t("apps.videos.menu.aboutVideos")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

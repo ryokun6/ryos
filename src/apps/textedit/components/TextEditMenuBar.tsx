@@ -17,6 +17,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
+import { useTranslation } from "react-i18next";
 
 interface TextEditMenuBarProps {
   editor: Editor | null;
@@ -45,6 +46,7 @@ export function TextEditMenuBar({
   currentFilePath,
   handleFileSelect,
 }: TextEditMenuBarProps) {
+  const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "textedit";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
@@ -69,7 +71,7 @@ export function TextEditMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            File
+            {t("common.menu.file")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -77,50 +79,50 @@ export function TextEditMenuBar({
             onClick={onNewFile}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            New File
+            {t("apps.textedit.menu.newFile")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onImportFile}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Open...
+            {t("apps.textedit.menu.open")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onSave}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            {currentFilePath ? "Save" : "Save..."}
+            {currentFilePath ? t("apps.textedit.menu.save") : t("apps.textedit.menu.saveEllipsis")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={() => fileInputRef.current?.click()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Import from Device...
+            {t("apps.textedit.menu.importFromDevice")}
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-              Export As...
+              {t("apps.textedit.menu.exportAs")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuItem
                 onClick={() => onExportFile("html")}
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
-                HTML
+                {t("apps.textedit.menu.html")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onExportFile("md")}
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
-                Markdown
+                {t("apps.textedit.menu.markdown")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onExportFile("txt")}
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
-                Plain Text
+                {t("apps.textedit.menu.plainText")}
               </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
@@ -129,7 +131,7 @@ export function TextEditMenuBar({
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Close
+            {t("common.menu.close")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -141,7 +143,7 @@ export function TextEditMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            Edit
+            {t("common.menu.edit")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -149,13 +151,13 @@ export function TextEditMenuBar({
             onClick={() => editor?.chain().focus().undo().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Undo
+            {t("common.menu.undo")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => editor?.chain().focus().redo().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Redo
+            {t("common.menu.redo")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -166,7 +168,7 @@ export function TextEditMenuBar({
             }}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Copy
+            {t("common.menu.copy")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
@@ -176,20 +178,20 @@ export function TextEditMenuBar({
             }}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Cut
+            {t("common.menu.cut")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => document.execCommand("paste")}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Paste
+            {t("common.menu.paste")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={() => editor?.chain().focus().selectAll().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Select All
+            {t("common.menu.selectAll")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -201,7 +203,7 @@ export function TextEditMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            Format
+            {t("apps.textedit.menu.format")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -210,7 +212,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("bold") && "pl-4")}>
-              {editor?.isActive("bold") ? "✓ Bold" : "Bold"}
+              {editor?.isActive("bold") ? `✓ ${t("apps.textedit.menu.bold")}` : t("apps.textedit.menu.bold")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -218,7 +220,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("italic") && "pl-4")}>
-              {editor?.isActive("italic") ? "✓ Italic" : "Italic"}
+              {editor?.isActive("italic") ? `✓ ${t("apps.textedit.menu.italic")}` : t("apps.textedit.menu.italic")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -226,7 +228,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("underline") && "pl-4")}>
-              {editor?.isActive("underline") ? "✓ Underline" : "Underline"}
+              {editor?.isActive("underline") ? `✓ ${t("apps.textedit.menu.underline")}` : t("apps.textedit.menu.underline")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
@@ -235,7 +237,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("paragraph") && "pl-4")}>
-              {editor?.isActive("paragraph") ? "✓ Text" : "Text"}
+              {editor?.isActive("paragraph") ? `✓ ${t("apps.textedit.menu.text")}` : t("apps.textedit.menu.text")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -248,8 +250,8 @@ export function TextEditMenuBar({
               )}
             >
               {editor?.isActive("heading", { level: 1 })
-                ? "✓ Heading 1"
-                : "Heading 1"}
+                ? `✓ ${t("apps.textedit.menu.heading1")}`
+                : t("apps.textedit.menu.heading1")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -262,8 +264,8 @@ export function TextEditMenuBar({
               )}
             >
               {editor?.isActive("heading", { level: 2 })
-                ? "✓ Heading 2"
-                : "Heading 2"}
+                ? `✓ ${t("apps.textedit.menu.heading2")}`
+                : t("apps.textedit.menu.heading2")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -276,8 +278,8 @@ export function TextEditMenuBar({
               )}
             >
               {editor?.isActive("heading", { level: 3 })
-                ? "✓ Heading 3"
-                : "Heading 3"}
+                ? `✓ ${t("apps.textedit.menu.heading3")}`
+                : t("apps.textedit.menu.heading3")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
@@ -291,8 +293,8 @@ export function TextEditMenuBar({
               )}
             >
               {editor?.isActive({ textAlign: "left" })
-                ? "✓ Align Left"
-                : "Align Left"}
+                ? `✓ ${t("apps.textedit.menu.alignLeft")}`
+                : t("apps.textedit.menu.alignLeft")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -305,8 +307,8 @@ export function TextEditMenuBar({
               )}
             >
               {editor?.isActive({ textAlign: "center" })
-                ? "✓ Align Center"
-                : "Align Center"}
+                ? `✓ ${t("apps.textedit.menu.alignCenter")}`
+                : t("apps.textedit.menu.alignCenter")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -319,8 +321,8 @@ export function TextEditMenuBar({
               )}
             >
               {editor?.isActive({ textAlign: "right" })
-                ? "✓ Align Right"
-                : "Align Right"}
+                ? `✓ ${t("apps.textedit.menu.alignRight")}`
+                : t("apps.textedit.menu.alignRight")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
@@ -329,7 +331,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("bulletList") && "pl-4")}>
-              {editor?.isActive("bulletList") ? "✓ Bullet List" : "Bullet List"}
+              {editor?.isActive("bulletList") ? `✓ ${t("apps.textedit.menu.bulletList")}` : t("apps.textedit.menu.bulletList")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -338,8 +340,8 @@ export function TextEditMenuBar({
           >
             <span className={cn(!editor?.isActive("orderedList") && "pl-4")}>
               {editor?.isActive("orderedList")
-                ? "✓ Numbered List"
-                : "Numbered List"}
+                ? `✓ ${t("apps.textedit.menu.numberedList")}`
+                : t("apps.textedit.menu.numberedList")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -347,7 +349,7 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("taskList") && "pl-4")}>
-              {editor?.isActive("taskList") ? "✓ Task List" : "Task List"}
+              {editor?.isActive("taskList") ? `✓ ${t("apps.textedit.menu.taskList")}` : t("apps.textedit.menu.taskList")}
             </span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -360,7 +362,7 @@ export function TextEditMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            Help
+            {t("common.menu.help")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -368,20 +370,20 @@ export function TextEditMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            TextEdit Help
+            {t("apps.textedit.menu.texteditHelp")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Share App...
+            {t("common.menu.shareApp")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About TextEdit
+            {t("apps.textedit.menu.aboutTextEdit")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

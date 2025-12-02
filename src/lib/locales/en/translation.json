@@ -6,26 +6,14 @@
       "view": "View",
       "go": "Go",
       "help": "Help",
-      "newFinderWindow": "New Finder Window",
-      "newFolder": "New Folder",
-      "moveToTrash": "Move to Trash",
-      "emptyTrash": "Empty Trash...",
       "close": "Close",
       "undo": "Undo",
+      "redo": "Redo",
       "cut": "Cut",
       "copy": "Copy",
       "paste": "Paste",
       "clear": "Clear",
       "selectAll": "Select All",
-      "bySmallIcon": "by Small Icon",
-      "byIcon": "by Icon",
-      "byList": "by List",
-      "byName": "by Name",
-      "byDate": "by Date",
-      "bySize": "by Size",
-      "byKind": "by Kind",
-      "back": "Back",
-      "forward": "Forward",
       "applications": "Applications",
       "documents": "Documents",
       "images": "Images",
@@ -33,8 +21,7 @@
       "sites": "Sites",
       "videos": "Videos",
       "trash": "Trash",
-      "finderHelp": "Finder Help",
-      "aboutFinder": "About Finder"
+      "shareApp": "Share App..."
     },
     "dialog": {
       "save": "Save",
@@ -71,6 +58,27 @@
     "finder": {
       "name": "Finder",
       "description": "Browse and manage files",
+      "menu": {
+        "newFinderWindow": "New Finder Window",
+        "newFolder": "New Folder...",
+        "importFromDevice": "Import from Device...",
+        "rename": "Rename...",
+        "duplicate": "Duplicate",
+        "putBack": "Put Back",
+        "moveToTrash": "Move to Trash",
+        "emptyTrash": "Empty Trash...",
+        "bySmallIcon": "by Small Icon",
+        "byIcon": "by Icon",
+        "byList": "by List",
+        "byName": "by Name",
+        "byDate": "by Date",
+        "bySize": "by Size",
+        "byKind": "by Kind",
+        "back": "Back",
+        "forward": "Forward",
+        "finderHelp": "Finder Help",
+        "aboutFinder": "About Finder"
+      },
       "help": {
         "browseNavigate": {
           "title": "Browse & Navigate",
@@ -101,6 +109,19 @@
     "soundboard": {
       "name": "Soundboard",
       "description": "Play sound effects",
+      "menu": {
+        "newSoundboard": "New Soundboard",
+        "importSoundboards": "Import Soundboards...",
+        "exportSoundboards": "Export Soundboards...",
+        "resetSoundboards": "Reset Soundboards",
+        "loadSpecialSoundboards": "Load Special Soundboards",
+        "renameSoundboard": "Rename Soundboard",
+        "deleteSoundboard": "Delete Soundboard",
+        "waveforms": "Waveforms",
+        "emojis": "Emojis",
+        "soundboardHelp": "Soundboard Help",
+        "aboutSoundboard": "About Soundboard"
+      },
       "help": {
         "recordSlot": {
           "title": "Record Slot",
@@ -131,6 +152,60 @@
     "internet-explorer": {
       "name": "Internet Explorer",
       "description": "Browse the web",
+      "menu": {
+        "goToUrl": "Go to URL",
+        "sharePage": "Share Page...",
+        "openTimeMachine": "Open Time Machine",
+        "refresh": "Refresh",
+        "stop": "Stop",
+        "year": "Year",
+        "now": "Now",
+        "language": "Language",
+        "auto": "Auto",
+        "english": "English",
+        "chinese": "Chinese",
+        "japanese": "Japanese",
+        "korean": "Korean",
+        "french": "French",
+        "spanish": "Spanish",
+        "portuguese": "Portuguese",
+        "german": "German",
+        "italian": "Italian",
+        "russian": "Russian",
+        "welsh": "Welsh",
+        "latin": "Latin",
+        "sanskrit": "Sanskrit",
+        "alien": "Alien",
+        "aiLanguage": "AI Language",
+        "digitalBeing": "Digital Being",
+        "location": "Location",
+        "unitedStates": "United States",
+        "china": "China",
+        "japan": "Japan",
+        "korea": "Korea",
+        "canada": "Canada",
+        "unitedKingdom": "United Kingdom",
+        "france": "France",
+        "germany": "Germany",
+        "spain": "Spain",
+        "portugal": "Portugal",
+        "india": "India",
+        "brazil": "Brazil",
+        "australia": "Australia",
+        "russia": "Russia",
+        "editFuture": "Edit Future...",
+        "favorites": "Favorites",
+        "goHome": "Go Home",
+        "addToFavorites": "Add to Favorites...",
+        "clearFavorites": "Clear Favorites...",
+        "resetFavorites": "Reset Favorites...",
+        "history": "History",
+        "back": "Back",
+        "forward": "Forward",
+        "clearHistory": "Clear History...",
+        "internetExplorerHelp": "Internet Explorer Help",
+        "aboutInternetExplorer": "About Internet Explorer"
+      },
       "help": {
         "browseWeb": {
           "title": "Browse the Web",
@@ -191,6 +266,33 @@
     "textedit": {
       "name": "TextEdit",
       "description": "A simple rich text editor",
+      "menu": {
+        "newFile": "New File",
+        "open": "Open...",
+        "save": "Save",
+        "saveEllipsis": "Save...",
+        "importFromDevice": "Import from Device...",
+        "exportAs": "Export As...",
+        "html": "HTML",
+        "markdown": "Markdown",
+        "plainText": "Plain Text",
+        "format": "Format",
+        "bold": "Bold",
+        "italic": "Italic",
+        "underline": "Underline",
+        "text": "Text",
+        "heading1": "Heading 1",
+        "heading2": "Heading 2",
+        "heading3": "Heading 3",
+        "alignLeft": "Align Left",
+        "alignCenter": "Align Center",
+        "alignRight": "Align Right",
+        "bulletList": "Bullet List",
+        "numberedList": "Numbered List",
+        "taskList": "Task List",
+        "texteditHelp": "TextEdit Help",
+        "aboutTextEdit": "About TextEdit"
+      },
       "help": {
         "richEditing": {
           "title": "Rich Editing",
@@ -221,6 +323,39 @@
     "paint": {
       "name": "Paint",
       "description": "Draw and edit images",
+      "menu": {
+        "newFile": "New File",
+        "open": "Open...",
+        "save": "Save",
+        "saveEllipsis": "Save...",
+        "importFromDevice": "Import from Device...",
+        "export": "Export",
+        "filters": "Filters",
+        "filterCategoryColor": "Color",
+        "filterCategoryArtistic": "Artistic",
+        "filterCategoryBlur": "Blur",
+        "filterCategoryRetro": "Retro",
+        "filterBrightnessPlus": "Brightness +",
+        "filterBrightnessMinus": "Brightness -",
+        "filterGrayscale": "Grayscale",
+        "filterInvert": "Invert",
+        "filterSepia": "Sepia",
+        "filterPixelate": "Pixelate",
+        "filterEdgeDetect": "Edge Detect",
+        "filterSharpen": "Sharpen",
+        "filterBlur": "Blur",
+        "filterGaussianBlur": "Gaussian Blur",
+        "filterMotionBlur": "Motion Blur",
+        "filterRadialBlur": "Radial Blur",
+        "filterNoise": "Noise",
+        "filterOldPhoto": "Old Photo",
+        "filterVhs": "VHS",
+        "filterCrt": "CRT",
+        "filterGlitch": "Glitch",
+        "filterDither": "Dither",
+        "paintHelp": "Paint Help",
+        "aboutPaint": "About Paint"
+      },
       "help": {
         "drawingTools": {
           "title": "Drawing Tools",
@@ -251,6 +386,14 @@
     "photo-booth": {
       "name": "Photo Booth",
       "description": "Take photos with effects",
+      "menu": {
+        "exportPhotos": "Export Photos",
+        "clearAllPhotos": "Clear All Photos",
+        "camera": "Camera",
+        "effects": "Effects",
+        "photoBoothHelp": "Photo Booth Help",
+        "aboutPhotoBooth": "About Photo Booth"
+      },
       "help": {
         "takingPhoto": {
           "title": "Taking a Photo",
@@ -281,6 +424,11 @@
     "minesweeper": {
       "name": "Minesweeper",
       "description": "Classic puzzle game",
+      "menu": {
+        "newGame": "New Game",
+        "minesweeperHelp": "Minesweeper Help",
+        "aboutMinesweeper": "About Minesweeper"
+      },
       "help": {
         "desktopControls": {
           "title": "Desktop Controls",
@@ -307,6 +455,27 @@
     "videos": {
       "name": "Videos",
       "description": "Watch videos",
+      "menu": {
+        "openVideo": "Open Video...",
+        "shareVideo": "Share Video...",
+        "controls": "Controls",
+        "play": "Play",
+        "pause": "Pause",
+        "previous": "Previous",
+        "next": "Next",
+        "fullScreen": "Full Screen",
+        "shuffle": "Shuffle",
+        "repeatAll": "Repeat All",
+        "repeatOne": "Repeat One",
+        "library": "Library",
+        "addToLibrary": "Add to Library...",
+        "allVideos": "All Videos",
+        "clearLibrary": "Clear Library...",
+        "resetLibrary": "Reset Library...",
+        "unknownArtist": "Unknown Artist",
+        "videosHelp": "Videos Help",
+        "aboutVideos": "About Videos"
+      },
       "help": {
         "addVideo": {
           "title": "Add Video",
@@ -337,6 +506,43 @@
     "ipod": {
       "name": "iPod",
       "description": "Music player",
+      "menu": {
+        "addSong": "Add Song...",
+        "shareSong": "Share Song...",
+        "exportLibrary": "Export Library...",
+        "importLibrary": "Import Library...",
+        "play": "Play",
+        "pause": "Pause",
+        "previous": "Previous",
+        "next": "Next",
+        "shuffle": "Shuffle",
+        "repeatAll": "Repeat All",
+        "repeatOne": "Repeat One",
+        "lyrics": "Lyrics",
+        "showLyrics": "Show Lyrics",
+        "refreshLyrics": "Refresh Lyrics",
+        "traditionalChinese": "繁體",
+        "korean": "한글",
+        "multi": "Multi",
+        "single": "Single",
+        "alternating": "Alternating",
+        "translate": "Translate",
+        "backlight": "Backlight",
+        "lcdFilter": "LCD Filter",
+        "video": "Video",
+        "classic": "Classic",
+        "black": "Black",
+        "u2": "U2",
+        "fullScreen": "Full Screen",
+        "library": "Library",
+        "addToLibrary": "Add to Library...",
+        "allSongs": "All Songs",
+        "clearLibrary": "Clear Library...",
+        "syncLibrary": "Sync Library...",
+        "unknownArtist": "Unknown Artist",
+        "ipodHelp": "iPod Help",
+        "aboutIpod": "About iPod"
+      },
       "help": {
         "addSongs": {
           "title": "Add Songs",
@@ -367,6 +573,16 @@
     "synth": {
       "name": "Synth",
       "description": "Virtual synthesizer",
+      "menu": {
+        "newPreset": "New Preset",
+        "resetSynth": "Reset Synth",
+        "presets": "Presets",
+        "noteLabels": "Note Labels",
+        "keyLabels": "Key Labels",
+        "noLabels": "No Labels",
+        "synthHelp": "Synth Help",
+        "aboutSynth": "About Synth"
+      },
       "help": {
         "virtualKeyboard": {
           "title": "Virtual Keyboard",
@@ -397,6 +613,18 @@
     "pc": {
       "name": "Virtual PC",
       "description": "3D PC simulation",
+      "menu": {
+        "loadGame": "Load Game",
+        "saveState": "Save State",
+        "loadState": "Load State",
+        "reset": "Reset",
+        "fullScreen": "Full Screen",
+        "toggleMouseCapture": "Toggle Mouse Capture",
+        "mouseSensitivity": "Mouse Sensitivity",
+        "aspectRatio": "Aspect Ratio",
+        "virtualPcHelp": "Virtual PC Help",
+        "aboutVirtualPc": "About Virtual PC"
+      },
       "help": {
         "pcEmulator": {
           "title": "PC Emulator",
@@ -427,6 +655,15 @@
     "terminal": {
       "name": "Terminal",
       "description": "Command line interface",
+      "menu": {
+        "clearTerminal": "Clear Terminal",
+        "increaseFontSize": "Increase Font Size",
+        "decreaseFontSize": "Decrease Font Size",
+        "resetFontSize": "Reset Font Size",
+        "muteSounds": "Mute Sounds",
+        "terminalHelp": "Terminal Help",
+        "aboutTerminal": "About Terminal"
+      },
       "help": {
         "basicCommands": {
           "title": "Basic Commands",
@@ -457,6 +694,26 @@
     "applet-viewer": {
       "name": "Applet Store",
       "description": "View and run applets",
+      "menu": {
+        "open": "Open...",
+        "shareApplet": "Share Applet...",
+        "importFromDevice": "Import from Device...",
+        "exportAs": "Export As...",
+        "ryosApp": "ryOS App",
+        "html": "HTML",
+        "store": "Store",
+        "openAppletStore": "Open Applet Store",
+        "checkForUpdates": "Check for updates",
+        "updateApplets": "Update {{count}} applet",
+        "updateAppletsPlural": "Update {{count}} applets",
+        "window": "Window",
+        "noAppletsOpen": "No applets open",
+        "createAccount": "Create Account...",
+        "login": "Login...",
+        "logOut": "Log Out",
+        "appletsHelp": "Applets Help",
+        "aboutApplets": "About Applets"
+      },
       "help": {
         "appletStore": {
           "title": "Applet Store",

@@ -15,6 +15,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
+import { useTranslation } from "react-i18next";
 
 export type ViewType = "small" | "large" | "list";
 export type SortType = "name" | "date" | "size" | "kind";
@@ -74,6 +75,7 @@ export function FinderMenuBar({
   rootFolders,
   onNewWindow,
 }: FinderMenuBarProps) {
+  const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "finder";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
@@ -103,7 +105,7 @@ export function FinderMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            File
+            {t("common.menu.file")}
           </Button>
         </DropdownMenuTrigger>
           <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -111,20 +113,20 @@ export function FinderMenuBar({
             onClick={onNewWindow}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            New Finder Window
+            {t("apps.finder.menu.newFinderWindow")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onNewFolder}
             disabled={!canCreateFolder}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            New Folder...
+            {t("apps.finder.menu.newFolder")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onImportFile}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Import from Device...
+            {t("apps.finder.menu.importFromDevice")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -132,14 +134,14 @@ export function FinderMenuBar({
             disabled={!canRename}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Rename...
+            {t("apps.finder.menu.rename")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onDuplicate}
             disabled={!canDuplicate}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Duplicate
+            {t("apps.finder.menu.duplicate")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           {isInTrash ? (
@@ -147,7 +149,7 @@ export function FinderMenuBar({
               onClick={onRestore}
               className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             >
-              Put Back
+              {t("apps.finder.menu.putBack")}
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem
@@ -155,7 +157,7 @@ export function FinderMenuBar({
               disabled={!canMoveToTrash}
               className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Move to Trash
+              {t("apps.finder.menu.moveToTrash")}
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
@@ -163,14 +165,14 @@ export function FinderMenuBar({
             disabled={isTrashEmpty}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Empty Trash...
+            {t("apps.finder.menu.emptyTrash")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Close
+            {t("common.menu.close")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -183,29 +185,29 @@ export function FinderMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            Edit
+            {t("common.menu.edit")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            Undo
+            {t("common.menu.undo")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            Cut
+            {t("common.menu.cut")}
           </DropdownMenuItem>
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            Copy
+            {t("common.menu.copy")}
           </DropdownMenuItem>
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            Paste
+            {t("common.menu.paste")}
           </DropdownMenuItem>
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            Clear
+            {t("common.menu.clear")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            Select All
+            {t("common.menu.selectAll")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -218,7 +220,7 @@ export function FinderMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            View
+            {t("common.menu.view")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -227,7 +229,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(viewType !== "small" && "pl-4")}> 
-              {viewType === "small" ? "✓ by Small Icon" : "by Small Icon"}
+              {viewType === "small" ? `✓ ${t("apps.finder.menu.bySmallIcon")}` : t("apps.finder.menu.bySmallIcon")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -235,7 +237,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(viewType !== "large" && "pl-4")}> 
-              {viewType === "large" ? "✓ by Icon" : "by Icon"}
+              {viewType === "large" ? `✓ ${t("apps.finder.menu.byIcon")}` : t("apps.finder.menu.byIcon")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -243,7 +245,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(viewType !== "list" && "pl-4")}> 
-              {viewType === "list" ? "✓ by List" : "by List"}
+              {viewType === "list" ? `✓ ${t("apps.finder.menu.byList")}` : t("apps.finder.menu.byList")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
@@ -252,7 +254,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(sortType !== "name" && "pl-4")}>
-              {sortType === "name" ? "✓ by Name" : "by Name"}
+              {sortType === "name" ? `✓ ${t("apps.finder.menu.byName")}` : t("apps.finder.menu.byName")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -260,7 +262,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(sortType !== "date" && "pl-4")}>
-              {sortType === "date" ? "✓ by Date" : "by Date"}
+              {sortType === "date" ? `✓ ${t("apps.finder.menu.byDate")}` : t("apps.finder.menu.byDate")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -268,7 +270,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(sortType !== "size" && "pl-4")}>
-              {sortType === "size" ? "✓ by Size" : "by Size"}
+              {sortType === "size" ? `✓ ${t("apps.finder.menu.bySize")}` : t("apps.finder.menu.bySize")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -276,7 +278,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(sortType !== "kind" && "pl-4")}>
-              {sortType === "kind" ? "✓ by Kind" : "by Kind"}
+              {sortType === "kind" ? `✓ ${t("apps.finder.menu.byKind")}` : t("apps.finder.menu.byKind")}
             </span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -290,7 +292,7 @@ export function FinderMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            Go
+            {t("common.menu.go")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -299,14 +301,14 @@ export function FinderMenuBar({
             disabled={!canNavigateBack}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Back
+            {t("apps.finder.menu.back")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onNavigateForward}
             disabled={!canNavigateForward}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Forward
+            {t("apps.finder.menu.forward")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
 
@@ -340,7 +342,7 @@ export function FinderMenuBar({
               alt=""
               className="w-4 h-4 [image-rendering:pixelated]"
             />
-            Trash
+            {t("common.menu.trash")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -353,7 +355,7 @@ export function FinderMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            Help
+            {t("common.menu.help")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -361,20 +363,20 @@ export function FinderMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Finder Help
+            {t("apps.finder.menu.finderHelp")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Share App...
+            {t("common.menu.shareApp")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About Finder
+            {t("apps.finder.menu.aboutFinder")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
