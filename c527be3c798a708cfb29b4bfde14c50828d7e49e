@@ -14,5 +14,5 @@ src/lib/locales/zh-TW/translation.json: +376-385[0] -376[0]
 
 Conversations:
 
-[0]: 0b334afb-08cf-4901-b674-98452eb67850; Add settings tool for AI system; composer-1;
-[1]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; Auto detect and set user locale; composer-1;
+[0]: 0b334afb-08cf-4901-b674-98452eb67850; 0b334afb; unknown;
+[1]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; 4afd4575; unknown;
