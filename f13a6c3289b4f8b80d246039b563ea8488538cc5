@@ -11,7 +11,12 @@ src/apps/ipod/components/IpodMenuBar.tsx: +22[0],+43[0],+48-60[0],+154[0],+179[0
 src/apps/ipod/components/IpodScreen.tsx: +10[0],+416[0],+434-435[0] -432-433[0]
 src/apps/ipod/components/IpodWheel.tsx: +3[0],+24[0],+311[0] -309[0]
 src/hooks/useWindowManager.ts: +124[3],+126[3],+132-134[3],+241[3],+243[3],+245-248[3],+341[3],+343[3],+345-348[3],+363-367[3],+382-386[3],+406-414[3],+425[3],+428[3] -124[3],-126[3],-238[3],-240[3],-334[3],-336[3],-395[3],-398[3]
-src/lib/locales/en/translation.json: +356[4],+367[5],+673-677[0],+678[5],+679[4],+680-698[0],+699[5],+700[4],+701-713[0],+714[2],+715[5],+716-729[0],+730[2],+731[5],+732-743[0],+744[5],+745[4],+746-753[0],+754[5],+755-758[0],+759[5],+760[4],+761-764[0] -655[0]
+src/lib/locales/de/translation.json: +517[4]
+src/lib/locales/en/translation.json: +356[5],+367[6],+673-677[0],+678[6],+679[5],+680-698[0],+699[6],+700[5],+701-713[0],+714[2],+715[6],+716[0],+717[4],+718-729[0],+730[2],+731[6],+732-743[0],+744-745[6],+746-753[0],+754[6],+755-758[0],+759[6],+760[5],+761-764[0] -655[0]
+src/lib/locales/fr/translation.json: +499[4]
+src/lib/locales/ja/translation.json: +499[4]
+src/lib/locales/ko/translation.json: +499[4]
+src/lib/locales/zh-TW/translation.json: +404[4],+421[4],+452[4],+493[4],+509[4],+515[4],+550[4]
 
 Conversations:
 
@@ -19,5 +24,6 @@ Conversations:
 [1]: 7fed5429-a03f-40db-af05-5a89637620a1; Check and update localization progress; composer-1;
 [2]: 8db2f8ff-4a03-440a-83df-90395d691ce1; Localize iPod components and keys; composer-1;
 [3]: 0ffa2300-9837-44f4-9dfb-48105f204ad7; Stop drag window sound from looping; composer-1;
-[4]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
-[5]: 94d8e20b-8bd1-4b08-99c1-f7854aef8c93; Localize PrefetchToast component; composer-1;
+[4]: 17545cb8-0fb6-421e-b363-f6d42cc18fb8; Localize folder and shortcut names; composer-1;
+[5]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
+[6]: f0606fb6-cb99-4fd4-a02b-b55a736b0562; Localize photo booth setup; composer-1;
