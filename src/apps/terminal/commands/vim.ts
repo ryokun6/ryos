@@ -9,7 +9,7 @@ import { STORES } from "@/utils/indexedDB";
 
 export const vimCommand: Command = {
   name: "vim",
-  description: "Open file in vim editor",
+  description: "apps.terminal.commands.vim",
   usage: "vim <filename>",
   handler: async (
     args: string[],

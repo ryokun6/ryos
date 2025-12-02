@@ -2,7 +2,7 @@ import { Command } from "../types";
 
 export const rmCommand: Command = {
   name: "rm",
-  description: "Move file to trash",
+  description: "apps.terminal.commands.rm",
   usage: "rm <filename>",
   handler: (args, context) => {
     if (args.length === 0) {

@@ -41,6 +41,7 @@ import { useVideoStore } from "@/stores/useVideoStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
+import i18n from "@/lib/i18n";
 
 // Import new components and utilities
 import { CommandHistory, CommandContext } from "../types";
@@ -76,7 +77,7 @@ const getAppName = (id?: string): string => {
 
 // Helper function to detect user's operating system
 const detectUserOS = (): string => {
-  if (typeof navigator === "undefined") return "Unknown";
+  if (typeof navigator === "undefined") return i18n.t("apps.terminal.output.unknown");
   
   const userAgent = navigator.userAgent;
   const platform = navigator.platform || "";
@@ -161,7 +162,7 @@ const getSystemState = () => {
   // --- Local browser time information (client side) ---
   const nowClient = new Date();
   const userTimeZone =
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
+    Intl.DateTimeFormat().resolvedOptions().timeZone || i18n.t("apps.terminal.output.unknown");
   const userTimeString = nowClient.toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
@@ -195,7 +196,7 @@ const getSystemState = () => {
 
     // Get title from app store instance
     const appInstance = appStore.instances[instance.instanceId];
-    const title = appInstance?.title || "Untitled";
+    const title = appInstance?.title || i18n.t("apps.terminal.output.untitled");
 
     return {
       instanceId: instance.instanceId,
@@ -408,7 +409,7 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
         break;
       }
       case "settings":
-        msg = "Changing settings…";
+        msg = i18n.t("apps.chats.toolCalls.changingSettings");
         break;
       case "generateHtml":
         msg = "Generating applet…";
@@ -437,50 +438,50 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
           msg = `Found ${count} song${count === 1 ? "" : "s"}`;
         } else if (appletMatch) {
           const count = parseInt(appletMatch[1], 10);
-          msg = `Found ${count} applet${count === 1 ? "" : "s"}`;
+          msg = i18n.t("apps.terminal.output.foundApplets", { count, defaultValue: `Found ${count} applet${count === 1 ? "" : "s"}` });
         } else if (documentMatch) {
           const count = parseInt(documentMatch[1], 10);
-          msg = `Found ${count} document${count === 1 ? "" : "s"}`;
+          msg = i18n.t("apps.terminal.output.foundDocuments", { count, defaultValue: `Found ${count} document${count === 1 ? "" : "s"}` });
         } else if (applicationMatch) {
           const count = parseInt(applicationMatch[1], 10);
-          msg = `Found ${count} application${count === 1 ? "" : "s"}`;
+          msg = i18n.t("apps.terminal.output.foundApplications", { count, defaultValue: `Found ${count} application${count === 1 ? "" : "s"}` });
         } else if (result.includes("empty") || result.includes("No ")) {
-          msg = "No items found";
+          msg = i18n.t("apps.terminal.output.noItemsFound");
         } else {
-          msg = "Listed items";
+          msg = i18n.t("apps.terminal.output.listedItems");
         }
       }
     } else if (toolName === "open") {
       if (typeof result === "string") {
         msg = result.includes("Playing") || result.includes("Opened") || result.includes("Launched")
           ? result
-          : "Opened";
+          : i18n.t("apps.terminal.output.opened");
       }
     } else if (toolName === "read") {
       const path = typeof args?.path === "string" ? args.path : "";
-      const fileName = path.split("/").filter(Boolean).pop() || "file";
-      msg = `Read ${fileName}`;
+      const fileName = path.split("/").filter(Boolean).pop() || i18n.t("apps.terminal.output.unknown");
+      msg = i18n.t("apps.terminal.output.readFile", { fileName });
     } else if (toolName === "write") {
       if (typeof result === "string") {
-        msg = result.includes("Successfully") ? "Content written" : result;
+        msg = result.includes("Successfully") ? i18n.t("apps.terminal.output.contentWritten") : result;
       } else {
-        msg = "Content written";
+        msg = i18n.t("apps.terminal.output.contentWritten");
       }
     } else if (toolName === "edit") {
       if (typeof result === "string") {
         if (result.includes("not found")) {
-          msg = "Text not found";
+          msg = i18n.t("apps.terminal.output.textNotFound");
         } else if (result.includes("matches") && result.includes("locations")) {
-          msg = "Multiple matches found";
+          msg = i18n.t("apps.terminal.output.multipleMatchesFound");
         } else if (result.includes("Successfully") || result.includes("edited")) {
-          msg = "File edited";
+          msg = i18n.t("apps.terminal.output.fileEdited");
         } else if (result.includes("Created")) {
-          msg = "File created";
+          msg = i18n.t("apps.terminal.output.fileCreated");
         } else {
           msg = result;
         }
       } else {
-        msg = "File edited";
+        msg = i18n.t("apps.terminal.output.fileEdited");
       }
     } else if (toolName === "launchApp" && args?.id === "internet-explorer") {
       const urlPart = args.url ? ` ${args.url}` : "";
@@ -496,15 +497,19 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
       } else {
         const action = args?.action || "toggle";
         if (action === "addAndPlay") {
-          msg = "Added and started playing new song";
+          msg = i18n.t("apps.terminal.output.addedAndStartedPlaying");
         } else if (action === "playKnown") {
-          msg = "Playing song";
+          msg = i18n.t("apps.terminal.output.playingSong");
         } else if (action === "next") {
-          msg = "Skipped to next track";
+          msg = i18n.t("apps.terminal.output.skippedToNextTrack");
         } else if (action === "previous") {
-          msg = "Skipped to previous track";
+          msg = i18n.t("apps.terminal.output.skippedToPreviousTrack");
         } else {
-          msg = action === "play" ? "Playing iPod" : action === "pause" ? "Paused iPod" : "Toggled iPod playback";
+          msg = action === "play" 
+            ? i18n.t("apps.terminal.output.playingIpod") 
+            : action === "pause" 
+            ? i18n.t("apps.terminal.output.pausedIpod") 
+            : i18n.t("apps.terminal.output.toggledIpodPlayback");
         }
       }
     } else if (toolName === "settings") {
@@ -512,7 +517,7 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
       if (typeof result === "string" && result.trim().length > 0) {
         msg = result;
       } else {
-        msg = "Settings updated";
+        msg = i18n.t("apps.chats.toolCalls.settingsUpdated");
       }
     } else if (
       toolName === "generateHtml" &&
@@ -658,7 +663,7 @@ export function TerminalAppComponent({
     setCommandHistory([
       {
         command: "",
-        output: `${asciiArt}\nlast login: ${currentTime}\ntype 'help' to see available commands\n\n`,
+        output: `${asciiArt}\n${i18n.t("apps.terminal.output.lastLogin", { time: currentTime })}\n${i18n.t("apps.terminal.output.typeHelpForCommands")}\n\n`,
         path: "welcome-message",
       },
     ]);
@@ -2105,7 +2110,7 @@ export function TerminalAppComponent({
 
       default:
         return {
-          output: `command not found: ${cmd}. type 'help' for a list of available commands.`,
+          output: i18n.t("apps.terminal.output.commandNotFound", { cmd }),
           isError: true,
         };
     }
@@ -2312,8 +2317,7 @@ export function TerminalAppComponent({
         setCommandHistory([
           {
             command: "",
-            output:
-              "chat cleared. you're still chatting with ryo. type 'exit' to return to terminal.",
+            output: i18n.t("apps.terminal.output.chatCleared"),
             path: "ai-assistant",
           },
         ]);
@@ -2742,7 +2746,7 @@ export function TerminalAppComponent({
                         ryo
                       </span>
                       <span className="text-gray-500 italic shimmer-subtle">
-                        {" is thinking"}
+                        {" "}{i18n.t("apps.terminal.output.isThinking")}
                         <AnimatedEllipsis />
                       </span>
                     </div>
@@ -2935,7 +2939,7 @@ export function TerminalAppComponent({
               {isAiLoading && isInAiMode && (
                 <div className="absolute top-0 left-0 w-full h-full pointer-events-none flex items-center">
                   <span className="text-gray-400/40 opacity-30 shimmer">
-                    is thinking
+                    {i18n.t("apps.terminal.output.isThinking")}
                     <AnimatedEllipsis />
                   </span>
                 </div>

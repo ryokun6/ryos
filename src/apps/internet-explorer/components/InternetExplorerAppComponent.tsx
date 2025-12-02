@@ -62,49 +62,52 @@ import { IE_ANALYTICS } from "@/utils/analytics";
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
+  const { t } = i18n;
   const languageMap: Record<LanguageOption, string> = {
-    auto: "Auto-detected",
-    english: "English",
-    chinese: "Chinese (Traditional)",
-    japanese: "Japanese",
-    korean: "Korean",
-    french: "French",
-    spanish: "Spanish",
-    portuguese: "Portuguese",
-    german: "German",
-    welsh: "Welsh",
-    sanskrit: "Sanskrit",
-    latin: "Latin",
-    alien: "Alien Language",
-    ai_language: "AI Language",
-    digital_being: "Digital Being Language",
+    auto: t("apps.internet-explorer.autodetected"),
+    english: t("apps.internet-explorer.english"),
+    chinese: t("apps.internet-explorer.chineseTraditional"),
+    japanese: t("apps.internet-explorer.japanese"),
+    korean: t("apps.internet-explorer.korean"),
+    french: t("apps.internet-explorer.french"),
+    spanish: t("apps.internet-explorer.spanish"),
+    portuguese: t("apps.internet-explorer.portuguese"),
+    german: t("apps.internet-explorer.german"),
+    welsh: t("apps.internet-explorer.welsh"),
+    sanskrit: t("apps.internet-explorer.sanskrit"),
+    latin: t("apps.internet-explorer.latin"),
+    alien: t("apps.internet-explorer.alienLanguage"),
+    ai_language: t("apps.internet-explorer.aiLanguage"),
+    digital_being: t("apps.internet-explorer.digitalBeingLanguage"),
   };
-  return languageMap[lang] || "Auto-detected";
+  return languageMap[lang] || t("apps.internet-explorer.autodetected");
 };
 
 // Helper function to get location display name
 const getLocationDisplayName = (loc: LocationOption): string => {
+  const { t } = i18n;
   const locationMap: Record<LocationOption, string> = {
-    auto: "Auto-detected",
-    united_states: "United States",
-    china: "China",
-    japan: "Japan",
-    korea: "South Korea",
-    france: "France",
-    spain: "Spain",
-    portugal: "Portugal",
-    germany: "Germany",
-    canada: "Canada",
-    uk: "United Kingdom",
-    india: "India",
-    brazil: "Brazil",
-    australia: "Australia",
-    russia: "Russia",
+    auto: t("apps.internet-explorer.autodetected"),
+    united_states: t("apps.internet-explorer.unitedStates"),
+    china: t("apps.internet-explorer.china"),
+    japan: t("apps.internet-explorer.japan"),
+    korea: t("apps.internet-explorer.southKorea"),
+    france: t("apps.internet-explorer.france"),
+    spain: t("apps.internet-explorer.spain"),
+    portugal: t("apps.internet-explorer.portugal"),
+    germany: t("apps.internet-explorer.germany"),
+    canada: t("apps.internet-explorer.canada"),
+    uk: t("apps.internet-explorer.unitedKingdom"),
+    india: t("apps.internet-explorer.india"),
+    brazil: t("apps.internet-explorer.brazil"),
+    australia: t("apps.internet-explorer.australia"),
+    russia: t("apps.internet-explorer.russia"),
   };
-  return locationMap[loc] || "Auto-detected";
+  return locationMap[loc] || t("apps.internet-explorer.autodetected");
 };
 
 interface ErrorPageProps {

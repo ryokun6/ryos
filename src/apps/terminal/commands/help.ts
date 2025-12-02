@@ -1,39 +1,44 @@
 import { Command } from "../types";
+import i18n from "@/lib/i18n";
 
 export const helpCommand: Command = {
   name: "help",
-  description: "Show available commands",
-  handler: () => ({
-    output: `
+  description: "apps.terminal.commands.help",
+  handler: () => {
+    const t = (key: string) => i18n.t(key);
+    
+    return {
+      output: `
 navigation & files
-  pwd              show current directory
-  ls               list directory contents  
-  cd <dir>         change directory
-  cat <file>       view file contents
-  touch <file>     create empty file
-  mkdir <dir>      create directory
-  rm <file>        move file to trash
-  edit <file>      open in text editor
-  vim <file>       open in vim editor
+  pwd              ${t("apps.terminal.commands.pwd")}
+  ls               ${t("apps.terminal.commands.ls")}
+  cd <dir>         ${t("apps.terminal.commands.cd")}
+  cat <file>       ${t("apps.terminal.commands.cat")}
+  touch <file>     ${t("apps.terminal.commands.touch")}
+  mkdir <dir>      ${t("apps.terminal.commands.mkdir")}
+  rm <file>        ${t("apps.terminal.commands.rm")}
+  edit <file>      ${t("apps.terminal.commands.edit")}
+  vim <file>       ${t("apps.terminal.commands.vim")}
 
 terminal
-  clear            clear screen
-  help             show this help
-  history          show command history
-  about            about terminal
-  echo <text>      display text
-  whoami           display current user
-  su <user> [pass] switch or create user
-  logout           log out current user
-  date             display current date/time
-  cowsay <text>    a talking cow
+  clear            ${t("apps.terminal.commands.clear")}
+  help             ${t("apps.terminal.commands.help")}
+  history          ${t("apps.terminal.commands.history")}
+  about            ${t("apps.terminal.commands.about")}
+  echo <text>      ${t("apps.terminal.commands.echo")}
+  whoami           ${t("apps.terminal.commands.whoami")}
+  su <user> [pass] ${t("apps.terminal.commands.su")}
+  logout           ${t("apps.terminal.commands.logout")}
+  date             ${t("apps.terminal.commands.date")}
+  cowsay <text>    ${t("apps.terminal.commands.cowsay")}
 
 assistant
-  ryo <prompt>     chat with ryo
-  ai <prompt>      chat with ryo (alias)
-  chat <prompt>    chat with ryo (alias)
+  ryo <prompt>     ${t("apps.terminal.commands.ryo")}
+  ai <prompt>      ${t("apps.terminal.commands.ai")}
+  chat <prompt>    ${t("apps.terminal.commands.chat")}
 
 `,
-    isError: false,
-  }),
+      isError: false,
+    };
+  },
 };

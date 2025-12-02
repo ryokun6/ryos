@@ -3,10 +3,11 @@ import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { track } from "@vercel/analytics";
 import { TERMINAL_ANALYTICS } from "@/utils/analytics";
+import i18n from "@/lib/i18n";
 
 export const aiCommand: Command = {
   name: "ai",
-  description: "Enter AI chat mode with ryo",
+  description: "apps.terminal.commands.ai",
   usage: "ai [initial prompt]",
   handler: (args: string[]): CommandResult => {
     // Get terminal store instance
@@ -33,13 +34,13 @@ export const aiCommand: Command = {
       terminalStore.setInitialAiPrompt(initialPrompt);
 
       return {
-        output: `ask ryo anything. type 'exit' to return to terminal.\n→ from your command: ${initialPrompt}`,
+        output: i18n.t("apps.terminal.output.askRyoWithPrompt", { prompt: initialPrompt }),
         isError: false,
       };
     }
 
     return {
-      output: `ask ryo anything. type 'exit' to return to terminal.`,
+      output: i18n.t("apps.terminal.output.askRyoAnything"),
       isError: false,
     };
   },

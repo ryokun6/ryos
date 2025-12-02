@@ -2,7 +2,7 @@ import { Command } from "../types";
 
 export const clearCommand: Command = {
   name: "clear",
-  description: "Clear terminal screen",
+  description: "apps.terminal.commands.clear",
   handler: () => ({
     output: "",
     isError: false,

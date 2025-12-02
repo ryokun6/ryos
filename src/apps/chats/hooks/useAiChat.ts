@@ -2118,18 +2118,28 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             // Language change
             if (language !== undefined) {
-              const languageNames: Record<string, string> = {
-                en: "English",
-                "zh-TW": "繁體中文",
-                ja: "日本語",
-                ko: "한국어",
-                fr: "Français",
-                de: "Deutsch",
+              // Use translation keys for language names (reuse iPod translation keys)
+              const getLanguageDisplayName = (langCode: string): string => {
+                const langMap: Record<string, string> = {
+                  en: "apps.ipod.translationLanguages.english",
+                  "zh-TW": "apps.ipod.translationLanguages.chinese",
+                  ja: "apps.ipod.translationLanguages.japanese",
+                  ko: "apps.ipod.translationLanguages.korean",
+                  fr: "apps.ipod.translationLanguages.french",
+                  de: "apps.ipod.translationLanguages.german",
+                };
+                const key = langMap[langCode];
+                if (key) {
+                  const translated = i18n.t(key);
+                  // If translation doesn't exist, fall back to code
+                  return translated !== key ? translated : langCode;
+                }
+                return langCode;
               };
               langStore.setLanguage(language as "en" | "zh-TW" | "ja" | "ko" | "fr" | "de");
               changes.push(
                 i18n.t("apps.chats.toolCalls.settingsLanguageChanged", {
-                  language: languageNames[language] || language,
+                  language: getLanguageDisplayName(language),
                 })
               );
               console.log(`[ToolCall] Language changed to: ${language}`);

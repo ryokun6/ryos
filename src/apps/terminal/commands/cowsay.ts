@@ -19,7 +19,7 @@ ${cow}`;
 
 export const cowsayCommand: Command = {
   name: "cowsay",
-  description: "A talking cow",
+  description: "apps.terminal.commands.cowsay",
   usage: "cowsay <text>",
   handler: (args, context) => {
     const message = args.join(" ") || "Moo!";

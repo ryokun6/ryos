@@ -9,6 +9,7 @@ import {
 } from "@/stores/useInternetExplorerStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
+import i18n from "@/lib/i18n";
 
 interface UseAiGenerationProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -87,45 +88,45 @@ export function useAiGeneration({
   // Helper function to get language display name
   const getLanguageDisplayName = (lang: LanguageOption): string => {
     const languageMap: Record<LanguageOption, string> = {
-      auto: "Auto-detected",
-      english: "English",
-      chinese: "Chinese (Traditional)",
-      japanese: "Japanese",
-      korean: "Korean",
-      french: "French",
-      spanish: "Spanish",
-      portuguese: "Portuguese",
-      german: "German",
-      welsh: "Welsh",
-      sanskrit: "Sanskrit",
-      latin: "Latin",
-      alien: "Alien Language",
-      ai_language: "AI Language",
-      digital_being: "Digital Being Language",
+      auto: i18n.t("apps.internet-explorer.autodetected"),
+      english: i18n.t("apps.internet-explorer.english"),
+      chinese: i18n.t("apps.internet-explorer.chineseTraditional"),
+      japanese: i18n.t("apps.internet-explorer.japanese"),
+      korean: i18n.t("apps.internet-explorer.korean"),
+      french: i18n.t("apps.internet-explorer.french"),
+      spanish: i18n.t("apps.internet-explorer.spanish"),
+      portuguese: i18n.t("apps.internet-explorer.portuguese"),
+      german: i18n.t("apps.internet-explorer.german"),
+      welsh: i18n.t("apps.internet-explorer.welsh"),
+      sanskrit: i18n.t("apps.internet-explorer.sanskrit"),
+      latin: i18n.t("apps.internet-explorer.latin"),
+      alien: i18n.t("apps.internet-explorer.alienLanguage"),
+      ai_language: i18n.t("apps.internet-explorer.aiLanguage"),
+      digital_being: i18n.t("apps.internet-explorer.digitalBeingLanguage"),
     };
-    return languageMap[lang] || "Auto-detected";
+    return languageMap[lang] || i18n.t("apps.internet-explorer.autodetected");
   };
 
   // Helper function to get location display name
   const getLocationDisplayName = (loc: LocationOption): string => {
     const locationMap: Record<LocationOption, string> = {
-      auto: "Auto-detected",
-      united_states: "United States",
-      china: "China",
-      japan: "Japan",
-      korea: "South Korea",
-      france: "France",
-      spain: "Spain",
-      portugal: "Portugal",
-      germany: "Germany",
-      canada: "Canada",
-      uk: "United Kingdom",
-      india: "India",
-      brazil: "Brazil",
-      australia: "Australia",
-      russia: "Russia",
+      auto: i18n.t("apps.internet-explorer.autodetected"),
+      united_states: i18n.t("apps.internet-explorer.unitedStates"),
+      china: i18n.t("apps.internet-explorer.china"),
+      japan: i18n.t("apps.internet-explorer.japan"),
+      korea: i18n.t("apps.internet-explorer.southKorea"),
+      france: i18n.t("apps.internet-explorer.france"),
+      spain: i18n.t("apps.internet-explorer.spain"),
+      portugal: i18n.t("apps.internet-explorer.portugal"),
+      germany: i18n.t("apps.internet-explorer.germany"),
+      canada: i18n.t("apps.internet-explorer.canada"),
+      uk: i18n.t("apps.internet-explorer.unitedKingdom"),
+      india: i18n.t("apps.internet-explorer.india"),
+      brazil: i18n.t("apps.internet-explorer.brazil"),
+      australia: i18n.t("apps.internet-explorer.australia"),
+      russia: i18n.t("apps.internet-explorer.russia"),
     };
-    return locationMap[loc] || "Auto-detected";
+    return locationMap[loc] || i18n.t("apps.internet-explorer.autodetected");
   };
 
   // Handler for when AI stream finishes

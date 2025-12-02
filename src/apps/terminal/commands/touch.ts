@@ -2,7 +2,7 @@ import { Command } from "../types";
 
 export const touchCommand: Command = {
   name: "touch",
-  description: "Create empty file",
+  description: "apps.terminal.commands.touch",
   usage: "touch <filename>",
   handler: async (args, context) => {
     if (args.length === 0) {

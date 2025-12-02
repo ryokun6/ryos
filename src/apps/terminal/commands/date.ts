@@ -2,7 +2,7 @@ import { Command } from "../types";
 
 export const dateCommand: Command = {
   name: "date",
-  description: "Display current date/time",
+  description: "apps.terminal.commands.date",
   handler: () => {
     const now = new Date();
     const options: Intl.DateTimeFormatOptions = {

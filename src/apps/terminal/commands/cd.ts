@@ -1,8 +1,9 @@
 import { Command } from "../types";
+import i18n from "@/lib/i18n";
 
 export const cdCommand: Command = {
   name: "cd",
-  description: "Change directory",
+  description: "apps.terminal.commands.cd",
   usage: "cd <dir>",
   handler: (args, context) => {
     if (args.length === 0) {
@@ -63,7 +64,7 @@ export const cdCommand: Command = {
 
     if (!targetExists) {
       return {
-        output: `cd: ${args[0]}: no such directory`,
+        output: i18n.t("apps.terminal.output.noSuchDirectory", { dir: args[0] }),
         isError: true,
       };
     }
