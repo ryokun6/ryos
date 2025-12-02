@@ -1,0 +1,10 @@
+AI Notes:
+
+src/components/layout/WindowFrame.tsx: +671[0],+672-676[1],+677-678[2],+691[1],+692[0],+693-697[1],+698-699[2],+703[1],+704[0],+705-708[1],+709[3],+710-711[2],+713[0],+714-718[1],+719[3],+720[1],+721-722[2],+741[1] -687[2],-696-697[2]
+
+Conversations:
+
+[0]: 3110be86-2e99-4d46-90c0-6e4b733d0fa1; Implement animations for taskbar items; claude-4.5-opus-high-thinking;
+[1]: 89f0f481-ff35-4d06-8097-b981134305c4; Implement minimize feature for macOS theme; claude-4.5-opus-high-thinking;
+[2]: 29422871-79a9-48e2-9ed0-3bb336f4ae31; Fix double close sound in text edit; claude-4.5-opus-high-thinking;
+[3]: 163fbc4c-4465-442e-b62b-1568d00bc0c8; Check bun run build for errors; claude-4.5-opus-high-thinking;
