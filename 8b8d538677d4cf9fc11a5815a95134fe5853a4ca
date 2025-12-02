@@ -15,11 +15,12 @@ src/apps/synth/components/SynthAppComponent.tsx: +1620[0]
 src/apps/terminal/components/TerminalAppComponent.tsx: +3037[0]
 src/apps/textedit/components/DialogManager.tsx: +137[0]
 src/apps/videos/components/VideosAppComponent.tsx: +1388[0]
-src/components/dialogs/AboutDialog.tsx: +12[0],+27[0],+34[0],+40-41[0],+68[0],+99[0] -62[0],-93[0]
-src/components/layout/MenuBar.tsx: +77[0],+79-80[0],+82-83[0],+107-112[0],+115-117[0],+122-131[0],+133-142[0],+144-153[0],+155-162[0],+164-189[0],+501[0] -104-109[0],-111-117[0],-119-124[0],-126-135[0]
-src/styles/themes.css: +1204[1],+1211[1] -1204[1],-1211[1]
+src/components/dialogs/AboutDialog.tsx: +12[1],+27[1],+34[1],+40-41[1],+68[1],+99[1] -62[1],-93[1]
+src/components/layout/MenuBar.tsx: +77[1],+79-80[1],+82-83[1],+107-112[1],+115-117[1],+122-131[1],+133-142[1],+144-153[1],+155-162[1],+164-189[1],+501[0] -104-109[1],-111-117[1],-119-124[1],-126-135[1]
+src/styles/themes.css: +1204[2],+1211[2] -1204[2],-1211[2]
 
 Conversations:
 
-[0]: 9757e6d2-1a48-49d8-895c-6bdd43154c3a; Show localized app names in about dialog; composer-1;
-[1]: a1c735af-d5ba-483f-bbdd-9a4f33642a1f; Tab Request a1c735af; unknown;
+[0]: 9f51e976-56e4-4c04-8b79-8a7b01e9a75c; Show localized app name in help dialog; composer-1;
+[1]: 9757e6d2-1a48-49d8-895c-6bdd43154c3a; Show localized app names in about dialog; composer-1;
+[2]: a1c735af-d5ba-483f-bbdd-9a4f33642a1f; Tab Request a1c735af; unknown;
