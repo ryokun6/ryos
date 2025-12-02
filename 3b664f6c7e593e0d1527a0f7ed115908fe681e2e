@@ -20,4 +20,4 @@ Conversations:
 [0]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; Auto detect and set user locale; composer-1;
 [1]: 0b334afb-08cf-4901-b674-98452eb67850; Add settings tool for AI system; composer-1;
 [2]: 0811ba11-51b6-4be1-aade-96549b786a1e; Localize lcd in minesweeper; composer-1;
-[3]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; Check remaining localization tasks; claude-4.5-opus-high-thinking;
+[3]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; Check remaining localization tasks; composer-1;
