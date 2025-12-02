@@ -1,0 +1,18 @@
+AI Notes:
+
+src/App.tsx: +13[0],+19[0],+89[0] -87[0]
+src/apps/control-panels/components/ControlPanelsAppComponent.tsx: +502[0],+1431[0],+1464[0],+1470[0],+2054[0] -502[0],-1431[0],-1464[0],-1470[0],-2054[0]
+src/components/dialogs/EmojiDialog.tsx: +10[0],+235[0],+250[0],+277[0],+282[0],+289[0],+292[0] -248[0],-275[0],-280[0],-287[0],-290[0]
+src/components/dialogs/LogoutDialog.tsx: +2[0],+19[0],+31-32[0],+43-44[0] -28-29[0],-40-41[0]
+src/lib/locales/de/translation.json: +1701[1],+1719[1],+1788[1]
+src/lib/locales/en/translation.json: +48-52[0],+80-86[0],+141[0],+151-156[0]
+src/lib/locales/fr/translation.json: +1701[1],+1719[1],+1788[1]
+src/lib/locales/ja/translation.json: +1701[1],+1719[1],+1788[1]
+src/lib/locales/ko/translation.json: +1701[1],+1719[1],+1788[1]
+src/lib/locales/zh-TW/translation.json: +1701[1],+1719[1],+1788[1]
+src/utils/prefetch.ts: +60[0],+62[0],+64[0] -60[0],-62[0],-64[0]
+
+Conversations:
+
+[0]: 16cb3ef1-42bb-411b-9776-06750a31a052; Check branch and localize components; composer-1;
+[1]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; 4afd4575; unknown;
