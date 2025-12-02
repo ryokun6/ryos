@@ -392,7 +392,33 @@
       "name": "Internet Explorer"
     },
     "ipod": {
+      "ariaLabels": {
+        "closeFullscreen": "關閉全螢幕",
+        "cycleLyricLayout": "切換歌詞佈局",
+        "nextTrack": "下一首",
+        "playPause": "播放/暫停",
+        "previousTrack": "上一首",
+        "select": "選取",
+        "toggleHangulRomanization": "切換韓文 / 羅馬拼音",
+        "translateLyrics": "翻譯歌詞"
+      },
       "description": "音樂播放器",
+      "dialogs": {
+        "addSongDescription": "貼上 YouTube 連結以新增至您的 iPod",
+        "addSongTitle": "新增歌曲",
+        "addingNewTrack": "正在從 URL 新增歌曲...",
+        "clearLibraryDescription": "您確定要清除整個音樂資料庫嗎？此動作無法復原。",
+        "clearLibraryTitle": "清除資料庫",
+        "errorAdding": "新增錯誤：",
+        "failedToExportLibrary": "無法匯出資料庫",
+        "failedToImportLibrary": "無法匯入資料庫：格式無效",
+        "failedToLoadSharedTrack": "無法載入分享的歌曲",
+        "ipodRequiresInternet": "iPod 需要網際網路連線",
+        "libraryExportedSuccessfully": "資料庫已成功匯出",
+        "libraryImportedSuccessfully": "資料庫已成功匯入",
+        "openedSharedTrack": "已開啟共享曲目。按下 ⏯ 開始播放。",
+        "youreOffline": "您已離線"
+      },
       "help": {
         "addSongs": {
           "description": "貼上 YouTube 網址以將音樂新增至您的 iPod。",
@@ -419,6 +445,11 @@
           "title": "轉盤導航"
         }
       },
+      "keys": {
+        "enter": "Enter",
+        "escape": "Escape",
+        "select": "選取"
+      },
       "menu": {
         "aboutIpod": "關於 iPod",
         "addSong": "加入歌曲...",
@@ -429,7 +460,9 @@
         "black": "黑色",
         "classic": "經典",
         "clearLibrary": "清除資料庫...",
+        "controls": "控制項",
         "exportLibrary": "輸出資料庫...",
+        "file": "檔案",
         "fullScreen": "全螢幕",
         "importLibrary": "匯入媒體庫...",
         "ipodHelp": "iPod 輔助說明",
@@ -445,6 +478,7 @@
         "refreshLyrics": "重新整理歌詞",
         "repeatAll": "全部重複",
         "repeatOne": "單曲重複",
+        "shareApp": "分享 App...",
         "shareSong": "分享歌曲...",
         "showLyrics": "顯示歌詞",
         "shuffle": "隨機播放",
@@ -454,9 +488,66 @@
         "translate": "翻譯",
         "u2": "U2",
         "unknownArtist": "未知藝人",
-        "video": "影片"
+        "video": "影片",
+        "view": "檢視"
       },
-      "name": "iPod"
+      "menuItems": {
+        "all": "全部",
+        "backlight": "背光",
+        "extras": "額外功能",
+        "ipod": "iPod",
+        "music": "音樂",
+        "nowPlaying": "現正播放",
+        "off": "關閉",
+        "on": "開啟",
+        "one": "單一",
+        "repeat": "重複",
+        "settings": "設定",
+        "shuffle": "隨機",
+        "shuffleSongs": "隨機播放歌曲",
+        "theme": "主題"
+      },
+      "messages": {
+        "bitteKeineMusikStehlen": "請勿盜用音樂",
+        "dontStealMusic": "請勿盜用音樂",
+        "neVolezPasLaMusique": "請勿盜用音樂",
+        "pleaseDontStealMusic": "請勿盜用音樂"
+      },
+      "name": "iPod",
+      "status": {
+        "added": "♬ 已新增",
+        "hangulOn": "韓文開啟",
+        "layoutAlternating": "版面配置：交替",
+        "layoutCenter": "版面配置：置中",
+        "layoutFocus": "版面配置：焦點",
+        "libraryCleared": "資料庫已清除",
+        "lightOff": "關燈",
+        "lightOn": "開燈",
+        "offset": "偏移",
+        "repeatAll": "全部重複",
+        "repeatOff": "關閉重複",
+        "repeatOne": "單曲重複",
+        "romanizationOn": "羅馬拼音開啟",
+        "shuffleOff": "隨機播放關",
+        "shuffleOn": "隨機播放開",
+        "themeBlack": "主題：黑色",
+        "themeClassic": "主題：經典",
+        "themeU2": "主題：U2",
+        "translatingLyrics": "正在翻譯歌詞…"
+      },
+      "translationLanguages": {
+        "chinese": "中文",
+        "english": "英文",
+        "french": "法文",
+        "german": "德文",
+        "italian": "義大利文",
+        "japanese": "日文",
+        "korean": "韓文",
+        "original": "原文",
+        "portuguese": "葡萄牙文",
+        "russian": "俄文",
+        "spanish": "西班牙文"
+      }
     },
     "minesweeper": {
       "description": "經典益智遊戲",

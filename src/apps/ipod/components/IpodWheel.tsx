@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 type WheelArea = "top" | "right" | "bottom" | "left" | "center";
 type RotationDirection = "clockwise" | "counterclockwise";
@@ -20,6 +21,7 @@ export function IpodWheel({
   onWheelRotation,
   onMenuButton,
 }: IpodWheelProps) {
+  const { t } = useTranslation();
   const wheelRef = useRef<HTMLDivElement>(null);
   // Accumulated mouse wheel delta (for desktop scrolling)
   const [wheelDelta, setWheelDelta] = useState(0);
@@ -306,7 +308,7 @@ export function IpodWheel({
       <div
         role="button"
         tabIndex={0}
-        aria-label="Select"
+        aria-label={t("apps.ipod.ariaLabels.select")}
         onClick={() => {
           if (recentTouchRef.current || isInTouchDragRef.current) return;
           onWheelClick("center");

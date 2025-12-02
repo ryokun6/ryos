@@ -392,7 +392,33 @@
       "name": "Internet Explorer"
     },
     "ipod": {
+      "ariaLabels": {
+        "closeFullscreen": "전체 화면 닫기",
+        "cycleLyricLayout": "가사 레이아웃 전환",
+        "nextTrack": "다음 곡",
+        "playPause": "재생/일시 정지",
+        "previousTrack": "이전 곡",
+        "select": "선택",
+        "toggleHangulRomanization": "한글 / 로마자 표기 전환",
+        "translateLyrics": "가사 번역"
+      },
       "description": "음악 플레이어",
+      "dialogs": {
+        "addSongDescription": "iPod에 추가하려면 YouTube 링크를 붙여넣으세요.",
+        "addSongTitle": "곡 추가",
+        "addingNewTrack": "URL에서 새 곡 추가 중...",
+        "clearLibraryDescription": "전체 음악 라이브러리를 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+        "clearLibraryTitle": "라이브러리 지우기",
+        "errorAdding": "추가 오류:",
+        "failedToExportLibrary": "라이브러리 내보내기 실패",
+        "failedToImportLibrary": "라이브러리 가져오기 실패: 잘못된 형식",
+        "failedToLoadSharedTrack": "공유된 트랙 로드 실패",
+        "ipodRequiresInternet": "iPod은 인터넷 연결이 필요합니다.",
+        "libraryExportedSuccessfully": "라이브러리 내보내기 성공",
+        "libraryImportedSuccessfully": "라이브러리 가져오기 성공",
+        "openedSharedTrack": "공유 트랙을 열었습니다. 재생하려면 ⏯을 누르세요.",
+        "youreOffline": "오프라인 상태입니다."
+      },
       "help": {
         "addSongs": {
           "description": "YouTube URL을 붙여넣어 iPod에 음악 추가.",
@@ -419,6 +445,11 @@
           "title": "휠 탐색"
         }
       },
+      "keys": {
+        "enter": "입력",
+        "escape": "취소",
+        "select": "선택"
+      },
       "menu": {
         "aboutIpod": "iPod 정보",
         "addSong": "노래 추가...",
@@ -429,7 +460,9 @@
         "black": "검정",
         "classic": "클래식",
         "clearLibrary": "보관함 지우기...",
+        "controls": "컨트롤",
         "exportLibrary": "보관함 내보내기...",
+        "file": "파일",
         "fullScreen": "전체 화면",
         "importLibrary": "보관함 가져오기...",
         "ipodHelp": "iPod 도움말",
@@ -445,6 +478,7 @@
         "refreshLyrics": "가사 새로 고침",
         "repeatAll": "모두 반복",
         "repeatOne": "한 곡 반복",
+        "shareApp": "앱 공유...",
         "shareSong": "노래 공유...",
         "showLyrics": "가사 보기",
         "shuffle": "임의 재생",
@@ -454,9 +488,66 @@
         "translate": "번역",
         "u2": "U2",
         "unknownArtist": "알 수 없는 아티스트",
-        "video": "동영상"
+        "video": "동영상",
+        "view": "보기"
       },
-      "name": "iPod"
+      "menuItems": {
+        "all": "모두",
+        "backlight": "백라이트",
+        "extras": "부가 기능",
+        "ipod": "iPod",
+        "music": "음악",
+        "nowPlaying": "지금 재생 중",
+        "off": "끔",
+        "on": "켬",
+        "one": "하나",
+        "repeat": "반복",
+        "settings": "설정",
+        "shuffle": "셔플",
+        "shuffleSongs": "곡 셔플",
+        "theme": "테마"
+      },
+      "messages": {
+        "bitteKeineMusikStehlen": "음악을 도용하지 마세요.",
+        "dontStealMusic": "음악을 도용하지 마세요.",
+        "neVolezPasLaMusique": "음악을 도용하지 마세요.",
+        "pleaseDontStealMusic": "음악을 도용하지 마세요."
+      },
+      "name": "iPod",
+      "status": {
+        "added": "♬ 추가됨",
+        "hangulOn": "한글 켜짐",
+        "layoutAlternating": "레이아웃: 교차",
+        "layoutCenter": "레이아웃: 중앙",
+        "layoutFocus": "레이아웃: 포커스",
+        "libraryCleared": "보관함 비움",
+        "lightOff": "조명 끔",
+        "lightOn": "조명 켬",
+        "offset": "오프셋",
+        "repeatAll": "모두 반복",
+        "repeatOff": "반복 끔",
+        "repeatOne": "한 곡 반복",
+        "romanizationOn": "로마자 표기 켜짐",
+        "shuffleOff": "셔플 끄기",
+        "shuffleOn": "셔플 켜기",
+        "themeBlack": "테마: 블랙",
+        "themeClassic": "테마: 클래식",
+        "themeU2": "테마: U2",
+        "translatingLyrics": "가사 번역 중…"
+      },
+      "translationLanguages": {
+        "chinese": "중국어",
+        "english": "영어",
+        "french": "프랑스어",
+        "german": "독일어",
+        "italian": "이탈리아어",
+        "japanese": "일본어",
+        "korean": "한국어",
+        "original": "원본",
+        "portuguese": "포르투갈어",
+        "russian": "러시아어",
+        "spanish": "스페인어"
+      }
     },
     "minesweeper": {
       "description": "클래식 퍼즐 게임",

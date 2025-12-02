@@ -392,7 +392,33 @@
       "name": "Internet Explorer"
     },
     "ipod": {
+      "ariaLabels": {
+        "closeFullscreen": "フルスクリーンを閉じる",
+        "cycleLyricLayout": "歌詞レイアウトを切り替える",
+        "nextTrack": "次の曲",
+        "playPause": "再生/一時停止",
+        "previousTrack": "前の曲",
+        "select": "選択",
+        "toggleHangulRomanization": "ハングル / ローマ字表記を切り替える",
+        "translateLyrics": "歌詞を翻訳"
+      },
       "description": "ミュージックプレーヤー",
+      "dialogs": {
+        "addSongDescription": "iPodに追加するにはYouTubeリンクを貼り付けてください",
+        "addSongTitle": "曲を追加",
+        "addingNewTrack": "URLから新しいトラックを追加中...",
+        "clearLibraryDescription": "音楽ライブラリ全体を消去してもよろしいですか？この操作は元に戻せません。",
+        "clearLibraryTitle": "ライブラリを消去",
+        "errorAdding": "追加エラー:",
+        "failedToExportLibrary": "ライブラリのエクスポートに失敗しました",
+        "failedToImportLibrary": "ライブラリのインポートに失敗しました: 無効な形式です",
+        "failedToLoadSharedTrack": "共有トラックの読み込みに失敗しました",
+        "ipodRequiresInternet": "iPodにはインターネット接続が必要です",
+        "libraryExportedSuccessfully": "ライブラリが正常にエクスポートされました",
+        "libraryImportedSuccessfully": "ライブラリが正常にインポートされました",
+        "openedSharedTrack": "共有トラックを開きました。再生するには⏯を押してください。",
+        "youreOffline": "オフライン"
+      },
       "help": {
         "addSongs": {
           "description": "YouTube URLを貼り付けてiPodに音楽を追加。",
@@ -419,6 +445,11 @@
           "title": "ホイールナビゲーション"
         }
       },
+      "keys": {
+        "enter": "Enter",
+        "escape": "Escape",
+        "select": "選択"
+      },
       "menu": {
         "aboutIpod": "iPodについて",
         "addSong": "曲を追加...",
@@ -429,7 +460,9 @@
         "black": "黒",
         "classic": "クラシック",
         "clearLibrary": "ライブラリを消去...",
+        "controls": "コントロール",
         "exportLibrary": "ライブラリを書き出す...",
+        "file": "ファイル",
         "fullScreen": "全画面表示",
         "importLibrary": "ライブラリを読み込む...",
         "ipodHelp": "iPod ヘルプ",
@@ -445,6 +478,7 @@
         "refreshLyrics": "歌詞を更新",
         "repeatAll": "全曲リピート",
         "repeatOne": "1曲リピート",
+        "shareApp": "アプリを共有...",
         "shareSong": "曲を共有...",
         "showLyrics": "歌詞を表示",
         "shuffle": "シャッフル",
@@ -454,9 +488,66 @@
         "translate": "翻訳",
         "u2": "U2",
         "unknownArtist": "不明なアーティスト",
-        "video": "ビデオ"
+        "video": "ビデオ",
+        "view": "表示"
       },
-      "name": "iPod"
+      "menuItems": {
+        "all": "すべて",
+        "backlight": "バックライト",
+        "extras": "その他",
+        "ipod": "iPod",
+        "music": "ミュージック",
+        "nowPlaying": "再生中",
+        "off": "オフ",
+        "on": "オン",
+        "one": "1曲",
+        "repeat": "リピート",
+        "settings": "設定",
+        "shuffle": "シャッフル",
+        "shuffleSongs": "曲をシャッフル",
+        "theme": "テーマ"
+      },
+      "messages": {
+        "bitteKeineMusikStehlen": "音楽を盗用しないでください",
+        "dontStealMusic": "音楽を盗用しないでください",
+        "neVolezPasLaMusique": "音楽を盗用しないでください",
+        "pleaseDontStealMusic": "音楽を盗用しないでください"
+      },
+      "name": "iPod",
+      "status": {
+        "added": "♬ 追加しました",
+        "hangulOn": "ハングルオン",
+        "layoutAlternating": "レイアウト: 交互",
+        "layoutCenter": "レイアウト: 中央",
+        "layoutFocus": "レイアウト: フォーカス",
+        "libraryCleared": "ライブラリをクリアしました",
+        "lightOff": "ライトオフ",
+        "lightOn": "ライトオン",
+        "offset": "オフセット",
+        "repeatAll": "全てリピート",
+        "repeatOff": "リピートオフ",
+        "repeatOne": "1曲リピート",
+        "romanizationOn": "ローマ字オン",
+        "shuffleOff": "シャッフルオフ",
+        "shuffleOn": "シャッフルオン",
+        "themeBlack": "テーマ：ブラック",
+        "themeClassic": "テーマ：クラシック",
+        "themeU2": "テーマ：U2",
+        "translatingLyrics": "歌詞を翻訳中…"
+      },
+      "translationLanguages": {
+        "chinese": "中国語",
+        "english": "英語",
+        "french": "フランス語",
+        "german": "ドイツ語",
+        "italian": "イタリア語",
+        "japanese": "日本語",
+        "korean": "韓国語",
+        "original": "オリジナル",
+        "portuguese": "ポルトガル語",
+        "russian": "ロシア語",
+        "spanish": "スペイン語"
+      }
     },
     "minesweeper": {
       "description": "クラシックなパズルゲーム",

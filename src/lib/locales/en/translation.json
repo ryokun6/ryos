@@ -347,6 +347,24 @@
     "chats": {
       "name": "Chats",
       "description": "Chat with AI",
+      "menu": {
+        "saveTranscript": "Save Transcript...",
+        "clearChat": "Clear Chat",
+        "logOut": "Log Out",
+        "createAccount": "Create Account...",
+        "login": "Login...",
+        "chats": "Chats",
+        "newChat": "New Chat...",
+        "sound": "Sound",
+        "chatSpeech": "Chat Speech",
+        "typingSynth": "Typing Synth",
+        "increaseFontSize": "Increase Font Size",
+        "decreaseFontSize": "Decrease Font Size",
+        "resetFontSize": "Reset Font Size",
+        "showRooms": "Show Rooms",
+        "chatsHelp": "Chats Help",
+        "aboutChats": "About Chats"
+      },
       "help": {
         "chatWithRyo": {
           "title": "Chat with Ryo",
@@ -652,7 +670,98 @@
         "syncLibrary": "Sync Library...",
         "unknownArtist": "Unknown Artist",
         "ipodHelp": "iPod Help",
-        "aboutIpod": "About iPod"
+        "aboutIpod": "About iPod",
+        "file": "File",
+        "controls": "Controls",
+        "view": "View",
+        "shareApp": "Share App..."
+      },
+      "status": {
+        "shuffleOn": "Shuffle ON",
+        "shuffleOff": "Shuffle OFF",
+        "lightOn": "Light ON",
+        "lightOff": "Light OFF",
+        "themeClassic": "Theme: Classic",
+        "themeBlack": "Theme: Black",
+        "themeU2": "Theme: U2",
+        "repeatOff": "Repeat OFF",
+        "repeatOne": "Repeat ONE",
+        "repeatAll": "Repeat ALL",
+        "layoutFocus": "Layout: Focus",
+        "layoutCenter": "Layout: Center",
+        "layoutAlternating": "Layout: Alternating",
+        "romanizationOn": "Romanization On",
+        "hangulOn": "Hangul On",
+        "libraryCleared": "Library Cleared",
+        "added": "♬ Added",
+        "translatingLyrics": "Translating lyrics…",
+        "offset": "Offset"
+      },
+      "dialogs": {
+        "clearLibraryTitle": "Clear Library",
+        "clearLibraryDescription": "Are you sure you want to clear your entire music library? This action cannot be undone.",
+        "addSongTitle": "Add Song",
+        "addSongDescription": "Paste a YouTube link to add to your iPod",
+        "youreOffline": "You're offline",
+        "ipodRequiresInternet": "iPod requires an internet connection",
+        "errorAdding": "Error adding:",
+        "openedSharedTrack": "Opened shared track. Press ⏯ to start playing.",
+        "addingNewTrack": "Adding new track from URL...",
+        "failedToLoadSharedTrack": "Failed to load shared track",
+        "libraryExportedSuccessfully": "Library exported successfully",
+        "failedToExportLibrary": "Failed to export library",
+        "libraryImportedSuccessfully": "Library imported successfully",
+        "failedToImportLibrary": "Failed to import library: Invalid format"
+      },
+      "menuItems": {
+        "music": "Music",
+        "settings": "Settings",
+        "extras": "Extras",
+        "shuffleSongs": "Shuffle Songs",
+        "nowPlaying": "Now Playing",
+        "ipod": "iPod",
+        "repeat": "Repeat",
+        "shuffle": "Shuffle",
+        "backlight": "Backlight",
+        "theme": "Theme",
+        "on": "On",
+        "off": "Off",
+        "one": "One",
+        "all": "All"
+      },
+      "translationLanguages": {
+        "original": "Original",
+        "english": "English",
+        "chinese": "中文",
+        "japanese": "日本語",
+        "korean": "한국어",
+        "spanish": "Español",
+        "french": "Français",
+        "german": "Deutsch",
+        "portuguese": "Português",
+        "italian": "Italiano",
+        "russian": "Русский"
+      },
+      "ariaLabels": {
+        "previousTrack": "Previous track",
+        "nextTrack": "Next track",
+        "playPause": "Play/Pause",
+        "closeFullscreen": "Close fullscreen",
+        "cycleLyricLayout": "Cycle lyric layout",
+        "toggleHangulRomanization": "Toggle Hangul / Romanization",
+        "translateLyrics": "Translate lyrics",
+        "select": "Select"
+      },
+      "keys": {
+        "escape": "Escape",
+        "enter": "Enter",
+        "select": "Select"
+      },
+      "messages": {
+        "dontStealMusic": "Don't steal music",
+        "neVolezPasLaMusique": "Ne volez pas la musique",
+        "bitteKeineMusikStehlen": "Bitte keine Musik stehlen",
+        "pleaseDontStealMusic": "音楽を盗用しないでください"
       },
       "help": {
         "addSongs": {

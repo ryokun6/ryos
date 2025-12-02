@@ -121,14 +121,17 @@ export const useWindowManager = ({
     };
   }, [currentTheme, isXpTheme, getSafeAreaBottomInset]);
 
-  const { playLoop: playMoveLoop, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
+  const { play: playMoveSound, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
   const { play: playMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);
-  const { playLoop: playResizeLoop, stop: stopResizeResizing } = useSound(Sounds.WINDOW_RESIZE_RESIZING);
+  const { play: playResizeSound, stop: stopResizeResizing } = useSound(Sounds.WINDOW_RESIZE_RESIZING);
   const { play: playResizeStop } = useSound(Sounds.WINDOW_RESIZE_STOP);
 
   // Track if sound is currently playing
   const isMovePlayingRef = useRef(false);
   const isResizePlayingRef = useRef(false);
+  // Track the interval for playing sounds repeatedly
+  const moveSoundIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const resizeSoundIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const updateWindowState = useAppStore((state) => state.updateWindowState);
   const updateInstanceWindowState = useAppStore(
@@ -235,10 +238,14 @@ export const useWindowManager = ({
 
         const { topInset: menuBarHeight, bottomInset } = computeInsets();
 
-        // Start looping move sound when movement begins
+        // Start playing move sound when movement begins (non-looping, plays repeatedly)
         if (!isMobile && !isMovePlayingRef.current) {
-          playMoveLoop();
+          playMoveSound();
           isMovePlayingRef.current = true;
+          // Play sound repeatedly while dragging (not looping the audio file)
+          moveSoundIntervalRef.current = setInterval(() => {
+            playMoveSound();
+          }, 100); // Play every 100ms while dragging
         }
 
         if (isMobile) {
@@ -331,10 +338,14 @@ export const useWindowManager = ({
         setWindowSize({ width: newWidth, height: newHeight });
         setWindowPosition({ x: newLeft, y: Math.max(menuBarHeight, newTop) });
 
-        // Start looping resize sound when movement begins
+        // Start playing resize sound when movement begins (non-looping, plays repeatedly)
         if (!isResizePlayingRef.current && (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2)) {
-          playResizeLoop();
+          playResizeSound();
           isResizePlayingRef.current = true;
+          // Play sound repeatedly while resizing (not looping the audio file)
+          resizeSoundIntervalRef.current = setInterval(() => {
+            playResizeSound();
+          }, 100); // Play every 100ms while resizing
         }
       }
     };
@@ -349,6 +360,11 @@ export const useWindowManager = ({
         }
         // Stop move sound immediately and play stop sound
         if (isMovePlayingRef.current) {
+          // Clear the interval that was playing the sound repeatedly
+          if (moveSoundIntervalRef.current) {
+            clearInterval(moveSoundIntervalRef.current);
+            moveSoundIntervalRef.current = null;
+          }
           stopMoveMoving();
           isMovePlayingRef.current = false;
           playMoveStop();
@@ -363,6 +379,11 @@ export const useWindowManager = ({
         }
         // Stop resize sound immediately and play stop sound
         if (isResizePlayingRef.current) {
+          // Clear the interval that was playing the sound repeatedly
+          if (resizeSoundIntervalRef.current) {
+            clearInterval(resizeSoundIntervalRef.current);
+            resizeSoundIntervalRef.current = null;
+          }
           stopResizeResizing();
           isResizePlayingRef.current = false;
           playResizeStop();
@@ -382,6 +403,15 @@ export const useWindowManager = ({
       document.removeEventListener("mouseup", handleEnd);
       document.removeEventListener("touchmove", handleMove);
       document.removeEventListener("touchend", handleEnd);
+      // Clean up intervals if they exist
+      if (moveSoundIntervalRef.current) {
+        clearInterval(moveSoundIntervalRef.current);
+        moveSoundIntervalRef.current = null;
+      }
+      if (resizeSoundIntervalRef.current) {
+        clearInterval(resizeSoundIntervalRef.current);
+        resizeSoundIntervalRef.current = null;
+      }
     };
   }, [
     isDragging,
@@ -392,10 +422,10 @@ export const useWindowManager = ({
     windowSize,
     appId,
     isMobile,
-    playMoveLoop,
+    playMoveSound,
     playMoveStop,
     stopMoveMoving,
-    playResizeLoop,
+    playResizeSound,
     playResizeStop,
     stopResizeResizing,
     config,

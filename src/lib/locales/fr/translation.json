@@ -392,7 +392,33 @@
       "name": "Internet Explorer"
     },
     "ipod": {
+      "ariaLabels": {
+        "closeFullscreen": "Quitter le mode plein écran",
+        "cycleLyricLayout": "Alterner la disposition des paroles",
+        "nextTrack": "Piste suivante",
+        "playPause": "Lecture/Pause",
+        "previousTrack": "Piste précédente",
+        "select": "Sélectionner",
+        "toggleHangulRomanization": "Basculer Hangul / Romanisation",
+        "translateLyrics": "Traduire les paroles"
+      },
       "description": "Lecteur de musique",
+      "dialogs": {
+        "addSongDescription": "Collez un lien YouTube pour l'ajouter à votre iPod",
+        "addSongTitle": "Ajouter un morceau",
+        "addingNewTrack": "Ajout d'une nouvelle piste depuis l'URL...",
+        "clearLibraryDescription": "Voulez-vous vraiment vider toute votre bibliothèque musicale ? Cette action est irréversible.",
+        "clearLibraryTitle": "Vider la bibliothèque",
+        "errorAdding": "Erreur lors de l'ajout :",
+        "failedToExportLibrary": "Échec de l'exportation de la bibliothèque",
+        "failedToImportLibrary": "Échec de l'importation de la bibliothèque : Format invalide",
+        "failedToLoadSharedTrack": "Échec du chargement de la piste partagée",
+        "ipodRequiresInternet": "L'iPod nécessite une connexion internet",
+        "libraryExportedSuccessfully": "Bibliothèque exportée avec succès",
+        "libraryImportedSuccessfully": "Bibliothèque importée avec succès",
+        "openedSharedTrack": "Piste partagée ouverte. Appuyez sur ⏯ pour commencer la lecture.",
+        "youreOffline": "Vous êtes hors ligne"
+      },
       "help": {
         "addSongs": {
           "description": "Collez des URL YouTube pour ajouter de la musique à votre iPod.",
@@ -419,6 +445,11 @@
           "title": "Navigation par molette"
         }
       },
+      "keys": {
+        "enter": "Entrée",
+        "escape": "Échap",
+        "select": "Sélectionner"
+      },
       "menu": {
         "aboutIpod": "À propos de l'iPod",
         "addSong": "Ajouter un morceau...",
@@ -429,7 +460,9 @@
         "black": "Noir",
         "classic": "Classique",
         "clearLibrary": "Effacer la bibliothèque...",
+        "controls": "Commandes",
         "exportLibrary": "Exporter la bibliothèque...",
+        "file": "Fichier",
         "fullScreen": "Plein écran",
         "importLibrary": "Importer la bibliothèque...",
         "ipodHelp": "Aide iPod",
@@ -445,6 +478,7 @@
         "refreshLyrics": "Actualiser les paroles",
         "repeatAll": "Répéter tout",
         "repeatOne": "Répéter un",
+        "shareApp": "Partager l'app...",
         "shareSong": "Partager le morceau...",
         "showLyrics": "Afficher les paroles",
         "shuffle": "Aléatoire",
@@ -454,9 +488,66 @@
         "translate": "Traduire",
         "u2": "U2",
         "unknownArtist": "Artiste inconnu",
-        "video": "Vidéo"
+        "video": "Vidéo",
+        "view": "Affichage"
       },
-      "name": "iPod"
+      "menuItems": {
+        "all": "Tout",
+        "backlight": "Rétroéclairage",
+        "extras": "Extras",
+        "ipod": "iPod",
+        "music": "Musique",
+        "nowPlaying": "En lecture",
+        "off": "Désactivé",
+        "on": "Activé",
+        "one": "Un",
+        "repeat": "Répétition",
+        "settings": "Réglages",
+        "shuffle": "Aléatoire",
+        "shuffleSongs": "Lecture aléatoire des morceaux",
+        "theme": "Thème"
+      },
+      "messages": {
+        "bitteKeineMusikStehlen": "Ne volez pas la musique",
+        "dontStealMusic": "Ne volez pas la musique",
+        "neVolezPasLaMusique": "Ne volez pas la musique",
+        "pleaseDontStealMusic": "Ne volez pas la musique"
+      },
+      "name": "iPod",
+      "status": {
+        "added": "♬ Ajouté",
+        "hangulOn": "Hangul activé",
+        "layoutAlternating": "Disposition : Alternée",
+        "layoutCenter": "Disposition : Centrée",
+        "layoutFocus": "Disposition : Focus",
+        "libraryCleared": "Bibliothèque effacée",
+        "lightOff": "Lumière éteinte",
+        "lightOn": "Lumière allumée",
+        "offset": "Décalage",
+        "repeatAll": "Répéter tout",
+        "repeatOff": "Répétition désactivée",
+        "repeatOne": "Répéter un",
+        "romanizationOn": "Romanisation activée",
+        "shuffleOff": "Lecture aléatoire DÉSACTIVÉE",
+        "shuffleOn": "Lecture aléatoire ACTIVÉE",
+        "themeBlack": "Thème : Noir",
+        "themeClassic": "Thème : Classique",
+        "themeU2": "Thème : U2",
+        "translatingLyrics": "Traduction des paroles…"
+      },
+      "translationLanguages": {
+        "chinese": "Chinois",
+        "english": "Anglais",
+        "french": "Français",
+        "german": "Allemand",
+        "italian": "Italien",
+        "japanese": "Japonais",
+        "korean": "Coréen",
+        "original": "Original",
+        "portuguese": "Portugais",
+        "russian": "Russe",
+        "spanish": "Espagnol"
+      }
     },
     "minesweeper": {
       "description": "Jeu de puzzle classique",

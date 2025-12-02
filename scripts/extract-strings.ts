@@ -65,14 +65,16 @@ const COMMON_STRINGS: Record<string, string> = {
 
 // Patterns to find hardcoded strings in JSX/TSX
 const STRING_PATTERNS = [
-  // Button/Label text: >Text<
-  />\s*([A-Z][a-zA-Z0-9\s&.,!?\-:;()]+)\s*<\/[A-Z]/g,
-  // String literals in JSX: "Text" or 'Text'
-  /["']([A-Z][a-zA-Z0-9\s&.,!?\-:;()]{2,})["']/g,
-  // Template literals: `Text`
-  /`([A-Z][a-zA-Z0-9\s&.,!?\-:;()]{2,})`/g,
-  // Text content in elements
-  />\s*([A-Z][a-zA-Z0-9\s&.,!?\-:;()]{2,})\s*</g,
+  // Button/Label text: >Text< or >Text</Button>
+  />\s*([A-Z][a-zA-Z0-9\s&.,!?\-:;()…]+)\s*<\/[A-Z]/g,
+  // String literals in JSX: "Text" or 'Text' (but not in t() calls)
+  /(?<!t\(["'])(["'])([A-Z][a-zA-Z0-9\s&.,!?\-:;()…]{2,})\1(?!["']\))/g,
+  // Template literals: `Text` (but not in t() calls)
+  /(?<!t\()`([A-Z][a-zA-Z0-9\s&.,!?\-:;()…]{2,})`(?!\))/g,
+  // Text content in elements: >Text< (but not in JSX expressions)
+  />\s*([A-Z][a-zA-Z0-9\s&.,!?\-:;()…]{2,})\s*</g,
+  // Menu items and labels: "Text" or 'Text' in JSX attributes or content
+  /(?:label|title|text|children|content)\s*[:=]\s*["']([A-Z][a-zA-Z0-9\s&.,!?\-:;()…]{2,})["']/gi,
 ];
 
 // Ignore patterns (don't extract these)
@@ -257,9 +259,15 @@ async function analyzeFile(filePath: string): Promise<FileAnalysis> {
     if (
       line.includes('t("') ||
       line.includes("t('") ||
+      line.includes("t(`") ||
       line.includes("useTranslation") ||
       line.includes("getTranslated")
     ) {
+      return;
+    }
+    
+    // Skip lines with template literals that use t()
+    if (line.includes("${t(") || line.includes("${ t(")) {
       return;
     }
     
@@ -267,8 +275,10 @@ async function analyzeFile(filePath: string): Promise<FileAnalysis> {
     for (const pattern of STRING_PATTERNS) {
       const matches = line.matchAll(pattern);
       for (const match of matches) {
-        if (match[1]) {
-          const original = match[1].trim();
+        // Handle different pattern groups
+        const stringValue = match[2] || match[1];
+        if (stringValue) {
+          const original = stringValue.trim();
           
           // Skip if should be ignored or already found
           if (shouldIgnore(original) || foundStrings.has(original)) {

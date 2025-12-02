@@ -78,6 +78,24 @@
           "title": "Drücken zum Sprechen"
         }
       },
+      "menu": {
+        "aboutChats": "About Chats",
+        "chatSpeech": "Chat Speech",
+        "chats": "Chats",
+        "chatsHelp": "Chats Help",
+        "clearChat": "Clear Chat",
+        "createAccount": "Create Account...",
+        "decreaseFontSize": "Decrease Font Size",
+        "increaseFontSize": "Increase Font Size",
+        "logOut": "Log Out",
+        "login": "Login...",
+        "newChat": "New Chat...",
+        "resetFontSize": "Reset Font Size",
+        "saveTranscript": "Save Transcript...",
+        "showRooms": "Show Rooms",
+        "sound": "Sound",
+        "typingSynth": "Typing Synth"
+      },
       "name": "Chats"
     },
     "control-panels": {
@@ -392,7 +410,33 @@
       "name": "Internet Explorer"
     },
     "ipod": {
+      "ariaLabels": {
+        "closeFullscreen": "Vollbild schließen",
+        "cycleLyricLayout": "Liedtext-Layout wechseln",
+        "nextTrack": "Nächster Titel",
+        "playPause": "Wiedergabe/Pause",
+        "previousTrack": "Vorheriger Titel",
+        "select": "Auswählen",
+        "toggleHangulRomanization": "Hangul / Romanisierung umschalten",
+        "translateLyrics": "Liedtext übersetzen"
+      },
       "description": "Musikplayer",
+      "dialogs": {
+        "addSongDescription": "Füge einen YouTube-Link ein, um ihn zu deinem iPod hinzuzufügen",
+        "addSongTitle": "Song hinzufügen",
+        "addingNewTrack": "Neuer Titel von URL wird hinzugefügt...",
+        "clearLibraryDescription": "Möchten Sie Ihre gesamte Musikbibliothek wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "clearLibraryTitle": "Bibliothek löschen",
+        "errorAdding": "Fehler beim Hinzufügen:",
+        "failedToExportLibrary": "Fehler beim Exportieren der Bibliothek",
+        "failedToImportLibrary": "Fehler beim Importieren der Bibliothek: Ungültiges Format",
+        "failedToLoadSharedTrack": "Freigegebener Titel konnte nicht geladen werden",
+        "ipodRequiresInternet": "iPod benötigt eine Internetverbindung",
+        "libraryExportedSuccessfully": "Bibliothek erfolgreich exportiert",
+        "libraryImportedSuccessfully": "Bibliothek erfolgreich importiert",
+        "openedSharedTrack": "Geteilter Titel geöffnet. Drücken Sie ⏯, um die Wiedergabe zu starten.",
+        "youreOffline": "Sie sind offline"
+      },
       "help": {
         "addSongs": {
           "description": "YouTube-URLs einfügen, um Musik zu Ihrem iPod hinzuzufügen.",
@@ -419,6 +463,11 @@
           "title": "Rad-Navigation"
         }
       },
+      "keys": {
+        "enter": "Enter",
+        "escape": "Escape",
+        "select": "Auswählen"
+      },
       "menu": {
         "aboutIpod": "Über iPod",
         "addSong": "Titel hinzufügen...",
@@ -429,7 +478,9 @@
         "black": "Schwarz",
         "classic": "Klassisch",
         "clearLibrary": "Mediathek leeren...",
+        "controls": "Steuerung",
         "exportLibrary": "Mediathek exportieren...",
+        "file": "Datei",
         "fullScreen": "Vollbild",
         "importLibrary": "Mediathek importieren...",
         "ipodHelp": "iPod-Hilfe",
@@ -445,6 +496,7 @@
         "refreshLyrics": "Liedtext aktualisieren",
         "repeatAll": "Alle wiederholen",
         "repeatOne": "Einen wiederholen",
+        "shareApp": "App teilen...",
         "shareSong": "Titel teilen...",
         "showLyrics": "Liedtext anzeigen",
         "shuffle": "Zufallswiedergabe",
@@ -454,9 +506,66 @@
         "translate": "Übersetzen",
         "u2": "U2",
         "unknownArtist": "Unbekannter Künstler",
-        "video": "Video"
+        "video": "Video",
+        "view": "Ansicht"
       },
-      "name": "iPod"
+      "menuItems": {
+        "all": "Alle",
+        "backlight": "Hintergrundbeleuchtung",
+        "extras": "Extras",
+        "ipod": "iPod",
+        "music": "Musik",
+        "nowPlaying": "Aktuelle Wiedergabe",
+        "off": "Aus",
+        "on": "Ein",
+        "one": "Eins",
+        "repeat": "Wiederholen",
+        "settings": "Einstellungen",
+        "shuffle": "Mischen",
+        "shuffleSongs": "Titel mischen",
+        "theme": "Design"
+      },
+      "messages": {
+        "bitteKeineMusikStehlen": "Bitte keine Musik stehlen",
+        "dontStealMusic": "Keine Musik stehlen",
+        "neVolezPasLaMusique": "Keine Musik stehlen",
+        "pleaseDontStealMusic": "Keine Musik stehlen"
+      },
+      "name": "iPod",
+      "status": {
+        "added": "♬ Hinzugefügt",
+        "hangulOn": "Hangul An",
+        "layoutAlternating": "Layout: Abwechselnd",
+        "layoutCenter": "Layout: Zentriert",
+        "layoutFocus": "Layout: Fokus",
+        "libraryCleared": "Mediathek geleert",
+        "lightOff": "Licht AUS",
+        "lightOn": "Licht AN",
+        "offset": "Versatz",
+        "repeatAll": "Alle wiederholen",
+        "repeatOff": "Wiederholung AUS",
+        "repeatOne": "Einen wiederholen",
+        "romanizationOn": "Romanisierung An",
+        "shuffleOff": "Zufall AUS",
+        "shuffleOn": "Zufall EIN",
+        "themeBlack": "Design: Schwarz",
+        "themeClassic": "Design: Klassisch",
+        "themeU2": "Design: U2",
+        "translatingLyrics": "Liedtexte werden übersetzt…"
+      },
+      "translationLanguages": {
+        "chinese": "Chinesisch",
+        "english": "Englisch",
+        "french": "Französisch",
+        "german": "Deutsch",
+        "italian": "Italienisch",
+        "japanese": "Japanisch",
+        "korean": "Koreanisch",
+        "original": "Original",
+        "portuguese": "Portugiesisch",
+        "russian": "Russisch",
+        "spanish": "Spanisch"
+      }
     },
     "minesweeper": {
       "description": "Klassisches Puzzlespiel",

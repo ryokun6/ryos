@@ -19,6 +19,7 @@ import { LyricsAlignment, ChineseVariant, KoreanDisplay } from "@/types/lyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
+import { useTranslation } from "react-i18next";
 
 interface IpodMenuBarProps {
   onClose: () => void;
@@ -30,20 +31,6 @@ interface IpodMenuBarProps {
   onShareSong: () => void;
 }
 
-const translationLanguages = [
-  { label: "Original", code: null },
-  { label: "English", code: "en" },
-  { label: "中文", code: "zh-TW" },
-  { label: "日本語", code: "ja" },
-  { label: "한국어", code: "ko" },
-  { label: "Español", code: "es" },
-  { label: "Français", code: "fr" },
-  { label: "Deutsch", code: "de" },
-  { label: "Português", code: "pt" },
-  { label: "Italiano", code: "it" },
-  { label: "Русский", code: "ru" },
-];
-
 export function IpodMenuBar({
   onClose,
   onShowHelp,
@@ -53,9 +40,24 @@ export function IpodMenuBar({
   onAddTrack,
   onShareSong,
 }: IpodMenuBarProps) {
+  const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "ipod";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
+
+  const translationLanguages = [
+    { label: t("apps.ipod.translationLanguages.original"), code: null },
+    { label: t("apps.ipod.translationLanguages.english"), code: "en" },
+    { label: t("apps.ipod.translationLanguages.chinese"), code: "zh-TW" },
+    { label: t("apps.ipod.translationLanguages.japanese"), code: "ja" },
+    { label: t("apps.ipod.translationLanguages.korean"), code: "ko" },
+    { label: t("apps.ipod.translationLanguages.spanish"), code: "es" },
+    { label: t("apps.ipod.translationLanguages.french"), code: "fr" },
+    { label: t("apps.ipod.translationLanguages.german"), code: "de" },
+    { label: t("apps.ipod.translationLanguages.portuguese"), code: "pt" },
+    { label: t("apps.ipod.translationLanguages.italian"), code: "it" },
+    { label: t("apps.ipod.translationLanguages.russian"), code: "ru" },
+  ];
   const {
     tracks,
     currentIndex,
@@ -149,7 +151,7 @@ export function IpodMenuBar({
   const tracksByArtist = tracks.reduce<
     Record<string, { track: (typeof tracks)[0]; index: number }[]>
   >((acc, track, index) => {
-    const artist = track.artist || "Unknown Artist";
+    const artist = track.artist || t("apps.ipod.menu.unknownArtist");
     if (!acc[artist]) {
       acc[artist] = [];
     }
@@ -174,10 +176,10 @@ export function IpodMenuBar({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Library exported successfully");
+      toast.success(t("apps.ipod.dialogs.libraryExportedSuccessfully"));
     } catch (error) {
       console.error("Failed to export library:", error);
-      toast.error("Failed to export library");
+      toast.error(t("apps.ipod.dialogs.failedToExportLibrary"));
     }
   };
 
@@ -194,10 +196,10 @@ export function IpodMenuBar({
         try {
           const json = event.target?.result as string;
           importLibrary(json);
-          toast.success("Library imported successfully");
+          toast.success(t("apps.ipod.dialogs.libraryImportedSuccessfully"));
         } catch (error) {
           console.error("Failed to import library:", error);
-          toast.error("Failed to import library: Invalid format");
+          toast.error(t("apps.ipod.dialogs.failedToImportLibrary"));
         }
       };
       reader.readAsText(file);
@@ -215,7 +217,7 @@ export function IpodMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            File
+            {t("apps.ipod.menu.file")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -223,14 +225,14 @@ export function IpodMenuBar({
             onClick={onAddTrack}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Add Song...
+            {t("apps.ipod.menu.addSong")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onShareSong}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={tracks.length === 0 || currentIndex === -1}
           >
-            Share Song...
+            {t("apps.ipod.menu.shareSong")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -238,20 +240,20 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={tracks.length === 0}
           >
-            Export Library...
+            {t("apps.ipod.menu.exportLibrary")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleImportLibrary}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Import Library...
+            {t("apps.ipod.menu.importLibrary")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Close
+            {t("common.menu.close")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -264,7 +266,7 @@ export function IpodMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Controls
+            {t("apps.ipod.menu.controls")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -273,21 +275,21 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={tracks.length === 0}
           >
-            {isPlaying ? "Pause" : "Play"}
+            {isPlaying ? t("apps.ipod.menu.pause") : t("apps.ipod.menu.play")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={previousTrack}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={tracks.length === 0}
           >
-            Previous
+            {t("apps.ipod.menu.previous")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={nextTrack}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={tracks.length === 0}
           >
-            Next
+            {t("apps.ipod.menu.next")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -295,7 +297,7 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isShuffled && "pl-4")}>
-              {isShuffled ? "✓ Shuffle" : "Shuffle"}
+              {isShuffled ? `✓ ${t("apps.ipod.menu.shuffle")}` : t("apps.ipod.menu.shuffle")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -303,7 +305,7 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isLoopAll && "pl-4")}>
-              {isLoopAll ? "✓ Repeat All" : "Repeat All"}
+              {isLoopAll ? `✓ ${t("apps.ipod.menu.repeatAll")}` : t("apps.ipod.menu.repeatAll")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -311,7 +313,7 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isLoopCurrent && "pl-4")}>
-              {isLoopCurrent ? "✓ Repeat One" : "Repeat One"}
+              {isLoopCurrent ? `✓ ${t("apps.ipod.menu.repeatOne")}` : t("apps.ipod.menu.repeatOne")}
             </span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -325,14 +327,14 @@ export function IpodMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            View
+            {t("apps.ipod.menu.view")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           {/* Lyrics Submenu */}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-              Lyrics
+              {t("apps.ipod.menu.lyrics")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="px-0">
               <DropdownMenuItem
@@ -340,7 +342,7 @@ export function IpodMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(!showLyrics && "pl-4")}>
-                  {showLyrics ? "✓ Show Lyrics" : "Show Lyrics"}
+                  {showLyrics ? `✓ ${t("apps.ipod.menu.showLyrics")}` : t("apps.ipod.menu.showLyrics")}
                 </span>
               </DropdownMenuItem>
 
@@ -349,7 +351,7 @@ export function IpodMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
                 disabled={tracks.length === 0 || currentIndex === -1}
               >
-                Refresh Lyrics
+                {t("apps.ipod.menu.refreshLyrics")}
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
@@ -371,8 +373,8 @@ export function IpodMenuBar({
                   )}
                 >
                   {chineseVariant === ChineseVariant.Traditional
-                    ? "✓ 繁體"
-                    : "繁體"}
+                    ? `✓ ${t("apps.ipod.menu.traditionalChinese")}`
+                    : t("apps.ipod.menu.traditionalChinese")}
                 </span>
               </DropdownMenuItem>
 
@@ -392,7 +394,7 @@ export function IpodMenuBar({
                     koreanDisplay !== KoreanDisplay.Original && "pl-4"
                   )}
                 >
-                  {koreanDisplay === KoreanDisplay.Original ? "✓ 한글" : "한글"}
+                  {koreanDisplay === KoreanDisplay.Original ? `✓ ${t("apps.ipod.menu.korean")}` : t("apps.ipod.menu.korean")}
                 </span>
               </DropdownMenuItem>
 
@@ -409,8 +411,8 @@ export function IpodMenuBar({
                   )}
                 >
                   {lyricsAlignment === LyricsAlignment.FocusThree
-                    ? "✓ Multi"
-                    : "Multi"}
+                    ? `✓ ${t("apps.ipod.menu.multi")}`
+                    : t("apps.ipod.menu.multi")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -423,8 +425,8 @@ export function IpodMenuBar({
                   )}
                 >
                   {lyricsAlignment === LyricsAlignment.Center
-                    ? "✓ Single"
-                    : "Single"}
+                    ? `✓ ${t("apps.ipod.menu.single")}`
+                    : t("apps.ipod.menu.single")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -437,8 +439,8 @@ export function IpodMenuBar({
                   )}
                 >
                   {lyricsAlignment === LyricsAlignment.Alternating
-                    ? "✓ Alternating"
-                    : "Alternating"}
+                    ? `✓ ${t("apps.ipod.menu.alternating")}`
+                    : t("apps.ipod.menu.alternating")}
                 </span>
               </DropdownMenuItem>
             </DropdownMenuSubContent>
@@ -447,7 +449,7 @@ export function IpodMenuBar({
           {/* Translate Lyrics Submenu */}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-              Translate
+              {t("apps.ipod.menu.translate")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="px-0 max-h-[400px] overflow-y-auto">
               {translationLanguages.map((lang) => {
@@ -479,7 +481,7 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isBacklightOn && "pl-4")}>
-              {isBacklightOn ? "✓ Backlight" : "Backlight"}
+              {isBacklightOn ? `✓ ${t("apps.ipod.menu.backlight")}` : t("apps.ipod.menu.backlight")}
             </span>
           </DropdownMenuItem>
 
@@ -488,7 +490,7 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isLcdFilterOn && "pl-4")}>
-              {isLcdFilterOn ? "✓ LCD Filter" : "LCD Filter"}
+              {isLcdFilterOn ? `✓ ${t("apps.ipod.menu.lcdFilter")}` : t("apps.ipod.menu.lcdFilter")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -497,7 +499,7 @@ export function IpodMenuBar({
             disabled={!isPlaying}
           >
             <span className={cn(!isVideoOn && "pl-4")}>
-              {isVideoOn ? "✓ Video" : "Video"}
+              {isVideoOn ? `✓ ${t("apps.ipod.menu.video")}` : t("apps.ipod.menu.video")}
             </span>
           </DropdownMenuItem>
 
@@ -507,7 +509,7 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(currentTheme !== "classic" && "pl-4")}>
-              {currentTheme === "classic" ? "✓ Classic" : "Classic"}
+              {currentTheme === "classic" ? `✓ ${t("apps.ipod.menu.classic")}` : t("apps.ipod.menu.classic")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -515,7 +517,7 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(currentTheme !== "black" && "pl-4")}>
-              {currentTheme === "black" ? "✓ Black" : "Black"}
+              {currentTheme === "black" ? `✓ ${t("apps.ipod.menu.black")}` : t("apps.ipod.menu.black")}
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -523,7 +525,7 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(currentTheme !== "u2" && "pl-4")}>
-              {currentTheme === "u2" ? "✓ U2" : "U2"}
+              {currentTheme === "u2" ? `✓ ${t("apps.ipod.menu.u2")}` : t("apps.ipod.menu.u2")}
             </span>
           </DropdownMenuItem>
 
@@ -534,7 +536,7 @@ export function IpodMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isFullScreen && "pl-4")}>
-              {isFullScreen ? "✓ Full Screen" : "Full Screen"}
+              {isFullScreen ? `✓ ${t("apps.ipod.menu.fullScreen")}` : t("apps.ipod.menu.fullScreen")}
             </span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -548,7 +550,7 @@ export function IpodMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Library
+            {t("apps.ipod.menu.library")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -560,7 +562,7 @@ export function IpodMenuBar({
             onClick={onAddTrack}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Add to Library...
+            {t("apps.ipod.menu.addToLibrary")}
           </DropdownMenuItem>
 
           {tracks.length > 0 && (
@@ -571,7 +573,7 @@ export function IpodMenuBar({
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
                   <div className="flex justify-between w-full items-center overflow-hidden">
-                    <span className="truncate min-w-0">All Songs</span>
+                    <span className="truncate min-w-0">{t("apps.ipod.menu.allSongs")}</span>
                   </div>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[400px] overflow-y-auto">
@@ -647,13 +649,13 @@ export function IpodMenuBar({
             onClick={onClearLibrary}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Clear Library...
+            {t("apps.ipod.menu.clearLibrary")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onSyncLibrary}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Sync Library...
+            {t("apps.ipod.menu.syncLibrary")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -666,7 +668,7 @@ export function IpodMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Help
+            {t("common.menu.help")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -674,20 +676,20 @@ export function IpodMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            iPod Help
+            {t("apps.ipod.menu.ipodHelp")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Share App...
+            {t("apps.ipod.menu.shareApp")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About iPod
+            {t("apps.ipod.menu.aboutIpod")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

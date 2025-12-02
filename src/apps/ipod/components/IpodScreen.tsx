@@ -7,6 +7,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { useLyrics } from "@/hooks/useLyrics";
 import { LyricsAlignment, ChineseVariant, KoreanDisplay } from "@/types/lyrics";
+import { useTranslation } from "react-i18next";
 
 // Minimal BatteryManager interface for browsers that expose navigator.getBattery
 interface BatteryManager {
@@ -412,6 +413,7 @@ export function IpodScreen({
   isFullScreen,
   lyricsControls,
 }: IpodScreenProps) {
+  const { t } = useTranslation();
   // Animation variants for menu transitions
   const menuVariants = {
     enter: (direction: "forward" | "backward") => ({
@@ -429,8 +431,8 @@ export function IpodScreen({
   const currentMenuTitle = menuMode
     ? menuHistory.length > 0
       ? menuHistory[menuHistory.length - 1].title
-      : "iPod"
-    : "Now Playing";
+      : t("apps.ipod.menuItems.ipod")
+    : t("apps.ipod.menuItems.nowPlaying");
 
   // Refs
   const menuScrollRef = useRef<HTMLDivElement>(null);
