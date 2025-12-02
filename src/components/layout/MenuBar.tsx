@@ -650,9 +650,8 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 
   // Scroll container ref for Mac-style menubar (must be before early returns)
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [showLeftMask, setShowLeftMask] = useState(false);
-  const [showRightMask, setShowRightMask] = useState(false);
   const isScrollingRef = useRef(false);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   // Taskbar overflow handling (used for XP taskbar rendering)
   const runningAreaRef = useRef<HTMLDivElement>(null);
@@ -711,7 +710,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     };
   }, [isXpTheme, inWindowFrame, allTaskbarIds]);
 
-  // Scroll detection for Mac-style menubar (must be before early returns)
+  // Prevent clicks during scrolling for Mac-style menubar (must be before early returns)
   useEffect(() => {
     // Only set up for Mac-style menubar (not XP/98 taskbar)
     if (isXpTheme && !inWindowFrame) return;
@@ -719,18 +718,13 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    const updateMasks = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = container;
-      setShowLeftMask(scrollLeft > 1);
-      setShowRightMask(scrollLeft < scrollWidth - clientWidth - 1);
-    };
-
     const handleScroll = () => {
       isScrollingRef.current = true;
-      updateMasks();
+      setIsScrolling(true);
       // Reset scrolling state after scroll ends
       setTimeout(() => {
         isScrollingRef.current = false;
+        setIsScrolling(false);
       }, 150);
     };
 
@@ -754,6 +748,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         if (deltaX > 5 || deltaY > 5) {
           isTouchScrolling = true;
           isScrollingRef.current = true;
+          setIsScrolling(true);
         }
       }
     };
@@ -762,6 +757,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       if (isTouchScrolling) {
         setTimeout(() => {
           isScrollingRef.current = false;
+          setIsScrolling(false);
           isTouchScrolling = false;
         }, 100);
       }
@@ -776,15 +772,11 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       }
     };
 
-    updateMasks();
     container.addEventListener("scroll", handleScroll);
     container.addEventListener("touchstart", handleTouchStart, { passive: true });
     container.addEventListener("touchmove", handleTouchMove, { passive: true });
     container.addEventListener("touchend", handleTouchEnd, { passive: true });
     container.addEventListener("click", handleClick, true);
-    
-    const resizeObserver = new ResizeObserver(updateMasks);
-    resizeObserver.observe(container);
 
     return () => {
       container.removeEventListener("scroll", handleScroll);
@@ -792,7 +784,6 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
       container.removeEventListener("click", handleClick, true);
-      resizeObserver.disconnect();
     };
   }, [isXpTheme, inWindowFrame, hasActiveApp, children]);
 
@@ -1196,6 +1187,19 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
             .scrollbar-hide::-webkit-scrollbar {
               display: none;
             }
+            .menubar-scroll-container {
+              animation: menubar-mask;
+              animation-timeline: scroll(self inline);
+              animation-range: 0 2rem;
+              mask-image: linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%);
+              -webkit-mask-image: linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%);
+              mask-position: -2rem 0;
+            }
+            @keyframes menubar-mask {
+              0% {
+                mask-position: -2rem 0;
+              }
+            }
             .menubar-scroll-content {
               touch-action: pan-x;
             }
@@ -1203,38 +1207,12 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           <div 
             className="menubar-scroll-content"
             style={{
-              pointerEvents: isScrollingRef.current ? "none" : "auto",
+              pointerEvents: isScrolling ? "none" : "auto",
             }}
           >
             {hasActiveApp ? children : <DefaultMenuItems />}
           </div>
         </div>
-        {/* Left fade mask - only shows when scrolled to the right */}
-        {showLeftMask && (
-          <div
-            className="absolute left-0 top-0 bottom-0 w-8 pointer-events-none z-10"
-            style={{
-              maskImage: "linear-gradient(to right, black, transparent)",
-              WebkitMaskImage: "linear-gradient(to right, black, transparent)",
-              backgroundColor: currentTheme === "macosx"
-                ? "rgba(248, 248, 248, 0.85)"
-                : "var(--os-color-menubar-bg)",
-            }}
-          />
-        )}
-        {/* Right fade mask - only shows when not at the end */}
-        {showRightMask && (
-          <div
-            className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none z-10"
-            style={{
-              maskImage: "linear-gradient(to left, black, transparent)",
-              WebkitMaskImage: "linear-gradient(to left, black, transparent)",
-              backgroundColor: currentTheme === "macosx"
-                ? "rgba(248, 248, 248, 0.85)"
-                : "var(--os-color-menubar-bg)",
-            }}
-          />
-        )}
       </div>
       <div className="ml-auto flex items-center flex-shrink-0">
         <OfflineIndicator />
