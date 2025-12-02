@@ -647,13 +647,6 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     return { icon, label, isEmoji };
   };
 
-  // Scroll handling for mobile menu bar (must be before early returns)
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [showLeftMask, setShowLeftMask] = useState(false);
-  const [showRightMask, setShowRightMask] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimeoutRef = useRef<number | null>(null);
-  const touchStartRef = useRef<{ x: number; y: number; scrollLeft: number } | null>(null);
 
   // Taskbar overflow handling (used for XP taskbar rendering)
   const runningAreaRef = useRef<HTMLDivElement>(null);
@@ -711,95 +704,6 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       window.removeEventListener("resize", compute);
     };
   }, [isXpTheme, inWindowFrame, allTaskbarIds]);
-
-  // Scroll handling useEffect for mobile menu bar (must be before early returns)
-  useEffect(() => {
-    // Only set up scroll handling for Mac-style menubar (not XP/98 taskbar)
-    if (isXpTheme && !inWindowFrame) return;
-    
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const updateMasks = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = container;
-      // Show left mask if scrolled to the right (not at the start)
-      setShowLeftMask(scrollLeft > 0);
-      // Show right mask if there's more content to scroll (not at the end)
-      setShowRightMask(scrollLeft < scrollWidth - clientWidth - 1);
-    };
-
-    // Track scrolling state to prevent clicks during scroll
-    const handleScroll = () => {
-      setIsScrolling(true);
-      updateMasks();
-      
-      // Clear existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      
-      // Reset scrolling state after scroll ends
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
-      }, 150);
-    };
-
-    // Handle touch events to detect scrolling vs tapping
-    const handleTouchStart = (e: TouchEvent) => {
-      if (!e.touches || e.touches.length === 0) return;
-      const touch = e.touches[0];
-      touchStartRef.current = {
-        x: touch.clientX,
-        y: touch.clientY,
-        scrollLeft: container.scrollLeft,
-      };
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!touchStartRef.current || !e.touches || e.touches.length === 0) return;
-      
-      const touch = e.touches[0];
-      const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
-      const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
-      const scrollDelta = Math.abs(container.scrollLeft - touchStartRef.current.scrollLeft);
-      
-      // If moved more than 5px horizontally or scrolled, consider it scrolling
-      if (deltaX > 5 || deltaY > 5 || scrollDelta > 1) {
-        setIsScrolling(true);
-      }
-    };
-
-    const handleTouchEnd = () => {
-      // Reset scrolling state after a short delay
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
-        touchStartRef.current = null;
-      }, 100);
-    };
-
-    updateMasks();
-    container.addEventListener("scroll", handleScroll);
-    container.addEventListener("touchstart", handleTouchStart, { passive: true });
-    container.addEventListener("touchmove", handleTouchMove, { passive: true });
-    container.addEventListener("touchend", handleTouchEnd, { passive: true });
-    
-    const resizeObserver = new ResizeObserver(updateMasks);
-    resizeObserver.observe(container);
-
-    return () => {
-      container.removeEventListener("scroll", handleScroll);
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchmove", handleTouchMove);
-      container.removeEventListener("touchend", handleTouchEnd);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      resizeObserver.disconnect();
-    };
-  }, [isXpTheme, inWindowFrame, hasActiveApp, children]);
 
   // If inside window frame for XP/98, use plain style
   if (inWindowFrame && isXpTheme) {
@@ -1164,98 +1068,6 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   }
 
   // Default Mac-style top menubar
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [showLeftMask, setShowLeftMask] = useState(false);
-  const [showRightMask, setShowRightMask] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimeoutRef = useRef<number | null>(null);
-  const touchStartRef = useRef<{ x: number; y: number; scrollLeft: number } | null>(null);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const updateMasks = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = container;
-      // Show left mask if scrolled to the right (not at the start)
-      setShowLeftMask(scrollLeft > 0);
-      // Show right mask if there's more content to scroll (not at the end)
-      setShowRightMask(scrollLeft < scrollWidth - clientWidth - 1);
-    };
-
-    // Track scrolling state to prevent clicks during scroll
-    const handleScroll = () => {
-      setIsScrolling(true);
-      updateMasks();
-      
-      // Clear existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      
-      // Reset scrolling state after scroll ends
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
-      }, 150);
-    };
-
-    // Handle touch events to detect scrolling vs tapping
-    const handleTouchStart = (e: TouchEvent) => {
-      if (!e.touches || e.touches.length === 0) return;
-      const touch = e.touches[0];
-      touchStartRef.current = {
-        x: touch.clientX,
-        y: touch.clientY,
-        scrollLeft: container.scrollLeft,
-      };
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!touchStartRef.current || !e.touches || e.touches.length === 0) return;
-      
-      const touch = e.touches[0];
-      const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
-      const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
-      const scrollDelta = Math.abs(container.scrollLeft - touchStartRef.current.scrollLeft);
-      
-      // If moved more than 5px horizontally or scrolled, consider it scrolling
-      if (deltaX > 5 || deltaY > 5 || scrollDelta > 1) {
-        setIsScrolling(true);
-      }
-    };
-
-    const handleTouchEnd = () => {
-      // Reset scrolling state after a short delay
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
-        touchStartRef.current = null;
-      }, 100);
-    };
-
-    updateMasks();
-    container.addEventListener("scroll", handleScroll);
-    container.addEventListener("touchstart", handleTouchStart, { passive: true });
-    container.addEventListener("touchmove", handleTouchMove, { passive: true });
-    container.addEventListener("touchend", handleTouchEnd, { passive: true });
-    
-    const resizeObserver = new ResizeObserver(updateMasks);
-    resizeObserver.observe(container);
-
-    return () => {
-      container.removeEventListener("scroll", handleScroll);
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchmove", handleTouchMove);
-      container.removeEventListener("touchend", handleTouchEnd);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      resizeObserver.disconnect();
-    };
-  }, [hasActiveApp, children]);
-
   return (
     <div
       className="fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar px-2 h-os-menubar items-center font-os-ui"
@@ -1278,56 +1090,36 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       }}
     >
       <AppleMenu apps={apps} />
-      {/* Scrollable menu items container with fade masks */}
+      {/* Scrollable menu items container with CSS scroll-driven fade masks */}
       <div className="flex-1 relative min-w-0 overflow-hidden">
         <div
-          ref={scrollContainerRef}
-          className="overflow-x-auto scrollbar-hide flex items-center gap-0"
+          className="overflow-x-auto scrollbar-hide flex items-center gap-0 menubar-scroll-container"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
             WebkitOverflowScrolling: "touch",
+            maskImage: "linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%)",
+            maskPosition: "0 0",
           }}
         >
           <style>{`
             .scrollbar-hide::-webkit-scrollbar {
               display: none;
             }
+            .menubar-scroll-container {
+              animation: menubar-mask-in;
+              animation-timeline: scroll(self inline);
+              animation-range: 0 2rem;
+            }
+            @keyframes menubar-mask-in {
+              0% {
+                mask-position: -2rem 0;
+              }
+            }
           `}</style>
-          <div
-            style={{
-              pointerEvents: isScrolling ? "none" : "auto",
-            }}
-          >
-            {hasActiveApp ? children : <DefaultMenuItems />}
-          </div>
+          {hasActiveApp ? children : <DefaultMenuItems />}
         </div>
-        {/* Left fade mask - shows when scrolled to the right */}
-        {showLeftMask && (
-          <div
-            className="absolute left-0 top-0 bottom-0 w-8 pointer-events-none z-10"
-            style={{
-              maskImage: "linear-gradient(to right, black, transparent)",
-              WebkitMaskImage: "linear-gradient(to right, black, transparent)",
-              backgroundColor: currentTheme === "macosx"
-                ? "rgba(248, 248, 248, 0.85)"
-                : "var(--os-color-menubar-bg)",
-            }}
-          />
-        )}
-        {/* Right fade mask - shows when there's more content to scroll */}
-        {showRightMask && (
-          <div
-            className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none z-10"
-            style={{
-              maskImage: "linear-gradient(to left, black, transparent)",
-              WebkitMaskImage: "linear-gradient(to left, black, transparent)",
-              backgroundColor: currentTheme === "macosx"
-                ? "rgba(248, 248, 248, 0.85)"
-                : "var(--os-color-menubar-bg)",
-            }}
-          />
-        )}
       </div>
       <div className="ml-auto flex items-center flex-shrink-0">
         <OfflineIndicator />
