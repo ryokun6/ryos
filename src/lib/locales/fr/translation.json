@@ -1151,7 +1151,7 @@
       "loadingEmulator": "CHARGEMENT ÉMULATEUR",
       "loadingGame": "Chargement de {{gameName}}...",
       "menu": {
-        "aboutVirtualPc": "À propos de Virtual PC",
+        "aboutVirtualPc": "À propos de PC virtuel",
         "aspectRatio": "Format d'image",
         "controls": "Commandes",
         "fullScreen": "Plein écran",
@@ -1161,7 +1161,7 @@
         "reset": "Réinitialiser",
         "saveState": "Enregistrer l'état",
         "toggleMouseCapture": "Basculer la capture de la souris",
-        "virtualPcHelp": "Aide de Virtual PC"
+        "virtualPcHelp": "Aide de PC virtuel"
       },
       "name": "PC virtuel",
       "programsAvailable": "{{count}} PROGRAMMES DISPONIBLES",
@@ -1269,7 +1269,7 @@
       },
       "importedSoundboard": "Tableau de sons importé",
       "menu": {
-        "aboutSoundboard": "À propos de Soundboard",
+        "aboutSoundboard": "À propos de Tableau de sons",
         "deleteSoundboard": "Supprimer le Soundboard",
         "emojis": "Émojis",
         "exportSoundboards": "Exporter les Soundboards...",
@@ -1278,7 +1278,7 @@
         "newSoundboard": "Nouvelle table de sons",
         "renameSoundboard": "Renommer la table de sons",
         "resetSoundboards": "Réinitialiser les tables de sons",
-        "soundboardHelp": "Aide Soundboard",
+        "soundboardHelp": "Aide Tableau de sons",
         "waveforms": "Formes d'onde"
       },
       "name": "Tableau de sons",
@@ -1514,7 +1514,7 @@
       },
       "italic": "Italique",
       "menu": {
-        "aboutTextEdit": "À propos de TextEdit",
+        "aboutTextEdit": "À propos de Éditeur de texte",
         "alignCenter": "Aligner au centre",
         "alignLeft": "Aligner à gauche",
         "alignRight": "Aligner à droite",
@@ -1537,7 +1537,7 @@
         "saveEllipsis": "Enregistrer...",
         "taskList": "Liste de tâches",
         "text": "Texte",
-        "texteditHelp": "Aide TextEdit",
+        "texteditHelp": "Aide Éditeur de texte",
         "underline": "Souligner"
       },
       "name": "Éditeur de texte",

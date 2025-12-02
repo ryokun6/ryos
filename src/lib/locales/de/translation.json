@@ -1151,7 +1151,7 @@
       "loadingEmulator": "EMULATOR WIRD GELADEN",
       "loadingGame": "Lade {{gameName}}...",
       "menu": {
-        "aboutVirtualPc": "Über Virtual PC",
+        "aboutVirtualPc": "Über Virtueller PC",
         "aspectRatio": "Seitenverhältnis",
         "controls": "Steuerung",
         "fullScreen": "Vollbild",
@@ -1161,7 +1161,7 @@
         "reset": "Zurücksetzen",
         "saveState": "Zustand speichern",
         "toggleMouseCapture": "Mausfang umschalten",
-        "virtualPcHelp": "Virtual PC-Hilfe"
+        "virtualPcHelp": "Virtueller PC-Hilfe"
       },
       "name": "Virtueller PC",
       "programsAvailable": "{{count}} PROGRAMME VERFÜGBAR",
@@ -1514,7 +1514,7 @@
       },
       "italic": "Kursiv",
       "menu": {
-        "aboutTextEdit": "Über TextEdit",
+        "aboutTextEdit": "Über Texteditor",
         "alignCenter": "Zentrieren",
         "alignLeft": "Linksbündig",
         "alignRight": "Rechtsbündig",
@@ -1537,7 +1537,7 @@
         "saveEllipsis": "Speichern unter...",
         "taskList": "Aufgabenliste",
         "text": "Text",
-        "texteditHelp": "TextEdit-Hilfe",
+        "texteditHelp": "Texteditor-Hilfe",
         "underline": "Unterstreichen"
       },
       "name": "Texteditor",

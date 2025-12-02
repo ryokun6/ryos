@@ -1151,7 +1151,7 @@
       "loadingEmulator": "エミュレーターを読み込み中",
       "loadingGame": "{{gameName}}を読み込み中...",
       "menu": {
-        "aboutVirtualPc": "バーチャルPC について",
+        "aboutVirtualPc": "バーチャルPCについて",
         "aspectRatio": "アスペクト比",
         "controls": "コントロール",
         "fullScreen": "フルスクリーン",
@@ -1161,7 +1161,7 @@
         "reset": "リセット",
         "saveState": "状態を保存",
         "toggleMouseCapture": "マウスキャプチャを切り替える",
-        "virtualPcHelp": "バーチャルPC ヘルプ"
+        "virtualPcHelp": "バーチャルPCのヘルプ"
       },
       "name": "バーチャルPC",
       "programsAvailable": "{{count}}個のプログラムが利用可能です",
@@ -1269,7 +1269,7 @@
       },
       "importedSoundboard": "インポートしたサウンドボード",
       "menu": {
-        "aboutSoundboard": "Soundboardについて",
+        "aboutSoundboard": "サウンドボードについて",
         "deleteSoundboard": "サウンドボードを削除",
         "emojis": "絵文字",
         "exportSoundboards": "サウンドボードを書き出す...",
@@ -1278,7 +1278,7 @@
         "newSoundboard": "新規サウンドボード",
         "renameSoundboard": "サウンドボードの名前を変更",
         "resetSoundboards": "サウンドボードをリセット",
-        "soundboardHelp": "Soundboard ヘルプ",
+        "soundboardHelp": "サウンドボードのヘルプ",
         "waveforms": "波形"
       },
       "name": "サウンドボード",
@@ -1514,7 +1514,7 @@
       },
       "italic": "斜体",
       "menu": {
-        "aboutTextEdit": "TextEditについて",
+        "aboutTextEdit": "テキストエディットについて",
         "alignCenter": "中央揃え",
         "alignLeft": "左揃え",
         "alignRight": "右揃え",
@@ -1537,7 +1537,7 @@
         "saveEllipsis": "保存...",
         "taskList": "タスクリスト",
         "text": "テキスト",
-        "texteditHelp": "TextEdit ヘルプ",
+        "texteditHelp": "テキストエディットのヘルプ",
         "underline": "下線"
       },
       "name": "テキストエディット",
