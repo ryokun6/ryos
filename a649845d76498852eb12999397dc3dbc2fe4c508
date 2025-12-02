@@ -1,8 +1,14 @@
 AI Notes:
 
-src/lib/locales/en/translation.json: +751[0],+761[1],+776[1],+778[1]
+src/lib/locales/de/translation.json: +133[0],+553[0] -483[0]
+src/lib/locales/en/translation.json: +751[1],+761[2],+770[1],+776[2],+778[2]
+src/lib/locales/fr/translation.json: +133[0],+553[0] -483[0]
+src/lib/locales/ja/translation.json: +133[0],+553[0] -483[0]
+src/lib/locales/ko/translation.json: +133[0],+553[0] -483[0]
+src/lib/locales/zh-TW/translation.json: +150[0]
 
 Conversations:
 
-[0]: 94d8e20b-8bd1-4b08-99c1-f7854aef8c93; Localize PrefetchToast component; composer-1;
-[1]: 3748bced-25f1-4fd2-bbaa-566dca4ce7d7; Localize iPod settings; composer-1;
+[0]: 17545cb8-0fb6-421e-b363-f6d42cc18fb8; Localize folder and shortcut names; composer-1;
+[1]: f0606fb6-cb99-4fd4-a02b-b55a736b0562; Localize photo booth setup; composer-1;
+[2]: 3748bced-25f1-4fd2-bbaa-566dca4ce7d7; Localize iPod settings; composer-1;
