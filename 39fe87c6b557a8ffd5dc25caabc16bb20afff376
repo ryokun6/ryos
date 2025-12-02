@@ -1,0 +1,14 @@
+AI Notes:
+
+src/components/layout/Dock.tsx: +14[0],+350-353[0],+852-855[0],+857-866[0],+868-884[0],+886-903[0],+905-919[0],+921-930[0],+932-944[0],+946-948[0],+950-952[0],+954-966[0],+968-1017[0],+1019-1025[0],+1027-1039[0],+1041-1044[0],+1317-1322[0],+1324-1329[0],+1331-1335[0],+1337-1359[0],+1456[0],+1463-1470[0] -14[0],-1119-1137[0],-1234-1253[0]
+src/components/ui/right-click-menu.tsx: +13[0],+22[0],+31[0],+49[0],+63-76[0],+87-100[0] -46[0],-60[0],-71[0]
+src/lib/locales/de/translation.json: +1767-1768[0] -1767[0]
+src/lib/locales/en/translation.json: +105-106[0] -105[0]
+src/lib/locales/fr/translation.json: +1767-1768[0] -1767[0]
+src/lib/locales/ja/translation.json: +1767-1768[0] -1767[0]
+src/lib/locales/ko/translation.json: +1767-1768[0] -1767[0]
+src/lib/locales/zh-TW/translation.json: +1767-1768[0] -1767[0]
+
+Conversations:
+
+[0]: 88d329a4-4157-4820-9c8d-b8df97f2265f; Right click menu for dock folder shortcuts; composer-1;
