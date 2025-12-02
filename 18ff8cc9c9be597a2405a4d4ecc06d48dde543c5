@@ -1,0 +1,10 @@
+AI Notes:
+
+src/lib/locales/ja/translation.json: +1154[0],+1272[1] -1272[1]
+src/lib/locales/ko/translation.json: +1272[1] -1272[1]
+src/lib/locales/zh-TW/translation.json: +1272[1],+1281[1] -1272[1]
+
+Conversations:
+
+[0]: 74d0b3a8-5712-45ed-85ea-082c7f3be13d; 74d0b3a8; unknown;
+[1]: 6aa8562e-6556-4078-83e6-108904f08364; 6aa8562e; unknown;
