@@ -1,7 +1,8 @@
 AI Notes:
 
-src/lib/locales/en/translation.json: +751[0],+761[0],+776[0],+778[0]
+src/lib/locales/en/translation.json: +751[0],+761[1],+776[1],+778[1]
 
 Conversations:
 
-[0]: 3748bced-25f1-4fd2-bbaa-566dca4ce7d7; Localize iPod settings; composer-1;
+[0]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
+[1]: 3748bced-25f1-4fd2-bbaa-566dca4ce7d7; Localize iPod settings; composer-1;
