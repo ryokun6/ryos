@@ -1089,8 +1089,34 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       }}
     >
       <AppleMenu apps={apps} />
-      {hasActiveApp ? children : <DefaultMenuItems />}
-      <div className="ml-auto flex items-center">
+      {/* Scrollable menu items container with fade mask */}
+      <div className="flex-1 relative min-w-0 overflow-hidden">
+        <div
+          className="overflow-x-auto scrollbar-hide flex items-center gap-0"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <style>{`
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
+          {hasActiveApp ? children : <DefaultMenuItems />}
+        </div>
+        {/* Fade mask on the right side */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none z-10"
+          style={{
+            background: currentTheme === "macosx"
+              ? "linear-gradient(to right, transparent, rgba(248, 248, 248, 0.85))"
+              : `linear-gradient(to right, transparent, var(--os-color-menubar-bg))`,
+          }}
+        />
+      </div>
+      <div className="ml-auto flex items-center flex-shrink-0">
         <OfflineIndicator />
         <div className="hidden sm:flex">
           <VolumeControl />
