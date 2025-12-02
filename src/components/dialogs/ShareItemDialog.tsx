@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { QRCodeSVG } from "qrcode.react";
+import { useTranslation } from "react-i18next";
 
 interface ShareItemDialogProps {
   isOpen: boolean;
@@ -39,12 +40,16 @@ export function ShareItemDialog({
   contentClassName,
   overlayClassName,
 }: ShareItemDialogProps) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOsxTheme = currentTheme === "macosx";
+
+  // Translate itemType (e.g., "Page" -> translated "Page", "Song" -> translated "Song")
+  const translatedItemType = t(`common.dialog.share.itemTypes.${itemType.toLowerCase()}`, { defaultValue: itemType });
 
   // Generate the share link when the dialog opens or identifiers change
   useEffect(() => {
@@ -55,8 +60,8 @@ export function ShareItemDialog({
         setShareUrl(generated);
       } catch (error) {
         console.error("Error generating share link:", error);
-        toast.error(`Failed to generate share link for ${itemType}`, {
-          description: "Please try again later",
+        toast.error(t("common.dialog.share.failedToGenerateShareLink", { itemType: translatedItemType }), {
+          description: t("common.dialog.share.pleaseTryAgainLater"),
         });
         setShareUrl(""); // Clear potentially stale URL
       } finally {
@@ -70,7 +75,7 @@ export function ShareItemDialog({
       }
     };
     // Include all dependencies that affect URL generation
-  }, [isOpen, itemIdentifier, secondaryIdentifier, itemType, generateShareUrl]);
+  }, [isOpen, itemIdentifier, secondaryIdentifier, itemType, generateShareUrl, t]);
 
   // Focus the input when the share URL is available
   useEffect(() => {
@@ -85,15 +90,14 @@ export function ShareItemDialog({
     if (inputRef.current && shareUrl) {
       try {
         await navigator.clipboard.writeText(shareUrl);
-        toast.success("Link copied", {
-          description: `${itemType} link copied to clipboard`,
+        toast.success(t("common.dialog.share.linkCopied"), {
+          description: t("common.dialog.share.linkCopiedToClipboard", { itemType: translatedItemType }),
         });
         onClose(); // Dismiss the dialog after copying
       } catch (err) {
         console.error("Failed to copy text: ", err);
-        toast.error("Failed to copy link", {
-          description:
-            "Could not copy to clipboard. Please try manually selecting and copying.",
+        toast.error(t("common.dialog.share.failedToCopyLink"), {
+          description: t("common.dialog.share.couldNotCopyToClipboard"),
         });
         // Fallback for older browsers or if permission denied, select the text
         inputRef.current.focus();
@@ -105,17 +109,17 @@ export function ShareItemDialog({
 
   // Construct the descriptive text
   const descriptionText = () => {
-    let text = `Share link or scan to open this ${itemType.toLowerCase()}`; // Start with basic type
+    let text = t("common.dialog.share.shareLinkOrScanToOpen", { itemType: translatedItemType.toLowerCase() }); // Start with basic type
     if (title) {
       text += `: ${title}`;
     }
     if (details) {
-      text += ` by ${details}`;
+      text += ` ${t("common.dialog.share.by")} ${details}`;
     }
     if (secondaryIdentifier) {
       // Handle year specifically for now, could be made more generic
       if (itemType === "Page" && secondaryIdentifier !== "current") {
-        text += ` from ${secondaryIdentifier}`;
+        text += ` ${t("common.dialog.share.from")} ${secondaryIdentifier}`;
       }
     }
     return text;
@@ -141,7 +145,7 @@ export function ShareItemDialog({
                 fontSize: isXpTheme ? "10px" : undefined,
               }}
             >
-              Generating...
+              {t("common.dialog.share.generating")}
             </p>
           </div>
         ) : shareUrl ? (
@@ -170,7 +174,7 @@ export function ShareItemDialog({
                 fontSize: isXpTheme ? "10px" : undefined,
               }}
             >
-              QR code
+              {t("common.dialog.share.qrCode")}
             </p>
           </div>
         )}
@@ -211,8 +215,8 @@ export function ShareItemDialog({
           }}
           placeholder={
             isLoading
-              ? "Generating..."
-              : `Share link for ${itemType.toLowerCase()}`
+              ? t("common.dialog.share.generating")
+              : t("common.dialog.share.shareLinkFor", { itemType: translatedItemType.toLowerCase() })
           }
         />
       </div>
@@ -235,7 +239,7 @@ export function ShareItemDialog({
             fontSize: isXpTheme ? "11px" : undefined,
           }}
         >
-          Copy Link
+          {t("common.dialog.share.copyLink")}
         </Button>
       </DialogFooter>
     </div>
@@ -260,9 +264,9 @@ export function ShareItemDialog({
             className="title-bar"
             style={currentTheme === "xp" ? { minHeight: "30px" } : undefined}
           >
-            <div className="title-bar-text">Share {itemType}</div>
+            <div className="title-bar-text">{t("common.dialog.share.shareItem", { itemType: translatedItemType })}</div>
             <div className="title-bar-controls">
-              <button aria-label="Close" onClick={onClose} />
+              <button aria-label={t("common.menu.close")} onClick={onClose} />
             </div>
           </div>
           <div className="window-body">{dialogContent}</div>
@@ -283,18 +287,18 @@ export function ShareItemDialog({
       >
         {isMacOsxTheme ? (
           <>
-            <DialogHeader>Share {itemType}</DialogHeader>
+            <DialogHeader>{t("common.dialog.share.shareItem", { itemType: translatedItemType })}</DialogHeader>
             <DialogDescription className="sr-only">
-              Share this {itemType.toLowerCase()} via link or QR code
+              {t("common.dialog.share.shareItemViaLinkOrQrCode", { itemType: translatedItemType.toLowerCase() })}
             </DialogDescription>
           </>
         ) : (
           <DialogHeader>
             <DialogTitle className="font-normal text-[16px]">
-              Share {itemType}
+              {t("common.dialog.share.shareItem", { itemType: translatedItemType })}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              Share this {itemType.toLowerCase()} via link or QR code
+              {t("common.dialog.share.shareItemViaLinkOrQrCode", { itemType: translatedItemType.toLowerCase() })}
             </DialogDescription>
           </DialogHeader>
         )}

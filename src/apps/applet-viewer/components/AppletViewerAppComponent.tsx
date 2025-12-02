@@ -1448,11 +1448,11 @@ export function AppletViewerAppComponent({
   // Determine window title - prefer applet title, then shared name/title, then filename, then default
   const windowTitle = hasAppletContent
     ? shareCode
-      ? getAppletTitle(htmlContent, true) || sharedTitle || sharedName || "Shared Applet"
+      ? getAppletTitle(htmlContent, true) || sharedTitle || sharedName || t("apps.applet-viewer.dialogs.sharedApplet")
       : appletPath
       ? getFileName(appletPath)
-              : getAppletTitle(htmlContent, false) || "Applet Store"
-    : "Applet Store";
+              : getAppletTitle(htmlContent, false) || t("common.dock.appletStore")
+    : t("common.dock.appletStore");
 
   return (
     <>

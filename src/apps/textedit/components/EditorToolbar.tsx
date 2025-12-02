@@ -29,6 +29,7 @@ import {
   ListOrdered,
 } from "lucide-react";
 import { useSound, Sounds } from "@/hooks/useSound";
+import { useTranslation } from "react-i18next";
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -53,6 +54,7 @@ export function EditorToolbar({
   onTranscriptionStart,
   onSpeak,
 }: EditorToolbarProps) {
+  const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isLegacyToolbarTheme = isXpTheme || currentTheme === "system7";
@@ -95,7 +97,7 @@ export function EditorToolbar({
                 src={`/icons/default/text-editor/bold-${
                   editor?.isActive("bold") ? "depressed" : "off"
                 }.png`}
-                alt="Bold"
+                alt={t("apps.textedit.bold")}
                 className="w-[26px] h-[22px]"
               />
             </button>
@@ -110,7 +112,7 @@ export function EditorToolbar({
                 src={`/icons/default/text-editor/italic-${
                   editor?.isActive("italic") ? "depressed" : "off"
                 }.png`}
-                alt="Italic"
+                alt={t("apps.textedit.italic")}
                 className="w-[26px] h-[22px]"
               />
             </button>
@@ -125,7 +127,7 @@ export function EditorToolbar({
                 src={`/icons/default/text-editor/underline-${
                   editor?.isActive("underline") ? "depressed" : "off"
                 }.png`}
-                alt="Underline"
+                alt={t("apps.textedit.underline")}
                 className="w-[26px] h-[22px]"
               />
             </button>
@@ -145,7 +147,7 @@ export function EditorToolbar({
                     ? "H2"
                     : getCurrentHeading() === "h3"
                     ? "H3"
-                    : "Text"}
+                    : t("apps.textedit.text")}
                   <ChevronDown className="ml-1 h-3 w-3" />
                 </button>
               </DropdownMenuTrigger>
@@ -154,7 +156,7 @@ export function EditorToolbar({
                   onClick={() => handleHeadingChange("text")}
                   className="text-sm h-6 px-2"
                 >
-                  Text
+                  {t("apps.textedit.text")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleHeadingChange("h1")}
@@ -196,7 +198,7 @@ export function EditorToolbar({
                     ? "depressed"
                     : "off"
                 }.png`}
-                alt="Align Left"
+                alt={t("apps.textedit.alignLeft")}
                 className="w-[26px] h-[22px]"
               />
             </button>
@@ -213,7 +215,7 @@ export function EditorToolbar({
                     ? "depressed"
                     : "off"
                 }.png`}
-                alt="Align Center"
+                alt={t("apps.textedit.alignCenter")}
                 className="w-[26px] h-[22px]"
               />
             </button>
@@ -230,7 +232,7 @@ export function EditorToolbar({
                     ? "depressed"
                     : "off"
                 }.png`}
-                alt="Align Right"
+                alt={t("apps.textedit.alignRight")}
                 className="w-[26px] h-[22px]"
               />
             </button>
@@ -252,7 +254,7 @@ export function EditorToolbar({
                 src={`/icons/default/text-editor/unordered-list-${
                   editor?.isActive("bulletList") ? "depressed" : "off"
                 }.png`}
-                alt="Bullet List"
+                alt={t("apps.textedit.bulletList")}
                 className="w-[26px] h-[22px]"
               />
             </button>
@@ -267,7 +269,7 @@ export function EditorToolbar({
                 src={`/icons/default/text-editor/ordered-list-${
                   editor?.isActive("orderedList") ? "depressed" : "off"
                 }.png`}
-                alt="Ordered List"
+                alt={t("apps.textedit.numberedList")}
                 className="w-[26px] h-[22px]"
               />
             </button>
@@ -292,7 +294,7 @@ export function EditorToolbar({
                   onSpeak();
                 }}
                 className="w-[26px] h-[22px] flex items-center justify-center"
-                aria-label={isSpeaking ? "Stop speech" : "Speak"}
+                aria-label={isSpeaking ? t("apps.textedit.stopSpeech") : t("apps.textedit.speak")}
               >
                 {isTtsLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -334,7 +336,7 @@ export function EditorToolbar({
           size="icon"
           className="h-7 w-7"
           onClick={() => editor?.chain().focus().toggleBold().run()}
-          aria-label="Bold"
+          aria-label={t("apps.textedit.bold")}
         >
           <BoldIcon
             className={`h-4 w-4 ${
@@ -349,7 +351,7 @@ export function EditorToolbar({
           size="icon"
           className="h-7 w-7"
           onClick={() => editor?.chain().focus().toggleItalic().run()}
-          aria-label="Italic"
+          aria-label={t("apps.textedit.italic")}
         >
           <ItalicIcon
             className={`h-4 w-4 ${
@@ -366,7 +368,7 @@ export function EditorToolbar({
           onClick={() =>
             editor?.chain().focus().toggleUnderline().run()
           }
-          aria-label="Underline"
+          aria-label={t("apps.textedit.underline")}
         >
           <UnderlineIcon
             className={`h-4 w-4 ${
@@ -386,13 +388,13 @@ export function EditorToolbar({
             onValueChange={handleHeadingChange}
           >
             <SelectTrigger className="h-7 px-2 !min-w-[92px] !text-[12px]">
-              <SelectValue placeholder="Text" />
+              <SelectValue placeholder={t("apps.textedit.text")} />
             </SelectTrigger>
             <SelectContent align="start" className="px-0">
-              <SelectItem value="text">Text</SelectItem>
-              <SelectItem value="h1">Heading 1</SelectItem>
-              <SelectItem value="h2">Heading 2</SelectItem>
-              <SelectItem value="h3">Heading 3</SelectItem>
+              <SelectItem value="text">{t("apps.textedit.text")}</SelectItem>
+              <SelectItem value="h1">{t("apps.textedit.heading1")}</SelectItem>
+              <SelectItem value="h2">{t("apps.textedit.heading2")}</SelectItem>
+              <SelectItem value="h3">{t("apps.textedit.heading3")}</SelectItem>
             </SelectContent>
           </Select>
         ) : (
@@ -408,22 +410,22 @@ export function EditorToolbar({
                   ? "H2"
                   : getCurrentHeading() === "h3"
                   ? "H3"
-                  : "Text"}
+                  : t("apps.textedit.text")}
                 <ChevronDown className="ml-1 h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[120px]">
               <DropdownMenuItem onClick={() => handleHeadingChange("text")}>
-                Text
+                {t("apps.textedit.text")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleHeadingChange("h1")}>
-                Heading 1
+                {t("apps.textedit.heading1")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleHeadingChange("h2")}>
-                Heading 2
+                {t("apps.textedit.heading2")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleHeadingChange("h3")}>
-                Heading 3
+                {t("apps.textedit.heading3")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -439,7 +441,7 @@ export function EditorToolbar({
           onClick={() =>
             editor?.chain().focus().setTextAlign("left").run()
           }
-          aria-label="Align Left"
+          aria-label={t("apps.textedit.alignLeft")}
         >
           <AlignLeft
             className={`h-4 w-4 ${
@@ -456,7 +458,7 @@ export function EditorToolbar({
           onClick={() =>
             editor?.chain().focus().setTextAlign("center").run()
           }
-          aria-label="Align Center"
+          aria-label={t("apps.textedit.alignCenter")}
         >
           <AlignCenter
             className={`h-4 w-4 ${
@@ -473,7 +475,7 @@ export function EditorToolbar({
           onClick={() =>
             editor?.chain().focus().setTextAlign("right").run()
           }
-          aria-label="Align Right"
+          aria-label={t("apps.textedit.alignRight")}
         >
           <AlignRight
             className={`h-4 w-4 ${
@@ -494,7 +496,7 @@ export function EditorToolbar({
           onClick={() =>
             editor?.chain().focus().toggleBulletList().run()
           }
-          aria-label="Bullet List"
+          aria-label={t("apps.textedit.bulletList")}
         >
           <ListIcon
             className={`h-4 w-4 ${
@@ -511,7 +513,7 @@ export function EditorToolbar({
           onClick={() =>
             editor?.chain().focus().toggleOrderedList().run()
           }
-          aria-label="Ordered List"
+          aria-label={t("apps.textedit.numberedList")}
         >
           <ListOrdered
             className={`h-4 w-4 ${
@@ -538,7 +540,7 @@ export function EditorToolbar({
             size="icon"
             className="h-7 w-7"
             onClick={onSpeak}
-            aria-label={isSpeaking ? "Stop speech" : "Speak"}
+            aria-label={isSpeaking ? t("apps.textedit.stopSpeech") : t("apps.textedit.speak")}
           >
             {isTtsLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-black" />

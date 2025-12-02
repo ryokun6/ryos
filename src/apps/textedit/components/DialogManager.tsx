@@ -4,6 +4,7 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { appMetadata, helpItems } from "..";
+import { useTranslation } from "react-i18next";
 
 // Export type for the dialog controls
 export type DialogControls = {
@@ -45,6 +46,7 @@ export function DialogManager({
   onControlsReady,
   isUntitledForClose = false,
 }: DialogManagerProps) {
+  const { t } = useTranslation();
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
@@ -83,8 +85,8 @@ export function DialogManager({
         isOpen={isSaveDialogOpen}
         onOpenChange={setIsSaveDialogOpen}
         onSubmit={onSaveSubmit}
-        title="Save File"
-        description="Enter a name for your file"
+        title={t("apps.textedit.dialogs.saveFile")}
+        description={t("apps.textedit.dialogs.enterANameForYourFile")}
         value={saveFileName}
         onChange={setSaveFileName}
       />
@@ -96,26 +98,26 @@ export function DialogManager({
           onConfirmNew();
           setIsConfirmNewDialogOpen(false);
         }}
-        title="Discard Changes"
-        description="Do you want to discard your changes and create a new file?"
+        title={t("apps.textedit.dialogs.discardChanges")}
+        description={t("apps.textedit.dialogs.doYouWantToDiscardYourChangesAndCreateANewFile")}
       />
 
       <InputDialog
         isOpen={isCloseSaveDialogOpen}
         onOpenChange={setIsCloseSaveDialogOpen}
         onSubmit={onCloseSave}
-        title={isUntitledForClose ? "Keep New Document" : "Save Changes"}
+        title={isUntitledForClose ? t("apps.textedit.dialogs.keepNewDocument") : t("apps.textedit.dialogs.saveChanges")}
         description={
           isUntitledForClose
-            ? "Enter a filename to save, or delete it before closing."
-            : "Save your changes before closing."
+            ? t("apps.textedit.dialogs.enterFilenameToSaveOrDeleteItBeforeClosing")
+            : t("apps.textedit.dialogs.saveYourChangesBeforeClosing")
         }
         value={closeSaveFileName}
         onChange={setCloseSaveFileName}
-        submitLabel="Save"
+        submitLabel={t("common.dialog.save")}
         additionalActions={[
           {
-            label: isUntitledForClose ? "Delete" : "Discard Changes",
+            label: isUntitledForClose ? t("common.dialog.delete") : t("apps.textedit.dialogs.discardChanges"),
             onClick: onCloseDelete,
             variant: "retro" as const,
             position: "left" as const,

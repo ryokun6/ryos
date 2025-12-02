@@ -1001,6 +1001,10 @@
     },
     "pc": {
       "description": "3D PC 模擬",
+      "dialogs": {
+        "resetVirtualPcDescription": "您確定要重設此 PC 嗎？這將清除所有目前的狀態。",
+        "resetVirtualPcTitle": "重設虛擬 PC"
+      },
       "help": {
         "aspectRatio": {
           "description": "在 4:3 或寬螢幕之間切換以符合您的顯示器",
@@ -1027,6 +1031,8 @@
           "title": "儲存狀態"
         }
       },
+      "loadingEmulator": "載入模擬器",
+      "loadingGame": "載入 {{gameName}}...",
       "menu": {
         "aboutVirtualPc": "關於 Virtual PC",
         "aspectRatio": "長寬比",
@@ -1040,7 +1046,9 @@
         "toggleMouseCapture": "切換滑鼠擷取",
         "virtualPcHelp": "虛擬PC輔助說明"
       },
-      "name": "虛擬 PC"
+      "name": "虛擬 PC",
+      "programsAvailable": "{{count}} 個程式可用",
+      "virtualPc": "虛擬 PC"
     },
     "photo-booth": {
       "ariaLabels": {
@@ -1144,7 +1152,7 @@
       },
       "importedSoundboard": "已匯入的音效板",
       "menu": {
-        "aboutSoundboard": "關於音效板",
+        "aboutSoundboard": "關於 Soundboard",
         "deleteSoundboard": "刪除音效板",
         "emojis": "表情符號",
         "exportSoundboards": "輸出音效板...",
@@ -1153,10 +1161,10 @@
         "newSoundboard": "新增音效板",
         "renameSoundboard": "重新命名音效板",
         "resetSoundboards": "重設音效板",
-        "soundboardHelp": "音效板輔助說明",
+        "soundboardHelp": "Soundboard 輔助說明",
         "waveforms": "波形"
       },
-      "name": "音效板",
+      "name": "Soundboard",
       "newSoundboardDefault": "新增音效板",
       "soundboards": "音效板"
     },
@@ -1240,7 +1248,26 @@
       "name": "終端機"
     },
     "textedit": {
+      "alignCenter": "置中對齊",
+      "alignLeft": "靠左對齊",
+      "alignRight": "靠右對齊",
+      "bold": "粗體",
+      "bulletList": "項目符號清單",
       "description": "簡單的富文字編輯器",
+      "dialogs": {
+        "discardChanges": "捨棄變更",
+        "doYouWantToDiscardYourChangesAndCreateANewFile": "您要捨棄變更並建立新檔案嗎？",
+        "enterANameForYourFile": "輸入檔案名稱",
+        "enterFilenameToSaveOrDeleteItBeforeClosing": "輸入要儲存的檔案名稱，或在關閉前將其刪除。",
+        "keepNewDocument": "保留新文件",
+        "saveChanges": "儲存變更",
+        "saveFile": "儲存檔案",
+        "saveYourChangesBeforeClosing": "在關閉前儲存您的變更。"
+      },
+      "failedToUpdateEditorWithDocumentUpdatedEvent": "更新編輯器失敗，文件更新事件：",
+      "heading1": "標題 1",
+      "heading2": "標題 2",
+      "heading3": "標題 3",
       "help": {
         "fileManagement": {
           "description": "建立、開啟、儲存和匯出檔案（HTML、MD、TXT）",
@@ -1267,8 +1294,9 @@
           "title": "語音聽寫"
         }
       },
+      "italic": "斜體",
       "menu": {
-        "aboutTextEdit": "關於文字編輯",
+        "aboutTextEdit": "關於 TextEdit",
         "alignCenter": "置中對齊",
         "alignLeft": "靠左對齊",
         "alignRight": "靠右對齊",
@@ -1294,10 +1322,59 @@
         "texteditHelp": "TextEdit 輔助說明",
         "underline": "底線"
       },
-      "name": "文字編輯"
+      "name": "TextEdit",
+      "numberedList": "編號列表",
+      "slashCommands": {
+        "bulletList": {
+          "description": "建立簡單的項目符號列表",
+          "title": "項目符號列表"
+        },
+        "heading1": {
+          "description": "大型區段標題",
+          "title": "標題 1"
+        },
+        "heading2": {
+          "description": "中型區段標題",
+          "title": "標題 2"
+        },
+        "heading3": {
+          "description": "小型區段標題",
+          "title": "標題 3"
+        },
+        "numberedList": {
+          "description": "建立編號列表",
+          "title": "編號列表"
+        },
+        "taskList": {
+          "description": "建立含核取方塊的檢查清單",
+          "title": "任務清單"
+        },
+        "text": {
+          "description": "只需開始輸入純文字",
+          "title": "文字"
+        }
+      },
+      "speak": "說話",
+      "stopSpeech": "停止語音",
+      "text": "文字",
+      "underline": "底線",
+      "untitled": "未命名"
     },
     "videos": {
       "description": "觀看影片",
+      "dialogs": {
+        "addVideoDescription": "輸入 YouTube、Vimeo 或影片網址",
+        "addVideoTitle": "加入影片",
+        "clearPlaylistDescription": "您確定要清除整個播放清單嗎？此動作無法復原。",
+        "clearPlaylistTitle": "清除播放清單",
+        "failedToLoadSharedVideo": "無法載入分享的影片",
+        "openedSharedVideo": "已開啟分享的影片。按下",
+        "resetPlaylistDescription": "您確定要將播放清單重設為預設影片嗎？這將會取代您目前的播放清單。",
+        "resetPlaylistTitle": "重設播放清單",
+        "toStartPlaying": "即可開始播放。",
+        "videoId": "影片 ID：{{videoId}}",
+        "videoItemType": "影片"
+      },
       "help": {
         "addVideo": {
           "description": "貼上任何 YouTube 網址以新增至播放清單",
@@ -1345,7 +1422,33 @@
         "unknownArtist": "未知演出者",
         "videosHelp": "影片輔助說明"
       },
-      "name": "影片"
+      "name": "影片",
+      "status": {
+        "add": "加入",
+        "addVideos": "加入影片",
+        "errorAdding": "加入錯誤：{{error}}",
+        "failedToAddVideo": "無法加入影片",
+        "failedToProcessVideo": "無法處理影片：{{videoId}}",
+        "fullscreen": "全螢幕",
+        "next": "下一首 ⏭",
+        "paused": "已暫停 ⏸",
+        "play": "播放 ▶",
+        "playing": "▶ 正在播放 {{title}}",
+        "playlistReset": "播放清單已重設",
+        "pressToPlay": "按 ⏯ 播放",
+        "prev": "上一首 ⏮",
+        "repeat": "重複播放",
+        "repeatingPlaylist": "正在重複播放清單",
+        "shuffle": "隨機播放",
+        "shuffleOff": "隨機播放關閉",
+        "shuffleOn": "隨機播放開啟",
+        "time": "時間",
+        "title": "標題",
+        "toGetStarted": "即可開始",
+        "track": "曲目",
+        "unknownError": "未知錯誤",
+        "videoAdded": "影片已新增"
+      }
     }
   },
   "common": {
@@ -1387,6 +1490,30 @@
       "saveBeforeClosing": "在關閉前儲存您的變更。",
       "saveChanges": "儲存變更",
       "saveFile": "儲存檔案",
+      "share": {
+        "by": "由",
+        "copyLink": "複製連結",
+        "couldNotCopyToClipboard": "無法複製到剪貼簿。請嘗試手動選取並複製。",
+        "failedToCopyLink": "複製連結失敗",
+        "failedToGenerateShareLink": "無法產生{{itemType}}的分享連結",
+        "from": "來自",
+        "generating": "正在產生...",
+        "itemTypes": {
+          "app": "應用程式",
+          "applet": "小程式",
+          "item": "項目",
+          "page": "頁面",
+          "song": "歌曲"
+        },
+        "linkCopied": "連結已複製",
+        "linkCopiedToClipboard": "{{itemType}}連結已複製到剪貼簿",
+        "pleaseTryAgainLater": "請稍後再試",
+        "qrCode": "QR 碼",
+        "shareItem": "分享{{itemType}}",
+        "shareItemViaLinkOrQrCode": "透過連結或QR碼分享此{{itemType}}",
+        "shareLinkFor": "分享{{itemType}}的連結",
+        "shareLinkOrScanToOpen": "分享連結或掃描以開啟此{{itemType}}"
+      },
       "version": "版本",
       "welcomeTo": "歡迎使用"
     },

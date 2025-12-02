@@ -18,6 +18,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { markdownToHtml } from "@/utils/markdown";
+import { useTranslation } from "react-i18next";
 
 // Inner component that has access to editor context
 function TextEditContent({
@@ -31,6 +32,7 @@ function TextEditContent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps) {
+  const { t } = useTranslation();
   const editor = useEditorContext();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -290,7 +292,7 @@ function TextEditContent({
           console.log("Editor content updated after document updated event");
         } catch (error) {
           console.error(
-            "Failed to update editor with document updated event:",
+            t("apps.textedit.failedToUpdateEditorWithDocumentUpdatedEvent"),
             error
           );
         }
@@ -355,7 +357,7 @@ function TextEditContent({
   };
 
   const handleNewFile = () => {
-    const newInstanceId = launchAppInstance("textedit", null, "Untitled", true);
+    const newInstanceId = launchAppInstance("textedit", null, t("apps.textedit.untitled"), true);
     console.log(`Created new TextEdit file in instance: ${newInstanceId}`);
   };
 
@@ -446,7 +448,7 @@ function TextEditContent({
         setCloseSaveFileName(`${suggestedName}.md`);
       } else {
         setCloseSaveFileName(
-          currentFilePath?.split("/").pop() || "Untitled.md"
+          currentFilePath?.split("/").pop() || `${t("apps.textedit.untitled")}.md`
         );
       }
 
@@ -532,7 +534,7 @@ function TextEditContent({
             ? `${removeFileExtension(currentFilePath.split("/").pop() || "")}${
                 hasUnsavedChanges ? " •" : ""
               }`
-            : `Untitled${showUnsavedIndicator ? " •" : ""}`)
+            : `${t("apps.textedit.untitled")}${showUnsavedIndicator ? " •" : ""}`)
         }
         onClose={handleClose}
         isForeground={isForeground}

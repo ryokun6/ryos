@@ -44,7 +44,31 @@
       "version": "Version",
       "madeBy": "Made by",
       "openInGitHub": "Open in GitHub",
-      "informationAboutApp": "Information about the application"
+      "informationAboutApp": "Information about the application",
+      "share": {
+        "shareItem": "Share {{itemType}}",
+        "shareItemViaLinkOrQrCode": "Share this {{itemType}} via link or QR code",
+        "generating": "Generating...",
+        "qrCode": "QR code",
+        "shareLinkOrScanToOpen": "Share link or scan to open this {{itemType}}",
+        "by": "by",
+        "from": "from",
+        "shareLinkFor": "Share link for {{itemType}}",
+        "copyLink": "Copy Link",
+        "linkCopied": "Link copied",
+        "linkCopiedToClipboard": "{{itemType}} link copied to clipboard",
+        "failedToCopyLink": "Failed to copy link",
+        "couldNotCopyToClipboard": "Could not copy to clipboard. Please try manually selecting and copying.",
+        "failedToGenerateShareLink": "Failed to generate share link for {{itemType}}",
+        "pleaseTryAgainLater": "Please try again later",
+        "itemTypes": {
+          "page": "Page",
+          "song": "Song",
+          "app": "App",
+          "applet": "Applet",
+          "item": "Item"
+        }
+      }
     },
     "system": {
       "systemRestoring": "System Restoring...",
@@ -616,6 +640,22 @@
     "textedit": {
       "name": "TextEdit",
       "description": "A simple rich text editor",
+      "untitled": "Untitled",
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "text": "Text",
+      "heading1": "Heading 1",
+      "heading2": "Heading 2",
+      "heading3": "Heading 3",
+      "alignLeft": "Align Left",
+      "alignCenter": "Align Center",
+      "alignRight": "Align Right",
+      "bulletList": "Bullet List",
+      "numberedList": "Numbered List",
+      "speak": "Speak",
+      "stopSpeech": "Stop speech",
+      "failedToUpdateEditorWithDocumentUpdatedEvent": "Failed to update editor with document updated event:",
       "menu": {
         "newFile": "New File",
         "open": "Open...",
@@ -642,6 +682,46 @@
         "taskList": "Task List",
         "texteditHelp": "TextEdit Help",
         "aboutTextEdit": "About TextEdit"
+      },
+      "dialogs": {
+        "saveFile": "Save File",
+        "enterANameForYourFile": "Enter a name for your file",
+        "discardChanges": "Discard Changes",
+        "doYouWantToDiscardYourChangesAndCreateANewFile": "Do you want to discard your changes and create a new file?",
+        "keepNewDocument": "Keep New Document",
+        "saveChanges": "Save Changes",
+        "enterFilenameToSaveOrDeleteItBeforeClosing": "Enter a filename to save, or delete it before closing.",
+        "saveYourChangesBeforeClosing": "Save your changes before closing."
+      },
+      "slashCommands": {
+        "text": {
+          "title": "Text",
+          "description": "Just start typing with plain text"
+        },
+        "heading1": {
+          "title": "Heading 1",
+          "description": "Large section heading"
+        },
+        "heading2": {
+          "title": "Heading 2",
+          "description": "Medium section heading"
+        },
+        "heading3": {
+          "title": "Heading 3",
+          "description": "Small section heading"
+        },
+        "bulletList": {
+          "title": "Bullet List",
+          "description": "Create a simple bullet list"
+        },
+        "numberedList": {
+          "title": "Numbered List",
+          "description": "Create a numbered list"
+        },
+        "taskList": {
+          "title": "Task List",
+          "description": "Create a checklist with checkboxes"
+        }
       },
       "help": {
         "richEditing": {
@@ -914,6 +994,45 @@
           "title": "Retro UI",
           "description": "Classic QuickTime player aesthetics"
         }
+      },
+      "status": {
+        "repeatingPlaylist": "REPEATING PLAYLIST",
+        "next": "NEXT ⏭",
+        "prev": "PREV ⏮",
+        "videoAdded": "VIDEO ADDED",
+        "errorAdding": "Error adding: {{error}}",
+        "unknownError": "Unknown error",
+        "pressToPlay": "PRESS ⏯ TO PLAY",
+        "failedToAddVideo": "Failed to add video",
+        "playing": "▶ Playing {{title}}",
+        "failedToProcessVideo": "Failed to process video: {{videoId}}",
+        "play": "PLAY ▶",
+        "paused": "PAUSED ⏸",
+        "shuffleOff": "SHUFFLE OFF",
+        "shuffleOn": "SHUFFLE ON",
+        "fullscreen": "FULLSCREEN",
+        "addVideos": "Add videos",
+        "toGetStarted": "to get started",
+        "track": "Track",
+        "time": "Time",
+        "title": "Title",
+        "add": "ADD",
+        "shuffle": "SHUFFLE",
+        "repeat": "REPEAT",
+        "playlistReset": "PLAYLIST RESET"
+      },
+      "dialogs": {
+        "openedSharedVideo": "Opened shared video. Press",
+        "toStartPlaying": "to start playing.",
+        "failedToLoadSharedVideo": "Failed to load shared video",
+        "videoId": "Video ID: {{videoId}}",
+        "clearPlaylistTitle": "Clear Playlist",
+        "clearPlaylistDescription": "Are you sure you want to clear the entire playlist? This action cannot be undone.",
+        "resetPlaylistTitle": "Reset Playlist",
+        "resetPlaylistDescription": "Are you sure you want to reset the playlist to default videos? This will replace your current playlist.",
+        "addVideoTitle": "Add Video",
+        "addVideoDescription": "Enter YouTube, Vimeo, or a video URL",
+        "videoItemType": "Video"
       }
     },
     "ipod": {
@@ -1136,6 +1255,10 @@
     "pc": {
       "name": "Virtual PC",
       "description": "3D PC simulation",
+      "virtualPc": "Virtual PC",
+      "loadingGame": "Loading {{gameName}}...",
+      "programsAvailable": "{{count}} PROGRAMS AVAILABLE",
+      "loadingEmulator": "LOADING EMULATOR",
       "menu": {
         "loadGame": "Load Game",
         "saveState": "Save State",
@@ -1148,6 +1271,10 @@
         "aspectRatio": "Aspect Ratio",
         "virtualPcHelp": "Virtual PC Help",
         "aboutVirtualPc": "About Virtual PC"
+      },
+      "dialogs": {
+        "resetVirtualPcTitle": "Reset Virtual PC",
+        "resetVirtualPcDescription": "Are you sure you want to reset the PC? This will clear all current state."
       },
       "help": {
         "pcEmulator": {

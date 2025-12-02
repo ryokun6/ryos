@@ -1001,6 +1001,10 @@
     },
     "pc": {
       "description": "3D PCシミュレーション",
+      "dialogs": {
+        "resetVirtualPcDescription": "PCをリセットしてもよろしいですか？これにより、現在のすべての状態がクリアされます。",
+        "resetVirtualPcTitle": "バーチャルPCをリセット"
+      },
       "help": {
         "aspectRatio": {
           "description": "モニターに合わせて4:3またはワイドスクリーンに切り替え",
@@ -1027,8 +1031,10 @@
           "title": "セーブステート"
         }
       },
+      "loadingEmulator": "エミュレーターを読み込み中",
+      "loadingGame": "{{gameName}}を読み込み中...",
       "menu": {
-        "aboutVirtualPc": "Virtual PC について",
+        "aboutVirtualPc": "バーチャルPC について",
         "aspectRatio": "アスペクト比",
         "controls": "コントロール",
         "fullScreen": "フルスクリーン",
@@ -1038,9 +1044,11 @@
         "reset": "リセット",
         "saveState": "状態を保存",
         "toggleMouseCapture": "マウスキャプチャを切り替える",
-        "virtualPcHelp": "Virtual PC ヘルプ"
+        "virtualPcHelp": "バーチャルPC ヘルプ"
       },
-      "name": "仮想PC"
+      "name": "バーチャルPC",
+      "programsAvailable": "{{count}}個のプログラムが利用可能です",
+      "virtualPc": "バーチャルPC"
     },
     "photo-booth": {
       "ariaLabels": {
@@ -1144,7 +1152,7 @@
       },
       "importedSoundboard": "インポートしたサウンドボード",
       "menu": {
-        "aboutSoundboard": "サウンドボードについて",
+        "aboutSoundboard": "Soundboardについて",
         "deleteSoundboard": "サウンドボードを削除",
         "emojis": "絵文字",
         "exportSoundboards": "サウンドボードを書き出す...",
@@ -1153,10 +1161,10 @@
         "newSoundboard": "新規サウンドボード",
         "renameSoundboard": "サウンドボードの名前を変更",
         "resetSoundboards": "サウンドボードをリセット",
-        "soundboardHelp": "サウンドボードのヘルプ",
+        "soundboardHelp": "Soundboard ヘルプ",
         "waveforms": "波形"
       },
-      "name": "サウンドボード",
+      "name": "Soundboard",
       "newSoundboardDefault": "新規サウンドボード",
       "soundboards": "サウンドボード"
     },
@@ -1240,7 +1248,26 @@
       "name": "ターミナル"
     },
     "textedit": {
+      "alignCenter": "中央揃え",
+      "alignLeft": "左揃え",
+      "alignRight": "右揃え",
+      "bold": "太字",
+      "bulletList": "箇条書き",
       "description": "シンプルなリッチテキストエディタ",
+      "dialogs": {
+        "discardChanges": "変更を破棄",
+        "doYouWantToDiscardYourChangesAndCreateANewFile": "変更を破棄して新しいファイルを作成しますか？",
+        "enterANameForYourFile": "ファイル名を入力してください",
+        "enterFilenameToSaveOrDeleteItBeforeClosing": "保存するファイル名を入力するか、閉じる前に削除してください。",
+        "keepNewDocument": "新規ドキュメントを保持",
+        "saveChanges": "変更を保存",
+        "saveFile": "ファイルを保存",
+        "saveYourChangesBeforeClosing": "閉じる前に変更を保存してください。"
+      },
+      "failedToUpdateEditorWithDocumentUpdatedEvent": "ドキュメント更新イベントによるエディターの更新に失敗しました:",
+      "heading1": "見出し1",
+      "heading2": "見出し2",
+      "heading3": "見出し3",
       "help": {
         "fileManagement": {
           "description": "ファイルの作成、開く、保存、エクスポート（HTML、MD、TXT）",
@@ -1267,6 +1294,7 @@
           "title": "音声入力"
         }
       },
+      "italic": "斜体",
       "menu": {
         "aboutTextEdit": "TextEditについて",
         "alignCenter": "中央揃え",
@@ -1294,10 +1322,59 @@
         "texteditHelp": "TextEdit ヘルプ",
         "underline": "下線"
       },
-      "name": "テキストエディット"
+      "name": "TextEdit",
+      "numberedList": "番号付きリスト",
+      "slashCommands": {
+        "bulletList": {
+          "description": "シンプルな箇条書きリストを作成",
+          "title": "箇条書きリスト"
+        },
+        "heading1": {
+          "description": "大見出し",
+          "title": "見出し1"
+        },
+        "heading2": {
+          "description": "中見出し",
+          "title": "見出し2"
+        },
+        "heading3": {
+          "description": "小見出し",
+          "title": "見出し3"
+        },
+        "numberedList": {
+          "description": "番号付きリストを作成",
+          "title": "番号付きリスト"
+        },
+        "taskList": {
+          "description": "チェックボックス付きチェックリストを作成",
+          "title": "タスクリスト"
+        },
+        "text": {
+          "description": "プレーンテキストで入力開始",
+          "title": "テキスト"
+        }
+      },
+      "speak": "話す",
+      "stopSpeech": "音声停止",
+      "text": "テキスト",
+      "underline": "下線",
+      "untitled": "無題"
     },
     "videos": {
       "description": "動画を視聴",
+      "dialogs": {
+        "addVideoDescription": "YouTube、Vimeo、または動画のURLを入力",
+        "addVideoTitle": "動画を追加",
+        "clearPlaylistDescription": "プレイリスト全体をクリアしてもよろしいですか？この操作は元に戻せません。",
+        "clearPlaylistTitle": "プレイリストをクリア",
+        "failedToLoadSharedVideo": "共有動画の読み込みに失敗しました",
+        "openedSharedVideo": "共有動画を開きました。「",
+        "resetPlaylistDescription": "プレイリストをデフォルトの動画にリセットしてもよろしいですか？これにより、現在のプレイリストが置き換えられます。",
+        "resetPlaylistTitle": "プレイリストをリセット",
+        "toStartPlaying": "」を押して再生を開始します。",
+        "videoId": "動画ID: {{videoId}}",
+        "videoItemType": "動画"
+      },
       "help": {
         "addVideo": {
           "description": "任意のYouTube URLを貼り付けてプレイリストに追加",
@@ -1345,7 +1422,33 @@
         "unknownArtist": "不明なアーティスト",
         "videosHelp": "ビデオヘルプ"
       },
-      "name": "ムービー"
+      "name": "ビデオ",
+      "status": {
+        "add": "追加",
+        "addVideos": "動画を追加",
+        "errorAdding": "追加エラー: {{error}}",
+        "failedToAddVideo": "動画の追加に失敗しました",
+        "failedToProcessVideo": "動画の処理に失敗しました: {{videoId}}",
+        "fullscreen": "全画面",
+        "next": "次へ ⏭",
+        "paused": "一時停止中 ⏸",
+        "play": "再生 ▶",
+        "playing": "▶ {{title}}を再生中",
+        "playlistReset": "プレイリストリセット",
+        "pressToPlay": "⏯ を押して再生",
+        "prev": "前へ⏮",
+        "repeat": "リピート",
+        "repeatingPlaylist": "プレイリストをリピート中",
+        "shuffle": "シャッフル",
+        "shuffleOff": "シャッフルオフ",
+        "shuffleOn": "シャッフルオン",
+        "time": "時間",
+        "title": "タイトル",
+        "toGetStarted": "始めるには",
+        "track": "トラック",
+        "unknownError": "不明なエラー",
+        "videoAdded": "動画を追加しました"
+      }
     }
   },
   "common": {
@@ -1387,6 +1490,30 @@
       "saveBeforeClosing": "閉じる前に変更を保存してください。",
       "saveChanges": "変更を保存",
       "saveFile": "ファイルを保存",
+      "share": {
+        "by": "による",
+        "copyLink": "リンクをコピー",
+        "couldNotCopyToClipboard": "クリップボードにコピーできませんでした。手動で選択してコピーしてください。",
+        "failedToCopyLink": "リンクのコピーに失敗しました",
+        "failedToGenerateShareLink": "{{itemType}} の共有リンクの生成に失敗しました",
+        "from": "から",
+        "generating": "生成中...",
+        "itemTypes": {
+          "app": "アプリ",
+          "applet": "アプレット",
+          "item": "項目",
+          "page": "ページ",
+          "song": "曲"
+        },
+        "linkCopied": "リンクをコピーしました",
+        "linkCopiedToClipboard": "{{itemType}} のリンクをクリップボードにコピーしました",
+        "pleaseTryAgainLater": "後でもう一度お試しください",
+        "qrCode": "QRコード",
+        "shareItem": "{{itemType}} を共有",
+        "shareItemViaLinkOrQrCode": "この {{itemType}} をリンクまたはQRコードで共有",
+        "shareLinkFor": "{{itemType}} の共有リンク",
+        "shareLinkOrScanToOpen": "リンクを共有するか、スキャンしてこの {{itemType}} を開く"
+      },
       "version": "バージョン",
       "welcomeTo": "へようこそ"
     },
@@ -1436,7 +1563,7 @@
       "sites": "サイト",
       "trash": "ゴミ箱",
       "undo": "取り消す",
-      "videos": "ムービー",
+      "videos": "ビデオ",
       "view": "表示"
     },
     "startMenu": {

@@ -11,8 +11,10 @@ import {
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface CommandItem {
+  key: string;
   title: string;
   description: string;
   command: (editor: Editor) => void;
@@ -27,6 +29,7 @@ const SlashMenuContent = ({
   onCommand: (command: CommandItem) => void;
   editor: Editor;
 }) => {
+  const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Reset selection when items change (when filtering)
@@ -35,22 +38,26 @@ const SlashMenuContent = ({
   }, [items]);
 
   const isActive = (item: CommandItem) => {
-    switch (item.title) {
-      case "Text":
+    switch (item.key) {
+      case "text":
         return editor.isActive("paragraph");
-      case "Heading 1":
+      case "heading1":
         return editor.isActive("heading", { level: 1 });
-      case "Heading 2":
+      case "heading2":
         return editor.isActive("heading", { level: 2 });
-      case "Heading 3":
+      case "heading3":
         return editor.isActive("heading", { level: 3 });
-      case "Bullet List":
+      case "bulletList":
         return editor.isActive("bulletList");
-      case "Numbered List":
+      case "numberedList":
         return editor.isActive("orderedList");
       default:
         return false;
     }
+  };
+
+  const getTranslatedTitle = (item: CommandItem) => {
+    return t(`apps.textedit.slashCommands.${item.key}.title`);
   };
 
   useEffect(() => {
@@ -93,7 +100,7 @@ const SlashMenuContent = ({
             index === selectedIndex ? "bg-gray-100" : ""
           }`}
         >
-          {item.title}
+          {getTranslatedTitle(item)}
           {isActive(item) && (
             <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
               <Check className="h-4 w-4" />
@@ -107,6 +114,7 @@ const SlashMenuContent = ({
 
 const commands: CommandItem[] = [
   {
+    key: "text",
     title: "Text",
     description: "Just start typing with plain text",
     command: (editor: Editor) => {
@@ -114,6 +122,7 @@ const commands: CommandItem[] = [
     },
   },
   {
+    key: "heading1",
     title: "Heading 1",
     description: "Large section heading",
     command: (editor: Editor) => {
@@ -121,6 +130,7 @@ const commands: CommandItem[] = [
     },
   },
   {
+    key: "heading2",
     title: "Heading 2",
     description: "Medium section heading",
     command: (editor: Editor) => {
@@ -128,6 +138,7 @@ const commands: CommandItem[] = [
     },
   },
   {
+    key: "heading3",
     title: "Heading 3",
     description: "Small section heading",
     command: (editor: Editor) => {
@@ -135,6 +146,7 @@ const commands: CommandItem[] = [
     },
   },
   {
+    key: "bulletList",
     title: "Bullet List",
     description: "Create a simple bullet list",
     command: (editor: Editor) => {
@@ -142,6 +154,7 @@ const commands: CommandItem[] = [
     },
   },
   {
+    key: "numberedList",
     title: "Numbered List",
     description: "Create a numbered list",
     command: (editor: Editor) => {
@@ -149,6 +162,7 @@ const commands: CommandItem[] = [
     },
   },
   {
+    key: "taskList",
     title: "Task List",
     description: "Create a checklist with checkboxes",
     command: (editor: Editor) => {
@@ -173,6 +187,7 @@ const suggestion: Partial<SuggestionOptions> = {
     editor.commands.deleteRange(range);
   },
   items: ({ query }: { query: string }) => {
+    // Filter by English title for search, but display will be translated
     return commands
       .filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
       .slice(0, 10);

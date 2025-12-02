@@ -1001,6 +1001,10 @@
     },
     "pc": {
       "description": "3D-PC-Simulation",
+      "dialogs": {
+        "resetVirtualPcDescription": "Sind Sie sicher, dass Sie den PC zurücksetzen möchten? Dadurch wird der gesamte aktuelle Zustand gelöscht.",
+        "resetVirtualPcTitle": "Virtual PC zurücksetzen"
+      },
       "help": {
         "aspectRatio": {
           "description": "Zwischen 4:3 oder Breitbild wechseln, um zu Ihrem Monitor zu passen",
@@ -1027,6 +1031,8 @@
           "title": "Speicherstände"
         }
       },
+      "loadingEmulator": "EMULATOR WIRD GELADEN",
+      "loadingGame": "Lade {{gameName}}...",
       "menu": {
         "aboutVirtualPc": "Über Virtual PC",
         "aspectRatio": "Seitenverhältnis",
@@ -1040,7 +1046,9 @@
         "toggleMouseCapture": "Mausfang umschalten",
         "virtualPcHelp": "Virtual PC-Hilfe"
       },
-      "name": "Virtueller PC"
+      "name": "Virtueller PC",
+      "programsAvailable": "{{count}} PROGRAMME VERFÜGBAR",
+      "virtualPc": "Virtueller PC"
     },
     "photo-booth": {
       "ariaLabels": {
@@ -1240,7 +1248,26 @@
       "name": "Terminal"
     },
     "textedit": {
+      "alignCenter": "Zentriert ausrichten",
+      "alignLeft": "Links ausrichten",
+      "alignRight": "Rechts ausrichten",
+      "bold": "Fett",
+      "bulletList": "Aufzählungsliste",
       "description": "Ein einfacher Rich-Text-Editor",
+      "dialogs": {
+        "discardChanges": "Änderungen verwerfen",
+        "doYouWantToDiscardYourChangesAndCreateANewFile": "Möchten Sie Ihre Änderungen verwerfen und eine neue Datei erstellen?",
+        "enterANameForYourFile": "Geben Sie einen Namen für Ihre Datei ein",
+        "enterFilenameToSaveOrDeleteItBeforeClosing": "Geben Sie einen Dateinamen zum Speichern ein, oder löschen Sie sie vor dem Schließen.",
+        "keepNewDocument": "Neues Dokument behalten",
+        "saveChanges": "Änderungen speichern",
+        "saveFile": "Datei speichern",
+        "saveYourChangesBeforeClosing": "Speichern Sie Ihre Änderungen, bevor Sie schließen."
+      },
+      "failedToUpdateEditorWithDocumentUpdatedEvent": "Fehler beim Aktualisieren des Editors mit dem Ereignis 'Dokument aktualisiert':",
+      "heading1": "Überschrift 1",
+      "heading2": "Überschrift 2",
+      "heading3": "Überschrift 3",
       "help": {
         "fileManagement": {
           "description": "Dateien erstellen, öffnen, sichern und exportieren (HTML, MD, TXT)",
@@ -1267,6 +1294,7 @@
           "title": "Sprachdiktat"
         }
       },
+      "italic": "Kursiv",
       "menu": {
         "aboutTextEdit": "Über TextEdit",
         "alignCenter": "Zentrieren",
@@ -1294,10 +1322,59 @@
         "texteditHelp": "TextEdit-Hilfe",
         "underline": "Unterstreichen"
       },
-      "name": "Textbearbeitung"
+      "name": "TextEdit",
+      "numberedList": "Nummerierte Liste",
+      "slashCommands": {
+        "bulletList": {
+          "description": "Einfache Aufzählungsliste erstellen",
+          "title": "Aufzählungsliste"
+        },
+        "heading1": {
+          "description": "Große Abschnittsüberschrift",
+          "title": "Überschrift 1"
+        },
+        "heading2": {
+          "description": "Mittlere Abschnittsüberschrift",
+          "title": "Überschrift 2"
+        },
+        "heading3": {
+          "description": "Kleine Abschnittsüberschrift",
+          "title": "Überschrift 3"
+        },
+        "numberedList": {
+          "description": "Nummerierte Liste erstellen",
+          "title": "Nummerierte Liste"
+        },
+        "taskList": {
+          "description": "Checkliste mit Kontrollkästchen erstellen",
+          "title": "Aufgabenliste"
+        },
+        "text": {
+          "description": "Einfach mit unformatiertem Text tippen",
+          "title": "Text"
+        }
+      },
+      "speak": "Sprechen",
+      "stopSpeech": "Sprachausgabe stoppen",
+      "text": "Text",
+      "underline": "Unterstreichen",
+      "untitled": "Unbenannt"
     },
     "videos": {
       "description": "Videos ansehen",
+      "dialogs": {
+        "addVideoDescription": "YouTube-, Vimeo- oder Video-URL eingeben",
+        "addVideoTitle": "Video hinzufügen",
+        "clearPlaylistDescription": "Möchten Sie die gesamte Wiedergabeliste wirklich leeren? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "clearPlaylistTitle": "Wiedergabeliste leeren",
+        "failedToLoadSharedVideo": "Freigegebenes Video konnte nicht geladen werden",
+        "openedSharedVideo": "Freigegebenes Video geöffnet. Drücken Sie",
+        "resetPlaylistDescription": "Möchten Sie die Wiedergabeliste wirklich auf die Standardvideos zurücksetzen? Dies ersetzt Ihre aktuelle Wiedergabeliste.",
+        "resetPlaylistTitle": "Wiedergabeliste zurücksetzen",
+        "toStartPlaying": "um die Wiedergabe zu starten.",
+        "videoId": "Video-ID: {{videoId}}",
+        "videoItemType": "Video"
+      },
       "help": {
         "addVideo": {
           "description": "Beliebige YouTube-URL einfügen, um zur Wiedergabeliste hinzuzufügen",
@@ -1345,7 +1422,33 @@
         "unknownArtist": "Unbekannter Künstler",
         "videosHelp": "Videos-Hilfe"
       },
-      "name": "Filme"
+      "name": "Filme",
+      "status": {
+        "add": "HINZUFÜGEN",
+        "addVideos": "Videos hinzufügen",
+        "errorAdding": "Fehler beim Hinzufügen: {{error}}",
+        "failedToAddVideo": "Video konnte nicht hinzugefügt werden",
+        "failedToProcessVideo": "Video konnte nicht verarbeitet werden: {{videoId}}",
+        "fullscreen": "VOLLBILD",
+        "next": "WEITER ⏭",
+        "paused": "PAUSIERT ⏸",
+        "play": "WIEDERGEBEN ▶",
+        "playing": "▶ Spielt {{title}}",
+        "playlistReset": "PLAYLIST ZURÜCKGESETZT",
+        "pressToPlay": "DRÜCKEN SIE ⏯ ZUM ABSPIELEN",
+        "prev": "ZURÜCK ⏮",
+        "repeat": "WIEDERHOLEN",
+        "repeatingPlaylist": "PLAYLIST WIRD WIEDERHOLT",
+        "shuffle": "ZUFALLS WIEDERGABE",
+        "shuffleOff": "ZUFALLS WIEDERGABE AUS",
+        "shuffleOn": "ZUFALLS WIEDERGABE AN",
+        "time": "Zeit",
+        "title": "Titel",
+        "toGetStarted": "um loszulegen",
+        "track": "Track",
+        "unknownError": "Unbekannter Fehler",
+        "videoAdded": "VIDEO HINZUGEFÜGT"
+      }
     }
   },
   "common": {
@@ -1387,6 +1490,30 @@
       "saveBeforeClosing": "Sichern Sie Ihre Änderungen vor dem Schließen.",
       "saveChanges": "Änderungen sichern",
       "saveFile": "Datei sichern",
+      "share": {
+        "by": "von",
+        "copyLink": "Link kopieren",
+        "couldNotCopyToClipboard": "Konnte nicht in die Zwischenablage kopiert werden. Bitte versuchen Sie, den Inhalt manuell auszuwählen und zu kopieren.",
+        "failedToCopyLink": "Link konnte nicht kopiert werden",
+        "failedToGenerateShareLink": "Freigabelink für {{itemType}} konnte nicht generiert werden",
+        "from": "von",
+        "generating": "Wird generiert...",
+        "itemTypes": {
+          "app": "App",
+          "applet": "Applet",
+          "item": "Element",
+          "page": "Seite",
+          "song": "Lied"
+        },
+        "linkCopied": "Link kopiert",
+        "linkCopiedToClipboard": "{{itemType}}-Link in die Zwischenablage kopiert",
+        "pleaseTryAgainLater": "Bitte versuchen Sie es später erneut",
+        "qrCode": "QR-Code",
+        "shareItem": "{{itemType}} teilen",
+        "shareItemViaLinkOrQrCode": "Diesen {{itemType}} per Link oder QR-Code teilen",
+        "shareLinkFor": "Freigabelink für {{itemType}}",
+        "shareLinkOrScanToOpen": "Link teilen oder scannen, um diesen {{itemType}} zu öffnen"
+      },
       "version": "Version",
       "welcomeTo": "Willkommen bei"
     },

@@ -19,6 +19,8 @@ import { useAppStore } from "@/stores/useAppStore";
 import { SeekBar } from "./SeekBar";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { useTranslation } from "react-i18next";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 
 interface Video {
   id: string;
@@ -281,6 +283,8 @@ export function VideosAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps<VideosInitialData>) {
+  const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("videos", helpItems);
   const { play: playVideoTape } = useSound(Sounds.VIDEO_TAPE);
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
   const videos = useVideoStore((s) => s.videos);
@@ -513,12 +517,12 @@ export function VideosAppComponent({
     const currentIndex = getCurrentIndex();
     if (currentIndex === videos.length - 1) {
       if (loopAll) {
-        showStatus("REPEATING PLAYLIST");
+        showStatus(t("apps.videos.status.repeatingPlaylist"));
         updateCurrentVideoId(videos[0].id, "next");
       }
       // If not looping, stay on current video
     } else {
-      showStatus("NEXT ⏭");
+      showStatus(t("apps.videos.status.next"));
       updateCurrentVideoId(videos[currentIndex + 1].id, "next");
     }
     setIsPlaying(true);
@@ -531,12 +535,12 @@ export function VideosAppComponent({
     const currentIndex = getCurrentIndex();
     if (currentIndex === 0) {
       if (loopAll) {
-        showStatus("REPEATING PLAYLIST");
+        showStatus(t("apps.videos.status.repeatingPlaylist"));
         updateCurrentVideoId(videos[videos.length - 1].id, "prev");
       }
       // If not looping, stay on current video
     } else {
-      showStatus("PREV ⏮");
+      showStatus(t("apps.videos.status.prev"));
       updateCurrentVideoId(videos[currentIndex - 1].id, "prev");
     }
     setIsPlaying(true);
@@ -665,16 +669,16 @@ export function VideosAppComponent({
         `[Videos] Video added successfully. Current video should be: ${newVideo.id}`
       );
 
-      showStatus("VIDEO ADDED"); // Update status message
+      showStatus(t("apps.videos.status.videoAdded"));
 
       setUrlInput("");
       setIsAddDialogOpen(false);
     } catch (error) {
       console.error("Failed to add video:", error);
       showStatus(
-        `Error adding: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+        t("apps.videos.status.errorAdding", {
+          error: error instanceof Error ? error.message : t("apps.videos.status.unknownError"),
+        })
       );
       // Reset state on error to prevent inconsistent state
       if (videos.length > 0) {
@@ -699,14 +703,14 @@ export function VideosAppComponent({
         /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
 
       if (isIOS && isSafari) {
-        showStatus("PRESS ⏯ TO PLAY");
+        showStatus(t("apps.videos.status.pressToPlay"));
       }
     } catch (error) {
       console.error(
         `[Videos] Error adding video for videoId ${videoId}:`,
         error
       );
-      showStatus(`Failed to add video`);
+      showStatus(t("apps.videos.status.failedToAddVideo"));
       throw error; // Re-throw to let caller handle
     }
   };
@@ -743,7 +747,7 @@ export function VideosAppComponent({
             setIsPlaying(true);
           }
           // Optionally show status
-          showStatus(`▶ Playing ${currentVideos[existingVideoIndex].title}`);
+          showStatus(t("apps.videos.status.playing", { title: currentVideos[existingVideoIndex].title }));
         } else {
           console.log(
             `[Videos] Video ID ${videoId} not found. Adding and playing.`
@@ -757,11 +761,11 @@ export function VideosAppComponent({
         }
       } catch (error) {
         console.error(`[Videos] Error processing video ID ${videoId}:`, error);
-        showStatus(`Failed to process video: ${videoId}`);
+        showStatus(t("apps.videos.status.failedToProcessVideo", { videoId }));
         throw error; // Re-throw to let caller handle
       }
     },
-    [safeSetCurrentVideoId, setIsPlaying, handleAddAndPlayVideoById, showStatus]
+    [safeSetCurrentVideoId, setIsPlaying, handleAddAndPlayVideoById, showStatus, t]
   );
 
   // --- Simplified: Effect for initial data on mount ---
@@ -780,8 +784,9 @@ export function VideosAppComponent({
 
       toast.info(
         <>
-          Opened shared video. Press <span className="font-chicago">⏯</span> to
-          start playing.
+          {t("apps.videos.dialogs.openedSharedVideo")}{" "}
+          <span className="font-chicago">⏯</span>{" "}
+          {t("apps.videos.dialogs.toStartPlaying")}
         </>
       );
 
@@ -801,8 +806,8 @@ export function VideosAppComponent({
             `[Videos] Error processing initial videoId ${videoIdToProcess}:`,
             error
           );
-          toast.error("Failed to load shared video", {
-            description: `Video ID: ${videoIdToProcess}`,
+          toast.error(t("apps.videos.dialogs.failedToLoadSharedVideo"), {
+            description: t("apps.videos.dialogs.videoId", { videoId: videoIdToProcess }),
           });
         });
 
@@ -838,8 +843,9 @@ export function VideosAppComponent({
         bringToForeground("videos");
         toast.info(
           <>
-            Opened shared video. Press <span className="font-chicago">⏯</span>{" "}
-            to start playing.
+            {t("apps.videos.dialogs.openedSharedVideo")}{" "}
+            <span className="font-chicago">⏯</span>{" "}
+            {t("apps.videos.dialogs.toStartPlaying")}
           </>
         );
         processVideoId(videoId).catch((error) => {
@@ -847,8 +853,8 @@ export function VideosAppComponent({
             `[Videos] Error processing videoId ${videoId} from updateApp event:`,
             error
           );
-          toast.error("Failed to load shared video", {
-            description: `Video ID: ${videoId}`,
+          toast.error(t("apps.videos.dialogs.failedToLoadSharedVideo"), {
+            description: t("apps.videos.dialogs.videoId", { videoId }),
           });
         });
         // Mark this videoId as processed
@@ -864,13 +870,13 @@ export function VideosAppComponent({
 
   const togglePlay = () => {
     togglePlayStore();
-    showStatus(!isPlaying ? "PLAY ▶" : "PAUSED ⏸");
+    showStatus(!isPlaying ? t("apps.videos.status.play") : t("apps.videos.status.paused"));
     playVideoTape();
   };
 
   const toggleShuffle = () => {
     setIsShuffled(!isShuffled);
-    showStatus(isShuffled ? "SHUFFLE OFF" : "SHUFFLE ON");
+    showStatus(isShuffled ? t("apps.videos.status.shuffleOff") : t("apps.videos.status.shuffleOn"));
   };
 
   const handleVideoEnd = () => {
@@ -926,7 +932,7 @@ export function VideosAppComponent({
 
         if (iframe && iframe.requestFullscreen) {
           iframe.requestFullscreen();
-          showStatus("FULLSCREEN");
+          showStatus(t("apps.videos.status.fullscreen"));
           return;
         }
       }
@@ -935,7 +941,7 @@ export function VideosAppComponent({
       const playerContainer = document.querySelector(".react-player iframe");
       if (playerContainer && playerContainer.requestFullscreen) {
         playerContainer.requestFullscreen();
-        showStatus("FULLSCREEN");
+        showStatus(t("apps.videos.status.fullscreen"));
         return;
       }
 
@@ -943,7 +949,7 @@ export function VideosAppComponent({
       const container = document.querySelector(".react-player");
       if (container && container.requestFullscreen) {
         container.requestFullscreen();
-        showStatus("FULLSCREEN");
+        showStatus(t("apps.videos.status.fullscreen"));
       }
     } catch (error) {
       console.error("Fullscreen error:", error);
@@ -1089,7 +1095,7 @@ export function VideosAppComponent({
                   {/* Pointer-interaction overlay for play/pause + swipe-to-show-seekbar (z-20) */}
                   <div
                     className="absolute inset-0 cursor-pointer z-20"
-                    aria-label={isPlaying ? "Pause" : "Play"}
+                    aria-label={isPlaying ? t("apps.videos.menu.pause") : t("apps.videos.menu.play")}
                     onPointerDown={handleOverlayPointerDown}
                     onPointerMove={handleOverlayPointerMove}
                     onPointerUp={handleOverlayPointerUp}
@@ -1133,9 +1139,9 @@ export function VideosAppComponent({
                   onClick={() => setIsAddDialogOpen(true)}
                   className="text-[#ff00ff] hover:underline cursor-pointer"
                 >
-                  Add videos
+                  {t("apps.videos.status.addVideos")}
                 </a>
-                &nbsp;to get started
+                &nbsp;{t("apps.videos.status.toGetStarted")}
               </div>
             )}
           </div>
@@ -1156,7 +1162,7 @@ export function VideosAppComponent({
                     isPlaying ? "text-[#ff00ff]" : "text-gray-600"
                   )}
                 >
-                  <div>Track</div>
+                  <div>{t("apps.videos.status.track")}</div>
                   <div className="text-xl">
                     <AnimatedNumber number={getCurrentIndex() + 1} />
                   </div>
@@ -1167,7 +1173,7 @@ export function VideosAppComponent({
                     isPlaying ? "text-[#ff00ff]" : "text-gray-600"
                   )}
                 >
-                  <div>Time</div>
+                  <div>{t("apps.videos.status.time")}</div>
                   <div className="text-xl">
                     {formatTime(
                       isDraggingSeek ? Math.floor(dragSeekTime) : elapsedTime
@@ -1182,7 +1188,7 @@ export function VideosAppComponent({
                     isPlaying ? "text-[#ff00ff]" : "text-gray-600"
                   )}
                 >
-                  Title
+                  {t("apps.videos.status.title")}
                 </div>
                 {videos.length > 0 && (
                   <div className="relative overflow-hidden">
@@ -1250,7 +1256,7 @@ export function VideosAppComponent({
                     >
                       <img
                         src="/assets/videos/prev.png"
-                        alt="Previous"
+                        alt={t("apps.videos.menu.previous")}
                         width={32}
                         height={22}
                         className="pointer-events-none"
@@ -1270,7 +1276,7 @@ export function VideosAppComponent({
                             ? "/assets/videos/pause.png"
                             : "/assets/videos/play.png"
                         }
-                        alt={isPlaying ? "Pause" : "Play"}
+                        alt={isPlaying ? t("apps.videos.menu.pause") : t("apps.videos.menu.play")}
                         width={50}
                         height={22}
                         className="pointer-events-none"
@@ -1286,7 +1292,7 @@ export function VideosAppComponent({
                     >
                       <img
                         src="/assets/videos/next.png"
-                        alt="Next"
+                        alt={t("apps.videos.menu.next")}
                         width={32}
                         height={22}
                         className="pointer-events-none"
@@ -1307,7 +1313,7 @@ export function VideosAppComponent({
                         data-state={isShuffled ? "on" : "off"}
                         className="px-2 aqua-compact font-geneva-12 !text-[11px]"
                       >
-                        SHUFFLE
+                        {t("apps.videos.status.shuffle")}
                       </Button>
                       <Button
                         onClick={() => setLoopAll(!loopAll)}
@@ -1315,7 +1321,7 @@ export function VideosAppComponent({
                         data-state={loopAll ? "on" : "off"}
                         className="px-2 aqua-compact font-geneva-12 !text-[11px]"
                       >
-                        REPEAT
+                        {t("apps.videos.status.repeat")}
                       </Button>
                       <Button
                         onClick={() => setLoopCurrent(!loopCurrent)}
@@ -1331,7 +1337,7 @@ export function VideosAppComponent({
                       variant="aqua_select"
                       className="px-2 aqua-compact font-geneva-12 !text-[11px]"
                     >
-                      ADD
+                      {t("apps.videos.status.add")}
                     </Button>
                   </>
                 ) : (
@@ -1343,7 +1349,7 @@ export function VideosAppComponent({
                         data-state={isShuffled ? "on" : "off"}
                         className="h-[22px] px-2"
                       >
-                        SHUFFLE
+                        {t("apps.videos.status.shuffle")}
                       </Button>
                       <Button
                         onClick={() => setLoopAll(!loopAll)}
@@ -1351,7 +1357,7 @@ export function VideosAppComponent({
                         data-state={loopAll ? "on" : "off"}
                         className="h-[22px] px-2"
                       >
-                        REPEAT
+                        {t("apps.videos.status.repeat")}
                       </Button>
                       <Button
                         onClick={() => setLoopCurrent(!loopCurrent)}
@@ -1367,7 +1373,7 @@ export function VideosAppComponent({
                       variant="player"
                       className="h-[22px] px-2"
                     >
-                      ADD
+                      {t("apps.videos.status.add")}
                     </Button>
                   </>
                 )}
@@ -1378,7 +1384,7 @@ export function VideosAppComponent({
         <HelpDialog
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
-          helpItems={helpItems}
+          helpItems={translatedHelpItems}
           appId="videos"
         />
         <AboutDialog
@@ -1396,8 +1402,8 @@ export function VideosAppComponent({
             setIsPlaying(false);
             setIsConfirmClearOpen(false);
           }}
-          title="Clear Playlist"
-          description="Are you sure you want to clear the entire playlist? This action cannot be undone."
+          title={t("apps.videos.dialogs.clearPlaylistTitle")}
+          description={t("apps.videos.dialogs.clearPlaylistDescription")}
         />
         <ConfirmDialog
           isOpen={isConfirmResetOpen}
@@ -1410,17 +1416,17 @@ export function VideosAppComponent({
             setIsPlaying(false);
             setOriginalOrder(DEFAULT_VIDEOS);
             setIsConfirmResetOpen(false);
-            showStatus("PLAYLIST RESET");
+            showStatus(t("apps.videos.status.playlistReset"));
           }}
-          title="Reset Playlist"
-          description="Are you sure you want to reset the playlist to default videos? This will replace your current playlist."
+          title={t("apps.videos.dialogs.resetPlaylistTitle")}
+          description={t("apps.videos.dialogs.resetPlaylistDescription")}
         />
         <InputDialog
           isOpen={isAddDialogOpen}
           onOpenChange={setIsAddDialogOpen}
           onSubmit={addVideo}
-          title="Add Video"
-          description="Enter YouTube, Vimeo, or a video URL"
+          title={t("apps.videos.dialogs.addVideoTitle")}
+          description={t("apps.videos.dialogs.addVideoDescription")}
           value={urlInput}
           onChange={setUrlInput}
           isLoading={isAddingVideo}
@@ -1429,7 +1435,7 @@ export function VideosAppComponent({
         <ShareItemDialog
           isOpen={isShareDialogOpen}
           onClose={() => setIsShareDialogOpen(false)}
-          itemType="Video"
+          itemType={t("apps.videos.dialogs.videoItemType")}
           itemIdentifier={getCurrentVideo()?.id || ""}
           title={getCurrentVideo()?.title}
           details={getCurrentVideo()?.artist}

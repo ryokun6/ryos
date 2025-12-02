@@ -1001,6 +1001,10 @@
     },
     "pc": {
       "description": "Simulation PC 3D",
+      "dialogs": {
+        "resetVirtualPcDescription": "Êtes-vous sûr de vouloir réinitialiser le PC ? Cela effacera tout l'état actuel.",
+        "resetVirtualPcTitle": "Réinitialiser le PC Virtuel"
+      },
       "help": {
         "aspectRatio": {
           "description": "Basculer entre 4:3 ou écran large pour s'adapter à votre moniteur",
@@ -1027,6 +1031,8 @@
           "title": "États de sauvegarde"
         }
       },
+      "loadingEmulator": "CHARGEMENT ÉMULATEUR",
+      "loadingGame": "Chargement de {{gameName}}...",
       "menu": {
         "aboutVirtualPc": "À propos de Virtual PC",
         "aspectRatio": "Format d'image",
@@ -1040,7 +1046,9 @@
         "toggleMouseCapture": "Basculer la capture de la souris",
         "virtualPcHelp": "Aide de Virtual PC"
       },
-      "name": "PC virtuel"
+      "name": "PC virtuel",
+      "programsAvailable": "{{count}} PROGRAMMES DISPONIBLES",
+      "virtualPc": "PC Virtuel"
     },
     "photo-booth": {
       "ariaLabels": {
@@ -1153,10 +1161,10 @@
         "newSoundboard": "Nouvelle table de sons",
         "renameSoundboard": "Renommer la table de sons",
         "resetSoundboards": "Réinitialiser les tables de sons",
-        "soundboardHelp": "Aide sur les tables de sons",
+        "soundboardHelp": "Aide Soundboard",
         "waveforms": "Formes d'onde"
       },
-      "name": "Tableau sonore",
+      "name": "Soundboard",
       "newSoundboardDefault": "Nouvelle table de sons",
       "soundboards": "Tableaux sonores"
     },
@@ -1240,7 +1248,26 @@
       "name": "Terminal"
     },
     "textedit": {
+      "alignCenter": "Aligner au centre",
+      "alignLeft": "Aligner à gauche",
+      "alignRight": "Aligner à droite",
+      "bold": "Gras",
+      "bulletList": "Liste à puces",
       "description": "Un éditeur de texte enrichi simple",
+      "dialogs": {
+        "discardChanges": "Annuler les modifications",
+        "doYouWantToDiscardYourChangesAndCreateANewFile": "Voulez-vous annuler vos modifications et créer un nouveau fichier ?",
+        "enterANameForYourFile": "Saisissez un nom pour votre fichier",
+        "enterFilenameToSaveOrDeleteItBeforeClosing": "Saisissez un nom de fichier à enregistrer, ou supprimez-le avant de fermer.",
+        "keepNewDocument": "Conserver le nouveau document",
+        "saveChanges": "Enregistrer les modifications",
+        "saveFile": "Enregistrer le fichier",
+        "saveYourChangesBeforeClosing": "Enregistrez vos modifications avant de fermer."
+      },
+      "failedToUpdateEditorWithDocumentUpdatedEvent": "Échec de la mise à jour de l'éditeur avec l'événement de mise à jour du document :",
+      "heading1": "Titre 1",
+      "heading2": "Titre 2",
+      "heading3": "Titre 3",
       "help": {
         "fileManagement": {
           "description": "Créer, ouvrir, enregistrer et exporter des fichiers (HTML, MD, TXT)",
@@ -1267,6 +1294,7 @@
           "title": "Dictée vocale"
         }
       },
+      "italic": "Italique",
       "menu": {
         "aboutTextEdit": "À propos de TextEdit",
         "alignCenter": "Aligner au centre",
@@ -1294,10 +1322,59 @@
         "texteditHelp": "Aide TextEdit",
         "underline": "Souligner"
       },
-      "name": "Édition de texte"
+      "name": "TextEdit",
+      "numberedList": "Liste numérotée",
+      "slashCommands": {
+        "bulletList": {
+          "description": "Créer une liste à puces simple",
+          "title": "Liste à puces"
+        },
+        "heading1": {
+          "description": "Grand titre de section",
+          "title": "Titre 1"
+        },
+        "heading2": {
+          "description": "Titre de section moyen",
+          "title": "Titre 2"
+        },
+        "heading3": {
+          "description": "Petit titre de section",
+          "title": "Titre 3"
+        },
+        "numberedList": {
+          "description": "Créer une liste numérotée",
+          "title": "Liste numérotée"
+        },
+        "taskList": {
+          "description": "Créer une liste de tâches avec des cases à cocher",
+          "title": "Liste de tâches"
+        },
+        "text": {
+          "description": "Commencez simplement à taper en texte brut",
+          "title": "Texte"
+        }
+      },
+      "speak": "Parler",
+      "stopSpeech": "Arrêter la parole",
+      "text": "Texte",
+      "underline": "Souligner",
+      "untitled": "Sans titre"
     },
     "videos": {
       "description": "Regarder des vidéos",
+      "dialogs": {
+        "addVideoDescription": "Saisissez une URL YouTube, Vimeo ou une URL de vidéo",
+        "addVideoTitle": "Ajouter une vidéo",
+        "clearPlaylistDescription": "Voulez-vous vraiment vider toute la playlist ? Cette action est irréversible.",
+        "clearPlaylistTitle": "Vider la playlist",
+        "failedToLoadSharedVideo": "Échec du chargement de la vidéo partagée",
+        "openedSharedVideo": "Vidéo partagée ouverte. Appuyez sur",
+        "resetPlaylistDescription": "Voulez-vous vraiment réinitialiser la playlist aux vidéos par défaut ? Cela remplacera votre playlist actuelle.",
+        "resetPlaylistTitle": "Réinitialiser la playlist",
+        "toStartPlaying": "pour commencer la lecture.",
+        "videoId": "ID de la vidéo : {{videoId}}",
+        "videoItemType": "Vidéo"
+      },
       "help": {
         "addVideo": {
           "description": "Collez n'importe quelle URL YouTube pour l'ajouter à la liste de lecture",
@@ -1345,7 +1422,33 @@
         "unknownArtist": "Artiste inconnu",
         "videosHelp": "Aide Vidéos"
       },
-      "name": "Vidéos"
+      "name": "Vidéos",
+      "status": {
+        "add": "AJOUTER",
+        "addVideos": "Ajouter des vidéos",
+        "errorAdding": "Erreur lors de l'ajout : {{error}}",
+        "failedToAddVideo": "Échec de l'ajout de la vidéo",
+        "failedToProcessVideo": "Échec du traitement de la vidéo : {{videoId}}",
+        "fullscreen": "PLEIN ÉCRAN",
+        "next": "SUIVANT ⏭",
+        "paused": "EN PAUSE ⏸",
+        "play": "LIRE ▶",
+        "playing": "▶ Lecture de {{title}}",
+        "playlistReset": "PLAYLIST RÉINITIALISÉE",
+        "pressToPlay": "APPUYEZ SUR ⏯ POUR LIRE",
+        "prev": "PRÉCÉDENT ⏮",
+        "repeat": "RÉPÉTITION",
+        "repeatingPlaylist": "RÉPÉTITION DE LA PLAYLIST",
+        "shuffle": "LECTURE ALÉATOIRE",
+        "shuffleOff": "LECTURE ALÉATOIRE DÉSACTIVÉE",
+        "shuffleOn": "LECTURE ALÉATOIRE ACTIVÉE",
+        "time": "Durée",
+        "title": "Titre",
+        "toGetStarted": "pour commencer",
+        "track": "Piste",
+        "unknownError": "Erreur inconnue",
+        "videoAdded": "VIDÉO AJOUTÉE"
+      }
     }
   },
   "common": {
@@ -1387,6 +1490,30 @@
       "saveBeforeClosing": "Enregistrez vos modifications avant de fermer.",
       "saveChanges": "Enregistrer les modifications",
       "saveFile": "Enregistrer le fichier",
+      "share": {
+        "by": "par",
+        "copyLink": "Copier le lien",
+        "couldNotCopyToClipboard": "Impossible de copier dans le presse-papiers. Veuillez essayer de sélectionner et de copier manuellement.",
+        "failedToCopyLink": "Échec de la copie du lien",
+        "failedToGenerateShareLink": "Échec de la génération du lien de partage pour {{itemType}}",
+        "from": "de",
+        "generating": "Génération en cours...",
+        "itemTypes": {
+          "app": "App",
+          "applet": "Applet",
+          "item": "Élément",
+          "page": "Page",
+          "song": "Chanson"
+        },
+        "linkCopied": "Lien copié",
+        "linkCopiedToClipboard": "Lien {{itemType}} copié dans le presse-papiers",
+        "pleaseTryAgainLater": "Veuillez réessayer plus tard",
+        "qrCode": "Code QR",
+        "shareItem": "Partager {{itemType}}",
+        "shareItemViaLinkOrQrCode": "Partager ce {{itemType}} via un lien ou un code QR",
+        "shareLinkFor": "Lien de partage pour {{itemType}}",
+        "shareLinkOrScanToOpen": "Partager le lien ou scanner pour ouvrir ce {{itemType}}"
+      },
       "version": "Version",
       "welcomeTo": "Bienvenue dans"
     },
