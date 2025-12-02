@@ -1,7 +1,7 @@
 AI Notes:
 
 src/lib/locales/de/translation.json: +133[0],+553[0] -483[0]
-src/lib/locales/en/translation.json: +747[1],+751[2],+761[3],+770[4],+776[3],+778[2]
+src/lib/locales/en/translation.json: +747[1],+751[2],+761[3],+770[4],+776[3],+778[2],+792[5]
 src/lib/locales/fr/translation.json: +133[0],+553[0] -483[0]
 src/lib/locales/ja/translation.json: +133[0],+553[0] -483[0]
 src/lib/locales/ko/translation.json: +133[0],+553[0] -483[0]
@@ -14,3 +14,4 @@ Conversations:
 [2]: f6f580aa-7ad0-46b0-ae7a-99105b7dc4f8; Localize paint application; composer-1;
 [3]: 3748bced-25f1-4fd2-bbaa-566dca4ce7d7; Localize iPod settings; composer-1;
 [4]: f0606fb6-cb99-4fd4-a02b-b55a736b0562; Localize photo booth setup; composer-1;
+[5]: 9f51e976-56e4-4c04-8b79-8a7b01e9a75c; Show localized app name in help dialog; composer-1;
