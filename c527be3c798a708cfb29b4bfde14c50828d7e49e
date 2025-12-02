@@ -1,0 +1,17 @@
+AI Notes:
+
+api/chat.ts: +1067-1105[0] -775-785[0]
+api/utils/aiPrompts.ts: +181-187[0] -181-186[0]
+src/apps/chats/hooks/useAiChat.ts: +2099-2112[0],+2114-2117[0],+2119-2136[0],+2138-2150[0],+2152-2162[0],+2164-2173[0],+2175-2182[0],+2184-2205[0] -618-631[0],-633-644[0]
+src/apps/terminal/components/TerminalAppComponent.tsx: +410-411[0],+510-516[0] -410-411[0],-510-512[0]
+src/components/shared/ToolInvocationMessage.tsx: +130-131[0],+336-342[0] -130-131[0],-336-338[0]
+src/lib/locales/de/translation.json: +376-385[0] -376[0]
+src/lib/locales/en/translation.json: +730-739[0] -730[0]
+src/lib/locales/fr/translation.json: +376-385[0] -376[0]
+src/lib/locales/ja/translation.json: +376-385[0] -376[0]
+src/lib/locales/ko/translation.json: +376-385[0] -376[0]
+src/lib/locales/zh-TW/translation.json: +376-385[0] -376[0]
+
+Conversations:
+
+[0]: 0b334afb-08cf-4901-b674-98452eb67850; Add settings tool for AI system; composer-1;
