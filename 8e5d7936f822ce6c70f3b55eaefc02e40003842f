@@ -1,9 +1,10 @@
 AI Notes:
 
 src/apps/finder/components/FinderAppComponent.tsx: +524[0],+528[0],+609[0],+613[0]
-src/lib/locales/en/translation.json: +55[1],+59[1],+70[1],+76[1],+79[1],+142[1],+146[1],+161[1],+175-176[1],+180[1],+184[1],+188-189[1],+194[1],+197-198[1],+208[1],+214[1]
+src/lib/locales/en/translation.json: +55[1],+59[1],+70[1],+76[1],+79[1],+142[1],+146[1],+161[1],+175[1],+176[2],+180[1],+184[1],+188-189[1],+194[1],+197[1],+198[2],+208[1],+214[1]
 
 Conversations:
 
 [0]: a612736a-806b-4e2f-864a-034f5045181a; Retain applet share IDs on import; composer-1;
-[1]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
+[1]: 94d8e20b-8bd1-4b08-99c1-f7854aef8c93; Localize PrefetchToast component; composer-1;
+[2]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
