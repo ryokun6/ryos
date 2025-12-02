@@ -7,10 +7,12 @@ import {
   forwardRef,
 } from "react";
 import type React from "react";
+import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { AppId, getAppIconPath, appRegistry } from "@/config/appRegistry";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -318,6 +320,7 @@ const Divider = forwardRef<HTMLDivElement, { idKey: string }>(
 const MULTI_WINDOW_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
 
 function MacDock() {
+  const { t } = useTranslation();
   const isPhone = useIsPhone();
   const { instances, instanceOrder, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
     useAppStoreShallow((s) => ({
@@ -412,7 +415,7 @@ function MacDock() {
         return fileName.replace(/\.(html|app)$/i, "");
       };
 
-      const label = path ? getFileName(path) : "Applet Store";
+      const label = path ? getFileName(path) : t("common.dock.appletStore");
 
       // Check if the file icon is an emoji (not a file path)
       const fileIcon = file?.icon;
@@ -653,7 +656,7 @@ function MacDock() {
       if (appInstances.length === 0 && !specificInstanceId) {
         items.push({
           type: "item",
-          label: "Open",
+          label: t("common.dock.open"),
           onSelect: () => {
             if (appId === "finder") {
               launchApp("finder", { initialPath: "/" });
@@ -674,7 +677,7 @@ function MacDock() {
           const isForeground = instance.isForeground && !instance.isMinimized;
           items.push({
             type: "item",
-            label: `${isForeground ? "✓ " : ""}${label}${instance.isMinimized ? " (minimized)" : ""}`,
+            label: `${isForeground ? "✓ " : ""}${label}${instance.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
             onSelect: () => {
               if (instance.isMinimized) {
                 restoreInstance(specificInstanceId);
@@ -688,7 +691,7 @@ function MacDock() {
           // Show All Windows
           items.push({
             type: "item",
-            label: "Show All Windows",
+            label: t("common.dock.showAllWindows"),
             onSelect: () => {
               if (instance.isMinimized) {
                 restoreInstance(specificInstanceId);
@@ -700,7 +703,7 @@ function MacDock() {
           // Hide
           items.push({
             type: "item",
-            label: "Hide",
+            label: t("common.dock.hide"),
             onSelect: () => {
               playZoomMinimize();
               minimizeInstance(specificInstanceId);
@@ -711,7 +714,7 @@ function MacDock() {
           // Quit
           items.push({
             type: "item",
-            label: "Quit",
+            label: t("common.dock.quit"),
             onSelect: () => {
               // If minimized, close directly without animation/sound (window isn't visible)
               if (instance.isMinimized) {
@@ -743,7 +746,7 @@ function MacDock() {
           const isForeground = inst.isForeground && !inst.isMinimized;
           items.push({
             type: "item",
-            label: `${isForeground ? "✓ " : ""}${windowLabel}${inst.isMinimized ? " (minimized)" : ""}`,
+            label: `${isForeground ? "✓ " : ""}${windowLabel}${inst.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
             onSelect: () => {
               if (inst.isMinimized) {
                 restoreInstance(inst.instanceId);
@@ -760,7 +763,7 @@ function MacDock() {
       if (MULTI_WINDOW_APPS.includes(appId)) {
         items.push({
           type: "item",
-          label: "New Window",
+          label: t("common.dock.newWindow"),
           onSelect: () => {
             if (appId === "finder") {
               launchApp("finder", { initialPath: "/" });
@@ -776,7 +779,7 @@ function MacDock() {
       // Show All Windows
       items.push({
         type: "item",
-        label: "Show All Windows",
+        label: t("common.dock.showAllWindows"),
         onSelect: () => {
           // Restore all minimized instances and bring the last one to foreground
           let lastRestoredId: string | null = null;
@@ -796,7 +799,7 @@ function MacDock() {
       // Hide (minimize all)
       items.push({
         type: "item",
-        label: "Hide",
+        label: t("common.dock.hide"),
         onSelect: () => {
           // Play sound once for the hide action
           playZoomMinimize();
@@ -812,7 +815,7 @@ function MacDock() {
       // Quit (close all)
       items.push({
         type: "item",
-        label: "Quit",
+        label: t("common.dock.quit"),
         onSelect: () => {
           appInstances.forEach((inst) => {
             // If minimized, close directly without animation/sound (window isn't visible)
@@ -1006,7 +1009,7 @@ function MacDock() {
                 const isLoading = Object.values(instances).some(
                   (i) => i.appId === appId && i.isOpen && i.isLoading
                 );
-                const label = appRegistry[appId]?.name ?? appId;
+                const label = getTranslatedAppName(appId);
                 return (
                   <IconButton
                     key={appId}
@@ -1072,7 +1075,7 @@ function MacDock() {
                 } else {
                   // Render regular app
                   const icon = getAppIconPath(item.appId);
-                  const label = appRegistry[item.appId]?.name ?? item.appId;
+                  const label = getTranslatedAppName(item.appId);
                   const isLoading = Object.values(instances).some(
                     (i) => i.appId === item.appId && i.isOpen && i.isLoading
                   );
@@ -1104,7 +1107,7 @@ function MacDock() {
               {/* Applications (left of Trash) */}
               <IconButton
                 key="__applications__"
-                label="Applications"
+                label={t("common.dock.applications")}
                 icon="/icons/default/applications.png"
                 idKey="__applications__"
                 onClick={() =>
@@ -1191,7 +1194,7 @@ function MacDock() {
                   >
                     <IconButton
                       key="__trash__"
-                      label="Trash"
+                      label={t("common.dock.trash")}
                       icon={trashIcon}
                       idKey="__trash__"
                       onClick={() => {
@@ -1220,7 +1223,7 @@ function MacDock() {
         items={[
           {
             type: "item",
-            label: "Open",
+            label: t("common.dock.open"),
             onSelect: () => {
               focusFinderAtPathOrLaunch("/Trash");
               setTrashContextMenuPos(null);
@@ -1229,7 +1232,7 @@ function MacDock() {
           { type: "separator" },
           {
             type: "item",
-            label: "Empty Trash...",
+            label: t("apps.finder.contextMenu.emptyTrash"),
             onSelect: () => {
               setIsEmptyTrashDialogOpen(true);
               setTrashContextMenuPos(null);
@@ -1260,8 +1263,8 @@ function MacDock() {
           fileStore.emptyTrash();
           setIsEmptyTrashDialogOpen(false);
         }}
-        title="Empty Trash"
-        description="Are you sure you want to empty the Trash? This action cannot be undone."
+        title={t("apps.finder.dialogs.emptyTrash.title")}
+        description={t("apps.finder.dialogs.emptyTrash.description")}
       />
     </div>
   );

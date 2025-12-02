@@ -18,7 +18,8 @@ import { Slider } from "@/components/ui/slider";
 import { Volume1, Volume2, VolumeX, Settings, ChevronUp } from "lucide-react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { getAppIconPath, appRegistry } from "@/config/appRegistry";
+import { getAppIconPath } from "@/config/appRegistry";
+import { AppId } from "@/config/appRegistry";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useFilesStore } from "@/stores/useFilesStore";
 import type { AppInstance } from "@/stores/useAppStore";
@@ -27,11 +28,11 @@ import { useOffline } from "@/hooks/useOffline";
 import { WifiOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { getTranslatedAppName } from "@/utils/i18n";
 
-// Helper function to get app name
+// Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
-  const app = appRegistry[appId as keyof typeof appRegistry];
-  return app?.name || appId;
+  return getTranslatedAppName(appId as AppId);
 };
 
 const finderHelpItems = [

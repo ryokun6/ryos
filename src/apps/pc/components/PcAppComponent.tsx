@@ -6,6 +6,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { helpItems, appMetadata } from "..";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { Game, loadGames } from "@/stores/usePcStore";
 import { motion } from "framer-motion";
 import { useJsDos, DosProps, DosEvent } from "../hooks/useJsDos";
@@ -259,7 +260,7 @@ export function PcAppComponent({
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title="Virtual PC"
+        title={getTranslatedAppName("pc")}
         onClose={onClose}
         isForeground={isForeground}
         appId="pc"

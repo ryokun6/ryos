@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useAppStore } from "@/stores/useAppStore";
 import { SeekBar } from "./SeekBar";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 interface Video {
   id: string;
@@ -1018,7 +1019,7 @@ export function VideosAppComponent({
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title="Videos"
+        title={getTranslatedAppName("videos")}
         onClose={onClose}
         isForeground={isForeground}
         appId="videos"

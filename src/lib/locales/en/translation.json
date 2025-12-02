@@ -52,6 +52,41 @@
       "resetAllSettingsDesc": "Are you sure you want to reset all settings? This will clear all saved settings and restore default states. ryOS will restart after reset.",
       "formatFileSystem": "Format File System",
       "formatFileSystemDesc": "Are you sure you want to format the file system? This will permanently delete all documents (except sample documents), images, and custom wallpapers. ryOS will restart after format."
+    },
+    "desktop": {
+      "setWallpaper": "Set Wallpaper…",
+      "myComputer": "My Computer"
+    },
+    "dock": {
+      "open": "Open",
+      "newWindow": "New Window",
+      "showAllWindows": "Show All Windows",
+      "hide": "Hide",
+      "quit": "Quit",
+      "applications": "Applications",
+      "trash": "Trash",
+      "minimized": "(minimized)",
+      "appletStore": "Applet Store"
+    },
+    "startMenu": {
+      "start": "Start",
+      "aboutThisComputer": "About This Computer",
+      "ryosProfessional": "ryOS Professional",
+      "ryos98": "ryOS 98"
+    },
+    "appleMenu": {
+      "aboutThisComputer": "About This Computer"
+    },
+    "aboutThisMac": {
+      "title": "About This Computer",
+      "description": "Information about ryOS on this computer",
+      "builtInMemory": "Built-in Memory",
+      "virtualMemory": "Virtual Memory",
+      "virtualMemoryOff": "Off",
+      "largestUnusedBlock": "Largest Unused Block",
+      "system": "System",
+      "mb": "MB",
+      "clickToToggle": "Click to toggle"
     }
   },
   "apps": {
@@ -104,6 +139,82 @@
           "title": "Trash",
           "description": "Drag files to Trash & Empty to permanently delete"
         }
+      },
+      "window": {
+        "macintoshHd": "Macintosh HD",
+        "finder": "Finder"
+      },
+      "fileTypes": {
+        "folder": "Folder",
+        "mp3Audio": "MP3 Audio",
+        "quicktimeMovie": "QuickTime Movie",
+        "internetShortcut": "Internet Shortcut",
+        "application": "Application",
+        "pngImage": "PNG Image",
+        "jpegImage": "JPEG Image",
+        "gifImage": "GIF Image",
+        "webpImage": "WebP Image",
+        "bmpImage": "BMP Image",
+        "document": "Document",
+        "htmlApplet": "HTML Applet",
+        "unknown": "Unknown"
+      },
+      "contextMenu": {
+        "sortBy": "Sort By",
+        "name": "Name",
+        "date": "Date",
+        "size": "Size",
+        "kind": "Kind",
+        "emptyTrash": "Empty Trash...",
+        "newFolder": "New Folder…",
+        "open": "Open",
+        "addToDesktop": "Add to Desktop",
+        "rename": "Rename…",
+        "duplicate": "Duplicate",
+        "moveToTrash": "Move to Trash"
+      },
+      "dialogs": {
+        "emptyTrash": {
+          "title": "Empty Trash",
+          "description": "Are you sure you want to empty the Trash? This action cannot be undone."
+        },
+        "renameItem": {
+          "title": "Rename Item",
+          "description": "Enter a new name for \"{{name}}\""
+        },
+        "newFolder": {
+          "title": "New Folder",
+          "description": "Enter a name for the new folder:"
+        }
+      },
+      "statusBar": {
+        "item": "item",
+        "items": "items",
+        "available": "available"
+      },
+      "placeholders": {
+        "enterPath": "Enter path"
+      },
+      "messages": {
+        "loading": "Loading...",
+        "appletImported": "Applet imported!",
+        "appletImportedDesc": "{{name}} saved to /Applets{{iconText}}",
+        "appletImportedIconText": " with {{icon}} icon",
+        "importFailed": "Import failed",
+        "importFailedDesc": "Could not import the file.",
+        "importFailedAppletDesc": "Could not import the applet file.",
+        "invalidFileType": "Invalid file type",
+        "invalidFileTypeDesc": "Only .app, .gz, and .html files can be imported to Applets"
+      },
+      "tableHeaders": {
+        "name": "Name",
+        "type": "Type",
+        "size": "Size",
+        "modified": "Modified"
+      },
+      "defaultNames": {
+        "untitledFolder": "untitled folder",
+        "copy": "copy"
       }
     },
     "soundboard": {

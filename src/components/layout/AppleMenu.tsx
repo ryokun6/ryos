@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,12 +15,14 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 interface AppleMenuProps {
   apps: AnyApp[];
 }
 
 export function AppleMenu({ apps }: AppleMenuProps) {
+  const { t } = useTranslation();
   const [aboutFinderOpen, setAboutFinderOpen] = useState(false);
   const launchApp = useLaunchApp();
   const currentTheme = useThemeStore((state) => state.current);
@@ -59,7 +62,7 @@ export function AppleMenu({ apps }: AppleMenuProps) {
             onClick={() => setAboutFinderOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About This Computer
+            {t("common.appleMenu.aboutThisComputer")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           {apps.map((app) => (
@@ -79,7 +82,7 @@ export function AppleMenu({ apps }: AppleMenuProps) {
                   className="w-4 h-4 [image-rendering:pixelated]"
                 />
               )}
-              {app.name}
+              {getTranslatedAppName(app.id as AppId)}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

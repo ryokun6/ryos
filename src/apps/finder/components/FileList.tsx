@@ -14,6 +14,7 @@ import { useState, useRef, useEffect } from "react";
 import { useLongPress } from "@/hooks/useLongPress";
 import { isTouchDevice } from "@/utils/device";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useTranslation } from "react-i18next";
 
 export interface FileItem {
   name: string;
@@ -57,6 +58,7 @@ export function FileList({
   onRenameRequest,
   onItemContextMenu,
 }: FileListProps) {
+  const { t } = useTranslation();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const [dropTargetPath, setDropTargetPath] = useState<string | null>(null);
   const draggedFileRef = useRef<FileItem | null>(null);
@@ -589,16 +591,16 @@ export function FileList({
           <TableHeader>
             <TableRow className="text-[10px] border-none font-normal">
               <TableHead className="font-normal bg-gray-100/50 h-[28px]">
-                Name
+                {t("apps.finder.tableHeaders.name")}
               </TableHead>
               <TableHead className="font-normal bg-gray-100/50 h-[28px]">
-                Type
+                {t("apps.finder.tableHeaders.type")}
               </TableHead>
               <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
-                Size
+                {t("apps.finder.tableHeaders.size")}
               </TableHead>
               <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
-                Modified
+                {t("apps.finder.tableHeaders.modified")}
               </TableHead>
             </TableRow>
           </TableHeader>

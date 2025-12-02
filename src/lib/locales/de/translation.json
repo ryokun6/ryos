@@ -181,7 +181,54 @@
       "uiVolume": "UI-Lautstärke"
     },
     "finder": {
+      "contextMenu": {
+        "addToDesktop": "Zum Schreibtisch hinzufügen",
+        "date": "Datum",
+        "duplicate": "Duplizieren",
+        "emptyTrash": "Papierkorb leeren...",
+        "kind": "Art",
+        "moveToTrash": "In den Papierkorb legen",
+        "name": "Name",
+        "newFolder": "Neuer Ordner…",
+        "open": "Öffnen",
+        "rename": "Umbenennen…",
+        "size": "Größe",
+        "sortBy": "Sortieren nach"
+      },
+      "defaultNames": {
+        "copy": "Kopie",
+        "untitledFolder": "Unbenannter Ordner"
+      },
       "description": "Dateien durchsuchen und verwalten",
+      "dialogs": {
+        "emptyTrash": {
+          "description": "Möchten Sie den Papierkorb wirklich leeren? Dieser Vorgang kann nicht rückgängig gemacht werden.",
+          "title": "Papierkorb leeren"
+        },
+        "newFolder": {
+          "description": "Geben Sie einen Namen für den neuen Ordner ein:",
+          "title": "Neuer Ordner"
+        },
+        "renameItem": {
+          "description": "Geben Sie einen neuen Namen für „{{name}}“ ein",
+          "title": "Objekt umbenennen"
+        }
+      },
+      "fileTypes": {
+        "application": "Anwendung",
+        "bmpImage": "BMP-Bild",
+        "document": "Dokument",
+        "folder": "Ordner",
+        "gifImage": "GIF-Bild",
+        "htmlApplet": "HTML-Applet",
+        "internetShortcut": "Internetverknüpfung",
+        "jpegImage": "JPEG-Bild",
+        "mp3Audio": "MP3-Audio",
+        "pngImage": "PNG-Bild",
+        "quicktimeMovie": "QuickTime-Film",
+        "unknown": "Unbekannt",
+        "webpImage": "WebP-Bild"
+      },
       "help": {
         "browseNavigate": {
           "description": "Zurück/Vor-Buttons, Adressleiste und Gehe-zu-Menü für schnelle Navigation",
@@ -229,7 +276,36 @@
         "putBack": "Zurücklegen",
         "rename": "Umbenennen..."
       },
-      "name": "Finder"
+      "messages": {
+        "appletImported": "Applet importiert!",
+        "appletImportedDesc": "{{name}} wurde in /Applets gespeichert{{iconText}}",
+        "appletImportedIconText": " mit dem Symbol {{icon}}",
+        "importFailed": "Import fehlgeschlagen",
+        "importFailedAppletDesc": "Die Applet-Datei konnte nicht importiert werden.",
+        "importFailedDesc": "Die Datei konnte nicht importiert werden.",
+        "invalidFileType": "Ungültiger Dateityp",
+        "invalidFileTypeDesc": "Nur .app-, .gz- und .html-Dateien können in Applets importiert werden",
+        "loading": "Laden..."
+      },
+      "name": "Finder",
+      "placeholders": {
+        "enterPath": "Pfad eingeben"
+      },
+      "statusBar": {
+        "available": "verfügbar",
+        "item": "Element",
+        "items": "Elemente"
+      },
+      "tableHeaders": {
+        "modified": "Geändert",
+        "name": "Name",
+        "size": "Größe",
+        "type": "Typ"
+      },
+      "window": {
+        "finder": "Finder",
+        "macintoshHd": "Macintosh HD"
+      }
     },
     "internet-explorer": {
       "description": "Im Web surfen",
@@ -788,6 +864,24 @@
     }
   },
   "common": {
+    "aboutThisMac": {
+      "builtInMemory": "Arbeitsspeicher",
+      "clickToToggle": "Klicken zum Umschalten",
+      "description": "Informationen über ryOS auf diesem Computer",
+      "largestUnusedBlock": "Größter ungenutzter Block",
+      "mb": "MB",
+      "system": "System",
+      "title": "Über diesen Computer",
+      "virtualMemory": "Virtueller Speicher",
+      "virtualMemoryOff": "Aus"
+    },
+    "appleMenu": {
+      "aboutThisComputer": "Über diesen Computer"
+    },
+    "desktop": {
+      "myComputer": "Arbeitsplatz",
+      "setWallpaper": "Hintergrundbild festlegen…"
+    },
     "dialog": {
       "about": "Über",
       "adding": "Hinzufügen...",
@@ -810,6 +904,17 @@
       "saveFile": "Datei sichern",
       "version": "Version",
       "welcomeTo": "Willkommen bei"
+    },
+    "dock": {
+      "appletStore": "Applet Store",
+      "applications": "Anwendungen",
+      "hide": "Ausblenden",
+      "minimized": "(minimiert)",
+      "newWindow": "Neues Fenster",
+      "open": "Öffnen",
+      "quit": "Beenden",
+      "showAllWindows": "Alle Fenster anzeigen",
+      "trash": "Papierkorb"
     },
     "menu": {
       "aboutFinder": "Über Finder",
@@ -848,6 +953,12 @@
       "undo": "Rückgängig",
       "videos": "Filme",
       "view": "Darstellung"
+    },
+    "startMenu": {
+      "aboutThisComputer": "Über diesen Computer",
+      "ryos98": "ryOS 98",
+      "ryosProfessional": "ryOS Professional",
+      "start": "Start"
     },
     "system": {
       "formatFileSystem": "Dateisystem formatieren",

@@ -10,6 +10,7 @@ import { helpItems, appMetadata } from "..";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { isMobileDevice } from "@/utils/device";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 const BOARD_SIZE = 9;
 const MINES_COUNT = 10;
@@ -459,7 +460,7 @@ export function MinesweeperAppComponent({
       <style>{minesweeperStyles}</style>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title="Minesweeper"
+        title={getTranslatedAppName("minesweeper")}
         onClose={onClose}
         isForeground={isForeground}
         appId="minesweeper"

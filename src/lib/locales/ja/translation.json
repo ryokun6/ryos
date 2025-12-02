@@ -181,7 +181,54 @@
       "uiVolume": "UI音量"
     },
     "finder": {
+      "contextMenu": {
+        "addToDesktop": "デスクトップに追加",
+        "date": "日付",
+        "duplicate": "複製",
+        "emptyTrash": "ゴミ箱を空にする...",
+        "kind": "種類",
+        "moveToTrash": "ゴミ箱に入れる",
+        "name": "名前",
+        "newFolder": "新規フォルダ…",
+        "open": "開く",
+        "rename": "名前の変更…",
+        "size": "サイズ",
+        "sortBy": "並び替え"
+      },
+      "defaultNames": {
+        "copy": "コピー",
+        "untitledFolder": "名称未設定フォルダ"
+      },
       "description": "ファイルを閲覧・管理",
+      "dialogs": {
+        "emptyTrash": {
+          "description": "ゴミ箱を空にしてもよろしいですか？この操作は元に戻せません。",
+          "title": "ゴミ箱を空にする"
+        },
+        "newFolder": {
+          "description": "新規フォルダの名前を入力してください:",
+          "title": "新規フォルダ"
+        },
+        "renameItem": {
+          "description": "「{{name}}」の新しい名前を入力してください",
+          "title": "名前の変更"
+        }
+      },
+      "fileTypes": {
+        "application": "アプリケーション",
+        "bmpImage": "BMP 画像",
+        "document": "ドキュメント",
+        "folder": "フォルダ",
+        "gifImage": "GIF 画像",
+        "htmlApplet": "HTMLアプレット",
+        "internetShortcut": "インターネットショートカット",
+        "jpegImage": "JPEG 画像",
+        "mp3Audio": "MP3オーディオ",
+        "pngImage": "PNG 画像",
+        "quicktimeMovie": "QuickTimeムービー",
+        "unknown": "不明",
+        "webpImage": "WebP 画像"
+      },
       "help": {
         "browseNavigate": {
           "description": "戻る/進むボタン、アドレスバー、移動メニューで素早くナビゲーション",
@@ -229,7 +276,36 @@
         "putBack": "元に戻す",
         "rename": "名称変更..."
       },
-      "name": "Finder"
+      "messages": {
+        "appletImported": "アプレットをインポートしました！",
+        "appletImportedDesc": "{{name}} は /Applets に保存されました{{iconText}}",
+        "appletImportedIconText": "{{icon}} アイコン付き",
+        "importFailed": "インポートに失敗しました",
+        "importFailedAppletDesc": "アプレットファイルをインポートできませんでした。",
+        "importFailedDesc": "ファイルをインポートできませんでした。",
+        "invalidFileType": "無効なファイルタイプ",
+        "invalidFileTypeDesc": "アプレットにインポートできるのは、.app、.gz、.htmlファイルのみです。",
+        "loading": "読み込み中..."
+      },
+      "name": "Finder",
+      "placeholders": {
+        "enterPath": "パスを入力"
+      },
+      "statusBar": {
+        "available": "利用可能",
+        "item": "項目",
+        "items": "項目"
+      },
+      "tableHeaders": {
+        "modified": "変更日",
+        "name": "名前",
+        "size": "サイズ",
+        "type": "種類"
+      },
+      "window": {
+        "finder": "Finder",
+        "macintoshHd": "Macintosh HD"
+      }
     },
     "internet-explorer": {
       "description": "ウェブを閲覧",
@@ -788,6 +864,24 @@
     }
   },
   "common": {
+    "aboutThisMac": {
+      "builtInMemory": "内蔵メモリ",
+      "clickToToggle": "クリックで切り替え",
+      "description": "このコンピュータのryOSについて",
+      "largestUnusedBlock": "最大の未使用ブロック",
+      "mb": "MB",
+      "system": "システム",
+      "title": "このコンピュータについて",
+      "virtualMemory": "仮想メモリ",
+      "virtualMemoryOff": "オフ"
+    },
+    "appleMenu": {
+      "aboutThisComputer": "このコンピュータについて"
+    },
+    "desktop": {
+      "myComputer": "マイコンピュータ",
+      "setWallpaper": "壁紙を設定…"
+    },
     "dialog": {
       "about": "について",
       "adding": "追加中...",
@@ -810,6 +904,17 @@
       "saveFile": "ファイルを保存",
       "version": "バージョン",
       "welcomeTo": "へようこそ"
+    },
+    "dock": {
+      "appletStore": "アプレットストア",
+      "applications": "アプリケーション",
+      "hide": "隠す",
+      "minimized": "(最小化)",
+      "newWindow": "新規ウィンドウ",
+      "open": "開く",
+      "quit": "終了",
+      "showAllWindows": "すべてのウィンドウを表示",
+      "trash": "ゴミ箱"
     },
     "menu": {
       "aboutFinder": "Finderについて",
@@ -848,6 +953,12 @@
       "undo": "取り消す",
       "videos": "ムービー",
       "view": "表示"
+    },
+    "startMenu": {
+      "aboutThisComputer": "このコンピュータについて",
+      "ryos98": "ryOS 98",
+      "ryosProfessional": "ryOS プロフェッショナル",
+      "start": "スタート"
     },
     "system": {
       "formatFileSystem": "ファイルシステムをフォーマット",

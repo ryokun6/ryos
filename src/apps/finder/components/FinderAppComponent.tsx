@@ -27,6 +27,9 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
+import { useTranslation } from "react-i18next";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 // Type for Finder initial data
 interface FinderInitialData {
@@ -35,50 +38,50 @@ interface FinderInitialData {
 }
 
 // Helper function to determine file type from FileItem
-const getFileType = (file: FileItem): string => {
+const getFileType = (file: FileItem, t: (key: string) => string): string => {
   // Check for directory first
   if (file.isDirectory) {
-    return "Folder";
+    return t("apps.finder.fileTypes.folder");
   }
 
   // Check for specific known virtual types *before* appId
-  if (file.type === "Music") return "MP3 Audio";
-  if (file.type === "Video") return "QuickTime Movie";
-  if (file.type === "site-link") return "Internet Shortcut";
+  if (file.type === "Music") return t("apps.finder.fileTypes.mp3Audio");
+  if (file.type === "Video") return t("apps.finder.fileTypes.quicktimeMovie");
+  if (file.type === "site-link") return t("apps.finder.fileTypes.internetShortcut");
 
   // Check for application
   if (file.appId) {
-    return "Application";
+    return t("apps.finder.fileTypes.application");
   }
 
   // Now check extension from file.name
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
   switch (ext) {
     case "app":
-      return "Application";
+      return t("apps.finder.fileTypes.application");
     case "png":
-      return "PNG Image";
+      return t("apps.finder.fileTypes.pngImage");
     case "jpg":
     case "jpeg":
-      return "JPEG Image";
+      return t("apps.finder.fileTypes.jpegImage");
     case "gif":
-      return "GIF Image";
+      return t("apps.finder.fileTypes.gifImage");
     case "webp":
-      return "WebP Image";
+      return t("apps.finder.fileTypes.webpImage");
     case "bmp":
-      return "BMP Image";
+      return t("apps.finder.fileTypes.bmpImage");
     case "md":
-      return "Document";
+      return t("apps.finder.fileTypes.document");
     case "txt":
-      return "Document";
+      return t("apps.finder.fileTypes.document");
     case "mp3":
-      return "MP3 Audio";
+      return t("apps.finder.fileTypes.mp3Audio");
     case "mov":
-      return "QuickTime Movie";
+      return t("apps.finder.fileTypes.quicktimeMovie");
     case "html":
-      return "HTML Applet";
+      return t("apps.finder.fileTypes.htmlApplet");
     default:
-      return "Unknown";
+      return t("apps.finder.fileTypes.unknown");
   }
 };
 
@@ -92,6 +95,8 @@ export function FinderAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps) {
+  const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("finder", helpItems);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isEmptyTrashDialogOpen, setIsEmptyTrashDialogOpen] = useState(false);
@@ -514,10 +519,13 @@ export function FinderAppComponent({
           });
           window.dispatchEvent(event);
 
-          toast.success("Applet imported!", {
-            description: `${importedData.name} saved to /Applets${
-              importedData.icon ? ` with ${importedData.icon} icon` : ""
-            }`,
+          toast.success(t("apps.finder.messages.appletImported"), {
+            description: t("apps.finder.messages.appletImportedDesc", {
+              name: importedData.name,
+              iconText: importedData.icon
+                ? t("apps.finder.messages.appletImportedIconText", { icon: importedData.icon })
+                : "",
+            }),
           });
           
           // Navigate to /Applets if not already there
@@ -526,8 +534,8 @@ export function FinderAppComponent({
           }
         } catch (error) {
           console.error("Import failed:", error);
-          toast.error("Import failed", {
-            description: "Could not import the applet file.",
+          toast.error(t("apps.finder.messages.importFailed"), {
+            description: t("apps.finder.messages.importFailedAppletDesc"),
           });
         } finally {
           e.target.value = "";
@@ -542,8 +550,8 @@ export function FinderAppComponent({
           !fileExtension.endsWith(".html") &&
           !fileExtension.endsWith(".htm")
         ) {
-          toast.error("Invalid file type", {
-            description: "Only .app, .gz, and .html files can be imported to Applets",
+          toast.error(t("apps.finder.messages.invalidFileType"), {
+            description: t("apps.finder.messages.invalidFileTypeDesc"),
           });
           e.target.value = "";
           return;
@@ -596,10 +604,13 @@ export function FinderAppComponent({
           });
           window.dispatchEvent(event);
 
-          toast.success("Applet imported!", {
-            description: `${importedData.name} saved to /Applets${
-              importedData.icon ? ` with ${importedData.icon} icon` : ""
-            }`,
+          toast.success(t("apps.finder.messages.appletImported"), {
+            description: t("apps.finder.messages.appletImportedDesc", {
+              name: importedData.name,
+              iconText: importedData.icon
+                ? t("apps.finder.messages.appletImportedIconText", { icon: importedData.icon })
+                : "",
+            }),
           });
         } else {
           // Handle regular text files
@@ -628,8 +639,8 @@ export function FinderAppComponent({
         e.target.value = "";
       } catch (err) {
         console.error("Error importing file:", err);
-        toast.error("Import failed", {
-          description: "Could not import the file.",
+        toast.error(t("apps.finder.messages.importFailed"), {
+          description: t("apps.finder.messages.importFailedDesc"),
         });
         e.target.value = "";
       }
@@ -677,7 +688,7 @@ export function FinderAppComponent({
         : "";
       const baseName = selectedFile.name.replace(ext, "");
       let copyIndex = 1;
-      let copyName = `${baseName} copy${ext}`;
+      let copyName = `${baseName} ${t("apps.finder.defaultNames.copy")}${ext}`;
       // Fix path construction here
       const basePath = currentPath === "/" ? "" : currentPath;
       let copyPath = `${basePath}/${copyName}`;
@@ -685,7 +696,7 @@ export function FinderAppComponent({
       // Ensure unique name
       while (fileStore.getItem(copyPath)) {
         copyIndex++;
-        copyName = `${baseName} copy ${copyIndex}${ext}`;
+        copyName = `${baseName} ${t("apps.finder.defaultNames.copy")} ${copyIndex}${ext}`;
         copyPath = `${basePath}/${copyName}`;
       }
 
@@ -755,17 +766,17 @@ export function FinderAppComponent({
 
   // --- New Folder State & Handlers --- //
   const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("untitled folder");
+  const [newFolderName, setNewFolderName] = useState(t("apps.finder.defaultNames.untitledFolder"));
 
   const handleNewFolder = () => {
     // Find a unique default name
     let folderIndex = 0;
-    let defaultName = "untitled folder";
+    let defaultName = t("apps.finder.defaultNames.untitledFolder");
     const basePath = currentPath === "/" ? "" : currentPath;
     let folderPath = `${basePath}/${defaultName}`;
     while (fileStore.getItem(folderPath)) {
       folderIndex++;
-      defaultName = `untitled folder ${folderIndex}`;
+      defaultName = `${t("apps.finder.defaultNames.untitledFolder")} ${folderIndex}`;
       folderPath = `${basePath}/${defaultName}`;
     }
     setNewFolderName(defaultName);
@@ -865,17 +876,17 @@ export function FinderAppComponent({
   const blankMenuItems: MenuItem[] = [
     {
       type: "submenu",
-      label: "Sort By",
+      label: t("apps.finder.contextMenu.sortBy"),
       items: [
         {
           type: "radioGroup",
           value: sortType,
           onChange: (val) => setSortType(val as SortType),
           items: [
-            { label: "Name", value: "name" },
-            { label: "Date", value: "date" },
-            { label: "Size", value: "size" },
-            { label: "Kind", value: "kind" },
+            { label: t("apps.finder.contextMenu.name"), value: "name" },
+            { label: t("apps.finder.contextMenu.date"), value: "date" },
+            { label: t("apps.finder.contextMenu.size"), value: "size" },
+            { label: t("apps.finder.contextMenu.kind"), value: "kind" },
           ],
         },
       ],
@@ -885,13 +896,13 @@ export function FinderAppComponent({
       ? [
           {
             type: "item" as const,
-            label: "Empty Trash...",
+            label: t("apps.finder.contextMenu.emptyTrash"),
             onSelect: handleEmptyTrash,
             disabled: trashItemsCount === 0,
           },
         ]
       : [
-          { type: "item" as const, label: "New Folder…", onSelect: handleNewFolder },
+          { type: "item" as const, label: t("apps.finder.contextMenu.newFolder"), onSelect: handleNewFolder },
         ]),
   ];
 
@@ -945,11 +956,11 @@ export function FinderAppComponent({
   };
 
   const fileMenuItems = (file: FileItem): MenuItem[] => [
-    { type: "item", label: "Open", onSelect: () => handleFileOpen(file) },
+    { type: "item", label: t("apps.finder.contextMenu.open"), onSelect: () => handleFileOpen(file) },
     { type: "separator" },
     {
       type: "item",
-      label: "Add to Desktop",
+      label: t("apps.finder.contextMenu.addToDesktop"),
       onSelect: () => handleAddToDesktop(file),
       disabled:
         file.isDirectory ||
@@ -957,11 +968,11 @@ export function FinderAppComponent({
         file.path === "/Desktop",
     },
     { type: "separator" },
-    { type: "item", label: "Rename…", onSelect: handleRename },
-    { type: "item", label: "Duplicate", onSelect: handleDuplicate },
+    { type: "item", label: t("apps.finder.contextMenu.rename"), onSelect: handleRename },
+    { type: "item", label: t("apps.finder.contextMenu.duplicate"), onSelect: handleDuplicate },
     {
       type: "item",
-      label: "Move to Trash",
+      label: t("apps.finder.contextMenu.moveToTrash"),
       onSelect: () => moveToTrash(file),
       disabled:
         file.path.startsWith("/Trash") ||
@@ -1023,15 +1034,15 @@ export function FinderAppComponent({
       <WindowFrame
         title={
           currentPath === "/"
-            ? "Macintosh HD"
+            ? t("apps.finder.window.macintoshHd")
             : (() => {
                 // Get the last path segment and decode it
                 const lastSegment =
                   currentPath.split("/").filter(Boolean).pop() || "";
                 try {
-                  return decodeURIComponent(lastSegment) || "Finder";
+                  return decodeURIComponent(lastSegment) || t("apps.finder.window.finder");
                 } catch {
-                  return lastSegment || "Finder";
+                  return lastSegment || t("apps.finder.window.finder");
                 }
               })()
         }
@@ -1195,7 +1206,7 @@ export function FinderAppComponent({
                       }
                     : undefined
                 }
-                placeholder="Enter path"
+                placeholder={t("apps.finder.placeholders.enterPath")}
               />
             </div>
           </div>
@@ -1208,7 +1219,7 @@ export function FinderAppComponent({
           >
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
-                Loading...
+                {t("apps.finder.messages.loading")}
               </div>
             ) : error ? (
               <div className="flex items-center justify-center h-full text-red-500">
@@ -1221,7 +1232,7 @@ export function FinderAppComponent({
                 onFileSelect={handleFileSelect}
                 selectedFile={selectedFile}
                 viewType={viewType}
-                getFileType={getFileType}
+                getFileType={(file) => getFileType(file, t)}
                 onFileDrop={handleFileMoved}
                 onDropToCurrentDirectory={handleDropToCurrentDirectory}
                 canDropFiles={canCreateFolder}
@@ -1233,11 +1244,10 @@ export function FinderAppComponent({
           </div>
           <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-gray-100 border-t border-gray-300">
             <span>
-              {sortedFiles.length} item{sortedFiles.length !== 1 ? "s" : ""}
+              {sortedFiles.length} {sortedFiles.length !== 1 ? t("apps.finder.statusBar.items") : t("apps.finder.statusBar.item")}
             </span>
             <span>
-              {Math.round((storageSpace.available / 1024 / 1024) * 10) / 10} MB
-              available
+              {Math.round((storageSpace.available / 1024 / 1024) * 10) / 10} MB {t("apps.finder.statusBar.available")}
             </span>
           </div>
         </div>
@@ -1245,8 +1255,8 @@ export function FinderAppComponent({
       <HelpDialog
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
-        appName="Finder"
-        helpItems={helpItems}
+        appName={getTranslatedAppName("finder")}
+        helpItems={translatedHelpItems}
       />
       <AboutDialog
         isOpen={isAboutDialogOpen}
@@ -1257,15 +1267,15 @@ export function FinderAppComponent({
         isOpen={isEmptyTrashDialogOpen}
         onOpenChange={setIsEmptyTrashDialogOpen}
         onConfirm={confirmEmptyTrash}
-        title="Empty Trash"
-        description="Are you sure you want to empty the Trash? This action cannot be undone."
+        title={t("apps.finder.dialogs.emptyTrash.title")}
+        description={t("apps.finder.dialogs.emptyTrash.description")}
       />
       <InputDialog
         isOpen={isRenameDialogOpen}
         onOpenChange={setIsRenameDialogOpen}
         onSubmit={handleRenameSubmit}
-        title="Rename Item"
-        description={`Enter a new name for "${selectedFile?.name || "item"}"`}
+        title={t("apps.finder.dialogs.renameItem.title")}
+        description={t("apps.finder.dialogs.renameItem.description", { name: selectedFile?.name || "item" })}
         value={renameValue}
         onChange={setRenameValue}
       />
@@ -1273,8 +1283,8 @@ export function FinderAppComponent({
         isOpen={isNewFolderDialogOpen}
         onOpenChange={setIsNewFolderDialogOpen}
         onSubmit={handleNewFolderSubmit}
-        title="New Folder"
-        description="Enter a name for the new folder:"
+        title={t("apps.finder.dialogs.newFolder.title")}
+        description={t("apps.finder.dialogs.newFolder.description")}
         value={newFolderName}
         onChange={setNewFolderName}
       />

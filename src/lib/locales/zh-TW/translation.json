@@ -181,7 +181,54 @@
       "uiVolume": "使用者介面音量"
     },
     "finder": {
+      "contextMenu": {
+        "addToDesktop": "加入桌面",
+        "date": "日期",
+        "duplicate": "複製",
+        "emptyTrash": "清空垃圾桶…",
+        "kind": "種類",
+        "moveToTrash": "丟到垃圾桶",
+        "name": "名稱",
+        "newFolder": "新增檔案夾…",
+        "open": "開啟",
+        "rename": "重新命名…",
+        "size": "大小",
+        "sortBy": "排序方式"
+      },
+      "defaultNames": {
+        "copy": "拷貝",
+        "untitledFolder": "未命名檔案夾"
+      },
       "description": "瀏覽和管理檔案",
+      "dialogs": {
+        "emptyTrash": {
+          "description": "您確定要清空垃圾桶嗎？此動作無法復原。",
+          "title": "清空垃圾桶"
+        },
+        "newFolder": {
+          "description": "輸入新檔案夾的名稱：",
+          "title": "新增檔案夾"
+        },
+        "renameItem": {
+          "description": "輸入「{{name}}」的新名稱",
+          "title": "重新命名項目"
+        }
+      },
+      "fileTypes": {
+        "application": "應用程式",
+        "bmpImage": "BMP 影像",
+        "document": "文件",
+        "folder": "檔案夾",
+        "gifImage": "GIF 影像",
+        "htmlApplet": "HTML 小程式",
+        "internetShortcut": "網際網路捷徑",
+        "jpegImage": "JPEG 影像",
+        "mp3Audio": "MP3 音訊",
+        "pngImage": "PNG 影像",
+        "quicktimeMovie": "QuickTime 影片",
+        "unknown": "未知",
+        "webpImage": "WebP 影像"
+      },
       "help": {
         "browseNavigate": {
           "description": "上一頁/下一頁按鈕、網址列和「前往」選單可快速導航",
@@ -229,7 +276,36 @@
         "putBack": "放回",
         "rename": "重新命名..."
       },
-      "name": "Finder"
+      "messages": {
+        "appletImported": "小程式已匯入！",
+        "appletImportedDesc": "{{name}} 已儲存至 /Applets{{iconText}}",
+        "appletImportedIconText": "附有 {{icon}} 圖示",
+        "importFailed": "匯入失敗",
+        "importFailedAppletDesc": "無法匯入小程式檔案。",
+        "importFailedDesc": "無法匯入檔案。",
+        "invalidFileType": "無效的檔案類型",
+        "invalidFileTypeDesc": "只有 .app、.gz 和 .html 檔案可以匯入到 Applets",
+        "loading": "載入中..."
+      },
+      "name": "Finder",
+      "placeholders": {
+        "enterPath": "輸入路徑"
+      },
+      "statusBar": {
+        "available": "可用",
+        "item": "項目",
+        "items": "項目"
+      },
+      "tableHeaders": {
+        "modified": "修改日期",
+        "name": "名稱",
+        "size": "大小",
+        "type": "類型"
+      },
+      "window": {
+        "finder": "Finder",
+        "macintoshHd": "Macintosh HD"
+      }
     },
     "internet-explorer": {
       "description": "瀏覽網頁",
@@ -788,6 +864,24 @@
     }
   },
   "common": {
+    "aboutThisMac": {
+      "builtInMemory": "內建記憶體",
+      "clickToToggle": "按一下以切換",
+      "description": "關於此電腦上的 ryOS 資訊",
+      "largestUnusedBlock": "最大未用區塊",
+      "mb": "MB",
+      "system": "系統",
+      "title": "關於此電腦",
+      "virtualMemory": "虛擬記憶體",
+      "virtualMemoryOff": "關閉"
+    },
+    "appleMenu": {
+      "aboutThisComputer": "關於此電腦"
+    },
+    "desktop": {
+      "myComputer": "我的電腦",
+      "setWallpaper": "設定背景圖片…"
+    },
     "dialog": {
       "about": "關於",
       "adding": "新增中...",
@@ -810,6 +904,17 @@
       "saveFile": "儲存檔案",
       "version": "版本",
       "welcomeTo": "歡迎使用"
+    },
+    "dock": {
+      "appletStore": "小程式商店",
+      "applications": "應用程式",
+      "hide": "隱藏",
+      "minimized": "(已最小化)",
+      "newWindow": "新增視窗",
+      "open": "開啟",
+      "quit": "結束",
+      "showAllWindows": "顯示所有視窗",
+      "trash": "垃圾桶"
     },
     "menu": {
       "aboutFinder": "關於 Finder",
@@ -848,6 +953,12 @@
       "undo": "還原",
       "videos": "影片",
       "view": "檢視"
+    },
+    "startMenu": {
+      "aboutThisComputer": "關於這部電腦",
+      "ryos98": "ryOS 98",
+      "ryosProfessional": "ryOS 專業版",
+      "start": "開始"
     },
     "system": {
       "formatFileSystem": "格式化檔案系統",

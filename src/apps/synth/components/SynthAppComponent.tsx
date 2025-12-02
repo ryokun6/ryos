@@ -28,6 +28,7 @@ import { Dial } from "@/components/ui/dial";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Waveform3D } from "./Waveform3D";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 // Define oscillator type
 type OscillatorType = "sine" | "square" | "triangle" | "sawtooth";
@@ -854,7 +855,7 @@ export function SynthAppComponent({
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title="Synth"
+        title={getTranslatedAppName("synth")}
         onClose={onClose}
         isForeground={isForeground}
         appId="synth"

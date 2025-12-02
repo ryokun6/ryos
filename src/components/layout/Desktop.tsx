@@ -14,6 +14,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { useTranslation } from "react-i18next";
 
 interface DesktopStyles {
   backgroundImage?: string;
@@ -37,6 +38,7 @@ export function Desktop({
   onClick,
   desktopStyles,
 }: DesktopProps) {
+  const { t } = useTranslation();
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [selectedShortcutPath, setSelectedShortcutPath] = useState<string | null>(null);
   const { wallpaperSource, isVideoWallpaper } = useWallpaper();
@@ -514,7 +516,7 @@ export function Desktop({
       return [
         {
           type: "item",
-          label: "Open",
+          label: t("apps.finder.contextMenu.open"),
           onSelect: () => {
             const shortcut = fileStore.getItem(contextMenuShortcutPath);
             if (shortcut) {
@@ -527,7 +529,7 @@ export function Desktop({
         { type: "separator" },
         {
           type: "item",
-          label: "Move to Trash",
+          label: t("apps.finder.contextMenu.moveToTrash"),
           onSelect: handleShortcutDelete,
         },
       ];
@@ -537,7 +539,7 @@ export function Desktop({
         return [
           {
             type: "item",
-            label: "Open",
+            label: t("apps.finder.contextMenu.open"),
             onSelect: () => {
               localStorage.setItem("app_finder_initialPath", "/Trash");
               const finderApp = apps.find((app) => app.id === "finder");
@@ -553,7 +555,7 @@ export function Desktop({
       return [
         {
           type: "item",
-          label: "Open",
+          label: t("apps.finder.contextMenu.open"),
           onSelect: () => handleOpenApp(contextMenuAppId),
         },
       ];
@@ -565,15 +567,15 @@ export function Desktop({
       return [
         {
           type: "submenu",
-          label: "Sort By",
+          label: t("apps.finder.contextMenu.sortBy"),
           items: [
             {
               type: "radioGroup",
               value: sortType,
               onChange: (val) => setSortType(val as SortType),
               items: [
-                { label: "Name", value: "name" },
-                { label: "Kind", value: "kind" },
+                { label: t("apps.finder.contextMenu.name"), value: "name" },
+                { label: t("apps.finder.contextMenu.kind"), value: "kind" },
               ],
             },
           ],
@@ -581,14 +583,14 @@ export function Desktop({
         { type: "separator" },
         {
           type: "item",
-          label: "Empty Trash...",
+          label: t("apps.finder.contextMenu.emptyTrash"),
           onSelect: handleEmptyTrash,
           disabled: isTrashEmpty,
         },
         { type: "separator" },
         {
           type: "item",
-          label: "Set Wallpaper…",
+          label: t("common.desktop.setWallpaper"),
           onSelect: () => toggleApp("control-panels"),
         },
       ];
@@ -680,7 +682,7 @@ export function Desktop({
           }
         >
           <FileIcon
-            name={isXpTheme ? "My Computer" : "Macintosh HD"}
+            name={isXpTheme ? t("common.desktop.myComputer") : t("apps.finder.window.macintoshHd")}
             isDirectory={true}
             icon={
               isXpTheme ? "/icons/default/pc.png" : "/icons/default/disk.png"
@@ -773,7 +775,7 @@ export function Desktop({
           {/* Display Trash icon at the end for non-macOS X themes */}
           {currentTheme !== "macosx" && (
             <FileIcon
-              name="Trash"
+              name={t("common.menu.trash")}
               isDirectory={true}
               icon={trashIcon}
               onClick={(e) => {
@@ -817,8 +819,8 @@ export function Desktop({
         isOpen={isEmptyTrashDialogOpen}
         onOpenChange={setIsEmptyTrashDialogOpen}
         onConfirm={confirmEmptyTrash}
-        title="Empty Trash"
-        description="Are you sure you want to empty the Trash? This action cannot be undone."
+        title={t("apps.finder.dialogs.emptyTrash.title")}
+        description={t("apps.finder.dialogs.emptyTrash.description")}
       />
     </div>
   );

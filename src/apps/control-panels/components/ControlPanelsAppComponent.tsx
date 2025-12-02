@@ -8,6 +8,7 @@ import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { helpItems, appMetadata } from "..";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -1490,7 +1491,7 @@ export function ControlPanelsAppComponent({
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title="Control Panels"
+        title={getTranslatedAppName("control-panels")}
         onClose={onClose}
         isForeground={isForeground}
         appId="control-panels"

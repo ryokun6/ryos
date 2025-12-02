@@ -14,6 +14,7 @@ import { SoundboardMenuBar } from "./SoundboardMenuBar";
 import { appMetadata } from "..";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 interface ImportedSlot {
   audioData: string | null;
@@ -378,7 +379,7 @@ export function SoundboardAppComponent({
   if (!hasInitialized || !activeBoard || !activeBoardId) {
     return (
       <WindowFrame
-        title="Soundboard"
+        title={getTranslatedAppName("soundboard")}
         onClose={onClose}
         isForeground={isForeground}
         appId="soundboard"

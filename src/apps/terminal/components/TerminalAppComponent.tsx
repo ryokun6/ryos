@@ -28,6 +28,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { generateHTML, type AnyExtension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -2966,7 +2967,7 @@ export function TerminalAppComponent({
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
         appId="terminal"
-        title="Terminal"
+        title={getTranslatedAppName("terminal")}
         onClose={onClose}
         isForeground={isForeground}
         transparentBackground={true}

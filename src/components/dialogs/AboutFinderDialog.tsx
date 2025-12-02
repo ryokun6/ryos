@@ -5,6 +5,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 import { getNonFinderApps } from "@/config/appRegistry";
 import { useAppContext } from "@/contexts/AppContext";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -12,6 +13,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -28,6 +30,7 @@ export function AboutFinderDialog({
   isOpen,
   onOpenChange,
 }: AboutFinderDialogProps) {
+  const { t } = useTranslation();
   const { appStates } = useAppContext();
   const currentTheme = useThemeStore((state) => state.current);
   const version = useAppStore((state) => state.ryOSVersion);
@@ -47,14 +50,14 @@ export function AboutFinderDialog({
     // Calculate memory usage for system and open apps (limited to 4)
     const appUsages: AppMemoryUsage[] = [
       {
-        name: "System",
+        name: t("common.aboutThisMac.system"),
         memoryMB: systemUsage,
         percentage: (systemUsage / totalMemory) * 100,
       },
       ...openApps.map((app, index) => {
         const memory = 1.5 + index * 0.5; // Simulate different memory usage per app
         return {
-          name: app.name,
+          name: getTranslatedAppName(app.id),
           memoryMB: memory,
           percentage: (memory / totalMemory) * 100,
         };
@@ -106,7 +109,7 @@ export function AboutFinderDialog({
                     : "font-geneva-12 text-[10px]"
                 )}
                 onClick={() => setVersionDisplayMode((prev) => (prev + 1) % 3)}
-                title="Click to toggle"
+                title={t("common.aboutThisMac.clickToToggle")}
               >
                 {versionDisplayMode === 0
                   ? (version || "...")
@@ -132,10 +135,10 @@ export function AboutFinderDialog({
               }}
             >
               <div>
-                <div>Built-in Memory: 32MB</div>
-                <div>Virtual Memory: Off</div>
+                <div>{t("common.aboutThisMac.builtInMemory")}: 32{t("common.aboutThisMac.mb")}</div>
+                <div>{t("common.aboutThisMac.virtualMemory")}: {t("common.aboutThisMac.virtualMemoryOff")}</div>
                 <div>
-                  Largest Unused Block: {(32 - totalUsedMemory).toFixed(1)}MB
+                  {t("common.aboutThisMac.largestUnusedBlock")}: {(32 - totalUsedMemory).toFixed(1)}{t("common.aboutThisMac.mb")}
                 </div>
                 <div
                   className={cn(
@@ -176,7 +179,7 @@ export function AboutFinderDialog({
               <div className="flex flex-row items-center gap-1" key={index}>
                 <div className="flex justify-between w-full">
                   <div className="w-1/2 truncate">{app.name}</div>
-                  <div className="w-1/3">{app.memoryMB.toFixed(1)} MB</div>
+                  <div className="w-1/3">{app.memoryMB.toFixed(1)} {t("common.aboutThisMac.mb")}</div>
                 </div>
                 <div
                   className={cn(
@@ -210,22 +213,22 @@ export function AboutFinderDialog({
       >
         {isXpTheme ? (
           <>
-            <DialogHeader>About This Computer</DialogHeader>
+            <DialogHeader>{t("common.aboutThisMac.title")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : currentTheme === "macosx" ? (
           <>
-            <DialogHeader>About This Computer</DialogHeader>
+            <DialogHeader>{t("common.aboutThisMac.title")}</DialogHeader>
             {dialogContent}
           </>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="font-normal text-[16px]">
-                About This Computer
+                {t("common.aboutThisMac.title")}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                Information about ryOS on this computer
+                {t("common.aboutThisMac.description")}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

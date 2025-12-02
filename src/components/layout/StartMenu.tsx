@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useThemeStore } from "@/stores/useThemeStore";
 import {
@@ -11,12 +12,14 @@ import { AboutFinderDialog } from "@/components/dialogs/AboutFinderDialog";
 import { AnyApp } from "@/apps/base/types";
 import { AppId } from "@/config/appIds";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 interface StartMenuProps {
   apps: AnyApp[];
 }
 
 export function StartMenu({ apps }: StartMenuProps) {
+  const { t } = useTranslation();
   const launchApp = useLaunchApp();
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const [aboutFinderOpen, setAboutFinderOpen] = useState(false);
@@ -99,7 +102,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                     : "none",
               }}
             >
-              {currentTheme === "xp" ? "start" : "Start"}
+              {currentTheme === "xp" ? t("common.startMenu.start").toLowerCase() : t("common.startMenu.start")}
             </span>
           </button>
         </DropdownMenuTrigger>
@@ -153,7 +156,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                 >
                   ryOS{" "}
                   <span style={{ fontWeight: "100" }}>
-                    {currentTheme === "xp" ? "Professional" : "98"}
+                    {currentTheme === "xp" ? t("common.startMenu.ryosProfessional") : t("common.startMenu.ryos98")}
                   </span>
                 </div>
               </div>
@@ -188,7 +191,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                     alt="About"
                     className="w-6 h-6 [image-rendering:pixelated]"
                   />
-                  About This Computer
+                  {t("common.startMenu.aboutThisComputer")}
                 </DropdownMenuItem>
 
                 {/* Separator */}
@@ -229,7 +232,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                         className="w-6 h-6 [image-rendering:pixelated]"
                       />
                     )}
-                    {app.name}
+                    {getTranslatedAppName(app.id as AppId)}
                   </DropdownMenuItem>
                 ))}
               </div>

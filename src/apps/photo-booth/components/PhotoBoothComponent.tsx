@@ -13,6 +13,7 @@ import { Webcam } from "@/components/Webcam";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { usePhotoBoothStore } from "@/stores/usePhotoBoothStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { getTranslatedAppName } from "@/utils/i18n";
 
 interface Effect {
   name: string;
@@ -838,7 +839,7 @@ export function PhotoBoothComponent({
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title="Photo Booth"
+        title={getTranslatedAppName("photo-booth")}
         onClose={onClose}
         isForeground={isForeground}
         appId="photo-booth"
