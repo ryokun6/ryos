@@ -1542,6 +1542,7 @@ export function AppletViewerAppComponent({
         isOpen={isAboutDialogOpen}
         onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
+        appId="applet-viewer"
       />
       <ShareItemDialog
         isOpen={isShareDialogOpen}

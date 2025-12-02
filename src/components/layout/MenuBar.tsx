@@ -74,6 +74,13 @@ function Clock() {
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { i18n: i18nInstance } = useTranslation();
+  
+  // Get current locale from i18n (reactive to language changes)
+  const currentLocale = i18nInstance.language || "en";
+  
+  // Determine if locale prefers 24-hour format
+  const prefers24Hour = ["zh-TW", "ja", "de", "fr", "ko"].includes(currentLocale);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -97,42 +104,89 @@ function Clock() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Helper function to format time without leading zeros for 24h format
+  const formatTime24h = (date: Date): string => {
+    const hour = date.getHours();
+    const minute = date.getMinutes().toString().padStart(2, "0");
+    return `${hour}:${minute}`;
+  };
+
   // Format the display based on theme and viewport width
+  // Use "numeric" for hour to avoid leading zeros (e.g., "0:08" instead of "00:08")
+  // "2-digit" would force leading zeros which Chinese/Japanese don't typically use
+  const hourFormat = "numeric";
+  
   let displayTime;
 
   if (isXpTheme) {
-    // For XP/98 themes: time with AM/PM (e.g., "1:34 AM")
-    displayTime = time.toLocaleTimeString([], {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    // For XP/98 themes: use 24h for locales that prefer it, otherwise 12h
+    if (prefers24Hour) {
+      displayTime = formatTime24h(time);
+    } else {
+      displayTime = time.toLocaleTimeString(currentLocale, {
+        hour: hourFormat,
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
   } else if (viewportWidth < 420) {
-    // For small screens: just time without AM/PM (e.g., "1:34")
-    const timeString = time.toLocaleTimeString([], {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-    displayTime = timeString.replace(/\s?(AM|PM)$/i, "");
+    // For small screens: just time (24h for locales that prefer it)
+    if (prefers24Hour) {
+      displayTime = formatTime24h(time);
+    } else {
+      displayTime = time.toLocaleTimeString(currentLocale, {
+        hour: hourFormat,
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
   } else if (viewportWidth >= 420 && viewportWidth <= 768) {
-    // For medium screens: time with AM/PM (e.g., "1:00 AM")
-    displayTime = time.toLocaleTimeString([], {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    // For medium screens: time (24h for locales that prefer it)
+    if (prefers24Hour) {
+      displayTime = formatTime24h(time);
+    } else {
+      displayTime = time.toLocaleTimeString(currentLocale, {
+        hour: hourFormat,
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
   } else {
-    // For larger screens (> 768px): full date and time (e.g., "Wed May 7 1:34 AM")
-    const shortWeekday = time.toLocaleDateString([], { weekday: "short" });
-    const month = time.toLocaleDateString([], { month: "short" });
-    const day = time.getDate();
-    const timeString = time.toLocaleTimeString([], {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-    displayTime = `${shortWeekday} ${month} ${day} ${timeString}`;
+    // For larger screens (> 768px): full date and time
+    const timeString = prefers24Hour 
+      ? formatTime24h(time)
+      : time.toLocaleTimeString(currentLocale, {
+          hour: hourFormat,
+          minute: "2-digit",
+          hour12: true,
+        });
+    
+    // Custom formatting for Chinese, Japanese, and Korean
+    if (currentLocale === "zh-TW") {
+      // Chinese format: "12月2日 週二 12:03"
+      const month = time.getMonth() + 1; // getMonth() returns 0-11, so add 1
+      const day = time.getDate();
+      const weekday = time.toLocaleDateString(currentLocale, { weekday: "short" });
+      displayTime = `${month}月${day}日 ${weekday} ${timeString}`;
+    } else if (currentLocale === "ja") {
+      // Japanese format: "12月2日 (火) 12:06"
+      const month = time.getMonth() + 1; // getMonth() returns 0-11, so add 1
+      const day = time.getDate();
+      const weekday = time.toLocaleDateString(currentLocale, { weekday: "short" });
+      displayTime = `${month}月${day}日 (${weekday}) ${timeString}`;
+    } else if (currentLocale === "ko") {
+      // Korean format: "12월2일 (화) 12:06" (similar to Japanese)
+      const month = time.getMonth() + 1; // getMonth() returns 0-11, so add 1
+      const day = time.getDate();
+      const weekday = time.toLocaleDateString(currentLocale, { weekday: "short" });
+      displayTime = `${month}월${day}일 (${weekday}) ${timeString}`;
+    } else {
+      // Default format for other locales: "Wed May 7 1:34 AM" or "Wed May 7 13:34"
+      const shortWeekday = time.toLocaleDateString(currentLocale, { weekday: "short" });
+      const month = time.toLocaleDateString(currentLocale, { month: "short" });
+      const day = time.getDate();
+      displayTime = `${shortWeekday} ${month} ${day} ${timeString}`;
+    }
   }
 
   return (
@@ -444,6 +498,7 @@ function DefaultMenuItems() {
         isOpen={isAboutDialogOpen}
         onOpenChange={setIsAboutDialogOpen}
         metadata={finderMetadata}
+        appId="finder"
       />
     </>
   );

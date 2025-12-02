@@ -516,6 +516,7 @@ export function SoundboardAppComponent({
           isOpen={aboutDialogOpen}
           onOpenChange={setAboutDialogOpen}
           metadata={appMetadata}
+          appId="soundboard"
         />
       </WindowFrame>
     </>

@@ -2073,6 +2073,7 @@ export function ControlPanelsAppComponent({
           isOpen={isAboutDialogOpen}
           onOpenChange={setIsAboutDialogOpen}
           metadata={appMetadata}
+          appId="control-panels"
         />
         <ConfirmDialog
           isOpen={isConfirmResetOpen}

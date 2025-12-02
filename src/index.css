@@ -53,8 +53,8 @@
     --radius: 0px;
     --sat-safe-area-bottom: env(safe-area-inset-bottom, 0px);
     --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
-    --font-apple-garamond: "AppleGaramond", "ArkPixel", "SerenityOS-Emoji",
-      system-ui;
+    --font-apple-garamond: "AppleGaramond", "Hiragino Mincho ProN", "SerenityOS-Emoji",
+      serif;
     --font-mondwest: "Mondwest", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-neuebit: "NeueBit", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", system-ui;
@@ -364,7 +364,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   .font-apple-garamond {
-    font-family: "Apple Garamond", "Georgia", "Palatino", serif;
+    font-family: var(--font-apple-garamond);
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }

@@ -134,6 +134,7 @@ export function DialogManager({
         isOpen={isAboutDialogOpen}
         onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
+        appId="textedit"
       />
     </>
   );

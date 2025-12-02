@@ -566,6 +566,7 @@ export function MinesweeperAppComponent({
               icon: "/icons/default/minesweeper.png",
             }
           }
+          appId="minesweeper"
         />
         <ConfirmDialog
           isOpen={isNewGameDialogOpen}

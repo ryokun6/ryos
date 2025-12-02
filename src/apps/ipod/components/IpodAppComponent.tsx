@@ -2718,6 +2718,7 @@ export function IpodAppComponent({
           isOpen={isAboutDialogOpen}
           onOpenChange={setIsAboutDialogOpen}
           metadata={appMetadata}
+          appId="ipod"
         />
         <ConfirmDialog
           isOpen={isConfirmClearOpen}

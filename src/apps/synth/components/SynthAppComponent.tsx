@@ -1617,6 +1617,7 @@ export function SynthAppComponent({
         isOpen={isAboutOpen}
         onOpenChange={setIsAboutOpen}
         metadata={appMetadata}
+        appId="synth"
       />
 
       <InputDialog

@@ -1385,6 +1385,7 @@ export function VideosAppComponent({
           isOpen={isAboutDialogOpen}
           onOpenChange={setIsAboutDialogOpen}
           metadata={appMetadata}
+          appId="videos"
         />
         <ConfirmDialog
           isOpen={isConfirmClearOpen}

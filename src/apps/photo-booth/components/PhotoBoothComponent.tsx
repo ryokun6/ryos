@@ -1241,6 +1241,7 @@ export function PhotoBoothComponent({
             isOpen={showAbout}
             onOpenChange={setShowAbout}
             metadata={appMetadata}
+            appId="photo-booth"
           />
         </div>
       </WindowFrame>

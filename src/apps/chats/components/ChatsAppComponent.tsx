@@ -850,6 +850,7 @@ export function ChatsAppComponent({
           isOpen={isAboutDialogOpen}
           onOpenChange={setIsAboutDialogOpen}
           metadata={appMetadata}
+          appId="chats"
         />
         <ConfirmDialog
           isOpen={isClearDialogOpen}

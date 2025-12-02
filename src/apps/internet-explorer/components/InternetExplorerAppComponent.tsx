@@ -2643,6 +2643,7 @@ export function InternetExplorerAppComponent({
             isOpen={isAboutDialogOpen}
             onOpenChange={setAboutDialogOpen}
             metadata={appMetadata}
+            appId="internet-explorer"
           />
           <ConfirmDialog
             isOpen={isClearFavoritesDialogOpen}

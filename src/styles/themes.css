@@ -1201,14 +1201,14 @@
 
 /* AboutDialog title styling for macOS theme */
 :root[data-os-theme="macosx"] .font-apple-garamond {
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", serif !important;
+  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
   font-size: 1.5rem !important;
 }
 
 /* Ensure AboutDialog title doesn't get overridden by general div styles */
 :root[data-os-theme="macosx"] .font-apple-garamond.text-2xl {
   font-size: 1.5rem !important;
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", serif !important;
+  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
 }
 
 /* AboutDialog body text styling for macOS theme */

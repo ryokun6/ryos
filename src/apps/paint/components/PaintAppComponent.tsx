@@ -562,6 +562,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
         isOpen={isAboutDialogOpen}
         onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
+        appId="paint"
       />
       <ConfirmDialog
         isOpen={isConfirmNewDialogOpen}

@@ -3034,6 +3034,7 @@ export function TerminalAppComponent({
             icon: "/icons/default/terminal.png",
           }
         }
+        appId="terminal"
       />
     </>
   );

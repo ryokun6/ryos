@@ -374,6 +374,7 @@ export function PcAppComponent({
           isOpen={isAboutDialogOpen}
           onOpenChange={setIsAboutDialogOpen}
           metadata={appMetadata}
+          appId="pc"
         />
         <ConfirmDialog
           isOpen={isResetDialogOpen}
