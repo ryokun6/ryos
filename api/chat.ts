@@ -772,17 +772,6 @@ export default async function handler(req: Request) {
             id: z.enum(appIds).describe("The app id to close"),
           }),
         },
-        switchTheme: {
-          description:
-            "Switch the ryOS UI theme to a specific OS style when the user explicitly requests it.",
-          inputSchema: z.object({
-            theme: z
-              .enum(themeIds)
-              .describe(
-                'The theme to switch to. One of "system7", "macosx", "xp", "win98".'
-              ),
-          }),
-        },
         // Add iPod control tools
         ipodControl: {
           description:
@@ -1072,6 +1061,45 @@ export default async function handler(req: Request) {
               .string()
               .describe(
                 "The edited text to replace the old_string."
+              ),
+          }),
+        },
+        // --- System Settings Tool ---
+        settings: {
+          description:
+            "Change system settings in ryOS. Use this tool when the user asks to change language, theme, volume, enable/disable speech, or check for updates. Multiple settings can be changed in a single call.",
+          inputSchema: z.object({
+            language: z
+              .enum(["en", "zh-TW", "ja", "ko", "fr", "de"])
+              .optional()
+              .describe(
+                "Change the system language. Supported: 'en' (English), 'zh-TW' (Traditional Chinese), 'ja' (Japanese), 'ko' (Korean), 'fr' (French), 'de' (German)."
+              ),
+            theme: z
+              .enum(themeIds)
+              .optional()
+              .describe(
+                'Change the OS theme. One of "system7" (Mac OS 7), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98).'
+              ),
+            masterVolume: z
+              .number()
+              .min(0)
+              .max(1)
+              .optional()
+              .describe(
+                "Set the master volume (0-1). Affects all system sounds including UI sounds, speech, and music. Use 0 to mute."
+              ),
+            speechEnabled: z
+              .boolean()
+              .optional()
+              .describe(
+                "Enable or disable text-to-speech for AI responses. When enabled, the AI's responses will be read aloud."
+              ),
+            checkForUpdates: z
+              .boolean()
+              .optional()
+              .describe(
+                "When true, triggers a check for ryOS updates. Will notify the user if an update is available."
               ),
           }),
         },

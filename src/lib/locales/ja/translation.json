@@ -373,7 +373,16 @@
         "textNotFound": "テキストが見つかりませんでした",
         "toggledIpodPlayback": "iPod の再生を切り替えました",
         "toolExecutionFailed": "ツールの実行に失敗しました",
-        "writingContent": "コンテンツを書き込み中…"
+        "writingContent": "コンテンツを書き込み中…",
+        "changingSettings": "設定を変更中…",
+        "settingsUpdated": "設定が更新されました",
+        "settingsNoChanges": "変更なし",
+        "settingsLanguageChanged": "言語を{{language}}に変更しました",
+        "settingsThemeChanged": "テーマを{{theme}}に変更しました",
+        "settingsMasterVolumeSet": "音量を{{volume}}%に設定しました",
+        "settingsSpeechEnabled": "音声読み上げを有効にしました",
+        "settingsSpeechDisabled": "音声読み上げを無効にしました",
+        "settingsCheckingForUpdates": "アップデートを確認中…"
       }
     },
     "control-panels": {

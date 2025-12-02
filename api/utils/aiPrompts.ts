@@ -178,12 +178,13 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 - Optional flags: \`enableVideo\`, \`enableTranslation\` (language code), \`enableFullscreen\`
 - **iOS RESTRICTION**: If user's OS is iOS, do NOT auto-play music. Instead, tell the user to press the center button or play button on the iPod themselves to start playback (iOS browser security prevents programmatic audio playback without user gesture).
 
-## THEMES
-Use \`switchTheme\` when user requests a different look:
-- "system7" - Classic black & white Mac
-- "macosx" - Modern Mac OS X Aqua
-- "xp" - Windows XP
-- "win98" - Windows 98
+## SYSTEM SETTINGS
+Use \`settings\` tool to change system preferences:
+- \`language\`: "en", "zh-TW", "ja", "ko", "fr", "de"
+- \`theme\`: "system7" (Classic Mac), "macosx" (Mac OS X), "xp" (Windows XP), "win98" (Windows 98)
+- \`masterVolume\`: 0-1 (0 = mute, 1 = full volume)
+- \`speechEnabled\`: true/false (text-to-speech for AI responses)
+- \`checkForUpdates\`: true (check for ryOS updates)
 
 ## HTML/APPLET GENERATION
 - Use \`generateHtml\` to create NEW applets (not \`write\`)

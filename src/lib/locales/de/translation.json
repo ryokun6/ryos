@@ -373,7 +373,16 @@
         "textNotFound": "Text nicht gefunden",
         "toggledIpodPlayback": "iPod-Wiedergabe umgeschaltet",
         "toolExecutionFailed": "Tool-Ausführung fehlgeschlagen",
-        "writingContent": "Inhalt wird geschrieben…"
+        "writingContent": "Inhalt wird geschrieben…",
+        "changingSettings": "Einstellungen werden geändert…",
+        "settingsUpdated": "Einstellungen aktualisiert",
+        "settingsNoChanges": "Keine Änderungen",
+        "settingsLanguageChanged": "Sprache wurde auf {{language}} geändert",
+        "settingsThemeChanged": "Thema wurde auf {{theme}} geändert",
+        "settingsMasterVolumeSet": "Lautstärke auf {{volume}}% gesetzt",
+        "settingsSpeechEnabled": "Sprachausgabe aktiviert",
+        "settingsSpeechDisabled": "Sprachausgabe deaktiviert",
+        "settingsCheckingForUpdates": "Suche nach Updates…"
       }
     },
     "control-panels": {

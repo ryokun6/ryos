@@ -373,7 +373,16 @@
         "textNotFound": "找不到文字",
         "toggledIpodPlayback": "切換 iPod 播放",
         "toolExecutionFailed": "工具執行失敗",
-        "writingContent": "寫入內容…"
+        "writingContent": "寫入內容…",
+        "changingSettings": "正在變更設定…",
+        "settingsUpdated": "設定已更新",
+        "settingsNoChanges": "沒有變更",
+        "settingsLanguageChanged": "語言已變更為{{language}}",
+        "settingsThemeChanged": "主題已變更為{{theme}}",
+        "settingsMasterVolumeSet": "音量設定為 {{volume}}%",
+        "settingsSpeechEnabled": "已啟用語音朗讀",
+        "settingsSpeechDisabled": "已停用語音朗讀",
+        "settingsCheckingForUpdates": "正在檢查更新…"
       }
     },
     "control-panels": {

@@ -407,8 +407,8 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
         }
         break;
       }
-      case "switchTheme":
-        msg = "Switching theme…";
+      case "settings":
+        msg = "Changing settings…";
         break;
       case "generateHtml":
         msg = "Generating applet…";
@@ -507,9 +507,13 @@ const formatToolInvocation = (invocation: ToolInvocation): string | null => {
           msg = action === "play" ? "Playing iPod" : action === "pause" ? "Paused iPod" : "Toggled iPod playback";
         }
       }
-    } else if (toolName === "switchTheme") {
-      const theme = args?.theme || "theme";
-      msg = `Switched to ${theme}`;
+    } else if (toolName === "settings") {
+      // Use the result directly as it contains the detailed changes
+      if (typeof result === "string" && result.trim().length > 0) {
+        msg = result;
+      } else {
+        msg = "Settings updated";
+      }
     } else if (
       toolName === "generateHtml" &&
       typeof result === "string" &&

@@ -727,7 +727,16 @@
         "generating": "Generating…",
         "preparingHtmlPreview": "Preparing HTML preview...",
         "toolExecutionFailed": "Tool execution failed",
-        "error": "Error: {{errorText}}"
+        "error": "Error: {{errorText}}",
+        "changingSettings": "Changing settings…",
+        "settingsUpdated": "Settings updated",
+        "settingsNoChanges": "No changes made",
+        "settingsLanguageChanged": "Language changed to {{language}}",
+        "settingsThemeChanged": "Theme changed to {{theme}}",
+        "settingsMasterVolumeSet": "Volume set to {{volume}}%",
+        "settingsSpeechEnabled": "Text-to-speech enabled",
+        "settingsSpeechDisabled": "Text-to-speech disabled",
+        "settingsCheckingForUpdates": "Checking for updates…"
       },
       "tokenStatus": {
         "clickToRefresh": "Click to manually refresh token",

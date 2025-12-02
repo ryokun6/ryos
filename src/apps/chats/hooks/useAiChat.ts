@@ -615,33 +615,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = "Aquarium displayed";
             break;
           }
-          case "switchTheme": {
-            const { theme } = toolCall.input as { theme?: OsThemeId };
-            if (!theme) {
-              console.error(
-                "[ToolCall] switchTheme: Missing required 'theme' parameter",
-              );
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: "No theme provided",
-              });
-              break;
-            }
-
-            const { current, setTheme } = useThemeStore.getState();
-            if (current === theme) {
-              const name = themes[theme]?.name || theme;
-              result = `${name} theme is already active`;
-            } else {
-              setTheme(theme);
-              const name = themes[theme]?.name || theme;
-              result = `Switched theme to ${name}`;
-            }
-            console.log("[ToolCall] switchTheme:", theme, result);
-            break;
-          }
           case "launchApp": {
             const { id, url, year } = toolCall.input as {
               id: string;
@@ -2118,6 +2091,113 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
                 errorText: err instanceof Error ? err.message : "Failed to edit file",
+              });
+              result = "";
+            }
+            break;
+          }
+          case "settings": {
+            const {
+              language,
+              theme,
+              masterVolume,
+              speechEnabled,
+              checkForUpdates,
+            } = toolCall.input as {
+              language?: string;
+              theme?: OsThemeId;
+              masterVolume?: number;
+              speechEnabled?: boolean;
+              checkForUpdates?: boolean;
+            };
+
+            const changes: string[] = [];
+            const appStore = useAppStore.getState();
+            const langStore = useLanguageStore.getState();
+            const themeStore = useThemeStore.getState();
+
+            // Language change
+            if (language !== undefined) {
+              const languageNames: Record<string, string> = {
+                en: "English",
+                "zh-TW": "繁體中文",
+                ja: "日本語",
+                ko: "한국어",
+                fr: "Français",
+                de: "Deutsch",
+              };
+              langStore.setLanguage(language as "en" | "zh-TW" | "ja" | "ko" | "fr" | "de");
+              changes.push(
+                i18n.t("apps.chats.toolCalls.settingsLanguageChanged", {
+                  language: languageNames[language] || language,
+                })
+              );
+              console.log(`[ToolCall] Language changed to: ${language}`);
+            }
+
+            // Theme change
+            if (theme !== undefined) {
+              if (themeStore.current !== theme) {
+                themeStore.setTheme(theme);
+                const themeName = themes[theme]?.name || theme;
+                changes.push(
+                  i18n.t("apps.chats.toolCalls.settingsThemeChanged", {
+                    theme: themeName,
+                  })
+                );
+                console.log(`[ToolCall] Theme changed to: ${theme}`);
+              }
+            }
+
+            // Master volume
+            if (masterVolume !== undefined) {
+              appStore.setMasterVolume(masterVolume);
+              const volumePercent = Math.round(masterVolume * 100);
+              changes.push(
+                i18n.t("apps.chats.toolCalls.settingsMasterVolumeSet", {
+                  volume: volumePercent,
+                })
+              );
+              console.log(`[ToolCall] Master volume set to: ${masterVolume}`);
+            }
+
+            // Speech enabled
+            if (speechEnabled !== undefined) {
+              appStore.setSpeechEnabled(speechEnabled);
+              changes.push(
+                speechEnabled
+                  ? i18n.t("apps.chats.toolCalls.settingsSpeechEnabled")
+                  : i18n.t("apps.chats.toolCalls.settingsSpeechDisabled")
+              );
+              console.log(`[ToolCall] Speech ${speechEnabled ? "enabled" : "disabled"}`);
+            }
+
+            // Check for updates
+            if (checkForUpdates) {
+              import("@/utils/prefetch").then(({ forceRefreshCache }) => {
+                forceRefreshCache();
+              });
+              changes.push(i18n.t("apps.chats.toolCalls.settingsCheckingForUpdates"));
+              console.log("[ToolCall] Checking for updates...");
+            }
+
+            // Build result message
+            if (changes.length > 0) {
+              const resultMessage =
+                changes.length === 1
+                  ? changes[0]
+                  : changes.join(". ") + ".";
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: resultMessage,
+              });
+              result = "";
+            } else {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: i18n.t("apps.chats.toolCalls.settingsNoChanges"),
               });
               result = "";
             }

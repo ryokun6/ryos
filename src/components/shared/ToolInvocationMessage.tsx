@@ -127,8 +127,8 @@ export function ToolInvocationMessage({
         }
         break;
       }
-      case "switchTheme":
-        displayCallMessage = t("apps.chats.toolCalls.switchingTheme");
+      case "settings":
+        displayCallMessage = t("apps.chats.toolCalls.changingSettings");
         break;
       default:
         displayCallMessage = t("apps.chats.toolCalls.running", { toolName: formatToolName(toolName) });
@@ -333,9 +333,13 @@ export function ToolInvocationMessage({
                 : t("apps.chats.toolCalls.toggledIpodPlayback");
         }
       }
-    } else if (toolName === "switchTheme") {
-      const theme = input?.theme || "theme";
-      displayResultMessage = t("apps.chats.toolCalls.switchedTo", { theme: String(theme) });
+    } else if (toolName === "settings") {
+      // Use the output directly as it contains the detailed changes
+      if (typeof output === "string" && output.trim().length > 0) {
+        displayResultMessage = output;
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.settingsUpdated");
+      }
     }
   }
 
