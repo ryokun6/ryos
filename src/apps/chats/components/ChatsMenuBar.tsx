@@ -210,7 +210,7 @@ export function ChatsMenuBar({
               className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             >
               <span className={cn(currentRoom !== null && "pl-4")}>
-                {currentRoom === null ? "✓ @ryo" : "@ryo"}
+                {currentRoom === null ? `✓ ${t("apps.chats.status.ryo")}` : t("apps.chats.status.ryo")}
               </span>
             </DropdownMenuItem>
 
@@ -305,7 +305,7 @@ export function ChatsMenuBar({
               size="default"
               className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
             >
-              View
+              {t("common.menu.view")}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -314,20 +314,20 @@ export function ChatsMenuBar({
               onClick={onIncreaseFontSize}
               className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             >
-              Increase Font Size
+              {t("apps.chats.menu.increaseFontSize")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={onDecreaseFontSize}
               className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             >
-              Decrease Font Size
+              {t("apps.chats.menu.decreaseFontSize")}
             </DropdownMenuItem>
             <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
             <DropdownMenuItem
               onClick={onResetFontSize}
               className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             >
-              Reset Font Size
+              {t("apps.chats.menu.resetFontSize")}
             </DropdownMenuItem>
             <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
             {/* Sidebar Toggle */}
@@ -339,7 +339,7 @@ export function ChatsMenuBar({
               className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             >
               <span className={cn(!isSidebarVisible && "pl-4")}>
-                {isSidebarVisible ? "✓ Show Rooms" : "Show Rooms"}
+                {isSidebarVisible ? `✓ ${t("apps.chats.menu.showRooms")}` : t("apps.chats.menu.showRooms")}
               </span>
             </DropdownMenuItem>
           </DropdownMenuContent>

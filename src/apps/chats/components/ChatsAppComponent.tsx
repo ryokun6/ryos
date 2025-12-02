@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
+import { useTranslation } from "react-i18next";
 
 // Define the expected message structure locally, matching ChatMessages internal type
 interface DisplayMessage extends Omit<AIChatMessage, "role"> {
@@ -49,6 +50,7 @@ export function ChatsAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps) {
+  const { t } = useTranslation();
   const { aiMessages } = useChatsStore();
 
   // Use auth hook for authentication functionality
@@ -221,7 +223,7 @@ export function ChatsAppComponent({
       e.preventDefault();
 
       // Check if offline and show error
-      if (checkOfflineAndShowError("Chat requires an internet connection")) {
+      if (checkOfflineAndShowError(t("apps.chats.status.chatRequiresInternet"))) {
         return;
       }
 
@@ -418,7 +420,7 @@ export function ChatsAppComponent({
     setPasswordError(null);
 
     if (!password || password.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
+      setPasswordError(t("apps.chats.dialogs.passwordMinLengthError"));
       setIsSettingPassword(false);
       return;
     }
@@ -426,13 +428,13 @@ export function ChatsAppComponent({
     const result = await setPassword(password);
 
     if (result.ok) {
-      toast.success("Password Set", {
-        description: "You can now use your password to recover your account",
+      toast.success(t("apps.chats.dialogs.passwordSetSuccess"), {
+        description: t("apps.chats.dialogs.passwordSetSuccessDescription"),
       });
       setIsPasswordDialogOpen(false);
       setPasswordInput("");
     } else {
-      setPasswordError(result.error || "Failed to set password");
+      setPasswordError(result.error || t("apps.chats.dialogs.passwordSetFailed"));
     }
 
     setIsSettingPassword(false);
@@ -688,7 +690,7 @@ export function ChatsAppComponent({
                       className="flex items-center gap-1 px-2 py-1 h-7"
                     >
                       <span className="font-geneva-12 text-[11px] text-orange-600 hover:text-orange-700">
-                        Login to ryOS
+                        {t("apps.chats.status.loginToRyOS")}
                       </span>
                     </Button>
                   )}
@@ -700,7 +702,7 @@ export function ChatsAppComponent({
                       onClick={() => setIsClearDialogOpen(true)}
                       className="flex items-center gap-1 px-2 py-1 h-7"
                     >
-                      <span className="font-geneva-12 text-[11px]">Clear</span>
+                      <span className="font-geneva-12 text-[11px]">{t("apps.chats.status.clear")}</span>
                     </Button>
                   )}
 
@@ -711,7 +713,7 @@ export function ChatsAppComponent({
                       onClick={() => promptDeleteRoom(currentRoom)}
                       className="flex items-center gap-1 px-2 py-1 h-7"
                     >
-                      <span className="font-geneva-12 text-[11px]">Leave</span>
+                      <span className="font-geneva-12 text-[11px]">{t("apps.chats.status.leave")}</span>
                     </Button>
                   )}
                 </div>
@@ -773,7 +775,7 @@ export function ChatsAppComponent({
                         onClick={promptSetUsername}
                         className="w-full !h-9 !rounded-full orange"
                       >
-                        {"Login to Chat"}
+                        {t("apps.chats.status.loginToChat")}
                       </Button>
                     ) : (
                       <Button
@@ -784,7 +786,7 @@ export function ChatsAppComponent({
                             : "bg-orange-600 text-white hover:bg-orange-700 transition-all duration-200"
                         }`}
                       >
-                        {"Login to Chat"}
+                        {t("apps.chats.status.loginToChat")}
                       </Button>
                     )
                   ) : (
@@ -853,15 +855,15 @@ export function ChatsAppComponent({
           isOpen={isClearDialogOpen}
           onOpenChange={setIsClearDialogOpen}
           onConfirm={confirmClearChats}
-          title="Clear Chats"
-          description="Are you sure you want to clear this chat? This action cannot be undone."
+          title={t("apps.chats.dialogs.clearChatsTitle")}
+          description={t("apps.chats.dialogs.clearChatsDescription")}
         />
         <InputDialog
           isOpen={isSaveDialogOpen}
           onOpenChange={setIsSaveDialogOpen}
           onSubmit={handleSaveSubmit}
-          title="Save Transcript"
-          description="Enter a name for your chat transcript file"
+          title={t("apps.chats.dialogs.saveTranscriptTitle")}
+          description={t("apps.chats.dialogs.saveTranscriptDescription")}
           value={saveFileName}
           onChange={setSaveFileName}
         />
@@ -912,13 +914,13 @@ export function ChatsAppComponent({
           onConfirm={confirmDeleteRoom}
           title={
             roomToDelete?.type === "private"
-              ? "Leave Conversation"
-              : "Delete Chat Room"
+              ? t("apps.chats.dialogs.leaveConversationTitle")
+              : t("apps.chats.dialogs.deleteChatRoomTitle")
           }
           description={
             roomToDelete?.type === "private"
-              ? `Are you sure you want to leave "${roomToDelete.name}"? You will no longer see messages in this conversation.`
-              : `Are you sure you want to delete the room "${roomToDelete?.name}"? This action cannot be undone.`
+              ? t("apps.chats.dialogs.leaveConversationDescription", { name: roomToDelete.name })
+              : t("apps.chats.dialogs.deleteChatRoomDescription", { name: roomToDelete?.name })
           }
         />
         <LogoutDialog
@@ -932,8 +934,8 @@ export function ChatsAppComponent({
           isOpen={isPasswordDialogOpen}
           onOpenChange={setIsPasswordDialogOpen}
           onSubmit={handleSetPassword}
-          title="Set Password"
-          description="Set a password to enable account recovery. You can use this password to get a new token if you lose access."
+          title={t("apps.chats.dialogs.setPasswordTitle")}
+          description={t("apps.chats.dialogs.setPasswordDescription")}
           value={passwordInput}
           onChange={(value) => {
             setPasswordInput(value);
@@ -941,7 +943,7 @@ export function ChatsAppComponent({
           }}
           isLoading={isSettingPassword}
           errorMessage={passwordError}
-          submitLabel="Set Password"
+          submitLabel={t("apps.chats.dialogs.setPasswordButton")}
         />
       </WindowFrame>
     </>

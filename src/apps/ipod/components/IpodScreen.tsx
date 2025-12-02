@@ -696,7 +696,7 @@ export function IpodScreen({
                 const newOffset = lyricOffset + deltaMs;
                 const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
                 showStatusCallback(
-                  `Offset ${sign}${(newOffset / 1000).toFixed(2)}s`
+                  `${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`
                 );
                 // Force immediate update of lyrics display with new offset
                 const updatedTime = elapsedTime + newOffset / 1000;

@@ -18,6 +18,7 @@ import { AI_MODELS } from "@/types/aiModels";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { CHAT_ANALYTICS } from "@/utils/analytics";
 import { checkOfflineAndShowError } from "@/utils/offline";
+import { useTranslation } from "react-i18next";
 
 // Animated ellipsis component (copied from TerminalAppComponent)
 function AnimatedEllipsis() {
@@ -84,6 +85,7 @@ export function ChatInput({
   needsUsername = false,
   isOffline = false,
 }: ChatInputProps) {
+  const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -175,7 +177,7 @@ export function ChatInput({
     setTranscriptionError(null);
 
     if (!text) {
-      setTranscriptionError("No transcription text received");
+      setTranscriptionError(t("apps.chats.status.noTranscriptionText"));
       return;
     }
 
@@ -304,7 +306,7 @@ export function ChatInput({
           onSubmit={(e) => {
             if (isOffline) {
               e.preventDefault();
-              checkOfflineAndShowError("Chat requires an internet connection");
+              checkOfflineAndShowError(t("apps.chats.status.chatRequiresInternet"));
               return;
             }
             if (input.trim() !== "") {
@@ -330,14 +332,14 @@ export function ChatInput({
                   isLoading
                     ? ""
                     : isRecording
-                    ? "Recording..."
+                    ? t("apps.chats.status.recording")
                     : isTranscribing
-                    ? "Transcribing..."
+                    ? t("apps.chats.status.transcribing")
                     : needsUsername && !isInChatRoom
-                    ? "Create account to continue..."
+                    ? t("apps.chats.status.createAccountToContinue")
                     : isFocused || isTouchDevice
-                    ? "Type a message..."
-                    : "Type or push 'space' to talk..."
+                    ? t("apps.chats.status.typeMessage")
+                    : t("apps.chats.status.typeOrPushSpace")
                 }
                 className={`w-full border-1 border-gray-800 text-xs font-geneva-12 h-9 ${
                   isMacTheme ? "pl-3 pr-16 rounded-full" : "pl-2 pr-16"
@@ -366,7 +368,7 @@ export function ChatInput({
                     className="absolute top-0 left-0 w-full h-full pointer-events-none flex items-center pl-3"
                   >
                     <span className="text-gray-500 opacity-70 shimmer-gray text-[13px] font-geneva-12">
-                      Thinking
+                      {t("apps.chats.status.thinking")}
                       <AnimatedEllipsis />
                     </span>
                   </motion.div>
@@ -387,14 +389,14 @@ export function ChatInput({
                                 : ""
                             }`}
                             disabled={isLoading}
-                            aria-label="Send a Nudge"
+                            aria-label={t("apps.chats.ariaLabels.sendNudge")}
                           >
                             <Hand className="h-4 w-4 -rotate-40" />
                           </button>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Send a Nudge</p>
+                        <p>{t("apps.chats.ariaLabels.sendNudge")}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -413,14 +415,14 @@ export function ChatInput({
                                 : ""
                             }`}
                             disabled={isLoading}
-                            aria-label="Mention Ryo"
+                            aria-label={t("apps.chats.ariaLabels.mentionRyo")}
                           >
                             <AtSign className="h-4 w-4" />
                           </button>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Mention Ryo</p>
+                        <p>{t("apps.chats.ariaLabels.mentionRyo")}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -445,7 +447,7 @@ export function ChatInput({
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Push to Talk</p>
+                      <p>{t("apps.chats.ariaLabels.pushToTalk")}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -622,12 +624,8 @@ export function ChatInput({
               className="mt-2 px-1 text-xs text-neutral-700 font-geneva-12"
             >
               {isTypingRyoMention
-                ? `Ryo will respond to this message${
-                    debugMode && modelDisplayName
-                      ? ` (${modelDisplayName})`
-                      : ""
-                  }`
-                : `Using ${modelDisplayName}`}
+                ? t("apps.chats.status.ryoWillRespond") + (debugMode && modelDisplayName ? ` (${modelDisplayName})` : "")
+                : t("apps.chats.status.usingModel", { model: modelDisplayName })}
             </motion.div>
           )}
         </AnimatePresence>

@@ -35,6 +35,7 @@ import {
 import { LinkPreview } from "@/components/shared/LinkPreview";
 import { useThemeStore } from "@/stores/useThemeStore";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
+import { useTranslation } from "react-i18next";
 
 // --- Color Hashing for Usernames ---
 const userColors = [
@@ -156,15 +157,15 @@ const getErrorMessage = (error: Error): string => {
       // Handle specific error types
       if (errorData.error === "rate_limit_exceeded") {
         if (errorData.isAuthenticated) {
-          return `Daily AI message limit reached.`;
+          return t("apps.chats.status.dailyLimitReached");
         } else {
-          return `Login to continue chatting with Ryo.`;
+          return t("apps.chats.status.loginToContinue");
         }
       }
 
       // Handle authentication error
       if (errorData.error === "authentication_failed") {
-        return `Session expired. Please login again.`;
+        return t("apps.chats.status.sessionExpired");
       }
 
       // Return the error field if it exists and is a string
@@ -255,6 +256,7 @@ interface ChatMessagesProps {
 
 // Component to render the scroll-to-bottom button using the library's context
 function ScrollToBottomButton() {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((s) => s.current);
   const isMacTheme = currentTheme === "macosx";
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
@@ -286,7 +288,7 @@ function ScrollToBottomButton() {
             backdropFilter: isMacTheme ? "blur(2px)" : undefined,
           }}
           onClick={() => scrollToBottom()} // Use the library's function
-          aria-label="Scroll to bottom"
+          aria-label={t("apps.chats.status.scrollToBottom")}
         >
           {isMacTheme && (
             <>
@@ -367,6 +369,7 @@ function ChatMessagesContent({
   isSpeaking,
   onSendMessage,
 }: ChatMessagesContentProps) {
+  const { t } = useTranslation();
   const { playNote } = useChatSynth();
   const { playElevatorMusic, stopElevatorMusic, playDingSound } =
     useTerminalSounds();
@@ -569,7 +572,7 @@ function ChatMessagesContent({
           className="flex items-center gap-2 text-gray-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
         >
           <MessageSquare className="h-3 w-3" />
-          <span>Start a new conversation?</span>
+          <span>{t("apps.chats.status.startNewConversation")}</span>
           {onClear && (
             <Button
               size="sm"
@@ -577,7 +580,7 @@ function ChatMessagesContent({
               onClick={onClear}
               className="m-0 p-0 text-[16px] h-0 text-gray-500 hover:text-gray-700"
             >
-              New chat
+              {t("apps.chats.status.newChat")}
             </Button>
           )}
         </motion.div>
@@ -706,13 +709,13 @@ function ChatMessagesContent({
                             }}
                             className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
                             onClick={() => deleteMessage(message)}
-                            aria-label="Delete message"
+                            aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                           >
                             <Trash className="h-3 w-3" />
                           </motion.button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Delete</p>
+                          <p>{t("apps.chats.messages.delete")}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -725,7 +728,7 @@ function ChatMessagesContent({
                     }}
                     className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors"
                     onClick={() => copyMessage(message)}
-                    aria-label="Copy message"
+                    aria-label={t("apps.chats.ariaLabels.copyMessage")}
                   >
                     {copiedMessageId === messageKey ? (
                       <Check className="h-3 w-3" />
@@ -738,10 +741,10 @@ function ChatMessagesContent({
               <span
                 className="max-w-[120px] inline-block overflow-hidden text-ellipsis whitespace-nowrap"
                 title={
-                  message.username || (message.role === "user" ? "You" : "Ryo")
+                  message.username || (message.role === "user" ? t("apps.chats.messages.you") : t("apps.chats.messages.ryo"))
                 }
               >
-                {message.username || (message.role === "user" ? "You" : "Ryo")}
+                {message.username || (message.role === "user" ? t("apps.chats.messages.you") : t("apps.chats.messages.ryo"))}
               </span>{" "}
               <span className="text-gray-400 select-text">
                 {message.metadata?.createdAt ? (
@@ -777,7 +780,7 @@ function ChatMessagesContent({
                     }}
                     className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors"
                     onClick={() => copyMessage(message)}
-                    aria-label="Copy message"
+                    aria-label={t("apps.chats.ariaLabels.copyMessage")}
                   >
                     {copiedMessageId === messageKey ? (
                       <Check className="h-3 w-3" />
@@ -877,8 +880,8 @@ function ChatMessagesContent({
                       }}
                       aria-label={
                         playingMessageId === messageKey
-                          ? "Stop speech"
-                          : "Speak message"
+                          ? t("apps.chats.ariaLabels.stopSpeech")
+                          : t("apps.chats.ariaLabels.speakMessage")
                       }
                     >
                       {playingMessageId === messageKey ? (
@@ -909,13 +912,13 @@ function ChatMessagesContent({
                           }}
                           className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
                           onClick={() => onSendMessage(message.username!)}
-                          aria-label="Send message"
+                          aria-label={t("apps.chats.ariaLabels.messageUser", { username: message.username })}
                         >
                           <Send className="h-3 w-3" />
                         </motion.button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Message {message.username}</p>
+                        <p>{t("apps.chats.ariaLabels.messageUser", { username: message.username })}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -932,13 +935,13 @@ function ChatMessagesContent({
                         }}
                         className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
                         onClick={() => deleteMessage(message)}
-                        aria-label="Delete message"
+                        aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                       >
                         <Trash className="h-3 w-3" />
                       </motion.button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Delete</p>
+                      <p>{t("apps.chats.messages.delete")}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1042,7 +1045,7 @@ function ChatMessagesContent({
                                     transition={{ duration: 0 }}
                                     className="select-text italic"
                                   >
-                                    editing...
+                                    {t("apps.chats.status.editing")}
                                   </motion.span>
                                 );
                               }
@@ -1331,7 +1334,7 @@ function ChatMessagesContent({
           if (isRateLimitError) return null;
 
           // Special handling for login message - render in gray like "Start a new conversation?"
-          if (errorMessage === "Login to continue chatting with Ryo.") {
+          if (errorMessage === t("apps.chats.status.loginToContinue")) {
             if (username) {
               return null;
             }
@@ -1368,7 +1371,7 @@ function ChatMessagesContent({
                     onClick={onRetry}
                     className="m-0 p-0 h-auto text-red-600 text-[16px] h-[16px] hover:text-red-700"
                   >
-                    Retry
+                    {t("apps.chats.status.retry")}
                   </Button>
                 )}
               </div>

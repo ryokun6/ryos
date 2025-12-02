@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
 export function useLibraryUpdateChecker(isActive: boolean) {
+  const { t } = useTranslation();
   const syncLibrary = useIpodStore((state) => state.syncLibrary);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastCheckedRef = useRef<number>(0);
@@ -80,24 +82,27 @@ export function useLibraryUpdateChecker(isActive: boolean) {
             const result = await syncLibrary();
             const message =
               wasEmpty && result.newTracksAdded > 0
-                ? `Added ${result.newTracksAdded} song${
-                    result.newTracksAdded === 1 ? "" : "s"
-                  } to the top. First song ready to play!`
+                ? t("apps.ipod.dialogs.addedSongsToTop", {
+                    count: result.newTracksAdded,
+                    plural: result.newTracksAdded === 1 ? "" : "s",
+                  })
                 : result.newTracksAdded > 0
-                ? `Auto-updated library: added ${
-                    result.newTracksAdded
-                  } new song${
-                    result.newTracksAdded === 1 ? "" : "s"
-                  } to the top${
-                    result.tracksUpdated > 0
-                      ? ` and updated ${result.tracksUpdated} track${
-                          result.tracksUpdated === 1 ? "" : "s"
-                        }`
-                      : ""
-                  }`
-                : `Auto-updated ${result.tracksUpdated} track metadata`;
+                ? t("apps.ipod.dialogs.autoUpdatedLibraryAddedSongs", {
+                    newCount: result.newTracksAdded,
+                    newPlural: result.newTracksAdded === 1 ? "" : "s",
+                    updatedText:
+                      result.tracksUpdated > 0
+                        ? t("apps.ipod.dialogs.andUpdated", {
+                            count: result.tracksUpdated,
+                            plural: result.tracksUpdated === 1 ? "" : "s",
+                          })
+                        : "",
+                  })
+                : t("apps.ipod.dialogs.autoUpdatedTrackMetadata", {
+                    count: result.tracksUpdated,
+                  });
 
-            toast.success("Library Auto-Updated", {
+            toast.success(t("apps.ipod.dialogs.libraryAutoUpdated"), {
               description: message,
               duration: 4000,
             });
@@ -107,8 +112,8 @@ export function useLibraryUpdateChecker(isActive: boolean) {
             );
           } catch (error) {
             console.error("Error auto-updating library:", error);
-            toast.error("Auto-Update Failed", {
-              description: "Failed to auto-update library",
+            toast.error(t("apps.ipod.dialogs.autoUpdateFailed"), {
+              description: t("apps.ipod.dialogs.failedToAutoUpdateLibrary"),
               duration: 4000,
             });
           }
@@ -151,33 +156,37 @@ export function useLibraryUpdateChecker(isActive: boolean) {
       if (result.newTracksAdded > 0 || result.tracksUpdated > 0) {
         const message =
           wasEmptyBefore && result.newTracksAdded > 0
-            ? `Added ${result.newTracksAdded} song${
-                result.newTracksAdded === 1 ? "" : "s"
-              } to the top. First song ready to play!`
-            : `Added ${result.newTracksAdded} new song${
-                result.newTracksAdded === 1 ? "" : "s"
-              } to the top${
-                result.tracksUpdated > 0
-                  ? ` and updated ${result.tracksUpdated} track${
-                      result.tracksUpdated === 1 ? "" : "s"
-                    }`
-                  : ""
-              }`;
+            ? t("apps.ipod.dialogs.addedSongsToTop", {
+                count: result.newTracksAdded,
+                plural: result.newTracksAdded === 1 ? "" : "s",
+              })
+            : t("apps.ipod.dialogs.addedNewSongsToTop", {
+                newCount: result.newTracksAdded,
+                newPlural: result.newTracksAdded === 1 ? "" : "s",
+                updatedText:
+                  result.tracksUpdated > 0
+                    ? t("apps.ipod.dialogs.andUpdated", {
+                        count: result.tracksUpdated,
+                        plural: result.tracksUpdated === 1 ? "" : "s",
+                      })
+                    : "",
+                total: result.totalTracks,
+              });
 
-        toast.success("Library Updated", {
+        toast.success(t("apps.ipod.dialogs.libraryUpdated"), {
           description: message,
         });
         return true;
       } else {
-        toast.info("No Updates", {
-          description: "Your library is already up to date",
+        toast.info(t("apps.ipod.dialogs.noUpdates"), {
+          description: t("apps.ipod.dialogs.libraryAlreadyUpToDate"),
         });
         return false;
       }
     } catch (error) {
       console.error("Error during manual library update check:", error);
-      toast.error("Update Check Failed", {
-        description: "Failed to check for library updates",
+      toast.error(t("apps.ipod.dialogs.updateCheckFailed"), {
+        description: t("apps.ipod.dialogs.failedToCheckForLibraryUpdates"),
       });
       return false;
     }
@@ -192,32 +201,38 @@ export function useLibraryUpdateChecker(isActive: boolean) {
       if (result.newTracksAdded > 0 || result.tracksUpdated > 0) {
         const message =
           wasEmptyBefore && result.newTracksAdded > 0
-            ? `Added ${result.newTracksAdded} song${
-                result.newTracksAdded === 1 ? "" : "s"
-              } to the top. First song ready to play!`
-            : `Added ${result.newTracksAdded} new song${
-                result.newTracksAdded === 1 ? "" : "s"
-              } to the top${
-                result.tracksUpdated > 0
-                  ? ` and updated ${result.tracksUpdated} track${
-                      result.tracksUpdated === 1 ? "" : "s"
-                    }`
-                  : ""
-              }. Total: ${result.totalTracks} songs`;
+            ? t("apps.ipod.dialogs.addedSongsToTop", {
+                count: result.newTracksAdded,
+                plural: result.newTracksAdded === 1 ? "" : "s",
+              })
+            : t("apps.ipod.dialogs.addedNewSongsToTop", {
+                newCount: result.newTracksAdded,
+                newPlural: result.newTracksAdded === 1 ? "" : "s",
+                updatedText:
+                  result.tracksUpdated > 0
+                    ? t("apps.ipod.dialogs.andUpdated", {
+                        count: result.tracksUpdated,
+                        plural: result.tracksUpdated === 1 ? "" : "s",
+                      })
+                    : "",
+                total: result.totalTracks,
+              });
 
-        toast.success("Library Synced", {
+        toast.success(t("apps.ipod.dialogs.librarySynced"), {
           description: message,
         });
       } else {
-        toast.info("Library Synced", {
-          description: `Library is up to date with ${result.totalTracks} songs`,
+        toast.info(t("apps.ipod.dialogs.librarySynced"), {
+          description: t("apps.ipod.dialogs.libraryUpToDateWithSongs", {
+            count: result.totalTracks,
+          }),
         });
       }
       return true;
     } catch (error) {
       console.error("Error during library sync:", error);
-      toast.error("Sync Failed", {
-        description: "Failed to sync with server library",
+      toast.error(t("apps.ipod.dialogs.syncFailed"), {
+        description: t("apps.ipod.dialogs.failedToSyncWithServerLibrary"),
       });
       return false;
     }

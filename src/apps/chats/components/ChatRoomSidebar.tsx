@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 // Extracted ChatRoomSidebar component
 interface ChatRoomSidebarProps {
@@ -39,6 +40,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
   isOverlay = false,
   username,
 }) => {
+  const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
   const unreadCounts = useChatsStore((state) => state.unreadCounts);
 
@@ -107,8 +109,8 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
               )}
             >
               {hasUnread
-                ? `${unreadCount >= 20 ? "20+" : unreadCount} new`
-                : `${room.userCount} online`}
+                ? `${unreadCount >= 20 ? "20+" : unreadCount} ${t("apps.chats.sidebar.new")}`
+                : `${room.userCount} ${t("apps.chats.sidebar.online")}`}
             </span>
           )}
         </div>
@@ -127,10 +129,10 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                 onDeleteRoom(room);
               }}
               aria-label={
-                room.type === "private" ? "Leave conversation" : "Delete room"
+                room.type === "private" ? t("apps.chats.ariaLabels.leaveConversation") : t("apps.chats.ariaLabels.deleteRoom")
               }
               title={
-                room.type === "private" ? "Leave conversation" : "Delete room"
+                room.type === "private" ? t("apps.chats.ariaLabels.leaveConversation") : t("apps.chats.ariaLabels.deleteRoom")
               }
             >
               <Trash className="w-3 h-3 text-black/30" />
@@ -169,7 +171,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
       >
         <div className="flex justify-between items-center mb-2 flex-shrink-0 px-3">
           <div className="flex items-baseline gap-1.5">
-            <h2 className="text-[14px] pl-1">Chats</h2>
+            <h2 className="text-[14px] pl-1">{t("apps.chats.sidebar.chats")}</h2>
           </div>
           <TooltipProvider>
             <Tooltip>
@@ -184,7 +186,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>New Chat</p>
+                <p>{t("apps.chats.ariaLabels.newChat")}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -217,7 +219,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
               onRoomSelect(null);
             }}
           >
-            @ryo
+            {t("apps.chats.status.ryo")}
           </div>
           {/* Chat Rooms List (Sections) */}
           {Array.isArray(rooms) && (
@@ -253,7 +255,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                             role="button"
                             aria-expanded={isChannelsOpen}
                           >
-                            <span>Channels</span>
+                            <span>{t("apps.chats.sidebar.channels")}</span>
                             {hasPrivate && (
                               <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <ChevronRight
@@ -281,7 +283,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                             role="button"
                             aria-expanded={isPrivateOpen}
                           >
-                            <span>Private</span>
+                            <span>{t("apps.chats.sidebar.private")}</span>
                             <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <ChevronRight
                                 className={cn(

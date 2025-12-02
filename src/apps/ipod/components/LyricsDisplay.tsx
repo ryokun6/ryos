@@ -13,6 +13,7 @@ import {
   loadDefaultJapaneseParser,
   loadDefaultSimplifiedChineseParser,
 } from "budoux";
+import { useTranslation } from "react-i18next";
 
 interface LyricsDisplayProps {
   lines: LyricLine[];
@@ -66,15 +67,18 @@ const LoadingState = ({
   bottomPaddingClass?: string;
   textSizeClass?: string;
   fontClassName?: string;
-}) => (
-  <div
-    className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
-  >
-    <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
-      Loading lyrics…
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div
+      className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
+    >
+      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
+        {t("apps.ipod.status.loadingLyrics")}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TranslatingState = ({
   bottomPaddingClass = "pb-5",
@@ -84,15 +88,18 @@ const TranslatingState = ({
   bottomPaddingClass?: string;
   textSizeClass?: string;
   fontClassName?: string;
-}) => (
-  <div
-    className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
-  >
-    <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
-      Translating lyrics…
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div
+      className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
+    >
+      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
+        {t("apps.ipod.status.translatingLyrics")}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ErrorState = ({
   bottomPaddingClass = "pb-5",

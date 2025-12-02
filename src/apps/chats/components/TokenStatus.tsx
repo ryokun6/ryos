@@ -4,8 +4,11 @@ import { CheckCircle, RefreshCw, Clock, AlertCircle } from "lucide-react";
 import { useTokenAge } from "../hooks/useTokenRefresh";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { useTranslation } from "react-i18next";
+import { i18n } from "@/lib/i18n";
 
 export function TokenStatus() {
+  const { t } = useTranslation();
   const { ageInDays } = useTokenAge();
   const debugMode = useAppStore((state) => state.debugMode);
   const refreshAuthToken = useChatsStore((state) => state.refreshAuthToken);
@@ -90,24 +93,24 @@ export function TokenStatus() {
           onClick={handleManualRefresh}
           disabled={isRefreshing}
           className="flex items-center gap-1 px-2 py-1 h-7"
-          title="Click to manually refresh token"
+          title={t("apps.chats.tokenStatus.clickToRefresh")}
         >
           {isRefreshing ? (
             <>
               <RefreshCw className="h-3 w-3 animate-spin" />
-              <span className="font-geneva-12 text-[11px]">Refreshing...</span>
+              <span className="font-geneva-12 text-[11px]">{t("apps.chats.tokenStatus.refreshing")}</span>
             </>
           ) : (
             <>
               {tokenAgeDisplay === 0 ? (
                 <span className="font-geneva-12 text-[11px] text-green-500">
-                  Refresh
+                  {t("apps.chats.tokenStatus.refresh")}
                 </span>
               ) : (
                 <>
                   <Clock className={`h-3 w-3 ${statusColor}`} />
                   <span className={`font-geneva-12 text-[11px] ${statusColor}`}>
-                    {`${tokenAgeDisplay}d old`}
+                    {t("apps.chats.tokenStatus.daysOld", { days: tokenAgeDisplay })}
                   </span>
                 </>
               )}
@@ -117,7 +120,7 @@ export function TokenStatus() {
 
         {recentlyRefreshed && (
           <span className="font-geneva-12 text-[11px] text-green-500 animate-fade-in">
-            ✓ Refreshed
+            ✓ {t("apps.chats.tokenStatus.refreshed")}
           </span>
         )}
 
@@ -133,7 +136,7 @@ export function TokenStatus() {
             className="font-geneva-12 text-[11px] text-gray-400"
             title={lastRefreshTime.toLocaleString()}
           >
-            Last: {getRelativeTime(lastRefreshTime)}
+            {t("apps.chats.tokenStatus.last")}: {getRelativeTime(lastRefreshTime)}
           </span>
         )}
       </div>
@@ -148,23 +151,24 @@ export function TokenStatus() {
   return (
     <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100/80 text-green-700 rounded-md animate-fade-in">
       <CheckCircle className="h-3 w-3" />
-      <span className="font-geneva-12 text-[11px]">Token refreshed</span>
+      <span className="font-geneva-12 text-[11px]">{t("apps.chats.tokenStatus.tokenRefreshed")}</span>
     </div>
   );
 }
 
 // Helper function to get relative time
 function getRelativeTime(date: Date): string {
+  const { t } = require("react-i18next").useTranslation();
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
 
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffMins < 1) return t("apps.chats.tokenStatus.justNow");
+  if (diffMins < 60) return t("apps.chats.tokenStatus.minutesAgo", { minutes: diffMins });
 
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffHours < 24) return t("apps.chats.tokenStatus.hoursAgo", { hours: diffHours });
 
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
+  return t("apps.chats.tokenStatus.daysAgo", { days: diffDays });
 }

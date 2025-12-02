@@ -699,7 +699,7 @@ function FullScreenPortal({
                 registerActivity();
                 onCycleAlignment();
               }}
-              aria-label="Cycle lyric layout"
+              aria-label={t("apps.ipod.ariaLabels.cycleLyricLayout")}
               className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
               title={currentAlignment}
             >
@@ -776,7 +776,7 @@ function FullScreenPortal({
                 setIsLangMenuOpen((v) => !v);
                 registerActivity();
               }}
-              aria-label="Translate lyrics"
+              aria-label={t("apps.ipod.ariaLabels.translateLyrics")}
               className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
             >
               {translationBadge ? (
@@ -1988,7 +1988,7 @@ export function IpodAppComponent({
           setMenuHistory([
             mainMenu,
             {
-              title: "Music",
+              title: t("apps.ipod.menuItems.music"),
               items: musicSubmenu,
               selectedIndex: 0,
             },
@@ -2651,7 +2651,7 @@ export function IpodAppComponent({
                                 const sign =
                                   newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
                                 showStatus(
-                                  `Offset ${sign}${(newOffset / 1000).toFixed(
+                                  `${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(
                                     2
                                   )}s`
                                 );
@@ -2695,7 +2695,7 @@ export function IpodAppComponent({
                                   "font-lyrics-rounded"
                                 )}
                               >
-                                Translating lyrics…
+                                {t("apps.ipod.status.translatingLyrics")}
                               </div>
                             </div>
                           )}
