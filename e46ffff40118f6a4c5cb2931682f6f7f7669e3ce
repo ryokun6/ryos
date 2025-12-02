@@ -33,13 +33,13 @@ src/lib/locales/zh-TW/translation.json: +93[0],+921[4],+924[4],+980[3],+984[3],+
 
 Conversations:
 
-[0]: 9f51e976-56e4-4c04-8b79-8a7b01e9a75c; Show localized app name in help dialog; composer-1;
-[1]: 6aa8562e-6556-4078-83e6-108904f08364; Use localized names consistently; composer-1;
-[2]: 31cfb261-366b-4a2f-8c72-e21c3c50a2c0; Localize internet explorer; composer-1;
-[3]: f6f580aa-7ad0-46b0-ae7a-99105b7dc4f8; Localize paint application; composer-1;
-[4]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; Auto detect and set user locale; composer-1;
-[5]: 754a2901-f892-47df-9cb5-40e84d837dba; Localize share page dialogs; composer-1;
-[6]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; Check remaining localization tasks; composer-1;
-[7]: 74d0b3a8-5712-45ed-85ea-082c7f3be13d; Localize virtual PC setup; composer-1;
-[8]: b8af09a7-aa4b-4909-8f26-b78062ae971d; Localize synth application; composer-1;
-[9]: 40dbae0b-7a32-49fa-b6bc-e7b8cb24ecbe; Localize text editing feature; composer-1;
+[0]: 9f51e976-56e4-4c04-8b79-8a7b01e9a75c; 9f51e976; unknown;
+[1]: 6aa8562e-6556-4078-83e6-108904f08364; 6aa8562e; unknown;
+[2]: 31cfb261-366b-4a2f-8c72-e21c3c50a2c0; 31cfb261; unknown;
+[3]: f6f580aa-7ad0-46b0-ae7a-99105b7dc4f8; f6f580aa; unknown;
+[4]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; 4afd4575; unknown;
+[5]: 754a2901-f892-47df-9cb5-40e84d837dba; 754a2901; unknown;
+[6]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; 17426fa4; unknown;
+[7]: 74d0b3a8-5712-45ed-85ea-082c7f3be13d; 74d0b3a8; unknown;
+[8]: b8af09a7-aa4b-4909-8f26-b78062ae971d; b8af09a7; unknown;
+[9]: 40dbae0b-7a32-49fa-b6bc-e7b8cb24ecbe; 40dbae0b; unknown;
