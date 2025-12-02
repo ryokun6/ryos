@@ -1067,6 +1067,33 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   }
 
   // Default Mac-style top menubar
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftMask, setShowLeftMask] = useState(false);
+  const [showRightMask, setShowRightMask] = useState(false);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const updateMasks = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      // Show left mask if scrolled to the right (not at the start)
+      setShowLeftMask(scrollLeft > 0);
+      // Show right mask if there's more content to scroll (not at the end)
+      setShowRightMask(scrollLeft < scrollWidth - clientWidth - 1);
+    };
+
+    updateMasks();
+    container.addEventListener("scroll", updateMasks);
+    const resizeObserver = new ResizeObserver(updateMasks);
+    resizeObserver.observe(container);
+
+    return () => {
+      container.removeEventListener("scroll", updateMasks);
+      resizeObserver.disconnect();
+    };
+  }, [hasActiveApp, children]);
+
   return (
     <div
       className="fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar px-2 h-os-menubar items-center font-os-ui"
@@ -1089,9 +1116,10 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       }}
     >
       <AppleMenu apps={apps} />
-      {/* Scrollable menu items container with fade mask */}
+      {/* Scrollable menu items container with fade masks */}
       <div className="flex-1 relative min-w-0 overflow-hidden">
         <div
+          ref={scrollContainerRef}
           className="overflow-x-auto scrollbar-hide flex items-center gap-0"
           style={{
             scrollbarWidth: "none",
@@ -1106,15 +1134,32 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           `}</style>
           {hasActiveApp ? children : <DefaultMenuItems />}
         </div>
-        {/* Fade mask on the right side */}
-        <div
-          className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none z-10"
-          style={{
-            background: currentTheme === "macosx"
-              ? "linear-gradient(to right, transparent, rgba(248, 248, 248, 0.85))"
-              : `linear-gradient(to right, transparent, var(--os-color-menubar-bg))`,
-          }}
-        />
+        {/* Left fade mask - shows when scrolled to the right */}
+        {showLeftMask && (
+          <div
+            className="absolute left-0 top-0 bottom-0 w-8 pointer-events-none z-10"
+            style={{
+              maskImage: "linear-gradient(to right, black, transparent)",
+              WebkitMaskImage: "linear-gradient(to right, black, transparent)",
+              backgroundColor: currentTheme === "macosx"
+                ? "rgba(248, 248, 248, 0.85)"
+                : "var(--os-color-menubar-bg)",
+            }}
+          />
+        )}
+        {/* Right fade mask - shows when there's more content to scroll */}
+        {showRightMask && (
+          <div
+            className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none z-10"
+            style={{
+              maskImage: "linear-gradient(to left, black, transparent)",
+              WebkitMaskImage: "linear-gradient(to left, black, transparent)",
+              backgroundColor: currentTheme === "macosx"
+                ? "rgba(248, 248, 248, 0.85)"
+                : "var(--os-color-menubar-bg)",
+            }}
+          />
+        )}
       </div>
       <div className="ml-auto flex items-center flex-shrink-0">
         <OfflineIndicator />
