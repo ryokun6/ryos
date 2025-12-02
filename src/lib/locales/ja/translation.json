@@ -1151,7 +1151,7 @@
       "loadingEmulator": "エミュレーターを読み込み中",
       "loadingGame": "{{gameName}}を読み込み中...",
       "menu": {
-        "aboutVirtualPc": "バーチャルPC について",
+        "aboutVirtualPc": "バーチャルPCについて",
         "aspectRatio": "アスペクト比",
         "controls": "コントロール",
         "fullScreen": "フルスクリーン",
@@ -1161,7 +1161,7 @@
         "reset": "リセット",
         "saveState": "状態を保存",
         "toggleMouseCapture": "マウスキャプチャを切り替える",
-        "virtualPcHelp": "バーチャルPC ヘルプ"
+        "virtualPcHelp": "バーチャルPCのヘルプ"
       },
       "name": "バーチャルPC",
       "programsAvailable": "{{count}}個のプログラムが利用可能です",
@@ -1278,7 +1278,7 @@
         "newSoundboard": "新規サウンドボード",
         "renameSoundboard": "サウンドボードの名前を変更",
         "resetSoundboards": "サウンドボードをリセット",
-        "soundboardHelp": "サウンドボード ヘルプ",
+        "soundboardHelp": "サウンドボードのヘルプ",
         "waveforms": "波形"
       },
       "name": "サウンドボード",
@@ -1537,7 +1537,7 @@
         "saveEllipsis": "保存...",
         "taskList": "タスクリスト",
         "text": "テキスト",
-        "texteditHelp": "テキストエディット ヘルプ",
+        "texteditHelp": "テキストエディットのヘルプ",
         "underline": "下線"
       },
       "name": "テキストエディット",
