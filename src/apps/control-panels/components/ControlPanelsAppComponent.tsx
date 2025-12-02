@@ -1521,9 +1521,9 @@ export function ControlPanelsAppComponent({
                   role="tablist"
                   className="h-7! flex justify-start! p-0 -mt-1 -mb-[2px] bg-transparent shadow-none /* Windows XP/98 tab strip */"
                 >
-                  <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                  <TabsTrigger value="sound">Sound</TabsTrigger>
-                  <TabsTrigger value="system">System</TabsTrigger>
+                  <TabsTrigger value="appearance">{t("apps.control-panels.appearance")}</TabsTrigger>
+                  <TabsTrigger value="sound">{t("apps.control-panels.sound")}</TabsTrigger>
+                  <TabsTrigger value="system">{t("apps.control-panels.system")}</TabsTrigger>
                 </menu>
               </TabsList>
             ) : (
@@ -1532,19 +1532,19 @@ export function ControlPanelsAppComponent({
                   value="appearance"
                   className={tabStyles.tabTriggerClasses}
                 >
-                  Appearance
+                  {t("apps.control-panels.appearance")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="sound"
                   className={tabStyles.tabTriggerClasses}
                 >
-                  Sound
+                  {t("apps.control-panels.sound")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="system"
                   className={tabStyles.tabTriggerClasses}
                 >
-                  System
+                  {t("apps.control-panels.system")}
                 </TabsTrigger>
               </TabsList>
             )}
@@ -1557,18 +1557,18 @@ export function ControlPanelsAppComponent({
                 {/* Theme Selector */}
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
-                    <Label>Theme</Label>
+                    <Label>{t("apps.control-panels.theme")}</Label>
                     <Label className="text-[11px] text-gray-600 font-geneva-12">
-                      Changes the appearance of windows, menus, and controls
+                      {t("apps.control-panels.themeDescription")}
                     </Label>
                   </div>
                   <Select
                     value={currentTheme}
                     onValueChange={(value) => setTheme(value as OsThemeId)}
                   >
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Select">
-                        {themes[currentTheme]?.name || "Select"}
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder={t("apps.control-panels.select")}>
+                        {themes[currentTheme]?.name || t("apps.control-panels.select")}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -1593,7 +1593,7 @@ export function ControlPanelsAppComponent({
                     value={currentLanguage}
                     onValueChange={(value) => setLanguage(value as LanguageCode)}
                   >
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-[120px]">
                       <SelectValue>
                         {t(`settings.language.${currentLanguage === "zh-TW" ? "chineseTraditional" : currentLanguage === "ja" ? "japanese" : currentLanguage === "ko" ? "korean" : currentLanguage === "fr" ? "french" : currentLanguage === "de" ? "german" : "english"}`)}
                       </SelectValue>
@@ -1623,7 +1623,7 @@ export function ControlPanelsAppComponent({
                 {/* UI Sounds toggle + volume */}
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
-                    <Label>UI Sounds</Label>
+                    <Label>{t("apps.control-panels.uiSounds")}</Label>
                     <Switch
                       checked={uiSoundsEnabled}
                       onCheckedChange={handleUISoundsChange}
@@ -1634,7 +1634,7 @@ export function ControlPanelsAppComponent({
 
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
-                    <Label>Speech</Label>
+                    <Label>{t("apps.control-panels.speech")}</Label>
                     <Switch
                       checked={speechEnabled}
                       onCheckedChange={handleSpeechChange}
@@ -1645,7 +1645,7 @@ export function ControlPanelsAppComponent({
 
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
-                    <Label>Terminal & IE Ambient Synth</Label>
+                    <Label>{t("apps.control-panels.terminalIeAmbientSynth")}</Label>
                   </div>
                   <Switch
                     checked={terminalSoundsEnabled}
@@ -1657,13 +1657,13 @@ export function ControlPanelsAppComponent({
                 {/* Chat Synth preset */}
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
-                    <Label>Chat Synth</Label>
+                    <Label>{t("apps.control-panels.chatSynth")}</Label>
                     <Select
                       value={synthPreset}
                       onValueChange={handleSynthPresetChange}
                     >
                       <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Select a preset" />
+                        <SelectValue placeholder={t("apps.control-panels.selectAPreset")} />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.entries(SYNTH_PRESETS).map(([key, preset]) => (
@@ -1721,7 +1721,7 @@ export function ControlPanelsAppComponent({
                             @{username}
                           </span>
                           <span className="text-[11px] text-gray-600 font-geneva-12">
-                            Logged in to ryOS
+                            {t("apps.control-panels.loggedInToRyOS")}
                           </span>
                         </div>
                         <div className="flex gap-2">
@@ -1731,7 +1731,7 @@ export function ControlPanelsAppComponent({
                               onClick={promptVerifyToken}
                               className="h-7"
                             >
-                              Log In
+                              {t("apps.control-panels.logIn")}
                             </Button>
                           )}
                           {hasPassword === false ? (
@@ -1744,7 +1744,7 @@ export function ControlPanelsAppComponent({
                               }}
                               className="h-7"
                             >
-                              Set Password
+                              {t("apps.control-panels.setPassword")}
                             </Button>
                           ) : (
                             <Button
@@ -1752,7 +1752,7 @@ export function ControlPanelsAppComponent({
                               onClick={logout}
                               className="h-7"
                             >
-                              Log Out
+                              {t("apps.control-panels.logOut")}
                             </Button>
                           )}
                         </div>
@@ -1766,8 +1766,8 @@ export function ControlPanelsAppComponent({
                             className="w-full"
                           >
                             {isLoggingOutAllDevices
-                              ? "Logging out..."
-                              : "Log Out of All Devices"}
+                              ? t("apps.control-panels.loggingOut")
+                              : t("apps.control-panels.logOutOfAllDevices")}
                           </Button>
                         </div>
                       )}
@@ -1777,10 +1777,10 @@ export function ControlPanelsAppComponent({
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col">
                           <span className="text-[13px] font-geneva-12 font-medium">
-                            ryOS Account
+                            {t("apps.control-panels.ryOSAccount")}
                           </span>
                           <span className="text-[11px] text-gray-600 font-geneva-12">
-                            Login to send messages and more
+                            {t("apps.control-panels.loginToSendMessages")}
                           </span>
                         </div>
                         <Button
@@ -1788,7 +1788,7 @@ export function ControlPanelsAppComponent({
                           onClick={promptSetUsername}
                           className="h-7"
                         >
-                          Login
+                          {t("apps.control-panels.login")}
                         </Button>
                       </div>
                     </div>
@@ -1808,7 +1808,7 @@ export function ControlPanelsAppComponent({
                     }}
                     className="w-full"
                   >
-                    Check for Updates
+                    {t("apps.control-panels.checkForUpdates")}
                   </Button>
                   <VersionDisplay />
                 </div>
@@ -1820,14 +1820,14 @@ export function ControlPanelsAppComponent({
                       onClick={handleBackup}
                       className="flex-1"
                     >
-                      Backup
+                      {t("apps.control-panels.backup")}
                     </Button>
                     <Button
                       variant="retro"
                       onClick={() => fileInputRef.current?.click()}
                       className="flex-1"
                     >
-                      Restore
+                      {t("apps.control-panels.restore")}
                     </Button>
                     <input
                       type="file"
@@ -1838,7 +1838,7 @@ export function ControlPanelsAppComponent({
                     />
                   </div>
                   <p className="text-[11px] text-gray-600 font-geneva-12">
-                    Backup or restore all app settings and files.
+                    {t("apps.control-panels.backupRestoreDescription")}
                   </p>
                 </div>
 
@@ -1848,10 +1848,10 @@ export function ControlPanelsAppComponent({
                     onClick={handleResetAll}
                     className="w-full"
                   >
-                    Reset All Settings
+                    {t("apps.control-panels.resetAllSettings")}
                   </Button>
                   <p className="text-[11px] text-gray-600 font-geneva-12">
-                    This will clear all saved settings and restore defaults.
+                    {t("apps.control-panels.resetAllSettingsDescription")}
                   </p>
                 </div>
 
@@ -1863,11 +1863,10 @@ export function ControlPanelsAppComponent({
                     }}
                     className="w-full"
                   >
-                    Format File System
+                    {t("apps.control-panels.formatFileSystem")}
                   </Button>
                   <p className="text-[11px] text-gray-600 font-geneva-12">
-                    This will clear all files (except sample docs), images, and
-                    custom wallpapers. ryOS will restart after format.
+                    {t("apps.control-panels.formatFileSystemDescription")}
                   </p>
                 </div>
 
@@ -1878,9 +1877,9 @@ export function ControlPanelsAppComponent({
 
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
-                    <Label>Debug Mode</Label>
+                    <Label>{t("apps.control-panels.debugMode")}</Label>
                     <Label className="text-[11px] text-gray-600 font-geneva-12">
-                      Enable debugging settings
+                      {t("apps.control-panels.debugModeDescription")}
                     </Label>
                   </div>
                   <Switch
@@ -1893,9 +1892,9 @@ export function ControlPanelsAppComponent({
                 {debugMode && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
-                      <Label>Shader Effect</Label>
+                      <Label>{t("apps.control-panels.shaderEffect")}</Label>
                       <Label className="text-[11px] text-gray-600 font-geneva-12">
-                        Performance intensive background effect
+                        {t("apps.control-panels.shaderEffectDescription")}
                       </Label>
                     </div>
                     <Switch
@@ -1909,9 +1908,9 @@ export function ControlPanelsAppComponent({
                 {debugMode && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
-                      <Label>AI Model</Label>
+                      <Label>{t("apps.control-panels.aiModel")}</Label>
                       <Label className="text-[11px] text-gray-600 font-geneva-12">
-                        Used in Chats, IE, and more
+                        {t("apps.control-panels.aiModelDescription")}
                       </Label>
                     </div>
                     <Select
@@ -1923,12 +1922,12 @@ export function ControlPanelsAppComponent({
                       }
                     >
                       <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Select">
-                          {aiModel || "Select"}
+                        <SelectValue placeholder={t("apps.control-panels.select")}>
+                          {aiModel || t("apps.control-panels.select")}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__null__">Default</SelectItem>
+                        <SelectItem value="__null__">{t("apps.control-panels.default")}</SelectItem>
                         {AI_MODELS.map((model) => (
                           <SelectItem key={model.id} value={model.id as string}>
                             {model.name}
@@ -1942,9 +1941,9 @@ export function ControlPanelsAppComponent({
                 {debugMode && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
-                      <Label>TTS Model</Label>
+                      <Label>{t("apps.control-panels.ttsModel")}</Label>
                       <Label className="text-[11px] text-gray-600 font-geneva-12">
-                        Text-to-speech provider
+                        {t("apps.control-panels.ttsModelDescription")}
                       </Label>
                     </div>
                     <Select
@@ -1958,14 +1957,14 @@ export function ControlPanelsAppComponent({
                       }
                     >
                       <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Select">
-                          {ttsModel || "Select"}
+                        <SelectValue placeholder={t("apps.control-panels.select")}>
+                          {ttsModel || t("apps.control-panels.select")}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__null__">Default</SelectItem>
-                        <SelectItem value="openai">OpenAI</SelectItem>
-                        <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+                        <SelectItem value="__null__">{t("apps.control-panels.default")}</SelectItem>
+                        <SelectItem value="openai">{t("apps.control-panels.openai")}</SelectItem>
+                        <SelectItem value="elevenlabs">{t("apps.control-panels.elevenlabs")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1974,11 +1973,11 @@ export function ControlPanelsAppComponent({
                 {debugMode && ttsModel && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
-                      <Label>TTS Voice</Label>
+                      <Label>{t("apps.control-panels.ttsVoice")}</Label>
                       <Label className="text-[11px] text-gray-600 font-geneva-12">
                         {ttsModel === "elevenlabs"
-                          ? "ElevenLabs Voice ID"
-                          : "OpenAI Voice"}
+                          ? t("apps.control-panels.elevenlabsVoiceId")
+                          : t("apps.control-panels.openaiVoice")}
                       </Label>
                     </div>
                     {ttsModel === "elevenlabs" ? (
@@ -1989,18 +1988,18 @@ export function ControlPanelsAppComponent({
                         }
                       >
                         <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder="Select">
+                          <SelectValue placeholder={t("apps.control-panels.select")}>
                             {ttsVoice === "YC3iw27qriLq7UUaqAyi"
                               ? "Ryo v3"
                               : ttsVoice === "kAyjEabBEu68HYYYRAHR"
                               ? "Ryo v2"
                               : ttsVoice === "G0mlS0y8ByHjGAOxBgvV"
                               ? "Ryo"
-                              : "Select"}
+                              : t("apps.control-panels.select")}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__null__">Select</SelectItem>
+                          <SelectItem value="__null__">{t("apps.control-panels.select")}</SelectItem>
                           <SelectItem value="YC3iw27qriLq7UUaqAyi">
                             Ryo v3
                           </SelectItem>
@@ -2020,12 +2019,12 @@ export function ControlPanelsAppComponent({
                         }
                       >
                         <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder="Select">
-                            {ttsVoice || "Select"}
+                          <SelectValue placeholder={t("apps.control-panels.select")}>
+                            {ttsVoice || t("apps.control-panels.select")}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__null__">Select</SelectItem>
+                          <SelectItem value="__null__">{t("apps.control-panels.select")}</SelectItem>
                           <SelectItem value="alloy">Alloy</SelectItem>
                           <SelectItem value="echo">Echo</SelectItem>
                           <SelectItem value="fable">Fable</SelectItem>
@@ -2041,9 +2040,9 @@ export function ControlPanelsAppComponent({
                 {debugMode && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
-                      <Label>Boot Screen</Label>
+                      <Label>{t("apps.control-panels.bootScreen")}</Label>
                       <Label className="text-[11px] text-gray-600 font-geneva-12">
-                        Test the boot screen animation
+                        {t("apps.control-panels.bootScreenDescription")}
                       </Label>
                     </div>
                     <Button
@@ -2054,7 +2053,7 @@ export function ControlPanelsAppComponent({
                       }}
                       className="w-fit"
                     >
-                      Show
+                      {t("apps.control-panels.show")}
                     </Button>
                   </div>
                 )}

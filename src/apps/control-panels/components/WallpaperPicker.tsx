@@ -16,6 +16,7 @@ import {
   loadWallpaperManifest,
   WallpaperManifest as WallpaperManifestType,
 } from "@/utils/wallpapers";
+import { useTranslation } from "react-i18next";
 
 // Remove unused constants
 interface WallpaperItemProps {
@@ -145,6 +146,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
 
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const { displayMode, setDisplayMode } = useAppStore();
+  const { t } = useTranslation();
   const [customWallpaperRefs, setCustomWallpaperRefs] = useState<string[]>([]);
   const [customWallpaperPreviews, setCustomWallpaperPreviews] = useState<
     Record<string, string>
@@ -315,12 +317,12 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             }
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select a category" />
+              <SelectValue placeholder={t("apps.control-panels.selectACategory")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="videos">Videos</SelectItem>
-              <SelectItem value="tiles">Patterns</SelectItem>
-              <SelectItem value="custom">Custom</SelectItem>
+              <SelectItem value="videos">{t("common.menu.videos")}</SelectItem>
+              <SelectItem value="tiles">{t("apps.control-panels.patterns")}</SelectItem>
+              <SelectItem value="custom">{t("apps.control-panels.custom")}</SelectItem>
               <SelectSeparator
                 className="-mx-1 my-1 h-px"
                 style={{
@@ -343,16 +345,16 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
           onValueChange={(value) => setDisplayMode(value as DisplayMode)}
         >
           <SelectTrigger className="w-[120px]">
-            <SelectValue placeholder="Display Mode" />
+            <SelectValue placeholder={t("apps.control-panels.displayMode")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="color">Color</SelectItem>
-            <SelectItem value="monotone">Mono</SelectItem>
-            <SelectItem value="crt">CRT</SelectItem>
-            <SelectItem value="sepia">Sepia</SelectItem>
-            <SelectItem value="high-contrast">High Contrast</SelectItem>
-            <SelectItem value="dream">Dream</SelectItem>
-            <SelectItem value="invert">Invert</SelectItem>
+            <SelectItem value="color">{t("apps.control-panels.color")}</SelectItem>
+            <SelectItem value="monotone">{t("apps.control-panels.mono")}</SelectItem>
+            <SelectItem value="crt">{t("apps.control-panels.crt")}</SelectItem>
+            <SelectItem value="sepia">{t("apps.control-panels.sepia")}</SelectItem>
+            <SelectItem value="high-contrast">{t("apps.control-panels.highContrast")}</SelectItem>
+            <SelectItem value="dream">{t("apps.control-panels.dream")}</SelectItem>
+            <SelectItem value="invert">{t("apps.control-panels.invert")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

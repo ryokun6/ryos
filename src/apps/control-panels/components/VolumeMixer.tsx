@@ -18,6 +18,7 @@ import {
   Speech as SpeechIcon,
 } from "lucide-react";
 import { useSound, Sounds } from "@/hooks/useSound";
+import { useTranslation } from "react-i18next";
 
 interface VolumeMixerProps {
   masterVolume: number;
@@ -67,6 +68,7 @@ export function VolumeMixer({
   isIOS,
 }: VolumeMixerProps) {
   const { play: playVolumeChangeSound } = useSound(Sounds.VOLUME_CHANGE);
+  const { t } = useTranslation();
   return (
     <TooltipProvider>
       <div className="flex justify-around items-end py-2">
@@ -99,10 +101,10 @@ export function VolumeMixer({
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>Master Volume</p>
+              <p>{t("apps.control-panels.masterVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">Master</p>
+          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.master")}</p>
         </div>
 
         {/* UI Volume */}
@@ -134,10 +136,10 @@ export function VolumeMixer({
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>UI Volume</p>
+              <p>{t("apps.control-panels.uiVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">UI</p>
+          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.ui")}</p>
         </div>
 
         {/* Speech Volume */}
@@ -169,10 +171,10 @@ export function VolumeMixer({
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>Speech Volume</p>
+              <p>{t("apps.control-panels.speechVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">Speech</p>
+          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.speech")}</p>
         </div>
 
         {/* Chat Synth Volume */}
@@ -206,10 +208,10 @@ export function VolumeMixer({
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>Chat Synth Volume</p>
+              <p>{t("apps.control-panels.chatSynthVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">Synth</p>
+          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.synth")}</p>
         </div>
 
         {/* iPod Volume */}
@@ -253,10 +255,10 @@ export function VolumeMixer({
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>iPod Volume</p>
+              <p>{t("apps.control-panels.ipodVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">iPod</p>
+          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.ipod")}</p>
         </div>
       </div>
       {isIOS && (
