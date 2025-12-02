@@ -648,6 +648,12 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   };
 
 
+  // Scroll container ref for Mac-style menubar (must be before early returns)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftMask, setShowLeftMask] = useState(false);
+  const [showRightMask, setShowRightMask] = useState(false);
+  const isScrollingRef = useRef(false);
+
   // Taskbar overflow handling (used for XP taskbar rendering)
   const runningAreaRef = useRef<HTMLDivElement>(null);
   const [visibleTaskbarIds, setVisibleTaskbarIds] = useState<string[]>([]);
@@ -704,6 +710,91 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       window.removeEventListener("resize", compute);
     };
   }, [isXpTheme, inWindowFrame, allTaskbarIds]);
+
+  // Scroll detection for Mac-style menubar (must be before early returns)
+  useEffect(() => {
+    // Only set up for Mac-style menubar (not XP/98 taskbar)
+    if (isXpTheme && !inWindowFrame) return;
+    
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const updateMasks = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      setShowLeftMask(scrollLeft > 1);
+      setShowRightMask(scrollLeft < scrollWidth - clientWidth - 1);
+    };
+
+    const handleScroll = () => {
+      isScrollingRef.current = true;
+      updateMasks();
+      // Reset scrolling state after scroll ends
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 150);
+    };
+
+    // Prevent clicks during touch scrolling
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isTouchScrolling = false;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isTouchScrolling = false;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const deltaX = Math.abs(e.touches[0].clientX - touchStartX);
+        const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+        if (deltaX > 5 || deltaY > 5) {
+          isTouchScrolling = true;
+          isScrollingRef.current = true;
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (isTouchScrolling) {
+        setTimeout(() => {
+          isScrollingRef.current = false;
+          isTouchScrolling = false;
+        }, 100);
+      }
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      if (isScrollingRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      }
+    };
+
+    updateMasks();
+    container.addEventListener("scroll", handleScroll);
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
+    container.addEventListener("click", handleClick, true);
+    
+    const resizeObserver = new ResizeObserver(updateMasks);
+    resizeObserver.observe(container);
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("click", handleClick, true);
+      resizeObserver.disconnect();
+    };
+  }, [isXpTheme, inWindowFrame, hasActiveApp, children]);
 
   // If inside window frame for XP/98, use plain style
   if (inWindowFrame && isXpTheme) {
@@ -1093,33 +1184,57 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       {/* Scrollable menu items container with CSS scroll-driven fade masks */}
       <div className="flex-1 relative min-w-0 overflow-hidden">
         <div
+          ref={scrollContainerRef}
           className="overflow-x-auto scrollbar-hide flex items-center gap-0 menubar-scroll-container"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
             WebkitOverflowScrolling: "touch",
-            maskImage: "linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%)",
-            WebkitMaskImage: "linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%)",
-            maskPosition: "0 0",
           }}
         >
           <style>{`
             .scrollbar-hide::-webkit-scrollbar {
               display: none;
             }
-            .menubar-scroll-container {
-              animation: menubar-mask-in;
-              animation-timeline: scroll(self inline);
-              animation-range: 0 2rem;
-            }
-            @keyframes menubar-mask-in {
-              0% {
-                mask-position: -2rem 0;
-              }
+            .menubar-scroll-content {
+              touch-action: pan-x;
             }
           `}</style>
-          {hasActiveApp ? children : <DefaultMenuItems />}
+          <div 
+            className="menubar-scroll-content"
+            style={{
+              pointerEvents: isScrollingRef.current ? "none" : "auto",
+            }}
+          >
+            {hasActiveApp ? children : <DefaultMenuItems />}
+          </div>
         </div>
+        {/* Left fade mask - only shows when scrolled to the right */}
+        {showLeftMask && (
+          <div
+            className="absolute left-0 top-0 bottom-0 w-8 pointer-events-none z-10"
+            style={{
+              maskImage: "linear-gradient(to right, black, transparent)",
+              WebkitMaskImage: "linear-gradient(to right, black, transparent)",
+              backgroundColor: currentTheme === "macosx"
+                ? "rgba(248, 248, 248, 0.85)"
+                : "var(--os-color-menubar-bg)",
+            }}
+          />
+        )}
+        {/* Right fade mask - only shows when not at the end */}
+        {showRightMask && (
+          <div
+            className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none z-10"
+            style={{
+              maskImage: "linear-gradient(to left, black, transparent)",
+              WebkitMaskImage: "linear-gradient(to left, black, transparent)",
+              backgroundColor: currentTheme === "macosx"
+                ? "rgba(248, 248, 248, 0.85)"
+                : "var(--os-color-menubar-bg)",
+            }}
+          />
+        )}
       </div>
       <div className="ml-auto flex items-center flex-shrink-0">
         <OfflineIndicator />
