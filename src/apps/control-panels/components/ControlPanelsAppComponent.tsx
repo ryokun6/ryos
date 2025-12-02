@@ -212,7 +212,6 @@ export function ControlPanelsAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps<ControlPanelsInitialData>) {
-  const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("control-panels", helpItems);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
