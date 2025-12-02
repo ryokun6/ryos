@@ -2,7 +2,7 @@ AI Notes:
 
 src/apps/finder/components/FinderAppComponent.tsx: +524[0],+528[0],+609[0],+613[0]
 src/lib/locales/de/translation.json: +910[1],+917[1]
-src/lib/locales/en/translation.json: +55[2],+59[2],+61[3],+66-67[1],+69[3],+70[2],+76[2],+79[2],+142[2],+146[2],+148[4],+161[2],+170[3],+175-176[2],+180[2],+184[2],+188-189[2],+194[2],+197[2],+198[5],+199-200[3],+203[3],+208[2],+214[2]
+src/lib/locales/en/translation.json: +55[2],+59[2],+61[3],+66-67[1],+69[4],+70[2],+76[2],+79[2],+142[2],+146[2],+148[5],+161[2],+170[3],+175-176[2],+180[2],+184[2],+188-189[2],+194[2],+197[2],+198[6],+199-200[3],+203[3],+208[2],+214[2]
 src/lib/locales/fr/translation.json: +910[1],+917[1]
 src/lib/locales/ja/translation.json: +910[1],+917[1]
 src/lib/locales/ko/translation.json: +910[1],+917[1]
@@ -14,5 +14,6 @@ Conversations:
 [1]: 17545cb8-0fb6-421e-b363-f6d42cc18fb8; Localize folder and shortcut names; composer-1;
 [2]: f6f580aa-7ad0-46b0-ae7a-99105b7dc4f8; Localize paint application; composer-1;
 [3]: 6c1ceec8-eaa5-4d8a-bb61-9dfe305c8e97; Localize applet viewer; composer-1;
-[4]: 31cfb261-366b-4a2f-8c72-e21c3c50a2c0; Localize internet explorer; composer-1;
-[5]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
+[4]: 9f51e976-56e4-4c04-8b79-8a7b01e9a75c; Show localized app name in help dialog; composer-1;
+[5]: 31cfb261-366b-4a2f-8c72-e21c3c50a2c0; Localize internet explorer; composer-1;
+[6]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
