@@ -74,12 +74,18 @@ export function HelpDialog({
   appName,
   appId,
 }: HelpDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   // Use localized app name if appId is provided, otherwise fall back to appName
   const displayAppName = appId ? getTranslatedAppName(appId) : appName || "";
+
+  // For Japanese, the word order should be "[App Name] へようこそ" instead of "へようこそ [App Name]"
+  const isJapanese = i18n.language === "ja";
+  const welcomeText = isJapanese
+    ? `${displayAppName} ${t("common.dialog.welcomeTo")}`
+    : `${t("common.dialog.welcomeTo")} ${displayAppName}`;
 
   const dialogContent = (
     <div className={isXpTheme ? "p-2 px-4" : "p-6 pt-4"}>
@@ -97,7 +103,7 @@ export function HelpDialog({
           fontSize: isXpTheme ? "18px" : undefined,
         }}
       >
-        {t("common.dialog.welcomeTo")} {displayAppName}
+        {welcomeText}
       </p>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {helpItems.map((item) => (
