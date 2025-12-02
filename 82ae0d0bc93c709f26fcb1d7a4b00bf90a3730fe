@@ -3,11 +3,13 @@ AI Notes:
 src/apps/chats/components/ChatMessages.tsx: +39[0],+161[0],+163[0],+169[0] -160[0],-162[0],-168[0]
 src/apps/chats/components/TokenStatus.tsx: +8[0],+165-166[0],+169[0],+172[0] -8[0],-161[0],-166-167[0],-170[0],-173[0]
 src/components/shared/PrefetchToast.tsx: +5[0],+29[0],+31-35[0],+37[0],+41-42[0],+59[0],+63[0] -19-23[0],-33[0],-37-38[0],-57[0]
-src/lib/locales/en/translation.json: +90-104[0]
-src/lib/locales/zh-TW/translation.json: +128[1] -128[1]
+src/lib/locales/en/translation.json: +90[1],+91-104[0]
+src/lib/locales/zh-TW/translation.json: +128[2],+1190[3] -128[2]
 src/utils/prefetch.ts: +20[0],+374[0] -373[0]
 
 Conversations:
 
 [0]: 94d8e20b-8bd1-4b08-99c1-f7854aef8c93; Localize PrefetchToast component; composer-1;
-[1]: 8db2f8ff-4a03-440a-83df-90395d691ce1; Localize iPod components and keys; composer-1;
+[1]: f0606fb6-cb99-4fd4-a02b-b55a736b0562; Localize photo booth setup; composer-1;
+[2]: 8db2f8ff-4a03-440a-83df-90395d691ce1; Localize iPod components and keys; composer-1;
+[3]: 17545cb8-0fb6-421e-b363-f6d42cc18fb8; Localize folder and shortcut names; composer-1;
