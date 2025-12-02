@@ -1176,7 +1176,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       <div className="flex-1 relative min-w-0 overflow-hidden">
         <div
           ref={scrollContainerRef}
-          className="overflow-x-auto scrollbar-hide flex items-center gap-0 menubar-scroll-container"
+          className="overflow-x-auto scrollbar-hide flex items-center gap-0 menubar-scroll-container flex-nowrap"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
@@ -1205,7 +1205,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
             }
           `}</style>
           <div 
-            className="menubar-scroll-content"
+            className="menubar-scroll-content flex items-center flex-nowrap"
             style={{
               pointerEvents: isScrolling ? "none" : "auto",
             }}
