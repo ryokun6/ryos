@@ -39,7 +39,7 @@ Conversations:
 [3]: f6f580aa-7ad0-46b0-ae7a-99105b7dc4f8; Localize paint application; composer-1;
 [4]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; Auto detect and set user locale; composer-1;
 [5]: 754a2901-f892-47df-9cb5-40e84d837dba; Localize share page dialogs; composer-1;
-[6]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; Check remaining localization tasks; claude-4.5-opus-high-thinking;
+[6]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; Check remaining localization tasks; composer-1;
 [7]: 74d0b3a8-5712-45ed-85ea-082c7f3be13d; Localize virtual PC setup; composer-1;
 [8]: b8af09a7-aa4b-4909-8f26-b78062ae971d; Localize synth application; composer-1;
 [9]: 40dbae0b-7a32-49fa-b6bc-e7b8cb24ecbe; Localize text editing feature; composer-1;
