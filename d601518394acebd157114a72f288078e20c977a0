@@ -1,0 +1,33 @@
+AI Notes:
+
+src/apps/chats/hooks/useAiChat.ts: +2121-2137[0],+2142[0]
+src/apps/internet-explorer/components/InternetExplorerAppComponent.tsx: +65[1],+69[1],+71-85[1],+87[1],+92[1],+94-108[1],+110[1] -69-83[1],-85[1],-91-105[1],-107[1]
+src/apps/internet-explorer/hooks/useAiGeneration.ts: +12[1],+91-105[1],+107[1],+113-127[1],+129[1] -90-104[1],-106[1],-112-126[1],-128[1]
+src/apps/terminal/commands/about.ts: +5[1] -5[1]
+src/apps/terminal/commands/ai.ts: +6[1],+10[1],+37[1],+43[1] -9[1],-36[1],-42[1]
+src/apps/terminal/commands/cd.ts: +2[1],+6[1],+67[1] -5[1],-66[1]
+src/apps/terminal/commands/clear.ts: +5[1] -5[1]
+src/apps/terminal/commands/cowsay.ts: +22[1] -22[1]
+src/apps/terminal/commands/date.ts: +5[1] -5[1]
+src/apps/terminal/commands/echo.ts: +5[1] -5[1]
+src/apps/terminal/commands/help.ts: +2[1],+6-8[1],+10-11[1],+13-21[1],+24-33[1],+36-38[1],+41-43[1] -5-7[1],-9-17[1],-20-29[1],-32-34[1],-37-38[1]
+src/apps/terminal/commands/ls.ts: +2[1],+6[1],+9[1] -5[1],-8[1]
+src/apps/terminal/commands/mkdir.ts: +5[1] -5[1]
+src/apps/terminal/commands/pwd.ts: +5[1] -5[1]
+src/apps/terminal/commands/rm.ts: +5[1] -5[1]
+src/apps/terminal/commands/touch.ts: +5[1] -5[1]
+src/apps/terminal/commands/vim.ts: +12[1] -12[1]
+src/apps/terminal/commands/whoami.ts: +5[1] -5[1]
+src/apps/terminal/components/TerminalAppComponent.tsx: +44[0],+80[1],+165[1],+199[1],+412[0],+441[1],+444[1],+447[1],+449[1],+451[1],+458[1],+462-463[1],+466[1],+468[1],+473[1],+475[1],+477[1],+479[1],+484[1],+500[1],+502[1],+504[1],+506[1],+508-512[1],+520[0],+666[1],+2113[1],+2320[1],+2749[1],+2942[1] -79[1],-164[1],-198[1],-440[1],-443[1],-446[1],-448[1],-450[1],-457[1],-461-462[1],-465[1],-467[1],-472[1],-474[1],-476[1],-478[1],-483[1],-499[1],-501[1],-503[1],-505[1],-507[1],-661[1],-2108[1],-2315-2316[1],-2745[1],-2938[1]
+src/lib/locales/de/translation.json: +285[2],+368-375[2],+385[2],+1394[0],+1433[0],+1438-1439[0],+1441-1446[0],+1449-1450[0],+1452[0],+1454-1455[0],+1459-1462[0],+1466[0] -376[2]
+src/lib/locales/en/translation.json: +1479-1537[1]
+src/lib/locales/fr/translation.json: +285[2],+368-375[2],+385[2],+1394[0],+1433[0],+1438-1439[0],+1449-1450[0],+1452[0],+1454-1456[0],+1461-1462[0],+1466[0] -376[2]
+src/lib/locales/ja/translation.json: +285[2],+368-375[2],+385[2],+1394[0],+1433[0],+1438-1439[0],+1441-1446[0],+1449[0],+1454-1456[0],+1462[0],+1466[0] -376[2]
+src/lib/locales/ko/translation.json: +285[2],+368-375[2],+385[2],+1394[0],+1438-1439[0],+1454-1456[0],+1459-1461[0],+1466[0] -376[2]
+src/lib/locales/zh-TW/translation.json: +285[2],+299-300[0],+304-307[0],+311[0],+343-344[0],+346-347[0],+349-351[0],+362-363[0],+368-375[2],+385[2],+1394[0],+1433[0],+1438-1439[0],+1441-1444[0],+1449[0],+1454[0],+1461[0],+1466[0] -376[2]
+
+Conversations:
+
+[0]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; Auto detect and set user locale; composer-1;
+[1]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; Check remaining localization tasks; composer-1;
+[2]: 0b334afb-08cf-4901-b674-98452eb67850; Add settings tool for AI system; composer-1;
