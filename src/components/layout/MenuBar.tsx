@@ -647,6 +647,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     return { icon, label, isEmoji };
   };
 
+  // Scroll handling for mobile menu bar (must be before early returns)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftMask, setShowLeftMask] = useState(false);
+  const [showRightMask, setShowRightMask] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<number | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; scrollLeft: number } | null>(null);
+
   // Taskbar overflow handling (used for XP taskbar rendering)
   const runningAreaRef = useRef<HTMLDivElement>(null);
   const [visibleTaskbarIds, setVisibleTaskbarIds] = useState<string[]>([]);
@@ -703,6 +711,95 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       window.removeEventListener("resize", compute);
     };
   }, [isXpTheme, inWindowFrame, allTaskbarIds]);
+
+  // Scroll handling useEffect for mobile menu bar (must be before early returns)
+  useEffect(() => {
+    // Only set up scroll handling for Mac-style menubar (not XP/98 taskbar)
+    if (isXpTheme && !inWindowFrame) return;
+    
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const updateMasks = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      // Show left mask if scrolled to the right (not at the start)
+      setShowLeftMask(scrollLeft > 0);
+      // Show right mask if there's more content to scroll (not at the end)
+      setShowRightMask(scrollLeft < scrollWidth - clientWidth - 1);
+    };
+
+    // Track scrolling state to prevent clicks during scroll
+    const handleScroll = () => {
+      setIsScrolling(true);
+      updateMasks();
+      
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Reset scrolling state after scroll ends
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false);
+      }, 150);
+    };
+
+    // Handle touch events to detect scrolling vs tapping
+    const handleTouchStart = (e: TouchEvent) => {
+      if (!e.touches || e.touches.length === 0) return;
+      const touch = e.touches[0];
+      touchStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        scrollLeft: container.scrollLeft,
+      };
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!touchStartRef.current || !e.touches || e.touches.length === 0) return;
+      
+      const touch = e.touches[0];
+      const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+      const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+      const scrollDelta = Math.abs(container.scrollLeft - touchStartRef.current.scrollLeft);
+      
+      // If moved more than 5px horizontally or scrolled, consider it scrolling
+      if (deltaX > 5 || deltaY > 5 || scrollDelta > 1) {
+        setIsScrolling(true);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      // Reset scrolling state after a short delay
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false);
+        touchStartRef.current = null;
+      }, 100);
+    };
+
+    updateMasks();
+    container.addEventListener("scroll", handleScroll);
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
+    
+    const resizeObserver = new ResizeObserver(updateMasks);
+    resizeObserver.observe(container);
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      resizeObserver.disconnect();
+    };
+  }, [isXpTheme, inWindowFrame, hasActiveApp, children]);
 
   // If inside window frame for XP/98, use plain style
   if (inWindowFrame && isXpTheme) {
@@ -1071,7 +1168,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   const [showLeftMask, setShowLeftMask] = useState(false);
   const [showRightMask, setShowRightMask] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<number | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; scrollLeft: number } | null>(null);
 
   useEffect(() => {
@@ -1104,6 +1201,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 
     // Handle touch events to detect scrolling vs tapping
     const handleTouchStart = (e: TouchEvent) => {
+      if (!e.touches || e.touches.length === 0) return;
       const touch = e.touches[0];
       touchStartRef.current = {
         x: touch.clientX,
@@ -1113,7 +1211,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!touchStartRef.current) return;
+      if (!touchStartRef.current || !e.touches || e.touches.length === 0) return;
       
       const touch = e.touches[0];
       const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
