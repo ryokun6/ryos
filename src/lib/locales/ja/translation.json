@@ -1269,7 +1269,7 @@
       },
       "importedSoundboard": "インポートしたサウンドボード",
       "menu": {
-        "aboutSoundboard": "Soundboardについて",
+        "aboutSoundboard": "サウンドボードについて",
         "deleteSoundboard": "サウンドボードを削除",
         "emojis": "絵文字",
         "exportSoundboards": "サウンドボードを書き出す...",
@@ -1278,7 +1278,7 @@
         "newSoundboard": "新規サウンドボード",
         "renameSoundboard": "サウンドボードの名前を変更",
         "resetSoundboards": "サウンドボードをリセット",
-        "soundboardHelp": "Soundboard ヘルプ",
+        "soundboardHelp": "サウンドボード ヘルプ",
         "waveforms": "波形"
       },
       "name": "サウンドボード",
@@ -1514,7 +1514,7 @@
       },
       "italic": "斜体",
       "menu": {
-        "aboutTextEdit": "TextEditについて",
+        "aboutTextEdit": "テキストエディットについて",
         "alignCenter": "中央揃え",
         "alignLeft": "左揃え",
         "alignRight": "右揃え",
@@ -1537,7 +1537,7 @@
         "saveEllipsis": "保存...",
         "taskList": "タスクリスト",
         "text": "テキスト",
-        "texteditHelp": "TextEdit ヘルプ",
+        "texteditHelp": "テキストエディット ヘルプ",
         "underline": "下線"
       },
       "name": "テキストエディット",

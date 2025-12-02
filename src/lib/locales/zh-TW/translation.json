@@ -1151,7 +1151,7 @@
       "loadingEmulator": "載入模擬器",
       "loadingGame": "載入 {{gameName}}...",
       "menu": {
-        "aboutVirtualPc": "關於 Virtual PC",
+        "aboutVirtualPc": "關於 虛擬 PC",
         "aspectRatio": "長寬比",
         "controls": "控制",
         "fullScreen": "全螢幕",
@@ -1269,7 +1269,7 @@
       },
       "importedSoundboard": "已匯入的音效板",
       "menu": {
-        "aboutSoundboard": "關於 Soundboard",
+        "aboutSoundboard": "關於 音效板",
         "deleteSoundboard": "刪除音效板",
         "emojis": "表情符號",
         "exportSoundboards": "輸出音效板...",
@@ -1278,7 +1278,7 @@
         "newSoundboard": "新增音效板",
         "renameSoundboard": "重新命名音效板",
         "resetSoundboards": "重設音效板",
-        "soundboardHelp": "Soundboard 輔助說明",
+        "soundboardHelp": "音效板 輔助說明",
         "waveforms": "波形"
       },
       "name": "音效板",
@@ -1339,14 +1339,14 @@
         }
       },
       "menu": {
-        "aboutSynth": "關於 Synth",
+        "aboutSynth": "關於 合成器",
         "keyLabels": "琴鍵標籤",
         "newPreset": "新增預設",
         "noLabels": "沒有標籤",
         "noteLabels": "音符標籤",
         "presets": "預設",
-        "resetSynth": "重設 Synth",
-        "synthHelp": "Synth 輔助說明"
+        "resetSynth": "重設 合成器",
+        "synthHelp": "合成器 輔助說明"
       },
       "name": "合成器",
       "noPresetsYet": "尚無預設。請使用「新增」按鈕建立一個。",
@@ -1514,7 +1514,7 @@
       },
       "italic": "斜體",
       "menu": {
-        "aboutTextEdit": "關於 TextEdit",
+        "aboutTextEdit": "關於 文字編輯",
         "alignCenter": "置中對齊",
         "alignLeft": "靠左對齊",
         "alignRight": "靠右對齊",
@@ -1537,7 +1537,7 @@
         "saveEllipsis": "儲存...",
         "taskList": "任務列表",
         "text": "文字",
-        "texteditHelp": "TextEdit 輔助說明",
+        "texteditHelp": "文字編輯 輔助說明",
         "underline": "底線"
       },
       "name": "文字編輯",

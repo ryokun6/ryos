@@ -1151,7 +1151,7 @@
       "loadingEmulator": "에뮬레이터 로드 중",
       "loadingGame": "{{gameName}} 로드 중...",
       "menu": {
-        "aboutVirtualPc": "Virtual PC 정보",
+        "aboutVirtualPc": "가상 PC 정보",
         "aspectRatio": "화면 비율",
         "controls": "제어",
         "fullScreen": "전체 화면",
@@ -1161,7 +1161,7 @@
         "reset": "재설정",
         "saveState": "상태 저장",
         "toggleMouseCapture": "마우스 캡처 전환",
-        "virtualPcHelp": "Virtual PC 도움말"
+        "virtualPcHelp": "가상 PC 도움말"
       },
       "name": "가상 PC",
       "programsAvailable": "{{count}}개의 프로그램 사용 가능",
@@ -1269,7 +1269,7 @@
       },
       "importedSoundboard": "가져온 사운드보드",
       "menu": {
-        "aboutSoundboard": "Soundboard 정보",
+        "aboutSoundboard": "사운드보드 정보",
         "deleteSoundboard": "사운드보드 삭제",
         "emojis": "이모티콘",
         "exportSoundboards": "사운드보드 내보내기...",
@@ -1278,7 +1278,7 @@
         "newSoundboard": "새로운 사운드보드",
         "renameSoundboard": "사운드보드 이름 변경",
         "resetSoundboards": "사운드보드 재설정",
-        "soundboardHelp": "Soundboard 도움말",
+        "soundboardHelp": "사운드보드 도움말",
         "waveforms": "파형"
       },
       "name": "사운드보드",
@@ -1339,14 +1339,14 @@
         }
       },
       "menu": {
-        "aboutSynth": "Synth 정보",
+        "aboutSynth": "신디 정보",
         "keyLabels": "키 레이블",
         "newPreset": "새로운 프리셋",
         "noLabels": "레이블 없음",
         "noteLabels": "노트 레이블",
         "presets": "프리셋",
-        "resetSynth": "Synth 재설정",
-        "synthHelp": "Synth 도움말"
+        "resetSynth": "신디 재설정",
+        "synthHelp": "신디 도움말"
       },
       "name": "신디",
       "noPresetsYet": "아직 프리셋이 없습니다. NEW 버튼으로 새로 만드세요.",
@@ -1514,7 +1514,7 @@
       },
       "italic": "기울임꼴",
       "menu": {
-        "aboutTextEdit": "TextEdit 정보",
+        "aboutTextEdit": "텍스트 편집기 정보",
         "alignCenter": "가운데 정렬",
         "alignLeft": "왼쪽 정렬",
         "alignRight": "오른쪽 정렬",
@@ -1537,7 +1537,7 @@
         "saveEllipsis": "저장...",
         "taskList": "작업 목록",
         "text": "텍스트",
-        "texteditHelp": "TextEdit 도움말",
+        "texteditHelp": "텍스트 편집기 도움말",
         "underline": "밑줄"
       },
       "name": "텍스트 편집기",
