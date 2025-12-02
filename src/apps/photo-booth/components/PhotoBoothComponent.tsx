@@ -1282,7 +1282,7 @@ export function PhotoBoothComponent({
             isOpen={showHelp}
             onOpenChange={setShowHelp}
             helpItems={helpItems}
-            appName={t("apps.photo-booth.name")}
+            appId="photo-booth"
           />
           <AboutDialog
             isOpen={showAbout}

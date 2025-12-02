@@ -1610,7 +1610,7 @@ export function SynthAppComponent({
         isOpen={isHelpOpen}
         onOpenChange={setIsHelpOpen}
         helpItems={helpItems}
-        appName="Synth"
+        appId="synth"
       />
 
       <AboutDialog

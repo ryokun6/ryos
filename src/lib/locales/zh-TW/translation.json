@@ -90,7 +90,7 @@
         "deleteApplet": "刪除 Applet",
         "discover": "探索",
         "removeFromFeatured": "從精選中移除",
-        "searchApplets": "搜尋 Applet",
+        "searchApplets": "搜尋小程式商店",
         "showAll": "顯示全部"
       },
       "menu": {
@@ -517,7 +517,49 @@
       }
     },
     "internet-explorer": {
+      "addFavorite": "加入我的最愛",
+      "aiLanguage": "AI 語言",
+      "alienLanguage": "外星語言",
+      "anErrorOccurred": "發生錯誤",
+      "appName": "網際網路總管",
+      "areYouSureClearFavorites": "您確定要清除所有我的最愛嗎？",
+      "areYouSureClearHistory": "您確定要清除所有歷史記錄嗎？",
+      "areYouSureResetFavorites": "您確定要將我的最愛重設為預設值嗎？",
+      "aurora": "極光",
+      "australia": "澳洲",
+      "autodetected": "自動偵測",
+      "back": "返回",
+      "brazil": "巴西",
+      "canada": "加拿大",
+      "cannotAccessWebsite": "無法存取 {{url}}。該網站可能阻擋了存取，或需要驗證。",
+      "cannotFindServerOrDnsError": "找不到伺服器或 DNS 錯誤",
+      "checkWebAddressAndTryAgain": "請檢查您輸入的網址，然後再試一次。",
+      "china": "中國",
+      "chineseTraditional": "繁體中文",
+      "clearFavorites": "清除我的最愛",
+      "clearHistory": "清除歷史記錄",
+      "closeTimeMachine": "關閉時光機",
       "description": "瀏覽網頁",
+      "digitalBeingLanguage": "數位生命語言",
+      "english": "英文",
+      "enterTitleForFavorite": "輸入此最愛的標題",
+      "enterUrl": "輸入網址",
+      "error": "錯誤",
+      "errorLoadingPreview": "載入預覽時發生錯誤。",
+      "failedToGenerateFuturisticWebsite": "無法產生未來風格網站。可能未選取 AI 模型。",
+      "favorite": "最愛",
+      "fetch": "擷取",
+      "fetchingContentForReconstruction": "正在擷取 {{hostname}} 的內容以進行重建...",
+      "fetchingFromYear": "正在擷取 {{year}} 年的 {{hostname}}...",
+      "folder": "資料夾",
+      "france": "法國",
+      "french": "法文",
+      "from": "從",
+      "galaxy": "銀河",
+      "german": "德文",
+      "germany": "德國",
+      "goBackToPreviousPage": "返回上一頁。",
+      "goToNow": "前往現在",
       "help": {
         "browseWeb": {
           "description": "輸入網址並使用導航按鈕（上一頁、下一頁、重新整理、停止）。",
@@ -544,6 +586,19 @@
           "title": "穿越時空"
         }
       },
+      "history": "歷史記錄",
+      "host": "主機：{{hostname}}",
+      "in": "在",
+      "india": "印度",
+      "invalidShareLink": "無效的分享連結",
+      "japan": "日本",
+      "japanese": "日文",
+      "korean": "韓文",
+      "latin": "拉丁文",
+      "loading": "正在載入 {{hostname}}...",
+      "loadingEllipsis": "正在載入...",
+      "loadingTitle": "Internet Explorer - 正在載入",
+      "loadingTitleWithSite": "{{site}} - 正在載入",
       "menu": {
         "aboutInternetExplorer": "關於 Internet Explorer",
         "addToFavorites": "加入我的最愛...",
@@ -562,6 +617,7 @@
         "editFuture": "編輯未來...",
         "english": "英文",
         "favorites": "我的最愛",
+        "folder": "資料夾",
         "forward": "前進",
         "france": "法國",
         "french": "法文",
@@ -598,7 +654,50 @@
         "welsh": "威爾斯文",
         "year": "年"
       },
-      "name": "Internet Explorer"
+      "name": "Internet Explorer",
+      "nebula": "星雲",
+      "newer": "較新",
+      "newerVersion": "較新版本",
+      "newest": "最新",
+      "now": "現在",
+      "off": "關",
+      "older": "較舊",
+      "olderVersion": "舊版本",
+      "oldest": "最舊",
+      "openingRequestedPage": "正在開啟所請求的頁面",
+      "openingSharedPage": "正在開啟已分享的頁面",
+      "page": "頁面",
+      "pageCouldNotBeLoadedInIframe": "無法在 iframe 中載入此頁面。這可能是因為安全性限制或網路問題。",
+      "pleaseTryTheFollowing": "請嘗試以下操作：",
+      "portugal": "葡萄牙",
+      "portuguese": "葡萄牙文",
+      "reconstructingHistoryForYear": "正在重建 {{hostname}} 在 {{year}} 年的歷史...",
+      "refresh": "重新整理",
+      "reimaginingForYear": "正在重新構想 {{hostname}} 在 {{year}} 年的樣貌...",
+      "requiresInternetConnection": "Internet Explorer 需要網際網路連線才能瀏覽",
+      "resetFavorites": "重設我的最愛",
+      "russia": "俄羅斯",
+      "sanskrit": "梵文",
+      "search": "搜尋",
+      "shareLinkInvalidOrCorrupted": "提供的分享連結無效或已損壞。",
+      "shareThisPage": "分享此頁面",
+      "shareThisPageAndTime": "分享此頁面和時間",
+      "showCachedVersionsTimeMachine": "顯示快取版本 (時光機)",
+      "site": "網站",
+      "southKorea": "南韓",
+      "spain": "西班牙",
+      "spanish": "西班牙文",
+      "timeNodes": "{{count}} 個時間節點",
+      "timeNodes_plural": "{{count}} 個時間節點",
+      "travel": "旅行",
+      "travellingTitle": "Internet Explorer - 旅行中",
+      "travellingTitleWithSite": "{{site}} - 旅行中",
+      "tryRefreshingThePage": "請嘗試重新整理頁面。",
+      "unableToLoadPreview": "無法載入預覽。",
+      "unitedKingdom": "英國",
+      "unitedStates": "美國",
+      "welsh": "威爾斯文",
+      "year": "年"
     },
     "ipod": {
       "ariaLabels": {
@@ -810,6 +909,19 @@
     },
     "paint": {
       "description": "繪製和編輯圖片",
+      "dialogs": {
+        "discardChanges": "放棄變更",
+        "discardChangesDescription": "您有未儲存的變更。確定要建立新檔案嗎？",
+        "enterImageName": "輸入影像名稱",
+        "error": "錯誤",
+        "failedToLoadImageContent": "無法載入影像內容。",
+        "failedToSaveImage": "無法儲存影像",
+        "imageSavedSuccessfully": "影像已成功儲存",
+        "saveImage": "儲存影像"
+      },
+      "filtersMenu": {
+        "openFiltersMenu": "開啟濾鏡選單"
+      },
       "help": {
         "colors": {
           "description": "從工具下方的調色盤選擇顏色以變更繪圖顏色。",
@@ -865,11 +977,27 @@
         "importFromDevice": "從裝置匯入...",
         "newFile": "開新檔案",
         "open": "開啟...",
-        "paintHelp": "繪圖說明",
+        "paintHelp": "小畫家說明",
         "save": "儲存",
         "saveEllipsis": "儲存..."
       },
-      "name": "繪圖"
+      "name": "小畫家",
+      "selectedPattern": "選取的圖樣",
+      "toolbar": {
+        "brush": "筆刷",
+        "eraser": "橡皮擦",
+        "fillColor": "填色",
+        "hand": "手形",
+        "line": "線條",
+        "oval": "橢圓",
+        "pencil": "鉛筆",
+        "rectangle": "矩形",
+        "rectangleSelect": "矩形選取",
+        "select": "選取",
+        "spray": "噴霧",
+        "text": "文字"
+      },
+      "untitled": "未命名"
     },
     "pc": {
       "description": "3D PC 模擬",
@@ -988,9 +1116,6 @@
     },
     "soundboard": {
       "description": "播放音效",
-      "soundboards": "音效板",
-      "newSoundboardDefault": "新增音效板",
-      "importedSoundboard": "已匯入的音效板",
       "help": {
         "customizeSlot": {
           "description": "為每個樣本新增表情符號和標題以便快速識別",
@@ -1017,6 +1142,7 @@
           "title": "波形檢視"
         }
       },
+      "importedSoundboard": "已匯入的音效板",
       "menu": {
         "aboutSoundboard": "關於音效板",
         "deleteSoundboard": "刪除音效板",
@@ -1030,7 +1156,9 @@
         "soundboardHelp": "音效板輔助說明",
         "waveforms": "波形"
       },
-      "name": "音效板"
+      "name": "音效板",
+      "newSoundboardDefault": "新增音效板",
+      "soundboards": "音效板"
     },
     "synth": {
       "description": "虛擬合成器",

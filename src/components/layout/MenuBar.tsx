@@ -491,7 +491,7 @@ function DefaultMenuItems() {
       <HelpDialog
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
-        appName="Finder"
+        appId="finder"
         helpItems={finderHelpItems}
       />
       <AboutDialog

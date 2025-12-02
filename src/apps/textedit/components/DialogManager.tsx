@@ -127,7 +127,7 @@ export function DialogManager({
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
         helpItems={helpItems}
-        appName="TextEdit"
+        appId="textedit"
       />
 
       <AboutDialog

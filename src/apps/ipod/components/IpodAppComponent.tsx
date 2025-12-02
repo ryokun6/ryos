@@ -2712,7 +2712,7 @@ export function IpodAppComponent({
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
           helpItems={helpItems}
-          appName="iPod"
+          appId="ipod"
         />
         <AboutDialog
           isOpen={isAboutDialogOpen}

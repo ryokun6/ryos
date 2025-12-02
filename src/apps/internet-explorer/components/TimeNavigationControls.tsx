@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface TimeNavigationControlsProps {
   onOlder: () => void;
@@ -41,6 +42,7 @@ const TimeNavigationControls: React.FC<TimeNavigationControlsProps> = ({
   layout,
   playClickSound,
 }) => {
+  const { t } = useTranslation();
   const OlderIcon = layout === "vertical" ? ChevronDown : ChevronRight;
   const NewerIcon = layout === "vertical" ? ChevronUp : ChevronLeft;
 
@@ -86,7 +88,7 @@ const TimeNavigationControls: React.FC<TimeNavigationControlsProps> = ({
                 layout === "vertical" ? isOlderDisabled : isNewerDisabled
               }
               aria-label={
-                layout === "vertical" ? "Older Version" : "Newer Version"
+                layout === "vertical" ? t("apps.internet-explorer.olderVersion") : t("apps.internet-explorer.newerVersion")
               }
             >
               <NewerIcon size={18} />
@@ -106,7 +108,7 @@ const TimeNavigationControls: React.FC<TimeNavigationControlsProps> = ({
                 layout === "vertical" ? buttonClasses : mobileButtonClasses
               }
               disabled={isNowDisabled}
-              aria-label="Go to Now"
+              aria-label={t("apps.internet-explorer.goToNow")}
             >
               <Dot size={24} />
             </button>
@@ -130,7 +132,7 @@ const TimeNavigationControls: React.FC<TimeNavigationControlsProps> = ({
                 layout === "vertical" ? isNewerDisabled : isOlderDisabled
               }
               aria-label={
-                layout === "vertical" ? "Newer Version" : "Older Version"
+                layout === "vertical" ? t("apps.internet-explorer.newerVersion") : t("apps.internet-explorer.olderVersion")
               }
             >
               <OlderIcon size={18} />

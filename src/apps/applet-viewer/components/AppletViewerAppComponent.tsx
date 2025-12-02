@@ -1537,7 +1537,7 @@ export function AppletViewerAppComponent({
       <HelpDialog
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
-        appName="Applet Store"
+        appId="applet-viewer"
         helpItems={helpItems}
       />
       <AboutDialog

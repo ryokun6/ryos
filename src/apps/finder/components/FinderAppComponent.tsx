@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { getTranslatedAppName } from "@/utils/i18n";
+import { getTranslatedFolderNameFromName } from "@/utils/i18n";
 
 // Type for Finder initial data
 interface FinderInitialData {
@@ -1040,9 +1040,12 @@ export function FinderAppComponent({
                 const lastSegment =
                   currentPath.split("/").filter(Boolean).pop() || "";
                 try {
-                  return decodeURIComponent(lastSegment) || t("apps.finder.window.finder");
+                  const decodedName = decodeURIComponent(lastSegment);
+                  // Use localized folder name if available
+                  return getTranslatedFolderNameFromName(decodedName) || t("apps.finder.window.finder");
                 } catch {
-                  return lastSegment || t("apps.finder.window.finder");
+                  // Use localized folder name even if decode fails
+                  return getTranslatedFolderNameFromName(lastSegment) || t("apps.finder.window.finder");
                 }
               })()
         }
@@ -1255,7 +1258,7 @@ export function FinderAppComponent({
       <HelpDialog
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
-        appName={getTranslatedAppName("finder")}
+        appId="finder"
         helpItems={translatedHelpItems}
       />
       <AboutDialog

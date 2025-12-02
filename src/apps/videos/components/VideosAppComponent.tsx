@@ -1379,7 +1379,7 @@ export function VideosAppComponent({
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
           helpItems={helpItems}
-          appName="Videos"
+          appId="videos"
         />
         <AboutDialog
           isOpen={isAboutDialogOpen}

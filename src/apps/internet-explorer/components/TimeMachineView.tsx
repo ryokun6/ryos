@@ -24,6 +24,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog"; // New import
 // Import the new navigation controls
 import TimeNavigationControls from "./TimeNavigationControls";
+import { useTranslation } from "react-i18next";
 
 // Define type for preview content source
 type PreviewSource = "html" | "url";
@@ -45,6 +46,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   onSelectYear,
   currentSelectedYear, // Destructure the new prop
 }) => {
+  const { t } = useTranslation();
   // Index of the year currently in focus (0 is the newest/frontmost)
   const [activeYearIndex, setActiveYearIndex] = useState<number>(0);
   const [scrollState, setScrollState] = useState({
@@ -105,10 +107,10 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
 
   // Define shader names including Off option
   const shaderNames: Record<ShaderType | "off", string> = {
-    [ShaderType.GALAXY]: "Galaxy",
-    [ShaderType.AURORA]: "Aurora",
-    [ShaderType.NEBULA]: "Nebula",
-    off: "Off",
+    [ShaderType.GALAXY]: t("apps.internet-explorer.galaxy"),
+    [ShaderType.AURORA]: t("apps.internet-explorer.aurora"),
+    [ShaderType.NEBULA]: t("apps.internet-explorer.nebula"),
+    off: t("apps.internet-explorer.off"),
   };
 
   // Define type for shader menu options
@@ -581,9 +583,9 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   const olderYearLabel =
     activeYearIndex < cachedYears.length - 1
       ? cachedYears[activeYearIndex + 1]
-      : "Oldest";
+      : t("apps.internet-explorer.oldest");
   const newerYearLabel =
-    activeYearIndex > 0 ? cachedYears[activeYearIndex - 1] : "Newest";
+    activeYearIndex > 0 ? cachedYears[activeYearIndex - 1] : t("apps.internet-explorer.newest");
 
   // --- Calculate the slice of years to actually render ---
   const startIndex = Math.max(0, activeYearIndex); // The active card is the first one we want
@@ -674,7 +676,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
             <button
               onClick={handleClose}
               className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 z-20"
-              aria-label="Close Time Machine"
+              aria-label={t("apps.internet-explorer.closeTimeMachine")}
             >
               <X size={24} />
             </button>
@@ -788,7 +790,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                       animate="loading"
                                     >
                                       <p className="text-neutral-400 shimmer">
-                                        Loading...
+                                        {t("apps.internet-explorer.loadingEllipsis")}
                                       </p>
                                     </motion.div>
                                   )}
@@ -796,7 +798,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                     <div className="w-full h-full flex items-center justify-center p-4">
                                       <p className="text-red-400 text-center">
                                         {previewError ||
-                                          "Error loading preview."}
+                                          t("apps.internet-explorer.errorLoadingPreview")}
                                       </p>
                                     </div>
                                   )}
@@ -851,7 +853,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                                   `[TimeMachine] iframe for ${previewYear} failed to load.`
                                                 );
                                                 setPreviewError(
-                                                  "Unable to load preview."
+                                                  t("apps.internet-explorer.unableToLoadPreview")
                                                 );
                                                 setPreviewStatus("error");
                                                 setIsIframeLoaded(false);
@@ -915,13 +917,14 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                       changeActiveYearIndex(nowIndex);
                     }
                   }}
-                  isOlderDisabled={activeYearIndex === cachedYears.length - 1}
-                  isNewerDisabled={activeYearIndex === 0}
-                  isNowDisabled={cachedYears[activeYearIndex] === "current"}
-                  olderLabel={olderYearLabel}
-                  newerLabel={newerYearLabel}
-                  playClickSound={playClick}
-                />
+                    isOlderDisabled={activeYearIndex === cachedYears.length - 1}
+                    isNewerDisabled={activeYearIndex === 0}
+                    isNowDisabled={cachedYears[activeYearIndex] === "current"}
+                    olderLabel={olderYearLabel}
+                    newerLabel={newerYearLabel}
+                    nowLabel={t("apps.internet-explorer.now")}
+                    playClickSound={playClick}
+                  />
               </div>
 
               {/* Timeline Area - Adjust height/max-height */}
@@ -1005,7 +1008,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                 : "sm:opacity-0 sm:group-hover:opacity-100" // Inactive opacity (Now always visible, others on hover)
                             }`}
                           >
-                            {isNow ? "Now" : year}
+                            {isNow ? t("apps.internet-explorer.now") : year}
                           </span>
                           {/* Timeline Bar - Hidden on mobile, visible on desktop */}
                           <div
@@ -1034,8 +1037,9 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                     isOlderDisabled={activeYearIndex === cachedYears.length - 1}
                     isNewerDisabled={activeYearIndex === 0}
                     isNowDisabled={cachedYears[activeYearIndex] === "current"}
-                    olderLabel="Older"
-                    newerLabel="Newer"
+                    olderLabel={t("apps.internet-explorer.older")}
+                    newerLabel={t("apps.internet-explorer.newer")}
+                    nowLabel={t("apps.internet-explorer.now")}
                     playClickSound={playClick}
                   />
                 </div>
@@ -1058,7 +1062,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                   size="icon"
                   className="h-7 w-7 rounded-full hover:bg-white/10 opacity-60 hover:opacity-100 transition-opacity"
                   onClick={handleSharePage}
-                  aria-label="Share this page and time"
+                  aria-label={t("apps.internet-explorer.shareThisPageAndTime")}
                 >
                   <Share size={16} className="text-neutral-300" />
                 </Button>
@@ -1072,7 +1076,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                   {getHostname(currentUrl)}
                   {activeYear !== "current" && (
                     <span className="text-neutral-400 ml-1">
-                      in {activeYear}
+                      {t("apps.internet-explorer.in")} {activeYear}
                     </span>
                   )}
                 </p>
@@ -1089,7 +1093,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                     }
                   }}
                 >
-                  Travel
+                  {t("apps.internet-explorer.travel")}
                 </Button>
               </div>
 

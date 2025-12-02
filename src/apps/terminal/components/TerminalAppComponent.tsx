@@ -3016,7 +3016,7 @@ export function TerminalAppComponent({
       <HelpDialog
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
-        appName="Terminal"
+        appId="terminal"
         helpItems={helpItems || []}
       />
       <AboutDialog

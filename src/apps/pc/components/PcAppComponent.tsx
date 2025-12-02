@@ -368,7 +368,7 @@ export function PcAppComponent({
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
           helpItems={helpItems}
-          appName="Virtual PC"
+          appId="pc"
         />
         <AboutDialog
           isOpen={isAboutDialogOpen}

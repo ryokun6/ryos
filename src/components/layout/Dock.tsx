@@ -12,7 +12,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { AppId, getAppIconPath, appRegistry } from "@/config/appRegistry";
-import { getTranslatedAppName } from "@/utils/i18n";
+import { getTranslatedAppName, getTranslatedFolderNameFromName } from "@/utils/i18n";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -734,12 +734,23 @@ function MacDock() {
         appInstances.forEach((inst) => {
           let windowLabel = inst.title || appRegistry[appId]?.name || appId;
           
-          // For Finder, show the current path
+          // For Finder, show the current path with localized folder name
           if (appId === "finder") {
             const finderState = finderInstances[inst.instanceId];
             if (finderState?.currentPath) {
-              const pathParts = finderState.currentPath.split("/");
-              windowLabel = pathParts[pathParts.length - 1] || "Root";
+              if (finderState.currentPath === "/") {
+                // Root path - use localized "Macintosh HD"
+                windowLabel = t("apps.finder.window.macintoshHd");
+              } else {
+                const pathParts = finderState.currentPath.split("/");
+                const lastSegment = pathParts[pathParts.length - 1] || "";
+                try {
+                  const decodedName = decodeURIComponent(lastSegment);
+                  windowLabel = getTranslatedFolderNameFromName(decodedName);
+                } catch {
+                  windowLabel = getTranslatedFolderNameFromName(lastSegment);
+                }
+              }
             }
           }
           

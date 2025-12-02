@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Sliders } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export interface Filter {
   name: string;
@@ -143,23 +144,32 @@ interface PaintFiltersMenuProps {
 export const PaintFiltersMenu: React.FC<PaintFiltersMenuProps> = ({
   onApplyFilter,
 }) => {
+  const { t } = useTranslation();
+  const filterKeyMap: Record<string, string> = {
+    "Blur": "apps.paint.menu.filterBlur",
+    "Sharpen": "apps.paint.menu.filterSharpen",
+    "Grayscale": "apps.paint.menu.filterGrayscale",
+    "Invert": "apps.paint.menu.filterInvert",
+    "Sepia": "apps.paint.menu.filterSepia",
+  };
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Sliders className="h-4 w-4" />
-          <span className="sr-only">Open filters menu</span>
+          <span className="sr-only">{t("apps.paint.filtersMenu.openFiltersMenu")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLabel>Filters</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("apps.paint.menu.filters")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {filters.map((filter) => (
           <DropdownMenuItem
             key={filter.name}
             onClick={() => onApplyFilter(filter)}
           >
-            {filter.name}
+            {t(filterKeyMap[filter.name] || filter.name)}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

@@ -24,6 +24,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
+import { useTranslation } from "react-i18next";
 
 interface InternetExplorerMenuBarProps extends Omit<AppProps, "onClose"> {
   onRefresh?: () => void;
@@ -149,6 +150,7 @@ export function InternetExplorerMenuBar({
   onYearChange,
   onSharePage,
 }: InternetExplorerMenuBarProps) {
+  const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "internet-explorer";
   // Get current year for generating year lists
@@ -209,7 +211,7 @@ export function InternetExplorerMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            File
+            {t("common.menu.file")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -217,27 +219,27 @@ export function InternetExplorerMenuBar({
             onClick={onFocusUrlInput}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Go to URL
+            {t("apps.internet-explorer.menu.goToUrl")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onSharePage}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Share Page...
+            {t("apps.internet-explorer.menu.sharePage")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onOpenTimeMachine}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Open Time Machine
+            {t("apps.internet-explorer.menu.openTimeMachine")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Close
+            {t("common.menu.close")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -250,7 +252,7 @@ export function InternetExplorerMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Edit
+            {t("common.menu.edit")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -258,7 +260,7 @@ export function InternetExplorerMenuBar({
             onClick={onRefresh}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Refresh
+            {t("apps.internet-explorer.menu.refresh")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onStop}
@@ -269,14 +271,14 @@ export function InternetExplorerMenuBar({
                 : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
             }
           >
-            Stop
+            {t("apps.internet-explorer.menu.stop")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
 
           {/* Year Submenu */}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-              Year
+              {t("apps.internet-explorer.menu.year")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="min-w-[120px] max-h-[400px] overflow-y-auto">
               {/* Future Years */}
@@ -298,7 +300,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(year !== "current" && "pl-4")}>
-                  {year === "current" ? "✓ Now" : "Now"}
+                  {year === "current" ? `✓ ${t("apps.internet-explorer.menu.now")}` : t("apps.internet-explorer.menu.now")}
                 </span>
               </DropdownMenuItem>
 
@@ -322,7 +324,7 @@ export function InternetExplorerMenuBar({
           {/* Language Submenu */}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-              Language
+              {t("apps.internet-explorer.menu.language")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="min-w-[160px]">
               <DropdownMenuItem
@@ -330,7 +332,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "auto" && "pl-4")}>
-                  {language === "auto" ? "✓ Auto" : "Auto"}
+                  {language === "auto" ? `✓ ${t("apps.internet-explorer.menu.auto")}` : t("apps.internet-explorer.menu.auto")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -338,7 +340,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "english" && "pl-4")}>
-                  {language === "english" ? "✓ English" : "English"}
+                  {language === "english" ? `✓ ${t("apps.internet-explorer.menu.english")}` : t("apps.internet-explorer.menu.english")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -346,7 +348,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "chinese" && "pl-4")}>
-                  {language === "chinese" ? "✓ Chinese" : "Chinese"}
+                  {language === "chinese" ? `✓ ${t("apps.internet-explorer.menu.chinese")}` : t("apps.internet-explorer.menu.chinese")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -354,7 +356,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "japanese" && "pl-4")}>
-                  {language === "japanese" ? "✓ Japanese" : "Japanese"}
+                  {language === "japanese" ? `✓ ${t("apps.internet-explorer.menu.japanese")}` : t("apps.internet-explorer.menu.japanese")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -362,7 +364,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "korean" && "pl-4")}>
-                  {language === "korean" ? "✓ Korean" : "Korean"}
+                  {language === "korean" ? `✓ ${t("apps.internet-explorer.menu.korean")}` : t("apps.internet-explorer.menu.korean")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -370,7 +372,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "french" && "pl-4")}>
-                  {language === "french" ? "✓ French" : "French"}
+                  {language === "french" ? `✓ ${t("apps.internet-explorer.menu.french")}` : t("apps.internet-explorer.menu.french")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -378,7 +380,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "spanish" && "pl-4")}>
-                  {language === "spanish" ? "✓ Spanish" : "Spanish"}
+                  {language === "spanish" ? `✓ ${t("apps.internet-explorer.menu.spanish")}` : t("apps.internet-explorer.menu.spanish")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -386,7 +388,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "portuguese" && "pl-4")}>
-                  {language === "portuguese" ? "✓ Portuguese" : "Portuguese"}
+                  {language === "portuguese" ? `✓ ${t("apps.internet-explorer.menu.portuguese")}` : t("apps.internet-explorer.menu.portuguese")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -394,7 +396,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "german" && "pl-4")}>
-                  {language === "german" ? "✓ German" : "German"}
+                  {language === "german" ? `✓ ${t("apps.internet-explorer.menu.german")}` : t("apps.internet-explorer.menu.german")}
                 </span>
               </DropdownMenuItem>
 
@@ -403,7 +405,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "welsh" && "pl-4")}>
-                  {language === "welsh" ? "✓ Welsh" : "Welsh"}
+                  {language === "welsh" ? `✓ ${t("apps.internet-explorer.menu.welsh")}` : t("apps.internet-explorer.menu.welsh")}
                 </span>
               </DropdownMenuItem>
 
@@ -414,7 +416,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "latin" && "pl-4")}>
-                  {language === "latin" ? "✓ Latin" : "Latin"}
+                  {language === "latin" ? `✓ ${t("apps.internet-explorer.menu.latin")}` : t("apps.internet-explorer.menu.latin")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -422,7 +424,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "sanskrit" && "pl-4")}>
-                  {language === "sanskrit" ? "✓ Sanskrit" : "Sanskrit"}
+                  {language === "sanskrit" ? `✓ ${t("apps.internet-explorer.menu.sanskrit")}` : t("apps.internet-explorer.menu.sanskrit")}
                 </span>
               </DropdownMenuItem>
 
@@ -433,7 +435,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "alien" && "pl-4")}>
-                  {language === "alien" ? "✓ Alien" : "Alien"}
+                  {language === "alien" ? `✓ ${t("apps.internet-explorer.menu.alien")}` : t("apps.internet-explorer.menu.alien")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -441,7 +443,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(language !== "ai_language" && "pl-4")}>
-                  {language === "ai_language" ? "✓ AI Language" : "AI Language"}
+                  {language === "ai_language" ? `✓ ${t("apps.internet-explorer.menu.aiLanguage")}` : t("apps.internet-explorer.menu.aiLanguage")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -450,8 +452,8 @@ export function InternetExplorerMenuBar({
               >
                 <span className={cn(language !== "digital_being" && "pl-4")}>
                   {language === "digital_being"
-                    ? "✓ Digital Being"
-                    : "Digital Being"}
+                    ? `✓ ${t("apps.internet-explorer.menu.digitalBeing")}`
+                    : t("apps.internet-explorer.menu.digitalBeing")}
                 </span>
               </DropdownMenuItem>
             </DropdownMenuSubContent>
@@ -460,7 +462,7 @@ export function InternetExplorerMenuBar({
           {/* Location Submenu */}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-              Location
+              {t("apps.internet-explorer.menu.location")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="min-w-[160px]">
               <DropdownMenuItem
@@ -468,7 +470,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "auto" && "pl-4")}>
-                  {location === "auto" ? "✓ Auto" : "Auto"}
+                  {location === "auto" ? `✓ ${t("apps.internet-explorer.menu.auto")}` : t("apps.internet-explorer.menu.auto")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -477,8 +479,8 @@ export function InternetExplorerMenuBar({
               >
                 <span className={cn(location !== "united_states" && "pl-4")}>
                   {location === "united_states"
-                    ? "✓ United States"
-                    : "United States"}
+                    ? `✓ ${t("apps.internet-explorer.menu.unitedStates")}`
+                    : t("apps.internet-explorer.menu.unitedStates")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -486,7 +488,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "china" && "pl-4")}>
-                  {location === "china" ? "✓ China" : "China"}
+                  {location === "china" ? `✓ ${t("apps.internet-explorer.menu.china")}` : t("apps.internet-explorer.menu.china")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -494,7 +496,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "japan" && "pl-4")}>
-                  {location === "japan" ? "✓ Japan" : "Japan"}
+                  {location === "japan" ? `✓ ${t("apps.internet-explorer.menu.japan")}` : t("apps.internet-explorer.menu.japan")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -502,7 +504,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "korea" && "pl-4")}>
-                  {location === "korea" ? "✓ Korea" : "Korea"}
+                  {location === "korea" ? `✓ ${t("apps.internet-explorer.menu.korea")}` : t("apps.internet-explorer.menu.korea")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -510,7 +512,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "canada" && "pl-4")}>
-                  {location === "canada" ? "✓ Canada" : "Canada"}
+                  {location === "canada" ? `✓ ${t("apps.internet-explorer.menu.canada")}` : t("apps.internet-explorer.menu.canada")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -518,7 +520,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "uk" && "pl-4")}>
-                  {location === "uk" ? "✓ United Kingdom" : "United Kingdom"}
+                  {location === "uk" ? `✓ ${t("apps.internet-explorer.menu.unitedKingdom")}` : t("apps.internet-explorer.menu.unitedKingdom")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -526,7 +528,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "france" && "pl-4")}>
-                  {location === "france" ? "✓ France" : "France"}
+                  {location === "france" ? `✓ ${t("apps.internet-explorer.menu.france")}` : t("apps.internet-explorer.menu.france")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -534,7 +536,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "germany" && "pl-4")}>
-                  {location === "germany" ? "✓ Germany" : "Germany"}
+                  {location === "germany" ? `✓ ${t("apps.internet-explorer.menu.germany")}` : t("apps.internet-explorer.menu.germany")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -542,7 +544,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "spain" && "pl-4")}>
-                  {location === "spain" ? "✓ Spain" : "Spain"}
+                  {location === "spain" ? `✓ ${t("apps.internet-explorer.menu.spain")}` : t("apps.internet-explorer.menu.spain")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -550,7 +552,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "portugal" && "pl-4")}>
-                  {location === "portugal" ? "✓ Portugal" : "Portugal"}
+                  {location === "portugal" ? `✓ ${t("apps.internet-explorer.menu.portugal")}` : t("apps.internet-explorer.menu.portugal")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -558,7 +560,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "india" && "pl-4")}>
-                  {location === "india" ? "✓ India" : "India"}
+                  {location === "india" ? `✓ ${t("apps.internet-explorer.menu.india")}` : t("apps.internet-explorer.menu.india")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -566,7 +568,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "brazil" && "pl-4")}>
-                  {location === "brazil" ? "✓ Brazil" : "Brazil"}
+                  {location === "brazil" ? `✓ ${t("apps.internet-explorer.menu.brazil")}` : t("apps.internet-explorer.menu.brazil")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -574,7 +576,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "australia" && "pl-4")}>
-                  {location === "australia" ? "✓ Australia" : "Australia"}
+                  {location === "australia" ? `✓ ${t("apps.internet-explorer.menu.australia")}` : t("apps.internet-explorer.menu.australia")}
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -582,7 +584,7 @@ export function InternetExplorerMenuBar({
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 <span className={cn(location !== "russia" && "pl-4")}>
-                  {location === "russia" ? "✓ Russia" : "Russia"}
+                  {location === "russia" ? `✓ ${t("apps.internet-explorer.menu.russia")}` : t("apps.internet-explorer.menu.russia")}
                 </span>
               </DropdownMenuItem>
             </DropdownMenuSubContent>
@@ -593,7 +595,7 @@ export function InternetExplorerMenuBar({
             onClick={onEditFuture}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Edit Future...
+            {t("apps.internet-explorer.menu.editFuture")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -606,7 +608,7 @@ export function InternetExplorerMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Favorites
+            {t("apps.internet-explorer.menu.favorites")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -618,14 +620,14 @@ export function InternetExplorerMenuBar({
             onClick={onHome}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Go Home
+            {t("apps.internet-explorer.menu.goHome")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onAddFavorite}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Add to Favorites...
+            {t("apps.internet-explorer.menu.addToFavorites")}
           </DropdownMenuItem>
           {favorites.length > 0 && (
             <>
@@ -640,7 +642,7 @@ export function InternetExplorerMenuBar({
                 onClick={onClearFavorites}
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
-                Clear Favorites...
+                {t("apps.internet-explorer.menu.clearFavorites")}
               </DropdownMenuItem>
             </>
           )}
@@ -648,7 +650,7 @@ export function InternetExplorerMenuBar({
             onClick={onResetFavorites}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Reset Favorites...
+            {t("apps.internet-explorer.menu.resetFavorites")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -661,7 +663,7 @@ export function InternetExplorerMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            History
+            {t("apps.internet-explorer.menu.history")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -678,7 +680,7 @@ export function InternetExplorerMenuBar({
                 : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
             }
           >
-            Back
+            {t("apps.internet-explorer.menu.back")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onGoForward}
@@ -689,7 +691,7 @@ export function InternetExplorerMenuBar({
                 : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
             }
           >
-            Forward
+            {t("apps.internet-explorer.menu.forward")}
           </DropdownMenuItem>
 
           {history.length > 0 && (
@@ -734,7 +736,7 @@ export function InternetExplorerMenuBar({
                 onClick={onClearHistory}
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
-                Clear History...
+                {t("apps.internet-explorer.menu.clearHistory")}
               </DropdownMenuItem>
             </>
           )}
@@ -749,7 +751,7 @@ export function InternetExplorerMenuBar({
             size="default"
             className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
           >
-            Help
+            {t("common.menu.help")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -757,20 +759,20 @@ export function InternetExplorerMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Internet Explorer Help
+            {t("apps.internet-explorer.menu.internetExplorerHelp")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Share App...
+            {t("common.menu.shareApp")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About Internet Explorer
+            {t("apps.internet-explorer.menu.aboutInternetExplorer")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

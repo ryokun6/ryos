@@ -16,6 +16,7 @@ import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
+import { useTranslation } from "react-i18next";
 
 interface PaintMenuBarProps {
   isWindowOpen: boolean;
@@ -640,6 +641,7 @@ export function PaintMenuBar({
   onPaste,
   onApplyFilter,
 }: PaintMenuBarProps) {
+  const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "paint";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
@@ -649,6 +651,35 @@ export function PaintMenuBar({
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Translation maps
+  const categoryKeyMap: Record<string, string> = {
+    "Color": "apps.paint.menu.filterCategoryColor",
+    "Artistic": "apps.paint.menu.filterCategoryArtistic",
+    "Blur": "apps.paint.menu.filterCategoryBlur",
+    "Retro": "apps.paint.menu.filterCategoryRetro",
+  };
+
+  const filterKeyMap: Record<string, string> = {
+    "Brightness +": "apps.paint.menu.filterBrightnessPlus",
+    "Brightness -": "apps.paint.menu.filterBrightnessMinus",
+    "Grayscale": "apps.paint.menu.filterGrayscale",
+    "Invert": "apps.paint.menu.filterInvert",
+    "Sepia": "apps.paint.menu.filterSepia",
+    "Pixelate": "apps.paint.menu.filterPixelate",
+    "Edge Detect": "apps.paint.menu.filterEdgeDetect",
+    "Sharpen": "apps.paint.menu.filterSharpen",
+    "Blur": "apps.paint.menu.filterBlur",
+    "Gaussian Blur": "apps.paint.menu.filterGaussianBlur",
+    "Motion Blur": "apps.paint.menu.filterMotionBlur",
+    "Radial Blur": "apps.paint.menu.filterRadialBlur",
+    "Noise": "apps.paint.menu.filterNoise",
+    "Old Photo": "apps.paint.menu.filterOldPhoto",
+    "VHS": "apps.paint.menu.filterVhs",
+    "CRT": "apps.paint.menu.filterCrt",
+    "Glitch": "apps.paint.menu.filterGlitch",
+    "Dither": "apps.paint.menu.filterDither",
+  };
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -666,7 +697,7 @@ export function PaintMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            File
+            {t("common.menu.file")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -674,40 +705,40 @@ export function PaintMenuBar({
             onClick={onNewFile}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            New File
+            {t("apps.paint.menu.newFile")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onImportFile}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Open...
+            {t("apps.paint.menu.open")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onSave}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            {currentFilePath ? "Save" : "Save..."}
+            {currentFilePath ? t("apps.paint.menu.save") : t("apps.paint.menu.saveEllipsis")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={() => fileInputRef.current?.click()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Import from Device...
+            {t("apps.paint.menu.importFromDevice")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onExportFile}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Export
+            {t("apps.paint.menu.export")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Close
+            {t("common.menu.close")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -719,7 +750,7 @@ export function PaintMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            Edit
+            {t("common.menu.edit")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -730,7 +761,7 @@ export function PaintMenuBar({
               !canUndo ? "text-gray-500" : ""
             }`}
           >
-            Undo
+            {t("common.menu.undo")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onRedo}
@@ -739,33 +770,33 @@ export function PaintMenuBar({
               !canRedo ? "text-gray-500" : ""
             }`}
           >
-            Redo
+            {t("common.menu.redo")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onCut}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Cut
+            {t("common.menu.cut")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onCopy}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Copy
+            {t("common.menu.copy")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onPaste}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Paste
+            {t("common.menu.paste")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onClear}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Clear
+            {t("common.menu.clear")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -777,14 +808,14 @@ export function PaintMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            Filters
+            {t("apps.paint.menu.filters")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           {Object.entries(filterCategories).map(([category, filterNames]) => (
             <DropdownMenuSub key={category}>
               <DropdownMenuSubTrigger className="text-md h-6 px-3">
-                {category}
+                {t(categoryKeyMap[category] || category)}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 {filterNames.map((name) => {
@@ -796,7 +827,7 @@ export function PaintMenuBar({
                       onClick={() => onApplyFilter(filter)}
                       className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
                     >
-                      {name}
+                      {t(filterKeyMap[name] || name)}
                     </DropdownMenuItem>
                   );
                 })}
@@ -813,7 +844,7 @@ export function PaintMenuBar({
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
-            Help
+            {t("common.menu.help")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -821,20 +852,20 @@ export function PaintMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Paint Help
+            {t("apps.paint.menu.paintHelp")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Share App...
+            {t("common.menu.shareApp")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About Paint
+            {t("apps.paint.menu.aboutPaint")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

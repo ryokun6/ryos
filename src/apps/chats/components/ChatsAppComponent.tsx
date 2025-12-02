@@ -844,7 +844,7 @@ export function ChatsAppComponent({
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
           helpItems={helpItems}
-          appName="Chats"
+          appId="chats"
         />
         <AboutDialog
           isOpen={isAboutDialogOpen}

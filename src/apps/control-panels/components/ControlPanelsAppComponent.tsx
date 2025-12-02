@@ -2067,7 +2067,7 @@ export function ControlPanelsAppComponent({
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
           helpItems={helpItems}
-          appName={t("apps.control-panels.name")}
+          appId="control-panels"
         />
         <AboutDialog
           isOpen={isAboutDialogOpen}

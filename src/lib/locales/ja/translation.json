@@ -517,7 +517,49 @@
       }
     },
     "internet-explorer": {
+      "addFavorite": "お気に入りに追加",
+      "aiLanguage": "AI言語",
+      "alienLanguage": "異星言語",
+      "anErrorOccurred": "エラーが発生しました",
+      "appName": "インターネット エクスプローラー",
+      "areYouSureClearFavorites": "すべてのお気に入りを消去してもよろしいですか？",
+      "areYouSureClearHistory": "すべての履歴を消去してもよろしいですか？",
+      "areYouSureResetFavorites": "お気に入りを初期設定に戻してもよろしいですか？",
+      "aurora": "オーロラ",
+      "australia": "オーストラリア",
+      "autodetected": "自動検出",
+      "back": "戻る",
+      "brazil": "ブラジル",
+      "canada": "カナダ",
+      "cannotAccessWebsite": "{{url}} にアクセスできません。ウェブサイトがアクセスをブロックしているか、認証が必要です。",
+      "cannotFindServerOrDnsError": "サーバーが見つからないか、DNSエラーです",
+      "checkWebAddressAndTryAgain": "入力したウェブアドレスを確認して、もう一度お試しください。",
+      "china": "中国",
+      "chineseTraditional": "中国語 (繁体字)",
+      "clearFavorites": "お気に入りを消去",
+      "clearHistory": "履歴を消去",
+      "closeTimeMachine": "タイムマシンを閉じる",
       "description": "ウェブを閲覧",
+      "digitalBeingLanguage": "デジタル存在言語",
+      "english": "英語",
+      "enterTitleForFavorite": "このお気に入りのタイトルを入力",
+      "enterUrl": "URLを入力",
+      "error": "エラー",
+      "errorLoadingPreview": "プレビューの読み込みエラー。",
+      "failedToGenerateFuturisticWebsite": "未来的なウェブサイトの生成に失敗しました。AIモデルが選択されていない可能性があります。",
+      "favorite": "お気に入り",
+      "fetch": "取得",
+      "fetchingContentForReconstruction": "再構築のため、{{hostname}}のコンテンツを取得中...",
+      "fetchingFromYear": "{{year}}年から{{hostname}}を取得中...",
+      "folder": "フォルダ",
+      "france": "フランス",
+      "french": "フランス語",
+      "from": "から",
+      "galaxy": "銀河",
+      "german": "ドイツ語",
+      "germany": "ドイツ",
+      "goBackToPreviousPage": "前のページに戻る。",
+      "goToNow": "今すぐ表示",
       "help": {
         "browseWeb": {
           "description": "URLを入力し、ナビゲーションボタン（戻る、進む、更新、停止）を使用。",
@@ -544,6 +586,19 @@
           "title": "時を旅する"
         }
       },
+      "history": "履歴",
+      "host": "ホスト: {{hostname}}",
+      "in": "内",
+      "india": "インド",
+      "invalidShareLink": "無効な共有リンク",
+      "japan": "日本",
+      "japanese": "日本語",
+      "korean": "韓国語",
+      "latin": "ラテン語",
+      "loading": "{{hostname}} を読み込み中...",
+      "loadingEllipsis": "読み込み中...",
+      "loadingTitle": "Internet Explorer - 読み込み中",
+      "loadingTitleWithSite": "{{site}} - 読み込み中",
       "menu": {
         "aboutInternetExplorer": "Internet Explorer について",
         "addToFavorites": "お気に入りに追加...",
@@ -562,6 +617,7 @@
         "editFuture": "未来を編集...",
         "english": "英語",
         "favorites": "お気に入り",
+        "folder": "フォルダー",
         "forward": "進む",
         "france": "フランス",
         "french": "フランス語",
@@ -598,7 +654,50 @@
         "welsh": "ウェールズ語",
         "year": "年"
       },
-      "name": "Internet Explorer"
+      "name": "Internet Explorer",
+      "nebula": "ネビュラ",
+      "newer": "より新しい",
+      "newerVersion": "より新しいバージョン",
+      "newest": "最新",
+      "now": "今",
+      "off": "オフ",
+      "older": "以前",
+      "olderVersion": "以前のバージョン",
+      "oldest": "最も古い",
+      "openingRequestedPage": "要求されたページを開いています",
+      "openingSharedPage": "共有ページを開いています",
+      "page": "ページ",
+      "pageCouldNotBeLoadedInIframe": "iframe 内でページを読み込めませんでした。これはセキュリティ制限またはネットワークの問題が原因である可能性があります。",
+      "pleaseTryTheFollowing": "以下をお試しください:",
+      "portugal": "ポルトガル",
+      "portuguese": "ポルトガル語",
+      "reconstructingHistoryForYear": "{{hostname}} の {{year}} 年の履歴を再構築しています...",
+      "refresh": "更新",
+      "reimaginingForYear": "{{hostname}} の {{year}} 年を再考しています...",
+      "requiresInternetConnection": "Internet Explorer で閲覧するにはインターネット接続が必要です",
+      "resetFavorites": "お気に入りをリセット",
+      "russia": "ロシア",
+      "sanskrit": "サンスクリット語",
+      "search": "検索",
+      "shareLinkInvalidOrCorrupted": "提供された共有リンクが無効であるか、破損しています。",
+      "shareThisPage": "このページを共有",
+      "shareThisPageAndTime": "このページと時間を共有",
+      "showCachedVersionsTimeMachine": "キャッシュされたバージョンを表示 (Time Machine)",
+      "site": "サイト",
+      "southKorea": "韓国",
+      "spain": "スペイン",
+      "spanish": "スペイン語",
+      "timeNodes": "{{count}} タイムノード",
+      "timeNodes_plural": "{{count}} タイムノード",
+      "travel": "移動",
+      "travellingTitle": "Internet Explorer - 移動中",
+      "travellingTitleWithSite": "{{site}} - 移動中",
+      "tryRefreshingThePage": "ページを再読み込みしてみてください。",
+      "unableToLoadPreview": "プレビューを読み込めません。",
+      "unitedKingdom": "イギリス",
+      "unitedStates": "アメリカ",
+      "welsh": "ウェールズ語",
+      "year": "年"
     },
     "ipod": {
       "ariaLabels": {
@@ -810,6 +909,19 @@
     },
     "paint": {
       "description": "画像を描画・編集",
+      "dialogs": {
+        "discardChanges": "変更を破棄",
+        "discardChangesDescription": "未保存の変更があります。新しいファイルを続行しますか？",
+        "enterImageName": "画像の名前を入力してください",
+        "error": "エラー",
+        "failedToLoadImageContent": "画像コンテンツの読み込みに失敗しました。",
+        "failedToSaveImage": "画像の保存に失敗しました",
+        "imageSavedSuccessfully": "画像を保存しました",
+        "saveImage": "画像を保存"
+      },
+      "filtersMenu": {
+        "openFiltersMenu": "フィルターメニューを開く"
+      },
       "help": {
         "colors": {
           "description": "ツールの下のパレットから色を選択して描画色を変更。",
@@ -869,7 +981,23 @@
         "save": "保存",
         "saveEllipsis": "名前を付けて保存..."
       },
-      "name": "ペイント"
+      "name": "ペイント",
+      "selectedPattern": "選択中のパターン",
+      "toolbar": {
+        "brush": "ブラシ",
+        "eraser": "消しゴム",
+        "fillColor": "塗りつぶし色",
+        "hand": "手",
+        "line": "線",
+        "oval": "楕円",
+        "pencil": "鉛筆",
+        "rectangle": "長方形",
+        "rectangleSelect": "矩形選択",
+        "select": "選択",
+        "spray": "スプレー",
+        "text": "テキスト"
+      },
+      "untitled": "無題"
     },
     "pc": {
       "description": "3D PCシミュレーション",
@@ -988,9 +1116,6 @@
     },
     "soundboard": {
       "description": "効果音を再生",
-      "soundboards": "サウンドボード",
-      "newSoundboardDefault": "新規サウンドボード",
-      "importedSoundboard": "インポートしたサウンドボード",
       "help": {
         "customizeSlot": {
           "description": "各サンプルに絵文字とタイトルを追加して素早く識別",
@@ -1017,6 +1142,7 @@
           "title": "波形表示"
         }
       },
+      "importedSoundboard": "インポートしたサウンドボード",
       "menu": {
         "aboutSoundboard": "サウンドボードについて",
         "deleteSoundboard": "サウンドボードを削除",
@@ -1030,7 +1156,9 @@
         "soundboardHelp": "サウンドボードのヘルプ",
         "waveforms": "波形"
       },
-      "name": "サウンドボード"
+      "name": "サウンドボード",
+      "newSoundboardDefault": "新規サウンドボード",
+      "soundboards": "サウンドボード"
     },
     "synth": {
       "description": "仮想シンセサイザー",

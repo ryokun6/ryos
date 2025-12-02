@@ -19,6 +19,7 @@ import { Filter } from "./PaintFiltersMenu";
 import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useTranslation } from "react-i18next";
 
 export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
   isWindowOpen,
@@ -30,6 +31,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
   onNavigateNext,
   onNavigatePrevious,
 }) => {
+  const { t } = useTranslation();
   const [selectedTool, setSelectedTool] = useState<string>("pencil");
   const [selectedPattern, setSelectedPattern] = useState<string>("pattern-1");
   const [strokeWidth, setStrokeWidth] = useState<number>(1);
@@ -208,7 +210,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     if (!currentFilePath) {
       // New file - prompt for filename first
       // Get first few pixels of canvas as suggestion for filename
-      const canvasName = "Untitled.png";
+      const canvasName = `${t("apps.paint.untitled")}.png`;
       setIsSaveDialogOpen(true);
       setSaveFileName(canvasName);
     } else {
@@ -556,7 +558,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
         helpItems={helpItems}
-        appName="Paint"
+        appId="paint"
       />
       <AboutDialog
         isOpen={isAboutDialogOpen}

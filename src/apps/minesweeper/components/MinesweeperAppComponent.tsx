@@ -552,7 +552,7 @@ export function MinesweeperAppComponent({
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
           helpItems={helpItems || []}
-          appName="Minesweeper"
+          appId="minesweeper"
         />
         <AboutDialog
           isOpen={isAboutDialogOpen}

@@ -495,6 +495,8 @@ export function InternetExplorerAppComponent({
   const { playElevatorMusic, stopElevatorMusic, playDingSound } =
     useTerminalSounds();
 
+  const currentTheme = useThemeStore((state) => state.current);
+
   const currentYear = new Date().getFullYear();
   const pastYears = [
     "1000 BC",
@@ -1151,6 +1153,7 @@ export function InternetExplorerAppComponent({
       setYear,
       setUrl,
       fetchCachedYears,
+      currentTheme,
     ]
   );
 
@@ -1937,7 +1940,6 @@ export function InternetExplorerAppComponent({
     setIsShareDialogOpen(true);
   }, []);
 
-  const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isOffline = useOffline();
 
@@ -2637,7 +2639,7 @@ export function InternetExplorerAppComponent({
             isOpen={isHelpDialogOpen}
             onOpenChange={setHelpDialogOpen}
             helpItems={helpItems || []}
-            appName="Internet Explorer"
+            appId="internet-explorer"
           />
           <AboutDialog
             isOpen={isAboutDialogOpen}

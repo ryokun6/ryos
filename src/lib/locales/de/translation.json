@@ -517,7 +517,49 @@
       }
     },
     "internet-explorer": {
+      "addFavorite": "Favorit hinzufügen",
+      "aiLanguage": "KI-Sprache",
+      "alienLanguage": "Außerirdische Sprache",
+      "anErrorOccurred": "Ein Fehler ist aufgetreten",
+      "appName": "Internet Explorer",
+      "areYouSureClearFavorites": "Möchten Sie wirklich alle Favoriten löschen?",
+      "areYouSureClearHistory": "Möchten Sie wirklich den gesamten Verlauf löschen?",
+      "areYouSureResetFavorites": "Möchten Sie die Favoriten wirklich auf die Standardeinstellungen zurücksetzen?",
+      "aurora": "Aurora",
+      "australia": "Australien",
+      "autodetected": "Automatisch erkannt",
+      "back": "Zurück",
+      "brazil": "Brasilien",
+      "canada": "Kanada",
+      "cannotAccessWebsite": "Auf {{url}} kann nicht zugegriffen werden. Die Website blockiert möglicherweise den Zugriff oder erfordert eine Authentifizierung.",
+      "cannotFindServerOrDnsError": "Server nicht gefunden oder DNS-Fehler",
+      "checkWebAddressAndTryAgain": "Überprüfen Sie die eingegebene Webadresse und versuchen Sie es erneut.",
+      "china": "China",
+      "chineseTraditional": "Chinesisch (Traditionell)",
+      "clearFavorites": "Favoriten löschen",
+      "clearHistory": "Verlauf löschen",
+      "closeTimeMachine": "Time Machine schließen",
       "description": "Im Web surfen",
+      "digitalBeingLanguage": "Digitale Wesenssprache",
+      "english": "Englisch",
+      "enterTitleForFavorite": "Titel für diesen Favoriten eingeben",
+      "enterUrl": "URL eingeben",
+      "error": "Fehler",
+      "errorLoadingPreview": "Fehler beim Laden der Vorschau.",
+      "failedToGenerateFuturisticWebsite": "Fehler beim Generieren der futuristischen Website. KI-Modell wurde möglicherweise nicht ausgewählt.",
+      "favorite": "Favorit",
+      "fetch": "Abrufen",
+      "fetchingContentForReconstruction": "Inhalt von {{hostname}} wird zur Rekonstruktion abgerufen...",
+      "fetchingFromYear": "{{hostname}} aus dem Jahr {{year}} wird abgerufen...",
+      "folder": "Ordner",
+      "france": "Frankreich",
+      "french": "Französisch",
+      "from": "von",
+      "galaxy": "Galaxie",
+      "german": "Deutsch",
+      "germany": "Deutschland",
+      "goBackToPreviousPage": "Zurück zur vorherigen Seite.",
+      "goToNow": "Zu Jetzt",
       "help": {
         "browseWeb": {
           "description": "URLs eingeben und Navigationsschaltflächen verwenden (Zurück, Vor, Aktualisieren, Stopp).",
@@ -544,6 +586,19 @@
           "title": "Durch die Zeit reisen"
         }
       },
+      "history": "Verlauf",
+      "host": "Host: {{hostname}}",
+      "in": "in",
+      "india": "Indien",
+      "invalidShareLink": "Ungültiger Freigabelink",
+      "japan": "Japan",
+      "japanese": "Japanisch",
+      "korean": "Koreanisch",
+      "latin": "Latein",
+      "loading": "Lade {{hostname}}...",
+      "loadingEllipsis": "Lade...",
+      "loadingTitle": "Internet Explorer - Lade",
+      "loadingTitleWithSite": "{{site}} - Lade",
       "menu": {
         "aboutInternetExplorer": "Über Internet Explorer",
         "addToFavorites": "Zu Favoriten hinzufügen...",
@@ -562,6 +617,7 @@
         "editFuture": "Zukunft bearbeiten...",
         "english": "Englisch",
         "favorites": "Favoriten",
+        "folder": "Ordner",
         "forward": "Weiter",
         "france": "Frankreich",
         "french": "Französisch",
@@ -598,7 +654,50 @@
         "welsh": "Walisisch",
         "year": "Jahr"
       },
-      "name": "Internet Explorer"
+      "name": "Internet Explorer",
+      "nebula": "Nebula",
+      "newer": "Neuer",
+      "newerVersion": "Neuere Version",
+      "newest": "Neueste",
+      "now": "Jetzt",
+      "off": "Aus",
+      "older": "Älter",
+      "olderVersion": "Ältere Version",
+      "oldest": "Älteste",
+      "openingRequestedPage": "Angeforderte Seite wird geöffnet",
+      "openingSharedPage": "Geteilte Seite wird geöffnet",
+      "page": "Seite",
+      "pageCouldNotBeLoadedInIframe": "Die Seite konnte nicht im Iframe geladen werden. Dies könnte an Sicherheitsbeschränkungen oder Netzwerkproblemen liegen.",
+      "pleaseTryTheFollowing": "Bitte versuchen Sie Folgendes:",
+      "portugal": "Portugal",
+      "portuguese": "Portugiesisch",
+      "reconstructingHistoryForYear": "Verlauf von {{hostname}} für das Jahr {{year}} wird rekonstruiert...",
+      "refresh": "Aktualisieren",
+      "reimaginingForYear": "{{hostname}} für das Jahr {{year}} wird neu interpretiert...",
+      "requiresInternetConnection": "Internet Explorer erfordert eine Internetverbindung zum Navigieren",
+      "resetFavorites": "Favoriten zurücksetzen",
+      "russia": "Russland",
+      "sanskrit": "Sanskrit",
+      "search": "Suchen",
+      "shareLinkInvalidOrCorrupted": "Der angegebene Freigabelink ist ungültig oder beschädigt.",
+      "shareThisPage": "Diese Seite teilen",
+      "shareThisPageAndTime": "Diese Seite und Zeit teilen",
+      "showCachedVersionsTimeMachine": "Zwischengespeicherte Versionen anzeigen (Time Machine)",
+      "site": "Website",
+      "southKorea": "Südkorea",
+      "spain": "Spanien",
+      "spanish": "Spanisch",
+      "timeNodes": "{{count}} Zeitknoten",
+      "timeNodes_plural": "{{count}} Zeitknoten",
+      "travel": "Reisen",
+      "travellingTitle": "Internet Explorer – Reisen",
+      "travellingTitleWithSite": "{{site}} – Reisen",
+      "tryRefreshingThePage": "Versuchen Sie, die Seite zu aktualisieren.",
+      "unableToLoadPreview": "Vorschau konnte nicht geladen werden.",
+      "unitedKingdom": "Vereinigtes Königreich",
+      "unitedStates": "Vereinigte Staaten",
+      "welsh": "Walisisch",
+      "year": "Jahr"
     },
     "ipod": {
       "ariaLabels": {
@@ -810,6 +909,19 @@
     },
     "paint": {
       "description": "Bilder zeichnen und bearbeiten",
+      "dialogs": {
+        "discardChanges": "Änderungen verwerfen",
+        "discardChangesDescription": "Sie haben ungespeicherte Änderungen. Trotzdem neue Datei erstellen?",
+        "enterImageName": "Geben Sie einen Namen für Ihr Bild ein",
+        "error": "Fehler",
+        "failedToLoadImageContent": "Bildinhalt konnte nicht geladen werden.",
+        "failedToSaveImage": "Bild konnte nicht gespeichert werden",
+        "imageSavedSuccessfully": "Bild erfolgreich gespeichert",
+        "saveImage": "Bild speichern"
+      },
+      "filtersMenu": {
+        "openFiltersMenu": "Filtermenü öffnen"
+      },
       "help": {
         "colors": {
           "description": "Wählen Sie Farben aus der Palette unter den Werkzeugen aus, um Ihre Zeichenfarbe zu ändern.",
@@ -869,7 +981,23 @@
         "save": "Speichern",
         "saveEllipsis": "Speichern..."
       },
-      "name": "Malprogramm"
+      "name": "Malprogramm",
+      "selectedPattern": "Ausgewähltes Muster",
+      "toolbar": {
+        "brush": "Pinsel",
+        "eraser": "Radiergummi",
+        "fillColor": "Füllfarbe",
+        "hand": "Hand",
+        "line": "Linie",
+        "oval": "Oval",
+        "pencil": "Bleistift",
+        "rectangle": "Rechteck",
+        "rectangleSelect": "Rechteckauswahl",
+        "select": "Auswählen",
+        "spray": "Sprühen",
+        "text": "Text"
+      },
+      "untitled": "Ohne Titel"
     },
     "pc": {
       "description": "3D-PC-Simulation",
@@ -988,9 +1116,6 @@
     },
     "soundboard": {
       "description": "Soundeffekte abspielen",
-      "soundboards": "Soundboards",
-      "newSoundboardDefault": "Neues Soundboard",
-      "importedSoundboard": "Importiertes Soundboard",
       "help": {
         "customizeSlot": {
           "description": "Emoji und Titel zu jeder Probe hinzufügen, um schnelle Identifikation zu ermöglichen",
@@ -1017,6 +1142,7 @@
           "title": "Wellenformansicht"
         }
       },
+      "importedSoundboard": "Importiertes Soundboard",
       "menu": {
         "aboutSoundboard": "Über Soundboard",
         "deleteSoundboard": "Soundboard löschen",
@@ -1030,7 +1156,9 @@
         "soundboardHelp": "Soundboard-Hilfe",
         "waveforms": "Wellenformen"
       },
-      "name": "Soundboard"
+      "name": "Soundboard",
+      "newSoundboardDefault": "Neues Soundboard",
+      "soundboards": "Soundboards"
     },
     "synth": {
       "description": "Virtueller Synthesizer",

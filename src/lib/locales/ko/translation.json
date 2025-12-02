@@ -517,7 +517,49 @@
       }
     },
     "internet-explorer": {
+      "addFavorite": "즐겨찾기 추가",
+      "aiLanguage": "AI 언어",
+      "alienLanguage": "외계어",
+      "anErrorOccurred": "오류가 발생했습니다.",
+      "appName": "Internet Explorer",
+      "areYouSureClearFavorites": "모든 즐겨찾기를 지우시겠습니까?",
+      "areYouSureClearHistory": "모든 방문 기록을 지우시겠습니까?",
+      "areYouSureResetFavorites": "즐겨찾기를 기본값으로 초기화하시겠습니까?",
+      "aurora": "오로라",
+      "australia": "호주",
+      "autodetected": "자동 감지됨",
+      "back": "뒤로",
+      "brazil": "브라질",
+      "canada": "캐나다",
+      "cannotAccessWebsite": "{{url}}에 액세스할 수 없습니다. 웹사이트에서 액세스를 차단했거나 인증이 필요할 수 있습니다.",
+      "cannotFindServerOrDnsError": "서버를 찾을 수 없거나 DNS 오류",
+      "checkWebAddressAndTryAgain": "입력한 웹 주소를 확인하고 다시 시도하세요.",
+      "china": "중국",
+      "chineseTraditional": "중국어(번체)",
+      "clearFavorites": "즐겨찾기 지우기",
+      "clearHistory": "기록 지우기",
+      "closeTimeMachine": "Time Machine 닫기",
       "description": "웹 탐색",
+      "digitalBeingLanguage": "디지털 존재 언어",
+      "english": "영어",
+      "enterTitleForFavorite": "이 즐겨찾기의 제목을 입력하십시오",
+      "enterUrl": "URL 입력",
+      "error": "오류",
+      "errorLoadingPreview": "미리보기 로드 오류.",
+      "failedToGenerateFuturisticWebsite": "미래형 웹사이트 생성에 실패했습니다. AI 모델이 선택되지 않았을 수 있습니다.",
+      "favorite": "즐겨찾기",
+      "fetch": "가져오기",
+      "fetchingContentForReconstruction": "재구성을 위해 {{hostname}}의 콘텐츠를 가져오는 중...",
+      "fetchingFromYear": "{{year}}년의 {{hostname}}을(를) 가져오는 중...",
+      "folder": "폴더",
+      "france": "프랑스",
+      "french": "프랑스어",
+      "from": "에서",
+      "galaxy": "갤럭시",
+      "german": "독일어",
+      "germany": "독일",
+      "goBackToPreviousPage": "이전 페이지로 돌아가기.",
+      "goToNow": "지금으로 이동",
       "help": {
         "browseWeb": {
           "description": "URL 입력 및 탐색 버튼 사용(뒤로, 앞으로, 새로 고침, 중지).",
@@ -544,6 +586,19 @@
           "title": "시간 여행"
         }
       },
+      "history": "기록",
+      "host": "호스트: {{hostname}}",
+      "in": "에서",
+      "india": "인도",
+      "invalidShareLink": "잘못된 공유 링크",
+      "japan": "일본",
+      "japanese": "일본어",
+      "korean": "한국어",
+      "latin": "라틴어",
+      "loading": "{{hostname}} 로드 중...",
+      "loadingEllipsis": "로드 중...",
+      "loadingTitle": "Internet Explorer - 로드 중",
+      "loadingTitleWithSite": "{{site}} - 로드 중",
       "menu": {
         "aboutInternetExplorer": "Internet Explorer 정보",
         "addToFavorites": "즐겨찾기에 추가...",
@@ -562,6 +617,7 @@
         "editFuture": "미래 편집...",
         "english": "영어",
         "favorites": "즐겨찾기",
+        "folder": "폴더",
         "forward": "앞으로",
         "france": "프랑스",
         "french": "프랑스어",
@@ -598,7 +654,50 @@
         "welsh": "웨일스어",
         "year": "연도"
       },
-      "name": "Internet Explorer"
+      "name": "Internet Explorer",
+      "nebula": "성운",
+      "newer": "최신",
+      "newerVersion": "최신 버전",
+      "newest": "가장 최신",
+      "now": "지금",
+      "off": "끄기",
+      "older": "이전",
+      "olderVersion": "이전 버전",
+      "oldest": "가장 오래된",
+      "openingRequestedPage": "요청한 페이지를 여는 중",
+      "openingSharedPage": "공유된 페이지를 여는 중",
+      "page": "페이지",
+      "pageCouldNotBeLoadedInIframe": "iframe에서 페이지를 로드할 수 없습니다. 보안 제한 또는 네트워크 문제 때문일 수 있습니다.",
+      "pleaseTryTheFollowing": "다음을 시도해 보세요:",
+      "portugal": "포르투갈",
+      "portuguese": "포르투갈어",
+      "reconstructingHistoryForYear": "{{year}}년 {{hostname}}의 기록을 재구성하는 중...",
+      "refresh": "새로 고침",
+      "reimaginingForYear": "{{year}}년 {{hostname}}을(를) 재구상하는 중...",
+      "requiresInternetConnection": "Internet Explorer는 탐색하려면 인터넷 연결이 필요합니다.",
+      "resetFavorites": "즐겨찾기 초기화",
+      "russia": "러시아",
+      "sanskrit": "산스크리트어",
+      "search": "검색",
+      "shareLinkInvalidOrCorrupted": "제공된 공유 링크가 유효하지 않거나 손상되었습니다.",
+      "shareThisPage": "이 페이지 공유",
+      "shareThisPageAndTime": "이 페이지 및 시간 공유",
+      "showCachedVersionsTimeMachine": "캐시된 버전 보기 (Time Machine)",
+      "site": "사이트",
+      "southKorea": "대한민국",
+      "spain": "스페인",
+      "spanish": "스페인어",
+      "timeNodes": "{{count}} 시간 노드",
+      "timeNodes_plural": "{{count}} 시간 노드",
+      "travel": "이동",
+      "travellingTitle": "Internet Explorer - 이동 중",
+      "travellingTitleWithSite": "{{site}} - 이동 중",
+      "tryRefreshingThePage": "페이지를 새로 고쳐보세요.",
+      "unableToLoadPreview": "미리보기를 로드할 수 없습니다.",
+      "unitedKingdom": "영국",
+      "unitedStates": "미국",
+      "welsh": "웨일스어",
+      "year": "년"
     },
     "ipod": {
       "ariaLabels": {
@@ -810,6 +909,19 @@
     },
     "paint": {
       "description": "이미지 그리기 및 편집",
+      "dialogs": {
+        "discardChanges": "변경 취소",
+        "discardChangesDescription": "저장되지 않은 변경 사항이 있습니다. 그래도 새 파일을 만드시겠습니까?",
+        "enterImageName": "이미지 이름을 입력하세요.",
+        "error": "오류",
+        "failedToLoadImageContent": "이미지 콘텐츠를 로드하지 못했습니다.",
+        "failedToSaveImage": "이미지를 저장하지 못했습니다.",
+        "imageSavedSuccessfully": "이미지가 성공적으로 저장되었습니다.",
+        "saveImage": "이미지 저장"
+      },
+      "filtersMenu": {
+        "openFiltersMenu": "필터 메뉴 열기"
+      },
       "help": {
         "colors": {
           "description": "도구 아래의 팔레트에서 색상을 선택하여 그리기 색상 변경.",
@@ -869,7 +981,23 @@
         "save": "저장",
         "saveEllipsis": "저장..."
       },
-      "name": "페인트"
+      "name": "페인트",
+      "selectedPattern": "선택된 패턴",
+      "toolbar": {
+        "brush": "브러시",
+        "eraser": "지우개",
+        "fillColor": "색 채우기",
+        "hand": "손",
+        "line": "선",
+        "oval": "타원",
+        "pencil": "연필",
+        "rectangle": "직사각형",
+        "rectangleSelect": "직사각형 선택",
+        "select": "선택",
+        "spray": "스프레이",
+        "text": "텍스트"
+      },
+      "untitled": "제목 없음"
     },
     "pc": {
       "description": "3D PC 시뮬레이션",
@@ -988,9 +1116,6 @@
     },
     "soundboard": {
       "description": "효과음 재생",
-      "soundboards": "사운드보드",
-      "newSoundboardDefault": "새로운 사운드보드",
-      "importedSoundboard": "가져온 사운드보드",
       "help": {
         "customizeSlot": {
           "description": "각 샘플에 이모지 및 제목 추가하여 빠른 식별",
@@ -1017,6 +1142,7 @@
           "title": "파형 보기"
         }
       },
+      "importedSoundboard": "가져온 사운드보드",
       "menu": {
         "aboutSoundboard": "사운드보드 정보",
         "deleteSoundboard": "사운드보드 삭제",
@@ -1030,7 +1156,9 @@
         "soundboardHelp": "사운드보드 도움말",
         "waveforms": "파형"
       },
-      "name": "사운드보드"
+      "name": "사운드보드",
+      "newSoundboardDefault": "새로운 사운드보드",
+      "soundboards": "사운드보드"
     },
     "synth": {
       "description": "가상 신시사이저",
