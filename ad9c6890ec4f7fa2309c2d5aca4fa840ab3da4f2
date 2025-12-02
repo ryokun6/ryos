@@ -14,9 +14,9 @@ src/utils/i18n.ts: +40-56[0],+58-64[0],+66-68[0],+70-85[0],+87-92[0],+94-95[0]
 
 Conversations:
 
-[0]: 17545cb8-0fb6-421e-b363-f6d42cc18fb8; Localize folder and shortcut names; composer-1;
-[1]: f0606fb6-cb99-4fd4-a02b-b55a736b0562; Localize photo booth setup; composer-1;
-[2]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; Auto detect and set user locale; composer-1;
-[3]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; Check remaining localization tasks; composer-1;
-[4]: b8af09a7-aa4b-4909-8f26-b78062ae971d; Localize synth application; composer-1;
-[5]: cccd1800-f7a4-404d-8023-c92f35408697; Localize videos for different audiences; composer-1;
+[0]: 17545cb8-0fb6-421e-b363-f6d42cc18fb8; 17545cb8; unknown;
+[1]: f0606fb6-cb99-4fd4-a02b-b55a736b0562; f0606fb6; unknown;
+[2]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; 4afd4575; unknown;
+[3]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; 17426fa4; unknown;
+[4]: b8af09a7-aa4b-4909-8f26-b78062ae971d; b8af09a7; unknown;
+[5]: cccd1800-f7a4-404d-8023-c92f35408697; cccd1800; unknown;
