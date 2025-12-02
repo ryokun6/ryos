@@ -1764,7 +1764,8 @@
       "open": "開く",
       "quit": "終了",
       "showAllWindows": "すべてのウィンドウを表示",
-      "trash": "ゴミ箱"
+      "trash": "ゴミ箱",
+      "folderContents": "フォルダの内容"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "無題のアプレット",

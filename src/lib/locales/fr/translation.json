@@ -1764,7 +1764,8 @@
       "open": "Ouvrir",
       "quit": "Quitter",
       "showAllWindows": "Afficher toutes les fenêtres",
-      "trash": "Corbeille"
+      "trash": "Corbeille",
+      "folderContents": "Contenu du dossier"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet sans titre",

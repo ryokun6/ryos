@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
-import { AppId, getAppIconPath, appRegistry } from "@/config/appRegistry";
+import { AppId, getAppIconPath, appRegistry, getNonFinderApps } from "@/config/appRegistry";
 import { getTranslatedAppName, getTranslatedFolderNameFromName } from "@/utils/i18n";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
@@ -344,6 +344,10 @@ function MacDock() {
   const finderInstances = useFinderStore((s) => s.instances);
   const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
   const [trashContextMenuPos, setTrashContextMenuPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [applicationsContextMenuPos, setApplicationsContextMenuPos] = useState<{
     x: number;
     y: number;
   } | null>(null);
@@ -845,6 +849,200 @@ function MacDock() {
     [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, playZoomMinimize, launchApp]
   );
 
+  // Generate context menu items for a folder shortcut
+  const getFolderContextMenuItems = useCallback(
+    (folderPath: string, isTrash: boolean = false): MenuItem[] => {
+      const items: MenuItem[] = [];
+      
+      // Handle virtual directories
+      let sortedItems: Array<{
+        name: string;
+        path: string;
+        isDirectory: boolean;
+        appId?: AppId;
+        aliasType?: "file" | "app";
+        aliasTarget?: string;
+        icon?: string;
+      }> = [];
+      
+      if (folderPath === "/Applications") {
+        // Applications is a virtual directory - get apps from registry
+        const apps = getNonFinderApps();
+        sortedItems = apps.map((app) => ({
+          name: app.name,
+          path: `/Applications/${app.name}`,
+          isDirectory: false,
+          appId: app.id,
+          aliasType: "app" as const,
+          aliasTarget: app.id,
+          icon: app.icon,
+        })).sort((a, b) => a.name.localeCompare(b.name));
+      } else {
+        // Regular directory - get items from file store
+        const folderItems = fileStore.getItemsInPath(folderPath);
+        sortedItems = folderItems.map((item) => {
+          let icon: string | undefined;
+          
+          // Get icon for the item
+          if (item.aliasType === "app" && item.aliasTarget) {
+            // App alias - get icon from app registry
+            icon = getAppIconPath(item.aliasTarget as AppId);
+          } else if (item.aliasType === "file" && item.aliasTarget) {
+            // File alias - get icon from target file
+            const targetFile = fileStore.getItem(item.aliasTarget);
+            icon = targetFile?.icon || "/icons/default/file.png";
+          } else if (item.isDirectory) {
+            // Directory - use folder icon
+            icon = item.icon || "/icons/directory.png";
+          } else if (item.icon) {
+            // Use stored icon
+            icon = item.icon;
+          } else {
+            // Default file icon
+            icon = "/icons/default/file.png";
+          }
+          
+          return {
+            name: item.name,
+            path: item.path,
+            isDirectory: item.isDirectory,
+            appId: item.appId as AppId | undefined,
+            aliasType: item.aliasType,
+            aliasTarget: item.aliasTarget,
+            icon,
+          };
+        }).sort((a, b) => {
+          if (a.isDirectory && !b.isDirectory) return -1;
+          if (!a.isDirectory && b.isDirectory) return 1;
+          return a.name.localeCompare(b.name);
+        });
+      }
+      
+      // Get folder icon for "Open" menu item
+      let folderIcon: string | undefined;
+      if (folderPath === "/Applications") {
+        folderIcon = "/icons/default/applications.png";
+      } else if (folderPath === "/Trash") {
+        folderIcon = trashIcon;
+      } else {
+        const folderItem = fileStore.getItem(folderPath);
+        folderIcon = folderItem?.icon || "/icons/directory.png";
+      }
+      
+      // Add "Open" option
+      items.push({
+        type: "item",
+        label: t("common.dock.open"),
+        onSelect: () => {
+          focusFinderAtPathOrLaunch(folderPath);
+          if (isTrash) {
+            setTrashContextMenuPos(null);
+          } else {
+            setApplicationsContextMenuPos(null);
+          }
+        },
+      });
+      
+      // Add separator if there are items
+      if (sortedItems.length > 0) {
+        items.push({ type: "separator" });
+        
+        // Create submenu items for folder contents
+        const submenuItems: MenuItem[] = sortedItems.map((item) => {
+          let displayName = item.name;
+          
+          // For directories, use translated folder name
+          if (item.isDirectory) {
+            displayName = getTranslatedFolderNameFromName(item.name);
+          } else if (item.aliasType === "app" && item.aliasTarget) {
+            // For app aliases, use translated app name
+            displayName = getTranslatedAppName(item.aliasTarget as AppId);
+          } else if (item.appId) {
+            // For Applications folder apps, use translated app name
+            displayName = getTranslatedAppName(item.appId);
+          } else {
+            // Remove file extension for display
+            displayName = item.name.replace(/\.[^/.]+$/, "");
+          }
+          
+          return {
+            type: "item",
+            label: displayName,
+            icon: item.icon,
+            onSelect: () => {
+              if (item.isDirectory) {
+                // Open folder in Finder
+                focusFinderAtPathOrLaunch(item.path);
+              } else if (item.appId) {
+                // Launch app (from Applications folder)
+                const appId = item.appId;
+                if (appId === "finder") {
+                  focusOrLaunchFinder("/");
+                } else {
+                  focusOrLaunchApp(appId);
+                }
+              } else if (item.aliasType === "app" && item.aliasTarget) {
+                // Launch app
+                const appId = item.aliasTarget as AppId;
+                if (appId === "finder") {
+                  focusOrLaunchFinder("/");
+                } else {
+                  focusOrLaunchApp(appId);
+                }
+              } else if (item.aliasType === "file" && item.aliasTarget) {
+                // Open file alias - resolve target and open
+                const targetFile = fileStore.getItem(item.aliasTarget);
+                if (targetFile) {
+                  if (targetFile.isDirectory) {
+                    focusFinderAtPathOrLaunch(targetFile.path);
+                  } else {
+                    // For files, open in Finder at the file's location
+                    const parentPath = item.aliasTarget.substring(0, item.aliasTarget.lastIndexOf("/"));
+                    focusFinderAtPathOrLaunch(parentPath || "/");
+                  }
+                }
+              } else {
+                // Regular file - open in Finder at the file's location
+                const parentPath = item.path.substring(0, item.path.lastIndexOf("/"));
+                focusFinderAtPathOrLaunch(parentPath || "/");
+              }
+              // Close the context menu
+              if (isTrash) {
+                setTrashContextMenuPos(null);
+              } else {
+                setApplicationsContextMenuPos(null);
+              }
+            },
+          };
+        });
+        
+        // Add submenu with folder contents
+        items.push({
+          type: "submenu",
+          label: t("common.dock.folderContents") || "Folder Contents",
+          items: submenuItems,
+        });
+      }
+      
+      // For Trash, add separator and Empty Trash option
+      if (isTrash) {
+        items.push({ type: "separator" });
+        items.push({
+          type: "item",
+          label: t("apps.finder.contextMenu.emptyTrash"),
+          onSelect: () => {
+            setIsEmptyTrashDialogOpen(true);
+            setTrashContextMenuPos(null);
+          },
+          disabled: isTrashEmpty,
+        });
+      }
+      
+      return items;
+    },
+    [fileStore, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, getTranslatedAppName, getTranslatedFolderNameFromName]
+  );
+
   // Handle app context menu
   const handleAppContextMenu = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>, appId: AppId, instanceId?: string) => {
@@ -1116,25 +1314,49 @@ function MacDock() {
               <Divider key="divider-between" idKey="between" />
 
               {/* Applications (left of Trash) */}
-              <IconButton
-                key="__applications__"
-                label={t("common.dock.applications")}
-                icon="/icons/default/applications.png"
-                idKey="__applications__"
-                onClick={() =>
-                  focusFinderAtPathOrLaunch("/Applications", {
-                    path: "/Applications",
-                    viewType: "large",
-                  })
-                }
-                mouseX={mouseX}
-                magnifyEnabled={magnifyEnabled}
-                isNew={hasMounted && !seenIdsRef.current.has("__applications__")}
-                isHovered={hoveredId === "__applications__"}
-                isSwapping={isSwapping}
-                onHover={() => handleIconHover("__applications__")}
-                onLeave={handleIconLeave}
-              />
+              {(() => {
+                const handleApplicationsContextMenu = (
+                  e: React.MouseEvent<HTMLButtonElement>
+                ) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  const containerRect =
+                    dockContainerRef.current?.getBoundingClientRect();
+                  if (!containerRect) {
+                    setApplicationsContextMenuPos({ x: e.clientX, y: e.clientY });
+                    return;
+                  }
+
+                  setApplicationsContextMenuPos({
+                    x: e.clientX - containerRect.left,
+                    y: e.clientY - containerRect.top,
+                  });
+                };
+
+                return (
+                  <IconButton
+                    key="__applications__"
+                    label={t("common.dock.applications")}
+                    icon="/icons/default/applications.png"
+                    idKey="__applications__"
+                    onClick={() =>
+                      focusFinderAtPathOrLaunch("/Applications", {
+                        path: "/Applications",
+                        viewType: "large",
+                      })
+                    }
+                    onContextMenu={handleApplicationsContextMenu}
+                    mouseX={mouseX}
+                    magnifyEnabled={magnifyEnabled}
+                    isNew={hasMounted && !seenIdsRef.current.has("__applications__")}
+                    isHovered={hoveredId === "__applications__"}
+                    isSwapping={isSwapping}
+                    onHover={() => handleIconHover("__applications__")}
+                    onLeave={handleIconLeave}
+                  />
+                );
+              })()}
 
               {/* Trash (right side) */}
               {(() => {
@@ -1231,29 +1453,18 @@ function MacDock() {
         </motion.div>
       </div>
       <RightClickMenu
-        items={[
-          {
-            type: "item",
-            label: t("common.dock.open"),
-            onSelect: () => {
-              focusFinderAtPathOrLaunch("/Trash");
-              setTrashContextMenuPos(null);
-            },
-          },
-          { type: "separator" },
-          {
-            type: "item",
-            label: t("apps.finder.contextMenu.emptyTrash"),
-            onSelect: () => {
-              setIsEmptyTrashDialogOpen(true);
-              setTrashContextMenuPos(null);
-            },
-            disabled: isTrashEmpty,
-          },
-        ]}
+        items={getFolderContextMenuItems("/Trash", true)}
         position={trashContextMenuPos}
         onClose={() => {
           setTrashContextMenuPos(null);
+          mouseX.set(Infinity);
+        }}
+      />
+      <RightClickMenu
+        items={getFolderContextMenuItems("/Applications", false)}
+        position={applicationsContextMenuPos}
+        onClose={() => {
+          setApplicationsContextMenuPos(null);
           mouseX.set(Infinity);
         }}
       />

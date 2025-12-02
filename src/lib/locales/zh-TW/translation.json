@@ -1764,7 +1764,8 @@
       "open": "開啟",
       "quit": "結束",
       "showAllWindows": "顯示所有視窗",
-      "trash": "垃圾桶"
+      "trash": "垃圾桶",
+      "folderContents": "資料夾內容"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "未命名 Applet",

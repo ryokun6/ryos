@@ -1764,7 +1764,8 @@
       "open": "열기",
       "quit": "종료",
       "showAllWindows": "모든 창 보기",
-      "trash": "휴지통"
+      "trash": "휴지통",
+      "folderContents": "폴더 내용"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "제목 없는 Applet",

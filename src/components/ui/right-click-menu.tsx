@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
+import { ThemedIcon } from "@/components/shared/ThemedIcon";
 
 // ------------------ Types ------------------
 export type MenuItem =
@@ -18,6 +19,7 @@ export type MenuItem =
       label: string;
       onSelect?: () => void;
       disabled?: boolean;
+      icon?: string; // Icon path or emoji
     }
   | {
       type: "separator";
@@ -26,6 +28,7 @@ export type MenuItem =
       type: "submenu";
       label: string;
       items: MenuItem[];
+      icon?: string; // Icon path or emoji
     }
   | {
       type: "radioGroup";
@@ -43,7 +46,7 @@ interface RightClickMenuProps {
 }
 
 export const menuItemClass =
-  "text-md h-6 px-3 active:bg-gray-900 active:text-white min-w-[140px]";
+  "text-md h-6 px-3 active:bg-gray-900 active:text-white min-w-[140px] flex items-center gap-2";
 
 // ------------------ Renderer helpers ------------------
 function renderItems(items: MenuItem[]): ReactNode {
@@ -57,7 +60,20 @@ function renderItems(items: MenuItem[]): ReactNode {
             disabled={item.disabled}
             className={menuItemClass}
           >
-            {item.label}
+            {item.icon && (
+              <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                {item.icon.startsWith("/") || item.icon.startsWith("http") ? (
+                  <ThemedIcon
+                    name={item.icon}
+                    alt={item.label}
+                    className="w-4 h-4 [image-rendering:pixelated]"
+                  />
+                ) : (
+                  <span className="text-xs leading-none">{item.icon}</span>
+                )}
+              </div>
+            )}
+            <span>{item.label}</span>
           </DropdownMenuItem>
         );
       case "separator":
@@ -68,7 +84,20 @@ function renderItems(items: MenuItem[]): ReactNode {
         return (
           <DropdownMenuSub key={idx}>
             <DropdownMenuSubTrigger className={menuItemClass}>
-              {item.label}
+              {item.icon && (
+                <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                  {item.icon.startsWith("/") || item.icon.startsWith("http") ? (
+                    <ThemedIcon
+                      name={item.icon}
+                      alt={item.label}
+                      className="w-4 h-4 [image-rendering:pixelated]"
+                    />
+                  ) : (
+                    <span className="text-xs leading-none">{item.icon}</span>
+                  )}
+                </div>
+              )}
+              <span>{item.label}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="px-0">
               {renderItems(item.items)}

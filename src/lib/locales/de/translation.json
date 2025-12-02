@@ -1764,7 +1764,8 @@
       "open": "Öffnen",
       "quit": "Beenden",
       "showAllWindows": "Alle Fenster anzeigen",
-      "trash": "Papierkorb"
+      "trash": "Papierkorb",
+      "folderContents": "Ordnerinhalt"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Unbenanntes Applet",
