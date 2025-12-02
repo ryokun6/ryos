@@ -57,11 +57,11 @@ function storeVersion(version: string, buildNumber: string, buildTime?: string):
 async function reloadPage(version?: string, buildNumber?: string): Promise<void> {
   // Set boot message to show boot screen after reload
   if (version && buildNumber) {
-    setNextBootMessage(`Updating to ryOS ${version} (${buildNumber})...`);
+    setNextBootMessage(i18n.t("common.system.updatingToRyOSWithBuild", { version, buildNumber }));
   } else if (version) {
-    setNextBootMessage(`Updating to ryOS ${version}...`);
+    setNextBootMessage(i18n.t("common.system.updatingToRyOS", { version }));
   } else {
-    setNextBootMessage("Rebooting...");
+    setNextBootMessage(i18n.t("common.system.rebooting"));
   }
   
   try {

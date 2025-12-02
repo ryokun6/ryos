@@ -1,4 +1,5 @@
 import { ConfirmDialog } from "./ConfirmDialog";
+import { useTranslation } from "react-i18next";
 
 interface LogoutDialogProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ export function LogoutDialog({
   hasPassword,
   onSetPassword,
 }: LogoutDialogProps) {
+  const { t } = useTranslation();
+
   // If user doesn't have a password set, show password requirement dialog
   if (hasPassword === false) {
     return (
@@ -25,8 +28,8 @@ export function LogoutDialog({
           onOpenChange(false);
           onSetPassword?.();
         }}
-        title="Set Password Required"
-        description="You need to set a password before logging out to ensure you can recover your account. Would you like to set a password now?"
+        title={t("common.auth.setPasswordRequired")}
+        description={t("common.auth.setPasswordRequiredDescription")}
       />
     );
   }
@@ -37,8 +40,8 @@ export function LogoutDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       onConfirm={onConfirm}
-      title="Log Out"
-      description="Are you sure you want to log out? You will be signed out of your account."
+      title={t("common.auth.logOut")}
+      description={t("common.auth.logOutDescription")}
     />
   );
 }

@@ -1684,6 +1684,21 @@
     "appleMenu": {
       "aboutThisComputer": "À propos de cet ordinateur"
     },
+    "auth": {
+      "createAccount": "Créer un compte",
+      "creatingAccount": "Création...",
+      "dialogTitle": "Connexion ryOS",
+      "logIn": "Se connecter",
+      "logOut": "Se déconnecter",
+      "logOutDescription": "Voulez-vous vraiment vous déconnecter ? Vous serez déconnecté de votre compte.",
+      "loggingIn": "Connexion...",
+      "loginDescription": "Connectez-vous à votre compte",
+      "password": "Mot de passe",
+      "setPasswordRequired": "Définir un mot de passe requis",
+      "setPasswordRequiredDescription": "Vous devez définir un mot de passe avant de vous déconnecter pour pouvoir récupérer votre compte. Souhaitez-vous définir un mot de passe maintenant ?",
+      "signupDescription": "Créez un compte pour accéder aux salons de discussion et enregistrer vos paramètres",
+      "username": "Nom d'utilisateur"
+    },
     "desktop": {
       "myComputer": "Mon ordinateur",
       "setWallpaper": "Définir le fond d'écran…"
@@ -1697,6 +1712,11 @@
       "delete": "Supprimer",
       "discardChanges": "Ignorer les modifications",
       "discardChangesDesc": "Voulez-vous ignorer vos modifications et créer un nouveau fichier ?",
+      "emoji": {
+        "chooseEmoji": "Choisir un emoji",
+        "description": "Choisir un emoji pour cet emplacement sonore",
+        "setEmoji": "Définir l'emoji"
+      },
       "enterFileName": "Entrez un nom pour votre fichier",
       "enterFilenameToSave": "Entrez un nom de fichier à enregistrer, ou supprimez-le avant de fermer.",
       "help": "Aide",
@@ -1746,6 +1766,26 @@
       "showAllWindows": "Afficher toutes les fenêtres",
       "trash": "Corbeille"
     },
+    "htmlPreview": {
+      "bannerFallbackTitle": "Applet sans titre",
+      "codePreviewTitle": "Aperçu du code ryOS",
+      "codePreviewTitleFullscreen": "Aperçu du code ryOS en plein écran",
+      "copyHtml": "Copier le code HTML",
+      "downloadHtml": "Télécharger HTML",
+      "exitFullscreen": "Quitter le mode plein écran",
+      "full": "Plein",
+      "maximizePreview": "Agrandir l'aperçu",
+      "minimizePreview": "Réduire l'aperçu",
+      "saveApplet": "Enregistrer comme Applet",
+      "saveAppletDescription": "Saisissez le nom de l'applet, une applet existante sera écrasée :",
+      "split": "Diviser",
+      "toastOpenAction": "Ouvrir",
+      "toastSaveFailed": "Échec de l'enregistrement de l'applet",
+      "toastSaveFailedDescription": "Une erreur est survenue lors de l'enregistrement de l'applet.",
+      "toastSaved": "Applet enregistrée avec succès",
+      "toggleCode": "Basculer le code",
+      "toggleSplitView": "Basculer l'affichage fractionné"
+    },
     "menu": {
       "aboutFinder": "À propos de Finder",
       "applications": "Applications",
@@ -1791,11 +1831,18 @@
       "start": "Démarrer"
     },
     "system": {
+      "debugBootScreenTest": "Test de l'écran de démarrage de débogage...",
       "formatFileSystem": "Formatter le système de fichiers",
       "formatFileSystemDesc": "Êtes-vous sûr de vouloir formater le système de fichiers ? Cela supprimera définitivement tous les documents (sauf les documents d'exemple), images et fonds d'écran personnalisés. ryOS redémarrera après le formatage.",
+      "formattingFileSystem": "Formatage du système de fichiers...",
+      "rebooting": "Redémarrage...",
       "resetAllSettings": "Réinitialiser tous les paramètres",
       "resetAllSettingsDesc": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres ? Cela effacera tous les paramètres enregistrés et restaurera les états par défaut. ryOS redémarrera après la réinitialisation.",
-      "systemRestoring": "Restauration du système..."
+      "resettingSystem": "Réinitialisation du système...",
+      "restoringSystem": "Restauration du système...",
+      "systemRestoring": "Restauration du système...",
+      "updatingToRyOS": "Mise à jour vers ryOS {{version}}...",
+      "updatingToRyOSWithBuild": "Mise à jour vers ryOS {{version}} ({{buildNumber}})..."
     },
     "toast": {
       "alreadyLatestVersion": "Vous utilisez déjà la dernière version",

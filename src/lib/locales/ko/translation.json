@@ -1684,6 +1684,21 @@
     "appleMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여"
     },
+    "auth": {
+      "createAccount": "계정 만들기",
+      "creatingAccount": "만드는 중...",
+      "dialogTitle": "ryOS 로그인",
+      "logIn": "로그인",
+      "logOut": "로그아웃",
+      "logOutDescription": "로그아웃하시겠습니까? 계정에서 로그아웃됩니다.",
+      "loggingIn": "로그인 중...",
+      "loginDescription": "계정에 로그인",
+      "password": "비밀번호",
+      "setPasswordRequired": "비밀번호 설정 필요",
+      "setPasswordRequiredDescription": "계정 복구를 위해 로그아웃하기 전에 비밀번호를 설정해야 합니다. 지금 비밀번호를 설정하시겠습니까?",
+      "signupDescription": "채팅방에 접속하고 설정을 저장하려면 계정을 만드세요.",
+      "username": "사용자 이름"
+    },
     "desktop": {
       "myComputer": "내 컴퓨터",
       "setWallpaper": "배경화면 설정…"
@@ -1697,6 +1712,11 @@
       "delete": "삭제",
       "discardChanges": "변경 사항 폐기",
       "discardChangesDesc": "변경 사항을 폐기하고 새 파일을 만들겠습니까?",
+      "emoji": {
+        "chooseEmoji": "이모티콘 선택",
+        "description": "이 사운드 슬롯에 사용할 이모티콘을 선택하세요.",
+        "setEmoji": "이모티콘 설정"
+      },
       "enterFileName": "파일 이름을 입력하세요",
       "enterFilenameToSave": "저장할 파일 이름을 입력하거나 닫기 전에 삭제하세요.",
       "help": "도움말",
@@ -1746,6 +1766,26 @@
       "showAllWindows": "모든 창 보기",
       "trash": "휴지통"
     },
+    "htmlPreview": {
+      "bannerFallbackTitle": "제목 없는 Applet",
+      "codePreviewTitle": "ryOS 코드 미리보기",
+      "codePreviewTitleFullscreen": "ryOS 코드 미리보기 전체 화면",
+      "copyHtml": "HTML 코드 복사",
+      "downloadHtml": "HTML 다운로드",
+      "exitFullscreen": "전체 화면 종료",
+      "full": "전체 화면",
+      "maximizePreview": "미리보기 최대화",
+      "minimizePreview": "미리보기 최소화",
+      "saveApplet": "Applet으로 저장",
+      "saveAppletDescription": "Applet 이름을 입력하세요. 기존 Applet은 덮어쓰여집니다:",
+      "split": "분할",
+      "toastOpenAction": "열기",
+      "toastSaveFailed": "Applet 저장 실패",
+      "toastSaveFailedDescription": "Applet 저장 중 오류가 발생했습니다.",
+      "toastSaved": "Applet이 성공적으로 저장되었습니다.",
+      "toggleCode": "코드 전환",
+      "toggleSplitView": "분할 보기 전환"
+    },
     "menu": {
       "aboutFinder": "Finder 정보",
       "applications": "응용 프로그램",
@@ -1791,11 +1831,18 @@
       "start": "시작"
     },
     "system": {
+      "debugBootScreenTest": "디버그 부팅 화면 테스트 중...",
       "formatFileSystem": "파일 시스템 포맷",
       "formatFileSystemDesc": "파일 시스템을 포맷하시겠습니까? 모든 문서(샘플 문서 제외), 이미지 및 사용자 지정 배경 화면이 영구적으로 삭제됩니다. 포맷 후 ryOS가 다시 시작됩니다.",
+      "formattingFileSystem": "파일 시스템 포맷 중...",
+      "rebooting": "재부팅 중...",
       "resetAllSettings": "모든 설정 재설정",
       "resetAllSettingsDesc": "모든 설정을 재설정하시겠습니까? 저장된 모든 설정이 지워지고 기본 상태로 복원됩니다. 재설정 후 ryOS가 다시 시작됩니다.",
-      "systemRestoring": "시스템 복원 중..."
+      "resettingSystem": "시스템 재설정 중...",
+      "restoringSystem": "시스템 복원 중...",
+      "systemRestoring": "시스템 복원 중...",
+      "updatingToRyOS": "ryOS {{version}}으로(로) 업데이트 중...",
+      "updatingToRyOSWithBuild": "ryOS {{version}} ({{buildNumber}})으로(로) 업데이트 중..."
     },
     "toast": {
       "alreadyLatestVersion": "이미 최신 버전입니다.",

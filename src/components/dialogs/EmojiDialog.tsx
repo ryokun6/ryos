@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface EmojiDialogProps {
   isOpen: boolean;
@@ -231,6 +232,7 @@ export function EmojiDialog({
   onOpenChange,
   onEmojiSelect,
 }: EmojiDialogProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -245,7 +247,7 @@ export function EmojiDialog({
             : "font-geneva-12 text-[12px]"
         )}
       >
-        Choose an emoji
+        {t("common.dialog.emoji.chooseEmoji")}
       </p>
       <div className="grid grid-cols-10 gap-1 max-h-[300px] overflow-y-auto">
         {EMOJIS.map((emoji, i) => (
@@ -272,22 +274,22 @@ export function EmojiDialog({
       >
         {isXpTheme ? (
           <>
-            <DialogHeader>Set Emoji</DialogHeader>
+            <DialogHeader>{t("common.dialog.emoji.setEmoji")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : currentTheme === "macosx" ? (
           <>
-            <DialogHeader>Set Emoji</DialogHeader>
+            <DialogHeader>{t("common.dialog.emoji.setEmoji")}</DialogHeader>
             {dialogContent}
           </>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="font-normal text-[16px]">
-                Set Emoji
+                {t("common.dialog.emoji.setEmoji")}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                Choose an emoji for this sound slot
+                {t("common.dialog.emoji.description")}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

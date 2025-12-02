@@ -1684,6 +1684,21 @@
     "appleMenu": {
       "aboutThisComputer": "關於此電腦"
     },
+    "auth": {
+      "createAccount": "建立帳戶",
+      "creatingAccount": "正在建立...",
+      "dialogTitle": "ryOS 登入",
+      "logIn": "登入",
+      "logOut": "登出",
+      "logOutDescription": "您確定要登出嗎？您將會從您的帳戶登出。",
+      "loggingIn": "正在登入...",
+      "loginDescription": "登入您的帳戶",
+      "password": "密碼",
+      "setPasswordRequired": "需要設定密碼",
+      "setPasswordRequiredDescription": "您需要在登出前設定密碼，以確保您可以復原您的帳戶。您現在要設定密碼嗎？",
+      "signupDescription": "建立帳戶以存取聊天室並儲存您的設定",
+      "username": "使用者名稱"
+    },
     "desktop": {
       "myComputer": "我的電腦",
       "setWallpaper": "設定背景圖片…"
@@ -1697,6 +1712,11 @@
       "delete": "刪除",
       "discardChanges": "捨棄變更",
       "discardChangesDesc": "您確定要捨棄變更並建立新檔案嗎？",
+      "emoji": {
+        "chooseEmoji": "選擇表情符號",
+        "description": "為此音效槽選擇表情符號",
+        "setEmoji": "設定表情符號"
+      },
       "enterFileName": "輸入檔案名稱",
       "enterFilenameToSave": "輸入要儲存的檔案名稱，或在關閉前刪除。",
       "help": "輔助說明",
@@ -1746,6 +1766,26 @@
       "showAllWindows": "顯示所有視窗",
       "trash": "垃圾桶"
     },
+    "htmlPreview": {
+      "bannerFallbackTitle": "未命名 Applet",
+      "codePreviewTitle": "ryOS 程式碼預覽",
+      "codePreviewTitleFullscreen": "ryOS 程式碼預覽全螢幕",
+      "copyHtml": "複製 HTML 程式碼",
+      "downloadHtml": "下載 HTML",
+      "exitFullscreen": "結束全螢幕",
+      "full": "完整",
+      "maximizePreview": "最大化預覽",
+      "minimizePreview": "最小化預覽",
+      "saveApplet": "另存為 Applet",
+      "saveAppletDescription": "輸入 Applet 名稱，現有的 Applet 將會被覆寫：",
+      "split": "分割",
+      "toastOpenAction": "開啟",
+      "toastSaveFailed": "儲存 Applet 失敗",
+      "toastSaveFailedDescription": "儲存 Applet 時發生錯誤。",
+      "toastSaved": "Applet 儲存成功",
+      "toggleCode": "切換程式碼",
+      "toggleSplitView": "切換分割視圖"
+    },
     "menu": {
       "aboutFinder": "關於 Finder",
       "applications": "應用程式",
@@ -1791,11 +1831,18 @@
       "start": "開始"
     },
     "system": {
+      "debugBootScreenTest": "偵錯開機畫面測試...",
       "formatFileSystem": "格式化檔案系統",
       "formatFileSystemDesc": "您確定要格式化檔案系統嗎？這將永久刪除所有文件（範例文件除外）、圖片和自訂桌布。格式化後 ryOS 將重新啟動。",
+      "formattingFileSystem": "格式化檔案系統...",
+      "rebooting": "重新開機中...",
       "resetAllSettings": "重設所有設定",
       "resetAllSettingsDesc": "您確定要重設所有設定嗎？這將清除所有已儲存的設定並還原為預設狀態。重設後 ryOS 將重新啟動。",
-      "systemRestoring": "系統還原中..."
+      "resettingSystem": "重設系統中...",
+      "restoringSystem": "還原系統中...",
+      "systemRestoring": "系統還原中...",
+      "updatingToRyOS": "更新至 ryOS {{version}}...",
+      "updatingToRyOSWithBuild": "更新至 ryOS {{version}} ({{buildNumber}})..."
     },
     "toast": {
       "alreadyLatestVersion": "已經是最新版本",

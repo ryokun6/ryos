@@ -1684,6 +1684,21 @@
     "appleMenu": {
       "aboutThisComputer": "Über diesen Computer"
     },
+    "auth": {
+      "createAccount": "Konto erstellen",
+      "creatingAccount": "Wird erstellt...",
+      "dialogTitle": "ryOS-Login",
+      "logIn": "Anmelden",
+      "logOut": "Abmelden",
+      "logOutDescription": "Möchten Sie sich wirklich abmelden? Sie werden von Ihrem Konto abgemeldet.",
+      "loggingIn": "Wird angemeldet...",
+      "loginDescription": "Melden Sie sich bei Ihrem Konto an",
+      "password": "Passwort",
+      "setPasswordRequired": "Passwort festlegen erforderlich",
+      "setPasswordRequiredDescription": "Sie müssen ein Passwort festlegen, bevor Sie sich abmelden, um sicherzustellen, dass Sie Ihr Konto wiederherstellen können. Möchten Sie jetzt ein Passwort festlegen?",
+      "signupDescription": "Erstellen Sie ein Konto, um auf Chaträume zuzugreifen und Ihre Einstellungen zu speichern",
+      "username": "Benutzername"
+    },
     "desktop": {
       "myComputer": "Arbeitsplatz",
       "setWallpaper": "Hintergrundbild festlegen…"
@@ -1697,6 +1712,11 @@
       "delete": "Löschen",
       "discardChanges": "Änderungen verwerfen",
       "discardChangesDesc": "Möchten Sie Ihre Änderungen verwerfen und eine neue Datei erstellen?",
+      "emoji": {
+        "chooseEmoji": "Emoji auswählen",
+        "description": "Wählen Sie ein Emoji für diesen Sound-Slot",
+        "setEmoji": "Emoji festlegen"
+      },
       "enterFileName": "Geben Sie einen Namen für Ihre Datei ein",
       "enterFilenameToSave": "Geben Sie einen Dateinamen zum Sichern ein oder löschen Sie ihn vor dem Schließen.",
       "help": "Hilfe",
@@ -1746,6 +1766,26 @@
       "showAllWindows": "Alle Fenster anzeigen",
       "trash": "Papierkorb"
     },
+    "htmlPreview": {
+      "bannerFallbackTitle": "Unbenanntes Applet",
+      "codePreviewTitle": "ryOS Code-Vorschau",
+      "codePreviewTitleFullscreen": "ryOS Code-Vorschau im Vollbildmodus",
+      "copyHtml": "HTML-Code kopieren",
+      "downloadHtml": "HTML herunterladen",
+      "exitFullscreen": "Vollbild verlassen",
+      "full": "Vollbild",
+      "maximizePreview": "Vorschau maximieren",
+      "minimizePreview": "Vorschau minimieren",
+      "saveApplet": "Als Applet speichern",
+      "saveAppletDescription": "Applet-Namen eingeben, bestehendes Applet wird überschrieben:",
+      "split": "Teilen",
+      "toastOpenAction": "Öffnen",
+      "toastSaveFailed": "Applet konnte nicht gespeichert werden",
+      "toastSaveFailedDescription": "Beim Speichern des Applets ist ein Fehler aufgetreten.",
+      "toastSaved": "Applet erfolgreich gespeichert",
+      "toggleCode": "Code umschalten",
+      "toggleSplitView": "Geteilte Ansicht umschalten"
+    },
     "menu": {
       "aboutFinder": "Über Finder",
       "applications": "Programme",
@@ -1791,11 +1831,18 @@
       "start": "Start"
     },
     "system": {
+      "debugBootScreenTest": "Debug-Startbildschirmtest...",
       "formatFileSystem": "Dateisystem formatieren",
       "formatFileSystemDesc": "Möchten Sie wirklich das Dateisystem formatieren? Dies löscht dauerhaft alle Dokumente (außer Beispieldokumenten), Bilder und benutzerdefinierte Hintergrundbilder. ryOS startet nach dem Formatieren neu.",
+      "formattingFileSystem": "Dateisystem wird formatiert...",
+      "rebooting": "Neustart...",
       "resetAllSettings": "Alle Einstellungen zurücksetzen",
       "resetAllSettingsDesc": "Möchten Sie wirklich alle Einstellungen zurücksetzen? Dies löscht alle gespeicherten Einstellungen und stellt die Standardzustände wieder her. ryOS startet nach dem Zurücksetzen neu.",
-      "systemRestoring": "System wird wiederhergestellt..."
+      "resettingSystem": "System wird zurückgesetzt...",
+      "restoringSystem": "System wird wiederhergestellt...",
+      "systemRestoring": "System wird wiederhergestellt...",
+      "updatingToRyOS": "Aktualisiere auf ryOS {{version}}...",
+      "updatingToRyOSWithBuild": "Aktualisiere auf ryOS {{version}} ({{buildNumber}})..."
     },
     "toast": {
       "alreadyLatestVersion": "Die neueste Version ist bereits installiert.",

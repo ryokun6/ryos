@@ -499,7 +499,7 @@ export function ControlPanelsAppComponent({
 
   const handleConfirmReset = () => {
     setIsConfirmResetOpen(false);
-    setNextBootMessage("Resetting System...");
+    setNextBootMessage(t("common.system.resettingSystem"));
     performReset();
   };
 
@@ -1428,7 +1428,7 @@ export function ControlPanelsAppComponent({
             }
           }
         }
-        setNextBootMessage("Restoring System...");
+        setNextBootMessage(t("common.system.restoringSystem"));
         window.location.reload();
       } catch (err) {
         console.error("Backup restore failed:", err);
@@ -1461,13 +1461,13 @@ export function ControlPanelsAppComponent({
     setCurrentWallpaper("/wallpapers/photos/aqua/water.jpg");
     await formatFileSystem();
     clearPrefetchFlag(); // Force re-prefetch on next boot
-    setNextBootMessage("Formatting File System...");
+    setNextBootMessage(t("common.system.formattingFileSystem"));
     window.location.reload();
   };
 
   const handleConfirmFormat = () => {
     setIsConfirmFormatOpen(false);
-    setNextBootMessage("Formatting File System...");
+    setNextBootMessage(t("common.system.formattingFileSystem"));
     performFormat();
   };
 
@@ -2051,7 +2051,7 @@ export function ControlPanelsAppComponent({
                     <Button
                       variant="retro"
                       onClick={() => {
-                        setNextBootMessage("Debug Boot Screen Test...");
+                        setNextBootMessage(t("common.system.debugBootScreenTest"));
                         window.location.reload();
                       }}
                       className="w-fit"

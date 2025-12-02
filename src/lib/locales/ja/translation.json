@@ -1684,6 +1684,21 @@
     "appleMenu": {
       "aboutThisComputer": "このコンピュータについて"
     },
+    "auth": {
+      "createAccount": "アカウントを作成",
+      "creatingAccount": "作成中...",
+      "dialogTitle": "ryOSログイン",
+      "logIn": "ログイン",
+      "logOut": "ログアウト",
+      "logOutDescription": "ログアウトしますか？アカウントからサインアウトされます。",
+      "loggingIn": "ログイン中...",
+      "loginDescription": "アカウントにログイン",
+      "password": "パスワード",
+      "setPasswordRequired": "パスワード設定が必要です",
+      "setPasswordRequiredDescription": "アカウントを復元できるように、ログアウトする前にパスワードを設定する必要があります。今すぐパスワードを設定しますか？",
+      "signupDescription": "チャットルームにアクセスし、設定を保存するためにアカウントを作成してください",
+      "username": "ユーザー名"
+    },
     "desktop": {
       "myComputer": "マイコンピュータ",
       "setWallpaper": "壁紙を設定…"
@@ -1697,6 +1712,11 @@
       "delete": "削除",
       "discardChanges": "変更を破棄",
       "discardChangesDesc": "変更を破棄して新しいファイルを作成しますか？",
+      "emoji": {
+        "chooseEmoji": "絵文字を選択",
+        "description": "このサウンドスロットの絵文字を選択",
+        "setEmoji": "絵文字を設定"
+      },
       "enterFileName": "ファイル名を入力してください",
       "enterFilenameToSave": "保存するファイル名を入力するか、閉じる前に削除してください。",
       "help": "ヘルプ",
@@ -1746,6 +1766,26 @@
       "showAllWindows": "すべてのウィンドウを表示",
       "trash": "ゴミ箱"
     },
+    "htmlPreview": {
+      "bannerFallbackTitle": "無題のアプレット",
+      "codePreviewTitle": "ryOSコードプレビュー",
+      "codePreviewTitleFullscreen": "ryOSコードプレビュー（フルスクリーン）",
+      "copyHtml": "HTMLコードをコピー",
+      "downloadHtml": "HTMLをダウンロード",
+      "exitFullscreen": "全画面表示を終了",
+      "full": "フル",
+      "maximizePreview": "プレビューを最大化",
+      "minimizePreview": "プレビューを最小化",
+      "saveApplet": "アプレットとして保存",
+      "saveAppletDescription": "アプレット名を入力してください。既存のアプレットは上書きされます。",
+      "split": "分割",
+      "toastOpenAction": "開く",
+      "toastSaveFailed": "アプレットの保存に失敗しました",
+      "toastSaveFailedDescription": "アプレットの保存中にエラーが発生しました。",
+      "toastSaved": "アプレットを保存しました",
+      "toggleCode": "コードの切り替え",
+      "toggleSplitView": "分割表示の切り替え"
+    },
     "menu": {
       "aboutFinder": "Finderについて",
       "applications": "アプリケーション",
@@ -1791,11 +1831,18 @@
       "start": "スタート"
     },
     "system": {
+      "debugBootScreenTest": "デバッグ起動画面テスト...",
       "formatFileSystem": "ファイルシステムをフォーマット",
       "formatFileSystemDesc": "ファイルシステムをフォーマットしてもよろしいですか？これにより、すべての書類（サンプル書類を除く）、画像、カスタム壁紙が永久に削除されます。フォーマット後、ryOSが再起動します。",
+      "formattingFileSystem": "ファイルシステムをフォーマット中...",
+      "rebooting": "再起動中...",
       "resetAllSettings": "すべての設定をリセット",
       "resetAllSettingsDesc": "すべての設定をリセットしてもよろしいですか？これにより、保存されたすべての設定がクリアされ、デフォルト状態に復元されます。リセット後、ryOSが再起動します。",
-      "systemRestoring": "システムを復元中..."
+      "resettingSystem": "システムをリセット中...",
+      "restoringSystem": "システムを復元中...",
+      "systemRestoring": "システムを復元中...",
+      "updatingToRyOS": "ryOS {{version}} にアップデート中...",
+      "updatingToRyOSWithBuild": "ryOS {{version}} ({{buildNumber}}) にアップデート中..."
     },
     "toast": {
       "alreadyLatestVersion": "最新バージョンです",

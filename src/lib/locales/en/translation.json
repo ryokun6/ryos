@@ -45,6 +45,11 @@
       "madeBy": "Made by",
       "openInGitHub": "Open in GitHub",
       "informationAboutApp": "Information about the application",
+      "emoji": {
+        "chooseEmoji": "Choose an emoji",
+        "setEmoji": "Set Emoji",
+        "description": "Choose an emoji for this sound slot"
+      },
       "share": {
         "shareItem": "Share {{itemType}}",
         "shareItemViaLinkOrQrCode": "Share this {{itemType}} via link or QR code",
@@ -72,6 +77,13 @@
     },
     "system": {
       "systemRestoring": "System Restoring...",
+      "resettingSystem": "Resetting System...",
+      "restoringSystem": "Restoring System...",
+      "formattingFileSystem": "Formatting File System...",
+      "debugBootScreenTest": "Debug Boot Screen Test...",
+      "updatingToRyOS": "Updating to ryOS {{version}}...",
+      "updatingToRyOSWithBuild": "Updating to ryOS {{version}} ({{buildNumber}})...",
+      "rebooting": "Rebooting...",
       "resetAllSettings": "Reset All Settings",
       "resetAllSettingsDesc": "Are you sure you want to reset all settings? This will clear all saved settings and restore default states. ryOS will restart after reset.",
       "formatFileSystem": "Format File System",
@@ -126,6 +138,41 @@
       "noAssetsToCache": "No assets to cache",
       "alreadyLatestVersion": "Already running the latest version",
       "couldNotCheckUpdates": "Could not check for updates"
+    },
+    "auth": {
+      "dialogTitle": "ryOS Login",
+      "username": "Username",
+      "password": "Password",
+      "logIn": "Log In",
+      "createAccount": "Create Account",
+      "loggingIn": "Logging in...",
+      "creatingAccount": "Creating...",
+      "loginDescription": "Log in to your account",
+      "signupDescription": "Create an account to access chat rooms and save your settings",
+      "setPasswordRequired": "Set Password Required",
+      "setPasswordRequiredDescription": "You need to set a password before logging out to ensure you can recover your account. Would you like to set a password now?",
+      "logOut": "Log Out",
+      "logOutDescription": "Are you sure you want to log out? You will be signed out of your account."
+    },
+    "htmlPreview": {
+      "toastSaved": "Applet saved successfully",
+      "toastSaveFailed": "Failed to save applet",
+      "toastSaveFailedDescription": "An error occurred while saving the applet.",
+      "toastOpenAction": "Open",
+      "bannerFallbackTitle": "Untitled Applet",
+      "saveApplet": "Save as Applet",
+      "saveAppletDescription": "Enter applet name, existing applet will get overwritten:",
+      "downloadHtml": "Download HTML",
+      "copyHtml": "Copy HTML code",
+      "maximizePreview": "Maximize preview",
+      "minimizePreview": "Minimize preview",
+      "toggleSplitView": "Toggle split view",
+      "split": "Split",
+      "full": "Full",
+      "toggleCode": "Toggle code",
+      "exitFullscreen": "Exit fullscreen",
+      "codePreviewTitle": "ryOS Code Preview",
+      "codePreviewTitleFullscreen": "ryOS Code Preview Fullscreen"
     }
   },
   "apps": {

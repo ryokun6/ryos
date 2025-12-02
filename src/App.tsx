@@ -10,11 +10,13 @@ import { AnyApp } from "./apps/base/types";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
+import { useTranslation } from "react-i18next";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
 
 export function App() {
+  const { t } = useTranslation();
   const { displayMode, isFirstBoot, setHasBooted } = useAppStoreShallow(
     (state) => ({
       displayMode: state.displayMode,
@@ -84,7 +86,7 @@ export function App() {
       <BootScreen
         isOpen={true}
         onOpenChange={() => {}}
-        title={bootScreenMessage || "System Restoring..."}
+        title={bootScreenMessage || t("common.system.systemRestoring")}
         onBootComplete={() => {
           clearNextBootMessage();
           setShowBootScreen(false);
