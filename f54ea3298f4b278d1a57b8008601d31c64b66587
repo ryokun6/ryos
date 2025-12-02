@@ -1,9 +1,7 @@
 AI Notes:
 
-src/styles/themes.css: +185-195[0],+196[1],+197[2],+198[0],+238-248[0],+249[1],+250[2],+251[0]
+src/styles/themes.css: +185-198[0],+238-251[0]
 
 Conversations:
 
 [0]: 2da79e75-4b71-4fdc-9895-8ff00fa7a3e2; Font fallback issue in theme UI; composer-1;
-[1]: 54d82b5a-1d62-4807-a24a-a9cd5848dea2; Tab Request 54d82b5a; unknown;
-[2]: 2fbbb605-0c40-46c0-862f-adec1a73010a; Tab Request 2fbbb605; unknown;
