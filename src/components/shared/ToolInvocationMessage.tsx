@@ -226,14 +226,12 @@ export function ToolInvocationMessage({
         }
       }
     } else if (toolName === "open") {
-      if (typeof output === "string") {
-        if (output.includes("Playing")) {
-          displayResultMessage = output;
-        } else if (output.includes("Opened") || output.includes("Launched")) {
-          displayResultMessage = output;
-        } else {
-          displayResultMessage = t("apps.chats.toolCalls.opened");
-        }
+      if (typeof output === "string" && output.trim().length > 0) {
+        // Use the output directly - it's already a properly localized message
+        // (e.g., "Playing X by Y" for music, "Opened X" for files, etc.)
+        displayResultMessage = output;
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.opened");
       }
     } else if (toolName === "read") {
       const path = typeof input?.path === "string" ? input.path : "";
