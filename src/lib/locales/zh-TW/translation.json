@@ -1684,6 +1684,17 @@
     "appleMenu": {
       "aboutThisComputer": "關於此電腦"
     },
+    "auth": {
+      "createAccount": "[TODO] Create Account",
+      "creatingAccount": "[TODO] Creating...",
+      "dialogTitle": "[TODO] ryOS Login",
+      "logIn": "[TODO] Log In",
+      "loggingIn": "[TODO] Logging in...",
+      "loginDescription": "[TODO] Log in to your account",
+      "password": "[TODO] Password",
+      "signupDescription": "[TODO] Create an account to access chat rooms and save your settings",
+      "username": "[TODO] Username"
+    },
     "desktop": {
       "myComputer": "我的電腦",
       "setWallpaper": "設定背景圖片…"
@@ -1745,6 +1756,26 @@
       "quit": "結束",
       "showAllWindows": "顯示所有視窗",
       "trash": "垃圾桶"
+    },
+    "htmlPreview": {
+      "bannerFallbackTitle": "[TODO] Untitled Applet",
+      "codePreviewTitle": "[TODO] ryOS Code Preview",
+      "codePreviewTitleFullscreen": "[TODO] ryOS Code Preview Fullscreen",
+      "copyHtml": "[TODO] Copy HTML code",
+      "downloadHtml": "[TODO] Download HTML",
+      "exitFullscreen": "[TODO] Exit fullscreen",
+      "full": "[TODO] Full",
+      "maximizePreview": "[TODO] Maximize preview",
+      "minimizePreview": "[TODO] Minimize preview",
+      "saveApplet": "[TODO] Save as Applet",
+      "saveAppletDescription": "[TODO] Enter applet name, existing applet will get overwritten:",
+      "split": "[TODO] Split",
+      "toastOpenAction": "[TODO] Open",
+      "toastSaveFailed": "[TODO] Failed to save applet",
+      "toastSaveFailedDescription": "[TODO] An error occurred while saving the applet.",
+      "toastSaved": "[TODO] Applet saved successfully",
+      "toggleCode": "[TODO] Toggle code",
+      "toggleSplitView": "[TODO] Toggle split view"
     },
     "menu": {
       "aboutFinder": "關於 Finder",

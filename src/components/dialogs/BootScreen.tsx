@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useSound, Sounds } from "@/hooks/useSound";
+import { useTranslation } from "react-i18next";
 
 interface BootScreenProps {
   isOpen: boolean;
@@ -15,10 +16,12 @@ export function BootScreen({
   isOpen,
   onOpenChange,
   onBootComplete,
-  title = "System Restoring...",
+  title,
 }: BootScreenProps) {
   const { play } = useSound(Sounds.BOOT, 0.5);
   const [progress, setProgress] = useState(0);
+  const { t } = useTranslation();
+  const localizedTitle = title ?? t("common.system.systemRestoring");
 
   useEffect(() => {
     let interval: number;
@@ -77,7 +80,7 @@ export function BootScreen({
           style={{ position: "fixed", zIndex: 80 }}
         >
           <VisuallyHidden>
-            <DialogTitle>{title}</DialogTitle>
+            <DialogTitle>{localizedTitle}</DialogTitle>
           </VisuallyHidden>
           <div className="flex flex-col items-center justify-center p-8 min-h-[300px] w-full">
             <div className="flex flex-col items-center justify-center border border-neutral-200 bg-white p-8 w-full pb-4">
@@ -90,7 +93,9 @@ export function BootScreen({
                 <span className="text-blue-500">ry</span>OS
               </h1>
             </div>
-            <h2 className="text-[16px] font-chicago mt-4 mb-1">{title}</h2>
+            <h2 className="text-[16px] font-chicago mt-4 mb-1">
+              {localizedTitle}
+            </h2>
             <div className="w-[50%] h-3 border-1 border-neutral-500 rounded-sm overflow-hidden">
               <div
                 className="h-full bg-neutral-900 transition-all duration-200"

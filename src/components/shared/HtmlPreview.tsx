@@ -30,6 +30,7 @@ import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
+import { useTranslation } from "react-i18next";
 
 // Lazily load shiki only when code view is requested to keep initial bundle smaller
 let shikiModulePromise: Promise<typeof import("shiki")> | null = null;
@@ -209,6 +210,7 @@ export default function HtmlPreview({
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isSaveAppletDialogOpen, setIsSaveAppletDialogOpen] = useState(false);
   const [appletFileName, setAppletFileName] = useState("");
+  const { t } = useTranslation();
 
   // Use file system hook for saving applets
   const { saveFile } = useFileSystem("/", { skipLoad: true });
@@ -875,10 +877,10 @@ export default function HtmlPreview({
       setIsSaveAppletDialogOpen(false);
 
       // Show success toast with button to open applet
-      toast.success("Applet saved successfully", {
+      toast.success(t("common.htmlPreview.toastSaved"), {
         description: nameWithExtension,
         action: {
-          label: "Open",
+          label: t("common.htmlPreview.toastOpenAction"),
           onClick: () => {
             launchApp("applet-viewer", {
               initialData: {
@@ -892,8 +894,8 @@ export default function HtmlPreview({
       });
     } catch (err) {
       console.error("Failed to save applet:", err);
-      toast.error("Failed to save applet", {
-        description: "An error occurred while saving the applet.",
+      toast.error(t("common.htmlPreview.toastSaveFailed"), {
+        description: t("common.htmlPreview.toastSaveFailedDescription"),
       });
     }
   };
@@ -1183,7 +1185,7 @@ export default function HtmlPreview({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm font-geneva-12 truncate">
-                  {appletTitle || "Untitled Applet"}
+                  {appletTitle || t("common.htmlPreview.bannerFallbackTitle")}
                 </div>
               </div>
               <Button
@@ -1201,7 +1203,7 @@ export default function HtmlPreview({
                 className="w-[60px]"
                 disabled={isStreaming}
               >
-                Save
+                {t("common.dialog.save")}
               </Button>
             </div>
         )}
@@ -1223,7 +1225,7 @@ export default function HtmlPreview({
               onClick={handleSaveAsApplet}
               onMouseDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded mr-1 group"
-              aria-label="Save as Applet"
+              aria-label={t("common.htmlPreview.saveApplet")}
               disabled={isStreaming}
             >
               <ArrowDownToLine
@@ -1235,7 +1237,7 @@ export default function HtmlPreview({
               onClick={handleSaveToDisk}
               onMouseDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded mr-1 group"
-              aria-label="Download HTML"
+              aria-label={t("common.htmlPreview.downloadHtml")}
               disabled={isStreaming}
             >
               <Share
@@ -1247,7 +1249,7 @@ export default function HtmlPreview({
               onClick={handleCopy}
               onMouseDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded mr-1 group"
-              aria-label="Copy HTML code"
+              aria-label={t("common.htmlPreview.copyHtml")}
               disabled={isStreaming}
             >
               {copySuccess ? (
@@ -1267,7 +1269,9 @@ export default function HtmlPreview({
               onMouseDown={(e) => e.stopPropagation()}
               className="flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded group"
               aria-label={
-                isFullScreen ? "Minimize preview" : "Maximize preview"
+                isFullScreen
+                  ? t("common.htmlPreview.minimizePreview")
+                  : t("common.htmlPreview.maximizePreview")
               }
               disabled={isStreaming}
             >
@@ -1322,7 +1326,7 @@ export default function HtmlPreview({
             id={iframeId}
             // srcDoc is now set by useEffect after streaming finishes
             // srcDoc={processedHtmlContent()}
-            title="ryOS Code Preview"
+            title={t("common.htmlPreview.codePreviewTitle")}
             className={`w-full border-0 ${
               !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : "h-full"
             }`}
@@ -1470,7 +1474,7 @@ export default function HtmlPreview({
                         id={`fullscreen-${iframeId}`}
                         // srcDoc is now set by useEffect after streaming finishes
                         // srcDoc={processedHtmlContent()}
-                        title="ryOS Code Preview Fullscreen"
+                        title={t("common.htmlPreview.codePreviewTitleFullscreen")}
                         className="border-0 bg-white w-full h-full"
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                         onClick={(e) => e.stopPropagation()}
@@ -1624,10 +1628,12 @@ export default function HtmlPreview({
                               }
                             }}
                             className="flex items-center justify-center px-2 h-8 hover:bg-white/10 rounded-full group text-sm font-geneva-12"
-                            aria-label="Toggle split view"
+                            aria-label={t("common.htmlPreview.toggleSplitView")}
                           >
                             <span className="text-white/70 group-hover:text-white">
-                              {isSplitView ? "Split" : "Full"}
+                              {isSplitView
+                                ? t("common.htmlPreview.split")
+                                : t("common.htmlPreview.full")}
                             </span>
                           </button>
                         )}
@@ -1645,7 +1651,7 @@ export default function HtmlPreview({
                             }
                           }}
                           className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
-                          aria-label="Toggle code"
+                          aria-label={t("common.htmlPreview.toggleCode")}
                         >
                           <Code
                             size={20}
@@ -1655,7 +1661,7 @@ export default function HtmlPreview({
                         <button
                           onClick={handleSaveAsApplet}
                           className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
-                          aria-label="Save as Applet"
+                          aria-label={t("common.htmlPreview.saveApplet")}
                         >
                           <ArrowDownToLine
                             size={20}
@@ -1665,7 +1671,7 @@ export default function HtmlPreview({
                         <button
                           onClick={handleSaveToDisk}
                           className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
-                          aria-label="Download HTML"
+                          aria-label={t("common.htmlPreview.downloadHtml")}
                         >
                           <Share
                             size={20}
@@ -1675,7 +1681,7 @@ export default function HtmlPreview({
                         <button
                           onClick={handleCopy}
                           className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
-                          aria-label="Copy HTML code"
+                          aria-label={t("common.htmlPreview.copyHtml")}
                         >
                           {copySuccess ? (
                             <Check
@@ -1696,7 +1702,7 @@ export default function HtmlPreview({
                             setIsFullScreen(false);
                           }}
                           className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
-                          aria-label="Exit fullscreen"
+                          aria-label={t("common.htmlPreview.exitFullscreen")}
                         >
                           <Minimize
                             size={20}
@@ -1717,8 +1723,8 @@ export default function HtmlPreview({
         isOpen={isSaveAppletDialogOpen}
         onOpenChange={setIsSaveAppletDialogOpen}
         onSubmit={handleSaveAppletSubmit}
-        title="Save as Applet"
-        description="Enter applet name, existing applet will get overwritten:"
+        title={t("common.htmlPreview.saveApplet")}
+        description={t("common.htmlPreview.saveAppletDescription")}
         value={appletFileName}
         onChange={setAppletFileName}
       />
