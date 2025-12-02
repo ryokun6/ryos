@@ -918,17 +918,6 @@ function MacDock() {
         });
       }
       
-      // Get folder icon for "Open" menu item
-      let folderIcon: string | undefined;
-      if (folderPath === "/Applications") {
-        folderIcon = "/icons/default/applications.png";
-      } else if (folderPath === "/Trash") {
-        folderIcon = trashIcon;
-      } else {
-        const folderItem = fileStore.getItem(folderPath);
-        folderIcon = folderItem?.icon || "/icons/directory.png";
-      }
-      
       // Add "Open" option
       items.push({
         type: "item",
