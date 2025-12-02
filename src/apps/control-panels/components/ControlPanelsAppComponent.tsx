@@ -8,6 +8,7 @@ import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { helpItems, appMetadata } from "..";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -211,6 +212,8 @@ export function ControlPanelsAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps<ControlPanelsInitialData>) {
+  const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("control-panels", helpItems);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
@@ -2066,7 +2069,7 @@ export function ControlPanelsAppComponent({
         <HelpDialog
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
-          helpItems={helpItems}
+          helpItems={translatedHelpItems}
           appId="control-panels"
         />
         <AboutDialog

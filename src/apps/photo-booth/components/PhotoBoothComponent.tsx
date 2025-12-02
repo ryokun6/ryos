@@ -4,6 +4,7 @@ import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { helpItems, appMetadata } from "..";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { PhotoBoothMenuBar } from "./PhotoBoothMenuBar";
 import { AppProps } from "../../base/types";
 import { Images, Timer, Camera } from "lucide-react";
@@ -78,6 +79,7 @@ export function PhotoBoothComponent({
   onNavigatePrevious,
 }: AppProps) {
   const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("photo-booth", helpItems);
   const [showHelp, setShowHelp] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
@@ -1281,7 +1283,7 @@ export function PhotoBoothComponent({
           <HelpDialog
             isOpen={showHelp}
             onOpenChange={setShowHelp}
-            helpItems={helpItems}
+            helpItems={translatedHelpItems}
             appId="photo-booth"
           />
           <AboutDialog

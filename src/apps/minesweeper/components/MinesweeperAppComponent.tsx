@@ -7,6 +7,7 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { helpItems, appMetadata } from "..";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { isMobileDevice } from "@/utils/device";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -183,6 +184,7 @@ export function MinesweeperAppComponent({
   onNavigatePrevious,
 }: AppProps) {
   const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("minesweeper", helpItems || []);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isNewGameDialogOpen, setIsNewGameDialogOpen] = useState(false);
@@ -553,7 +555,7 @@ export function MinesweeperAppComponent({
         <HelpDialog
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
-          helpItems={helpItems || []}
+          helpItems={translatedHelpItems}
           appId="minesweeper"
         />
         <AboutDialog

@@ -6,6 +6,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { TerminalMenuBar } from "./TerminalMenuBar";
 import { appMetadata, helpItems } from "../index";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import {
   useFileSystem,
   dbOperations,
@@ -558,6 +559,7 @@ export function TerminalAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps) {
+  const translatedHelpItems = useTranslatedHelpItems("terminal", helpItems || []);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [currentCommand, setCurrentCommand] = useState("");
@@ -3031,7 +3033,7 @@ export function TerminalAppComponent({
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
         appId="terminal"
-        helpItems={helpItems || []}
+        helpItems={translatedHelpItems}
       />
       <AboutDialog
         isOpen={isAboutDialogOpen}

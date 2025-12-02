@@ -10,6 +10,7 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { helpItems, appMetadata } from "..";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { IpodScreen } from "./IpodScreen";
@@ -947,6 +948,7 @@ export function IpodAppComponent({
   }));
 
   const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("ipod", helpItems);
   const lyricOffset = useIpodStore(
     (s) => s.tracks[s.currentIndex]?.lyricOffset ?? 0
   );
@@ -2711,7 +2713,7 @@ export function IpodAppComponent({
         <HelpDialog
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
-          helpItems={helpItems}
+          helpItems={translatedHelpItems}
           appId="ipod"
         />
         <AboutDialog
