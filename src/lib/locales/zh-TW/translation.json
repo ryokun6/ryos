@@ -252,6 +252,7 @@
         "loginToRyOS": "登入 ryOS",
         "newChat": "新聊天",
         "noTranscriptionText": "未收到轉錄文字。",
+        "nudgeSent": "👋 *輕推已送出*",
         "recording": "正在錄音...",
         "retry": "重試",
         "ryo": "@ryo",
@@ -1760,14 +1761,14 @@
     "dock": {
       "appletStore": "小程式商店",
       "applications": "應用程式",
+      "folderContents": "資料夾內容",
       "hide": "隱藏",
       "minimized": "(已最小化)",
       "newWindow": "新增視窗",
       "open": "開啟",
       "quit": "結束",
       "showAllWindows": "顯示所有視窗",
-      "trash": "垃圾桶",
-      "folderContents": "資料夾內容"
+      "trash": "垃圾桶"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "未命名 Applet",

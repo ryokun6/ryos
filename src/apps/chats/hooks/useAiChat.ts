@@ -37,6 +37,7 @@ import { AnyExtension } from "@tiptap/core";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
 import i18n from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 
 // TODO: Move relevant state and logic from ChatsAppComponent here
 // - AI chat state (useChat hook)
@@ -467,6 +468,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
 
   // Local input state (SDK v5 no longer provides this)
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const handleInputChange = useCallback(
     (
@@ -2666,9 +2668,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   );
 
   const handleNudge = useCallback(() => {
-    handleDirectMessageSubmit("👋 *nudge sent*");
+    handleDirectMessageSubmit(t("apps.chats.status.nudgeSent"));
     // Consider adding shake effect trigger here if needed
-  }, [handleDirectMessageSubmit]);
+  }, [handleDirectMessageSubmit, t]);
 
   const clearChats = useCallback(() => {
     console.log("Clearing AI chats");

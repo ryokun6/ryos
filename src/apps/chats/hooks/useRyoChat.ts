@@ -1,6 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/useAppStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
@@ -105,6 +106,7 @@ export function useRyoChat({
   onScrollToBottom,
   roomMessages = [],
 }: UseRyoChatProps) {
+  const { t } = useTranslation();
   // Pull current auth credentials from store (reactive)
   const { authToken, username } = useChatsStore();
 
@@ -181,11 +183,11 @@ export function useRyoChat({
         return { isMention: true, messageContent };
       } else if (input === "@ryo") {
         // If they just typed @ryo without a message, treat it as a nudge
-        return { isMention: true, messageContent: "👋 *nudge sent*" };
+        return { isMention: true, messageContent: t("apps.chats.status.nudgeSent") };
       }
       return { isMention: false, messageContent: "" };
     },
-    []
+    [t]
   );
 
   return {
