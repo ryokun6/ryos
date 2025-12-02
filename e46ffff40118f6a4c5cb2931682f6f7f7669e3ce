@@ -25,11 +25,11 @@ src/components/dialogs/HelpDialog.tsx: +11[0],+66-67[0],+75[0],+81-82[0],+100[0]
 src/components/layout/Dock.tsx: +15[1],+737[1],+741-753[1] -15[1],-737[1],-741-742[1]
 src/components/layout/MenuBar.tsx: +494[0] -494[0]
 src/lib/locales/de/translation.json: +921[4],+924[4],+999[4],+1145[1],+1160-1161[1]
-src/lib/locales/en/translation.json: +295-343[2],+344[5],+345-373[2],+374[5],+375-392[2],+445-446[2],+676[6],+677-681[3],+682[6],+683-690[3],+691[4],+692-693[3],+694[4],+695[7],+696-700[3],+701[6],+702[3],+703[2],+704[4],+1230[0],+1239[0],+1240[6],+1241[0] -347[2],-1102[0],-1111[0],-1223-1226[0]
-src/lib/locales/fr/translation.json: +921[4],+924[4],+999[4],+1145[1],+1160-1161[1] -1033[8]
-src/lib/locales/ja/translation.json: +921[4],+924[4],+999[4],+1145[1],+1159[4],+1160-1161[1] -1033[8]
-src/lib/locales/ko/translation.json: +921[4],+924[4],+999[4],+1145[1],+1159[4],+1160-1161[1] -1033[8]
-src/lib/locales/zh-TW/translation.json: +93[0],+921[4],+924[4],+980[3],+984[3],+999[4],+1145[1],+1159[4],+1160-1161[1] -93[0],-868[3],-872[3],-1033[8]
+src/lib/locales/en/translation.json: +295-343[2],+344[5],+345-373[2],+374[5],+375-392[2],+445-446[2],+676[6],+677-681[3],+682[7],+683-690[3],+691[6],+692-693[3],+694[6],+695[8],+696-700[3],+701[7],+702[3],+703[2],+704[6],+1230[0],+1239[0],+1240[6],+1241[0] -347[2],-1102[0],-1111[0],-1223-1226[0]
+src/lib/locales/fr/translation.json: +921[4],+924[4],+999[4],+1145[1],+1160-1161[1] -1033[9]
+src/lib/locales/ja/translation.json: +921[4],+924[4],+999[4],+1145[1],+1159[4],+1160-1161[1] -1033[9]
+src/lib/locales/ko/translation.json: +921[4],+924[4],+999[4],+1145[1],+1159[4],+1160-1161[1] -1033[9]
+src/lib/locales/zh-TW/translation.json: +93[0],+921[4],+924[4],+980[3],+984[3],+999[4],+1145[1],+1159[4],+1160-1161[1] -93[0],-868[3],-872[3],-1033[9]
 
 Conversations:
 
@@ -39,6 +39,7 @@ Conversations:
 [3]: f6f580aa-7ad0-46b0-ae7a-99105b7dc4f8; Localize paint application; composer-1;
 [4]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; Auto detect and set user locale; composer-1;
 [5]: 754a2901-f892-47df-9cb5-40e84d837dba; Localize share page dialogs; composer-1;
-[6]: 74d0b3a8-5712-45ed-85ea-082c7f3be13d; Localize virtual PC setup; composer-1;
-[7]: b8af09a7-aa4b-4909-8f26-b78062ae971d; Localize synth application; composer-1;
-[8]: 40dbae0b-7a32-49fa-b6bc-e7b8cb24ecbe; Localize text editing feature; composer-1;
+[6]: 17426fa4-6168-4fb7-8844-b61d887e7e2a; Check remaining localization tasks; claude-4.5-opus-high-thinking;
+[7]: 74d0b3a8-5712-45ed-85ea-082c7f3be13d; Localize virtual PC setup; composer-1;
+[8]: b8af09a7-aa4b-4909-8f26-b78062ae971d; Localize synth application; composer-1;
+[9]: 40dbae0b-7a32-49fa-b6bc-e7b8cb24ecbe; Localize text editing feature; composer-1;
