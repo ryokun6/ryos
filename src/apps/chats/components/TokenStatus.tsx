@@ -5,7 +5,7 @@ import { useTokenAge } from "../hooks/useTokenRefresh";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
-import { i18n } from "@/lib/i18n";
+import i18n from "@/lib/i18n";
 
 export function TokenStatus() {
   const { t } = useTranslation();
@@ -158,17 +158,16 @@ export function TokenStatus() {
 
 // Helper function to get relative time
 function getRelativeTime(date: Date): string {
-  const { t } = require("react-i18next").useTranslation();
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
 
-  if (diffMins < 1) return t("apps.chats.tokenStatus.justNow");
-  if (diffMins < 60) return t("apps.chats.tokenStatus.minutesAgo", { minutes: diffMins });
+  if (diffMins < 1) return i18n.t("apps.chats.tokenStatus.justNow");
+  if (diffMins < 60) return i18n.t("apps.chats.tokenStatus.minutesAgo", { minutes: diffMins });
 
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return t("apps.chats.tokenStatus.hoursAgo", { hours: diffHours });
+  if (diffHours < 24) return i18n.t("apps.chats.tokenStatus.hoursAgo", { hours: diffHours });
 
   const diffDays = Math.floor(diffHours / 24);
-  return t("apps.chats.tokenStatus.daysAgo", { days: diffDays });
+  return i18n.t("apps.chats.tokenStatus.daysAgo", { days: diffDays });
 }

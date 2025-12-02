@@ -125,7 +125,7 @@
         "aboutChats": "關於聊天",
         "chatSpeech": "聊天語音",
         "chats": "聊天",
-        "chatsHelp": "聊天室輔助說明",
+        "chatsHelp": "聊天輔助說明",
         "clearChat": "清除聊天",
         "createAccount": "建立帳號...",
         "decreaseFontSize": "縮小字體",
@@ -1187,6 +1187,21 @@
       "resetAllSettings": "重設所有設定",
       "resetAllSettingsDesc": "您確定要重設所有設定嗎？這將清除所有已儲存的設定並還原為預設狀態。重設後 ryOS 將重新啟動。",
       "systemRestoring": "系統還原中..."
+    },
+    "toast": {
+      "alreadyLatestVersion": "已經是最新版本",
+      "couldNotCheckUpdates": "無法檢查更新",
+      "failedToCacheAssets": "快取資產失敗",
+      "failedToLoadAssetManifest": "載入資產清單失敗",
+      "files": "檔案",
+      "noAssetsToCache": "無資產可快取",
+      "reboot": "重新啟動",
+      "total": "總計",
+      "updateReady": "ryOS {{version}} ({{buildNumber}}) 的更新已就緒",
+      "updatingAssets": "正在更新資產",
+      "updatingIcons": "正在更新圖示",
+      "updatingSounds": "正在更新音效",
+      "updatingSystemFiles": "正在更新系統檔案"
     }
   },
   "settings": {

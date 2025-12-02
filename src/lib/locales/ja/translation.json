@@ -1187,6 +1187,21 @@
       "resetAllSettings": "すべての設定をリセット",
       "resetAllSettingsDesc": "すべての設定をリセットしてもよろしいですか？これにより、保存されたすべての設定がクリアされ、デフォルト状態に復元されます。リセット後、ryOSが再起動します。",
       "systemRestoring": "システムを復元中..."
+    },
+    "toast": {
+      "alreadyLatestVersion": "最新バージョンです",
+      "couldNotCheckUpdates": "アップデートを確認できませんでした",
+      "failedToCacheAssets": "アセットのキャッシュに失敗しました",
+      "failedToLoadAssetManifest": "アセットマニフェストの読み込みに失敗しました",
+      "files": "ファイル",
+      "noAssetsToCache": "キャッシュするアセットがありません",
+      "reboot": "再起動",
+      "total": "合計",
+      "updateReady": "ryOS {{version}} ({{buildNumber}}) のアップデート準備完了",
+      "updatingAssets": "アセット更新中",
+      "updatingIcons": "アイコン更新中",
+      "updatingSounds": "サウンド更新中",
+      "updatingSystemFiles": "システムファイル更新中"
     }
   },
   "settings": {

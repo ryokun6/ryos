@@ -1187,6 +1187,21 @@
       "resetAllSettings": "Alle Einstellungen zurücksetzen",
       "resetAllSettingsDesc": "Möchten Sie wirklich alle Einstellungen zurücksetzen? Dies löscht alle gespeicherten Einstellungen und stellt die Standardzustände wieder her. ryOS startet nach dem Zurücksetzen neu.",
       "systemRestoring": "System wird wiederhergestellt..."
+    },
+    "toast": {
+      "alreadyLatestVersion": "Die neueste Version ist bereits installiert.",
+      "couldNotCheckUpdates": "Konnte nicht nach Updates suchen.",
+      "failedToCacheAssets": "Fehler beim Cachen der Assets",
+      "failedToLoadAssetManifest": "Fehler beim Laden des Asset-Manifests",
+      "files": "Dateien",
+      "noAssetsToCache": "Keine Assets zum Cachen",
+      "reboot": "Neustart",
+      "total": "gesamt",
+      "updateReady": "Update für ryOS {{version}} ({{buildNumber}}) ist bereit",
+      "updatingAssets": "Assets werden aktualisiert",
+      "updatingIcons": "Symbole werden aktualisiert",
+      "updatingSounds": "Töne werden aktualisiert",
+      "updatingSystemFiles": "Systemdateien werden aktualisiert"
     }
   },
   "settings": {

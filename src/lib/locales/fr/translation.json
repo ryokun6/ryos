@@ -1187,6 +1187,21 @@
       "resetAllSettings": "Réinitialiser tous les paramètres",
       "resetAllSettingsDesc": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres ? Cela effacera tous les paramètres enregistrés et restaurera les états par défaut. ryOS redémarrera après la réinitialisation.",
       "systemRestoring": "Restauration du système..."
+    },
+    "toast": {
+      "alreadyLatestVersion": "Vous utilisez déjà la dernière version",
+      "couldNotCheckUpdates": "Impossible de vérifier les mises à jour",
+      "failedToCacheAssets": "Échec de la mise en cache des ressources",
+      "failedToLoadAssetManifest": "Échec du chargement du manifeste des ressources",
+      "files": "fichiers",
+      "noAssetsToCache": "Aucune ressource à mettre en cache",
+      "reboot": "Redémarrer",
+      "total": "total",
+      "updateReady": "Mise à jour prête pour ryOS {{version}} ({{buildNumber}})",
+      "updatingAssets": "Mise à jour des ressources",
+      "updatingIcons": "Mise à jour des icônes",
+      "updatingSounds": "Mise à jour des sons",
+      "updatingSystemFiles": "Mise à jour des fichiers système"
     }
   },
   "settings": {

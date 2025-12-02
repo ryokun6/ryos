@@ -2,6 +2,8 @@
  * Toast component for showing prefetch progress
  */
 
+import { useTranslation } from "react-i18next";
+
 interface PrefetchToastProps {
   phase: string;
   completed: number;
@@ -16,12 +18,6 @@ interface PrefetchCompleteToastProps {
   buildNumber: string;
 }
 
-const phaseLabels: Record<string, string> = {
-  icons: 'Updating icons',
-  sounds: 'Updating sounds',
-  scripts: 'Updating system files',
-};
-
 export function PrefetchToast({ 
   phase, 
   completed, 
@@ -30,12 +26,20 @@ export function PrefetchToast({
   phaseTotal = 0,
   percentage = 0,
 }: PrefetchToastProps) {
-  const label = phaseLabels[phase] || 'Updating assets';
+  const { t } = useTranslation();
+  
+  const phaseLabels: Record<string, string> = {
+    icons: t("common.toast.updatingIcons"),
+    sounds: t("common.toast.updatingSounds"),
+    scripts: t("common.toast.updatingSystemFiles"),
+  };
+  
+  const label = phaseLabels[phase] || t("common.toast.updatingAssets");
   const displayPercentage = percentage || Math.round((completed / total) * 100);
   
   const fileCount = phaseTotal > 0 
-    ? `${phaseCompleted}/${phaseTotal} files`
-    : `${completed}/${total} total`;
+    ? `${phaseCompleted}/${phaseTotal} ${t("common.toast.files")}`
+    : `${completed}/${total} ${t("common.toast.total")}`;
   
   return (
     <div className="flex flex-col gap-1.5 w-full min-w-[200px]">
@@ -52,9 +56,11 @@ export function PrefetchToast({
 }
 
 export function PrefetchCompleteToast({ version, buildNumber }: PrefetchCompleteToastProps) {
+  const { t } = useTranslation();
+  
   return (
     <div className="text-sm">
-      Update ready for ryOS {version} ({buildNumber})
+      {t("common.toast.updateReady", { version, buildNumber })}
     </div>
   );
 }

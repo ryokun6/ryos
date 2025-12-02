@@ -36,6 +36,7 @@ import { LinkPreview } from "@/components/shared/LinkPreview";
 import { useThemeStore } from "@/stores/useThemeStore";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 
 // --- Color Hashing for Usernames ---
 const userColors = [
@@ -157,15 +158,15 @@ const getErrorMessage = (error: Error): string => {
       // Handle specific error types
       if (errorData.error === "rate_limit_exceeded") {
         if (errorData.isAuthenticated) {
-          return t("apps.chats.status.dailyLimitReached");
+          return i18n.t("apps.chats.status.dailyLimitReached");
         } else {
-          return t("apps.chats.status.loginToContinue");
+          return i18n.t("apps.chats.status.loginToContinue");
         }
       }
 
       // Handle authentication error
       if (errorData.error === "authentication_failed") {
-        return t("apps.chats.status.sessionExpired");
+        return i18n.t("apps.chats.status.sessionExpired");
       }
 
       // Return the error field if it exists and is a string

@@ -87,6 +87,21 @@
       "system": "System",
       "mb": "MB",
       "clickToToggle": "Click to toggle"
+    },
+    "toast": {
+      "updatingIcons": "Updating icons",
+      "updatingSounds": "Updating sounds",
+      "updatingSystemFiles": "Updating system files",
+      "updatingAssets": "Updating assets",
+      "files": "files",
+      "total": "total",
+      "updateReady": "Update ready for ryOS {{version}} ({{buildNumber}})",
+      "reboot": "Reboot",
+      "failedToCacheAssets": "Failed to cache assets",
+      "failedToLoadAssetManifest": "Failed to load asset manifest",
+      "noAssetsToCache": "No assets to cache",
+      "alreadyLatestVersion": "Already running the latest version",
+      "couldNotCheckUpdates": "Could not check for updates"
     }
   },
   "apps": {

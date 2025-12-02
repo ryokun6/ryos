@@ -1187,6 +1187,21 @@
       "resetAllSettings": "모든 설정 재설정",
       "resetAllSettingsDesc": "모든 설정을 재설정하시겠습니까? 저장된 모든 설정이 지워지고 기본 상태로 복원됩니다. 재설정 후 ryOS가 다시 시작됩니다.",
       "systemRestoring": "시스템 복원 중..."
+    },
+    "toast": {
+      "alreadyLatestVersion": "이미 최신 버전입니다.",
+      "couldNotCheckUpdates": "업데이트를 확인할 수 없습니다.",
+      "failedToCacheAssets": "에셋 캐시 실패",
+      "failedToLoadAssetManifest": "에셋 매니페스트 로드 실패",
+      "files": "파일",
+      "noAssetsToCache": "캐시할 에셋 없음",
+      "reboot": "재부팅",
+      "total": "총",
+      "updateReady": "ryOS {{version}} ({{buildNumber}}) 업데이트 준비 완료",
+      "updatingAssets": "에셋 업데이트 중",
+      "updatingIcons": "아이콘 업데이트 중",
+      "updatingSounds": "사운드 업데이트 중",
+      "updatingSystemFiles": "시스템 파일 업데이트 중"
     }
   },
   "settings": {

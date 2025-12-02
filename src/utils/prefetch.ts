@@ -17,6 +17,7 @@ import { createElement } from "react";
 import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/PrefetchToast";
 import { useAppStore } from "@/stores/useAppStore";
 import { setNextBootMessage } from "@/utils/bootMessage";
+import i18n from "@/lib/i18n";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos-manifest-timestamp';
@@ -370,7 +371,7 @@ async function runPrefetchWithToast(
         {
           duration: Infinity,
           action: {
-            label: "Reboot",
+            label: i18n.t("common.toast.reboot"),
             onClick: () => reloadPage(server.version, server.buildNumber),
           },
         }
