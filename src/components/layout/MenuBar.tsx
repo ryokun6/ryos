@@ -1070,6 +1070,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftMask, setShowLeftMask] = useState(false);
   const [showRightMask, setShowRightMask] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; scrollLeft: number } | null>(null);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -1083,13 +1086,74 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       setShowRightMask(scrollLeft < scrollWidth - clientWidth - 1);
     };
 
+    // Track scrolling state to prevent clicks during scroll
+    const handleScroll = () => {
+      setIsScrolling(true);
+      updateMasks();
+      
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Reset scrolling state after scroll ends
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false);
+      }, 150);
+    };
+
+    // Handle touch events to detect scrolling vs tapping
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      touchStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        scrollLeft: container.scrollLeft,
+      };
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      
+      const touch = e.touches[0];
+      const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+      const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+      const scrollDelta = Math.abs(container.scrollLeft - touchStartRef.current.scrollLeft);
+      
+      // If moved more than 5px horizontally or scrolled, consider it scrolling
+      if (deltaX > 5 || deltaY > 5 || scrollDelta > 1) {
+        setIsScrolling(true);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      // Reset scrolling state after a short delay
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false);
+        touchStartRef.current = null;
+      }, 100);
+    };
+
     updateMasks();
-    container.addEventListener("scroll", updateMasks);
+    container.addEventListener("scroll", handleScroll);
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
+    
     const resizeObserver = new ResizeObserver(updateMasks);
     resizeObserver.observe(container);
 
     return () => {
-      container.removeEventListener("scroll", updateMasks);
+      container.removeEventListener("scroll", handleScroll);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
       resizeObserver.disconnect();
     };
   }, [hasActiveApp, children]);
@@ -1132,7 +1196,13 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
               display: none;
             }
           `}</style>
-          {hasActiveApp ? children : <DefaultMenuItems />}
+          <div
+            style={{
+              pointerEvents: isScrolling ? "none" : "auto",
+            }}
+          >
+            {hasActiveApp ? children : <DefaultMenuItems />}
+          </div>
         </div>
         {/* Left fade mask - shows when scrolled to the right */}
         {showLeftMask && (
