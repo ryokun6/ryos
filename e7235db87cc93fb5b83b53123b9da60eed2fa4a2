@@ -13,6 +13,6 @@ src/stores/useSoundboardStore.ts: +4[2],+9[2],+90[2] -8[2],-89[2]
 
 Conversations:
 
-[0]: 851d76a8-5fa9-4e1b-8e39-96747f5999a3; Optimize localization command ordering; composer-1;
-[1]: 3748bced-25f1-4fd2-bbaa-566dca4ce7d7; Localize iPod settings; composer-1;
-[2]: 6aa8562e-6556-4078-83e6-108904f08364; Use localized names consistently; composer-1;
+[0]: 851d76a8-5fa9-4e1b-8e39-96747f5999a3; 851d76a8; unknown;
+[1]: 3748bced-25f1-4fd2-bbaa-566dca4ce7d7; 3748bced; unknown;
+[2]: 6aa8562e-6556-4078-83e6-108904f08364; 6aa8562e; unknown;
