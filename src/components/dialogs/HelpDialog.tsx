@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface HelpCardProps {
   icon: string;
@@ -70,6 +71,7 @@ export function HelpDialog({
   helpItems = [],
   appName,
 }: HelpDialogProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -89,7 +91,7 @@ export function HelpDialog({
           fontSize: isXpTheme ? "18px" : undefined,
         }}
       >
-        Welcome to {appName}
+        {t("common.dialog.welcomeTo")} {appName}
       </p>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {helpItems.map((item) => (
@@ -107,22 +109,22 @@ export function HelpDialog({
       >
         {isXpTheme ? (
           <>
-            <DialogHeader>Help</DialogHeader>
+            <DialogHeader>{t("common.dialog.help")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : currentTheme === "macosx" ? (
           <>
-            <DialogHeader>Help</DialogHeader>
+            <DialogHeader>{t("common.dialog.help")}</DialogHeader>
             {dialogContent}
           </>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="font-normal text-[16px]">
-                Help
+                {t("common.dialog.help")}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                Help and documentation for {appName}
+                {t("common.dialog.informationAboutApp")}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

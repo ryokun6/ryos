@@ -12,6 +12,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { useTranslation } from "react-i18next";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export function ConfirmDialog({
   title,
   description,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const { play: playAlertSound } = useSound(Sounds.ALERT_SOSUMI);
   const currentTheme = useThemeStore((state) => state.current);
@@ -85,7 +87,7 @@ export function ConfirmDialog({
             fontSize: isXpTheme ? "11px" : undefined,
           }}
         >
-          Cancel
+          {t("common.dialog.cancel")}
         </Button>
         <Button
           variant={isMacTheme ? "default" : "retro"}
@@ -104,7 +106,7 @@ export function ConfirmDialog({
             fontSize: isXpTheme ? "11px" : undefined,
           }}
         >
-          Confirm
+          {t("common.dialog.confirm")}
         </Button>
       </DialogFooter>
     </div>

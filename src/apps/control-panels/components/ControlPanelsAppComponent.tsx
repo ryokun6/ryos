@@ -38,6 +38,8 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { themes } from "@/themes";
 import { OsThemeId } from "@/themes/types";
 import { getTabStyles } from "@/utils/tabStyles";
+import { useLanguageStore, type LanguageCode } from "@/stores/useLanguageStore";
+import { useTranslation } from "react-i18next";
 
 interface StoreItem {
   name: string;
@@ -279,6 +281,10 @@ export function ControlPanelsAppComponent({
 
   // Theme state
   const { current: currentTheme, setTheme } = useThemeStore();
+  
+  // Language state
+  const { current: currentLanguage, setLanguage } = useLanguageStore();
+  const { t } = useTranslation();
 
   // Use auth hook
   const {
@@ -1575,6 +1581,34 @@ export function ControlPanelsAppComponent({
                   </Select>
                 </div>
 
+                {/* Language Selector */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    <Label>{t("settings.language.title")}</Label>
+                    <Label className="text-[11px] text-gray-600 font-geneva-12">
+                      {t("settings.language.description")}
+                    </Label>
+                  </div>
+                  <Select
+                    value={currentLanguage}
+                    onValueChange={(value) => setLanguage(value as LanguageCode)}
+                  >
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue>
+                        {t(`settings.language.${currentLanguage === "zh-TW" ? "chineseTraditional" : currentLanguage === "ja" ? "japanese" : currentLanguage === "ko" ? "korean" : currentLanguage === "fr" ? "french" : currentLanguage === "de" ? "german" : "english"}`)}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">{t("settings.language.english")}</SelectItem>
+                      <SelectItem value="zh-TW">{t("settings.language.chineseTraditional")}</SelectItem>
+                      <SelectItem value="ja">{t("settings.language.japanese")}</SelectItem>
+                      <SelectItem value="ko">{t("settings.language.korean")}</SelectItem>
+                      <SelectItem value="fr">{t("settings.language.french")}</SelectItem>
+                      <SelectItem value="de">{t("settings.language.german")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div
                   className="border-t my-4"
                   style={tabStyles.separatorStyle}
@@ -2033,7 +2067,7 @@ export function ControlPanelsAppComponent({
           isOpen={isHelpDialogOpen}
           onOpenChange={setIsHelpDialogOpen}
           helpItems={helpItems}
-          appName="Control Panels"
+          appName={t("apps.control-panels.name")}
         />
         <AboutDialog
           isOpen={isAboutDialogOpen}
@@ -2044,15 +2078,15 @@ export function ControlPanelsAppComponent({
           isOpen={isConfirmResetOpen}
           onOpenChange={setIsConfirmResetOpen}
           onConfirm={handleConfirmReset}
-          title="Reset All Settings"
-          description="Are you sure you want to reset all settings? This will clear all saved settings and restore default states. ryOS will restart after reset."
+          title={t("common.system.resetAllSettings")}
+          description={t("common.system.resetAllSettingsDesc")}
         />
         <ConfirmDialog
           isOpen={isConfirmFormatOpen}
           onOpenChange={setIsConfirmFormatOpen}
           onConfirm={handleConfirmFormat}
-          title="Format File System"
-          description="Are you sure you want to format the file system? This will permanently delete all documents (except sample documents), images, and custom wallpapers. ryOS will restart after format."
+          title={t("common.system.formatFileSystem")}
+          description={t("common.system.formatFileSystemDesc")}
         />
         {/* Sign Up Dialog (was SetUsernameDialog) */}
         <LoginDialog

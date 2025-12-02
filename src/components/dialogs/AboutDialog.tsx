@@ -8,6 +8,7 @@ import {
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { useTranslation } from "react-i18next";
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export function AboutDialog({
   onOpenChange,
   metadata,
 }: AboutDialogProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -59,9 +61,9 @@ export function AboutDialog({
         >
           {metadata.name}
         </div>
-        <p className="text-gray-500 mb-2">Version {metadata.version}</p>
+        <p className="text-gray-500 mb-2">{t("common.dialog.version")} {metadata.version}</p>
         <p>
-          Made by{" "}
+          {t("common.dialog.madeBy")}{" "}
           <a
             href={metadata.creator.url}
             target="_blank"
@@ -78,7 +80,7 @@ export function AboutDialog({
             rel="noopener noreferrer"
             className="text-blue-500 hover:underline"
           >
-            Open in GitHub
+            {t("common.dialog.openInGitHub")}
           </a>
         </p>
       </div>
@@ -93,24 +95,24 @@ export function AboutDialog({
       >
         {isXpTheme ? (
           <>
-            <DialogHeader>About</DialogHeader>
+            <DialogHeader>{t("common.dialog.about")}</DialogHeader>
             <div className={`window-body ${isXpTheme ? "p-2 px-4" : "p-4"}`}>
               {dialogContent}
             </div>
           </>
         ) : currentTheme === "macosx" ? (
           <>
-            <DialogHeader>About</DialogHeader>
+            <DialogHeader>{t("common.dialog.about")}</DialogHeader>
             {dialogContent}
           </>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="font-normal text-[16px]">
-                About
+                {t("common.dialog.about")}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                Information about the application
+                {t("common.dialog.informationAboutApp")}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

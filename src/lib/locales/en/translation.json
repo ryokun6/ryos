@@ -1,0 +1,531 @@
+{
+  "common": {
+    "menu": {
+      "file": "File",
+      "edit": "Edit",
+      "view": "View",
+      "go": "Go",
+      "help": "Help",
+      "newFinderWindow": "New Finder Window",
+      "newFolder": "New Folder",
+      "moveToTrash": "Move to Trash",
+      "emptyTrash": "Empty Trash...",
+      "close": "Close",
+      "undo": "Undo",
+      "cut": "Cut",
+      "copy": "Copy",
+      "paste": "Paste",
+      "clear": "Clear",
+      "selectAll": "Select All",
+      "bySmallIcon": "by Small Icon",
+      "byIcon": "by Icon",
+      "byList": "by List",
+      "byName": "by Name",
+      "byDate": "by Date",
+      "bySize": "by Size",
+      "byKind": "by Kind",
+      "back": "Back",
+      "forward": "Forward",
+      "applications": "Applications",
+      "documents": "Documents",
+      "images": "Images",
+      "music": "Music",
+      "sites": "Sites",
+      "videos": "Videos",
+      "trash": "Trash",
+      "finderHelp": "Finder Help",
+      "aboutFinder": "About Finder"
+    },
+    "dialog": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "close": "Close",
+      "adding": "Adding...",
+      "saveFile": "Save File",
+      "enterFileName": "Enter a name for your file",
+      "discardChanges": "Discard Changes",
+      "discardChangesDesc": "Do you want to discard your changes and create a new file?",
+      "keepNewDocument": "Keep New Document",
+      "saveChanges": "Save Changes",
+      "enterFilenameToSave": "Enter a filename to save, or delete it before closing.",
+      "saveBeforeClosing": "Save your changes before closing.",
+      "delete": "Delete",
+      "help": "Help",
+      "about": "About",
+      "welcomeTo": "Welcome to",
+      "version": "Version",
+      "madeBy": "Made by",
+      "openInGitHub": "Open in GitHub",
+      "informationAboutApp": "Information about the application"
+    },
+    "system": {
+      "systemRestoring": "System Restoring...",
+      "resetAllSettings": "Reset All Settings",
+      "resetAllSettingsDesc": "Are you sure you want to reset all settings? This will clear all saved settings and restore default states. ryOS will restart after reset.",
+      "formatFileSystem": "Format File System",
+      "formatFileSystemDesc": "Are you sure you want to format the file system? This will permanently delete all documents (except sample documents), images, and custom wallpapers. ryOS will restart after format."
+    }
+  },
+  "apps": {
+    "finder": {
+      "name": "Finder",
+      "description": "Browse and manage files",
+      "help": {
+        "browseNavigate": {
+          "title": "Browse & Navigate",
+          "description": "Back/Forward buttons, address bar & Go menu for fast navigation"
+        },
+        "fileManagement": {
+          "title": "File Management",
+          "description": "Create folders, rename, move, and drag items to organize files"
+        },
+        "viewSort": {
+          "title": "View & Sort",
+          "description": "Switch Icon sizes and sort by name, kind, size, or date"
+        },
+        "quickAccess": {
+          "title": "Quick Access",
+          "description": "Jump to Documents, Applications, or Trash instantly from Go menu"
+        },
+        "storageInfo": {
+          "title": "Storage Info",
+          "description": "See free space & item count in the window footer"
+        },
+        "trash": {
+          "title": "Trash",
+          "description": "Drag files to Trash & Empty to permanently delete"
+        }
+      }
+    },
+    "soundboard": {
+      "name": "Soundboard",
+      "description": "Play sound effects",
+      "help": {
+        "recordSlot": {
+          "title": "Record Slot",
+          "description": "Click a slot to record audio; click again to stop"
+        },
+        "keyboardPlay": {
+          "title": "Keyboard Play",
+          "description": "Press 1-9 to trigger sounds instantly"
+        },
+        "waveformView": {
+          "title": "Waveform View",
+          "description": "See live waveform while recording or playing back"
+        },
+        "customizeSlot": {
+          "title": "Customize Slot",
+          "description": "Add emoji & title to each sample for quick ID"
+        },
+        "multipleBoards": {
+          "title": "Multiple Boards",
+          "description": "Create, rename & switch boards for sets of sounds"
+        },
+        "importExport": {
+          "title": "Import / Export",
+          "description": "Share boards as files; drag-drop to import"
+        }
+      }
+    },
+    "internet-explorer": {
+      "name": "Internet Explorer",
+      "description": "Browse the web",
+      "help": {
+        "browseWeb": {
+          "title": "Browse the Web",
+          "description": "Enter URLs and use navigation buttons (Back, Forward, Refresh, Stop)."
+        },
+        "travelThroughTime": {
+          "title": "Travel Through Time",
+          "description": "Select a year from the dropdown to view websites from the past or future."
+        },
+        "historyReimagined": {
+          "title": "History Reimagined",
+          "description": "AI reconstructs very old sites (pre-1996) and imagines future web experiences."
+        },
+        "saveFavorites": {
+          "title": "Save Favorites",
+          "description": "Add sites and specific years to your Favorites bar for easy access."
+        },
+        "exploreTimeNodes": {
+          "title": "Explore Time Nodes",
+          "description": "Click the clock icon in the address bar to see available snapshots of the current site across time."
+        },
+        "shareJourney": {
+          "title": "Share Your Journey",
+          "description": "Use the Share button to generate a link to the exact page and year you're viewing."
+        }
+      }
+    },
+    "chats": {
+      "name": "Chats",
+      "description": "Chat with AI",
+      "help": {
+        "chatWithRyo": {
+          "title": "Chat with Ryo",
+          "description": "Type your message to chat with Ryo, generate code, or get help with ryOS."
+        },
+        "createEditFiles": {
+          "title": "Create & Edit Files",
+          "description": "Ask Ryo to create HTML applets, edit documents, read files, or search the Applets Store."
+        },
+        "controlApps": {
+          "title": "Control Apps",
+          "description": "Ask Ryo to launch or close apps, switch themes, or control iPod playback."
+        },
+        "joinChatRooms": {
+          "title": "Join Chat Rooms",
+          "description": "Connect with others in public chat rooms. Mention @ryo for AI responses."
+        },
+        "pushToTalk": {
+          "title": "Push to Talk",
+          "description": "Hold Space or tap the microphone button to record and send voice messages."
+        },
+        "nudgeDjMode": {
+          "title": "Nudge & DJ Mode",
+          "description": "Send 👋 nudge for context-aware tips. Ryo becomes a DJ when music is playing."
+        }
+      }
+    },
+    "textedit": {
+      "name": "TextEdit",
+      "description": "A simple rich text editor",
+      "help": {
+        "richEditing": {
+          "title": "Rich Editing",
+          "description": "Type, copy, cut, paste, undo & redo your text with ease"
+        },
+        "formatting": {
+          "title": "Formatting",
+          "description": "Bold, italic, underline, headings & alignment options"
+        },
+        "listsTasks": {
+          "title": "Lists & Tasks",
+          "description": "Create bullet, numbered & check-box task lists"
+        },
+        "fileManagement": {
+          "title": "File Management",
+          "description": "Create, open, save, and export files (HTML, MD, TXT)"
+        },
+        "voiceDictation": {
+          "title": "Voice Dictation",
+          "description": "Dictate text hands-free right into the document"
+        },
+        "slashCommands": {
+          "title": "Slash Commands",
+          "description": "Type / for quick actions or let Ryo AI edit lines remotely"
+        }
+      }
+    },
+    "paint": {
+      "name": "Paint",
+      "description": "Draw and edit images",
+      "help": {
+        "drawingTools": {
+          "title": "Drawing Tools",
+          "description": "Use the toolbar on the left to select different drawing tools like pencil, brush, shapes, and more."
+        },
+        "colors": {
+          "title": "Colors",
+          "description": "Select colors from the palette below the tools to change your drawing color."
+        },
+        "undo": {
+          "title": "Undo",
+          "description": "Press ⌘Z or use Edit > Undo to undo your last action."
+        },
+        "saving": {
+          "title": "Saving",
+          "description": "Use File > Save to save your artwork, or File > Save As to save it with a new name."
+        },
+        "patterns": {
+          "title": "Patterns",
+          "description": "Choose from various patterns in the bottom palette to fill shapes and areas."
+        },
+        "filters": {
+          "title": "Filters",
+          "description": "Apply invert, grayscale, brightness & more from the Filters menu."
+        }
+      }
+    },
+    "photo-booth": {
+      "name": "Photo Booth",
+      "description": "Take photos with effects",
+      "help": {
+        "takingPhoto": {
+          "title": "Taking a Photo",
+          "description": "Click the large red camera button to capture a single image."
+        },
+        "quickSnaps": {
+          "title": "Quick Snaps",
+          "description": "Click the timer button (left of the camera button) to start a sequence of four photos taken one second apart."
+        },
+        "applyingEffects": {
+          "title": "Applying Effects",
+          "description": "Click the 'Effects' button (right of the camera button) to open the effects panel and apply fun filters to your live camera view."
+        },
+        "viewingPhotos": {
+          "title": "Viewing Photos",
+          "description": "Click the photo stack button (far left) to show or hide the photo strip at the bottom, displaying all your saved photos."
+        },
+        "downloadingPhotos": {
+          "title": "Downloading Photos",
+          "description": "Photos are automatically saved. Click on a photo in the photo strip to download it."
+        },
+        "switchingCameras": {
+          "title": "Switching Cameras",
+          "description": "Use the 'View' menu in the menu bar to switch between available cameras if you have more than one connected."
+        }
+      }
+    },
+    "minesweeper": {
+      "name": "Minesweeper",
+      "description": "Classic puzzle game",
+      "help": {
+        "desktopControls": {
+          "title": "Desktop Controls",
+          "description": "Left-click to reveal, right-click to flag, double-click numbers to auto-reveal neighbors."
+        },
+        "mobileControls": {
+          "title": "Mobile Controls",
+          "description": "Tap to reveal, long-press to flag a mine."
+        },
+        "gameRules": {
+          "title": "Game Rules",
+          "description": "Numbers show adjacent mines. Flag every mine and reveal all safe cells to win."
+        },
+        "timerCounter": {
+          "title": "Timer & Counter",
+          "description": "Top bar shows elapsed time and remaining unflagged mines."
+        },
+        "restart": {
+          "title": "Restart",
+          "description": "Press the smiley face or choose Game ▸ New to start a fresh board."
+        }
+      }
+    },
+    "videos": {
+      "name": "Videos",
+      "description": "Watch videos",
+      "help": {
+        "addVideo": {
+          "title": "Add Video",
+          "description": "Paste any YouTube URL to add to playlist"
+        },
+        "playback": {
+          "title": "Playback",
+          "description": "Play, pause, next, previous controls"
+        },
+        "loop": {
+          "title": "Loop",
+          "description": "Loop current video or entire playlist"
+        },
+        "shuffle": {
+          "title": "Shuffle",
+          "description": "Randomize playlist order"
+        },
+        "playlist": {
+          "title": "Playlist",
+          "description": "Manage and organize your video playlist"
+        },
+        "retroUi": {
+          "title": "Retro UI",
+          "description": "Classic QuickTime player aesthetics"
+        }
+      }
+    },
+    "ipod": {
+      "name": "iPod",
+      "description": "Music player",
+      "help": {
+        "addSongs": {
+          "title": "Add Songs",
+          "description": "Paste YouTube URLs to add music to your iPod."
+        },
+        "wheelNavigation": {
+          "title": "Wheel Navigation",
+          "description": "Use the click wheel to browse menus and your music library."
+        },
+        "playbackControls": {
+          "title": "Playback Controls",
+          "description": "Play, pause, skip tracks, and control your current song."
+        },
+        "syncedLyrics": {
+          "title": "Synced Lyrics",
+          "description": "View time-synced lyrics and get instant translations."
+        },
+        "playbackModes": {
+          "title": "Playback Modes",
+          "description": "Enable shuffle, repeat songs or playlists, and more."
+        },
+        "displayFullscreen": {
+          "title": "Display & Fullscreen",
+          "description": "Adjust backlight, themes, and switch to fullscreen video."
+        }
+      }
+    },
+    "synth": {
+      "name": "Synth",
+      "description": "Virtual synthesizer",
+      "help": {
+        "virtualKeyboard": {
+          "title": "Virtual Keyboard",
+          "description": "Play notes with on-screen keys or computer keyboard"
+        },
+        "controlsPanel": {
+          "title": "Controls Panel",
+          "description": "Toggle CONTROLS to tweak oscillators, envelope & effects"
+        },
+        "presets": {
+          "title": "Presets",
+          "description": "Save, load & manage custom sound presets"
+        },
+        "waveform3d": {
+          "title": "3D Waveform",
+          "description": "Live animated waveform when controls panel is open"
+        },
+        "effects": {
+          "title": "Effects",
+          "description": "Reverb, delay, distortion, chorus, phaser & bit-crusher"
+        },
+        "midiInput": {
+          "title": "MIDI Input",
+          "description": "Plug in a MIDI keyboard and play instantly"
+        }
+      }
+    },
+    "pc": {
+      "name": "Virtual PC",
+      "description": "3D PC simulation",
+      "help": {
+        "pcEmulator": {
+          "title": "PC Emulator",
+          "description": "Runs classic DOS games & apps right in your browser"
+        },
+        "keyboardControls": {
+          "title": "Keyboard Controls",
+          "description": "Use your physical keyboard for in-game input"
+        },
+        "mouseCapture": {
+          "title": "Mouse Capture",
+          "description": "Click inside the window to capture / release the mouse"
+        },
+        "fullscreenMode": {
+          "title": "Full-Screen Mode",
+          "description": "Toggle View ▸ Full Screen for an immersive display"
+        },
+        "saveStates": {
+          "title": "Save States",
+          "description": "Save or load game progress any time from File menu"
+        },
+        "aspectRatio": {
+          "title": "Aspect Ratio",
+          "description": "Switch between 4∶3 or widescreen to fit your monitor"
+        }
+      }
+    },
+    "terminal": {
+      "name": "Terminal",
+      "description": "Command line interface",
+      "help": {
+        "basicCommands": {
+          "title": "Basic Commands",
+          "description": "Use commands like ls, cd, cat, pwd, clear, and touch to navigate and manage files."
+        },
+        "navigation": {
+          "title": "Navigation",
+          "description": "Browse the same virtual file system as Finder with familiar Unix commands."
+        },
+        "commandHistory": {
+          "title": "Command History",
+          "description": "Press ↑ / ↓ arrows to cycle through previous commands and re-run them quickly."
+        },
+        "aiAssistant": {
+          "title": "AI Assistant",
+          "description": "Type \"ryo <prompt>\" to chat with Ryo AI directly inside the terminal."
+        },
+        "fileEditing": {
+          "title": "File Editing",
+          "description": "Open documents in TextEdit (edit) or Vim-style editor (vim) right from the prompt."
+        },
+        "terminalSounds": {
+          "title": "Terminal Sounds",
+          "description": "Distinct sounds for output, errors & AI replies. Toggle in View ▸ Sounds."
+        }
+      }
+    },
+    "applet-viewer": {
+      "name": "Applet Store",
+      "description": "View and run applets",
+      "help": {
+        "appletStore": {
+          "title": "Applet Store",
+          "description": "Browse and install applets from the community. Open the Store menu to discover new apps."
+        },
+        "createWithRyosChat": {
+          "title": "Create with ryOS Chat",
+          "description": "Ask ryOS Chat to create custom apps and applets for you. Share your ideas and get working apps instantly."
+        },
+        "viewApplets": {
+          "title": "View Applets",
+          "description": "Open and run applets saved from ryOS Chat or downloaded from the store."
+        },
+        "shareApplets": {
+          "title": "Share Applets",
+          "description": "Share your favorite applets with others using the Share Applet option in the File menu."
+        },
+        "openFromFinder": {
+          "title": "Open from Finder",
+          "description": "Browse and open applets saved on your system using the File menu."
+        },
+        "keepUpdated": {
+          "title": "Keep Updated",
+          "description": "Check for updates in the Store menu to get the latest versions of your installed applets."
+        }
+      }
+    },
+    "control-panels": {
+      "name": "Control Panels",
+      "description": "System settings",
+      "help": {
+        "appearance": {
+          "title": "Appearance",
+          "description": "Choose photos, patterns, or shader effects for your desktop wallpaper"
+        },
+        "sounds": {
+          "title": "Sounds",
+          "description": "Toggle UI sounds, typing synth, and Terminal / IE effects"
+        },
+        "aiModel": {
+          "title": "AI Model",
+          "description": "Select the AI model used by Chats and Terminal assistant"
+        },
+        "shaderEffects": {
+          "title": "Shader Effects",
+          "description": "Enable CRT, Galaxy, or Aurora visual effects"
+        },
+        "backupRestore": {
+          "title": "Backup & Restore",
+          "description": "Export or restore all settings and files"
+        },
+        "system": {
+          "title": "System",
+          "description": "Reset preferences or format the virtual file system"
+        }
+      }
+    }
+  },
+  "settings": {
+    "language": {
+      "title": "Language",
+      "description": "Select your preferred language for ryOS interface",
+      "english": "English",
+      "chineseTraditional": "中文 (繁體中文)",
+      "japanese": "日本語",
+      "korean": "한국어",
+      "french": "Français",
+      "german": "Deutsch"
+    }
+  }
+}
+

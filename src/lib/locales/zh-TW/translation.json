@@ -1,0 +1,531 @@
+{
+  "common": {
+    "menu": {
+      "file": "檔案",
+      "edit": "編輯",
+      "view": "檢視",
+      "go": "前往",
+      "help": "輔助說明",
+      "newFinderWindow": "新增 Finder 視窗",
+      "newFolder": "新增資料夾",
+      "moveToTrash": "移到垃圾桶",
+      "emptyTrash": "清除垃圾桶...",
+      "close": "關閉",
+      "undo": "還原",
+      "cut": "剪下",
+      "copy": "複製",
+      "paste": "貼上",
+      "clear": "清除",
+      "selectAll": "全選",
+      "bySmallIcon": "小圖示",
+      "byIcon": "圖示",
+      "byList": "列表",
+      "byName": "名稱",
+      "byDate": "日期",
+      "bySize": "大小",
+      "byKind": "種類",
+      "back": "上一頁",
+      "forward": "下一頁",
+      "applications": "應用程式",
+      "documents": "文件",
+      "images": "圖片",
+      "music": "音樂",
+      "sites": "網站",
+      "videos": "影片",
+      "trash": "垃圾桶",
+      "finderHelp": "Finder 輔助說明",
+      "aboutFinder": "關於 Finder"
+    },
+    "dialog": {
+      "save": "儲存",
+      "cancel": "取消",
+      "confirm": "確認",
+      "close": "關閉",
+      "adding": "新增中...",
+      "saveFile": "儲存檔案",
+      "enterFileName": "輸入檔案名稱",
+      "discardChanges": "捨棄變更",
+      "discardChangesDesc": "您確定要捨棄變更並建立新檔案嗎？",
+      "keepNewDocument": "保留新文件",
+      "saveChanges": "儲存變更",
+      "enterFilenameToSave": "輸入要儲存的檔案名稱，或在關閉前刪除。",
+      "saveBeforeClosing": "在關閉前儲存您的變更。",
+      "delete": "刪除",
+      "help": "輔助說明",
+      "about": "關於",
+      "welcomeTo": "歡迎使用",
+      "version": "版本",
+      "madeBy": "製作：",
+      "openInGitHub": "在 GitHub 開啟",
+      "informationAboutApp": "應用程式資訊"
+    },
+    "system": {
+      "systemRestoring": "系統還原中...",
+      "resetAllSettings": "重設所有設定",
+      "resetAllSettingsDesc": "您確定要重設所有設定嗎？這將清除所有已儲存的設定並還原為預設狀態。重設後 ryOS 將重新啟動。",
+      "formatFileSystem": "格式化檔案系統",
+      "formatFileSystemDesc": "您確定要格式化檔案系統嗎？這將永久刪除所有文件（範例文件除外）、圖片和自訂桌布。格式化後 ryOS 將重新啟動。"
+    }
+  },
+  "apps": {
+    "finder": {
+      "name": "Finder",
+      "description": "瀏覽和管理檔案",
+      "help": {
+        "browseNavigate": {
+          "title": "瀏覽與導航",
+          "description": "上一頁/下一頁按鈕、網址列和「前往」選單可快速導航"
+        },
+        "fileManagement": {
+          "title": "檔案管理",
+          "description": "建立資料夾、重新命名、移動和拖曳項目以整理檔案"
+        },
+        "viewSort": {
+          "title": "檢視與排序",
+          "description": "切換圖示大小，並依名稱、種類、大小或日期排序"
+        },
+        "quickAccess": {
+          "title": "快速存取",
+          "description": "從「前往」選單立即跳至文件、應用程式或垃圾桶"
+        },
+        "storageInfo": {
+          "title": "儲存空間資訊",
+          "description": "在視窗底部查看可用空間和項目數量"
+        },
+        "trash": {
+          "title": "垃圾桶",
+          "description": "將檔案拖曳至垃圾桶並清空以永久刪除"
+        }
+      }
+    },
+    "soundboard": {
+      "name": "音效板",
+      "description": "播放音效",
+      "help": {
+        "recordSlot": {
+          "title": "錄音插槽",
+          "description": "點擊插槽開始錄音；再次點擊停止"
+        },
+        "keyboardPlay": {
+          "title": "鍵盤播放",
+          "description": "按 1-9 立即觸發音效"
+        },
+        "waveformView": {
+          "title": "波形檢視",
+          "description": "在錄音或播放時查看即時波形"
+        },
+        "customizeSlot": {
+          "title": "自訂插槽",
+          "description": "為每個樣本新增表情符號和標題以便快速識別"
+        },
+        "multipleBoards": {
+          "title": "多個音效板",
+          "description": "建立、重新命名和切換音效板以管理多組音效"
+        },
+        "importExport": {
+          "title": "匯入 / 匯出",
+          "description": "將音效板分享為檔案；拖放以匯入"
+        }
+      }
+    },
+    "internet-explorer": {
+      "name": "Internet Explorer",
+      "description": "瀏覽網頁",
+      "help": {
+        "browseWeb": {
+          "title": "瀏覽網頁",
+          "description": "輸入網址並使用導航按鈕（上一頁、下一頁、重新整理、停止）。"
+        },
+        "travelThroughTime": {
+          "title": "穿越時空",
+          "description": "從下拉選單選擇年份，查看過去或未來的網站。"
+        },
+        "historyReimagined": {
+          "title": "歷史重現",
+          "description": "AI 重建非常古老的網站（1996 年以前）並想像未來的網路體驗。"
+        },
+        "saveFavorites": {
+          "title": "儲存我的最愛",
+          "description": "將網站和特定年份新增至「我的最愛」列以便快速存取。"
+        },
+        "exploreTimeNodes": {
+          "title": "探索時間節點",
+          "description": "點擊網址列中的時鐘圖示，查看目前網站在不同時間的可用快照。"
+        },
+        "shareJourney": {
+          "title": "分享您的旅程",
+          "description": "使用「分享」按鈕產生您正在檢視的確切頁面和年份的連結。"
+        }
+      }
+    },
+    "chats": {
+      "name": "聊天",
+      "description": "與 AI 聊天",
+      "help": {
+        "chatWithRyo": {
+          "title": "與 Ryo 聊天",
+          "description": "輸入訊息與 Ryo 聊天、產生程式碼或取得 ryOS 的協助。"
+        },
+        "createEditFiles": {
+          "title": "建立與編輯檔案",
+          "description": "請 Ryo 建立 HTML 小程式、編輯文件、讀取檔案或搜尋小程式商店。"
+        },
+        "controlApps": {
+          "title": "控制應用程式",
+          "description": "請 Ryo 啟動或關閉應用程式、切換主題或控制 iPod 播放。"
+        },
+        "joinChatRooms": {
+          "title": "加入聊天室",
+          "description": "在公開聊天室中與他人聯繫。提及 @ryo 以獲得 AI 回應。"
+        },
+        "pushToTalk": {
+          "title": "按住說話",
+          "description": "按住空白鍵或點擊麥克風按鈕以錄製並傳送語音訊息。"
+        },
+        "nudgeDjMode": {
+          "title": "輕推與 DJ 模式",
+          "description": "傳送 👋 輕推以獲得情境感知提示。播放音樂時 Ryo 會變成 DJ。"
+        }
+      }
+    },
+    "textedit": {
+      "name": "文字編輯",
+      "description": "簡單的富文字編輯器",
+      "help": {
+        "richEditing": {
+          "title": "富文字編輯",
+          "description": "輕鬆輸入、複製、剪下、貼上、還原和重做文字"
+        },
+        "formatting": {
+          "title": "格式化",
+          "description": "粗體、斜體、底線、標題和對齊選項"
+        },
+        "listsTasks": {
+          "title": "清單與任務",
+          "description": "建立項目符號、編號和核取方塊任務清單"
+        },
+        "fileManagement": {
+          "title": "檔案管理",
+          "description": "建立、開啟、儲存和匯出檔案（HTML、MD、TXT）"
+        },
+        "voiceDictation": {
+          "title": "語音聽寫",
+          "description": "免持聽寫文字到文件中"
+        },
+        "slashCommands": {
+          "title": "斜線指令",
+          "description": "輸入 / 以快速操作，或讓 Ryo AI 遠端編輯行"
+        }
+      }
+    },
+    "paint": {
+      "name": "繪圖",
+      "description": "繪製和編輯圖片",
+      "help": {
+        "drawingTools": {
+          "title": "繪圖工具",
+          "description": "使用左側工具列選擇不同的繪圖工具，如鉛筆、畫筆、形狀等。"
+        },
+        "colors": {
+          "title": "顏色",
+          "description": "從工具下方的調色盤選擇顏色以變更繪圖顏色。"
+        },
+        "undo": {
+          "title": "還原",
+          "description": "按 ⌘Z 或使用「編輯」>「還原」以還原上一個動作。"
+        },
+        "saving": {
+          "title": "儲存",
+          "description": "使用「檔案」>「儲存」以儲存您的作品，或「檔案」>「另存新檔」以使用新名稱儲存。"
+        },
+        "patterns": {
+          "title": "圖樣",
+          "description": "從底部調色盤選擇各種圖樣以填滿形狀和區域。"
+        },
+        "filters": {
+          "title": "濾鏡",
+          "description": "從「濾鏡」選單套用負片、灰階、亮度等效果。"
+        }
+      }
+    },
+    "photo-booth": {
+      "name": "Photo Booth",
+      "description": "使用效果拍照",
+      "help": {
+        "takingPhoto": {
+          "title": "拍照",
+          "description": "點擊大型紅色相機按鈕以拍攝單張影像。"
+        },
+        "quickSnaps": {
+          "title": "快速連拍",
+          "description": "點擊計時器按鈕（相機按鈕左側）以開始每隔一秒拍攝四張照片的序列。"
+        },
+        "applyingEffects": {
+          "title": "套用效果",
+          "description": "點擊「效果」按鈕（相機按鈕右側）以開啟效果面板，並在即時相機檢視中套用有趣的濾鏡。"
+        },
+        "viewingPhotos": {
+          "title": "檢視照片",
+          "description": "點擊照片堆疊按鈕（最左側）以顯示或隱藏底部的照片條，顯示所有已儲存的照片。"
+        },
+        "downloadingPhotos": {
+          "title": "下載照片",
+          "description": "照片會自動儲存。點擊照片條中的照片以下載。"
+        },
+        "switchingCameras": {
+          "title": "切換相機",
+          "description": "如果您連接了多個相機，請使用選單列中的「檢視」選單在可用相機之間切換。"
+        }
+      }
+    },
+    "minesweeper": {
+      "name": "踩地雷",
+      "description": "經典益智遊戲",
+      "help": {
+        "desktopControls": {
+          "title": "桌面控制",
+          "description": "左鍵點擊以顯示，右鍵點擊以標記，雙擊數字以自動顯示相鄰格子。"
+        },
+        "mobileControls": {
+          "title": "行動裝置控制",
+          "description": "點擊以顯示，長按以標記地雷。"
+        },
+        "gameRules": {
+          "title": "遊戲規則",
+          "description": "數字顯示相鄰地雷數量。標記所有地雷並顯示所有安全格子以獲勝。"
+        },
+        "timerCounter": {
+          "title": "計時器與計數器",
+          "description": "頂部列顯示經過時間和剩餘未標記的地雷。"
+        },
+        "restart": {
+          "title": "重新開始",
+          "description": "按笑臉或選擇「遊戲」▸「新增」以開始新的遊戲。"
+        }
+      }
+    },
+    "videos": {
+      "name": "影片",
+      "description": "觀看影片",
+      "help": {
+        "addVideo": {
+          "title": "新增影片",
+          "description": "貼上任何 YouTube 網址以新增至播放清單"
+        },
+        "playback": {
+          "title": "播放",
+          "description": "播放、暫停、下一部、上一部控制"
+        },
+        "loop": {
+          "title": "循環",
+          "description": "循環目前影片或整個播放清單"
+        },
+        "shuffle": {
+          "title": "隨機播放",
+          "description": "隨機排列播放清單順序"
+        },
+        "playlist": {
+          "title": "播放清單",
+          "description": "管理和整理您的影片播放清單"
+        },
+        "retroUi": {
+          "title": "復古介面",
+          "description": "經典 QuickTime 播放器美學"
+        }
+      }
+    },
+    "ipod": {
+      "name": "iPod",
+      "description": "音樂播放器",
+      "help": {
+        "addSongs": {
+          "title": "新增歌曲",
+          "description": "貼上 YouTube 網址以將音樂新增至您的 iPod。"
+        },
+        "wheelNavigation": {
+          "title": "轉盤導航",
+          "description": "使用點擊轉盤瀏覽選單和您的音樂資料庫。"
+        },
+        "playbackControls": {
+          "title": "播放控制",
+          "description": "播放、暫停、跳過曲目並控制目前歌曲。"
+        },
+        "syncedLyrics": {
+          "title": "同步歌詞",
+          "description": "檢視時間同步的歌詞並獲得即時翻譯。"
+        },
+        "playbackModes": {
+          "title": "播放模式",
+          "description": "啟用隨機播放、重複歌曲或播放清單等功能。"
+        },
+        "displayFullscreen": {
+          "title": "顯示與全螢幕",
+          "description": "調整背光、主題並切換至全螢幕影片。"
+        }
+      }
+    },
+    "synth": {
+      "name": "合成器",
+      "description": "虛擬合成器",
+      "help": {
+        "virtualKeyboard": {
+          "title": "虛擬鍵盤",
+          "description": "使用螢幕按鍵或電腦鍵盤演奏音符"
+        },
+        "controlsPanel": {
+          "title": "控制面板",
+          "description": "切換「控制」以調整振盪器、包絡和效果"
+        },
+        "presets": {
+          "title": "預設",
+          "description": "儲存、載入和管理自訂音效預設"
+        },
+        "waveform3d": {
+          "title": "3D 波形",
+          "description": "開啟控制面板時顯示即時動畫波形"
+        },
+        "effects": {
+          "title": "效果",
+          "description": "殘響、延遲、失真、和聲、相位器和位元壓縮器"
+        },
+        "midiInput": {
+          "title": "MIDI 輸入",
+          "description": "插入 MIDI 鍵盤並立即演奏"
+        }
+      }
+    },
+    "pc": {
+      "name": "虛擬 PC",
+      "description": "3D PC 模擬",
+      "help": {
+        "pcEmulator": {
+          "title": "PC 模擬器",
+          "description": "在瀏覽器中直接執行經典 DOS 遊戲和應用程式"
+        },
+        "keyboardControls": {
+          "title": "鍵盤控制",
+          "description": "使用實體鍵盤進行遊戲內輸入"
+        },
+        "mouseCapture": {
+          "title": "滑鼠擷取",
+          "description": "在視窗內點擊以擷取/釋放滑鼠"
+        },
+        "fullscreenMode": {
+          "title": "全螢幕模式",
+          "description": "切換「檢視」▸「全螢幕」以獲得沉浸式顯示"
+        },
+        "saveStates": {
+          "title": "儲存狀態",
+          "description": "隨時從「檔案」選單儲存或載入遊戲進度"
+        },
+        "aspectRatio": {
+          "title": "長寬比",
+          "description": "在 4:3 或寬螢幕之間切換以符合您的顯示器"
+        }
+      }
+    },
+    "terminal": {
+      "name": "終端機",
+      "description": "命令列介面",
+      "help": {
+        "basicCommands": {
+          "title": "基本指令",
+          "description": "使用 ls、cd、cat、pwd、clear 和 touch 等指令來導航和管理檔案。"
+        },
+        "navigation": {
+          "title": "導航",
+          "description": "使用熟悉的 Unix 指令瀏覽與 Finder 相同的虛擬檔案系統。"
+        },
+        "commandHistory": {
+          "title": "指令歷史",
+          "description": "按 ↑ / ↓ 箭頭以循環瀏覽先前的指令並快速重新執行。"
+        },
+        "aiAssistant": {
+          "title": "AI 助理",
+          "description": "輸入「ryo <提示>」以直接在終端機內與 Ryo AI 聊天。"
+        },
+        "fileEditing": {
+          "title": "檔案編輯",
+          "description": "從提示直接開啟文件至文字編輯（edit）或 Vim 風格編輯器（vim）。"
+        },
+        "terminalSounds": {
+          "title": "終端機音效",
+          "description": "輸出、錯誤和 AI 回應的獨特音效。在「檢視」▸「音效」中切換。"
+        }
+      }
+    },
+    "applet-viewer": {
+      "name": "小程式商店",
+      "description": "檢視和執行小程式",
+      "help": {
+        "appletStore": {
+          "title": "小程式商店",
+          "description": "瀏覽並安裝社群的小程式。開啟「商店」選單以發現新應用程式。"
+        },
+        "createWithRyosChat": {
+          "title": "使用 ryOS 聊天建立",
+          "description": "請 ryOS 聊天為您建立自訂應用程式和小程式。分享您的想法並立即獲得可用的應用程式。"
+        },
+        "viewApplets": {
+          "title": "檢視小程式",
+          "description": "開啟並執行從 ryOS 聊天儲存或從商店下載的小程式。"
+        },
+        "shareApplets": {
+          "title": "分享小程式",
+          "description": "使用「檔案」選單中的「分享小程式」選項與他人分享您喜愛的小程式。"
+        },
+        "openFromFinder": {
+          "title": "從 Finder 開啟",
+          "description": "使用「檔案」選單瀏覽並開啟系統上儲存的小程式。"
+        },
+        "keepUpdated": {
+          "title": "保持更新",
+          "description": "在「商店」選單中檢查更新以獲得已安裝小程式的最新版本。"
+        }
+      }
+    },
+    "control-panels": {
+      "name": "控制台",
+      "description": "系統設定",
+      "help": {
+        "appearance": {
+          "title": "外觀",
+          "description": "選擇照片、圖樣或著色器效果作為桌面桌布"
+        },
+        "sounds": {
+          "title": "音效",
+          "description": "切換 UI 音效、打字合成器和終端機 / IE 效果"
+        },
+        "aiModel": {
+          "title": "AI 模型",
+          "description": "選擇聊天和終端機助理使用的 AI 模型"
+        },
+        "shaderEffects": {
+          "title": "著色器效果",
+          "description": "啟用 CRT、銀河或極光視覺效果"
+        },
+        "backupRestore": {
+          "title": "備份與還原",
+          "description": "匯出或還原所有設定和檔案"
+        },
+        "system": {
+          "title": "系統",
+          "description": "重設偏好設定或格式化虛擬檔案系統"
+        }
+      }
+    }
+  },
+  "settings": {
+    "language": {
+      "title": "語言",
+      "description": "選擇您的 ryOS 介面偏好語言",
+      "english": "English",
+      "chineseTraditional": "中文 (繁體中文)",
+      "japanese": "日本語",
+      "korean": "한국어",
+      "french": "Français",
+      "german": "Deutsch"
+    }
+  }
+}
+

@@ -26,6 +26,7 @@ import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { useOffline } from "@/hooks/useOffline";
 import { WifiOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 // Helper function to get app name
 const getAppName = (appId: string): string => {
@@ -149,6 +150,7 @@ function Clock() {
 }
 
 function DefaultMenuItems() {
+  const { t } = useTranslation();
   const launchApp = useLaunchApp();
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
@@ -168,7 +170,7 @@ function DefaultMenuItems() {
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
-            File
+            {t("common.menu.file")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -176,30 +178,30 @@ function DefaultMenuItems() {
             onClick={() => handleLaunchFinder("/")}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            New Finder Window
+            {t("common.menu.newFinderWindow")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            New Folder
+            {t("common.menu.newFolder")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Move to Trash
+            {t("common.menu.moveToTrash")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Empty Trash...
+            {t("common.menu.emptyTrash")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            Close
+            {t("common.menu.close")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -213,7 +215,7 @@ function DefaultMenuItems() {
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
-            Edit
+            {t("common.menu.edit")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -221,39 +223,39 @@ function DefaultMenuItems() {
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Undo
+            {t("common.menu.undo")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Cut
+            {t("common.menu.cut")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Copy
+            {t("common.menu.copy")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Paste
+            {t("common.menu.paste")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Clear
+            {t("common.menu.clear")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Select All
+            {t("common.menu.selectAll")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -267,31 +269,31 @@ function DefaultMenuItems() {
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
-            View
+            {t("common.menu.view")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            <span className="pl-4">by Small Icon</span>
+            <span className="pl-4">{t("common.menu.bySmallIcon")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            <span>✓ by Icon</span>
+            <span>✓ {t("common.menu.byIcon")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            <span className="pl-4">by List</span>
+            <span className="pl-4">{t("common.menu.byList")}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            <span>✓ by Name</span>
+            <span>✓ {t("common.menu.byName")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            <span className="pl-4">by Date</span>
+            <span className="pl-4">{t("common.menu.byDate")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            <span className="pl-4">by Size</span>
+            <span className="pl-4">{t("common.menu.bySize")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
-            <span className="pl-4">by Kind</span>
+            <span className="pl-4">{t("common.menu.byKind")}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -305,7 +307,7 @@ function DefaultMenuItems() {
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
-            Go
+            {t("common.menu.go")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -313,13 +315,13 @@ function DefaultMenuItems() {
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Back
+            {t("common.menu.back")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Forward
+            {t("common.menu.forward")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -328,10 +330,10 @@ function DefaultMenuItems() {
           >
             <ThemedIcon
               name="applications.png"
-              alt="Applications"
+              alt={t("common.menu.applications")}
               className="w-4 h-4 [image-rendering:pixelated]"
             />
-            Applications
+            {t("common.menu.applications")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => handleLaunchFinder("/Documents")}
@@ -339,10 +341,10 @@ function DefaultMenuItems() {
           >
             <ThemedIcon
               name="documents.png"
-              alt="Documents"
+              alt={t("common.menu.documents")}
               className="w-4 h-4 [image-rendering:pixelated]"
             />
-            Documents
+            {t("common.menu.documents")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => handleLaunchFinder("/Images")}
@@ -350,10 +352,10 @@ function DefaultMenuItems() {
           >
             <ThemedIcon
               name="images.png"
-              alt="Images"
+              alt={t("common.menu.images")}
               className="w-4 h-4 [image-rendering:pixelated]"
             />
-            Images
+            {t("common.menu.images")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => handleLaunchFinder("/Music")}
@@ -361,10 +363,10 @@ function DefaultMenuItems() {
           >
             <ThemedIcon
               name="sounds.png"
-              alt="Music"
+              alt={t("common.menu.music")}
               className="w-4 h-4 [image-rendering:pixelated]"
             />
-            Music
+            {t("common.menu.music")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => handleLaunchFinder("/Sites")}
@@ -372,10 +374,10 @@ function DefaultMenuItems() {
           >
             <ThemedIcon
               name="sites.png"
-              alt="Sites"
+              alt={t("common.menu.sites")}
               className="w-4 h-4 [image-rendering:pixelated]"
             />
-            Sites
+            {t("common.menu.sites")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => handleLaunchFinder("/Videos")}
@@ -383,10 +385,10 @@ function DefaultMenuItems() {
           >
             <ThemedIcon
               name="movies.png"
-              alt="Videos"
+              alt={t("common.menu.videos")}
               className="w-4 h-4 [image-rendering:pixelated]"
             />
-            Videos
+            {t("common.menu.videos")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => handleLaunchFinder("/Trash")}
@@ -394,10 +396,10 @@ function DefaultMenuItems() {
           >
             <ThemedIcon
               name="trash-empty.png"
-              alt="Trash"
+              alt={t("common.menu.trash")}
               className="w-4 h-4 [image-rendering:pixelated]"
             />
-            Trash
+            {t("common.menu.trash")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -411,7 +413,7 @@ function DefaultMenuItems() {
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
-            Help
+            {t("common.menu.help")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
@@ -419,14 +421,14 @@ function DefaultMenuItems() {
             onClick={() => setIsHelpDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            Finder Help
+            {t("common.menu.finderHelp")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={() => setIsAboutDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            About Finder
+            {t("common.menu.aboutFinder")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
