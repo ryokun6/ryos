@@ -1,10 +1,16 @@
 AI Notes:
 
 src/apps/finder/components/FinderAppComponent.tsx: +524[0],+528[0],+609[0],+613[0]
-src/lib/locales/en/translation.json: +55[1],+59[1],+70[1],+76[1],+79[1],+142[1],+146[1],+161[1],+175[1],+176[2],+180[1],+184[1],+188-189[1],+194[1],+197[1],+198[2],+208[1],+214[1]
+src/lib/locales/de/translation.json: +910[1],+917[1]
+src/lib/locales/en/translation.json: +55[2],+59[2],+66-67[1],+70[2],+76[2],+79[2],+142[2],+146[2],+161[2],+175[2],+176[3],+180[2],+184[2],+188-189[2],+194[2],+197[2],+198[3],+208[2],+214[2]
+src/lib/locales/fr/translation.json: +910[1],+917[1]
+src/lib/locales/ja/translation.json: +910[1],+917[1]
+src/lib/locales/ko/translation.json: +910[1],+917[1]
+src/lib/locales/zh-TW/translation.json: +197[1],+201[1],+207[1],+211[1],+215-216[1],+231[1],+289[1],+293[1],+298[1],+304[1],+308[1],+877[1],+880[1],+884[1],+918[1],+962[1]
 
 Conversations:
 
 [0]: a612736a-806b-4e2f-864a-034f5045181a; Retain applet share IDs on import; composer-1;
-[1]: 94d8e20b-8bd1-4b08-99c1-f7854aef8c93; Localize PrefetchToast component; composer-1;
-[2]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
+[1]: 17545cb8-0fb6-421e-b363-f6d42cc18fb8; Localize folder and shortcut names; composer-1;
+[2]: f0606fb6-cb99-4fd4-a02b-b55a736b0562; Localize photo booth setup; composer-1;
+[3]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; Localize chats app components; composer-1;
