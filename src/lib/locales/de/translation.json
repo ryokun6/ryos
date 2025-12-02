@@ -209,22 +209,22 @@
         }
       },
       "menu": {
-        "aboutChats": "About Chats",
-        "chatSpeech": "Chat Speech",
+        "aboutChats": "Über Chats",
+        "chatSpeech": "Chat-Sprachausgabe",
         "chats": "Chats",
-        "chatsHelp": "Chats Help",
-        "clearChat": "Clear Chat",
-        "createAccount": "Create Account...",
-        "decreaseFontSize": "Decrease Font Size",
-        "increaseFontSize": "Increase Font Size",
-        "logOut": "Log Out",
-        "login": "Login...",
-        "newChat": "New Chat...",
-        "resetFontSize": "Reset Font Size",
-        "saveTranscript": "Save Transcript...",
-        "showRooms": "Show Rooms",
-        "sound": "Sound",
-        "typingSynth": "Typing Synth"
+        "chatsHelp": "Chats-Hilfe",
+        "clearChat": "Chat leeren",
+        "createAccount": "Konto erstellen...",
+        "decreaseFontSize": "Schriftgröße verkleinern",
+        "increaseFontSize": "Schriftgröße vergrößern",
+        "logOut": "Abmelden",
+        "login": "Anmelden...",
+        "newChat": "Neuer Chat...",
+        "resetFontSize": "Schriftgröße zurücksetzen",
+        "saveTranscript": "Transkript speichern...",
+        "showRooms": "Räume anzeigen",
+        "sound": "Ton",
+        "typingSynth": "Tipp-Synthesizer"
       },
       "messages": {
         "delete": "Löschen",
@@ -237,7 +237,7 @@
         "channels": "Kanäle",
         "chats": "Chats",
         "new": "neu",
-        "online": "online",
+        "online": "aktiv",
         "private": "Privat"
       },
       "status": {
