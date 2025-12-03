@@ -4,4 +4,4 @@ src/components/layout/MenuBar.tsx: +96-103[0],+115[0],+117-120[0],+127[0],+129-1
 
 Conversations:
 
-[0]: 7f757504-372d-494c-b5d3-297428c1e58d; Implement mobile menubar overscroll feature; claude-4.5-opus-high-thinking;
+[0]: 7f757504-372d-494c-b5d3-297428c1e58d; Implement mobile menubar overscroll feature; composer-1;
