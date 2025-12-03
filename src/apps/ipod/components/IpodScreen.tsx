@@ -856,6 +856,9 @@ export function IpodScreen({
                 ) : (
                   <div className="text-center font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] h-full flex flex-col justify-center items-center">
                     <p>Don't steal music</p>
+                    <p>Ne volez pas la musique</p>
+                    <p>Bitte keine Musik stehlen</p>
+                    <p>音楽を盗用しないでください</p>
                   </div>
                 )}
               </div>
