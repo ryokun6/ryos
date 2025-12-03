@@ -1,0 +1,7 @@
+AI Notes:
+
+src/apps/terminal/components/TerminalAppComponent.tsx: +2640[0],+2879[0] -2640[0],-2879[0]
+
+Conversations:
+
+[0]: 11b0d762-83d8-427b-ba97-1c3d12d6ee5a; Fix terminal input alignment issue; claude-4.5-opus-high-thinking;
