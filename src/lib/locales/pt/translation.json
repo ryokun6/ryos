@@ -1028,7 +1028,7 @@
       "name": "Campo Minado"
     },
     "paint": {
-      "description": "[TODO] Draw and edit images",
+      "description": "Desenhar e editar imagens",
       "dialogs": {
         "discardChanges": "Descartar Alterações",
         "discardChangesDescription": "Você tem alterações não salvas. Criar novo arquivo mesmo assim?",
@@ -1044,65 +1044,65 @@
       },
       "help": {
         "colors": {
-          "description": "[TODO] Select colors from the palette below the tools to change your drawing color.",
-          "title": "[TODO] Colors"
+          "description": "Selecione cores da paleta abaixo das ferramentas para mudar a cor do seu desenho.",
+          "title": "Cores"
         },
         "drawingTools": {
-          "description": "[TODO] Use the toolbar on the left to select different drawing tools like pencil, brush, shapes, and more.",
-          "title": "[TODO] Drawing Tools"
+          "description": "Use a barra de ferramentas à esquerda para selecionar diferentes ferramentas de desenho como lápis, pincel, formas e muito mais.",
+          "title": "Ferramentas de Desenho"
         },
         "filters": {
           "description": "Aplicar inverter, escala de cinza, brilho e mais no menu Filtros.",
           "title": "Filtros"
         },
         "patterns": {
-          "description": "[TODO] Choose from various patterns in the bottom palette to fill shapes and areas.",
-          "title": "[TODO] Patterns"
+          "description": "Escolha entre vários padrões na paleta inferior para preencher formas e áreas.",
+          "title": "Padrões"
         },
         "saving": {
-          "description": "[TODO] Use File > Save to save your artwork, or File > Save As to save it with a new name.",
-          "title": "[TODO] Saving"
+          "description": "Use Arquivo > Salvar para salvar sua arte, ou Arquivo > Salvar Como para salvá-lo com um novo nome.",
+          "title": "Salvando"
         },
         "undo": {
-          "description": "[TODO] Press ⌘Z or use Edit > Undo to undo your last action.",
-          "title": "[TODO] Undo"
+          "description": "Pressione ⌘Z ou use Editar > Desfazer para desfazer sua última ação.",
+          "title": "Desfazer"
         }
       },
       "menu": {
-        "aboutPaint": "[TODO] About Paint",
-        "export": "[TODO] Export",
-        "filterBlur": "[TODO] Blur",
-        "filterBrightnessMinus": "[TODO] Brightness -",
-        "filterBrightnessPlus": "[TODO] Brightness +",
-        "filterCategoryArtistic": "[TODO] Artistic",
-        "filterCategoryBlur": "[TODO] Blur",
-        "filterCategoryColor": "[TODO] Color",
-        "filterCategoryRetro": "[TODO] Retro",
-        "filterCrt": "[TODO] CRT",
-        "filterDither": "[TODO] Dither",
-        "filterEdgeDetect": "[TODO] Edge Detect",
-        "filterGaussianBlur": "[TODO] Gaussian Blur",
-        "filterGlitch": "[TODO] Glitch",
-        "filterGrayscale": "[TODO] Grayscale",
-        "filterInvert": "[TODO] Invert",
-        "filterMotionBlur": "[TODO] Motion Blur",
-        "filterNoise": "[TODO] Noise",
-        "filterOldPhoto": "[TODO] Old Photo",
-        "filterPixelate": "[TODO] Pixelate",
-        "filterRadialBlur": "[TODO] Radial Blur",
-        "filterSepia": "[TODO] Sepia",
-        "filterSharpen": "[TODO] Sharpen",
-        "filterVhs": "[TODO] VHS",
-        "filters": "[TODO] Filters",
-        "importFromDevice": "[TODO] Import from Device...",
+        "aboutPaint": "Sobre o Paint",
+        "export": "Exportar",
+        "filterBlur": "Desfoque",
+        "filterBrightnessMinus": "Brilho -",
+        "filterBrightnessPlus": "Brilho +",
+        "filterCategoryArtistic": "Artístico",
+        "filterCategoryBlur": "Desfoque",
+        "filterCategoryColor": "Cor",
+        "filterCategoryRetro": "Retrô",
+        "filterCrt": "CRT",
+        "filterDither": "Dither",
+        "filterEdgeDetect": "Detecção de Borda",
+        "filterGaussianBlur": "Desfoque Gaussiano",
+        "filterGlitch": "Glitch",
+        "filterGrayscale": "Escala de Cinza",
+        "filterInvert": "Inverter",
+        "filterMotionBlur": "Desfoque de Movimento",
+        "filterNoise": "Ruído",
+        "filterOldPhoto": "Foto Antiga",
+        "filterPixelate": "Pixelizar",
+        "filterRadialBlur": "Desfoque Radial",
+        "filterSepia": "Sépia",
+        "filterSharpen": "Nitidez",
+        "filterVhs": "VHS",
+        "filters": "Filtros",
+        "importFromDevice": "Importar do Dispositivo...",
         "newFile": "Novo Arquivo",
-        "open": "[TODO] Open...",
-        "paintHelp": "[TODO] Paint Help",
-        "save": "[TODO] Save",
-        "saveEllipsis": "[TODO] Save..."
+        "open": "Abrir...",
+        "paintHelp": "Ajuda da Pintura",
+        "save": "Salvar",
+        "saveEllipsis": "Salvar..."
       },
-      "name": "[TODO] Paint",
-      "selectedPattern": "[TODO] Selected Pattern",
+      "name": "Pintar",
+      "selectedPattern": "Padrão Selecionado",
       "toolbar": {
         "brush": "Pincel",
         "eraser": "Borracha",
@@ -1112,12 +1112,12 @@
         "oval": "Oval",
         "pencil": "Lápis",
         "rectangle": "Retângulo",
-        "rectangleSelect": "[TODO] Rectangle Select",
-        "select": "[TODO] Select",
+        "rectangleSelect": "Seleção Retangular",
+        "select": "Selecionar",
         "spray": "Spray",
         "text": "Texto"
       },
-      "untitled": "[TODO] Untitled"
+      "untitled": "Sem Título"
     },
     "pc": {
       "description": "Simulação de PC 3D",
@@ -1380,20 +1380,20 @@
         "clear": "Limpar tela do terminal",
         "cowsay": "Uma vaca falante",
         "date": "Exibir data/hora atual",
-        "echo": "[TODO] Display text",
-        "edit": "[TODO] Open in text editor",
-        "help": "[TODO] Show available commands",
-        "history": "[TODO] Show command history",
-        "logout": "[TODO] Log out current user",
-        "ls": "[TODO] List directory contents",
-        "mkdir": "[TODO] Create directory",
-        "pwd": "[TODO] Show current directory",
-        "rm": "[TODO] Move file to trash",
-        "ryo": "[TODO] Chat with ryo",
-        "su": "[TODO] Switch or create user",
-        "touch": "[TODO] Create empty file",
-        "vim": "[TODO] Open file in vim editor",
-        "whoami": "[TODO] Display current user"
+        "echo": "Exibir texto",
+        "edit": "Abrir no editor de texto",
+        "help": "Mostrar comandos disponíveis",
+        "history": "Mostrar histórico de comandos",
+        "logout": "Sair do usuário atual",
+        "ls": "Listar conteúdo do diretório",
+        "mkdir": "Criar diretório",
+        "pwd": "Mostrar diretório atual",
+        "rm": "Mover arquivo para a lixeira",
+        "ryo": "Conversar com ryo",
+        "su": "Trocar ou criar usuário",
+        "touch": "Criar arquivo vazio",
+        "vim": "Abrir arquivo no editor vim",
+        "whoami": "Exibir usuário atual"
       },
       "description": "Interface de linha de comando",
       "help": {
@@ -1438,7 +1438,7 @@
         "askRyoWithPrompt": "pergunte qualquer coisa ao ryo. digite 'exit' para voltar ao terminal.\n→ do seu comando: {{prompt}}",
         "chatCleared": "conversa limpa. você ainda está conversando com o ryo. digite 'exit' para voltar ao terminal.",
         "commandNotFound": "comando não encontrado: {{cmd}}. digite 'help' para uma lista de comandos disponíveis.",
-        "contentWritten": "[TODO] Content written",
+        "contentWritten": "Conteúdo escrito",
         "fileCreated": "Arquivo criado",
         "fileEdited": "Arquivo editado",
         "foundApplets": "Encontrado {{count}} applet",
@@ -1449,19 +1449,19 @@
         "foundDocumentsPlural": "Encontrados {{count}} documentos",
         "isThinking": "está pensando",
         "lastLogin": "último login: {{time}}",
-        "listedItems": "[TODO] Listed items",
+        "listedItems": "Itens listados",
         "multipleMatchesFound": "Várias correspondências encontradas",
         "noFilesFound": "nenhum arquivo encontrado",
-        "noItemsFound": "[TODO] No items found",
+        "noItemsFound": "Nenhum item encontrado",
         "noSuchDirectory": "cd: {{dir}}: diretório não encontrado",
-        "opened": "[TODO] Opened",
+        "opened": "Aberto",
         "pausedIpod": "iPod em pausa",
         "playingIpod": "A reproduzir iPod",
         "playingSong": "A reproduzir música",
-        "readFile": "[TODO] Read {{fileName}}",
+        "readFile": "Lido {{fileName}}",
         "skippedToNextTrack": "Avançou para a próxima faixa",
         "skippedToPreviousTrack": "Voltou para a faixa anterior",
-        "textNotFound": "[TODO] Text not found",
+        "textNotFound": "Texto não encontrado",
         "toggledIpodPlayback": "Alternou a reprodução do iPod",
         "typeHelpForCommands": "digite 'help' para ver os comandos disponíveis",
         "unknown": "Desconhecido",
@@ -1491,28 +1491,28 @@
       "heading3": "Título 3",
       "help": {
         "fileManagement": {
-          "description": "[TODO] Create, open, save, and export files (HTML, MD, TXT)",
-          "title": "[TODO] File Management"
+          "description": "Crie, abra, salve e exporte arquivos (HTML, MD, TXT)",
+          "title": "Gerenciamento de Arquivos"
         },
         "formatting": {
-          "description": "[TODO] Bold, italic, underline, headings & alignment options",
-          "title": "[TODO] Formatting"
+          "description": "Opções de negrito, itálico, sublinhado, títulos e alinhamento",
+          "title": "Formatação"
         },
         "listsTasks": {
-          "description": "[TODO] Create bullet, numbered & check-box task lists",
-          "title": "[TODO] Lists & Tasks"
+          "description": "Crie listas de tarefas com marcadores, numeração e caixas de seleção",
+          "title": "Listas e Tarefas"
         },
         "richEditing": {
-          "description": "[TODO] Type, copy, cut, paste, undo & redo your text with ease",
-          "title": "[TODO] Rich Editing"
+          "description": "Digite, copie, recorte, cole, desfaça e refaça seu texto com facilidade",
+          "title": "Edição Avançada"
         },
         "slashCommands": {
-          "description": "[TODO] Type / for quick actions or let Ryo AI edit lines remotely",
-          "title": "[TODO] Slash Commands"
+          "description": "Digite / para ações rápidas ou deixe a IA Ryo editar linhas remotamente",
+          "title": "Comandos de Barra"
         },
         "voiceDictation": {
-          "description": "[TODO] Dictate text hands-free right into the document",
-          "title": "[TODO] Voice Dictation"
+          "description": "Dite texto sem usar as mãos diretamente no documento",
+          "title": "Ditado por Voz"
         }
       },
       "italic": "Itálico",
@@ -1567,8 +1567,8 @@
           "title": "Lista Numerada"
         },
         "taskList": {
-          "description": "[TODO] Create a checklist with checkboxes",
-          "title": "[TODO] Task List"
+          "description": "Crie uma lista de verificação com caixas de seleção",
+          "title": "Lista de Tarefas"
         },
         "text": {
           "description": "Basta começar a digitar com texto simples",
