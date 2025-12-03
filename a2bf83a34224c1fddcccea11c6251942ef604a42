@@ -1,0 +1,15 @@
+AI Notes:
+
+src/lib/i18n.ts: +36[0],+39[0],+42[0]
+src/lib/locales/de/translation.json: +1764[1],+1771[1] -1769[1]
+src/lib/locales/en/translation.json: +652[2]
+src/lib/locales/fr/translation.json: +1764[1],+1771[1] -1769[1]
+src/lib/locales/ja/translation.json: +1764[1],+1771[1] -1769[1]
+src/lib/locales/ko/translation.json: +1764[1],+1771[1] -1769[1]
+src/lib/locales/zh-TW/translation.json: +1764[1],+1771[1] -1769[1]
+
+Conversations:
+
+[0]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; 4afd4575; unknown;
+[1]: 88d329a4-4157-4820-9c8d-b8df97f2265f; Right click menu for dock folder shortcuts; composer-1;
+[2]: cb9c9bef-8087-46b1-b55c-f4b83290d2ee; cb9c9bef; unknown;
