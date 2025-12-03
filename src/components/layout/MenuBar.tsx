@@ -423,26 +423,26 @@ function DefaultMenuItems() {
             onClick={() => handleLaunchFinder("/")}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            {t("common.menu.newFinderWindow")}
+            {t("apps.finder.menu.newFinderWindow")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            {t("common.menu.newFolder")}
+            {t("apps.finder.menu.newFolder")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t("common.menu.moveToTrash")}
+            {t("apps.finder.menu.moveToTrash")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t("common.menu.emptyTrash")}
+            {t("apps.finder.menu.emptyTrash")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -523,44 +523,44 @@ function DefaultMenuItems() {
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            <span className="pl-4">{t("common.menu.bySmallIcon")}</span>
+            <span className="pl-4">{t("apps.finder.menu.bySmallIcon")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            <span>✓ {t("common.menu.byIcon")}</span>
+            <span>✓ {t("apps.finder.menu.byIcon")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            <span className="pl-4">{t("common.menu.byList")}</span>
+            <span className="pl-4">{t("apps.finder.menu.byList")}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            <span>✓ {t("common.menu.byName")}</span>
+            <span>✓ {t("apps.finder.menu.byName")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            <span className="pl-4">{t("common.menu.byDate")}</span>
+            <span className="pl-4">{t("apps.finder.menu.byDate")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            <span className="pl-4">{t("common.menu.bySize")}</span>
+            <span className="pl-4">{t("apps.finder.menu.bySize")}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            <span className="pl-4">{t("common.menu.byKind")}</span>
+            <span className="pl-4">{t("apps.finder.menu.byKind")}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -581,13 +581,13 @@ function DefaultMenuItems() {
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t("common.menu.back")}
+            {t("apps.finder.menu.back")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t("common.menu.forward")}
+            {t("apps.finder.menu.forward")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
@@ -686,14 +686,14 @@ function DefaultMenuItems() {
             onClick={() => setIsHelpDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            {t("common.menu.finderHelp")}
+            {t("apps.finder.menu.finderHelp")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
           <DropdownMenuItem
             onClick={() => setIsAboutDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
-            {t("common.menu.aboutFinder")}
+            {t("apps.finder.menu.aboutFinder")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
