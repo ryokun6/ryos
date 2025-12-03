@@ -37,7 +37,8 @@ export function StartMenu({ apps }: StartMenuProps) {
           <button
             className="flex items-center gap-1 px-2 text-white font-bold transition-all"
             style={{
-              width: currentTheme === "xp" ? "100px" : "auto",
+              width: currentTheme === "xp" ? "auto" : "auto",
+              minWidth: currentTheme === "xp" ? "100px" : "auto",
               height: currentTheme === "xp" ? "100%" : "85%",
               marginTop: currentTheme === "win98" ? "2px" : "0px",
               marginLeft: currentTheme === "win98" ? "4px" : "0px",
@@ -92,7 +93,7 @@ export function StartMenu({ apps }: StartMenuProps) {
               }}
             />
             <span
-              className={`tracking-wider ${
+              className={`tracking-wider whitespace-nowrap ${
                 currentTheme === "xp" ? "pr-2" : ""
               }`}
               style={{

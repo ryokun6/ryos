@@ -793,14 +793,14 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 :root[data-os-theme="xp"] [data-sonner-toast] .text-sm,
 :root[data-os-theme="xp"] [data-sonner-toast] [data-content] {
   color: #000 !important;
-  font-family: "Pixelated MS Sans Serif", Tahoma, sans-serif !important;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
   font-size: 11px !important;
   -webkit-font-smoothing: none !important;
   font-smooth: never !important;
 }
 
 :root[data-os-theme="xp"] [data-sonner-toast] button {
-  font-family: "Pixelated MS Sans Serif", Tahoma, sans-serif !important;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
   font-size: 11px !important;
   background: #ECE9D8 !important;
   border: none !important;
@@ -836,7 +836,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 }
 
 :root[data-os-theme="win98"] [data-sonner-toast] button {
-  font-family: "Pixelated MS Sans Serif", Tahoma, sans-serif !important;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
   font-size: 11px !important;
   background: #C0C0C0 !important;
   border: none !important;

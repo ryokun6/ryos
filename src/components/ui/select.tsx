@@ -58,7 +58,7 @@ const SelectTrigger = React.forwardRef<
       )}
       style={{
         fontFamily: isXpTheme
-          ? '"Pixelated MS Sans Serif", Arial'
+          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
           ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
@@ -223,7 +223,7 @@ const SelectLabel = React.forwardRef<
       className={cn("px-2 py-1.5 text-sm font-semibold", className)}
       style={{
         fontFamily: isXpTheme
-          ? '"Pixelated MS Sans Serif", Arial'
+          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
           ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
@@ -259,7 +259,7 @@ const SelectItem = React.forwardRef<
       )}
       style={{
         fontFamily: isXpTheme
-          ? '"Pixelated MS Sans Serif", Arial'
+          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
           ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,

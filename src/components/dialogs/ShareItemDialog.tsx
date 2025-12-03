@@ -140,7 +140,7 @@ export function ShareItemDialog({
               )}
               style={{
                 fontFamily: isXpTheme
-                  ? '"Pixelated MS Sans Serif", Arial'
+                  ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
                 fontSize: isXpTheme ? "10px" : undefined,
               }}
@@ -169,7 +169,7 @@ export function ShareItemDialog({
               )}
               style={{
                 fontFamily: isXpTheme
-                  ? '"Pixelated MS Sans Serif", Arial'
+                  ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
                 fontSize: isXpTheme ? "10px" : undefined,
               }}
@@ -188,7 +188,7 @@ export function ShareItemDialog({
           )}
           style={{
             fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", Arial'
+              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
             fontSize: isXpTheme ? "10px" : undefined,
           }}
@@ -209,7 +209,7 @@ export function ShareItemDialog({
           )}
           style={{
             fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", Arial'
+              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
             fontSize: isXpTheme ? "11px" : undefined,
           }}
@@ -234,7 +234,7 @@ export function ShareItemDialog({
           )}
           style={{
             fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", Arial'
+              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
               : undefined,
             fontSize: isXpTheme ? "11px" : undefined,
           }}

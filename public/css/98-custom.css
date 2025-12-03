@@ -120,7 +120,7 @@ label {
 input,
 label,
 textarea {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   font-size: 11px;
 }
 textarea {
@@ -137,7 +137,7 @@ textarea:focus {
   outline: none;
 }
 select {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   font-size: 11px;
   border: none;
   background-color: #fff;
@@ -166,7 +166,7 @@ select:active {
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='16' height='17' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M0 0h16v17H0V0zm1 16h14V1H1v15z' fill='gray'/%3E%3Cpath fill='silver' d='M1 1h14v15H1z'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12 7H5v1h1v1h1v1h1v1h1v-1h1V9h1V8h1V7z' fill='%23000'/%3E%3C/svg%3E");
 }
 option {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   font-size: 11px;
 }
 .vertical-bar {
@@ -436,7 +436,7 @@ input[type="range"].has-box-indicator::-moz-range-thumb {
   margin: 0;
 }
 ul.tree-view {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   font-size: 11px;
   display: block;
   background: #fff;
@@ -594,7 +594,7 @@ pre {
     inset 2px 2px #0a0a0a;
 }
 .window {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   -webkit-font-smoothing: none;
 }
 .title-bar-controls button[aria-label="Minimize"] {
@@ -680,7 +680,7 @@ menu[role="tablist"] button {
     inset -2px -2px grey;
 }
 button {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
 }
 button,
 ul.tree-view {

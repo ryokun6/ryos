@@ -56,6 +56,12 @@ export function AboutDialog({
             ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
             : "font-geneva-12 text-[10px]"
         )}
+        style={{
+          fontFamily: isXpTheme
+            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+            : undefined,
+          fontSize: isXpTheme ? "11px" : undefined,
+        }}
       >
         <div
           className={cn(

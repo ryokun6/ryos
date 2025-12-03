@@ -129,7 +129,7 @@ export function AboutFinderDialog({
               )}
               style={{
                 fontFamily: isXpTheme
-                  ? '"Pixelated MS Sans Serif", Arial'
+                  ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                   : undefined,
                 fontSize: isXpTheme ? "10px" : undefined,
               }}
@@ -149,7 +149,7 @@ export function AboutFinderDialog({
                   )}
                   style={{
                     fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", Arial'
+                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                       : undefined,
                   }}
                 >
@@ -170,7 +170,7 @@ export function AboutFinderDialog({
             )}
             style={{
               fontFamily: isXpTheme
-                ? '"Pixelated MS Sans Serif", Arial'
+                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
                 : undefined,
               fontSize: isXpTheme ? "10px" : undefined,
             }}

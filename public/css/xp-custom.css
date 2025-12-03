@@ -140,7 +140,7 @@ label {
 input,
 label,
 textarea {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   font-size: 11px;
 }
 
@@ -160,7 +160,7 @@ textarea:focus {
 }
 
 select {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   font-size: 11px;
   border: none;
   background-color: #fff;
@@ -193,7 +193,7 @@ select:active {
 }
 
 option {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   font-size: 11px;
 }
 
@@ -478,7 +478,7 @@ input[type="range"].has-box-indicator::-moz-range-thumb {
 }
 
 ul.tree-view {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   font-size: 11px;
   display: block;
   background: #fff;
@@ -802,7 +802,7 @@ menu[role="tablist"].justified button {
 }
 
 .status-bar-field {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   -webkit-font-smoothing: antialiased;
   box-shadow: none;
   padding: 1px 2px;
@@ -819,7 +819,7 @@ menu[role="tablist"].justified button {
 }
 
 button {
-  font-family: "Pixelated MS Sans Serif", Arial;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Arial;
   -webkit-font-smoothing: antialiased;
   font-size: 11px;
   box-sizing: border-box;
