@@ -1598,29 +1598,27 @@ export function ControlPanelsAppComponent({
                   >
                     <SelectTrigger className="w-[120px]">
                       <SelectValue>
-                        {t(`settings.language.${
-                          currentLanguage === "zh-TW" ? "chineseTraditional" :
-                          currentLanguage === "ja" ? "japanese" :
-                          currentLanguage === "ko" ? "korean" :
-                          currentLanguage === "es" ? "spanish" :
-                          currentLanguage === "fr" ? "french" :
-                          currentLanguage === "de" ? "german" :
-                          currentLanguage === "pt" ? "portuguese" :
-                          currentLanguage === "ru" ? "russian" :
-                          "english"
-                        }`)}
+                        {currentLanguage === "zh-TW" ? "中文" :
+                         currentLanguage === "ja" ? "日本語" :
+                         currentLanguage === "ko" ? "한국어" :
+                         currentLanguage === "es" ? "Español" :
+                         currentLanguage === "fr" ? "Français" :
+                         currentLanguage === "de" ? "Deutsch" :
+                         currentLanguage === "pt" ? "Português" :
+                         currentLanguage === "ru" ? "Русский" :
+                         "English"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en">{t("settings.language.english")}</SelectItem>
-                      <SelectItem value="zh-TW">{t("settings.language.chineseTraditional")}</SelectItem>
-                      <SelectItem value="ja">{t("settings.language.japanese")}</SelectItem>
-                      <SelectItem value="ko">{t("settings.language.korean")}</SelectItem>
-                      <SelectItem value="es">{t("settings.language.spanish")}</SelectItem>
-                      <SelectItem value="fr">{t("settings.language.french")}</SelectItem>
-                      <SelectItem value="de">{t("settings.language.german")}</SelectItem>
-                      <SelectItem value="pt">{t("settings.language.portuguese")}</SelectItem>
-                      <SelectItem value="ru">{t("settings.language.russian")}</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="zh-TW">中文</SelectItem>
+                      <SelectItem value="ja">日本語</SelectItem>
+                      <SelectItem value="ko">한국어</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="de">Deutsch</SelectItem>
+                      <SelectItem value="pt">Português</SelectItem>
+                      <SelectItem value="ru">Русский</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
