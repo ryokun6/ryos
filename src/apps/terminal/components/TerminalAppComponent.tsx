@@ -2637,7 +2637,7 @@ export function TerminalAppComponent({
             vimCursorColumn={vimCursorColumn}
             vimMode={vimMode}
           />
-          <div className="flex mt-1">
+          <div className="flex items-baseline mt-1">
             <span className="text-green-400 mr-1">
               {vimMode === "normal" ? "" : vimMode === "insert" ? "" : ":"}
             </span>
@@ -2876,7 +2876,7 @@ export function TerminalAppComponent({
         <div className="relative select-text">
           <form
             onSubmit={handleCommandSubmit}
-            className="flex transition-all duration-200 select-text"
+            className="flex items-baseline transition-all duration-200 select-text"
           >
             {isInAiMode ? (
               <span className="text-purple-400 mr-2 whitespace-nowrap select-text cursor-text">
