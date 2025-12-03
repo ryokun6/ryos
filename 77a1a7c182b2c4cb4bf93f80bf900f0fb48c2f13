@@ -1,0 +1,32 @@
+AI Notes:
+
+public/css/98-custom.css: +123[0],+140[0],+169[0],+439[0],+597[0],+683[0] -123[0],-140[0],-169[0],-439[0],-597[0],-683[0]
+public/css/xp-custom.css: +143[0],+163[0],+196[0],+481[0],+805[0],+822[0] -143[0],-163[0],-196[0],-481[0],-805[0],-822[0]
+src/apps/chats/components/CreateRoomDialog.tsx: +185[0],+202[0],+226[0],+256[0],+277[0],+303[0],+338[0],+371[0],+393[0],+416[0] -185[0],-202[0],-226[0],-256[0],-277[0],-303[0],-338[0],-371[0],-393[0],-416[0]
+src/components/dialogs/AboutDialog.tsx: +59-64[0]
+src/components/dialogs/AboutFinderDialog.tsx: +132[0],+152[0],+173[0] -132[0],-152[0],-173[0]
+src/components/dialogs/ConfirmDialog.tsx: +65[0],+85[0],+104[0] -65[0],-85[0],-104[0]
+src/components/dialogs/EmojiDialog.tsx: +249-254[0]
+src/components/dialogs/FutureSettingsDialog.tsx: +109[0],+152[0],+169[0],+188[0] -109[0],-152[0],-169[0],-188[0]
+src/components/dialogs/HelpDialog.tsx: +35[0],+51[0],+95[0] -35[0],-51[0],-95[0]
+src/components/dialogs/InputDialog.tsx: +74[0],+100[0],+127[0],+153[0],+175[0],+196[0] -74[0],-100[0],-127[0],-153[0],-175[0],-196[0]
+src/components/dialogs/LoginDialog.tsx: +106[0],+125[0],+142[0],+161[0],+183[0],+202[0],+219[0],+238[0],+307[0],+320[0],+346[0],+364[0],+395[0],+422[0] -106[0],-125[0],-142[0],-161[0],-183[0],-202[0],-219[0],-238[0],-307[0],-320[0],-346[0],-364[0],-395[0],-422[0]
+src/components/dialogs/ShareItemDialog.tsx: +143[0],+172[0],+191[0],+212[0],+237[0] -143[0],-172[0],-191[0],-212[0],-237[0]
+src/components/layout/StartMenu.tsx: +40-41[0],+96[0] -40[0],-95[0]
+src/components/ui/dropdown-menu.tsx: +86[0],+210[0],+251[0],+300[0],+341[0] -86[0],-210[0],-251[0],-300[0],-341[0]
+src/components/ui/select.tsx: +61[0],+226[0],+262[0] -61[0],-226[0],-262[0]
+src/index.css: +796[0],+803[0],+839[0] -796[0],-803[0],-839[0]
+src/lib/locales/de/translation.json: +1833-1834[0] -1833-1834[0]
+src/lib/locales/en/translation.json: +111-112[0] -111-112[0]
+src/lib/locales/es/translation.json: +1818-1819[0] -1818-1819[0]
+src/lib/locales/fr/translation.json: +1833-1834[0] -1833-1834[0]
+src/lib/locales/it/translation.json: +1818-1819[0] -1818-1819[0]
+src/lib/locales/ja/translation.json: +1833-1834[0] -1833-1834[0]
+src/lib/locales/ko/translation.json: +1833-1834[0] -1833-1834[0]
+src/lib/locales/pt/translation.json: +1818-1819[0] -1818-1819[0]
+src/lib/locales/ru/translation.json: +1818-1819[0] -1818-1819[0]
+src/lib/locales/zh-TW/translation.json: +1833-1834[0] -1833-1834[0]
+
+Conversations:
+
+[0]: 2d0f113a-f533-4855-8031-2afc30864a14; Check font hardcoding and CJK fallback; composer-1;
