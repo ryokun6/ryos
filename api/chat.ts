@@ -38,7 +38,7 @@ interface SystemState {
   username?: string | null;
   /** User's operating system (e.g., "iOS", "Android", "macOS", "Windows", "Linux") */
   userOS?: string;
-  /** User's system locale (e.g., "en", "zh-TW", "ja", "ko", "fr", "de") */
+  /** User's system locale (e.g., "en", "zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru") */
   locale?: string;
   internetExplorer: {
     url: string;
@@ -1070,10 +1070,10 @@ export default async function handler(req: Request) {
             "Change system settings in ryOS. Use this tool when the user asks to change language, theme, volume, enable/disable speech, or check for updates. Multiple settings can be changed in a single call.",
           inputSchema: z.object({
             language: z
-              .enum(["en", "zh-TW", "ja", "ko", "fr", "de"])
+              .enum(["en", "zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"])
               .optional()
               .describe(
-                "Change the system language. Supported: 'en' (English), 'zh-TW' (Traditional Chinese), 'ja' (Japanese), 'ko' (Korean), 'fr' (French), 'de' (German)."
+                "Change the system language. Supported: 'en' (English), 'zh-TW' (Traditional Chinese), 'ja' (Japanese), 'ko' (Korean), 'fr' (French), 'de' (German), 'es' (Spanish), 'pt' (Portuguese), 'it' (Italian), 'ru' (Russian)."
               ),
             theme: z
               .enum(themeIds)
