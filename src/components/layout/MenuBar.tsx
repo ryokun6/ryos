@@ -91,7 +91,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   const [scrollLeft, setScrollLeft] = useState(0);
   const [scrollWidth, setScrollWidth] = useState(0);
   const [clientWidth, setClientWidth] = useState(0);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Track touch state for preventing accidental taps during scroll
   const touchStateRef = useRef<{
@@ -122,6 +122,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
     // Clear existing timeout
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = null;
     }
     
     // Clear recent scroll flag after scroll ends
@@ -162,6 +163,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
       resizeObserver.disconnect();
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
       }
     };
   }, [updateScrollState]);

@@ -12,7 +12,7 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const meshRef = useRef<THREE.Mesh | null>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
   const materialRef = useRef<THREE.ShaderMaterial | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const timeRef = useRef(0);
@@ -231,8 +231,9 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
 
     return () => {
       resizeObserver.disconnect();
-      if (animationFrameRef.current) {
+      if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
       if (rendererRef.current) {
         rendererRef.current.dispose();

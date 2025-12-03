@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useRef } from "react";
+import type { MutableRefObject } from "react";
 import { createWaveform } from "@/utils/audio";
 import type WaveSurfer from "wavesurfer.js";
 
@@ -11,7 +12,7 @@ interface WaveformProps {
 
 export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
   ({ className = "", audioData, onWaveformCreate, isPlaying = false }, ref) => {
-    const waveformRef = useRef<WaveSurfer>();
+    const waveformRef = useRef<WaveSurfer | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -22,7 +23,7 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
       const cleanup = () => {
         if (waveformRef.current) {
           waveformRef.current.destroy();
-          waveformRef.current = undefined;
+          waveformRef.current = null;
         }
       };
 
@@ -86,11 +87,12 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
     return (
       <div
         ref={(node) => {
-          if (node) {
-            containerRef.current = node;
-            if (ref) {
-              if (typeof ref === "function") ref(node);
-              // Note: Handling ref objects might require assigning to ref.current
+          containerRef.current = node;
+          if (ref) {
+            if (typeof ref === "function") {
+              ref(node);
+            } else if (typeof ref === "object" && ref !== null) {
+              (ref as MutableRefObject<HTMLDivElement | null>).current = node;
             }
           }
         }}
