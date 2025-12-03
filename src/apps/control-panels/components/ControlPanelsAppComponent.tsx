@@ -1558,7 +1558,7 @@ export function ControlPanelsAppComponent({
             >
               <div className="space-y-4 h-full overflow-y-auto p-4 pt-6">
                 {/* Theme Selector */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex flex-col gap-1">
                     <Label>{t("apps.control-panels.theme")}</Label>
                     <Label className="text-[11px] text-gray-600 font-geneva-12">
@@ -1569,7 +1569,7 @@ export function ControlPanelsAppComponent({
                     value={currentTheme}
                     onValueChange={(value) => setTheme(value as OsThemeId)}
                   >
-                    <SelectTrigger className="w-[120px]">
+                    <SelectTrigger className="w-[120px] flex-shrink-0">
                       <SelectValue placeholder={t("apps.control-panels.select")}>
                         {themes[currentTheme]?.name || t("apps.control-panels.select")}
                       </SelectValue>
@@ -1585,7 +1585,7 @@ export function ControlPanelsAppComponent({
                 </div>
 
                 {/* Language Selector */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex flex-col gap-1">
                     <Label>{t("settings.language.title")}</Label>
                     <Label className="text-[11px] text-gray-600 font-geneva-12">
@@ -1596,7 +1596,7 @@ export function ControlPanelsAppComponent({
                     value={currentLanguage}
                     onValueChange={(value) => setLanguage(value as LanguageCode)}
                   >
-                    <SelectTrigger className="w-[120px]">
+                    <SelectTrigger className="w-[120px] flex-shrink-0">
                       <SelectValue>
                         {t(`settings.language.${
                           currentLanguage === "zh-TW" ? "chineseTraditional" :

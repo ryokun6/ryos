@@ -9,13 +9,11 @@ import {
 } from "@/components/ui/select";
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { DisplayMode } from "@/utils/displayMode";
+import type { DisplayMode } from "@/utils/displayMode";
 import { Plus } from "lucide-react";
 import { useAppStore } from "@/stores/useAppStore";
-import {
-  loadWallpaperManifest,
-  WallpaperManifest as WallpaperManifestType,
-} from "@/utils/wallpapers";
+import { loadWallpaperManifest } from "@/utils/wallpapers";
+import type { WallpaperManifest as WallpaperManifestType } from "@/utils/wallpapers";
 import { useTranslation } from "react-i18next";
 
 // Remove unused constants
@@ -62,7 +60,7 @@ function WallpaperItem({
         setIsLoading(false);
       }
     }
-  }, [isSelected, isVideo, displayUrl]);
+  }, [isSelected, isVideo]);
 
   const handleVideoLoaded = () => {
     setIsLoading(false);
@@ -74,11 +72,18 @@ function WallpaperItem({
 
   if (isVideo) {
     return (
-      <div
+      <button
+        type="button"
         className={`w-full aspect-video cursor-pointer hover:opacity-90 ${
           isSelected ? "border-2 ring-2 ring-black border-white" : "border-0"
         } relative overflow-hidden`}
         onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
       >
         {isLoading && (
           <div className="absolute inset-0 bg-gray-700/30">
@@ -106,12 +111,13 @@ function WallpaperItem({
             transition: "opacity 0.5s ease-in-out",
           }}
         />
-      </div>
+      </button>
     );
   }
 
   return (
-    <div
+    <button
+      type="button"
       className={`w-full ${
         isTile ? "aspect-square" : "aspect-video"
       } cursor-pointer hover:opacity-90 ${
@@ -124,6 +130,12 @@ function WallpaperItem({
         backgroundRepeat: isTile ? "repeat" : undefined,
       }}
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     />
   );
 }
@@ -344,7 +356,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
           value={displayMode}
           onValueChange={(value) => setDisplayMode(value as DisplayMode)}
         >
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-[120px] flex-shrink-0">
             <SelectValue placeholder={t("apps.control-panels.displayMode")} />
           </SelectTrigger>
           <SelectContent>
@@ -395,14 +407,21 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                 isVideo
               />
             ))
-          ) : selectedCategory === "custom" ? (
+          )           : selectedCategory === "custom" ? (
             <>
-              <div
+              <button
+                type="button"
                 className="w-full aspect-video border-[2px] border-dotted border-gray-400 cursor-pointer hover:opacity-90 flex items-center justify-center"
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
               >
                 <Plus className="h-5 w-5 text-gray-500" />
-              </div>
+              </button>
               {customWallpaperRefs.length > 0 ? (
                 customWallpaperRefs.map((path) => (
                   <WallpaperItem
