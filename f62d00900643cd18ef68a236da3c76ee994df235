@@ -2,7 +2,7 @@ AI Notes:
 
 src/apps/chats/components/ChatInput.tsx: +322[0],+451[0] -322-326[0],-455[0],-463[0],-543[0]
 src/apps/chats/components/ChatMessages.tsx: +662[0],+668[0],+698[0],+954[0] -662[0],-664[0],-669[0],-699-700[0],-956[0],-964[0],-1350[0],-1364[0]
-src/apps/terminal/components/TerminalAppComponent.tsx: +2747[0],+2829[1] -2690-2698[0],-2756-2766[0],-2848[0]
+src/apps/terminal/components/TerminalAppComponent.tsx: +2747[0],+2829[1] -2690-2697[0],-2698[1],-2756-2764[0],-2765[1],-2766[0],-2848[0]
 
 Conversations:
 
