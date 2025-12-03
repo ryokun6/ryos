@@ -91,9 +91,16 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   const [scrollLeft, setScrollLeft] = useState(0);
   const [scrollWidth, setScrollWidth] = useState(0);
   const [clientWidth, setClientWidth] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout>();
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  
+  // Track touch state for preventing accidental taps during scroll
+  const touchStateRef = useRef<{
+    startX: number;
+    startY: number;
+    hasMoved: boolean;
+    startTime: number;
+  } | null>(null);
+  const hadRecentScrollRef = useRef(false);
 
   const updateScrollState = useCallback(() => {
     if (!scrollRef.current) return;
@@ -105,27 +112,45 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
 
   const handleScroll = useCallback(() => {
     updateScrollState();
-    setIsScrolling(true);
+    hadRecentScrollRef.current = true;
+    
+    // Mark current touch as moved if there's an active touch
+    if (touchStateRef.current) {
+      touchStateRef.current.hasMoved = true;
+    }
     
     // Clear existing timeout
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
     }
     
-    // Set scrolling to false after scroll ends
+    // Clear recent scroll flag after scroll ends
     scrollTimeoutRef.current = setTimeout(() => {
-      setIsScrolling(false);
-    }, 150);
+      hadRecentScrollRef.current = false;
+    }, 300);
   }, [updateScrollState]);
 
-  const preventInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (isScrolling) {
+  // Check if interaction should be prevented
+  const shouldPreventInteraction = useCallback(() => {
+    // Prevent if there was recent scrolling
+    if (hadRecentScrollRef.current) {
+      return true;
+    }
+    // Prevent if current touch has moved
+    if (touchStateRef.current?.hasMoved) {
+      return true;
+    }
+    return false;
+  }, []);
+
+  const preventInteraction = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
+    if (shouldPreventInteraction()) {
       e.preventDefault();
       e.stopPropagation();
       return true;
     }
     return false;
-  }, [isScrolling]);
+  }, [shouldPreventInteraction]);
 
   useEffect(() => {
     updateScrollState();
@@ -168,32 +193,39 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
-    touchStartRef.current = {
-      x: touch.clientX,
-      y: touch.clientY,
-      time: Date.now(),
+    touchStateRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      hasMoved: false,
+      startTime: Date.now(),
     };
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
+    if (!touchStateRef.current) return;
     
     const touch = e.touches[0];
-    const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
-    const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+    const deltaX = Math.abs(touch.clientX - touchStateRef.current.startX);
+    const deltaY = Math.abs(touch.clientY - touchStateRef.current.startY);
     
-    // If horizontal movement is significant, mark as scrolling
-    if (deltaX > 5 || deltaY > 5) {
-      setIsScrolling(true);
+    // If any movement is significant, mark as moved
+    if (deltaX > 3 || deltaY > 3) {
+      touchStateRef.current.hasMoved = true;
     }
   }, []);
 
   const handleTouchEnd = useCallback(() => {
-    touchStartRef.current = null;
-    // Clear scrolling flag after a delay
-    setTimeout(() => {
-      setIsScrolling(false);
-    }, 100);
+    // Keep hasMoved state briefly to catch click events that fire after touchend
+    const hadMoved = touchStateRef.current?.hasMoved;
+    touchStateRef.current = null;
+    
+    if (hadMoved) {
+      // Briefly keep the scroll prevention active
+      hadRecentScrollRef.current = true;
+      setTimeout(() => {
+        hadRecentScrollRef.current = false;
+      }, 100);
+    }
   }, []);
 
   if (!isPhone) {
@@ -205,7 +237,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ScrollingContext.Provider value={{ isScrolling, preventInteraction }}>
+    <ScrollingContext.Provider value={{ isScrolling: hadRecentScrollRef.current, preventInteraction }}>
       <div
         ref={scrollRef}
         onScroll={handleScroll}
@@ -217,6 +249,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
           msOverflowStyle: "none",
           maskImage: getMaskImage(),
           WebkitMaskImage: getMaskImage(),
+          touchAction: "pan-x",
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -236,27 +269,74 @@ function DropdownTriggerButton({
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { preventInteraction } = useScrollingContext();
+  const isPhone = useIsPhone();
+  const touchStateRef = useRef<{ 
+    startX: number; 
+    startY: number; 
+    startTime: number;
+    hasMoved: boolean;
+  } | null>(null);
+  
+  if (!isPhone) {
+    return <Button {...props}>{children}</Button>;
+  }
   
   return (
     <Button
       {...props}
       onPointerDown={(e) => {
+        // For touch events, prevent Radix from opening dropdown immediately
+        // We'll handle it via click after determining if it's a tap vs scroll
+        if (e.pointerType === 'touch') {
+          e.preventDefault();
+          // Track touch start
+          touchStateRef.current = {
+            startX: e.clientX,
+            startY: e.clientY,
+            startTime: Date.now(),
+            hasMoved: false,
+          };
+          return;
+        }
+        // For mouse/pen, use normal behavior
         if (preventInteraction(e)) {
           return;
         }
         props.onPointerDown?.(e);
       }}
-      onMouseDown={(e) => {
-        if (preventInteraction(e)) {
-          return;
+      onPointerMove={(e) => {
+        if (e.pointerType !== 'touch' || !touchStateRef.current) return;
+        const deltaX = Math.abs(e.clientX - touchStateRef.current.startX);
+        const deltaY = Math.abs(e.clientY - touchStateRef.current.startY);
+        if (deltaX > 5 || deltaY > 5) {
+          touchStateRef.current.hasMoved = true;
         }
-        props.onMouseDown?.(e);
       }}
-      onTouchStart={(e) => {
+      onPointerUp={(e) => {
+        if (e.pointerType !== 'touch' || !touchStateRef.current) return;
+        
+        const { hasMoved, startTime } = touchStateRef.current;
+        const duration = Date.now() - startTime;
+        touchStateRef.current = null;
+        
+        // If it was a clean tap (no movement, reasonable duration), trigger click
+        if (!hasMoved && duration < 300 && !preventInteraction(e)) {
+          // Simulate a click to open the dropdown
+          (e.target as HTMLElement).click();
+        }
+      }}
+      onPointerCancel={() => {
+        touchStateRef.current = null;
+      }}
+      onClick={(e) => {
+        // For touch, clicks are triggered programmatically from onPointerUp
+        // For mouse, allow normal clicks
         if (preventInteraction(e)) {
+          e.preventDefault();
+          e.stopPropagation();
           return;
         }
-        props.onTouchStart?.(e);
+        props.onClick?.(e);
       }}
     >
       {children}
