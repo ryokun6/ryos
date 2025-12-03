@@ -1,0 +1,9 @@
+AI Notes:
+
+src/apps/chats/hooks/useAiChat.ts: +874[0],+876-878[0]
+src/components/shared/ToolInvocationMessage.tsx: +229[1],+232-233[1],+234[0]
+
+Conversations:
+
+[0]: 4afd4575-bad0-40ed-a87b-2ebae5b92ddc; 4afd4575; unknown;
+[1]: 0b334afb-08cf-4901-b674-98452eb67850; 0b334afb; unknown;
