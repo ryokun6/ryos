@@ -415,7 +415,7 @@
       "help": {
         "aiModel": {
           "description": "チャットとターミナルアシスタントで使用するAIモデルを選択",
-          "title": "AIモデル"
+          "title": "AI モデル"
         },
         "appearance": {
           "description": "デスクトップの壁紙に写真、パターン、またはシェーダーエフェクトを選択",
@@ -486,7 +486,7 @@
       "ttsVoice": "TTS 音声",
       "ui": "UI",
       "uiSounds": "UI サウンド",
-      "uiVolume": "UI音量"
+      "uiVolume": "UI 音量"
     },
     "finder": {
       "contextMenu": {
@@ -936,7 +936,7 @@
         "all": "すべて",
         "allSongs": "すべての曲",
         "backlight": "バックライト",
-        "extras": "その他",
+        "extras": "エクストラ",
         "ipod": "iPod",
         "music": "ミュージック",
         "nowPlaying": "再生中",
