@@ -866,7 +866,7 @@
           "title": "新增歌曲"
         },
         "displayFullscreen": {
-          "description": "調整背光、主題並切換至全螢幕影片。",
+          "description": "調整背光燈、主題並切換至全螢幕影片。",
           "title": "顯示與全螢幕"
         },
         "playbackControls": {
@@ -897,7 +897,7 @@
         "addToLibrary": "加入資料庫...",
         "allSongs": "所有歌曲",
         "alternating": "交替",
-        "backlight": "背光",
+        "backlight": "背光燈",
         "black": "黑色",
         "classic": "經典",
         "clearLibrary": "清除資料庫...",
@@ -935,7 +935,7 @@
       "menuItems": {
         "all": "全部",
         "allSongs": "所有歌曲",
-        "backlight": "背光",
+        "backlight": "背光燈",
         "extras": "附加功能",
         "ipod": "iPod",
         "music": "音樂",
