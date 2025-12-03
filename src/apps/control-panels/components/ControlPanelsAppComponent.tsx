@@ -1606,6 +1606,7 @@ export function ControlPanelsAppComponent({
                           currentLanguage === "fr" ? "french" :
                           currentLanguage === "de" ? "german" :
                           currentLanguage === "pt" ? "portuguese" :
+                          currentLanguage === "it" ? "italian" :
                           currentLanguage === "ru" ? "russian" :
                           "english"
                         }`)}
@@ -1620,6 +1621,7 @@ export function ControlPanelsAppComponent({
                       <SelectItem value="fr">{t("settings.language.french")}</SelectItem>
                       <SelectItem value="de">{t("settings.language.german")}</SelectItem>
                       <SelectItem value="pt">{t("settings.language.portuguese")}</SelectItem>
+                      <SelectItem value="it">{t("settings.language.italian")}</SelectItem>
                       <SelectItem value="ru">{t("settings.language.russian")}</SelectItem>
                     </SelectContent>
                   </Select>
