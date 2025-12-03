@@ -1,9 +1,17 @@
+export interface ToolInvocationData {
+  toolName: string;
+  state?: "input-streaming" | "input-available" | "output-available" | "output-error";
+  input?: Record<string, unknown>;
+  output?: unknown;
+}
+
 export interface CommandHistory {
   command: string;
   output: string;
   path: string;
   messageId?: string;
   hasAquarium?: boolean;
+  toolInvocations?: ToolInvocationData[];
 }
 
 export interface CommandResult {

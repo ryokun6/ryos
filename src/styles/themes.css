@@ -493,6 +493,24 @@
   font-size: 13px !important;
 }
 
+/* Allow Terminal to use its own font size in macOS theme */
+/* Use CSS custom property to override !important rules */
+:root[data-os-theme="macosx"] div.terminal-content,
+:root[data-os-theme="macosx"] .terminal-content div,
+:root[data-os-theme="macosx"] .terminal-content p,
+:root[data-os-theme="macosx"] .terminal-content span,
+:root[data-os-theme="macosx"] .terminal-content pre,
+:root[data-os-theme="macosx"] .terminal-content code,
+:root[data-os-theme="macosx"] .terminal-content input,
+:root[data-os-theme="macosx"] .terminal-content label,
+:root[data-os-theme="macosx"] .terminal-content button,
+:root[data-os-theme="macosx"] .terminal-content form,
+:root[data-os-theme="macosx"] .terminal-tool-invocation,
+:root[data-os-theme="macosx"] .terminal-tool-invocation div,
+:root[data-os-theme="macosx"] .terminal-tool-invocation span {
+  font-size: var(--terminal-font-size, 12px) !important;
+}
+
 :root[data-os-theme="macosx"] .synth-force-font {
   font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
     -apple-system, sans-serif !important;

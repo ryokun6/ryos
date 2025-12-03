@@ -18,7 +18,6 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAiChat } from "@/apps/chats/hooks/useAiChat";
 import { useAppContext } from "@/contexts/AppContext";
 import { useAppStore } from "@/stores/useAppStore";
-import { appRegistry } from "@/config/appRegistry";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 import { track } from "@vercel/analytics";
 import HtmlPreview, {
@@ -29,7 +28,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { getTranslatedAppName, type AppId } from "@/utils/i18n";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { generateHTML, type AnyExtension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -45,9 +44,10 @@ import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import i18n from "@/lib/i18n";
 
 // Import new components and utilities
-import { CommandHistory, CommandContext } from "../types";
+import { CommandHistory, CommandContext, ToolInvocationData } from "../types";
 import { parseCommand } from "../utils/commandParser";
 import { commands, AVAILABLE_COMMANDS } from "../commands";
+import { TerminalToolInvocation } from "./TerminalToolInvocation";
 import { VimEditor } from "./VimEditor";
 import { TypewriterText, parseSimpleMarkdown } from "./TypewriterText";
 import { AnimatedEllipsis } from "./AnimatedEllipsis";
@@ -56,25 +56,6 @@ import { UrgentMessageAnimation } from "./UrgentMessageAnimation";
 import { TERMINAL_ANALYTICS } from "@/utils/analytics";
 
 // Removed interfaces and constants - now imported from separate files
-
-// Helper: prettify tool names
-const formatToolName = (name: string): string =>
-  name
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (ch) => ch.toUpperCase())
-    .trim();
-
-// Helper to map an app id to a user-friendly name (uses translations)
-const getAppName = (id?: string): string => {
-  if (!id) return "app";
-  try {
-    return getTranslatedAppName(id as AppId);
-  } catch {
-    // Fallback to formatting the id if translation fails
-    const entry = (appRegistry as Record<string, { name?: string }>)[id];
-    return entry?.name || formatToolName(id);
-  }
-};
 
 // Helper function to detect user's operating system
 const detectUserOS = (): string => {
@@ -329,213 +310,6 @@ function TerminalHtmlPreview({
 }
 
 // parseSimpleMarkdown is imported from TypewriterText exports
-
-interface ToolInvocation {
-  state: "partial-call" | "call" | "result";
-  step?: number;
-  toolCallId: string;
-  toolName: string;
-  args?: Record<string, unknown>;
-  result?: unknown;
-}
-
-const formatToolInvocation = (invocation: ToolInvocation): string | null => {
-  const { toolName, state, args, result } = invocation;
-  if (state === "call" || state === "partial-call") {
-    // Aquarium renders as a dedicated component; suppress textual output
-    if (toolName === "aquarium") return null;
-    let msg = "";
-    switch (toolName) {
-      // Unified VFS tools
-      case "list": {
-        const path = typeof args?.path === "string" ? args.path : "";
-        if (path === "/Music") {
-          msg = "Loading music library…";
-        } else if (path === "/Applets Store") {
-          msg = "Listing shared applets…";
-        } else if (path === "/Applications") {
-          msg = "Listing applications…";
-        } else {
-          msg = "Finding files…";
-        }
-        break;
-      }
-      case "open": {
-        const path = typeof args?.path === "string" ? args.path : "";
-        if (path.startsWith("/Music/")) {
-          msg = "Playing song…";
-        } else if (path.startsWith("/Applets Store/")) {
-          msg = "Opening applet preview…";
-        } else if (path.startsWith("/Applications/")) {
-          msg = "Launching app…";
-        } else {
-          msg = "Opening file…";
-        }
-        break;
-      }
-      case "read": {
-        const path = typeof args?.path === "string" ? args.path : "";
-        if (path.startsWith("/Applets Store/")) {
-          msg = "Fetching applet…";
-        } else {
-          msg = "Reading file…";
-        }
-        break;
-      }
-      case "write":
-        msg = "Writing content…";
-        break;
-      case "edit":
-        msg = "Editing file…";
-        break;
-      case "launchApp":
-        msg = `Launching ${getAppName(args?.id as string)}…`;
-        break;
-      case "closeApp":
-        msg = `Closing ${getAppName(args?.id as string)}…`;
-        break;
-      case "ipodControl": {
-        const action = args?.action || "toggle";
-        if (action === "next") {
-          msg = "Skipping to next…";
-        } else if (action === "previous") {
-          msg = "Skipping to previous…";
-        } else if (action === "addAndPlay") {
-          msg = "Adding song…";
-        } else if (action === "playKnown") {
-          msg = "Playing song…";
-        } else {
-          msg = "Controlling playback…";
-        }
-        break;
-      }
-      case "settings":
-        msg = i18n.t("apps.chats.toolCalls.changingSettings");
-        break;
-      case "generateHtml":
-        msg = "Generating applet…";
-        break;
-      default:
-        msg = `Running ${formatToolName(toolName)}…`;
-    }
-    return `::: ${msg}`;
-  }
-
-  if (state === "result") {
-    // Aquarium renders visually; no textual result
-    if (toolName === "aquarium") return null;
-    let msg: string | null = null;
-    
-    // Unified VFS tools
-    if (toolName === "list") {
-      if (typeof result === "string") {
-        const songMatch = result.match(/Found (\d+) songs?/);
-        const appletMatch = result.match(/Found (\d+) (?:shared )?applets?/i);
-        const documentMatch = result.match(/Found (\d+) documents?/);
-        const applicationMatch = result.match(/Found (\d+) applications?/);
-
-        if (songMatch) {
-          const count = parseInt(songMatch[1], 10);
-          msg = `Found ${count} song${count === 1 ? "" : "s"}`;
-        } else if (appletMatch) {
-          const count = parseInt(appletMatch[1], 10);
-          msg = i18n.t("apps.terminal.output.foundApplets", { count, defaultValue: `Found ${count} applet${count === 1 ? "" : "s"}` });
-        } else if (documentMatch) {
-          const count = parseInt(documentMatch[1], 10);
-          msg = i18n.t("apps.terminal.output.foundDocuments", { count, defaultValue: `Found ${count} document${count === 1 ? "" : "s"}` });
-        } else if (applicationMatch) {
-          const count = parseInt(applicationMatch[1], 10);
-          msg = i18n.t("apps.terminal.output.foundApplications", { count, defaultValue: `Found ${count} application${count === 1 ? "" : "s"}` });
-        } else if (result.includes("empty") || result.includes("No ")) {
-          msg = i18n.t("apps.terminal.output.noItemsFound");
-        } else {
-          msg = i18n.t("apps.terminal.output.listedItems");
-        }
-      }
-    } else if (toolName === "open") {
-      if (typeof result === "string") {
-        msg = result.includes("Playing") || result.includes("Opened") || result.includes("Launched")
-          ? result
-          : i18n.t("apps.terminal.output.opened");
-      }
-    } else if (toolName === "read") {
-      const path = typeof args?.path === "string" ? args.path : "";
-      const fileName = path.split("/").filter(Boolean).pop() || i18n.t("apps.terminal.output.unknown");
-      msg = i18n.t("apps.terminal.output.readFile", { fileName });
-    } else if (toolName === "write") {
-      if (typeof result === "string") {
-        msg = result.includes("Successfully") ? i18n.t("apps.terminal.output.contentWritten") : result;
-      } else {
-        msg = i18n.t("apps.terminal.output.contentWritten");
-      }
-    } else if (toolName === "edit") {
-      if (typeof result === "string") {
-        if (result.includes("not found")) {
-          msg = i18n.t("apps.terminal.output.textNotFound");
-        } else if (result.includes("matches") && result.includes("locations")) {
-          msg = i18n.t("apps.terminal.output.multipleMatchesFound");
-        } else if (result.includes("Successfully") || result.includes("edited")) {
-          msg = i18n.t("apps.terminal.output.fileEdited");
-        } else if (result.includes("Created")) {
-          msg = i18n.t("apps.terminal.output.fileCreated");
-        } else {
-          msg = result;
-        }
-      } else {
-        msg = i18n.t("apps.terminal.output.fileEdited");
-      }
-    } else if (toolName === "launchApp" && args?.id === "internet-explorer") {
-      const urlPart = args.url ? ` ${args.url}` : "";
-      const yearPart = args.year && args.year !== "" ? ` in ${args.year}` : "";
-      msg = `Launched${urlPart}${yearPart}`;
-    } else if (toolName === "launchApp") {
-      msg = `Launched ${getAppName(args?.id as string)}`;
-    } else if (toolName === "closeApp") {
-      msg = `Closed ${getAppName(args?.id as string)}`;
-    } else if (toolName === "ipodControl") {
-      if (typeof result === "string" && result.trim().length > 0) {
-        msg = result;
-      } else {
-        const action = args?.action || "toggle";
-        if (action === "addAndPlay") {
-          msg = i18n.t("apps.terminal.output.addedAndStartedPlaying");
-        } else if (action === "playKnown") {
-          msg = i18n.t("apps.terminal.output.playingSong");
-        } else if (action === "next") {
-          msg = i18n.t("apps.terminal.output.skippedToNextTrack");
-        } else if (action === "previous") {
-          msg = i18n.t("apps.terminal.output.skippedToPreviousTrack");
-        } else {
-          msg = action === "play" 
-            ? i18n.t("apps.terminal.output.playingIpod") 
-            : action === "pause" 
-            ? i18n.t("apps.terminal.output.pausedIpod") 
-            : i18n.t("apps.terminal.output.toggledIpodPlayback");
-        }
-      }
-    } else if (toolName === "settings") {
-      // Use the result directly as it contains the detailed changes
-      if (typeof result === "string" && result.trim().length > 0) {
-        msg = result;
-      } else {
-        msg = i18n.t("apps.chats.toolCalls.settingsUpdated");
-      }
-    } else if (
-      toolName === "generateHtml" &&
-      typeof result === "string" &&
-      result.trim().length > 0
-    ) {
-      msg = `\n\n\u0060\u0060\u0060html\n${result.trim()}\n\u0060\u0060\u0060`;
-    } else if (typeof result === "string") {
-      msg = result;
-    } else {
-      msg = formatToolName(toolName);
-    }
-    return `→ ${msg}`;
-  }
-
-  return null;
-};
 
 // TypewriterText component has been extracted to separate file
 
@@ -2168,22 +1942,38 @@ export function TerminalAppComponent({
       | undefined;
     const lines: string[] = [];
     let hasAquarium = false;
+    const toolInvocations: ToolInvocationData[] = [];
 
     if (parts && parts.length > 0) {
       parts.forEach((part) => {
-        if ((part as { type: string }).type === "text") {
+        const partType = (part as { type: string }).type;
+        if (partType === "text") {
           const processed = processMessageContent(
             (part as { text: string }).text
           );
           if (processed) lines.push(processed);
-        } else if ((part as { type: string }).type === "tool-invocation") {
-          const ti = (part as { toolInvocation: ToolInvocation })
-            .toolInvocation;
-          if (ti.toolName === "aquarium") {
+        } else if (partType.startsWith("tool-")) {
+          // AI SDK v5 tool parts have type like "tool-launchApp", "tool-ipodControl", etc.
+          const toolName = partType.slice(5); // Remove "tool-" prefix
+          const toolPart = part as {
+            type: string;
+            toolCallId: string;
+            state: "input-streaming" | "input-available" | "output-available" | "output-error";
+            input?: Record<string, unknown>;
+            output?: unknown;
+          };
+          
+          if (toolName === "aquarium") {
             hasAquarium = true;
+          } else {
+            // Store tool invocation for visual rendering
+            toolInvocations.push({
+              toolName,
+              state: toolPart.state,
+              input: toolPart.input,
+              output: toolPart.output,
+            });
           }
-          const txt = formatToolInvocation(ti);
-          if (txt) lines.push(txt);
         }
       });
     } else {
@@ -2208,7 +1998,8 @@ export function TerminalAppComponent({
         const existing = filteredHistory[existingIndex];
         if (
           existing.output === cleanedContent &&
-          existing.hasAquarium === hasAquarium
+          existing.hasAquarium === hasAquarium &&
+          JSON.stringify(existing.toolInvocations) === JSON.stringify(toolInvocations)
         )
           return prev;
 
@@ -2219,6 +2010,7 @@ export function TerminalAppComponent({
           path: "ai-assistant",
           messageId: lastMessage.id,
           hasAquarium,
+          toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined,
         };
         return updated;
       }
@@ -2233,6 +2025,7 @@ export function TerminalAppComponent({
           path: "ai-assistant",
           messageId: lastMessage.id,
           hasAquarium,
+          toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined,
         },
       ];
     });
@@ -2706,7 +2499,7 @@ export function TerminalAppComponent({
                   </span>
                 </div>
               )}
-              {item.output && (
+              {(item.output || (item.toolInvocations && item.toolInvocations.length > 0)) && (
                 <div
                   className={`ml-0 select-text ${
                     item.path === "ai-thinking" ? "text-gray-400" : ""
@@ -2714,10 +2507,10 @@ export function TerminalAppComponent({
                     item.path === "ai-error" ? "text-red-400" : ""
                   } ${item.path === "welcome-message" ? "text-gray-400" : ""} ${
                     // Add urgent message styling
-                    isUrgentMessage(item.output) ? "text-red-400" : ""
+                    item.output && isUrgentMessage(item.output) ? "text-red-400" : ""
                   } ${
                     // Add system message styling
-                    item.output.startsWith("ask ryo anything") ||
+                    item.output && (item.output.startsWith("ask ryo anything") ||
                     item.output.startsWith("usage:") ||
                     item.output.startsWith("command not found:") ||
                     item.output.includes("type 'help' for") ||
@@ -2725,7 +2518,7 @@ export function TerminalAppComponent({
                     item.output.includes("not implemented") ||
                     item.output.includes("already exists") ||
                     item.output.startsWith("file not found:") ||
-                    item.output.startsWith("no files found")
+                    item.output.startsWith("no files found"))
                       ? "text-gray-400"
                       : ""
                   }`}
@@ -2734,7 +2527,7 @@ export function TerminalAppComponent({
                     <div>
                       <span className="gradient-spin">
                         <span className="inline-block w-2 text-center">
-                          {item.output.split(" ")[0]}
+                          {(item.output || "").split(" ")[0]}
                         </span>{" "}
                         ryo
                       </span>
@@ -2748,10 +2541,10 @@ export function TerminalAppComponent({
                       {(() => {
                         // Process the message to extract HTML and text parts
                         const { htmlContent, textContent, hasHtml } =
-                          extractHtmlContent(item.output);
+                          extractHtmlContent(item.output || "");
 
                         // Check if this is an urgent message
-                        const urgent = isUrgentMessage(item.output);
+                        const urgent = isUrgentMessage(item.output || "");
                         // Clean content by removing !!!! prefix if urgent
                         const cleanedTextContent = urgent
                           ? cleanUrgentPrefix(textContent || "")
@@ -2767,6 +2560,19 @@ export function TerminalAppComponent({
 
                         return (
                           <>
+                            {/* Render tool invocations FIRST (before text content) */}
+                            {item.toolInvocations && item.toolInvocations.length > 0 && (
+                              <div className="space-y-0.5 mb-1">
+                                {item.toolInvocations.map((invocation, invIdx) => (
+                                  <TerminalToolInvocation
+                                    key={`${item.messageId}-tool-${invIdx}`}
+                                    invocation={invocation}
+                                    fontSize={fontSize}
+                                  />
+                                ))}
+                              </div>
+                            )}
+
                             {/* Show only non-HTML text content with markdown parsing */}
                             {cleanedTextContent &&
                               (() => {
@@ -2975,12 +2781,14 @@ export function TerminalAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
       >
         <motion.div
-          className="flex flex-col h-full w-full bg-black/80 backdrop-blur-lg text-white antialiased font-monaco overflow-hidden select-text"
+          className="terminal-content flex flex-col h-full w-full bg-black/80 backdrop-blur-lg text-white antialiased font-monaco overflow-hidden select-text"
           style={{
+            // Use CSS custom property to allow !important override in macOS theme
+            "--terminal-font-size": `${fontSize}px`,
             fontSize: `${fontSize}px`,
             fontFamily:
               '"Monaco", "ArkPixel", "SerenityOS-Emoji", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace',
-          }}
+          } as React.CSSProperties}
           animate={
             terminalFlash
               ? {

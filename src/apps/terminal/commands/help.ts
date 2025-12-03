@@ -17,6 +17,7 @@ navigation & files
   touch <file>     ${t("apps.terminal.commands.touch")}
   mkdir <dir>      ${t("apps.terminal.commands.mkdir")}
   rm <file>        ${t("apps.terminal.commands.rm")}
+  open <target>    ${t("apps.terminal.commands.open")}
   edit <file>      ${t("apps.terminal.commands.edit")}
   vim <file>       ${t("apps.terminal.commands.vim")}
 
