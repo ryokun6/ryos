@@ -1,1871 +1,1868 @@
 {
-  "common": {
-    "menu": {
-      "file": "File",
-      "edit": "Edit",
-      "view": "View",
-      "go": "Go",
-      "help": "Help",
-      "close": "Close",
-      "undo": "Undo",
-      "redo": "Redo",
-      "cut": "Cut",
-      "copy": "Copy",
-      "paste": "Paste",
-      "clear": "Clear",
-      "selectAll": "Select All",
-      "applications": "Applications",
-      "documents": "Documents",
-      "images": "Images",
-      "music": "Music",
-      "sites": "Sites",
-      "videos": "Videos",
-      "trash": "Trash",
-      "shareApp": "Share App..."
-    },
-    "dialog": {
-      "save": "Save",
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "close": "Close",
-      "adding": "Adding...",
-      "saveFile": "Save File",
-      "enterFileName": "Enter a name for your file",
-      "discardChanges": "Discard Changes",
-      "discardChangesDesc": "Do you want to discard your changes and create a new file?",
-      "keepNewDocument": "Keep New Document",
-      "saveChanges": "Save Changes",
-      "enterFilenameToSave": "Enter a filename to save, or delete it before closing.",
-      "saveBeforeClosing": "Save your changes before closing.",
-      "delete": "Delete",
-      "help": "Help",
-      "about": "About",
-      "welcomeTo": "Welcome to {{appName}}",
-      "version": "Version",
-      "madeBy": "Made by",
-      "openInGitHub": "Open in GitHub",
-      "informationAboutApp": "Information about the application",
-      "emoji": {
-        "chooseEmoji": "Choose an emoji",
-        "setEmoji": "Set Emoji",
-        "description": "Choose an emoji for this sound slot"
-      },
-      "share": {
-        "shareItem": "Share {{itemType}}",
-        "shareItemViaLinkOrQrCode": "Share this {{itemType}} via link or QR code",
-        "generating": "Generating...",
-        "qrCode": "QR code",
-        "shareLinkOrScanToOpen": "Share link or scan to open this {{itemType}}",
-        "by": "by",
-        "from": "from",
-        "shareLinkFor": "Share link for {{itemType}}",
-        "copyLink": "Copy Link",
-        "linkCopied": "Link copied",
-        "linkCopiedToClipboard": "{{itemType}} link copied to clipboard",
-        "failedToCopyLink": "Failed to copy link",
-        "couldNotCopyToClipboard": "Could not copy to clipboard. Please try manually selecting and copying.",
-        "failedToGenerateShareLink": "Failed to generate share link for {{itemType}}",
-        "pleaseTryAgainLater": "Please try again later",
-        "itemTypes": {
-          "page": "Page",
-          "song": "Song",
-          "app": "App",
-          "applet": "Applet",
-          "item": "Item"
-        }
-      }
-    },
-    "system": {
-      "systemRestoring": "System Restoring...",
-      "resettingSystem": "Resetting System...",
-      "restoringSystem": "Restoring System...",
-      "formattingFileSystem": "Formatting File System...",
-      "debugBootScreenTest": "Debug Boot Screen Test...",
-      "updatingToRyOS": "Updating to ryOS {{version}}...",
-      "updatingToRyOSWithBuild": "Updating to ryOS {{version}} ({{buildNumber}})...",
-      "rebooting": "Rebooting...",
-      "resetAllSettings": "Reset All Settings",
-      "resetAllSettingsDesc": "Are you sure you want to reset all settings? This will clear all saved settings and restore default states. ryOS will restart after reset.",
-      "formatFileSystem": "Format File System",
-      "formatFileSystemDesc": "Are you sure you want to format the file system? This will permanently delete all documents (except sample documents), images, and custom wallpapers. ryOS will restart after format."
-    },
-    "desktop": {
-      "setWallpaper": "Set Wallpaper…",
-      "myComputer": "My Computer"
-    },
-    "dock": {
-      "open": "Open",
-      "newWindow": "New Window",
-      "showAllWindows": "Show All Windows",
-      "hide": "Hide",
-      "quit": "Quit",
-      "applications": "Applications",
-      "trash": "Trash",
-      "minimized": "(minimized)",
-      "appletStore": "Applet Store",
-      "folderContents": "Folder Contents"
-    },
-    "startMenu": {
-      "start": "Start",
-      "aboutThisComputer": "About This Computer",
-      "ryosProfessional": "ryOS Professional",
-      "ryos98": "ryOS 98"
-    },
-    "appleMenu": {
-      "aboutThisComputer": "About This Computer"
-    },
-    "aboutThisMac": {
-      "title": "About This Computer",
-      "description": "Information about ryOS on this computer",
-      "builtInMemory": "Built-in Memory",
-      "virtualMemory": "Virtual Memory",
-      "virtualMemoryOff": "Off",
-      "largestUnusedBlock": "Largest Unused Block",
-      "system": "System",
-      "mb": "MB",
-      "clickToToggle": "Click to toggle"
-    },
-    "toast": {
-      "updatingIcons": "Updating icons",
-      "updatingSounds": "Updating sounds",
-      "updatingSystemFiles": "Updating system files",
-      "updatingAssets": "Updating assets",
-      "files": "files",
-      "total": "total",
-      "updateReady": "Update ready for ryOS {{version}} ({{buildNumber}})",
-      "reboot": "Reboot",
-      "failedToCacheAssets": "Failed to cache assets",
-      "failedToLoadAssetManifest": "Failed to load asset manifest",
-      "noAssetsToCache": "No assets to cache",
-      "alreadyLatestVersion": "Already running the latest version",
-      "couldNotCheckUpdates": "Could not check for updates"
-    },
-    "auth": {
-      "dialogTitle": "ryOS Login",
-      "username": "Username",
-      "password": "Password",
-      "logIn": "Log In",
-      "createAccount": "Create Account",
-      "loggingIn": "Logging in...",
-      "creatingAccount": "Creating...",
-      "loginDescription": "Log in to your account",
-      "signupDescription": "Create an account to access chat rooms and save your settings",
-      "setPasswordRequired": "Set Password Required",
-      "setPasswordRequiredDescription": "You need to set a password before logging out to ensure you can recover your account. Would you like to set a password now?",
-      "logOut": "Log Out",
-      "logOutDescription": "Are you sure you want to log out? You will be signed out of your account."
-    },
-    "htmlPreview": {
-      "toastSaved": "Applet saved successfully",
-      "toastSaveFailed": "Failed to save applet",
-      "toastSaveFailedDescription": "An error occurred while saving the applet.",
-      "toastOpenAction": "Open",
-      "bannerFallbackTitle": "Untitled Applet",
-      "saveApplet": "Save as Applet",
-      "saveAppletDescription": "Enter applet name, existing applet will get overwritten:",
-      "downloadHtml": "Download HTML",
-      "copyHtml": "Copy HTML code",
-      "maximizePreview": "Maximize preview",
-      "minimizePreview": "Minimize preview",
-      "toggleSplitView": "Toggle split view",
-      "split": "Split",
-      "full": "Full",
-      "toggleCode": "Toggle code",
-      "exitFullscreen": "Exit fullscreen",
-      "codePreviewTitle": "ryOS Code Preview",
-      "codePreviewTitleFullscreen": "ryOS Code Preview Fullscreen"
-    }
-  },
   "apps": {
-    "finder": {
-      "name": "Finder",
-      "description": "Browse and manage files",
-      "menu": {
-        "newFinderWindow": "New Finder Window",
-        "newFolder": "New Folder...",
-        "importFromDevice": "Import from Device...",
-        "rename": "Rename...",
-        "duplicate": "Duplicate",
-        "putBack": "Put Back",
-        "moveToTrash": "Move to Trash",
-        "emptyTrash": "Empty Trash...",
-        "bySmallIcon": "by Small Icon",
-        "byIcon": "by Icon",
-        "byList": "by List",
-        "byName": "by Name",
-        "byDate": "by Date",
-        "bySize": "by Size",
-        "byKind": "by Kind",
-        "back": "Back",
-        "forward": "Forward",
-        "finderHelp": "Finder Help",
-        "aboutFinder": "About Finder"
-      },
-      "help": {
-        "browseNavigate": {
-          "title": "Browse & Navigate",
-          "description": "Back/Forward buttons, address bar & Go menu for fast navigation"
-        },
-        "fileManagement": {
-          "title": "File Management",
-          "description": "Create folders, rename, move, and drag items to organize files"
-        },
-        "viewSort": {
-          "title": "View & Sort",
-          "description": "Switch Icon sizes and sort by name, kind, size, or date"
-        },
-        "quickAccess": {
-          "title": "Quick Access",
-          "description": "Jump to Documents, Applications, or Trash instantly from Go menu"
-        },
-        "storageInfo": {
-          "title": "Storage Info",
-          "description": "See free space & item count in the window footer"
-        },
-        "trash": {
-          "title": "Trash",
-          "description": "Drag files to Trash & Empty to permanently delete"
-        }
-      },
-      "window": {
-        "macintoshHd": "Macintosh HD",
-        "finder": "Finder"
-      },
-      "fileTypes": {
-        "folder": "Folder",
-        "mp3Audio": "MP3 Audio",
-        "quicktimeMovie": "QuickTime Movie",
-        "internetShortcut": "Internet Shortcut",
-        "application": "Application",
-        "pngImage": "PNG Image",
-        "jpegImage": "JPEG Image",
-        "gifImage": "GIF Image",
-        "webpImage": "WebP Image",
-        "bmpImage": "BMP Image",
-        "document": "Document",
-        "htmlApplet": "HTML Applet",
-        "unknown": "Unknown"
-      },
-      "contextMenu": {
-        "sortBy": "Sort By",
-        "name": "Name",
-        "date": "Date",
-        "size": "Size",
-        "kind": "Kind",
-        "emptyTrash": "Empty Trash...",
-        "newFolder": "New Folder…",
-        "open": "Open",
-        "addToDesktop": "Add to Desktop",
-        "rename": "Rename…",
-        "duplicate": "Duplicate",
-        "moveToTrash": "Move to Trash"
-      },
-      "dialogs": {
-        "emptyTrash": {
-          "title": "Empty Trash",
-          "description": "Are you sure you want to empty the Trash? This action cannot be undone."
-        },
-        "renameItem": {
-          "title": "Rename Item",
-          "description": "Enter a new name for \"{{name}}\""
-        },
-        "newFolder": {
-          "title": "New Folder",
-          "description": "Enter a name for the new folder:"
-        }
-      },
-      "statusBar": {
-        "item": "item",
-        "items": "items",
-        "available": "available"
-      },
-      "placeholders": {
-        "enterPath": "Enter path"
-      },
-      "messages": {
-        "loading": "Loading...",
-        "appletImported": "Applet imported!",
-        "appletImportedDesc": "{{name}} saved to /Applets{{iconText}}",
-        "appletImportedIconText": " with {{icon}} icon",
-        "importFailed": "Import failed",
-        "importFailedDesc": "Could not import the file.",
-        "importFailedAppletDesc": "Could not import the applet file.",
-        "invalidFileType": "Invalid file type",
-        "invalidFileTypeDesc": "Only .app, .gz, and .html files can be imported to Applets"
-      },
-      "tableHeaders": {
-        "name": "Name",
-        "type": "Type",
-        "size": "Size",
-        "modified": "Modified"
-      },
-      "defaultNames": {
-        "untitledFolder": "untitled folder",
-        "copy": "copy"
-      },
-      "folders": {
-        "applications": "Applications",
-        "documents": "Documents",
-        "images": "Images",
-        "music": "Music",
-        "videos": "Videos",
-        "sites": "Sites",
-        "applets": "Applets",
-        "trash": "Trash",
-        "desktop": "Desktop"
-      }
-    },
-    "soundboard": {
-      "name": "Soundboard",
-      "description": "Play sound effects",
-      "soundboards": "Soundboards",
-      "newSoundboardDefault": "New Soundboard",
-      "importedSoundboard": "Imported Soundboard",
-      "menu": {
-        "newSoundboard": "New Soundboard",
-        "importSoundboards": "Import Soundboards...",
-        "exportSoundboards": "Export Soundboards...",
-        "resetSoundboards": "Reset Soundboards",
-        "loadSpecialSoundboards": "Load Special Soundboards",
-        "renameSoundboard": "Rename Soundboard",
-        "deleteSoundboard": "Delete Soundboard",
-        "waveforms": "Waveforms",
-        "emojis": "Emojis",
-        "soundboardHelp": "Soundboard Help",
-        "aboutSoundboard": "About Soundboard"
-      },
-      "help": {
-        "recordSlot": {
-          "title": "Record Slot",
-          "description": "Click a slot to record audio; click again to stop"
-        },
-        "keyboardPlay": {
-          "title": "Keyboard Play",
-          "description": "Press 1-9 to trigger sounds instantly"
-        },
-        "waveformView": {
-          "title": "Waveform View",
-          "description": "See live waveform while recording or playing back"
-        },
-        "customizeSlot": {
-          "title": "Customize Slot",
-          "description": "Add emoji & title to each sample for quick ID"
-        },
-        "multipleBoards": {
-          "title": "Multiple Boards",
-          "description": "Create, rename & switch boards for sets of sounds"
-        },
-        "importExport": {
-          "title": "Import / Export",
-          "description": "Share boards as files; drag-drop to import"
-        }
-      }
-    },
-    "internet-explorer": {
-      "name": "Internet Explorer",
-      "description": "Browse the web",
-      "appName": "Internet Explorer",
-      "autodetected": "Auto-detected",
-      "english": "English",
-      "chineseTraditional": "Chinese (Traditional)",
-      "japanese": "Japanese",
-      "korean": "Korean",
-      "french": "French",
-      "spanish": "Spanish",
-      "portuguese": "Portuguese",
-      "german": "German",
-      "welsh": "Welsh",
-      "sanskrit": "Sanskrit",
-      "latin": "Latin",
-      "alienLanguage": "Alien Language",
-      "aiLanguage": "AI Language",
-      "digitalBeingLanguage": "Digital Being Language",
-      "unitedStates": "United States",
-      "china": "China",
-      "japan": "Japan",
-      "southKorea": "South Korea",
-      "france": "France",
-      "spain": "Spain",
-      "portugal": "Portugal",
-      "germany": "Germany",
-      "canada": "Canada",
-      "unitedKingdom": "United Kingdom",
-      "india": "India",
-      "brazil": "Brazil",
-      "australia": "Australia",
-      "russia": "Russia",
-      "pleaseTryTheFollowing": "Please try the following:",
-      "back": "Back",
-      "refresh": "Refresh",
-      "cannotFindServerOrDnsError": "Cannot find server or DNS Error",
-      "error": "Error",
-      "anErrorOccurred": "An error occurred",
-      "checkWebAddressAndTryAgain": "Check the web address you typed and try again.",
-      "goBackToPreviousPage": "Go back to the previous page.",
-      "tryRefreshingThePage": "Try refreshing the page.",
-      "host": "Host: {{hostname}}",
-      "loadingTitle": "Internet Explorer - Loading",
-      "loadingTitleWithSite": "{{site}} - Loading",
-      "travellingTitle": "Internet Explorer - Travelling",
-      "travellingTitleWithSite": "{{site}} - Travelling",
-      "requiresInternetConnection": "Internet Explorer requires an internet connection to navigate",
-      "failedToGenerateFuturisticWebsite": "Failed to generate futuristic website. AI model may not be selected.",
-      "cannotAccessWebsite": "Cannot access {{url}}. The website might be blocking access or requires authentication.",
-      "pageCouldNotBeLoadedInIframe": "The page could not be loaded in the iframe. This could be due to security restrictions or network issues.",
-      "openingSharedPage": "Opening shared page",
-      "from": "from",
-      "invalidShareLink": "Invalid Share Link",
-      "shareLinkInvalidOrCorrupted": "The share link provided is invalid or corrupted.",
-      "openingRequestedPage": "Opening requested page",
-      "fetch": "Fetch",
-      "fetchingContentForReconstruction": "Fetching content of {{hostname}} for reconstruction...",
-      "reimaginingForYear": "Reimagining {{hostname}} for year {{year}}...",
-      "reconstructingHistoryForYear": "Reconstructing history of {{hostname}} for year {{year}}...",
-      "fetchingFromYear": "Fetching {{hostname}} from year {{year}}...",
-      "loading": "Loading {{hostname}}...",
-      "shareThisPage": "Share this page",
-      "enterUrl": "Enter URL",
-      "favorite": "Favorite",
-      "history": "History",
-      "search": "Search",
-      "showCachedVersionsTimeMachine": "Show cached versions (Time Machine)",
-      "timeNodes": "{{count}} Time Node",
-      "timeNodes_plural": "{{count}} Time Nodes",
-      "year": "Year",
-      "now": "Now",
-      "folder": "Folder",
-      "site": "Site",
-      "addFavorite": "Add Favorite",
-      "enterTitleForFavorite": "Enter a title for this favorite",
-      "clearFavorites": "Clear Favorites",
-      "areYouSureClearFavorites": "Are you sure you want to clear all favorites?",
-      "clearHistory": "Clear History",
-      "areYouSureClearHistory": "Are you sure you want to clear all history?",
-      "resetFavorites": "Reset Favorites",
-      "areYouSureResetFavorites": "Are you sure you want to reset favorites to default?",
-      "page": "Page",
-      "galaxy": "Galaxy",
-      "aurora": "Aurora",
-      "nebula": "Nebula",
-      "off": "Off",
-      "oldest": "Oldest",
-      "newest": "Newest",
-      "closeTimeMachine": "Close Time Machine",
-      "loadingEllipsis": "Loading...",
-      "errorLoadingPreview": "Error loading preview.",
-      "unableToLoadPreview": "Unable to load preview.",
-      "in": "in",
-      "travel": "Travel",
-      "shareThisPageAndTime": "Share this page and time",
-      "olderVersion": "Older Version",
-      "newerVersion": "Newer Version",
-      "goToNow": "Go to Now",
-      "older": "Older",
-      "newer": "Newer",
-      "menu": {
-        "goToUrl": "Go to URL",
-        "sharePage": "Share Page...",
-        "openTimeMachine": "Open Time Machine",
-        "refresh": "Refresh",
-        "stop": "Stop",
-        "year": "Year",
-        "now": "Now",
-        "language": "Language",
-        "auto": "Auto",
-        "english": "English",
-        "chinese": "Chinese",
-        "japanese": "Japanese",
-        "korean": "Korean",
-        "french": "French",
-        "spanish": "Spanish",
-        "portuguese": "Portuguese",
-        "german": "German",
-        "italian": "Italian",
-        "russian": "Russian",
-        "welsh": "Welsh",
-        "latin": "Latin",
-        "sanskrit": "Sanskrit",
-        "alien": "Alien",
-        "aiLanguage": "AI Language",
-        "digitalBeing": "Digital Being",
-        "location": "Location",
-        "unitedStates": "United States",
-        "china": "China",
-        "japan": "Japan",
-        "korea": "Korea",
-        "canada": "Canada",
-        "unitedKingdom": "United Kingdom",
-        "france": "France",
-        "germany": "Germany",
-        "spain": "Spain",
-        "portugal": "Portugal",
-        "india": "India",
-        "brazil": "Brazil",
-        "australia": "Australia",
-        "russia": "Russia",
-        "editFuture": "Edit Future...",
-        "favorites": "Favorites",
-        "goHome": "Go Home",
-        "addToFavorites": "Add to Favorites...",
-        "clearFavorites": "Clear Favorites...",
-        "resetFavorites": "Reset Favorites...",
-        "history": "History",
-        "back": "Back",
-        "forward": "Forward",
-        "clearHistory": "Clear History...",
-        "internetExplorerHelp": "Internet Explorer Help",
-        "aboutInternetExplorer": "About Internet Explorer",
-        "folder": "Folder"
-      },
-      "futureTimeline": {
-        "title": "Edit Future Timeline",
-        "description": "Edit settings for the future timeline",
-        "selectYear": "Select year",
-        "reset": "Reset"
-      },
-      "help": {
-        "browseWeb": {
-          "title": "Browse the Web",
-          "description": "Enter URLs and use navigation buttons (Back, Forward, Refresh, Stop)."
-        },
-        "travelThroughTime": {
-          "title": "Travel Through Time",
-          "description": "Select a year from the dropdown to view websites from the past or future."
-        },
-        "historyReimagined": {
-          "title": "History Reimagined",
-          "description": "AI reconstructs very old sites (pre-1996) and imagines future web experiences."
-        },
-        "saveFavorites": {
-          "title": "Save Favorites",
-          "description": "Add sites and specific years to your Favorites bar for easy access."
-        },
-        "exploreTimeNodes": {
-          "title": "Explore Time Nodes",
-          "description": "Click the clock icon in the address bar to see available snapshots of the current site across time."
-        },
-        "shareJourney": {
-          "title": "Share Your Journey",
-          "description": "Use the Share button to generate a link to the exact page and year you're viewing."
-        }
-      }
-    },
-    "chats": {
-      "name": "Chats",
-      "description": "Chat with AI",
-      "menu": {
-        "saveTranscript": "Save Transcript...",
-        "clearChat": "Clear Chat",
-        "logOut": "Log Out",
-        "createAccount": "Create Account...",
-        "login": "Login...",
-        "chats": "Chats",
-        "newChat": "New Chat...",
-        "sound": "Sound",
-        "chatSpeech": "Chat Speech",
-        "typingSynth": "Typing Synth",
-        "increaseFontSize": "Increase Font Size",
-        "decreaseFontSize": "Decrease Font Size",
-        "resetFontSize": "Reset Font Size",
-        "showRooms": "Show Rooms",
-        "chatsHelp": "Chats Help",
-        "aboutChats": "About Chats"
-      },
-      "help": {
-        "chatWithRyo": {
-          "title": "Chat with Ryo",
-          "description": "Type your message to chat with Ryo, generate code, or get help with ryOS."
-        },
-        "createEditFiles": {
-          "title": "Create & Edit Files",
-          "description": "Ask Ryo to create HTML applets, edit documents, read files, or search the Applets Store."
-        },
-        "controlApps": {
-          "title": "Control Apps",
-          "description": "Ask Ryo to launch or close apps, switch themes, or control iPod playback."
-        },
-        "joinChatRooms": {
-          "title": "Join Chat Rooms",
-          "description": "Connect with others in public chat rooms. Mention @ryo for AI responses."
-        },
-        "pushToTalk": {
-          "title": "Push to Talk",
-          "description": "Hold Space or tap the microphone button to record and send voice messages."
-        },
-        "nudgeDjMode": {
-          "title": "Nudge & DJ Mode",
-          "description": "Send 👋 nudge for context-aware tips. Ryo becomes a DJ when music is playing."
-        }
-      },
-      "dialogs": {
-        "clearChatsTitle": "Clear Chats",
-        "clearChatsDescription": "Are you sure you want to clear this chat? This action cannot be undone.",
-        "saveTranscriptTitle": "Save Transcript",
-        "saveTranscriptDescription": "Enter a name for your chat transcript file",
-        "leaveConversationTitle": "Leave Conversation",
-        "deleteChatRoomTitle": "Delete Chat Room",
-        "leaveConversationDescription": "Are you sure you want to leave \"{{name}}\"? You will no longer see messages in this conversation.",
-        "deleteChatRoomDescription": "Are you sure you want to delete the room \"{{name}}\"? This action cannot be undone.",
-        "setPasswordTitle": "Set Password",
-        "setPasswordDescription": "Set a password to enable account recovery. You can use this password to get a new token if you lose access.",
-        "setPasswordButton": "Set Password",
-        "passwordSetSuccess": "Password Set",
-        "passwordSetSuccessDescription": "You can now use your password to recover your account",
-        "passwordMinLengthError": "Password must be at least 8 characters",
-        "passwordSetFailed": "Failed to set password",
-        "newChatTitle": "New Chat",
-        "newChatDescription": "Create a public chat room or start a private conversation",
-        "newChatDescriptionPrivate": "Start a private conversation",
-        "public": "Public",
-        "roomName": "Room Name",
-        "roomNamePlaceholder": "general",
-        "addUsersToPrivateChat": "Add Users to Private Chat",
-        "searchUsernamePlaceholder": "Search username...",
-        "creating": "Creating...",
-        "cancel": "Cancel",
-        "create": "Create",
-        "failedToCreateRoom": "Failed to create room"
-      },
-      "status": {
-        "loginToRyOS": "Login to ryOS",
-        "loginToChat": "Login to Chat",
-        "clear": "Clear",
-        "leave": "Leave",
-        "ryo": "@ryo",
-        "chatRequiresInternet": "Chat requires an internet connection",
-        "ryoWillRespond": "Ryo will respond to this message",
-        "usingModel": "Using {{model}}",
-        "noTranscriptionText": "No transcription text received",
-        "dailyLimitReached": "Daily AI message limit reached.",
-        "loginToContinue": "Login to continue chatting with Ryo.",
-        "sessionExpired": "Session expired. Please login again.",
-        "retry": "Retry",
-        "startNewConversation": "Start a new conversation?",
-        "newChat": "New chat",
-        "editing": "editing...",
-        "thinking": "Thinking",
-        "recording": "Recording...",
-        "transcribing": "Transcribing...",
-        "createAccountToContinue": "Create account to continue...",
-        "typeMessage": "Type a message...",
-        "typeOrPushSpace": "Type or push 'space' to talk...",
-        "scrollToBottom": "Scroll to bottom",
-        "nudgeSent": "👋 *nudge sent*"
-      },
-      "ariaLabels": {
-        "sendNudge": "Send a Nudge",
-        "mentionRyo": "Mention Ryo",
-        "pushToTalk": "Push to Talk",
-        "stopGeneration": "Stop generation",
-        "copyMessage": "Copy message",
-        "deleteMessage": "Delete message",
-        "speakMessage": "Speak message",
-        "stopSpeech": "Stop speech",
-        "messageUser": "Message {{username}}",
-        "newChat": "New Chat",
-        "leaveConversation": "Leave conversation",
-        "deleteRoom": "Delete room"
-      },
-      "sidebar": {
-        "chats": "Chats",
-        "channels": "Channels",
-        "private": "Private",
-        "new": "new",
-        "online": "online"
-      },
-      "messages": {
-        "you": "You",
-        "ryo": "Ryo",
-        "delete": "Delete",
-        "greeting": "👋 hey! i'm ryo. ask me anything!"
-      },
-      "toolCalls": {
-        "loadingMusicLibrary": "Loading music library…",
-        "listingSharedApplets": "Listing shared applets…",
-        "listingApplications": "Listing applications…",
-        "findingFiles": "Finding files…",
-        "playingSong": "Playing song…",
-        "openingAppletPreview": "Opening applet preview…",
-        "launchingApp": "Launching app…",
-        "openingFile": "Opening file…",
-        "fetchingApplet": "Fetching applet…",
-        "readingFile": "Reading file…",
-        "writingContent": "Writing content…",
-        "editingFile": "Editing file…",
-        "launching": "Launching {{appName}}…",
-        "closing": "Closing {{appName}}…",
-        "skippingToNext": "Skipping to next…",
-        "skippingToPrevious": "Skipping to previous…",
-        "addingSong": "Adding song…",
-        "controllingPlayback": "Controlling playback…",
-        "switchingTheme": "Switching theme…",
-        "running": "Running {{toolName}}…",
-        "calling": "Calling {{toolName}}…",
-        "foundSongs": "Found {{count}} song",
-        "foundSongsPlural": "Found {{count}} songs",
-        "foundSongsInMusic": "Found {{count}} song in Music",
-        "foundSongsInMusicPlural": "Found {{count}} songs in Music",
-        "musicLibraryEmpty": "Music library is empty",
-        "foundApplets": "Found {{count}} applet",
-        "foundAppletsPlural": "Found {{count}} applets",
-        "foundSharedApplets": "Found {{count}} shared applet",
-        "foundSharedAppletsPlural": "Found {{count}} shared applets",
-        "noSharedAppletsMatched": "No shared applets matched \"{{query}}\"",
-        "noSharedAppletsAvailable": "No shared applets available",
-        "foundDocuments": "Found {{count}} document",
-        "foundDocumentsPlural": "Found {{count}} documents",
-        "foundApplications": "Found {{count}} application",
-        "foundApplicationsPlural": "Found {{count}} applications",
-        "foundApplicationsList": "Found {{count}} application",
-        "foundApplicationsListPlural": "Found {{count}} applications",
-        "noItemsFound": "No items found",
-        "noFileTypeFound": "No {{fileType}}s found in {{path}} directory",
-        "foundFileType": "Found {{count}} {{fileType}}",
-        "foundFileTypePlural": "Found {{count}} {{fileType}}s",
-        "listedItems": "Listed items",
-        "opened": "Opened",
-        "openedApplet": "Opened {{appletName}}",
-        "openedDocument": "Opened document: {{fileName}}",
-        "openedFile": "Opened {{fileName}}",
-        "playingTrack": "Playing {{title}}",
-        "playingTrackByArtist": "Playing {{title}} by {{artist}}",
-        "read": "Read {{fileName}}",
-        "contentWritten": "Content written",
-        "textNotFound": "Text not found",
-        "multipleMatchesFound": "Multiple matches found",
-        "edited": "Edited {{fileName}}",
-        "fileCreated": "File created",
-        "launched": "Launched {{appName}}",
-        "launchedWithUrl": "Launched {{url}}",
-        "launchedWithUrlAndYear": "Launched {{url}} in {{year}}",
-        "closed": "Closed {{appName}}",
-        "addedAndStartedPlaying": "Added and started playing new song",
-        "playing": "Playing {{title}}",
-        "playingByArtist": "Playing {{title}} by {{artist}}",
-        "playingSongByArtist": "Playing song by {{artist}}",
-        "playingSongWithId": "Playing song ({{id}})",
-        "playingSongGeneric": "Playing song",
-        "playingTrack": "Playing {{title}}",
-        "playingTrackByArtist": "Playing {{title}} by {{artist}}",
-        "skippedToNextTrack": "Skipped to next track",
-        "skippedToPreviousTrack": "Skipped to previous track",
-        "playingIpod": "Playing iPod",
-        "pausedIpod": "Paused iPod",
-        "toggledIpodPlayback": "Toggled iPod playback",
-        "ipodPlaying": "Playing",
-        "ipodPlayingTrack": "Playing {{trackDesc}}",
-        "ipodPaused": "Paused",
-        "ipodPausedTrack": "Paused {{trackDesc}}",
-        "ipodReady": "iPod is ready. Press the center button or play button on the iPod to start playing",
-        "ipodSelected": "Selected {{trackDesc}}. Press the center button or play button on the iPod to start playing",
-        "ipodAdded": "Added '{{title}}' to iPod. Press the center button or play button on the iPod to start playing",
-        "ipodAddedAndPlaying": "Added '{{title}}' to iPod and started playing",
-        "ipodSkippedTo": "Skipped to {{trackDesc}}",
-        "ipodWentBackTo": "Went back to {{trackDesc}}",
-        "ipodSkippedToNext": "Skipped to next track",
-        "ipodWentBackToPrevious": "Went back to previous track",
-        "ipodSongNotFound": "Song not found in iPod library",
-        "ipodFailedToAdd": "Failed to add {{id}} to iPod",
-        "ipodCannotAdd": "Cannot add {{id}}: Video unavailable or invalid",
-        "ipodFailedToAddWithError": "Failed to add {{id}}: {{error}}",
-        "ipodTurnedOnVideo": "Turned on video",
-        "ipodTurnedOffVideo": "Turned off video",
-        "ipodTurnedOffLyricsTranslation": "Turned off lyrics translation",
-        "ipodTranslatedLyricsTo": "Translated lyrics to {{langName}}",
-        "ipodTurnedOnFullScreen": "Turned on full screen mode",
-        "ipodTurnedOffFullScreen": "Turned off full screen mode",
-        "switchedTo": "Switched to {{theme}}",
-        "generating": "Generating…",
-        "preparingHtmlPreview": "Preparing HTML preview...",
-        "toolExecutionFailed": "Tool execution failed",
-        "error": "Error: {{errorText}}",
-        "changingSettings": "Changing settings…",
-        "settingsUpdated": "Settings updated",
-        "settingsNoChanges": "No changes made",
-        "settingsLanguageChanged": "Language changed to {{language}}",
-        "settingsThemeChanged": "Theme changed to {{theme}}",
-        "settingsMasterVolumeSet": "Volume set to {{volume}}%",
-        "settingsSpeechEnabled": "Text-to-speech enabled",
-        "settingsSpeechDisabled": "Text-to-speech disabled",
-        "settingsCheckingForUpdates": "Checking for updates…"
-      },
-      "tokenStatus": {
-        "clickToRefresh": "Click to manually refresh token",
-        "refreshing": "Refreshing...",
-        "refresh": "Refresh",
-        "daysOld": "{{days}}d old",
-        "refreshed": "Refreshed",
-        "last": "Last",
-        "tokenRefreshed": "Token refreshed",
-        "justNow": "just now",
-        "minutesAgo": "{{minutes}}m ago",
-        "hoursAgo": "{{hours}}h ago",
-        "daysAgo": "{{days}}d ago"
-      }
-    },
-    "textedit": {
-      "name": "TextEdit",
-      "description": "A simple rich text editor",
-      "untitled": "Untitled",
-      "bold": "Bold",
-      "italic": "Italic",
-      "underline": "Underline",
-      "text": "Text",
-      "heading1": "Heading 1",
-      "heading2": "Heading 2",
-      "heading3": "Heading 3",
-      "alignLeft": "Align Left",
-      "alignCenter": "Align Center",
-      "alignRight": "Align Right",
-      "bulletList": "Bullet List",
-      "numberedList": "Numbered List",
-      "speak": "Speak",
-      "stopSpeech": "Stop speech",
-      "failedToUpdateEditorWithDocumentUpdatedEvent": "Failed to update editor with document updated event:",
-      "menu": {
-        "newFile": "New File",
-        "open": "Open...",
-        "save": "Save",
-        "saveEllipsis": "Save...",
-        "importFromDevice": "Import from Device...",
-        "exportAs": "Export As...",
-        "html": "HTML",
-        "markdown": "Markdown",
-        "plainText": "Plain Text",
-        "format": "Format",
-        "bold": "Bold",
-        "italic": "Italic",
-        "underline": "Underline",
-        "text": "Text",
-        "heading1": "Heading 1",
-        "heading2": "Heading 2",
-        "heading3": "Heading 3",
-        "alignLeft": "Align Left",
-        "alignCenter": "Align Center",
-        "alignRight": "Align Right",
-        "bulletList": "Bullet List",
-        "numberedList": "Numbered List",
-        "taskList": "Task List",
-        "texteditHelp": "TextEdit Help",
-        "aboutTextEdit": "About TextEdit"
-      },
-      "dialogs": {
-        "saveFile": "Save File",
-        "enterANameForYourFile": "Enter a name for your file",
-        "discardChanges": "Discard Changes",
-        "doYouWantToDiscardYourChangesAndCreateANewFile": "Do you want to discard your changes and create a new file?",
-        "keepNewDocument": "Keep New Document",
-        "saveChanges": "Save Changes",
-        "enterFilenameToSaveOrDeleteItBeforeClosing": "Enter a filename to save, or delete it before closing.",
-        "saveYourChangesBeforeClosing": "Save your changes before closing."
-      },
-      "slashCommands": {
-        "text": {
-          "title": "Text",
-          "description": "Just start typing with plain text"
-        },
-        "heading1": {
-          "title": "Heading 1",
-          "description": "Large section heading"
-        },
-        "heading2": {
-          "title": "Heading 2",
-          "description": "Medium section heading"
-        },
-        "heading3": {
-          "title": "Heading 3",
-          "description": "Small section heading"
-        },
-        "bulletList": {
-          "title": "Bullet List",
-          "description": "Create a simple bullet list"
-        },
-        "numberedList": {
-          "title": "Numbered List",
-          "description": "Create a numbered list"
-        },
-        "taskList": {
-          "title": "Task List",
-          "description": "Create a checklist with checkboxes"
-        }
-      },
-      "help": {
-        "richEditing": {
-          "title": "Rich Editing",
-          "description": "Type, copy, cut, paste, undo & redo your text with ease"
-        },
-        "formatting": {
-          "title": "Formatting",
-          "description": "Bold, italic, underline, headings & alignment options"
-        },
-        "listsTasks": {
-          "title": "Lists & Tasks",
-          "description": "Create bullet, numbered & check-box task lists"
-        },
-        "fileManagement": {
-          "title": "File Management",
-          "description": "Create, open, save, and export files (HTML, MD, TXT)"
-        },
-        "voiceDictation": {
-          "title": "Voice Dictation",
-          "description": "Dictate text hands-free right into the document"
-        },
-        "slashCommands": {
-          "title": "Slash Commands",
-          "description": "Type / for quick actions or let Ryo AI edit lines remotely"
-        }
-      }
-    },
-    "paint": {
-      "name": "Paint",
-      "description": "Draw and edit images",
-      "untitled": "Untitled",
-      "selectedPattern": "Selected Pattern",
-      "toolbar": {
-        "select": "Select",
-        "rectangleSelect": "Rectangle Select",
-        "hand": "Hand",
-        "text": "Text",
-        "fillColor": "Fill Color",
-        "spray": "Spray",
-        "brush": "Brush",
-        "pencil": "Pencil",
-        "line": "Line",
-        "eraser": "Eraser",
-        "rectangle": "Rectangle",
-        "oval": "Oval"
-      },
-      "filtersMenu": {
-        "openFiltersMenu": "Open filters menu"
-      },
-      "dialogs": {
-        "failedToLoadImageContent": "Failed to load image content.",
-        "imageSavedSuccessfully": "Image saved successfully",
-        "failedToSaveImage": "Failed to save image",
-        "saveImage": "Save Image",
-        "enterImageName": "Enter a name for your image",
-        "discardChanges": "Discard Changes",
-        "discardChangesDescription": "You have unsaved changes. Create new file anyway?",
-        "error": "Error"
-      },
-      "menu": {
-        "newFile": "New File",
-        "open": "Open...",
-        "save": "Save",
-        "saveEllipsis": "Save...",
-        "importFromDevice": "Import from Device...",
-        "export": "Export",
-        "filters": "Filters",
-        "filterCategoryColor": "Color",
-        "filterCategoryArtistic": "Artistic",
-        "filterCategoryBlur": "Blur",
-        "filterCategoryRetro": "Retro",
-        "filterBrightnessPlus": "Brightness +",
-        "filterBrightnessMinus": "Brightness -",
-        "filterGrayscale": "Grayscale",
-        "filterInvert": "Invert",
-        "filterSepia": "Sepia",
-        "filterPixelate": "Pixelate",
-        "filterEdgeDetect": "Edge Detect",
-        "filterSharpen": "Sharpen",
-        "filterBlur": "Blur",
-        "filterGaussianBlur": "Gaussian Blur",
-        "filterMotionBlur": "Motion Blur",
-        "filterRadialBlur": "Radial Blur",
-        "filterNoise": "Noise",
-        "filterOldPhoto": "Old Photo",
-        "filterVhs": "VHS",
-        "filterCrt": "CRT",
-        "filterGlitch": "Glitch",
-        "filterDither": "Dither",
-        "paintHelp": "Paint Help",
-        "aboutPaint": "About Paint"
-      },
-      "help": {
-        "drawingTools": {
-          "title": "Drawing Tools",
-          "description": "Use the toolbar on the left to select different drawing tools like pencil, brush, shapes, and more."
-        },
-        "colors": {
-          "title": "Colors",
-          "description": "Select colors from the palette below the tools to change your drawing color."
-        },
-        "undo": {
-          "title": "Undo",
-          "description": "Press ⌘Z or use Edit > Undo to undo your last action."
-        },
-        "saving": {
-          "title": "Saving",
-          "description": "Use File > Save to save your artwork, or File > Save As to save it with a new name."
-        },
-        "patterns": {
-          "title": "Patterns",
-          "description": "Choose from various patterns in the bottom palette to fill shapes and areas."
-        },
-        "filters": {
-          "title": "Filters",
-          "description": "Apply invert, grayscale, brightness & more from the Filters menu."
-        }
-      }
-    },
-    "photo-booth": {
-      "name": "Photo Booth",
-      "description": "Take photos with effects",
-      "menu": {
-        "exportPhotos": "Export Photos",
-        "clearAllPhotos": "Clear All Photos",
-        "camera": "Camera",
-        "effects": "Effects",
-        "photoBoothHelp": "Photo Booth Help",
-        "aboutPhotoBooth": "About Photo Booth"
-      },
-      "effects": {
-        "rainbow": "Rainbow",
-        "vibrant": "Vibrant",
-        "coldBlue": "Cold Blue",
-        "highContrast": "High Contrast",
-        "normal": "Normal",
-        "vintage": "Vintage",
-        "xRay": "X-Ray",
-        "neon": "Neon",
-        "blackAndWhite": "Black & White",
-        "bulge": "Bulge",
-        "stretch": "Stretch",
-        "pinch": "Pinch",
-        "twirl": "Twirl",
-        "fishEye": "Fish Eye",
-        "squeeze": "Squeeze",
-        "kaleidoscope": "Kaleidoscope",
-        "ripple": "Ripple",
-        "glitch": "Glitch"
-      },
-      "buttons": {
-        "effects": "Effects"
-      },
-      "errors": {
-        "couldNotAccessCamera": "Could not access camera",
-        "cameraPermissionDenied": "Camera permission denied",
-        "noCameraFound": "No camera found",
-        "cameraRequiresHttps": "Camera requires HTTPS",
-        "cameraError": "Camera error: {{error}}",
-        "cameraApiNotAvailable": "Camera API not available"
-      },
-      "ariaLabels": {
-        "photo": "Photo {{index}}"
-      },
-      "help": {
-        "takingPhoto": {
-          "title": "Taking a Photo",
-          "description": "Click the large red camera button to capture a single image."
-        },
-        "quickSnaps": {
-          "title": "Quick Snaps",
-          "description": "Click the timer button (left of the camera button) to start a sequence of four photos taken one second apart."
-        },
-        "applyingEffects": {
-          "title": "Applying Effects",
-          "description": "Click the 'Effects' button (right of the camera button) to open the effects panel and apply fun filters to your live camera view."
-        },
-        "viewingPhotos": {
-          "title": "Viewing Photos",
-          "description": "Click the photo stack button (far left) to show or hide the photo strip at the bottom, displaying all your saved photos."
-        },
-        "downloadingPhotos": {
-          "title": "Downloading Photos",
-          "description": "Photos are automatically saved. Click on a photo in the photo strip to download it."
-        },
-        "switchingCameras": {
-          "title": "Switching Cameras",
-          "description": "Use the 'View' menu in the menu bar to switch between available cameras if you have more than one connected."
-        }
-      }
-    },
-    "minesweeper": {
-      "name": "Minesweeper",
-      "description": "Classic puzzle game",
-      "menu": {
-        "newGame": "New Game",
-        "minesweeperHelp": "Minesweeper Help",
-        "aboutMinesweeper": "About Minesweeper"
-      },
-      "lcd": {
-        "left": "Left",
-        "total": "Total"
-      },
-      "help": {
-        "desktopControls": {
-          "title": "Desktop Controls",
-          "description": "Left-click to reveal, right-click to flag, double-click numbers to auto-reveal neighbors."
-        },
-        "mobileControls": {
-          "title": "Mobile Controls",
-          "description": "Tap to reveal, long-press to flag a mine."
-        },
-        "gameRules": {
-          "title": "Game Rules",
-          "description": "Numbers show adjacent mines. Flag every mine and reveal all safe cells to win."
-        },
-        "timerCounter": {
-          "title": "Timer & Counter",
-          "description": "Top bar shows elapsed time and remaining unflagged mines."
-        },
-        "restart": {
-          "title": "Restart",
-          "description": "Press the smiley face or choose Game ▸ New to start a fresh board."
-        }
-      }
-    },
-    "videos": {
-      "name": "Videos",
-      "description": "Watch videos",
-      "menu": {
-        "openVideo": "Open Video...",
-        "shareVideo": "Share Video...",
-        "controls": "Controls",
-        "play": "Play",
-        "pause": "Pause",
-        "previous": "Previous",
-        "next": "Next",
-        "fullScreen": "Full Screen",
-        "shuffle": "Shuffle",
-        "repeatAll": "Repeat All",
-        "repeatOne": "Repeat One",
-        "library": "Library",
-        "addToLibrary": "Add to Library...",
-        "allVideos": "All Videos",
-        "clearLibrary": "Clear Library...",
-        "resetLibrary": "Reset Library...",
-        "unknownArtist": "Unknown Artist",
-        "videosHelp": "Videos Help",
-        "aboutVideos": "About Videos"
-      },
-      "help": {
-        "addVideo": {
-          "title": "Add Video",
-          "description": "Paste any YouTube URL to add to playlist"
-        },
-        "playback": {
-          "title": "Playback",
-          "description": "Play, pause, next, previous controls"
-        },
-        "loop": {
-          "title": "Loop",
-          "description": "Loop current video or entire playlist"
-        },
-        "shuffle": {
-          "title": "Shuffle",
-          "description": "Randomize playlist order"
-        },
-        "playlist": {
-          "title": "Playlist",
-          "description": "Manage and organize your video playlist"
-        },
-        "retroUi": {
-          "title": "Retro UI",
-          "description": "Classic QuickTime player aesthetics"
-        }
-      },
-      "status": {
-        "repeatingPlaylist": "REPEATING PLAYLIST",
-        "next": "NEXT ⏭",
-        "prev": "PREV ⏮",
-        "videoAdded": "VIDEO ADDED",
-        "errorAdding": "Error adding: {{error}}",
-        "unknownError": "Unknown error",
-        "pressToPlay": "PRESS ⏯ TO PLAY",
-        "failedToAddVideo": "Failed to add video",
-        "playing": "▶ Playing {{title}}",
-        "failedToProcessVideo": "Failed to process video: {{videoId}}",
-        "play": "PLAY ▶",
-        "paused": "PAUSED ⏸",
-        "shuffleOff": "SHUFFLE OFF",
-        "shuffleOn": "SHUFFLE ON",
-        "fullscreen": "FULLSCREEN",
-        "addVideos": "Add videos",
-        "toGetStarted": "to get started",
-        "track": "Track",
-        "time": "Time",
-        "title": "Title",
-        "add": "ADD",
-        "shuffle": "SHUFFLE",
-        "repeat": "REPEAT",
-        "playlistReset": "PLAYLIST RESET"
-      },
-      "dialogs": {
-        "openedSharedVideo": "Opened shared video. Press",
-        "toStartPlaying": "to start playing.",
-        "failedToLoadSharedVideo": "Failed to load shared video",
-        "videoId": "Video ID: {{videoId}}",
-        "clearPlaylistTitle": "Clear Playlist",
-        "clearPlaylistDescription": "Are you sure you want to clear the entire playlist? This action cannot be undone.",
-        "resetPlaylistTitle": "Reset Playlist",
-        "resetPlaylistDescription": "Are you sure you want to reset the playlist to default videos? This will replace your current playlist.",
-        "addVideoTitle": "Add Video",
-        "addVideoDescription": "Enter YouTube, Vimeo, or a video URL",
-        "videoItemType": "Video"
-      }
-    },
-    "ipod": {
-      "name": "iPod",
-      "description": "Music player",
-      "menu": {
-        "addSong": "Add Song...",
-        "shareSong": "Share Song...",
-        "exportLibrary": "Export Library...",
-        "importLibrary": "Import Library...",
-        "play": "Play",
-        "pause": "Pause",
-        "previous": "Previous",
-        "next": "Next",
-        "shuffle": "Shuffle",
-        "repeatAll": "Repeat All",
-        "repeatOne": "Repeat One",
-        "lyrics": "Lyrics",
-        "showLyrics": "Show Lyrics",
-        "refreshLyrics": "Refresh Lyrics",
-        "traditionalChinese": "繁體",
-        "korean": "한글",
-        "multi": "Multi",
-        "single": "Single",
-        "alternating": "Alternating",
-        "translate": "Translate",
-        "backlight": "Backlight",
-        "lcdFilter": "LCD Filter",
-        "video": "Video",
-        "classic": "Classic",
-        "black": "Black",
-        "u2": "U2",
-        "fullScreen": "Full Screen",
-        "library": "Library",
-        "addToLibrary": "Add to Library...",
-        "allSongs": "All Songs",
-        "clearLibrary": "Clear Library...",
-        "syncLibrary": "Sync Library...",
-        "unknownArtist": "Unknown Artist",
-        "ipodHelp": "iPod Help",
-        "aboutIpod": "About iPod",
-        "file": "File",
-        "controls": "Controls",
-        "view": "View",
-        "shareApp": "Share App..."
-      },
-      "status": {
-        "shuffleOn": "Shuffle ON",
-        "shuffleOff": "Shuffle OFF",
-        "lightOn": "Light ON",
-        "lightOff": "Light OFF",
-        "themeClassic": "Theme: Classic",
-        "themeBlack": "Theme: Black",
-        "themeU2": "Theme: U2",
-        "repeatOff": "Repeat OFF",
-        "repeatOne": "Repeat ONE",
-        "repeatAll": "Repeat ALL",
-        "layoutFocus": "Layout: Focus",
-        "layoutCenter": "Layout: Center",
-        "layoutAlternating": "Layout: Alternating",
-        "romanizationOn": "Romanization On",
-        "hangulOn": "Hangul On",
-        "libraryCleared": "Library Cleared",
-        "added": "♬ Added",
-        "loadingLyrics": "Loading lyrics…",
-        "translatingLyrics": "Translating lyrics…",
-        "offset": "Offset"
-      },
-      "dialogs": {
-        "clearLibraryTitle": "Clear Library",
-        "clearLibraryDescription": "Are you sure you want to clear your entire music library? This action cannot be undone.",
-        "addSongTitle": "Add Song",
-        "addSongDescription": "Paste a YouTube link to add to your iPod",
-        "youreOffline": "You're offline",
-        "ipodRequiresInternet": "iPod requires an internet connection",
-        "errorAdding": "Error adding:",
-        "openedSharedTrack": "Opened shared track. Press ⏯ to start playing.",
-        "addingNewTrack": "Adding new track from URL...",
-        "failedToLoadSharedTrack": "Failed to load shared track",
-        "libraryExportedSuccessfully": "Library exported successfully",
-        "failedToExportLibrary": "Failed to export library",
-        "libraryImportedSuccessfully": "Library imported successfully",
-        "failedToImportLibrary": "Failed to import library: Invalid format",
-        "libraryAutoUpdated": "Library Auto-Updated",
-        "autoUpdateFailed": "Auto-Update Failed",
-        "failedToAutoUpdateLibrary": "Failed to auto-update library",
-        "libraryUpdated": "Library Updated",
-        "noUpdates": "No Updates",
-        "libraryAlreadyUpToDate": "Your library is already up to date",
-        "updateCheckFailed": "Update Check Failed",
-        "failedToCheckForLibraryUpdates": "Failed to check for library updates",
-        "librarySynced": "Library Synced",
-        "syncFailed": "Sync Failed",
-        "failedToSyncWithServerLibrary": "Failed to sync with server library",
-        "addedSongsToTop": "Added {{count}} song{{plural}} to the top. First song ready to play!",
-        "autoUpdatedLibraryAddedSongs": "Auto-updated library: added {{newCount}} new song{{newPlural}} to the top{{updatedText}}",
-        "autoUpdatedTrackMetadata": "Auto-updated {{count}} track metadata",
-        "addedNewSongsToTop": "Added {{newCount}} new song{{newPlural}} to the top{{updatedText}}. Total: {{total}} songs",
-        "libraryUpToDateWithSongs": "Library is up to date with {{count}} songs",
-        "andUpdated": " and updated {{count}} track{{plural}}"
-      },
-      "menuItems": {
-        "music": "Music",
-        "settings": "Settings",
-        "extras": "Extras",
-        "shuffleSongs": "Shuffle Songs",
-        "nowPlaying": "Now Playing",
-        "ipod": "iPod",
-        "repeat": "Repeat",
-        "shuffle": "Shuffle",
-        "backlight": "Backlight",
-        "theme": "Theme",
-        "on": "On",
-        "off": "Off",
-        "one": "One",
-        "all": "All",
-        "allSongs": "All Songs"
-      },
-      "translationLanguages": {
-        "original": "Original",
-        "english": "English",
-        "chinese": "中文",
-        "japanese": "日本語",
-        "korean": "한국어",
-        "spanish": "Español",
-        "french": "Français",
-        "german": "Deutsch",
-        "portuguese": "Português",
-        "italian": "Italiano",
-        "russian": "Русский"
-      },
-      "ariaLabels": {
-        "previousTrack": "Previous track",
-        "nextTrack": "Next track",
-        "playPause": "Play/Pause",
-        "closeFullscreen": "Close fullscreen",
-        "cycleLyricLayout": "Cycle lyric layout",
-        "toggleHangulRomanization": "Toggle Hangul / Romanization",
-        "translateLyrics": "Translate lyrics",
-        "select": "Select"
-      },
-      "keys": {
-        "escape": "Escape",
-        "enter": "Enter",
-        "select": "Select"
-      },
-      "messages": {
-        "dontStealMusic": "Don't steal music",
-        "neVolezPasLaMusique": "Ne volez pas la musique",
-        "bitteKeineMusikStehlen": "Bitte keine Musik stehlen",
-        "pleaseDontStealMusic": "音楽を盗用しないでください"
-      },
-      "help": {
-        "addSongs": {
-          "title": "Add Songs",
-          "description": "Paste YouTube URLs to add music to your iPod."
-        },
-        "wheelNavigation": {
-          "title": "Wheel Navigation",
-          "description": "Use the click wheel to browse menus and your music library."
-        },
-        "playbackControls": {
-          "title": "Playback Controls",
-          "description": "Play, pause, skip tracks, and control your current song."
-        },
-        "syncedLyrics": {
-          "title": "Synced Lyrics",
-          "description": "View time-synced lyrics and get instant translations."
-        },
-        "playbackModes": {
-          "title": "Playback Modes",
-          "description": "Enable shuffle, repeat songs or playlists, and more."
-        },
-        "displayFullscreen": {
-          "title": "Display & Fullscreen",
-          "description": "Adjust backlight, themes, and switch to fullscreen video."
-        }
-      }
-    },
-    "synth": {
-      "name": "Synth",
-      "description": "Virtual synthesizer",
-      "menu": {
-        "newPreset": "New Preset",
-        "resetSynth": "Reset Synth",
-        "presets": "Presets",
-        "noteLabels": "Note Labels",
-        "keyLabels": "Key Labels",
-        "noLabels": "No Labels",
-        "synthHelp": "Synth Help",
-        "aboutSynth": "About Synth"
-      },
-      "help": {
-        "virtualKeyboard": {
-          "title": "Virtual Keyboard",
-          "description": "Play notes with on-screen keys or computer keyboard"
-        },
-        "controlsPanel": {
-          "title": "Controls Panel",
-          "description": "Toggle CONTROLS to tweak oscillators, envelope & effects"
-        },
-        "presets": {
-          "title": "Presets",
-          "description": "Save, load & manage custom sound presets"
-        },
-        "waveform3d": {
-          "title": "3D Waveform",
-          "description": "Live animated waveform when controls panel is open"
-        },
-        "effects": {
-          "title": "Effects",
-          "description": "Reverb, delay, distortion, chorus, phaser & bit-crusher"
-        },
-        "midiInput": {
-          "title": "MIDI Input",
-          "description": "Plug in a MIDI keyboard and play instantly"
-        }
-      },
-      "selectPreset": "Select Preset",
-      "noPresetsYet": "No presets yet. Create one with the NEW button.",
-      "controls": "CONTROLS",
-      "oscillator": "Oscillator",
-      "addPreset": "ADD PRESET",
-      "waveform": "Waveform",
-      "envelope": "Envelope",
-      "effects": "Effects",
-      "waveforms": {
-        "sine": "Sine",
-        "square": "Square",
-        "triangle": "Triangle",
-        "sawtooth": "Sawtooth"
-      },
-      "envelopeParams": {
-        "attack": "Attack",
-        "decay": "Decay",
-        "sustain": "Sustain",
-        "release": "Release"
-      },
-      "effectsParams": {
-        "gain": "Gain",
-        "reverb": "Reverb",
-        "delay": "Delay",
-        "distortion": "Distortion",
-        "chorus": "Chorus",
-        "phaser": "Phaser",
-        "bitcrusher": "Bitcrusher"
-      },
-      "status": {
-        "presetSaved": "Preset \"{{name}}\" saved",
-        "presetUpdated": "Preset \"{{name}}\" updated",
-        "presetLoaded": "Preset \"{{name}}\" loaded",
-        "synthResetToDefaults": "Synth reset to defaults",
-        "octave": "Octave {{offset}}"
-      },
-      "dialogs": {
-        "saveNewPreset": "Save New Preset",
-        "updatePreset": "Update Preset",
-        "enterPresetName": "Enter a name for your preset",
-        "updatePresetName": "Update the name of your preset"
-      }
-    },
-    "pc": {
-      "name": "Virtual PC",
-      "description": "3D PC simulation",
-      "virtualPc": "Virtual PC",
-      "loadingGame": "Loading {{gameName}}...",
-      "programsAvailable": "{{count}} PROGRAMS AVAILABLE",
-      "loadingEmulator": "LOADING EMULATOR",
-      "menu": {
-        "loadGame": "Load Game",
-        "saveState": "Save State",
-        "loadState": "Load State",
-        "reset": "Reset",
-        "controls": "Controls",
-        "fullScreen": "Full Screen",
-        "toggleMouseCapture": "Toggle Mouse Capture",
-        "mouseSensitivity": "Mouse Sensitivity",
-        "aspectRatio": "Aspect Ratio",
-        "virtualPcHelp": "Virtual PC Help",
-        "aboutVirtualPc": "About Virtual PC"
-      },
-      "dialogs": {
-        "resetVirtualPcTitle": "Reset Virtual PC",
-        "resetVirtualPcDescription": "Are you sure you want to reset the PC? This will clear all current state."
-      },
-      "help": {
-        "pcEmulator": {
-          "title": "PC Emulator",
-          "description": "Runs classic DOS games & apps right in your browser"
-        },
-        "keyboardControls": {
-          "title": "Keyboard Controls",
-          "description": "Use your physical keyboard for in-game input"
-        },
-        "mouseCapture": {
-          "title": "Mouse Capture",
-          "description": "Click inside the window to capture / release the mouse"
-        },
-        "fullscreenMode": {
-          "title": "Full-Screen Mode",
-          "description": "Toggle View ▸ Full Screen for an immersive display"
-        },
-        "saveStates": {
-          "title": "Save States",
-          "description": "Save or load game progress any time from File menu"
-        },
-        "aspectRatio": {
-          "title": "Aspect Ratio",
-          "description": "Switch between 4∶3 or widescreen to fit your monitor"
-        }
-      }
-    },
-    "terminal": {
-      "name": "Terminal",
-      "description": "Command line interface",
-      "menu": {
-        "clearTerminal": "Clear Terminal",
-        "increaseFontSize": "Increase Font Size",
-        "decreaseFontSize": "Decrease Font Size",
-        "resetFontSize": "Reset Font Size",
-        "muteSounds": "Mute Sounds",
-        "terminalHelp": "Terminal Help",
-        "aboutTerminal": "About Terminal"
-      },
-      "commands": {
-        "about": "About terminal",
-        "ai": "Enter AI chat mode with ryo",
-        "cat": "View file contents",
-        "cd": "Change directory",
-        "chat": "Chat with ryo (alias)",
-        "clear": "Clear terminal screen",
-        "cowsay": "A talking cow",
-        "date": "Display current date/time",
-        "echo": "Display text",
-        "edit": "Open in text editor",
-        "help": "Show available commands",
-        "history": "Show command history",
-        "logout": "Log out current user",
-        "ls": "List directory contents",
-        "mkdir": "Create directory",
-        "pwd": "Show current directory",
-        "rm": "Move file to trash",
-        "ryo": "Chat with ryo",
-        "su": "Switch or create user",
-        "touch": "Create empty file",
-        "vim": "Open file in vim editor",
-        "whoami": "Display current user"
-      },
-      "output": {
-        "noItemsFound": "No items found",
-        "listedItems": "Listed items",
-        "opened": "Opened",
-        "readFile": "Read {{fileName}}",
-        "contentWritten": "Content written",
-        "textNotFound": "Text not found",
-        "multipleMatchesFound": "Multiple matches found",
-        "fileEdited": "File edited",
-        "fileCreated": "File created",
-        "addedAndStartedPlaying": "Added and started playing new song",
-        "playingSong": "Playing song",
-        "skippedToNextTrack": "Skipped to next track",
-        "skippedToPreviousTrack": "Skipped to previous track",
-        "playingIpod": "Playing iPod",
-        "pausedIpod": "Paused iPod",
-        "toggledIpodPlayback": "Toggled iPod playback",
-        "foundApplets": "Found {{count}} applet",
-        "foundAppletsPlural": "Found {{count}} applets",
-        "foundDocuments": "Found {{count}} document",
-        "foundDocumentsPlural": "Found {{count}} documents",
-        "foundApplications": "Found {{count}} application",
-        "foundApplicationsPlural": "Found {{count}} applications",
-        "unknown": "Unknown",
-        "untitled": "Untitled",
-        "noFilesFound": "no files found",
-        "noSuchDirectory": "cd: {{dir}}: no such directory",
-        "lastLogin": "last login: {{time}}",
-        "typeHelpForCommands": "type 'help' to see available commands",
-        "commandNotFound": "command not found: {{cmd}}. type 'help' for a list of available commands.",
-        "askRyoAnything": "ask ryo anything. type 'exit' to return to terminal.",
-        "askRyoWithPrompt": "ask ryo anything. type 'exit' to return to terminal.\n→ from your command: {{prompt}}",
-        "chatCleared": "chat cleared. you're still chatting with ryo. type 'exit' to return to terminal.",
-        "isThinking": "is thinking"
-      },
-      "help": {
-        "basicCommands": {
-          "title": "Basic Commands",
-          "description": "Use commands like ls, cd, cat, pwd, clear, and touch to navigate and manage files."
-        },
-        "navigation": {
-          "title": "Navigation",
-          "description": "Browse the same virtual file system as Finder with familiar Unix commands."
-        },
-        "commandHistory": {
-          "title": "Command History",
-          "description": "Press ↑ / ↓ arrows to cycle through previous commands and re-run them quickly."
-        },
-        "aiAssistant": {
-          "title": "AI Assistant",
-          "description": "Type \"ryo <prompt>\" to chat with Ryo AI directly inside the terminal."
-        },
-        "fileEditing": {
-          "title": "File Editing",
-          "description": "Open documents in TextEdit (edit) or Vim-style editor (vim) right from the prompt."
-        },
-        "terminalSounds": {
-          "title": "Terminal Sounds",
-          "description": "Distinct sounds for output, errors & AI replies. Toggle in View ▸ Sounds."
-        }
-      }
-    },
     "applet-viewer": {
-      "name": "Applet Store",
-      "description": "View and run applets",
-      "menu": {
-        "open": "Open...",
-        "shareApplet": "Share Applet...",
-        "importFromDevice": "Import from Device...",
-        "exportAs": "Export As...",
-        "ryosApp": "ryOS App",
-        "html": "HTML",
-        "store": "Store",
-        "openAppletStore": "Open Applet Store",
-        "checkForUpdates": "Check for Updates",
-        "updateApplets": "Update {{count}} applet",
-        "updateAppletsPlural": "Update {{count}} applets",
-        "window": "Window",
-        "noAppletsOpen": "No applets open",
-        "createAccount": "Create Account...",
-        "login": "Login...",
-        "logOut": "Log Out",
-        "appletsHelp": "Applets Help",
-        "aboutApplets": "About Applets",
-        "untitled": "Untitled",
-        "appletStore": "Applet Store"
+      "description": "Visualizza ed esegui applet",
+      "dialogs": {
+        "addedToFeatured": "Aggiunto agli elementi in evidenza",
+        "allAppletsUpToDate": "Tutte le applet sono aggiornate",
+        "appletAlreadyShared": "Applet già condivisa",
+        "appletDeleted": "Applet eliminata",
+        "appletExported": "Applet esportata!",
+        "appletExportedDescription": "{{fileName}}.app esportato correttamente.",
+        "appletImported": "Applet importata!",
+        "appletImportedDescription": "{{fileName}} salvato in /Applets{{iconText}}",
+        "appletNotFound": "Applet non trovata",
+        "appletNotFoundDescription": "L'applet condivisa potrebbe essere stata eliminata o il link non è valido.",
+        "appletSaved": "Applet salvata",
+        "appletSavedDescription": "Salvato in /Applets/{{fileName}}",
+        "appletShared": "Applet condivisa!",
+        "appletStore": "Applet Store",
+        "appletUpdateAvailable": "Aggiornamento applet disponibile",
+        "appletUpdateAvailableDescription": "{{appletName}} ha un aggiornamento disponibile.",
+        "appletUpdated": "Applet aggiornata",
+        "appletUpdatedShare": "Applet aggiornata!",
+        "appletsUpdated": "{{count}} applet aggiornate",
+        "areYouSureDeleteApplet": "Sei sicuro di voler eliminare questa applet?",
+        "couldNotCompressAppletFile": "Impossibile comprimere il file dell'applet.",
+        "couldNotImportFile": "Impossibile importare il file.",
+        "exportFailed": "Esportazione fallita",
+        "failedToDeleteApplet": "Impossibile eliminare l'applet",
+        "failedToFetchSharedApplet": "Impossibile recuperare l'applet condivisa",
+        "failedToLoadSharedApplet": "Impossibile caricare l'applet condivisa",
+        "failedToSaveApplet": "Impossibile salvare l'applet",
+        "failedToShareApplet": "Impossibile condividere l'applet",
+        "failedToUpdateApplet": "Impossibile aggiornare l'applet",
+        "failedToUpdateApplets": "Impossibile aggiornare le applet",
+        "failedToUpdateFeaturedStatus": "Impossibile aggiornare lo stato di evidenziazione",
+        "importFailed": "Importazione fallita",
+        "loading": "Caricamento...",
+        "loginRequired": "Accesso richiesto",
+        "mustBeLoggedInToShare": "È necessario aver effettuato l'accesso per condividere le applet.",
+        "newAppletUpdates": "{{count}} nuovo aggiornamento applet",
+        "newAppletUpdatesPlural": "{{count}} nuovi aggiornamenti applet",
+        "noAppletToShare": "Nessuna applet da condividere",
+        "noAppletsAvailable": "Nessuna applet disponibile al momento.",
+        "noAppletsFound": "Nessuna applet trovata corrispondente a \"{{query}}\".",
+        "pleaseCheckConnection": "Verificare la connessione e riprovare.",
+        "pleaseOpenAppletFirst": "Aprire prima un'applet.",
+        "pleaseTryAgainLater": "Riprova più tardi.",
+        "removedFromFeatured": "Rimosso dagli elementi in evidenza",
+        "shareLinkGeneratedSuccessfully": "Link di condivisione generato correttamente.",
+        "shareLinkUpdatedSuccessfully": "Link di condivisione aggiornato correttamente.",
+        "sharedApplet": "Applet condivisa",
+        "sharedAppletLoaded": "Applet condivisa caricata",
+        "showingExistingShareLink": "Visualizzazione del link di condivisione esistente.",
+        "untitled": "Senza titolo",
+        "untitledApplet": "Applet senza titolo",
+        "updatingApplet": "Aggiornamento applet...",
+        "updatingAppletSingle": "Aggiornamento di 1 applet...",
+        "updatingApplets": "Aggiornamento di {{count}} applet...",
+        "updatingAppletsPlural": "Aggiornamento di {{count}} applet..."
       },
       "help": {
         "appletStore": {
-          "title": "Applet Store",
-          "description": "Browse and install applets from the community. Open the Store menu to discover new apps."
+          "description": "Sfoglia e installa applet dalla community. Apri il menu Store per scoprire nuove app.",
+          "title": "Applet Store"
         },
         "createWithRyosChat": {
-          "title": "Create with ryOS Chat",
-          "description": "Ask ryOS Chat to create custom apps and applets for you. Share your ideas and get working apps instantly."
-        },
-        "viewApplets": {
-          "title": "View Applets",
-          "description": "Open and run applets saved from ryOS Chat or downloaded from the store."
-        },
-        "shareApplets": {
-          "title": "Share Applets",
-          "description": "Share your favorite applets with others using the Share Applet option in the File menu."
-        },
-        "openFromFinder": {
-          "title": "Open from Finder",
-          "description": "Browse and open applets saved on your system using the File menu."
+          "description": "Chiedi a ryOS Chat di creare app e applet personalizzate per te. Condividi le tue idee e ottieni app funzionanti all'istante.",
+          "title": "Crea con ryOS Chat"
         },
         "keepUpdated": {
-          "title": "Keep Updated",
-          "description": "Check for updates in the Store menu to get the latest versions of your installed applets."
+          "description": "Controlla aggiornamenti nel menu Store per ottenere le ultime versioni delle tue applet installate.",
+          "title": "Mantieni aggiornato"
+        },
+        "openFromFinder": {
+          "description": "Sfoglia e apri applet salvate sul tuo sistema usando il menu File.",
+          "title": "Apri da Finder"
+        },
+        "shareApplets": {
+          "description": "Condividi le tue applet preferite con altri usando l'opzione Condividi Applet nel menu File.",
+          "title": "Condividi Applet"
+        },
+        "viewApplets": {
+          "description": "Apri ed esegui applet salvate da ryOS Chat o scaricate dallo store.",
+          "title": "Visualizza Applet"
         }
       },
-      "dialogs": {
-        "untitledApplet": "Untitled Applet",
-        "sharedApplet": "Shared Applet",
+      "labels": {
+        "addToFeatured": "Aggiungi a in evidenza",
+        "deleteApplet": "Elimina applet",
+        "discover": "Scopri",
+        "removeFromFeatured": "Rimuovi da in evidenza",
+        "searchApplets": "Cerca applet",
+        "showAll": "Mostra tutto"
+      },
+      "menu": {
+        "aboutApplets": "Informazioni su Applet",
         "appletStore": "Applet Store",
-        "untitled": "Untitled",
-        "updatingApplet": "Updating applet...",
-        "updatingApplets": "Updating {{count}} applets...",
-        "updatingAppletSingle": "Updating 1 applet...",
-        "updatingAppletsPlural": "Updating {{count}} applets...",
-        "appletUpdated": "Applet updated",
-        "appletsUpdated": "{{count}} applets updated",
-        "allAppletsUpToDate": "All applets are up to date",
-        "appletUpdateAvailable": "Applet update available",
-        "appletUpdateAvailableDescription": "{{appletName}} has an update available.",
-        "newAppletUpdates": "{{count}} new applet update",
-        "newAppletUpdatesPlural": "{{count}} new applet updates",
-        "failedToUpdateApplets": "Failed to update applets",
-        "failedToUpdateApplet": "Failed to update applet",
-        "pleaseTryAgainLater": "Please try again later.",
-        "appletImported": "Applet imported!",
-        "appletImportedDescription": "{{fileName}} saved to /Applets{{iconText}}",
-        "importFailed": "Import failed",
-        "couldNotImportFile": "Could not import the file.",
-        "appletExported": "Applet exported!",
-        "appletExportedDescription": "{{fileName}}.app exported successfully.",
-        "exportFailed": "Export failed",
-        "couldNotCompressAppletFile": "Could not compress the applet file.",
-        "noAppletToShare": "No applet to share",
-        "pleaseOpenAppletFirst": "Please open an applet first.",
-        "loginRequired": "Login required",
-        "mustBeLoggedInToShare": "You must be logged in to share applets.",
-        "appletAlreadyShared": "Applet already shared",
-        "showingExistingShareLink": "Showing existing share link.",
-        "appletUpdatedShare": "Applet updated!",
-        "appletShared": "Applet shared!",
-        "shareLinkUpdatedSuccessfully": "Share link updated successfully.",
-        "shareLinkGeneratedSuccessfully": "Share link generated successfully.",
-        "failedToShareApplet": "Failed to share applet",
-        "appletNotFound": "Applet not found",
-        "appletNotFoundDescription": "The shared applet may have been deleted or the link is invalid.",
-        "failedToFetchSharedApplet": "Failed to fetch shared applet",
-        "failedToLoadSharedApplet": "Failed to load shared applet",
-        "pleaseCheckConnection": "Please check your connection and try again.",
-        "sharedAppletLoaded": "Shared applet loaded",
-        "appletSaved": "Applet saved",
-        "appletSavedDescription": "Saved to /Applets/{{fileName}}",
-        "failedToSaveApplet": "Failed to save applet",
-        "appletDeleted": "Applet deleted",
-        "failedToDeleteApplet": "Failed to delete applet",
-        "removedFromFeatured": "Removed from featured",
-        "addedToFeatured": "Added to featured",
-        "failedToUpdateFeaturedStatus": "Failed to update featured status",
-        "areYouSureDeleteApplet": "Are you sure you want to delete this applet?",
-        "noAppletsAvailable": "No applets available at this time.",
-        "noAppletsFound": "No applets found matching \"{{query}}\".",
-        "loading": "Loading..."
+        "appletsHelp": "Guida Applet",
+        "checkForUpdates": "Verifica aggiornamenti",
+        "createAccount": "Crea Account...",
+        "exportAs": "Esporta come...",
+        "html": "HTML",
+        "importFromDevice": "Importa da Dispositivo...",
+        "logOut": "Esci",
+        "login": "Accedi...",
+        "noAppletsOpen": "Nessuna applet aperta",
+        "open": "Apri...",
+        "openAppletStore": "Apri Applet Store",
+        "ryosApp": "App ryOS",
+        "shareApplet": "Condividi Applet...",
+        "store": "Store",
+        "untitled": "Senza titolo",
+        "updateApplets": "Aggiorna {{count}} applet",
+        "updateAppletsPlural": "Aggiorna {{count}} applet",
+        "window": "Finestra"
+      },
+      "name": "Applet Store",
+      "sections": {
+        "featured": "In evidenza",
+        "installed": "Installate",
+        "newApplets": "Nuove Applet",
+        "updatesAvailable": "Aggiornamenti disponibili"
       },
       "status": {
-        "update": "Update",
-        "open": "Open",
-        "get": "Get",
-        "save": "Save",
-        "updatedJustNow": "Updated just now",
-        "updatedMinutesAgo": "Updated {{minutes}}m ago",
-        "updatedHoursAgo": "Updated {{hours}}h ago",
-        "updatedYesterday": "Updated yesterday",
-        "updatedDaysAgo": "Updated {{days}}d ago",
-        "updatedWeeksAgo": "Updated {{weeks}}w ago",
-        "updatedMonthsAgo": "Updated {{months}}mo ago",
-        "updatedYearsAgo": "Updated {{years}}y ago"
+        "get": "Ottieni",
+        "open": "Apri",
+        "save": "Salva",
+        "update": "Aggiorna",
+        "updatedDaysAgo": "Aggiornato {{days}} giorni fa",
+        "updatedHoursAgo": "Aggiornato {{hours}} ore fa",
+        "updatedJustNow": "Aggiornato adesso",
+        "updatedMinutesAgo": "Aggiornato {{minutes}} min fa",
+        "updatedMonthsAgo": "Aggiornato {{months}} mesi fa",
+        "updatedWeeksAgo": "Aggiornato {{weeks}} settimane fa",
+        "updatedYearsAgo": "Aggiornato {{years}} anni fa",
+        "updatedYesterday": "Aggiornato ieri"
+      }
+    },
+    "chats": {
+      "ariaLabels": {
+        "copyMessage": "Copia messaggio",
+        "deleteMessage": "Elimina messaggio",
+        "deleteRoom": "Elimina stanza",
+        "leaveConversation": "Abbandona conversazione",
+        "mentionRyo": "Menziona Ryo",
+        "messageUser": "Messaggio {{username}}",
+        "newChat": "Nuova Chat",
+        "pushToTalk": "Premi per parlare",
+        "sendNudge": "Invia un sollecito",
+        "speakMessage": "Leggi messaggio",
+        "stopGeneration": "Interrompi generazione",
+        "stopSpeech": "Interrompi lettura"
       },
-      "sections": {
-        "updatesAvailable": "Updates Available",
-        "featured": "Featured",
-        "newApplets": "New Applets",
-        "installed": "Installed"
+      "description": "Chatta con l'IA",
+      "dialogs": {
+        "addUsersToPrivateChat": "Aggiungi utenti alla chat privata",
+        "cancel": "Annulla",
+        "clearChatsDescription": "Sei sicuro di voler cancellare questa chat? Questa azione non può essere annullata.",
+        "clearChatsTitle": "Cancella Chat",
+        "create": "Crea",
+        "creating": "Creazione in corso...",
+        "deleteChatRoomDescription": "Sei sicuro di voler eliminare la stanza \"{{name}}\"? Questa azione non può essere annullata.",
+        "deleteChatRoomTitle": "Elimina Chat Room",
+        "failedToCreateRoom": "Impossibile creare la stanza",
+        "leaveConversationDescription": "Sei sicuro di voler lasciare \"{{name}}\"? Non vedrai più i messaggi in questa conversazione.",
+        "leaveConversationTitle": "Lascia Conversazione",
+        "newChatDescription": "Crea una chat room pubblica o avvia una conversazione privata",
+        "newChatDescriptionPrivate": "Avvia una conversazione privata",
+        "newChatTitle": "Nuova Chat",
+        "passwordMinLengthError": "La password deve contenere almeno 8 caratteri",
+        "passwordSetFailed": "Impossibile impostare la password",
+        "passwordSetSuccess": "Password Impostata",
+        "passwordSetSuccessDescription": "Ora puoi usare la tua password per recuperare il tuo account",
+        "public": "Pubblico",
+        "roomName": "Nome stanza",
+        "roomNamePlaceholder": "generale",
+        "saveTranscriptDescription": "Inserisci un nome per il file della trascrizione della chat",
+        "saveTranscriptTitle": "Salva Trascrizione",
+        "searchUsernamePlaceholder": "Cerca nome utente...",
+        "setPasswordButton": "Imposta Password",
+        "setPasswordDescription": "Imposta una password per abilitare il recupero dell'account. Puoi usare questa password per ottenere un nuovo token se perdi l'accesso.",
+        "setPasswordTitle": "Imposta Password"
       },
-      "labels": {
-        "searchApplets": "Search applets",
-        "showAll": "Show All",
-        "discover": "Discover",
-        "removeFromFeatured": "Remove from featured",
-        "addToFeatured": "Add to featured",
-        "deleteApplet": "Delete applet"
+      "help": {
+        "chatWithRyo": {
+          "description": "Digita il tuo messaggio per chattare con Ryo, generare codice o ottenere aiuto con ryOS.",
+          "title": "Chatta con Ryo"
+        },
+        "controlApps": {
+          "description": "Chiedi a Ryo di avviare o chiudere app, cambiare temi o controllare la riproduzione di iPod.",
+          "title": "Controlla App"
+        },
+        "createEditFiles": {
+          "description": "Chiedi a Ryo di creare applet HTML, modificare documenti, leggere file o cercare nell'Applets Store.",
+          "title": "Crea & Modifica File"
+        },
+        "joinChatRooms": {
+          "description": "Connettiti con altri nelle chat room pubbliche. Menziona @ryo per risposte AI.",
+          "title": "Unisciti a Chat Room"
+        },
+        "nudgeDjMode": {
+          "description": "Invia un 👋 nudge per suggerimenti contestuali. Ryo diventa un DJ quando la musica è in riproduzione.",
+          "title": "Nudge e Modalità DJ"
+        },
+        "pushToTalk": {
+          "description": "Tieni premuto Spazio o tocca il pulsante del microfono per registrare e inviare messaggi vocali.",
+          "title": "Premi per Parlare"
+        }
+      },
+      "menu": {
+        "aboutChats": "Informazioni su Chat",
+        "chatSpeech": "Voce Chat",
+        "chats": "Chat",
+        "chatsHelp": "Aiuto Chat",
+        "clearChat": "Svuota Chat",
+        "createAccount": "Crea Account...",
+        "decreaseFontSize": "Riduci Dimensione Carattere",
+        "increaseFontSize": "Aumenta Dimensione Carattere",
+        "logOut": "Esci",
+        "login": "Accedi...",
+        "newChat": "Nuova Chat...",
+        "resetFontSize": "Reimposta Dimensione Carattere",
+        "saveTranscript": "Salva Trascrizione...",
+        "showRooms": "Mostra Stanze",
+        "sound": "Suono",
+        "typingSynth": "Sintesi Digitazione"
+      },
+      "messages": {
+        "delete": "Elimina",
+        "greeting": "👋 Ehi! Sono Ryo. Chiedimi qualsiasi cosa!",
+        "ryo": "Ryo",
+        "you": "Tu"
+      },
+      "name": "Chat",
+      "sidebar": {
+        "channels": "Canali",
+        "chats": "Chat",
+        "new": "nuovo",
+        "online": "online",
+        "private": "Privato"
+      },
+      "status": {
+        "chatRequiresInternet": "La chat richiede una connessione a internet",
+        "clear": "Cancella",
+        "createAccountToContinue": "Crea un account per continuare...",
+        "dailyLimitReached": "Limite giornaliero di messaggi IA raggiunto.",
+        "editing": "modifica in corso...",
+        "leave": "Esci",
+        "loginToChat": "Accedi alla Chat",
+        "loginToContinue": "Accedi per continuare a chattare con Ryo.",
+        "loginToRyOS": "Accedi a ryOS",
+        "newChat": "Nuova chat",
+        "noTranscriptionText": "Nessun testo trascritto ricevuto",
+        "nudgeSent": "👋 *sollecito inviato*",
+        "recording": "Registrando...",
+        "retry": "Riprova",
+        "ryo": "@ryo",
+        "ryoWillRespond": "Ryo risponderà a questo messaggio",
+        "scrollToBottom": "Scorri in basso",
+        "sessionExpired": "Sessione scaduta. Accedi di nuovo.",
+        "startNewConversation": "Iniziare una nuova conversazione?",
+        "thinking": "Elaborando",
+        "transcribing": "Trascrivendo...",
+        "typeMessage": "Digita un messaggio...",
+        "typeOrPushSpace": "Digita o premi 'spazio' per parlare...",
+        "usingModel": "Utilizzo di {{model}}"
+      },
+      "tokenStatus": {
+        "clickToRefresh": "Fai clic per aggiornare manualmente il token",
+        "daysAgo": "{{days}} giorni fa",
+        "daysOld": "vecchio di {{days}} giorni",
+        "hoursAgo": "{{hours}} ore fa",
+        "justNow": "appena",
+        "last": "Ultimo",
+        "minutesAgo": "{{minutes}} minuti fa",
+        "refresh": "Aggiorna",
+        "refreshed": "Aggiornato",
+        "refreshing": "Aggiornamento...",
+        "tokenRefreshed": "Token aggiornato"
+      },
+      "toolCalls": {
+        "addedAndStartedPlaying": "Aggiunta nuova canzone e avviata la riproduzione",
+        "addingSong": "Aggiunta brano…",
+        "calling": "Chiamata a {{toolName}}…",
+        "changingSettings": "Modifica impostazioni…",
+        "closed": "Chiuso {{appName}}",
+        "closing": "Chiusura {{appName}}…",
+        "contentWritten": "Contenuto scritto",
+        "controllingPlayback": "Controllo riproduzione…",
+        "edited": "Modificato {{fileName}}",
+        "editingFile": "Modifica file…",
+        "error": "Errore: {{errorText}}",
+        "fetchingApplet": "Recupero applet…",
+        "fileCreated": "File creato",
+        "findingFiles": "Ricerca file…",
+        "foundApplets": "Trovata {{count}} applet",
+        "foundAppletsPlural": "Trovate {{count}} applet",
+        "foundApplications": "Trovata {{count}} applicazione",
+        "foundApplicationsList": "Trovata {{count}} applicazione",
+        "foundApplicationsListPlural": "Trovate {{count}} applicazioni",
+        "foundApplicationsPlural": "Trovate {{count}} applicazioni",
+        "foundDocuments": "Trovato {{count}} documento",
+        "foundDocumentsPlural": "Trovati {{count}} documenti",
+        "foundFileType": "Trovato {{count}} {{fileType}}",
+        "foundFileTypePlural": "Trovati {{count}} {{fileType}}",
+        "foundSharedApplets": "Trovata {{count}} applet condivisa",
+        "foundSharedAppletsPlural": "Trovate {{count}} applet condivise",
+        "foundSongs": "Trovata {{count}} canzone",
+        "foundSongsInMusic": "Trovata {{count}} canzone in Musica",
+        "foundSongsInMusicPlural": "Trovate {{count}} canzoni in Musica",
+        "foundSongsPlural": "Trovate {{count}} canzoni",
+        "generating": "Generazione…",
+        "ipodAdded": "Aggiunto '{{title}}' all'iPod. Premi il pulsante centrale o il pulsante di riproduzione sull'iPod per avviare la riproduzione",
+        "ipodAddedAndPlaying": "Aggiunto '{{title}}' all'iPod e avviata la riproduzione",
+        "ipodCannotAdd": "Impossibile aggiungere {{id}}: Video non disponibile o non valido",
+        "ipodFailedToAdd": "Impossibile aggiungere {{id}} all'iPod",
+        "ipodFailedToAddWithError": "Impossibile aggiungere {{id}}: {{error}}",
+        "ipodPaused": "In pausa",
+        "ipodPausedTrack": "In pausa: {{trackDesc}}",
+        "ipodPlaying": "In riproduzione",
+        "ipodPlayingTrack": "Riproduzione di {{trackDesc}}",
+        "ipodReady": "iPod è pronto. Premi il pulsante centrale o il pulsante di riproduzione sull'iPod per avviare la riproduzione",
+        "ipodSelected": "Selezionato {{trackDesc}}. Premi il pulsante centrale o il pulsante di riproduzione sull'iPod per avviare la riproduzione",
+        "ipodSkippedTo": "Saltato a {{trackDesc}}",
+        "ipodSkippedToNext": "Saltato al brano successivo",
+        "ipodSongNotFound": "Canzone non trovata nella libreria dell'iPod",
+        "ipodTranslatedLyricsTo": "Testi tradotti in {{langName}}",
+        "ipodTurnedOffFullScreen": "Modalità a schermo intero disattivata",
+        "ipodTurnedOffLyricsTranslation": "Traduzione testi disattivata",
+        "ipodTurnedOffVideo": "Video disattivato",
+        "ipodTurnedOnFullScreen": "Modalità a schermo intero attivata",
+        "ipodTurnedOnVideo": "Video attivato",
+        "ipodWentBackTo": "Tornato a {{trackDesc}}",
+        "ipodWentBackToPrevious": "Tornato al brano precedente",
+        "launched": "Avviato {{appName}}",
+        "launchedWithUrl": "Avviato {{url}}",
+        "launchedWithUrlAndYear": "Avviato {{url}} nel {{year}}",
+        "launching": "Avvio {{appName}}…",
+        "launchingApp": "Avvio app…",
+        "listedItems": "Elementi elencati",
+        "listingApplications": "Elenco applicazioni…",
+        "listingSharedApplets": "Elenco applet condivise…",
+        "loadingMusicLibrary": "Caricamento libreria musicale…",
+        "multipleMatchesFound": "Più corrispondenze trovate",
+        "musicLibraryEmpty": "La libreria musicale è vuota",
+        "noFileTypeFound": "Nessun {{fileType}} trovato nella directory {{path}}",
+        "noItemsFound": "Nessun elemento trovato",
+        "noSharedAppletsAvailable": "Nessuna applet condivisa disponibile",
+        "noSharedAppletsMatched": "Nessuna applet condivisa corrisponde a \"{{query}}\"",
+        "opened": "Aperto",
+        "openedApplet": "Aperta {{appletName}}",
+        "openedDocument": "Aperto documento: {{fileName}}",
+        "openedFile": "Aperto {{fileName}}",
+        "openingAppletPreview": "Apertura anteprima applet…",
+        "openingFile": "Apertura file…",
+        "pausedIpod": "iPod in pausa",
+        "playing": "Riproduzione di {{title}}",
+        "playingByArtist": "Riproduzione di {{title}} di {{artist}}",
+        "playingIpod": "Riproduzione iPod",
+        "playingSong": "Riproduzione brano…",
+        "playingSongByArtist": "Riproduzione brano di {{artist}}",
+        "playingSongGeneric": "Riproduzione brano",
+        "playingSongWithId": "Riproduzione brano ({{id}})",
+        "playingTrack": "In riproduzione {{title}}",
+        "playingTrackByArtist": "In riproduzione {{title}} di {{artist}}",
+        "preparingHtmlPreview": "Preparazione anteprima HTML...",
+        "read": "Letto {{fileName}}",
+        "readingFile": "Lettura file…",
+        "running": "Esecuzione {{toolName}}…",
+        "settingsCheckingForUpdates": "Controllo aggiornamenti…",
+        "settingsLanguageChanged": "Lingua cambiata in {{language}}",
+        "settingsMasterVolumeSet": "Volume impostato a {{volume}}%",
+        "settingsNoChanges": "Nessuna modifica apportata",
+        "settingsSpeechDisabled": "Sintesi vocale disabilitata",
+        "settingsSpeechEnabled": "Sintesi vocale abilitata",
+        "settingsThemeChanged": "Tema cambiato in {{theme}}",
+        "settingsUpdated": "Impostazioni aggiornate",
+        "skippedToNextTrack": "Saltato al brano successivo",
+        "skippedToPreviousTrack": "Saltato al brano precedente",
+        "skippingToNext": "Passaggio al successivo…",
+        "skippingToPrevious": "Passaggio al precedente…",
+        "switchedTo": "Passato a {{theme}}",
+        "switchingTheme": "Cambio tema…",
+        "textNotFound": "Testo non trovato",
+        "toggledIpodPlayback": "Stato riproduzione iPod modificato",
+        "toolExecutionFailed": "Esecuzione strumento fallita",
+        "writingContent": "Scrittura contenuto…"
       }
     },
     "control-panels": {
-      "name": "Control Panels",
-      "description": "System settings",
-      "menu": {
-        "app": "App",
-        "controlPanelsHelp": "Control Panels Help",
-        "aboutControlPanels": "About Control Panels"
-      },
-      "masterVolume": "Master Volume",
-      "master": "Master",
-      "uiVolume": "UI Volume",
-      "ui": "UI",
-      "speechVolume": "Speech Volume",
-      "speech": "Speech",
-      "chatSynthVolume": "Chat Synth Volume",
-      "synth": "Synth",
-      "ipodVolume": "iPod Volume",
-      "ipod": "iPod",
-      "selectACategory": "Select a category",
-      "patterns": "Patterns",
-      "custom": "Custom",
-      "displayMode": "Display Mode",
-      "color": "Color",
-      "mono": "Mono",
-      "crt": "CRT",
-      "sepia": "Sepia",
-      "highContrast": "High Contrast",
-      "dream": "Dream",
-      "invert": "Invert",
-      "appearance": "Appearance",
-      "sound": "Sound",
-      "system": "System",
-      "theme": "Theme",
-      "themeDescription": "Changes the appearance of windows, menus, and controls",
-      "select": "Select",
-      "uiSounds": "UI Sounds",
-      "terminalIeAmbientSynth": "Synth",
-      "chatSynth": "Chat Synth",
-      "selectAPreset": "Select a preset",
-      "loggedInToRyOS": "Logged in to ryOS",
-      "logIn": "Log In",
-      "setPassword": "Set Password",
-      "logOut": "Log Out",
-      "loggingOut": "Logging out...",
-      "logOutOfAllDevices": "Log Out of All Devices",
-      "ryOSAccount": "ryOS Account",
-      "loginToSendMessages": "Login to send messages and more",
-      "login": "Login",
-      "checkForUpdates": "Check for Updates",
+      "aiModel": "Modello AI",
+      "aiModelDescription": "Utilizzato in Chat, IE e altro",
+      "appearance": "Aspetto",
       "backup": "Backup",
-      "restore": "Restore",
-      "backupRestoreDescription": "Backup or restore all app settings and files.",
-      "resetAllSettings": "Reset All Settings",
-      "resetAllSettingsDescription": "This will clear all saved settings and restore defaults.",
-      "formatFileSystem": "Format File System",
-      "formatFileSystemDescription": "This will clear all files (except sample docs), images, and custom wallpapers. ryOS will restart after format.",
-      "debugMode": "Debug Mode",
-      "debugModeDescription": "Enable debugging settings",
-      "shaderEffect": "Shader Effect",
-      "shaderEffectDescription": "Performance intensive background effect",
-      "aiModel": "AI Model",
-      "aiModelDescription": "Used in Chats, IE, and more",
-      "default": "Default",
-      "ttsModel": "TTS Model",
-      "ttsModelDescription": "Text-to-speech provider",
-      "openai": "OpenAI",
+      "backupRestoreDescription": "Esegui il backup o ripristina tutte le impostazioni e i file dell'app.",
+      "bootScreen": "Schermata di Avvio",
+      "bootScreenDescription": "Testa l'animazione della schermata di avvio",
+      "chatSynth": "Synth Chat",
+      "chatSynthVolume": "Volume sintetizzatore chat",
+      "checkForUpdates": "Verifica aggiornamenti",
+      "color": "Colore",
+      "crt": "CRT",
+      "custom": "Personalizzato",
+      "debugMode": "Modalità Debug",
+      "debugModeDescription": "Abilita impostazioni di debug",
+      "default": "Predefinito",
+      "description": "Impostazioni di sistema",
+      "displayMode": "Modalità di visualizzazione",
+      "dream": "Sogno",
       "elevenlabs": "ElevenLabs",
-      "ttsVoice": "TTS Voice",
-      "elevenlabsVoiceId": "ElevenLabs Voice ID",
-      "openaiVoice": "OpenAI Voice",
-      "bootScreen": "Boot Screen",
-      "bootScreenDescription": "Test the boot screen animation",
-      "show": "Show",
+      "elevenlabsVoiceId": "ID Voce ElevenLabs",
+      "formatFileSystem": "Formatta File System",
+      "formatFileSystemDescription": "Questo cancellerà tutti i file (eccetto i documenti di esempio), le immagini e gli sfondi personalizzati. ryOS si riavvierà dopo la formattazione.",
       "help": {
-        "appearance": {
-          "title": "Appearance",
-          "description": "Choose photos, patterns, or shader effects for your desktop wallpaper"
-        },
-        "sounds": {
-          "title": "Sounds",
-          "description": "Toggle UI sounds, typing synth, and Terminal / IE effects"
-        },
         "aiModel": {
-          "title": "AI Model",
-          "description": "Select the AI model used by Chats and Terminal assistant"
+          "description": "Seleziona il modello AI utilizzato da Chat e dall'assistente del Terminale",
+          "title": "Modello AI"
         },
-        "shaderEffects": {
-          "title": "Shader Effects",
-          "description": "Enable CRT, Galaxy, or Aurora visual effects"
+        "appearance": {
+          "description": "Scegli foto, motivi o effetti shader per lo sfondo del tuo desktop",
+          "title": "Aspetto"
         },
         "backupRestore": {
-          "title": "Backup & Restore",
-          "description": "Export or restore all settings and files"
+          "description": "Esporta o ripristina tutte le impostazioni e i file",
+          "title": "Backup e Ripristino"
+        },
+        "shaderEffects": {
+          "description": "Abilita effetti visivi CRT, Galaxy o Aurora",
+          "title": "Effetti Shader"
+        },
+        "sounds": {
+          "description": "Attiva/disattiva suoni dell'interfaccia, sintetizzatore di digitazione ed effetti del Terminale / IE",
+          "title": "Suoni"
         },
         "system": {
-          "title": "System",
-          "description": "Reset preferences or format the virtual file system"
+          "description": "Reimposta preferenze o formatta il file system virtuale",
+          "title": "Sistema"
         }
+      },
+      "highContrast": "Contrasto elevato",
+      "invert": "Inverti",
+      "ipod": "iPod",
+      "ipodVolume": "Volume iPod",
+      "logIn": "Accedi",
+      "logOut": "Esci",
+      "logOutOfAllDevices": "Esci da tutti i dispositivi",
+      "loggedInToRyOS": "Accesso effettuato a ryOS",
+      "loggingOut": "Disconnessione in corso...",
+      "login": "Accedi",
+      "loginToSendMessages": "Accedi per inviare messaggi e altro",
+      "master": "Principale",
+      "masterVolume": "Volume principale",
+      "menu": {
+        "aboutControlPanels": "Informazioni su Pannelli di controllo",
+        "app": "App",
+        "controlPanelsHelp": "Guida Pannelli di controllo"
+      },
+      "mono": "Mono",
+      "name": "Pannelli di controllo",
+      "openai": "OpenAI",
+      "openaiVoice": "Voce OpenAI",
+      "patterns": "Modelli",
+      "resetAllSettings": "Ripristina tutte le impostazioni",
+      "resetAllSettingsDescription": "Questo cancellerà tutte le impostazioni salvate e ripristinerà i valori predefiniti.",
+      "restore": "Ripristina",
+      "ryOSAccount": "Account ryOS",
+      "select": "Seleziona",
+      "selectACategory": "Seleziona una categoria",
+      "selectAPreset": "Seleziona un preset",
+      "sepia": "Seppia",
+      "setPassword": "Imposta password",
+      "shaderEffect": "Effetto Shader",
+      "shaderEffectDescription": "Effetto di sfondo ad alta intensità di prestazioni",
+      "show": "Mostra",
+      "sound": "Suono",
+      "speech": "Voce",
+      "speechVolume": "Volume voce",
+      "synth": "Sintetizzatore",
+      "system": "Sistema",
+      "terminalIeAmbientSynth": "Synth",
+      "theme": "Tema",
+      "themeDescription": "Modifica l'aspetto di finestre, menu e controlli",
+      "ttsModel": "Modello TTS",
+      "ttsModelDescription": "Provider text-to-speech",
+      "ttsVoice": "Voce TTS",
+      "ui": "Interfaccia",
+      "uiSounds": "Suoni UI",
+      "uiVolume": "Volume interfaccia"
+    },
+    "finder": {
+      "contextMenu": {
+        "addToDesktop": "Aggiungi alla Scrivania",
+        "date": "Data",
+        "duplicate": "Duplica",
+        "emptyTrash": "Svuota Cestino...",
+        "kind": "Tipo",
+        "moveToTrash": "Sposta nel Cestino",
+        "name": "Nome",
+        "newFolder": "Nuova Cartella…",
+        "open": "Apri",
+        "rename": "Rinomina…",
+        "size": "Dimensione",
+        "sortBy": "Ordina per"
+      },
+      "defaultNames": {
+        "copy": "copia",
+        "untitledFolder": "cartella senza titolo"
+      },
+      "description": "Sfoglia e gestisci file",
+      "dialogs": {
+        "emptyTrash": {
+          "description": "Sei sicuro di voler svuotare il Cestino? Questa azione non può essere annullata.",
+          "title": "Svuota Cestino"
+        },
+        "newFolder": {
+          "description": "Inserisci un nome per la nuova cartella:",
+          "title": "Nuova Cartella"
+        },
+        "renameItem": {
+          "description": "Inserisci un nuovo nome per \"{{name}}\"",
+          "title": "Rinomina Elemento"
+        }
+      },
+      "fileTypes": {
+        "application": "Applicazione",
+        "bmpImage": "Immagine BMP",
+        "document": "Documento",
+        "folder": "Cartella",
+        "gifImage": "Immagine GIF",
+        "htmlApplet": "Applet HTML",
+        "internetShortcut": "Collegamento Internet",
+        "jpegImage": "Immagine JPEG",
+        "mp3Audio": "Audio MP3",
+        "pngImage": "Immagine PNG",
+        "quicktimeMovie": "Filmato QuickTime",
+        "unknown": "Sconosciuto",
+        "webpImage": "Immagine WebP"
+      },
+      "folders": {
+        "applets": "Applet",
+        "applications": "Applicazioni",
+        "desktop": "Desktop",
+        "documents": "Documenti",
+        "images": "Immagini",
+        "music": "Musica",
+        "sites": "Siti",
+        "trash": "Cestino",
+        "videos": "Video"
+      },
+      "help": {
+        "browseNavigate": {
+          "description": "Pulsanti Indietro/Avanti, barra degli indirizzi e menu Vai per una navigazione veloce",
+          "title": "Sfoglia e Naviga"
+        },
+        "fileManagement": {
+          "description": "Crea cartelle, rinomina, sposta e trascina elementi per organizzare i file",
+          "title": "Gestione File"
+        },
+        "quickAccess": {
+          "description": "Vai a Documenti, Applicazioni o Cestino istantaneamente dal menu Vai",
+          "title": "Accesso Rapido"
+        },
+        "storageInfo": {
+          "description": "Visualizza spazio libero e numero di elementi nel piè di pagina della finestra",
+          "title": "Info Spazio"
+        },
+        "trash": {
+          "description": "Trascina i file nel Cestino e Svuota per eliminare definitivamente",
+          "title": "Cestino"
+        },
+        "viewSort": {
+          "description": "Cambia le dimensioni delle icone e ordina per nome, tipo, dimensione o data",
+          "title": "Visualizza e Ordina"
+        }
+      },
+      "menu": {
+        "aboutFinder": "Informazioni su Finder",
+        "back": "Indietro",
+        "byDate": "per Data",
+        "byIcon": "Per icona",
+        "byKind": "per Tipo",
+        "byList": "Per elenco",
+        "byName": "per Nome",
+        "bySize": "per Dimensione",
+        "bySmallIcon": "Per icona piccola",
+        "duplicate": "Duplica",
+        "emptyTrash": "Svuota Cestino...",
+        "finderHelp": "Aiuto Finder",
+        "forward": "Avanti",
+        "importFromDevice": "Importa da dispositivo...",
+        "moveToTrash": "Sposta nel Cestino",
+        "newFinderWindow": "Nuova finestra Finder",
+        "newFolder": "Nuova cartella...",
+        "putBack": "Ripristina",
+        "rename": "Rinomina..."
+      },
+      "messages": {
+        "appletImported": "Applet importata!",
+        "appletImportedDesc": "{{name}} salvato in /Applets{{iconText}}",
+        "appletImportedIconText": " con icona {{icon}}",
+        "importFailed": "Importazione non riuscita",
+        "importFailedAppletDesc": "Impossibile importare il file applet.",
+        "importFailedDesc": "Impossibile importare il file.",
+        "invalidFileType": "Tipo di file non valido",
+        "invalidFileTypeDesc": "Solo i file .app, .gz e .html possono essere importati in Applet",
+        "loading": "Caricamento..."
+      },
+      "name": "Finder",
+      "placeholders": {
+        "enterPath": "Inserisci percorso"
+      },
+      "statusBar": {
+        "available": "disponibile",
+        "item": "elemento",
+        "items": "elementi"
+      },
+      "tableHeaders": {
+        "modified": "Modificato",
+        "name": "Nome",
+        "size": "Dimensione",
+        "type": "Tipo"
+      },
+      "window": {
+        "finder": "Finder",
+        "macintoshHd": "Macintosh HD"
       }
+    },
+    "internet-explorer": {
+      "addFavorite": "Aggiungi preferito",
+      "aiLanguage": "Lingua IA",
+      "alienLanguage": "Lingua aliena",
+      "anErrorOccurred": "Si è verificato un errore",
+      "appName": "Internet Explorer",
+      "areYouSureClearFavorites": "Sei sicuro di voler cancellare tutti i preferiti?",
+      "areYouSureClearHistory": "Sei sicuro di voler cancellare tutta la cronologia?",
+      "areYouSureResetFavorites": "Sei sicuro di voler ripristinare i preferiti predefiniti?",
+      "aurora": "Aurora",
+      "australia": "Australia",
+      "autodetected": "Rilevato automaticamente",
+      "back": "Indietro",
+      "brazil": "Brasile",
+      "canada": "Canada",
+      "cannotAccessWebsite": "Impossibile accedere a {{url}}. Il sito web potrebbe bloccare l'accesso o richiedere l'autenticazione.",
+      "cannotFindServerOrDnsError": "Impossibile trovare il server o errore DNS",
+      "checkWebAddressAndTryAgain": "Controlla l'indirizzo web digitato e riprova.",
+      "china": "Cina",
+      "chineseTraditional": "Cinese (Tradizionale)",
+      "clearFavorites": "Cancella preferiti",
+      "clearHistory": "Cancella cronologia",
+      "closeTimeMachine": "Chiudi Time Machine",
+      "description": "Naviga sul web",
+      "digitalBeingLanguage": "Lingua dell'essere digitale",
+      "english": "Inglese",
+      "enterTitleForFavorite": "Inserisci un titolo per questo preferito",
+      "enterUrl": "Inserisci URL",
+      "error": "Errore",
+      "errorLoadingPreview": "Errore durante il caricamento dell'anteprima.",
+      "failedToGenerateFuturisticWebsite": "Impossibile generare il sito web futuristico. Il modello AI potrebbe non essere selezionato.",
+      "favorite": "Preferito",
+      "fetch": "Recupera",
+      "fetchingContentForReconstruction": "Recupero del contenuto di {{hostname}} per la ricostruzione...",
+      "fetchingFromYear": "Recupero di {{hostname}} dall'anno {{year}}...",
+      "folder": "Cartella",
+      "france": "Francia",
+      "french": "Francese",
+      "from": "da",
+      "futureTimeline": {
+        "description": "Modifica le impostazioni per la cronologia futura",
+        "reset": "Reimposta",
+        "selectYear": "Seleziona anno",
+        "title": "Modifica cronologia futura"
+      },
+      "galaxy": "Galassia",
+      "german": "Tedesco",
+      "germany": "Germania",
+      "goBackToPreviousPage": "Torna alla pagina precedente.",
+      "goToNow": "Vai a ora",
+      "help": {
+        "browseWeb": {
+          "description": "Inserisci URL e usa i pulsanti di navigazione (Indietro, Avanti, Aggiorna, Ferma).",
+          "title": "Naviga sul Web"
+        },
+        "exploreTimeNodes": {
+          "description": "Fai clic sull'icona dell'orologio nella barra degli indirizzi per vedere le istantanee disponibili del sito attuale nel tempo.",
+          "title": "Esplora nodi temporali"
+        },
+        "historyReimagined": {
+          "description": "L'IA ricostruisce siti molto vecchi (pre-1996) e immagina esperienze web future.",
+          "title": "Storia reinventata"
+        },
+        "saveFavorites": {
+          "description": "Aggiungi siti e anni specifici alla barra dei Preferiti per un facile accesso.",
+          "title": "Salva preferiti"
+        },
+        "shareJourney": {
+          "description": "Usa il pulsante Condividi per generare un link alla pagina e all'anno esatti che stai visualizzando.",
+          "title": "Condividi il tuo viaggio"
+        },
+        "travelThroughTime": {
+          "description": "Seleziona un anno dal menu a discesa per visualizzare siti web dal passato o dal futuro.",
+          "title": "Viaggia nel tempo"
+        }
+      },
+      "history": "Cronologia",
+      "host": "Host: {{hostname}}",
+      "in": "in",
+      "india": "India",
+      "invalidShareLink": "Link di condivisione non valido",
+      "japan": "Giappone",
+      "japanese": "Giapponese",
+      "korean": "Coreano",
+      "latin": "Latino",
+      "loading": "Caricamento di {{hostname}}...",
+      "loadingEllipsis": "Caricamento...",
+      "loadingTitle": "Internet Explorer - Caricamento",
+      "loadingTitleWithSite": "{{site}} - Caricamento",
+      "menu": {
+        "aboutInternetExplorer": "Informazioni su Internet Explorer",
+        "addToFavorites": "Aggiungi ai preferiti...",
+        "aiLanguage": "Linguaggio AI",
+        "alien": "Alieno",
+        "australia": "Australia",
+        "auto": "Automatico",
+        "back": "Indietro",
+        "brazil": "Brasile",
+        "canada": "Canada",
+        "china": "Cina",
+        "chinese": "Cinese",
+        "clearFavorites": "Cancella preferiti...",
+        "clearHistory": "Cancella cronologia...",
+        "digitalBeing": "Essere Digitale",
+        "editFuture": "Modifica futuro...",
+        "english": "Inglese",
+        "favorites": "Preferiti",
+        "folder": "Cartella",
+        "forward": "Avanti",
+        "france": "Francia",
+        "french": "Francese",
+        "german": "Tedesco",
+        "germany": "Germania",
+        "goHome": "Vai alla Home",
+        "goToUrl": "Vai all'URL",
+        "history": "Cronologia",
+        "india": "India",
+        "internetExplorerHelp": "Guida di Internet Explorer",
+        "italian": "Italiano",
+        "japan": "Giappone",
+        "japanese": "Giapponese",
+        "korea": "Corea",
+        "korean": "Coreano",
+        "language": "Lingua",
+        "latin": "Latino",
+        "location": "Posizione",
+        "now": "Ora",
+        "openTimeMachine": "Apri Time Machine",
+        "portugal": "Portogallo",
+        "portuguese": "Portoghese",
+        "refresh": "Aggiorna",
+        "resetFavorites": "Reimposta preferiti...",
+        "russia": "Russia",
+        "russian": "Russo",
+        "sanskrit": "Sanscrito",
+        "sharePage": "Condividi pagina...",
+        "spain": "Spagna",
+        "spanish": "Spagnolo",
+        "stop": "Interrompi",
+        "unitedKingdom": "Regno Unito",
+        "unitedStates": "Stati Uniti",
+        "welsh": "Gallese",
+        "year": "Anno"
+      },
+      "name": "Internet Explorer",
+      "nebula": "Nebulosa",
+      "newer": "Successivo",
+      "newerVersion": "Versione più recente",
+      "newest": "Più recente",
+      "now": "Ora",
+      "off": "Disattivato",
+      "older": "Precedente",
+      "olderVersion": "Versione precedente",
+      "oldest": "Meno recente",
+      "openingRequestedPage": "Apertura della pagina richiesta",
+      "openingSharedPage": "Apertura pagina condivisa",
+      "page": "Pagina",
+      "pageCouldNotBeLoadedInIframe": "La pagina non può essere caricata nell'iframe. Ciò potrebbe essere dovuto a restrizioni di sicurezza o problemi di rete.",
+      "pleaseTryTheFollowing": "Prova quanto segue:",
+      "portugal": "Portogallo",
+      "portuguese": "Portoghese",
+      "reconstructingHistoryForYear": "Ricostruzione della cronologia di {{hostname}} per l'anno {{year}}...",
+      "refresh": "Aggiorna",
+      "reimaginingForYear": "Ricreando {{hostname}} per l'anno {{year}}...",
+      "requiresInternetConnection": "Internet Explorer richiede una connessione a Internet per navigare",
+      "resetFavorites": "Ripristina preferiti",
+      "russia": "Russia",
+      "sanskrit": "Sanscrito",
+      "search": "Cerca",
+      "shareLinkInvalidOrCorrupted": "Il link di condivisione fornito non è valido o è danneggiato.",
+      "shareThisPage": "Condividi questa pagina",
+      "shareThisPageAndTime": "Condividi questa pagina e ora",
+      "showCachedVersionsTimeMachine": "Mostra versioni in cache (Time Machine)",
+      "site": "Sito",
+      "southKorea": "Corea del Sud",
+      "spain": "Spagna",
+      "spanish": "Spagnolo",
+      "timeNodes": "{{count}} Nodo temporale",
+      "timeNodes_plural": "{{count}} Nodi temporali",
+      "travel": "Viaggi",
+      "travellingTitle": "Internet Explorer - Navigazione",
+      "travellingTitleWithSite": "{{site}} - Navigazione",
+      "tryRefreshingThePage": "Prova ad aggiornare la pagina.",
+      "unableToLoadPreview": "Impossibile caricare l'anteprima.",
+      "unitedKingdom": "Regno Unito",
+      "unitedStates": "Stati Uniti",
+      "welsh": "Gallese",
+      "year": "Anno"
+    },
+    "ipod": {
+      "ariaLabels": {
+        "closeFullscreen": "Chiudi schermo intero",
+        "cycleLyricLayout": "Scorri layout testi",
+        "nextTrack": "Traccia successiva",
+        "playPause": "Riproduci/Pausa",
+        "previousTrack": "Traccia precedente",
+        "select": "Seleziona",
+        "toggleHangulRomanization": "Alterna Hangul / Romanizzazione",
+        "translateLyrics": "Traduci testi"
+      },
+      "description": "Lettore musicale",
+      "dialogs": {
+        "addSongDescription": "Incolla un link di YouTube da aggiungere al tuo iPod",
+        "addSongTitle": "Aggiungi Canzone",
+        "addedNewSongsToTop": "Aggiunti {{newCount}} nuovi brano{{newPlural}} in cima{{updatedText}}. Totale: {{total}} brani",
+        "addedSongsToTop": "Aggiunte {{count}} canzone{{plural}} in cima. La prima canzone è pronta per la riproduzione!",
+        "addingNewTrack": "Aggiunta nuova traccia da URL...",
+        "andUpdated": " e aggiornati {{count}} brano{{plural}}",
+        "autoUpdateFailed": "Aggiornamento automatico non riuscito",
+        "autoUpdatedLibraryAddedSongs": "Libreria aggiornata automaticamente: aggiunti {{newCount}} nuovi brano{{newPlural}} in cima{{updatedText}}",
+        "autoUpdatedTrackMetadata": "Aggiornati automaticamente i metadati di {{count}} brani",
+        "clearLibraryDescription": "Sei sicuro di voler svuotare l'intera libreria musicale? Questa azione non può essere annullata.",
+        "clearLibraryTitle": "Svuota Libreria",
+        "errorAdding": "Errore durante l'aggiunta:",
+        "failedToAutoUpdateLibrary": "Impossibile aggiornare automaticamente la libreria",
+        "failedToCheckForLibraryUpdates": "Impossibile verificare la disponibilità di aggiornamenti per la libreria",
+        "failedToExportLibrary": "Impossibile esportare la libreria",
+        "failedToImportLibrary": "Impossibile importare la libreria: Formato non valido",
+        "failedToLoadSharedTrack": "Impossibile caricare la traccia condivisa",
+        "failedToSyncWithServerLibrary": "Impossibile sincronizzare con la libreria del server",
+        "ipodRequiresInternet": "iPod richiede una connessione a internet",
+        "libraryAlreadyUpToDate": "La tua libreria è già aggiornata",
+        "libraryAutoUpdated": "Libreria aggiornata automaticamente",
+        "libraryExportedSuccessfully": "Libreria esportata con successo",
+        "libraryImportedSuccessfully": "Libreria importata con successo",
+        "librarySynced": "Libreria sincronizzata",
+        "libraryUpToDateWithSongs": "Libreria aggiornata con {{count}} brani",
+        "libraryUpdated": "Libreria aggiornata",
+        "noUpdates": "Nessun aggiornamento",
+        "openedSharedTrack": "Traccia condivisa aperta. Premi ⏯ per avviare la riproduzione.",
+        "syncFailed": "Sincronizzazione non riuscita",
+        "updateCheckFailed": "Verifica aggiornamenti non riuscita",
+        "youreOffline": "Sei offline"
+      },
+      "help": {
+        "addSongs": {
+          "description": "Incolla URL di YouTube per aggiungere musica al tuo iPod.",
+          "title": "Aggiungi brani"
+        },
+        "displayFullscreen": {
+          "description": "Regola retroilluminazione, temi e passa al video a schermo intero.",
+          "title": "Display e Schermo intero"
+        },
+        "playbackControls": {
+          "description": "Riproduci, metti in pausa, salta brani e controlla il brano attuale.",
+          "title": "Controlli di riproduzione"
+        },
+        "playbackModes": {
+          "description": "Abilita riproduzione casuale, ripeti brani o playlist e altro ancora.",
+          "title": "Modalità di riproduzione"
+        },
+        "syncedLyrics": {
+          "description": "Visualizza testi sincronizzati nel tempo e ottieni traduzioni istantanee.",
+          "title": "Testi sincronizzati"
+        },
+        "wheelNavigation": {
+          "description": "Usa la rotella cliccabile per sfogliare i menu e la tua libreria musicale.",
+          "title": "Navigazione con la rotella"
+        }
+      },
+      "keys": {
+        "enter": "Invio",
+        "escape": "Esci",
+        "select": "Seleziona"
+      },
+      "menu": {
+        "aboutIpod": "Informazioni su iPod",
+        "addSong": "Aggiungi brano...",
+        "addToLibrary": "Aggiungi alla libreria...",
+        "allSongs": "Tutti i brani",
+        "alternating": "Alternato",
+        "backlight": "Retroilluminazione",
+        "black": "Nero",
+        "classic": "Classico",
+        "clearLibrary": "Svuota libreria...",
+        "controls": "Controlli",
+        "exportLibrary": "Esporta libreria...",
+        "file": "File",
+        "fullScreen": "Schermo intero",
+        "importLibrary": "Importa libreria...",
+        "ipodHelp": "Aiuto iPod",
+        "korean": "한글",
+        "lcdFilter": "Filtro LCD",
+        "library": "Libreria",
+        "lyrics": "Testo",
+        "multi": "Multiplo",
+        "next": "Successivo",
+        "pause": "Pausa",
+        "play": "Riproduci",
+        "previous": "Precedente",
+        "refreshLyrics": "Aggiorna testo",
+        "repeatAll": "Ripeti tutto",
+        "repeatOne": "Ripeti uno",
+        "shareApp": "Condividi app...",
+        "shareSong": "Condividi brano...",
+        "showLyrics": "Mostra testo",
+        "shuffle": "Casuale",
+        "single": "Singolo",
+        "syncLibrary": "Sincronizza libreria...",
+        "traditionalChinese": "繁體",
+        "translate": "Traduci",
+        "u2": "U2",
+        "unknownArtist": "Artista sconosciuto",
+        "video": "Video",
+        "view": "Visualizza"
+      },
+      "menuItems": {
+        "all": "Tutti",
+        "allSongs": "Tutti i brani",
+        "backlight": "Retroilluminazione",
+        "extras": "Extra",
+        "ipod": "iPod",
+        "music": "Musica",
+        "nowPlaying": "In riproduzione",
+        "off": "Disattivo",
+        "on": "Attivo",
+        "one": "Uno",
+        "repeat": "Ripeti",
+        "settings": "Impostazioni",
+        "shuffle": "Casuale",
+        "shuffleSongs": "Riproduzione casuale",
+        "theme": "Tema"
+      },
+      "messages": {
+        "bitteKeineMusikStehlen": "Bitte keine Musik stehlen",
+        "dontStealMusic": "Non rubare musica",
+        "neVolezPasLaMusique": "Ne volez pas la musique",
+        "pleaseDontStealMusic": "音楽を盗用しないでください"
+      },
+      "name": "iPod",
+      "status": {
+        "added": "♬ Aggiunta",
+        "hangulOn": "Hangul Attivo",
+        "layoutAlternating": "Layout: Alternato",
+        "layoutCenter": "Layout: Centrato",
+        "layoutFocus": "Layout: Focus",
+        "libraryCleared": "Libreria Svuotata",
+        "lightOff": "Luce SPENTA",
+        "lightOn": "Luce ACCESA",
+        "loadingLyrics": "Caricamento testi…",
+        "offset": "Offset",
+        "repeatAll": "Ripeti TUTTI",
+        "repeatOff": "Ripeti OFF",
+        "repeatOne": "Ripeti UNO",
+        "romanizationOn": "Romanizzazione Attiva",
+        "shuffleOff": "Riproduzione casuale DISATTIVA",
+        "shuffleOn": "Riproduzione casuale ATTIVA",
+        "themeBlack": "Tema: Nero",
+        "themeClassic": "Tema: Classico",
+        "themeU2": "Tema: U2",
+        "translatingLyrics": "Traduzione testi…"
+      },
+      "translationLanguages": {
+        "chinese": "Cinese",
+        "english": "Inglese",
+        "french": "Francese",
+        "german": "Tedesco",
+        "italian": "Italiano",
+        "japanese": "Giapponese",
+        "korean": "Coreano",
+        "original": "Originale",
+        "portuguese": "Portoghese",
+        "russian": "Russo",
+        "spanish": "Spagnolo"
+      }
+    },
+    "minesweeper": {
+      "description": "Classico rompicapo",
+      "help": {
+        "desktopControls": {
+          "description": "Fai clic sinistro per rivelare, fai clic destro per contrassegnare, fai doppio clic sui numeri per rivelare automaticamente le caselle adiacenti.",
+          "title": "Controlli desktop"
+        },
+        "gameRules": {
+          "description": "I numeri indicano le mine adiacenti. Segnala ogni mina e rivela tutte le celle sicure per vincere.",
+          "title": "Regole del gioco"
+        },
+        "mobileControls": {
+          "description": "Tocca per rivelare, tieni premuto per contrassegnare una mina.",
+          "title": "Controlli mobile"
+        },
+        "restart": {
+          "description": "Premi la faccina sorridente o scegli Gioco ▸ Nuovo per iniziare una nuova partita.",
+          "title": "Ricomincia"
+        },
+        "timerCounter": {
+          "description": "La barra superiore mostra il tempo trascorso e le mine rimanenti non segnalate.",
+          "title": "Timer e Contatore"
+        }
+      },
+      "lcd": {
+        "left": "Rimanenti",
+        "total": "Totale"
+      },
+      "menu": {
+        "aboutMinesweeper": "Informazioni su Campo minato",
+        "minesweeperHelp": "Aiuto Campo minato",
+        "newGame": "Nuova partita"
+      },
+      "name": "Campo minato"
+    },
+    "paint": {
+      "description": "Disegna e modifica immagini",
+      "dialogs": {
+        "discardChanges": "Annulla modifiche",
+        "discardChangesDescription": "Hai modifiche non salvate. Creare comunque un nuovo file?",
+        "enterImageName": "Inserisci un nome per la tua immagine",
+        "error": "Errore",
+        "failedToLoadImageContent": "Impossibile caricare il contenuto dell'immagine.",
+        "failedToSaveImage": "Impossibile salvare l'immagine",
+        "imageSavedSuccessfully": "Immagine salvata correttamente",
+        "saveImage": "Salva immagine"
+      },
+      "filtersMenu": {
+        "openFiltersMenu": "Apri menu filtri"
+      },
+      "help": {
+        "colors": {
+          "description": "Seleziona i colori dalla tavolozza sotto gli strumenti per cambiare il colore del tuo disegno.",
+          "title": "Colori"
+        },
+        "drawingTools": {
+          "description": "Usa la barra degli strumenti a sinistra per selezionare diversi strumenti di disegno come matita, pennello, forme e altro.",
+          "title": "Strumenti di disegno"
+        },
+        "filters": {
+          "description": "Applica inverti, scala di grigi, luminosità e altro dal menu Filtri.",
+          "title": "Filtri"
+        },
+        "patterns": {
+          "description": "Scegli tra vari motivi nella tavolozza inferiore per riempire forme e aree.",
+          "title": "Motivi"
+        },
+        "saving": {
+          "description": "Usa File > Salva per salvare la tua opera, o File > Salva con nome per salvarla con un nuovo nome.",
+          "title": "Salvataggio"
+        },
+        "undo": {
+          "description": "Premi ⌘Z o usa Modifica > Annulla per annullare l'ultima azione.",
+          "title": "Annulla"
+        }
+      },
+      "menu": {
+        "aboutPaint": "Informazioni su Pittura",
+        "export": "Esporta",
+        "filterBlur": "Sfocatura",
+        "filterBrightnessMinus": "Luminosità -",
+        "filterBrightnessPlus": "Luminosità +",
+        "filterCategoryArtistic": "Artistici",
+        "filterCategoryBlur": "Sfocatura",
+        "filterCategoryColor": "Colore",
+        "filterCategoryRetro": "Retro",
+        "filterCrt": "CRT",
+        "filterDither": "Dithering",
+        "filterEdgeDetect": "Rilevamento bordi",
+        "filterGaussianBlur": "Sfocatura Gaussiana",
+        "filterGlitch": "Glitch",
+        "filterGrayscale": "Scala di grigi",
+        "filterInvert": "Inverti",
+        "filterMotionBlur": "Sfocatura movimento",
+        "filterNoise": "Rumore",
+        "filterOldPhoto": "Vecchia foto",
+        "filterPixelate": "Pixelizza",
+        "filterRadialBlur": "Sfocatura radiale",
+        "filterSepia": "Seppia",
+        "filterSharpen": "Nitidezza",
+        "filterVhs": "VHS",
+        "filters": "Filtri",
+        "importFromDevice": "Importa da Dispositivo...",
+        "newFile": "Nuovo file",
+        "open": "Apri...",
+        "paintHelp": "Aiuto Pittura",
+        "save": "Salva",
+        "saveEllipsis": "Salva..."
+      },
+      "name": "Disegno",
+      "selectedPattern": "Modello selezionato",
+      "toolbar": {
+        "brush": "Pennello",
+        "eraser": "Gomma",
+        "fillColor": "Colore riempimento",
+        "hand": "Mano",
+        "line": "Linea",
+        "oval": "Ovale",
+        "pencil": "Matita",
+        "rectangle": "Rettangolo",
+        "rectangleSelect": "Selezione rettangolare",
+        "select": "Seleziona",
+        "spray": "Spray",
+        "text": "Testo"
+      },
+      "untitled": "Senza titolo"
+    },
+    "pc": {
+      "description": "Simulazione PC 3D",
+      "dialogs": {
+        "resetVirtualPcDescription": "Sei sicuro di voler resettare il PC? Questo cancellerà tutto lo stato attuale.",
+        "resetVirtualPcTitle": "Reset Virtual PC"
+      },
+      "help": {
+        "aspectRatio": {
+          "description": "Passa tra 4∶3 o widescreen per adattarsi al tuo monitor",
+          "title": "Proporzioni"
+        },
+        "fullscreenMode": {
+          "description": "Attiva/Disattiva Visualizza ▸ Schermo Intero per una visualizzazione immersiva",
+          "title": "Modalità Schermo Intero"
+        },
+        "keyboardControls": {
+          "description": "Usa la tua tastiera fisica per l'input di gioco",
+          "title": "Controlli Tastiera"
+        },
+        "mouseCapture": {
+          "description": "Clicca all'interno della finestra per catturare / rilasciare il mouse",
+          "title": "Cattura Mouse"
+        },
+        "pcEmulator": {
+          "description": "Esegue giochi e app DOS classici direttamente nel tuo browser",
+          "title": "Emulatore PC"
+        },
+        "saveStates": {
+          "description": "Salva o carica i progressi di gioco in qualsiasi momento dal menu File",
+          "title": "Salva Stati"
+        }
+      },
+      "loadingEmulator": "CARICAMENTO EMULATORE",
+      "loadingGame": "Caricamento di {{gameName}}...",
+      "menu": {
+        "aboutVirtualPc": "Informazioni su Virtual PC",
+        "aspectRatio": "Proporzioni",
+        "controls": "Controlli",
+        "fullScreen": "Schermo Intero",
+        "loadGame": "Carica Gioco",
+        "loadState": "Carica Stato",
+        "mouseSensitivity": "Sensibilità Mouse",
+        "reset": "Reset",
+        "saveState": "Salva Stato",
+        "toggleMouseCapture": "Attiva/Disattiva Cattura Mouse",
+        "virtualPcHelp": "Aiuto Virtual PC"
+      },
+      "name": "Virtual PC",
+      "programsAvailable": "{{count}} PROGRAMMI DISPONIBILI",
+      "virtualPc": "Virtual PC"
+    },
+    "photo-booth": {
+      "ariaLabels": {
+        "photo": "Foto {{index}}"
+      },
+      "buttons": {
+        "effects": "Effetti"
+      },
+      "description": "Scatta foto con effetti",
+      "effects": {
+        "blackAndWhite": "Bianco e nero",
+        "bulge": "Rigonfiamento",
+        "coldBlue": "Blu freddo",
+        "fishEye": "Fisheye",
+        "glitch": "Glitch",
+        "highContrast": "Contrasto elevato",
+        "kaleidoscope": "Caleidoscopio",
+        "neon": "Neon",
+        "normal": "Normale",
+        "pinch": "Pizzico",
+        "rainbow": "Arcobaleno",
+        "ripple": "Increspatura",
+        "squeeze": "Schiacciamento",
+        "stretch": "Allungamento",
+        "twirl": "Vortice",
+        "vibrant": "Vibrante",
+        "vintage": "Vintage",
+        "xRay": "Raggi X"
+      },
+      "errors": {
+        "cameraApiNotAvailable": "API fotocamera non disponibile",
+        "cameraError": "Errore fotocamera: {{error}}",
+        "cameraPermissionDenied": "Permesso fotocamera negato",
+        "cameraRequiresHttps": "La fotocamera richiede HTTPS",
+        "couldNotAccessCamera": "Impossibile accedere alla fotocamera",
+        "noCameraFound": "Nessuna fotocamera trovata"
+      },
+      "help": {
+        "applyingEffects": {
+          "description": "Fai clic sul pulsante 'Effetti' (a destra del pulsante della fotocamera) per aprire il pannello degli effetti e applicare filtri divertenti alla tua visualizzazione live della fotocamera.",
+          "title": "Applicazione effetti"
+        },
+        "downloadingPhotos": {
+          "description": "Le foto vengono salvate automaticamente. Fai clic su una foto nella striscia di foto per scaricarla.",
+          "title": "Download foto"
+        },
+        "quickSnaps": {
+          "description": "Tocca il pulsante del timer (a sinistra del pulsante della fotocamera) per avviare una sequenza di quattro foto scattate a un secondo di distanza l'una dall'altra.",
+          "title": "Scatti rapidi"
+        },
+        "switchingCameras": {
+          "description": "Usa il menu 'Visualizza' nella barra dei menu per passare da una fotocamera all'altra se ne hai più di una collegata.",
+          "title": "Cambio fotocamere"
+        },
+        "takingPhoto": {
+          "description": "Tocca il grande pulsante rosso della fotocamera per scattare una singola foto.",
+          "title": "Acquisizione foto"
+        },
+        "viewingPhotos": {
+          "description": "Fai clic sul pulsante della pila di foto (all'estrema sinistra) per mostrare o nascondere la striscia di foto in basso, che mostra tutte le tue foto salvate.",
+          "title": "Visualizzazione foto"
+        }
+      },
+      "menu": {
+        "aboutPhotoBooth": "Informazioni su Photo Booth",
+        "camera": "Fotocamera",
+        "clearAllPhotos": "Cancella tutte le foto",
+        "effects": "Effetti",
+        "exportPhotos": "Esporta foto",
+        "photoBoothHelp": "Aiuto Photo Booth"
+      },
+      "name": "Photo Booth"
+    },
+    "soundboard": {
+      "description": "Riproduci effetti sonori",
+      "help": {
+        "customizeSlot": {
+          "description": "Aggiungi emoji e titolo a ogni campione per un'identificazione rapida",
+          "title": "Personalizza Slot"
+        },
+        "importExport": {
+          "description": "Condividi le schede come file; trascina e rilascia per importare",
+          "title": "Importa / Esporta"
+        },
+        "keyboardPlay": {
+          "description": "Premi 1-9 per attivare i suoni istantaneamente",
+          "title": "Riproduzione da Tastiera"
+        },
+        "multipleBoards": {
+          "description": "Crea, rinomina e passa tra le schede per set di suoni",
+          "title": "Schede Multiple"
+        },
+        "recordSlot": {
+          "description": "Fai clic su uno slot per registrare l'audio; fai di nuovo clic per interrompere",
+          "title": "Slot di Registrazione"
+        },
+        "waveformView": {
+          "description": "Visualizza la forma d'onda in tempo reale durante la registrazione o la riproduzione",
+          "title": "Vista Forma d'onda"
+        }
+      },
+      "importedSoundboard": "Pannello Suoni Importato",
+      "menu": {
+        "aboutSoundboard": "Informazioni su Pannello Suoni",
+        "deleteSoundboard": "Elimina Pannello Suoni",
+        "emojis": "Emoji",
+        "exportSoundboards": "Esporta Pannelli Suoni...",
+        "importSoundboards": "Importa Pannelli Suoni...",
+        "loadSpecialSoundboards": "Carica Pannelli Suoni Speciali",
+        "newSoundboard": "Nuovo Pannello Suoni",
+        "renameSoundboard": "Rinomina Pannello Suoni",
+        "resetSoundboards": "Reimposta Pannelli Suoni",
+        "soundboardHelp": "Guida Pannello Suoni",
+        "waveforms": "Forme d'onda"
+      },
+      "name": "Pannello Suoni",
+      "newSoundboardDefault": "Nuovo Pannello Suoni",
+      "soundboards": "Pannelli Suoni"
+    },
+    "synth": {
+      "addPreset": "AGGIUNGI PRESET",
+      "controls": "CONTROLLI",
+      "description": "Sintetizzatore virtuale",
+      "dialogs": {
+        "enterPresetName": "Inserisci un nome per il tuo preset",
+        "saveNewPreset": "Salva Nuovo Preset",
+        "updatePreset": "Aggiorna Preset",
+        "updatePresetName": "Aggiorna il nome del tuo preset"
+      },
+      "effects": "Effetti",
+      "effectsParams": {
+        "bitcrusher": "Bitcrusher",
+        "chorus": "Coro",
+        "delay": "Delay",
+        "distortion": "Distorsione",
+        "gain": "Guadagno",
+        "phaser": "Phaser",
+        "reverb": "Riverbero"
+      },
+      "envelope": "Invilluppo",
+      "envelopeParams": {
+        "attack": "Attacco",
+        "decay": "Decadimento",
+        "release": "Rilascio",
+        "sustain": "Sostegno"
+      },
+      "help": {
+        "controlsPanel": {
+          "description": "Attiva/disattiva CONTROLLI per regolare oscillatori, inviluppo ed effetti",
+          "title": "Pannello Controlli"
+        },
+        "effects": {
+          "description": "Riverbero, delay, distorsione, chorus, phaser e bit-crusher",
+          "title": "Effetti"
+        },
+        "midiInput": {
+          "description": "Collega una tastiera MIDI e suona all'istante",
+          "title": "Ingresso MIDI"
+        },
+        "presets": {
+          "description": "Salva, carica e gestisci i preset audio personalizzati",
+          "title": "Preset"
+        },
+        "virtualKeyboard": {
+          "description": "Riproduci note con i tasti su schermo o la tastiera del computer",
+          "title": "Tastiera Virtuale"
+        },
+        "waveform3d": {
+          "description": "Forma d'onda animata in tempo reale quando il pannello controlli è aperto",
+          "title": "Forma d'onda 3D"
+        }
+      },
+      "menu": {
+        "aboutSynth": "Informazioni su Synth",
+        "keyLabels": "Etichette Tasti",
+        "newPreset": "Nuovo Preset",
+        "noLabels": "Nessuna Etichetta",
+        "noteLabels": "Etichette Note",
+        "presets": "Preset",
+        "resetSynth": "Resetta Sintetizzatore",
+        "synthHelp": "Aiuto Synth"
+      },
+      "name": "Synth",
+      "noPresetsYet": "Ancora nessun preset. Creane uno con il pulsante NUOVO.",
+      "oscillator": "Oscillatore",
+      "selectPreset": "Seleziona Preset",
+      "status": {
+        "octave": "Ottava {{offset}}",
+        "presetLoaded": "Preset \"{{name}}\" caricato",
+        "presetSaved": "Preset \"{{name}}\" salvato",
+        "presetUpdated": "Preset \"{{name}}\" aggiornato",
+        "synthResetToDefaults": "Sintetizzatore ripristinato ai valori predefiniti"
+      },
+      "waveform": "Forma d'onda",
+      "waveforms": {
+        "sawtooth": "Dente di sega",
+        "sine": "Seno",
+        "square": "Quadra",
+        "triangle": "Triangolo"
+      }
+    },
+    "terminal": {
+      "commands": {
+        "about": "Informazioni sul terminale",
+        "ai": "Entra in modalità chat AI con ryo",
+        "cat": "Visualizza contenuto file",
+        "cd": "Cambia directory",
+        "chat": "Chatta con ryo (alias)",
+        "clear": "Pulisci schermo del terminale",
+        "cowsay": "Una mucca parlante",
+        "date": "Visualizza data/ora attuale",
+        "echo": "Visualizza testo",
+        "edit": "Apri nell'editor di testo",
+        "help": "Mostra comandi disponibili",
+        "history": "Mostra cronologia comandi",
+        "logout": "Disconnetti utente corrente",
+        "ls": "Elenca contenuto directory",
+        "mkdir": "Crea directory",
+        "pwd": "Mostra directory corrente",
+        "rm": "Sposta file nel cestino",
+        "ryo": "Chatta con ryo",
+        "su": "Cambia o crea utente",
+        "touch": "Crea file vuoto",
+        "vim": "Apri file nell'editor vim",
+        "whoami": "Visualizza utente corrente"
+      },
+      "description": "Interfaccia a riga di comando",
+      "help": {
+        "aiAssistant": {
+          "description": "Digita \"ryo <prompt>\" per chattare con Ryo AI direttamente all'interno del terminale.",
+          "title": "Assistente AI"
+        },
+        "basicCommands": {
+          "description": "Usa comandi come ls, cd, cat, pwd, clear e touch per navigare e gestire i file.",
+          "title": "Comandi Base"
+        },
+        "commandHistory": {
+          "description": "Premi le frecce ↑ / ↓ per scorrere i comandi precedenti e rieseguirli rapidamente.",
+          "title": "Cronologia Comandi"
+        },
+        "fileEditing": {
+          "description": "Apri documenti in TextEdit (edit) o nell'editor in stile Vim (vim) direttamente dal prompt.",
+          "title": "Modifica File"
+        },
+        "navigation": {
+          "description": "Sfoglia lo stesso file system virtuale di Finder con comandi Unix familiari.",
+          "title": "Navigazione"
+        },
+        "terminalSounds": {
+          "description": "Suoni distinti per output, errori e risposte AI. Attiva/disattiva in Visualizza ▸ Suoni.",
+          "title": "Suoni Terminale"
+        }
+      },
+      "menu": {
+        "aboutTerminal": "Informazioni su Terminale",
+        "clearTerminal": "Pulisci Terminale",
+        "decreaseFontSize": "Riduci dimensione carattere",
+        "increaseFontSize": "Aumenta dimensione carattere",
+        "muteSounds": "Disattiva audio",
+        "resetFontSize": "Reimposta dimensione carattere",
+        "terminalHelp": "Aiuto Terminale"
+      },
+      "name": "Terminale",
+      "output": {
+        "addedAndStartedPlaying": "Aggiunta e avviata nuova canzone",
+        "askRyoAnything": "chiedi qualsiasi cosa a ryo. digita 'exit' per tornare al terminale.",
+        "askRyoWithPrompt": "chiedi qualsiasi cosa a ryo. digita 'exit' per tornare al terminale.\n→ dal tuo comando: {{prompt}}",
+        "chatCleared": "chat cancellata. stai ancora chattando con ryo. digita 'exit' per tornare al terminale.",
+        "commandNotFound": "comando non trovato: {{cmd}}. digita 'help' per una lista dei comandi disponibili.",
+        "contentWritten": "Contenuto scritto",
+        "fileCreated": "File creato",
+        "fileEdited": "File modificato",
+        "foundApplets": "Trovata {{count}} applet",
+        "foundAppletsPlural": "Trovate {{count}} applet",
+        "foundApplications": "Trovata {{count}} applicazione",
+        "foundApplicationsPlural": "Trovate {{count}} applicazioni",
+        "foundDocuments": "Trovato {{count}} documento",
+        "foundDocumentsPlural": "Trovati {{count}} documenti",
+        "isThinking": "sta pensando",
+        "lastLogin": "ultimo accesso: {{time}}",
+        "listedItems": "Elementi elencati",
+        "multipleMatchesFound": "Trovate più corrispondenze",
+        "noFilesFound": "nessun file trovato",
+        "noItemsFound": "Nessun elemento trovato",
+        "noSuchDirectory": "cd: {{dir}}: directory inesistente",
+        "opened": "Aperto",
+        "pausedIpod": "iPod in pausa",
+        "playingIpod": "Riproduzione iPod",
+        "playingSong": "Riproduzione brano",
+        "readFile": "Letto {{fileName}}",
+        "skippedToNextTrack": "Passato al brano successivo",
+        "skippedToPreviousTrack": "Passato al brano precedente",
+        "textNotFound": "Testo non trovato",
+        "toggledIpodPlayback": "Riproduzione iPod attivata/disattivata",
+        "typeHelpForCommands": "digita 'help' per vedere i comandi disponibili",
+        "unknown": "Sconosciuto",
+        "untitled": "Senza titolo"
+      }
+    },
+    "textedit": {
+      "alignCenter": "Allinea al centro",
+      "alignLeft": "Allinea a sinistra",
+      "alignRight": "Allinea a destra",
+      "bold": "Grassetto",
+      "bulletList": "Elenco puntato",
+      "description": "Un semplice editor di testo formattato",
+      "dialogs": {
+        "discardChanges": "Annulla modifiche",
+        "doYouWantToDiscardYourChangesAndCreateANewFile": "Vuoi annullare le modifiche e creare un nuovo file?",
+        "enterANameForYourFile": "Inserisci un nome per il tuo file",
+        "enterFilenameToSaveOrDeleteItBeforeClosing": "Inserisci un nome file da salvare, oppure eliminalo prima di chiudere.",
+        "keepNewDocument": "Mantieni nuovo documento",
+        "saveChanges": "Salva modifiche",
+        "saveFile": "Salva file",
+        "saveYourChangesBeforeClosing": "Salva le modifiche prima di chiudere."
+      },
+      "failedToUpdateEditorWithDocumentUpdatedEvent": "Impossibile aggiornare l'editor con l'evento di aggiornamento del documento:",
+      "heading1": "Intestazione 1",
+      "heading2": "Intestazione 2",
+      "heading3": "Intestazione 3",
+      "help": {
+        "fileManagement": {
+          "description": "Crea, apri, salva ed esporta file (HTML, MD, TXT)",
+          "title": "Gestione file"
+        },
+        "formatting": {
+          "description": "Grassetto, corsivo, sottolineato, titoli e opzioni di allineamento",
+          "title": "Formattazione"
+        },
+        "listsTasks": {
+          "description": "Crea elenchi puntati, numerati e di attività con caselle di controllo",
+          "title": "Elenchi e attività"
+        },
+        "richEditing": {
+          "description": "Digita, copia, taglia, incolla, annulla e ripristina il testo con facilità",
+          "title": "Modifica avanzata"
+        },
+        "slashCommands": {
+          "description": "Digita / per azioni rapide o lascia che Ryo AI modifichi le righe in remoto",
+          "title": "Comandi slash"
+        },
+        "voiceDictation": {
+          "description": "Detta il testo a mani libere direttamente nel documento",
+          "title": "Dettatura vocale"
+        }
+      },
+      "italic": "Corsivo",
+      "menu": {
+        "aboutTextEdit": "Informazioni su TextEdit",
+        "alignCenter": "Allinea al centro",
+        "alignLeft": "Allinea a sinistra",
+        "alignRight": "Allinea a destra",
+        "bold": "Grassetto",
+        "bulletList": "Elenco puntato",
+        "exportAs": "Esporta come...",
+        "format": "Formato",
+        "heading1": "Titolo 1",
+        "heading2": "Titolo 2",
+        "heading3": "Titolo 3",
+        "html": "HTML",
+        "importFromDevice": "Importa da dispositivo...",
+        "italic": "Corsivo",
+        "markdown": "Markdown",
+        "newFile": "Nuovo file",
+        "numberedList": "Elenco numerato",
+        "open": "Apri...",
+        "plainText": "Testo semplice",
+        "save": "Salva",
+        "saveEllipsis": "Salva con nome...",
+        "taskList": "Elenco attività",
+        "text": "Testo",
+        "texteditHelp": "Aiuto TextEdit",
+        "underline": "Sottolineato"
+      },
+      "name": "TextEdit",
+      "numberedList": "Elenco numerato",
+      "slashCommands": {
+        "bulletList": {
+          "description": "Crea un semplice elenco puntato",
+          "title": "Elenco puntato"
+        },
+        "heading1": {
+          "description": "Intestazione di sezione grande",
+          "title": "Intestazione 1"
+        },
+        "heading2": {
+          "description": "Intestazione di sezione media",
+          "title": "Intestazione 2"
+        },
+        "heading3": {
+          "description": "Intestazione di sezione piccola",
+          "title": "Intestazione 3"
+        },
+        "numberedList": {
+          "description": "Crea un elenco numerato",
+          "title": "Elenco numerato"
+        },
+        "taskList": {
+          "description": "Crea una lista di controllo con caselle di controllo",
+          "title": "Elenco attività"
+        },
+        "text": {
+          "description": "Inizia a digitare con testo normale",
+          "title": "Testo"
+        }
+      },
+      "speak": "Parla",
+      "stopSpeech": "Interrompi voce",
+      "text": "Testo",
+      "underline": "Sottolineato",
+      "untitled": "Senza titolo"
+    },
+    "videos": {
+      "description": "Guarda video",
+      "dialogs": {
+        "addVideoDescription": "Inserisci YouTube, Vimeo o un URL video",
+        "addVideoTitle": "Aggiungi video",
+        "clearPlaylistDescription": "Sei sicuro di voler svuotare l'intera playlist? Questa azione non può essere annullata.",
+        "clearPlaylistTitle": "Svuota playlist",
+        "failedToLoadSharedVideo": "Impossibile caricare il video condiviso",
+        "openedSharedVideo": "Video condiviso aperto. Premi",
+        "resetPlaylistDescription": "Sei sicuro di voler ripristinare la playlist ai video predefiniti? Questo sostituirà la tua playlist attuale.",
+        "resetPlaylistTitle": "Ripristina playlist",
+        "toStartPlaying": "per avviare la riproduzione.",
+        "videoId": "ID video: {{videoId}}",
+        "videoItemType": "Video"
+      },
+      "help": {
+        "addVideo": {
+          "description": "Incolla qualsiasi URL di YouTube per aggiungere alla playlist",
+          "title": "Aggiungi video"
+        },
+        "loop": {
+          "description": "Ripeti video corrente o intera playlist",
+          "title": "Ripeti"
+        },
+        "playback": {
+          "description": "Controlli riproduci, pausa, successivo, precedente",
+          "title": "Riproduzione"
+        },
+        "playlist": {
+          "description": "Gestisci e organizza la tua playlist video",
+          "title": "Playlist"
+        },
+        "retroUi": {
+          "description": "Estetica classica del lettore QuickTime",
+          "title": "Interfaccia retrò"
+        },
+        "shuffle": {
+          "description": "Randomizza ordine playlist",
+          "title": "Casuale"
+        }
+      },
+      "menu": {
+        "aboutVideos": "Informazioni su Video",
+        "addToLibrary": "Aggiungi alla libreria...",
+        "allVideos": "Tutti i video",
+        "clearLibrary": "Svuota libreria...",
+        "controls": "Controlli",
+        "fullScreen": "Schermo intero",
+        "library": "Libreria",
+        "next": "Successivo",
+        "openVideo": "Apri video...",
+        "pause": "Pausa",
+        "play": "Riproduci",
+        "previous": "Precedente",
+        "repeatAll": "Ripeti tutto",
+        "repeatOne": "Ripeti uno",
+        "resetLibrary": "Reimposta libreria...",
+        "shareVideo": "Condividi video...",
+        "shuffle": "Casuale",
+        "unknownArtist": "Artista sconosciuto",
+        "videosHelp": "Aiuto video"
+      },
+      "name": "Video",
+      "status": {
+        "add": "AGGIUNGI",
+        "addVideos": "Aggiungi video",
+        "errorAdding": "Errore durante l'aggiunta: {{error}}",
+        "failedToAddVideo": "Impossibile aggiungere il video",
+        "failedToProcessVideo": "Impossibile elaborare il video: {{videoId}}",
+        "fullscreen": "SCHERMO INTERO",
+        "next": "SUCCESSIVO ⏭",
+        "paused": "IN PAUSA ⏸",
+        "play": "RIPRODUCI ▶",
+        "playing": "▶ In riproduzione: {{title}}",
+        "playlistReset": "RIPRISTINO PLAYLIST",
+        "pressToPlay": "PREMI ⏯ PER RIPRODURRE",
+        "prev": "PREC.",
+        "repeat": "RIPETI",
+        "repeatingPlaylist": "PLAYLIST IN RIPETIZIONE",
+        "shuffle": "RIPRODUZIONE CASUALE",
+        "shuffleOff": "RIPRODUZIONE CASUALE DISATTIVATA",
+        "shuffleOn": "RIPRODUZIONE CASUALE ATTIVATA",
+        "time": "Durata",
+        "title": "Titolo",
+        "toGetStarted": "per iniziare",
+        "track": "Traccia",
+        "unknownError": "Errore sconosciuto",
+        "videoAdded": "VIDEO AGGIUNTO"
+      }
+    }
+  },
+  "common": {
+    "aboutThisMac": {
+      "builtInMemory": "Memoria integrata",
+      "clickToToggle": "Clicca per alternare",
+      "description": "Informazioni su ryOS su questo computer",
+      "largestUnusedBlock": "Blocco più grande non utilizzato",
+      "mb": "MB",
+      "system": "Sistema",
+      "title": "Informazioni su questo computer",
+      "virtualMemory": "Memoria virtuale",
+      "virtualMemoryOff": "Disattivato"
+    },
+    "appleMenu": {
+      "aboutThisComputer": "Informazioni su questo computer"
+    },
+    "auth": {
+      "createAccount": "Crea account",
+      "creatingAccount": "Creazione in corso...",
+      "dialogTitle": "Accesso a ryOS",
+      "logIn": "Accedi",
+      "logOut": "Esci",
+      "logOutDescription": "Sei sicuro di voler uscire? Verrai disconnesso dal tuo account.",
+      "loggingIn": "Accesso in corso...",
+      "loginDescription": "Accedi al tuo account",
+      "password": "Password",
+      "setPasswordRequired": "Imposta password richiesta",
+      "setPasswordRequiredDescription": "Devi impostare una password prima di disconnetterti per assicurarti di poter recuperare il tuo account. Vuoi impostare una password ora?",
+      "signupDescription": "Crea un account per accedere alle chat room e salvare le tue impostazioni",
+      "username": "Nome utente"
+    },
+    "desktop": {
+      "myComputer": "Computer",
+      "setWallpaper": "Imposta sfondo…"
+    },
+    "dialog": {
+      "about": "Informazioni",
+      "adding": "Aggiunta...",
+      "cancel": "Annulla",
+      "close": "Chiudi",
+      "confirm": "Conferma",
+      "delete": "Elimina",
+      "discardChanges": "Ignora modifiche",
+      "discardChangesDesc": "Vuoi ignorare le modifiche e creare un nuovo file?",
+      "emoji": {
+        "chooseEmoji": "Scegli un'emoji",
+        "description": "Scegli un'emoji per questo slot audio",
+        "setEmoji": "Imposta Emoji"
+      },
+      "enterFileName": "Inserisci un nome per il tuo file",
+      "enterFilenameToSave": "Inserisci un nome file da salvare, o eliminalo prima di chiudere.",
+      "help": "Aiuto",
+      "informationAboutApp": "Informazioni sull'applicazione",
+      "keepNewDocument": "Mantieni nuovo documento",
+      "madeBy": "Realizzato da",
+      "openInGitHub": "Apri su GitHub",
+      "save": "Salva",
+      "saveBeforeClosing": "Salva le modifiche prima di chiudere.",
+      "saveChanges": "Salva modifiche",
+      "saveFile": "Salva file",
+      "share": {
+        "by": "da",
+        "copyLink": "Copia Link",
+        "couldNotCopyToClipboard": "Impossibile copiare negli appunti. Prova a selezionare e copiare manualmente.",
+        "failedToCopyLink": "Impossibile copiare il link",
+        "failedToGenerateShareLink": "Impossibile generare il link di condivisione per {{itemType}}",
+        "from": "da",
+        "generating": "Generazione...",
+        "itemTypes": {
+          "app": "App",
+          "applet": "Applet",
+          "item": "Elemento",
+          "page": "Pagina",
+          "song": "Brano"
+        },
+        "linkCopied": "Link copiato",
+        "linkCopiedToClipboard": "Link {{itemType}} copiato negli appunti",
+        "pleaseTryAgainLater": "Riprova più tardi",
+        "qrCode": "Codice QR",
+        "shareItem": "Condividi {{itemType}}",
+        "shareItemViaLinkOrQrCode": "Condividi {{itemType}} tramite link o codice QR",
+        "shareLinkFor": "Condividi link per {{itemType}}",
+        "shareLinkOrScanToOpen": "Condividi il link o scansiona per aprire questo/a {{itemType}}"
+      },
+      "version": "Versione",
+      "welcomeTo": "Benvenuto in {{appName}}"
+    },
+    "dock": {
+      "appletStore": "Applet Store",
+      "applications": "Applicazioni",
+      "folderContents": "Contenuto cartella",
+      "hide": "Nascondi",
+      "minimized": "(ridotta a icona)",
+      "newWindow": "Nuova finestra",
+      "open": "Apri",
+      "quit": "Esci",
+      "showAllWindows": "Mostra tutte le finestre",
+      "trash": "Cestino"
+    },
+    "htmlPreview": {
+      "bannerFallbackTitle": "Applet senza titolo",
+      "codePreviewTitle": "Anteprima codice ryOS",
+      "codePreviewTitleFullscreen": "Anteprima codice ryOS a schermo intero",
+      "copyHtml": "Copia codice HTML",
+      "downloadHtml": "Scarica HTML",
+      "exitFullscreen": "Esci da schermo intero",
+      "full": "Intera",
+      "maximizePreview": "Massimizza anteprima",
+      "minimizePreview": "Riduci anteprima",
+      "saveApplet": "Salva come Applet",
+      "saveAppletDescription": "Inserisci il nome dell'applet, l'applet esistente verrà sovrascritta:",
+      "split": "Divisa",
+      "toastOpenAction": "Apri",
+      "toastSaveFailed": "Impossibile salvare l'applet",
+      "toastSaveFailedDescription": "Si è verificato un errore durante il salvataggio dell'applet.",
+      "toastSaved": "Applet salvata correttamente",
+      "toggleCode": "Alterna codice",
+      "toggleSplitView": "Alterna vista divisa"
+    },
+    "menu": {
+      "applications": "Applicazioni",
+      "clear": "Cancella",
+      "close": "Chiudi",
+      "copy": "Copia",
+      "cut": "Taglia",
+      "documents": "Documenti",
+      "edit": "Modifica",
+      "file": "File",
+      "go": "Vai",
+      "help": "Aiuto",
+      "images": "Immagini",
+      "music": "Musica",
+      "paste": "Incolla",
+      "redo": "Ripeti",
+      "selectAll": "Seleziona tutto",
+      "shareApp": "Condividi App...",
+      "sites": "Siti",
+      "trash": "Cestino",
+      "undo": "Annulla",
+      "videos": "Video",
+      "view": "Vista"
+    },
+    "startMenu": {
+      "aboutThisComputer": "Informazioni su questo computer",
+      "ryos98": "ryOS 98",
+      "ryosProfessional": "ryOS Professional",
+      "start": "Avvio"
+    },
+    "system": {
+      "debugBootScreenTest": "Test schermata di avvio debug...",
+      "formatFileSystem": "Formatta file system",
+      "formatFileSystemDesc": "Sei sicuro di voler formattare il file system? Questo eliminerà definitivamente tutti i documenti (eccetto i documenti di esempio), le immagini e gli sfondi personalizzati. ryOS si riavvierà dopo la formattazione.",
+      "formattingFileSystem": "Formattazione del file system...",
+      "rebooting": "Riavvio in corso...",
+      "resetAllSettings": "Reimposta tutte le impostazioni",
+      "resetAllSettingsDesc": "Sei sicuro di voler reimpostare tutte le impostazioni? Questo cancellerà tutte le impostazioni salvate e ripristinerà gli stati predefiniti. ryOS si riavvierà dopo la reimpostazione.",
+      "resettingSystem": "Reimpostazione del sistema...",
+      "restoringSystem": "Ripristino del sistema...",
+      "systemRestoring": "Ripristino del sistema...",
+      "updatingToRyOS": "Aggiornamento a ryOS {{version}}...",
+      "updatingToRyOSWithBuild": "Aggiornamento a ryOS {{version}} ({{buildNumber}})..."
+    },
+    "toast": {
+      "alreadyLatestVersion": "Stai già eseguendo l'ultima versione",
+      "couldNotCheckUpdates": "Impossibile verificare la presenza di aggiornamenti",
+      "failedToCacheAssets": "Memorizzazione nella cache delle risorse non riuscita",
+      "failedToLoadAssetManifest": "Caricamento del manifesto delle risorse non riuscito",
+      "files": "file",
+      "noAssetsToCache": "Nessuna risorsa da memorizzare nella cache",
+      "reboot": "Riavvia",
+      "total": "totale",
+      "updateReady": "Aggiornamento pronto per ryOS {{version}} ({{buildNumber}})",
+      "updatingAssets": "Aggiornamento risorse",
+      "updatingIcons": "Aggiornamento icone",
+      "updatingSounds": "Aggiornamento suoni",
+      "updatingSystemFiles": "Aggiornamento file di sistema"
     }
   },
   "settings": {
     "language": {
-      "title": "Language",
-      "description": "Select your preferred language for ryOS interface",
-      "english": "English",
       "chineseTraditional": "中文",
-      "japanese": "日本語",
-      "korean": "한국어",
+      "description": "Seleziona la tua lingua preferita per l'interfaccia di ryOS",
+      "english": "Inglese",
       "french": "Français",
       "german": "Deutsch",
-      "spanish": "Español",
-      "portuguese": "Português",
       "italian": "Italiano",
-      "russian": "Русский"
+      "japanese": "日本語",
+      "korean": "한국어",
+      "portuguese": "Portoghese",
+      "russian": "Russo",
+      "spanish": "Spagnolo",
+      "title": "Lingua"
     }
   }
 }
-

@@ -24,7 +24,7 @@ import { generateText } from "ai";
 
 const LOCALES_DIR = join(process.cwd(), "src/lib/locales");
 const ENGLISH_FILE = join(LOCALES_DIR, "en/translation.json");
-const OTHER_LANGUAGES = ["zh-TW", "ja", "ko", "fr", "de", "es", "pt", "ru"];
+const OTHER_LANGUAGES = ["zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"];
 
 // Language names for better context in prompts
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -35,6 +35,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   "de": "German",
   "es": "Spanish",
   "pt": "Portuguese",
+  "it": "Italian",
   "ru": "Russian",
 };
 
