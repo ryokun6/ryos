@@ -949,12 +949,6 @@
         "shuffleSongs": "隨機播放歌曲",
         "theme": "主題"
       },
-      "messages": {
-        "bitteKeineMusikStehlen": "請勿盜用音樂",
-        "dontStealMusic": "請勿盜用音樂",
-        "neVolezPasLaMusique": "請勿盜用音樂",
-        "pleaseDontStealMusic": "請勿盜用音樂"
-      },
       "name": "iPod",
       "status": {
         "added": "♬ 已新增",

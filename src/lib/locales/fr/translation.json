@@ -949,12 +949,6 @@
         "shuffleSongs": "Lecture aléatoire des morceaux",
         "theme": "Thème"
       },
-      "messages": {
-        "bitteKeineMusikStehlen": "Ne volez pas la musique",
-        "dontStealMusic": "Ne volez pas la musique",
-        "neVolezPasLaMusique": "Ne volez pas la musique",
-        "pleaseDontStealMusic": "Ne volez pas la musique"
-      },
       "name": "iPod",
       "status": {
         "added": "♬ Ajouté",

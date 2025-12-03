@@ -949,12 +949,6 @@
         "shuffleSongs": "曲をシャッフル",
         "theme": "テーマ"
       },
-      "messages": {
-        "bitteKeineMusikStehlen": "音楽を盗用しないでください",
-        "dontStealMusic": "音楽を盗用しないでください",
-        "neVolezPasLaMusique": "音楽を盗用しないでください",
-        "pleaseDontStealMusic": "音楽を盗用しないでください"
-      },
       "name": "iPod",
       "status": {
         "added": "♬ 追加しました",

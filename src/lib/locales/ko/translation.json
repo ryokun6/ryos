@@ -949,12 +949,6 @@
         "shuffleSongs": "곡 셔플",
         "theme": "테마"
       },
-      "messages": {
-        "bitteKeineMusikStehlen": "음악을 도용하지 마세요.",
-        "dontStealMusic": "음악을 도용하지 마세요.",
-        "neVolezPasLaMusique": "음악을 도용하지 마세요.",
-        "pleaseDontStealMusic": "음악을 도용하지 마세요."
-      },
       "name": "iPod",
       "status": {
         "added": "♬ 추가됨",
