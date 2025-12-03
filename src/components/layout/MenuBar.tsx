@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { AppleMenu } from "./AppleMenu";
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { WifiOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { useIsPhone } from "@/hooks/useIsPhone";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -67,6 +68,200 @@ const finderMetadata = {
 interface MenuBarProps {
   children?: React.ReactNode;
   inWindowFrame?: boolean; // Add prop to indicate if MenuBar is inside a window
+}
+
+// Context to share scrolling state
+const ScrollingContext = React.createContext<{
+  isScrolling: boolean;
+  preventInteraction: (e: React.MouseEvent | React.TouchEvent) => boolean;
+}>({
+  isScrolling: false,
+  preventInteraction: () => false,
+});
+
+// Hook to use scrolling context
+function useScrollingContext() {
+  return React.useContext(ScrollingContext);
+}
+
+// Scrollable menu wrapper with fade masks for mobile
+function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
+  const isPhone = useIsPhone();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollWidth, setScrollWidth] = useState(0);
+  const [clientWidth, setClientWidth] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const updateScrollState = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollLeft: left, scrollWidth: width, clientWidth: cw } = scrollRef.current;
+    setScrollLeft(left);
+    setScrollWidth(width);
+    setClientWidth(cw);
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    updateScrollState();
+    setIsScrolling(true);
+    
+    // Clear existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    
+    // Set scrolling to false after scroll ends
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 150);
+  }, [updateScrollState]);
+
+  const preventInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    if (isScrolling) {
+      e.preventDefault();
+      e.stopPropagation();
+      return true;
+    }
+    return false;
+  }, [isScrolling]);
+
+  useEffect(() => {
+    updateScrollState();
+    const resizeObserver = new ResizeObserver(updateScrollState);
+    if (scrollRef.current) {
+      resizeObserver.observe(scrollRef.current);
+    }
+    return () => {
+      resizeObserver.disconnect();
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [updateScrollState]);
+
+  const canScrollLeft = scrollLeft > 0;
+  const canScrollRight = scrollLeft < scrollWidth - clientWidth - 1;
+
+  // Calculate mask gradients based on scroll position
+  // In CSS masks: black = visible, transparent = hidden
+  const getMaskImage = () => {
+    if (!isPhone || scrollWidth <= clientWidth) {
+      return undefined;
+    }
+    
+    const fadeWidth = 24; // Width of fade in pixels
+    
+    if (canScrollLeft && canScrollRight) {
+      // Both sides need fade: transparent edges, black middle
+      return `linear-gradient(to right, transparent 0%, black ${fadeWidth}px, black calc(100% - ${fadeWidth}px), transparent 100%)`;
+    } else if (canScrollLeft) {
+      // Only left side needs fade: transparent left edge, black rest
+      return `linear-gradient(to right, transparent 0%, black ${fadeWidth}px, black 100%)`;
+    } else if (canScrollRight) {
+      // Only right side needs fade: black start, transparent right edge
+      return `linear-gradient(to right, black 0%, black calc(100% - ${fadeWidth}px), transparent 100%)`;
+    }
+    return undefined;
+  };
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    };
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+    const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+    
+    // If horizontal movement is significant, mark as scrolling
+    if (deltaX > 5 || deltaY > 5) {
+      setIsScrolling(true);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    touchStartRef.current = null;
+    // Clear scrolling flag after a delay
+    setTimeout(() => {
+      setIsScrolling(false);
+    }, 100);
+  }, []);
+
+  if (!isPhone) {
+    return (
+      <ScrollingContext.Provider value={{ isScrolling: false, preventInteraction: () => false }}>
+        {children}
+      </ScrollingContext.Provider>
+    );
+  }
+
+  return (
+    <ScrollingContext.Provider value={{ isScrolling, preventInteraction }}>
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-x-auto overflow-y-hidden"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          overscrollBehaviorX: "contain",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          maskImage: getMaskImage(),
+          WebkitMaskImage: getMaskImage(),
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className="flex items-center min-w-max">
+          {children}
+        </div>
+      </div>
+    </ScrollingContext.Provider>
+  );
+}
+
+// Wrapper for dropdown trigger buttons that prevents interaction during scrolling
+function DropdownTriggerButton({
+  children,
+  ...props
+}: React.ComponentProps<typeof Button>) {
+  const { preventInteraction } = useScrollingContext();
+  
+  return (
+    <Button
+      {...props}
+      onPointerDown={(e) => {
+        if (preventInteraction(e)) {
+          return;
+        }
+        props.onPointerDown?.(e);
+      }}
+      onMouseDown={(e) => {
+        if (preventInteraction(e)) {
+          return;
+        }
+        props.onMouseDown?.(e);
+      }}
+      onTouchStart={(e) => {
+        if (preventInteraction(e)) {
+          return;
+        }
+        props.onTouchStart?.(e);
+      }}
+    >
+      {children}
+    </Button>
+  );
 }
 
 function Clock() {
@@ -219,14 +414,14 @@ function DefaultMenuItems() {
       {/* File Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
+          <DropdownTriggerButton
             variant="ghost"
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
             {t("common.menu.file")}
-          </Button>
+          </DropdownTriggerButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem
@@ -264,14 +459,14 @@ function DefaultMenuItems() {
       {/* Edit Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
+          <DropdownTriggerButton
             variant="ghost"
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
             {t("common.menu.edit")}
-          </Button>
+          </DropdownTriggerButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem
@@ -318,14 +513,14 @@ function DefaultMenuItems() {
       {/* View Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
+          <DropdownTriggerButton
             variant="ghost"
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
             {t("common.menu.view")}
-          </Button>
+          </DropdownTriggerButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
@@ -356,14 +551,14 @@ function DefaultMenuItems() {
       {/* Go Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
+          <DropdownTriggerButton
             variant="ghost"
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
             {t("common.menu.go")}
-          </Button>
+          </DropdownTriggerButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem
@@ -462,14 +657,14 @@ function DefaultMenuItems() {
       {/* Help Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
+          <DropdownTriggerButton
             variant="ghost"
             size="default"
             className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
             style={{ color: "inherit" }}
           >
             {t("common.menu.help")}
-          </Button>
+          </DropdownTriggerButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem
@@ -1067,9 +1262,11 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   }
 
   // Default Mac-style top menubar
+  const isPhone = useIsPhone();
+
   return (
     <div
-      className="fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar px-2 h-os-menubar items-center font-os-ui"
+      className="fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar h-os-menubar items-center font-os-ui"
       style={{
         background:
           currentTheme === "macosx"
@@ -1086,11 +1283,20 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
             : undefined,
         fontFamily: "var(--os-font-ui)",
         color: "var(--os-color-menubar-text)",
+        paddingLeft: isPhone ? "0" : "0.5rem",
+        paddingRight: isPhone ? "0" : "0.5rem",
       }}
     >
-      <AppleMenu apps={apps} />
-      {hasActiveApp ? children : <DefaultMenuItems />}
-      <div className="ml-auto flex items-center">
+      {!isPhone && <AppleMenu apps={apps} />}
+      {isPhone && (
+        <div className="flex-shrink-0 flex items-center pl-2">
+          <AppleMenu apps={apps} />
+        </div>
+      )}
+      <ScrollableMenuWrapper>
+        {hasActiveApp ? children : <DefaultMenuItems />}
+      </ScrollableMenuWrapper>
+      <div className={`${isPhone ? "flex-shrink-0 px-2" : "ml-auto"} flex items-center`}>
         <OfflineIndicator />
         <div className="hidden sm:flex">
           <VolumeControl />
