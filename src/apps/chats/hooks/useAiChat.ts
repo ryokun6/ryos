@@ -2139,6 +2139,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ko: "apps.ipod.translationLanguages.korean",
                   fr: "apps.ipod.translationLanguages.french",
                   de: "apps.ipod.translationLanguages.german",
+                  es: "apps.ipod.translationLanguages.spanish",
+                  pt: "apps.ipod.translationLanguages.portuguese",
+                  it: "apps.ipod.translationLanguages.italian",
+                  ru: "apps.ipod.translationLanguages.russian",
                 };
                 const key = langMap[langCode];
                 if (key) {
@@ -2148,7 +2152,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
                 return langCode;
               };
-              langStore.setLanguage(language as "en" | "zh-TW" | "ja" | "ko" | "fr" | "de");
+              langStore.setLanguage(language as "en" | "zh-TW" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru");
               changes.push(
                 i18n.t("apps.chats.toolCalls.settingsLanguageChanged", {
                   language: getLanguageDisplayName(language),
