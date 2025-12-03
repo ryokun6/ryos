@@ -197,7 +197,7 @@ function VersionDisplay() {
   
   return (
     <p className="text-[11px] text-gray-600 font-geneva-12">
-      Current version: ryOS {displayVersion}{displayBuild}
+      ryOS {displayVersion}{displayBuild}
     </p>
   );
 }
