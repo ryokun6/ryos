@@ -104,7 +104,9 @@ function Scrollbar({
   backlightOn,
   menuMode,
 }: {
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef:
+    | React.RefObject<HTMLDivElement | null>
+    | React.MutableRefObject<HTMLDivElement | null>;
   backlightOn: boolean;
   menuMode: boolean;
 }) {
@@ -350,7 +352,7 @@ interface IpodScreenProps {
   menuDirection: "forward" | "backward";
   onMenuItemAction: (action: () => void) => void;
   showVideo: boolean;
-  playerRef: React.RefObject<ReactPlayer>;
+  playerRef: React.RefObject<ReactPlayer | null>;
   handleTrackEnd: () => void;
   handleProgress: (state: { playedSeconds: number }) => void;
   handleDuration: (duration: number) => void;
@@ -753,7 +755,9 @@ export function IpodScreen({
                       (item, index) => (
                         <div
                           key={index}
-                          ref={(el) => (menuItemsRef.current[index] = el)}
+                          ref={(el) => {
+                            menuItemsRef.current[index] = el;
+                          }}
                           className={`ipod-menu-item ${
                             index === selectedMenuItem ? "selected" : ""
                           }`}

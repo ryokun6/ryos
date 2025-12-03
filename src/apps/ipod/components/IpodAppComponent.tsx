@@ -61,7 +61,7 @@ interface FullScreenPortalProps {
   currentKoreanDisplay: import("@/types/lyrics").KoreanDisplay;
   onToggleKoreanDisplay: () => void;
   // Player ref for mobile Safari handling
-  fullScreenPlayerRef: React.RefObject<ReactPlayer>;
+  fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
 }
 
 function FullScreenPortal({
@@ -1013,9 +1013,9 @@ export function IpodAppComponent({
   const [cameFromNowPlayingMenuItem, setCameFromNowPlayingMenuItem] =
     useState(false);
   // Ref for the in-window (small) player inside IpodScreen
-  const playerRef = useRef<ReactPlayer>(null);
+  const playerRef = useRef<ReactPlayer | null>(null);
   // Separate ref for the full-screen player rendered in the portal
-  const fullScreenPlayerRef = useRef<ReactPlayer>(null);
+  const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
   // Ref to track the last song that was tracked for analytics
   const lastTrackedSongRef = useRef<{ trackId: string; elapsedTime: number } | null>(null);
   const skipOperationRef = useRef(false);

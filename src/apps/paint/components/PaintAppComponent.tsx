@@ -71,7 +71,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     copy: () => void;
     paste: () => void;
     applyFilter: (filter: Filter) => void;
-  }>();
+  } | null>(null);
   const { saveFile } = useFileSystem("/Images");
   const launchApp = useLaunchApp();
   const contentChangeTimeoutRef = useRef<number | null>(null);

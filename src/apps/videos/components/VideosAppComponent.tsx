@@ -169,7 +169,7 @@ function AnimatedTitle({
 
 function WhiteNoiseEffect() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
   const [brightness, setBrightness] = useState(0);
 
   useEffect(() => {
@@ -216,8 +216,9 @@ function WhiteNoiseEffect() {
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
       }
     };
   }, [brightness]);
@@ -344,10 +345,10 @@ export function VideosAppComponent({
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
   const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
   const [isAddingVideo, setIsAddingVideo] = useState(false);
-  const playerRef = useRef<ReactPlayer>(null);
+  const playerRef = useRef<ReactPlayer | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const statusTimeoutRef = useRef<NodeJS.Timeout>();
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [duration, setDuration] = useState(0);
   const [playedSeconds, setPlayedSeconds] = useState(0);
@@ -495,6 +496,7 @@ export function VideosAppComponent({
     setStatusMessage(message);
     if (statusTimeoutRef.current) {
       clearTimeout(statusTimeoutRef.current);
+      statusTimeoutRef.current = null;
     }
     statusTimeoutRef.current = setTimeout(() => {
       setStatusMessage(null);
@@ -973,6 +975,7 @@ export function VideosAppComponent({
     return () => {
       if (statusTimeoutRef.current) {
         clearTimeout(statusTimeoutRef.current);
+        statusTimeoutRef.current = null;
       }
     };
   }, []);

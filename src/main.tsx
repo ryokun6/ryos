@@ -9,6 +9,10 @@ import { preloadFileSystemData } from "./stores/useFilesStore";
 import { preloadIpodData } from "./stores/useIpodStore";
 import { initPrefetch } from "./utils/prefetch";
 import "./lib/i18n";
+import { primeReactResources } from "./lib/reactResources";
+
+// Prime React 19 resource hints before anything else runs
+primeReactResources();
 
 // ============================================================================
 // CHUNK LOAD ERROR HANDLING - Reload when old assets 404 after deployment

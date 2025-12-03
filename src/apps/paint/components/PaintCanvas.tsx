@@ -81,7 +81,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
     const [isDraggingSelection, setIsDraggingSelection] = useState(false);
     const dragStartRef = useRef<Point | null>(null);
     const dashOffsetRef = useRef(0);
-    const animationFrameRef = useRef<number>();
+    const animationFrameRef = useRef<number | null>(null);
     const touchStartRef = useRef<Point | null>(null);
     const [isLoadingFile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -227,8 +227,9 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
     // Animate selection dashes
     useEffect(() => {
       if (!selection) {
-        if (animationFrameRef.current) {
+        if (animationFrameRef.current !== null) {
           cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
         }
         // Restore canvas to state before selection was made
         if (lastImageRef.current && contextRef.current) {
@@ -285,8 +286,9 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       animate();
 
       return () => {
-        if (animationFrameRef.current) {
+        if (animationFrameRef.current !== null) {
           cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
         }
       };
     }, [selection]);
