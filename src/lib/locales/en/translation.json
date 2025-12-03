@@ -1349,12 +1349,6 @@
         "enter": "Enter",
         "select": "Select"
       },
-      "messages": {
-        "dontStealMusic": "Don't steal music",
-        "neVolezPasLaMusique": "Ne volez pas la musique",
-        "bitteKeineMusikStehlen": "Bitte keine Musik stehlen",
-        "pleaseDontStealMusic": "音楽を盗用しないでください"
-      },
       "help": {
         "addSongs": {
           "title": "Add Songs",

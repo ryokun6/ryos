@@ -949,12 +949,6 @@
         "shuffleSongs": "Titel mischen",
         "theme": "Design"
       },
-      "messages": {
-        "bitteKeineMusikStehlen": "Bitte keine Musik stehlen",
-        "dontStealMusic": "Keine Musik stehlen",
-        "neVolezPasLaMusique": "Keine Musik stehlen",
-        "pleaseDontStealMusic": "Keine Musik stehlen"
-      },
       "name": "iPod",
       "status": {
         "added": "♬ Hinzugefügt",

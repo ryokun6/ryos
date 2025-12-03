@@ -949,12 +949,6 @@
         "shuffleSongs": "Перемешать песни",
         "theme": "Тема"
       },
-      "messages": {
-        "bitteKeineMusikStehlen": "Не крадите музыку",
-        "dontStealMusic": "Не крадите музыку",
-        "neVolezPasLaMusique": "Не крадите музыку",
-        "pleaseDontStealMusic": "Не крадите музыку"
-      },
       "name": "iPod",
       "status": {
         "added": "♬ Добавлено",
