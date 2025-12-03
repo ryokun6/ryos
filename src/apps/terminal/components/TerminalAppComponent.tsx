@@ -2687,15 +2687,6 @@ export function TerminalAppComponent({
                   : "animate"
               }
               exit="exit"
-              layoutId={`terminal-line-${index}`}
-              layout="preserve-aspect"
-              transition={{
-                type: "spring",
-                duration: 0.3,
-                stiffness: 100,
-                damping: 25,
-                mass: 0.8,
-              }}
             >
               {item.command && (
                 <div className="flex select-text">
@@ -2753,17 +2744,7 @@ export function TerminalAppComponent({
                       </span>
                     </div>
                   ) : item.path === "ai-assistant" ? (
-                    <motion.div
-                      layout="position"
-                      className="select-text cursor-text"
-                      transition={{
-                        type: "spring",
-                        duration: 0.3,
-                        stiffness: 100,
-                        damping: 25,
-                        mass: 0.8,
-                      }}
-                    >
+                    <div className="select-text cursor-text">
                       {(() => {
                         // Process the message to extract HTML and text parts
                         const { htmlContent, textContent, hasHtml } =
@@ -2845,7 +2826,7 @@ export function TerminalAppComponent({
                           </>
                         );
                       })()}
-                    </motion.div>
+                    </div>
                   ) : animatedLines.has(index) ? (
                     <>
                       {isUrgentMessage(item.output) && (

@@ -659,14 +659,13 @@ function ChatMessagesContent({
 
         // base background calculation no longer needed; inline animation drives color for urgent
 
-        return (
+          return (
           <motion.div
-            layout="position"
             key={messageKey}
             variants={variants}
             initial={isInitialMessage ? "animate" : "initial"}
             animate="animate"
-            transition={{ type: "spring", duration: 0.4 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             className={`flex flex-col z-10 w-full ${
               message.role === "user" ? "items-end" : "items-start"
             }`}
@@ -696,8 +695,7 @@ function ChatMessagesContent({
               }
             }}
           >
-            <motion.div
-              layout="position"
+            <div
               className={`${
                 currentTheme === "macosx" ? "text-[10px]" : "text-[16px]"
               } chat-messages-meta text-gray-500 mb-0.5 font-['Geneva-9'] mb-[-2px] select-text flex items-center gap-2`}
@@ -953,7 +951,7 @@ function ChatMessagesContent({
                   </Tooltip>
                 </TooltipProvider>
               )}
-            </motion.div>
+            </div>
 
             {/* Render aquarium tool(s) as their own element; component styles itself as a chat bubble */}
             {hasAquarium && <EmojiAquarium />}
@@ -961,7 +959,6 @@ function ChatMessagesContent({
             {/* Show the standard message bubble if it's not URL-only (even if aquarium exists) */}
             {!isUrlOnly(displayContent) && (
               <motion.div
-                layout="position"
                 initial={
                   isUrgent
                     ? {
@@ -1347,7 +1344,6 @@ function ChatMessagesContent({
             }
             return (
               <motion.div
-                layout="position"
                 key="login-message"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1361,7 +1357,6 @@ function ChatMessagesContent({
 
           return (
             <motion.div
-              layout="position"
               key="error-indicator"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

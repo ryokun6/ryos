@@ -319,11 +319,7 @@ export function ChatInput({
           className={`flex ${isMacTheme ? "gap-2" : "gap-1"}`}
         >
           <AnimatePresence mode="popLayout" initial={false}>
-            <motion.div
-              layout
-              className="flex-1 relative"
-              transition={{ duration: 0.15 }}
-            >
+            <div className="flex-1 relative">
               <Input
                 ref={inputRef}
                 value={input}
@@ -452,7 +448,7 @@ export function ChatInput({
                   </Tooltip>
                 </TooltipProvider>
               </div>
-            </motion.div>
+            </div>
             {isLoading || isSpeechPlaying ? (
               <motion.div
                 key="stop"
@@ -460,7 +456,6 @@ export function ChatInput({
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                layout
               >
                 <Button
                   type="button"
@@ -540,7 +535,6 @@ export function ChatInput({
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                layout
               >
                 <Button
                   type="submit"
