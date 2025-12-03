@@ -20,7 +20,7 @@ import { join } from "path";
 
 const LOCALES_DIR = join(process.cwd(), "src/lib/locales");
 const ENGLISH_FILE = join(LOCALES_DIR, "en/translation.json");
-const OTHER_LANGUAGES = ["zh-TW", "ja", "ko", "fr", "de", "es", "pt", "ru"];
+const OTHER_LANGUAGES = ["zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"];
 
 interface TranslationObject {
   [key: string]: string | TranslationObject;
