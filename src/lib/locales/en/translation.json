@@ -1860,7 +1860,10 @@
       "japanese": "日本語",
       "korean": "한국어",
       "french": "Français",
-      "german": "Deutsch"
+      "german": "Deutsch",
+      "spanish": "Español",
+      "portuguese": "Português",
+      "russian": "Русский"
     }
   }
 }

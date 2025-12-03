@@ -1598,7 +1598,17 @@ export function ControlPanelsAppComponent({
                   >
                     <SelectTrigger className="w-[120px]">
                       <SelectValue>
-                        {t(`settings.language.${currentLanguage === "zh-TW" ? "chineseTraditional" : currentLanguage === "ja" ? "japanese" : currentLanguage === "ko" ? "korean" : currentLanguage === "fr" ? "french" : currentLanguage === "de" ? "german" : "english"}`)}
+                        {t(`settings.language.${
+                          currentLanguage === "zh-TW" ? "chineseTraditional" :
+                          currentLanguage === "ja" ? "japanese" :
+                          currentLanguage === "ko" ? "korean" :
+                          currentLanguage === "fr" ? "french" :
+                          currentLanguage === "de" ? "german" :
+                          currentLanguage === "es" ? "spanish" :
+                          currentLanguage === "pt" ? "portuguese" :
+                          currentLanguage === "ru" ? "russian" :
+                          "english"
+                        }`)}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -1608,6 +1618,9 @@ export function ControlPanelsAppComponent({
                       <SelectItem value="ko">{t("settings.language.korean")}</SelectItem>
                       <SelectItem value="fr">{t("settings.language.french")}</SelectItem>
                       <SelectItem value="de">{t("settings.language.german")}</SelectItem>
+                      <SelectItem value="es">{t("settings.language.spanish")}</SelectItem>
+                      <SelectItem value="pt">{t("settings.language.portuguese")}</SelectItem>
+                      <SelectItem value="ru">{t("settings.language.russian")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
