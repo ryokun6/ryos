@@ -8,6 +8,9 @@ import jaTranslation from "./locales/ja/translation.json";
 import koTranslation from "./locales/ko/translation.json";
 import frTranslation from "./locales/fr/translation.json";
 import deTranslation from "./locales/de/translation.json";
+import esTranslation from "./locales/es/translation.json";
+import ptTranslation from "./locales/pt/translation.json";
+import ruTranslation from "./locales/ru/translation.json";
 
 const resources = {
   en: {
@@ -28,9 +31,18 @@ const resources = {
   de: {
     translation: deTranslation,
   },
+  es: {
+    translation: esTranslation,
+  },
+  pt: {
+    translation: ptTranslation,
+  },
+  ru: {
+    translation: ruTranslation,
+  },
 };
 
-export const SUPPORTED_LANGUAGES = ["en", "zh-TW", "ja", "ko", "fr", "de"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "zh-TW", "ja", "ko", "fr", "de", "es", "pt", "ru"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 /**
@@ -41,6 +53,9 @@ export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
  * - ko, ko-KR -> ko
  * - fr, fr-FR, fr-CA -> fr
  * - de, de-DE, de-AT, de-CH -> de
+ * - es, es-ES, es-MX, es-AR -> es
+ * - pt, pt-BR, pt-PT -> pt
+ * - ru, ru-RU -> ru
  * - en, en-US, en-GB -> en
  */
 export const detectLanguageFromLocale = (locale: string): SupportedLanguage | null => {
