@@ -649,7 +649,8 @@
         "createAccountToContinue": "Create account to continue...",
         "typeMessage": "Type a message...",
         "typeOrPushSpace": "Type or push 'space' to talk...",
-        "scrollToBottom": "Scroll to bottom"
+        "scrollToBottom": "Scroll to bottom",
+        "nudgeSent": "👋 *nudge sent*"
       },
       "ariaLabels": {
         "sendNudge": "Send a Nudge",

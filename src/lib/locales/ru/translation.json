@@ -1,0 +1,1864 @@
+{
+  "apps": {
+    "applet-viewer": {
+      "description": "[TODO] View and run applets",
+      "dialogs": {
+        "addedToFeatured": "[TODO] Added to featured",
+        "allAppletsUpToDate": "[TODO] All applets are up to date",
+        "appletAlreadyShared": "[TODO] Applet already shared",
+        "appletDeleted": "[TODO] Applet deleted",
+        "appletExported": "[TODO] Applet exported!",
+        "appletExportedDescription": "[TODO] {{fileName}}.app exported successfully.",
+        "appletImported": "[TODO] Applet imported!",
+        "appletImportedDescription": "[TODO] {{fileName}} saved to /Applets{{iconText}}",
+        "appletNotFound": "[TODO] Applet not found",
+        "appletNotFoundDescription": "[TODO] The shared applet may have been deleted or the link is invalid.",
+        "appletSaved": "[TODO] Applet saved",
+        "appletSavedDescription": "[TODO] Saved to /Applets/{{fileName}}",
+        "appletShared": "[TODO] Applet shared!",
+        "appletStore": "[TODO] Applet Store",
+        "appletUpdateAvailable": "[TODO] Applet update available",
+        "appletUpdateAvailableDescription": "[TODO] {{appletName}} has an update available.",
+        "appletUpdated": "[TODO] Applet updated",
+        "appletUpdatedShare": "[TODO] Applet updated!",
+        "appletsUpdated": "[TODO] {{count}} applets updated",
+        "areYouSureDeleteApplet": "[TODO] Are you sure you want to delete this applet?",
+        "couldNotCompressAppletFile": "[TODO] Could not compress the applet file.",
+        "couldNotImportFile": "[TODO] Could not import the file.",
+        "exportFailed": "[TODO] Export failed",
+        "failedToDeleteApplet": "[TODO] Failed to delete applet",
+        "failedToFetchSharedApplet": "[TODO] Failed to fetch shared applet",
+        "failedToLoadSharedApplet": "[TODO] Failed to load shared applet",
+        "failedToSaveApplet": "[TODO] Failed to save applet",
+        "failedToShareApplet": "[TODO] Failed to share applet",
+        "failedToUpdateApplet": "[TODO] Failed to update applet",
+        "failedToUpdateApplets": "[TODO] Failed to update applets",
+        "failedToUpdateFeaturedStatus": "[TODO] Failed to update featured status",
+        "importFailed": "[TODO] Import failed",
+        "loading": "[TODO] Loading...",
+        "loginRequired": "[TODO] Login required",
+        "mustBeLoggedInToShare": "[TODO] You must be logged in to share applets.",
+        "newAppletUpdates": "[TODO] {{count}} new applet update",
+        "newAppletUpdatesPlural": "[TODO] {{count}} new applet updates",
+        "noAppletToShare": "[TODO] No applet to share",
+        "noAppletsAvailable": "[TODO] No applets available at this time.",
+        "noAppletsFound": "[TODO] No applets found matching \"{{query}}\".",
+        "pleaseCheckConnection": "[TODO] Please check your connection and try again.",
+        "pleaseOpenAppletFirst": "[TODO] Please open an applet first.",
+        "pleaseTryAgainLater": "[TODO] Please try again later.",
+        "removedFromFeatured": "[TODO] Removed from featured",
+        "shareLinkGeneratedSuccessfully": "[TODO] Share link generated successfully.",
+        "shareLinkUpdatedSuccessfully": "[TODO] Share link updated successfully.",
+        "sharedApplet": "[TODO] Shared Applet",
+        "sharedAppletLoaded": "[TODO] Shared applet loaded",
+        "showingExistingShareLink": "[TODO] Showing existing share link.",
+        "untitled": "[TODO] Untitled",
+        "untitledApplet": "[TODO] Untitled Applet",
+        "updatingApplet": "[TODO] Updating applet...",
+        "updatingAppletSingle": "[TODO] Updating 1 applet...",
+        "updatingApplets": "[TODO] Updating {{count}} applets...",
+        "updatingAppletsPlural": "[TODO] Updating {{count}} applets..."
+      },
+      "help": {
+        "appletStore": {
+          "description": "[TODO] Browse and install applets from the community. Open the Store menu to discover new apps.",
+          "title": "[TODO] Applet Store"
+        },
+        "createWithRyosChat": {
+          "description": "[TODO] Ask ryOS Chat to create custom apps and applets for you. Share your ideas and get working apps instantly.",
+          "title": "[TODO] Create with ryOS Chat"
+        },
+        "keepUpdated": {
+          "description": "[TODO] Check for updates in the Store menu to get the latest versions of your installed applets.",
+          "title": "[TODO] Keep Updated"
+        },
+        "openFromFinder": {
+          "description": "[TODO] Browse and open applets saved on your system using the File menu.",
+          "title": "[TODO] Open from Finder"
+        },
+        "shareApplets": {
+          "description": "[TODO] Share your favorite applets with others using the Share Applet option in the File menu.",
+          "title": "[TODO] Share Applets"
+        },
+        "viewApplets": {
+          "description": "[TODO] Open and run applets saved from ryOS Chat or downloaded from the store.",
+          "title": "[TODO] View Applets"
+        }
+      },
+      "labels": {
+        "addToFeatured": "[TODO] Add to featured",
+        "deleteApplet": "[TODO] Delete applet",
+        "discover": "[TODO] Discover",
+        "removeFromFeatured": "[TODO] Remove from featured",
+        "searchApplets": "[TODO] Search applets",
+        "showAll": "[TODO] Show All"
+      },
+      "menu": {
+        "aboutApplets": "[TODO] About Applets",
+        "appletStore": "[TODO] Applet Store",
+        "appletsHelp": "[TODO] Applets Help",
+        "checkForUpdates": "[TODO] Check for Updates",
+        "createAccount": "[TODO] Create Account...",
+        "exportAs": "[TODO] Export As...",
+        "html": "[TODO] HTML",
+        "importFromDevice": "[TODO] Import from Device...",
+        "logOut": "[TODO] Log Out",
+        "login": "[TODO] Login...",
+        "noAppletsOpen": "[TODO] No applets open",
+        "open": "[TODO] Open...",
+        "openAppletStore": "[TODO] Open Applet Store",
+        "ryosApp": "[TODO] ryOS App",
+        "shareApplet": "[TODO] Share Applet...",
+        "store": "[TODO] Store",
+        "untitled": "[TODO] Untitled",
+        "updateApplets": "[TODO] Update {{count}} applet",
+        "updateAppletsPlural": "[TODO] Update {{count}} applets",
+        "window": "[TODO] Window"
+      },
+      "name": "[TODO] Applet Store",
+      "sections": {
+        "featured": "[TODO] Featured",
+        "installed": "[TODO] Installed",
+        "newApplets": "[TODO] New Applets",
+        "updatesAvailable": "[TODO] Updates Available"
+      },
+      "status": {
+        "get": "[TODO] Get",
+        "open": "[TODO] Open",
+        "save": "[TODO] Save",
+        "update": "[TODO] Update",
+        "updatedDaysAgo": "[TODO] Updated {{days}}d ago",
+        "updatedHoursAgo": "[TODO] Updated {{hours}}h ago",
+        "updatedJustNow": "[TODO] Updated just now",
+        "updatedMinutesAgo": "[TODO] Updated {{minutes}}m ago",
+        "updatedMonthsAgo": "[TODO] Updated {{months}}mo ago",
+        "updatedWeeksAgo": "[TODO] Updated {{weeks}}w ago",
+        "updatedYearsAgo": "[TODO] Updated {{years}}y ago",
+        "updatedYesterday": "[TODO] Updated yesterday"
+      }
+    },
+    "chats": {
+      "ariaLabels": {
+        "copyMessage": "[TODO] Copy message",
+        "deleteMessage": "[TODO] Delete message",
+        "deleteRoom": "[TODO] Delete room",
+        "leaveConversation": "[TODO] Leave conversation",
+        "mentionRyo": "[TODO] Mention Ryo",
+        "messageUser": "[TODO] Message {{username}}",
+        "newChat": "[TODO] New Chat",
+        "pushToTalk": "[TODO] Push to Talk",
+        "sendNudge": "[TODO] Send a Nudge",
+        "speakMessage": "[TODO] Speak message",
+        "stopGeneration": "[TODO] Stop generation",
+        "stopSpeech": "[TODO] Stop speech"
+      },
+      "description": "[TODO] Chat with AI",
+      "dialogs": {
+        "addUsersToPrivateChat": "[TODO] Add Users to Private Chat",
+        "cancel": "[TODO] Cancel",
+        "clearChatsDescription": "[TODO] Are you sure you want to clear this chat? This action cannot be undone.",
+        "clearChatsTitle": "[TODO] Clear Chats",
+        "create": "[TODO] Create",
+        "creating": "[TODO] Creating...",
+        "deleteChatRoomDescription": "[TODO] Are you sure you want to delete the room \"{{name}}\"? This action cannot be undone.",
+        "deleteChatRoomTitle": "[TODO] Delete Chat Room",
+        "failedToCreateRoom": "[TODO] Failed to create room",
+        "leaveConversationDescription": "[TODO] Are you sure you want to leave \"{{name}}\"? You will no longer see messages in this conversation.",
+        "leaveConversationTitle": "[TODO] Leave Conversation",
+        "newChatDescription": "[TODO] Create a public chat room or start a private conversation",
+        "newChatDescriptionPrivate": "[TODO] Start a private conversation",
+        "newChatTitle": "[TODO] New Chat",
+        "passwordMinLengthError": "[TODO] Password must be at least 8 characters",
+        "passwordSetFailed": "[TODO] Failed to set password",
+        "passwordSetSuccess": "[TODO] Password Set",
+        "passwordSetSuccessDescription": "[TODO] You can now use your password to recover your account",
+        "public": "[TODO] Public",
+        "roomName": "[TODO] Room Name",
+        "roomNamePlaceholder": "[TODO] general",
+        "saveTranscriptDescription": "[TODO] Enter a name for your chat transcript file",
+        "saveTranscriptTitle": "[TODO] Save Transcript",
+        "searchUsernamePlaceholder": "[TODO] Search username...",
+        "setPasswordButton": "[TODO] Set Password",
+        "setPasswordDescription": "[TODO] Set a password to enable account recovery. You can use this password to get a new token if you lose access.",
+        "setPasswordTitle": "[TODO] Set Password"
+      },
+      "help": {
+        "chatWithRyo": {
+          "description": "[TODO] Type your message to chat with Ryo, generate code, or get help with ryOS.",
+          "title": "[TODO] Chat with Ryo"
+        },
+        "controlApps": {
+          "description": "[TODO] Ask Ryo to launch or close apps, switch themes, or control iPod playback.",
+          "title": "[TODO] Control Apps"
+        },
+        "createEditFiles": {
+          "description": "[TODO] Ask Ryo to create HTML applets, edit documents, read files, or search the Applets Store.",
+          "title": "[TODO] Create & Edit Files"
+        },
+        "joinChatRooms": {
+          "description": "[TODO] Connect with others in public chat rooms. Mention @ryo for AI responses.",
+          "title": "[TODO] Join Chat Rooms"
+        },
+        "nudgeDjMode": {
+          "description": "[TODO] Send 👋 nudge for context-aware tips. Ryo becomes a DJ when music is playing.",
+          "title": "[TODO] Nudge & DJ Mode"
+        },
+        "pushToTalk": {
+          "description": "[TODO] Hold Space or tap the microphone button to record and send voice messages.",
+          "title": "[TODO] Push to Talk"
+        }
+      },
+      "menu": {
+        "aboutChats": "[TODO] About Chats",
+        "chatSpeech": "[TODO] Chat Speech",
+        "chats": "[TODO] Chats",
+        "chatsHelp": "[TODO] Chats Help",
+        "clearChat": "[TODO] Clear Chat",
+        "createAccount": "[TODO] Create Account...",
+        "decreaseFontSize": "[TODO] Decrease Font Size",
+        "increaseFontSize": "[TODO] Increase Font Size",
+        "logOut": "[TODO] Log Out",
+        "login": "[TODO] Login...",
+        "newChat": "[TODO] New Chat...",
+        "resetFontSize": "[TODO] Reset Font Size",
+        "saveTranscript": "[TODO] Save Transcript...",
+        "showRooms": "[TODO] Show Rooms",
+        "sound": "[TODO] Sound",
+        "typingSynth": "[TODO] Typing Synth"
+      },
+      "messages": {
+        "delete": "[TODO] Delete",
+        "greeting": "[TODO] 👋 hey! i'm ryo. ask me anything!",
+        "ryo": "[TODO] Ryo",
+        "you": "[TODO] You"
+      },
+      "name": "[TODO] Chats",
+      "sidebar": {
+        "channels": "[TODO] Channels",
+        "chats": "[TODO] Chats",
+        "new": "[TODO] new",
+        "online": "[TODO] online",
+        "private": "[TODO] Private"
+      },
+      "status": {
+        "chatRequiresInternet": "[TODO] Chat requires an internet connection",
+        "clear": "[TODO] Clear",
+        "createAccountToContinue": "[TODO] Create account to continue...",
+        "dailyLimitReached": "[TODO] Daily AI message limit reached.",
+        "editing": "[TODO] editing...",
+        "leave": "[TODO] Leave",
+        "loginToChat": "[TODO] Login to Chat",
+        "loginToContinue": "[TODO] Login to continue chatting with Ryo.",
+        "loginToRyOS": "[TODO] Login to ryOS",
+        "newChat": "[TODO] New chat",
+        "noTranscriptionText": "[TODO] No transcription text received",
+        "nudgeSent": "[TODO] 👋 *nudge sent*",
+        "recording": "[TODO] Recording...",
+        "retry": "[TODO] Retry",
+        "ryo": "[TODO] @ryo",
+        "ryoWillRespond": "[TODO] Ryo will respond to this message",
+        "scrollToBottom": "[TODO] Scroll to bottom",
+        "sessionExpired": "[TODO] Session expired. Please login again.",
+        "startNewConversation": "[TODO] Start a new conversation?",
+        "thinking": "[TODO] Thinking",
+        "transcribing": "[TODO] Transcribing...",
+        "typeMessage": "[TODO] Type a message...",
+        "typeOrPushSpace": "[TODO] Type or push 'space' to talk...",
+        "usingModel": "[TODO] Using {{model}}"
+      },
+      "tokenStatus": {
+        "clickToRefresh": "[TODO] Click to manually refresh token",
+        "daysAgo": "[TODO] {{days}}d ago",
+        "daysOld": "[TODO] {{days}}d old",
+        "hoursAgo": "[TODO] {{hours}}h ago",
+        "justNow": "[TODO] just now",
+        "last": "[TODO] Last",
+        "minutesAgo": "[TODO] {{minutes}}m ago",
+        "refresh": "[TODO] Refresh",
+        "refreshed": "[TODO] Refreshed",
+        "refreshing": "[TODO] Refreshing...",
+        "tokenRefreshed": "[TODO] Token refreshed"
+      },
+      "toolCalls": {
+        "addedAndStartedPlaying": "[TODO] Added and started playing new song",
+        "addingSong": "[TODO] Adding song…",
+        "calling": "[TODO] Calling {{toolName}}…",
+        "changingSettings": "[TODO] Changing settings…",
+        "closed": "[TODO] Closed {{appName}}",
+        "closing": "[TODO] Closing {{appName}}…",
+        "contentWritten": "[TODO] Content written",
+        "controllingPlayback": "[TODO] Controlling playback…",
+        "edited": "[TODO] Edited {{fileName}}",
+        "editingFile": "[TODO] Editing file…",
+        "error": "[TODO] Error: {{errorText}}",
+        "fetchingApplet": "[TODO] Fetching applet…",
+        "fileCreated": "[TODO] File created",
+        "findingFiles": "[TODO] Finding files…",
+        "foundApplets": "[TODO] Found {{count}} applet",
+        "foundAppletsPlural": "[TODO] Found {{count}} applets",
+        "foundApplications": "[TODO] Found {{count}} application",
+        "foundApplicationsList": "[TODO] Found {{count}} application",
+        "foundApplicationsListPlural": "[TODO] Found {{count}} applications",
+        "foundApplicationsPlural": "[TODO] Found {{count}} applications",
+        "foundDocuments": "[TODO] Found {{count}} document",
+        "foundDocumentsPlural": "[TODO] Found {{count}} documents",
+        "foundFileType": "[TODO] Found {{count}} {{fileType}}",
+        "foundFileTypePlural": "[TODO] Found {{count}} {{fileType}}s",
+        "foundSharedApplets": "[TODO] Found {{count}} shared applet",
+        "foundSharedAppletsPlural": "[TODO] Found {{count}} shared applets",
+        "foundSongs": "[TODO] Found {{count}} song",
+        "foundSongsInMusic": "[TODO] Found {{count}} song in Music",
+        "foundSongsInMusicPlural": "[TODO] Found {{count}} songs in Music",
+        "foundSongsPlural": "[TODO] Found {{count}} songs",
+        "generating": "[TODO] Generating…",
+        "ipodAdded": "[TODO] Added '{{title}}' to iPod. Press the center button or play button on the iPod to start playing",
+        "ipodAddedAndPlaying": "[TODO] Added '{{title}}' to iPod and started playing",
+        "ipodCannotAdd": "[TODO] Cannot add {{id}}: Video unavailable or invalid",
+        "ipodFailedToAdd": "[TODO] Failed to add {{id}} to iPod",
+        "ipodFailedToAddWithError": "[TODO] Failed to add {{id}}: {{error}}",
+        "ipodPaused": "[TODO] Paused",
+        "ipodPausedTrack": "[TODO] Paused {{trackDesc}}",
+        "ipodPlaying": "[TODO] Playing",
+        "ipodPlayingTrack": "[TODO] Playing {{trackDesc}}",
+        "ipodReady": "[TODO] iPod is ready. Press the center button or play button on the iPod to start playing",
+        "ipodSelected": "[TODO] Selected {{trackDesc}}. Press the center button or play button on the iPod to start playing",
+        "ipodSkippedTo": "[TODO] Skipped to {{trackDesc}}",
+        "ipodSkippedToNext": "[TODO] Skipped to next track",
+        "ipodSongNotFound": "[TODO] Song not found in iPod library",
+        "ipodTranslatedLyricsTo": "[TODO] Translated lyrics to {{langName}}",
+        "ipodTurnedOffFullScreen": "[TODO] Turned off full screen mode",
+        "ipodTurnedOffLyricsTranslation": "[TODO] Turned off lyrics translation",
+        "ipodTurnedOffVideo": "[TODO] Turned off video",
+        "ipodTurnedOnFullScreen": "[TODO] Turned on full screen mode",
+        "ipodTurnedOnVideo": "[TODO] Turned on video",
+        "ipodWentBackTo": "[TODO] Went back to {{trackDesc}}",
+        "ipodWentBackToPrevious": "[TODO] Went back to previous track",
+        "launched": "[TODO] Launched {{appName}}",
+        "launchedWithUrl": "[TODO] Launched {{url}}",
+        "launchedWithUrlAndYear": "[TODO] Launched {{url}} in {{year}}",
+        "launching": "[TODO] Launching {{appName}}…",
+        "launchingApp": "[TODO] Launching app…",
+        "listedItems": "[TODO] Listed items",
+        "listingApplications": "[TODO] Listing applications…",
+        "listingSharedApplets": "[TODO] Listing shared applets…",
+        "loadingMusicLibrary": "[TODO] Loading music library…",
+        "multipleMatchesFound": "[TODO] Multiple matches found",
+        "musicLibraryEmpty": "[TODO] Music library is empty",
+        "noFileTypeFound": "[TODO] No {{fileType}}s found in {{path}} directory",
+        "noItemsFound": "[TODO] No items found",
+        "noSharedAppletsAvailable": "[TODO] No shared applets available",
+        "noSharedAppletsMatched": "[TODO] No shared applets matched \"{{query}}\"",
+        "opened": "[TODO] Opened",
+        "openedApplet": "[TODO] Opened {{appletName}}",
+        "openedDocument": "[TODO] Opened document: {{fileName}}",
+        "openedFile": "[TODO] Opened {{fileName}}",
+        "openingAppletPreview": "[TODO] Opening applet preview…",
+        "openingFile": "[TODO] Opening file…",
+        "pausedIpod": "[TODO] Paused iPod",
+        "playing": "[TODO] Playing {{title}}",
+        "playingByArtist": "[TODO] Playing {{title}} by {{artist}}",
+        "playingIpod": "[TODO] Playing iPod",
+        "playingSong": "[TODO] Playing song…",
+        "playingSongByArtist": "[TODO] Playing song by {{artist}}",
+        "playingSongGeneric": "[TODO] Playing song",
+        "playingSongWithId": "[TODO] Playing song ({{id}})",
+        "playingTrack": "[TODO] Playing {{title}}",
+        "playingTrackByArtist": "[TODO] Playing {{title}} by {{artist}}",
+        "preparingHtmlPreview": "[TODO] Preparing HTML preview...",
+        "read": "[TODO] Read {{fileName}}",
+        "readingFile": "[TODO] Reading file…",
+        "running": "[TODO] Running {{toolName}}…",
+        "settingsCheckingForUpdates": "[TODO] Checking for updates…",
+        "settingsLanguageChanged": "[TODO] Language changed to {{language}}",
+        "settingsMasterVolumeSet": "[TODO] Volume set to {{volume}}%",
+        "settingsNoChanges": "[TODO] No changes made",
+        "settingsSpeechDisabled": "[TODO] Text-to-speech disabled",
+        "settingsSpeechEnabled": "[TODO] Text-to-speech enabled",
+        "settingsThemeChanged": "[TODO] Theme changed to {{theme}}",
+        "settingsUpdated": "[TODO] Settings updated",
+        "skippedToNextTrack": "[TODO] Skipped to next track",
+        "skippedToPreviousTrack": "[TODO] Skipped to previous track",
+        "skippingToNext": "[TODO] Skipping to next…",
+        "skippingToPrevious": "[TODO] Skipping to previous…",
+        "switchedTo": "[TODO] Switched to {{theme}}",
+        "switchingTheme": "[TODO] Switching theme…",
+        "textNotFound": "[TODO] Text not found",
+        "toggledIpodPlayback": "[TODO] Toggled iPod playback",
+        "toolExecutionFailed": "[TODO] Tool execution failed",
+        "writingContent": "[TODO] Writing content…"
+      }
+    },
+    "control-panels": {
+      "aiModel": "[TODO] AI Model",
+      "aiModelDescription": "[TODO] Used in Chats, IE, and more",
+      "appearance": "[TODO] Appearance",
+      "backup": "[TODO] Backup",
+      "backupRestoreDescription": "[TODO] Backup or restore all app settings and files.",
+      "bootScreen": "[TODO] Boot Screen",
+      "bootScreenDescription": "[TODO] Test the boot screen animation",
+      "chatSynth": "[TODO] Chat Synth",
+      "chatSynthVolume": "[TODO] Chat Synth Volume",
+      "checkForUpdates": "[TODO] Check for Updates",
+      "color": "[TODO] Color",
+      "crt": "[TODO] CRT",
+      "custom": "[TODO] Custom",
+      "debugMode": "[TODO] Debug Mode",
+      "debugModeDescription": "[TODO] Enable debugging settings",
+      "default": "[TODO] Default",
+      "description": "[TODO] System settings",
+      "displayMode": "[TODO] Display Mode",
+      "dream": "[TODO] Dream",
+      "elevenlabs": "[TODO] ElevenLabs",
+      "elevenlabsVoiceId": "[TODO] ElevenLabs Voice ID",
+      "formatFileSystem": "[TODO] Format File System",
+      "formatFileSystemDescription": "[TODO] This will clear all files (except sample docs), images, and custom wallpapers. ryOS will restart after format.",
+      "help": {
+        "aiModel": {
+          "description": "[TODO] Select the AI model used by Chats and Terminal assistant",
+          "title": "[TODO] AI Model"
+        },
+        "appearance": {
+          "description": "[TODO] Choose photos, patterns, or shader effects for your desktop wallpaper",
+          "title": "[TODO] Appearance"
+        },
+        "backupRestore": {
+          "description": "[TODO] Export or restore all settings and files",
+          "title": "[TODO] Backup & Restore"
+        },
+        "shaderEffects": {
+          "description": "[TODO] Enable CRT, Galaxy, or Aurora visual effects",
+          "title": "[TODO] Shader Effects"
+        },
+        "sounds": {
+          "description": "[TODO] Toggle UI sounds, typing synth, and Terminal / IE effects",
+          "title": "[TODO] Sounds"
+        },
+        "system": {
+          "description": "[TODO] Reset preferences or format the virtual file system",
+          "title": "[TODO] System"
+        }
+      },
+      "highContrast": "[TODO] High Contrast",
+      "invert": "[TODO] Invert",
+      "ipod": "[TODO] iPod",
+      "ipodVolume": "[TODO] iPod Volume",
+      "logIn": "[TODO] Log In",
+      "logOut": "[TODO] Log Out",
+      "logOutOfAllDevices": "[TODO] Log Out of All Devices",
+      "loggedInToRyOS": "[TODO] Logged in to ryOS",
+      "loggingOut": "[TODO] Logging out...",
+      "login": "[TODO] Login",
+      "loginToSendMessages": "[TODO] Login to send messages and more",
+      "master": "[TODO] Master",
+      "masterVolume": "[TODO] Master Volume",
+      "menu": {
+        "aboutControlPanels": "[TODO] About Control Panels",
+        "app": "[TODO] App",
+        "controlPanelsHelp": "[TODO] Control Panels Help"
+      },
+      "mono": "[TODO] Mono",
+      "name": "[TODO] Control Panels",
+      "openai": "[TODO] OpenAI",
+      "openaiVoice": "[TODO] OpenAI Voice",
+      "patterns": "[TODO] Patterns",
+      "resetAllSettings": "[TODO] Reset All Settings",
+      "resetAllSettingsDescription": "[TODO] This will clear all saved settings and restore defaults.",
+      "restore": "[TODO] Restore",
+      "ryOSAccount": "[TODO] ryOS Account",
+      "select": "[TODO] Select",
+      "selectACategory": "[TODO] Select a category",
+      "selectAPreset": "[TODO] Select a preset",
+      "sepia": "[TODO] Sepia",
+      "setPassword": "[TODO] Set Password",
+      "shaderEffect": "[TODO] Shader Effect",
+      "shaderEffectDescription": "[TODO] Performance intensive background effect",
+      "show": "[TODO] Show",
+      "sound": "[TODO] Sound",
+      "speech": "[TODO] Speech",
+      "speechVolume": "[TODO] Speech Volume",
+      "synth": "[TODO] Synth",
+      "system": "[TODO] System",
+      "terminalIeAmbientSynth": "[TODO] Synth",
+      "theme": "[TODO] Theme",
+      "themeDescription": "[TODO] Changes the appearance of windows, menus, and controls",
+      "ttsModel": "[TODO] TTS Model",
+      "ttsModelDescription": "[TODO] Text-to-speech provider",
+      "ttsVoice": "[TODO] TTS Voice",
+      "ui": "[TODO] UI",
+      "uiSounds": "[TODO] UI Sounds",
+      "uiVolume": "[TODO] UI Volume"
+    },
+    "finder": {
+      "contextMenu": {
+        "addToDesktop": "Добавить на Рабочий стол",
+        "date": "Дата",
+        "duplicate": "Дублировать",
+        "emptyTrash": "Очистить Корзину...",
+        "kind": "Вид",
+        "moveToTrash": "Переместить в Корзину",
+        "name": "Имя",
+        "newFolder": "Новая папка…",
+        "open": "Открыть",
+        "rename": "Переименовать…",
+        "size": "Размер",
+        "sortBy": "Сортировать по"
+      },
+      "defaultNames": {
+        "copy": "копия",
+        "untitledFolder": "безымянная папка"
+      },
+      "description": "Просмотр и управление файлами",
+      "dialogs": {
+        "emptyTrash": {
+          "description": "Вы уверены, что хотите очистить Корзину? Это действие невозможно отменить.",
+          "title": "Очистить Корзину"
+        },
+        "newFolder": {
+          "description": "Введите имя для новой папки:",
+          "title": "Новая папка"
+        },
+        "renameItem": {
+          "description": "Введите новое имя для «{{name}}»",
+          "title": "Переименовать объект"
+        }
+      },
+      "fileTypes": {
+        "application": "Приложение",
+        "bmpImage": "Изображение BMP",
+        "document": "Документ",
+        "folder": "Папка",
+        "gifImage": "Изображение GIF",
+        "htmlApplet": "Апплет HTML",
+        "internetShortcut": "Интернет-ярлык",
+        "jpegImage": "Изображение JPEG",
+        "mp3Audio": "Аудио MP3",
+        "pngImage": "Изображение PNG",
+        "quicktimeMovie": "Фильм QuickTime",
+        "unknown": "Неизвестно",
+        "webpImage": "Изображение WebP"
+      },
+      "folders": {
+        "applets": "Апплеты",
+        "applications": "Приложения",
+        "desktop": "Рабочий стол",
+        "documents": "Документы",
+        "images": "Изображения",
+        "music": "Музыка",
+        "sites": "Сайты",
+        "trash": "Корзина",
+        "videos": "Видео"
+      },
+      "help": {
+        "browseNavigate": {
+          "description": "Кнопки «Назад/Вперед», адресная строка и меню «Переход» для быстрой навигации",
+          "title": "Просмотр и навигация"
+        },
+        "fileManagement": {
+          "description": "Создавайте папки, переименовывайте, перемещайте и перетаскивайте объекты для организации файлов",
+          "title": "Управление файлами"
+        },
+        "quickAccess": {
+          "description": "Мгновенно переходите к Документам, Программам или Корзине из меню «Переход»",
+          "title": "Быстрый доступ"
+        },
+        "storageInfo": {
+          "description": "Просматривайте свободное место и количество объектов в нижнем колонтитуле окна",
+          "title": "Информация о хранилище"
+        },
+        "trash": {
+          "description": "Перетаскивайте файлы в Корзину и очищайте ее для окончательного удаления",
+          "title": "Корзина"
+        },
+        "viewSort": {
+          "description": "Изменяйте размеры значков и сортируйте по имени, типу, размеру или дате",
+          "title": "Просмотр и сортировка"
+        }
+      },
+      "menu": {
+        "aboutFinder": "О Finder",
+        "back": "Назад",
+        "byDate": "по дате",
+        "byIcon": "По значкам",
+        "byKind": "по типу",
+        "byList": "Списком",
+        "byName": "по имени",
+        "bySize": "по размеру",
+        "bySmallIcon": "По мелким значкам",
+        "duplicate": "Дублировать",
+        "emptyTrash": "Очистить Корзину...",
+        "finderHelp": "Справка Finder",
+        "forward": "Вперед",
+        "importFromDevice": "Импортировать с устройства...",
+        "moveToTrash": "Переместить в Корзину",
+        "newFinderWindow": "Новое окно Finder",
+        "newFolder": "Новая папка...",
+        "putBack": "Вернуть на место",
+        "rename": "Переименовать..."
+      },
+      "messages": {
+        "appletImported": "Апплет импортирован!",
+        "appletImportedDesc": "{{name}} сохранено в /Applets{{iconText}}",
+        "appletImportedIconText": " с {{icon}} значком",
+        "importFailed": "Импорт не удался",
+        "importFailedAppletDesc": "Не удалось импортировать файл апплета.",
+        "importFailedDesc": "Не удалось импортировать файл.",
+        "invalidFileType": "Недопустимый тип файла",
+        "invalidFileTypeDesc": "Только файлы .app, .gz и .html можно импортировать в Апплеты",
+        "loading": "Загрузка..."
+      },
+      "name": "Finder",
+      "placeholders": {
+        "enterPath": "Введите путь"
+      },
+      "statusBar": {
+        "available": "доступно",
+        "item": "объект",
+        "items": "объектов"
+      },
+      "tableHeaders": {
+        "modified": "Изменено",
+        "name": "Имя",
+        "size": "Размер",
+        "type": "Тип"
+      },
+      "window": {
+        "finder": "Finder",
+        "macintoshHd": "Macintosh HD"
+      }
+    },
+    "internet-explorer": {
+      "addFavorite": "[TODO] Add Favorite",
+      "aiLanguage": "[TODO] AI Language",
+      "alienLanguage": "[TODO] Alien Language",
+      "anErrorOccurred": "Произошла ошибка",
+      "appName": "[TODO] Internet Explorer",
+      "areYouSureClearFavorites": "[TODO] Are you sure you want to clear all favorites?",
+      "areYouSureClearHistory": "[TODO] Are you sure you want to clear all history?",
+      "areYouSureResetFavorites": "[TODO] Are you sure you want to reset favorites to default?",
+      "aurora": "[TODO] Aurora",
+      "australia": "[TODO] Australia",
+      "autodetected": "[TODO] Auto-detected",
+      "back": "Назад",
+      "brazil": "[TODO] Brazil",
+      "canada": "[TODO] Canada",
+      "cannotAccessWebsite": "Не удается получить доступ к {{url}}. Веб-сайт может блокировать доступ или требовать аутентификации.",
+      "cannotFindServerOrDnsError": "Не удается найти сервер или ошибка DNS",
+      "checkWebAddressAndTryAgain": "Проверьте введенный веб-адрес и повторите попытку.",
+      "china": "[TODO] China",
+      "chineseTraditional": "[TODO] Chinese (Traditional)",
+      "clearFavorites": "[TODO] Clear Favorites",
+      "clearHistory": "[TODO] Clear History",
+      "closeTimeMachine": "[TODO] Close Time Machine",
+      "description": "[TODO] Browse the web",
+      "digitalBeingLanguage": "[TODO] Digital Being Language",
+      "english": "[TODO] English",
+      "enterTitleForFavorite": "[TODO] Enter a title for this favorite",
+      "enterUrl": "[TODO] Enter URL",
+      "error": "Ошибка",
+      "errorLoadingPreview": "[TODO] Error loading preview.",
+      "failedToGenerateFuturisticWebsite": "Не удалось сгенерировать футуристический веб-сайт. Возможно, модель ИИ не выбрана.",
+      "favorite": "[TODO] Favorite",
+      "fetch": "[TODO] Fetch",
+      "fetchingContentForReconstruction": "[TODO] Fetching content of {{hostname}} for reconstruction...",
+      "fetchingFromYear": "[TODO] Fetching {{hostname}} from year {{year}}...",
+      "folder": "[TODO] Folder",
+      "france": "[TODO] France",
+      "french": "[TODO] French",
+      "from": "[TODO] from",
+      "futureTimeline": {
+        "description": "[TODO] Edit settings for the future timeline",
+        "reset": "[TODO] Reset",
+        "selectYear": "[TODO] Select year",
+        "title": "[TODO] Edit Future Timeline"
+      },
+      "galaxy": "[TODO] Galaxy",
+      "german": "[TODO] German",
+      "germany": "[TODO] Germany",
+      "goBackToPreviousPage": "Вернитесь на предыдущую страницу.",
+      "goToNow": "[TODO] Go to Now",
+      "help": {
+        "browseWeb": {
+          "description": "[TODO] Enter URLs and use navigation buttons (Back, Forward, Refresh, Stop).",
+          "title": "[TODO] Browse the Web"
+        },
+        "exploreTimeNodes": {
+          "description": "[TODO] Click the clock icon in the address bar to see available snapshots of the current site across time.",
+          "title": "[TODO] Explore Time Nodes"
+        },
+        "historyReimagined": {
+          "description": "[TODO] AI reconstructs very old sites (pre-1996) and imagines future web experiences.",
+          "title": "[TODO] History Reimagined"
+        },
+        "saveFavorites": {
+          "description": "[TODO] Add sites and specific years to your Favorites bar for easy access.",
+          "title": "[TODO] Save Favorites"
+        },
+        "shareJourney": {
+          "description": "[TODO] Use the Share button to generate a link to the exact page and year you're viewing.",
+          "title": "[TODO] Share Your Journey"
+        },
+        "travelThroughTime": {
+          "description": "[TODO] Select a year from the dropdown to view websites from the past or future.",
+          "title": "[TODO] Travel Through Time"
+        }
+      },
+      "history": "[TODO] History",
+      "host": "Узел: {{hostname}}",
+      "in": "[TODO] in",
+      "india": "[TODO] India",
+      "invalidShareLink": "[TODO] Invalid Share Link",
+      "japan": "[TODO] Japan",
+      "japanese": "[TODO] Japanese",
+      "korean": "[TODO] Korean",
+      "latin": "[TODO] Latin",
+      "loading": "[TODO] Loading {{hostname}}...",
+      "loadingEllipsis": "[TODO] Loading...",
+      "loadingTitle": "Internet Explorer - Загрузка",
+      "loadingTitleWithSite": "{{site}} - Загрузка",
+      "menu": {
+        "aboutInternetExplorer": "[TODO] About Internet Explorer",
+        "addToFavorites": "[TODO] Add to Favorites...",
+        "aiLanguage": "[TODO] AI Language",
+        "alien": "[TODO] Alien",
+        "australia": "[TODO] Australia",
+        "auto": "[TODO] Auto",
+        "back": "[TODO] Back",
+        "brazil": "[TODO] Brazil",
+        "canada": "[TODO] Canada",
+        "china": "[TODO] China",
+        "chinese": "[TODO] Chinese",
+        "clearFavorites": "[TODO] Clear Favorites...",
+        "clearHistory": "[TODO] Clear History...",
+        "digitalBeing": "[TODO] Digital Being",
+        "editFuture": "[TODO] Edit Future...",
+        "english": "[TODO] English",
+        "favorites": "[TODO] Favorites",
+        "folder": "[TODO] Folder",
+        "forward": "[TODO] Forward",
+        "france": "[TODO] France",
+        "french": "[TODO] French",
+        "german": "[TODO] German",
+        "germany": "[TODO] Germany",
+        "goHome": "[TODO] Go Home",
+        "goToUrl": "[TODO] Go to URL",
+        "history": "[TODO] History",
+        "india": "[TODO] India",
+        "internetExplorerHelp": "[TODO] Internet Explorer Help",
+        "italian": "[TODO] Italian",
+        "japan": "[TODO] Japan",
+        "japanese": "[TODO] Japanese",
+        "korea": "[TODO] Korea",
+        "korean": "[TODO] Korean",
+        "language": "[TODO] Language",
+        "latin": "[TODO] Latin",
+        "location": "[TODO] Location",
+        "now": "[TODO] Now",
+        "openTimeMachine": "[TODO] Open Time Machine",
+        "portugal": "[TODO] Portugal",
+        "portuguese": "[TODO] Portuguese",
+        "refresh": "[TODO] Refresh",
+        "resetFavorites": "[TODO] Reset Favorites...",
+        "russia": "[TODO] Russia",
+        "russian": "[TODO] Russian",
+        "sanskrit": "[TODO] Sanskrit",
+        "sharePage": "[TODO] Share Page...",
+        "spain": "[TODO] Spain",
+        "spanish": "[TODO] Spanish",
+        "stop": "[TODO] Stop",
+        "unitedKingdom": "[TODO] United Kingdom",
+        "unitedStates": "[TODO] United States",
+        "welsh": "[TODO] Welsh",
+        "year": "[TODO] Year"
+      },
+      "name": "[TODO] Internet Explorer",
+      "nebula": "[TODO] Nebula",
+      "newer": "[TODO] Newer",
+      "newerVersion": "[TODO] Newer Version",
+      "newest": "[TODO] Newest",
+      "now": "[TODO] Now",
+      "off": "[TODO] Off",
+      "older": "[TODO] Older",
+      "olderVersion": "[TODO] Older Version",
+      "oldest": "[TODO] Oldest",
+      "openingRequestedPage": "[TODO] Opening requested page",
+      "openingSharedPage": "Открытие общей страницы",
+      "page": "[TODO] Page",
+      "pageCouldNotBeLoadedInIframe": "Страницу не удалось загрузить в iframe. Это может быть связано с ограничениями безопасности или проблемами с сетью.",
+      "pleaseTryTheFollowing": "Попробуйте следующее:",
+      "portugal": "[TODO] Portugal",
+      "portuguese": "[TODO] Portuguese",
+      "reconstructingHistoryForYear": "[TODO] Reconstructing history of {{hostname}} for year {{year}}...",
+      "refresh": "Обновить",
+      "reimaginingForYear": "[TODO] Reimagining {{hostname}} for year {{year}}...",
+      "requiresInternetConnection": "Для навигации Internet Explorer требуется подключение к Интернету",
+      "resetFavorites": "[TODO] Reset Favorites",
+      "russia": "Россия",
+      "sanskrit": "[TODO] Sanskrit",
+      "search": "[TODO] Search",
+      "shareLinkInvalidOrCorrupted": "[TODO] The share link provided is invalid or corrupted.",
+      "shareThisPage": "[TODO] Share this page",
+      "shareThisPageAndTime": "[TODO] Share this page and time",
+      "showCachedVersionsTimeMachine": "[TODO] Show cached versions (Time Machine)",
+      "site": "[TODO] Site",
+      "southKorea": "[TODO] South Korea",
+      "spain": "[TODO] Spain",
+      "spanish": "[TODO] Spanish",
+      "timeNodes": "[TODO] {{count}} Time Node",
+      "timeNodes_plural": "[TODO] {{count}} Time Nodes",
+      "travel": "[TODO] Travel",
+      "travellingTitle": "Internet Explorer - Переход",
+      "travellingTitleWithSite": "{{site}} - Переход",
+      "tryRefreshingThePage": "Попробуйте обновить страницу.",
+      "unableToLoadPreview": "[TODO] Unable to load preview.",
+      "unitedKingdom": "[TODO] United Kingdom",
+      "unitedStates": "[TODO] United States",
+      "welsh": "[TODO] Welsh",
+      "year": "[TODO] Year"
+    },
+    "ipod": {
+      "ariaLabels": {
+        "closeFullscreen": "[TODO] Close fullscreen",
+        "cycleLyricLayout": "[TODO] Cycle lyric layout",
+        "nextTrack": "[TODO] Next track",
+        "playPause": "[TODO] Play/Pause",
+        "previousTrack": "[TODO] Previous track",
+        "select": "[TODO] Select",
+        "toggleHangulRomanization": "[TODO] Toggle Hangul / Romanization",
+        "translateLyrics": "[TODO] Translate lyrics"
+      },
+      "description": "[TODO] Music player",
+      "dialogs": {
+        "addSongDescription": "[TODO] Paste a YouTube link to add to your iPod",
+        "addSongTitle": "[TODO] Add Song",
+        "addedNewSongsToTop": "[TODO] Added {{newCount}} new song{{newPlural}} to the top{{updatedText}}. Total: {{total}} songs",
+        "addedSongsToTop": "[TODO] Added {{count}} song{{plural}} to the top. First song ready to play!",
+        "addingNewTrack": "[TODO] Adding new track from URL...",
+        "andUpdated": "[TODO]  and updated {{count}} track{{plural}}",
+        "autoUpdateFailed": "[TODO] Auto-Update Failed",
+        "autoUpdatedLibraryAddedSongs": "[TODO] Auto-updated library: added {{newCount}} new song{{newPlural}} to the top{{updatedText}}",
+        "autoUpdatedTrackMetadata": "[TODO] Auto-updated {{count}} track metadata",
+        "clearLibraryDescription": "[TODO] Are you sure you want to clear your entire music library? This action cannot be undone.",
+        "clearLibraryTitle": "[TODO] Clear Library",
+        "errorAdding": "[TODO] Error adding:",
+        "failedToAutoUpdateLibrary": "[TODO] Failed to auto-update library",
+        "failedToCheckForLibraryUpdates": "[TODO] Failed to check for library updates",
+        "failedToExportLibrary": "[TODO] Failed to export library",
+        "failedToImportLibrary": "[TODO] Failed to import library: Invalid format",
+        "failedToLoadSharedTrack": "[TODO] Failed to load shared track",
+        "failedToSyncWithServerLibrary": "[TODO] Failed to sync with server library",
+        "ipodRequiresInternet": "[TODO] iPod requires an internet connection",
+        "libraryAlreadyUpToDate": "[TODO] Your library is already up to date",
+        "libraryAutoUpdated": "[TODO] Library Auto-Updated",
+        "libraryExportedSuccessfully": "[TODO] Library exported successfully",
+        "libraryImportedSuccessfully": "[TODO] Library imported successfully",
+        "librarySynced": "[TODO] Library Synced",
+        "libraryUpToDateWithSongs": "[TODO] Library is up to date with {{count}} songs",
+        "libraryUpdated": "[TODO] Library Updated",
+        "noUpdates": "[TODO] No Updates",
+        "openedSharedTrack": "[TODO] Opened shared track. Press ⏯ to start playing.",
+        "syncFailed": "[TODO] Sync Failed",
+        "updateCheckFailed": "[TODO] Update Check Failed",
+        "youreOffline": "[TODO] You're offline"
+      },
+      "help": {
+        "addSongs": {
+          "description": "[TODO] Paste YouTube URLs to add music to your iPod.",
+          "title": "[TODO] Add Songs"
+        },
+        "displayFullscreen": {
+          "description": "[TODO] Adjust backlight, themes, and switch to fullscreen video.",
+          "title": "[TODO] Display & Fullscreen"
+        },
+        "playbackControls": {
+          "description": "[TODO] Play, pause, skip tracks, and control your current song.",
+          "title": "[TODO] Playback Controls"
+        },
+        "playbackModes": {
+          "description": "[TODO] Enable shuffle, repeat songs or playlists, and more.",
+          "title": "[TODO] Playback Modes"
+        },
+        "syncedLyrics": {
+          "description": "[TODO] View time-synced lyrics and get instant translations.",
+          "title": "[TODO] Synced Lyrics"
+        },
+        "wheelNavigation": {
+          "description": "[TODO] Use the click wheel to browse menus and your music library.",
+          "title": "[TODO] Wheel Navigation"
+        }
+      },
+      "keys": {
+        "enter": "[TODO] Enter",
+        "escape": "[TODO] Escape",
+        "select": "[TODO] Select"
+      },
+      "menu": {
+        "aboutIpod": "[TODO] About iPod",
+        "addSong": "[TODO] Add Song...",
+        "addToLibrary": "[TODO] Add to Library...",
+        "allSongs": "[TODO] All Songs",
+        "alternating": "[TODO] Alternating",
+        "backlight": "[TODO] Backlight",
+        "black": "[TODO] Black",
+        "classic": "[TODO] Classic",
+        "clearLibrary": "[TODO] Clear Library...",
+        "controls": "[TODO] Controls",
+        "exportLibrary": "[TODO] Export Library...",
+        "file": "[TODO] File",
+        "fullScreen": "[TODO] Full Screen",
+        "importLibrary": "[TODO] Import Library...",
+        "ipodHelp": "[TODO] iPod Help",
+        "korean": "[TODO] 한글",
+        "lcdFilter": "[TODO] LCD Filter",
+        "library": "[TODO] Library",
+        "lyrics": "[TODO] Lyrics",
+        "multi": "[TODO] Multi",
+        "next": "[TODO] Next",
+        "pause": "[TODO] Pause",
+        "play": "[TODO] Play",
+        "previous": "[TODO] Previous",
+        "refreshLyrics": "[TODO] Refresh Lyrics",
+        "repeatAll": "[TODO] Repeat All",
+        "repeatOne": "[TODO] Repeat One",
+        "shareApp": "[TODO] Share App...",
+        "shareSong": "[TODO] Share Song...",
+        "showLyrics": "[TODO] Show Lyrics",
+        "shuffle": "[TODO] Shuffle",
+        "single": "[TODO] Single",
+        "syncLibrary": "[TODO] Sync Library...",
+        "traditionalChinese": "[TODO] 繁體",
+        "translate": "[TODO] Translate",
+        "u2": "[TODO] U2",
+        "unknownArtist": "[TODO] Unknown Artist",
+        "video": "[TODO] Video",
+        "view": "[TODO] View"
+      },
+      "menuItems": {
+        "all": "[TODO] All",
+        "allSongs": "[TODO] All Songs",
+        "backlight": "[TODO] Backlight",
+        "extras": "[TODO] Extras",
+        "ipod": "[TODO] iPod",
+        "music": "[TODO] Music",
+        "nowPlaying": "[TODO] Now Playing",
+        "off": "[TODO] Off",
+        "on": "[TODO] On",
+        "one": "[TODO] One",
+        "repeat": "[TODO] Repeat",
+        "settings": "[TODO] Settings",
+        "shuffle": "[TODO] Shuffle",
+        "shuffleSongs": "[TODO] Shuffle Songs",
+        "theme": "[TODO] Theme"
+      },
+      "messages": {
+        "bitteKeineMusikStehlen": "[TODO] Bitte keine Musik stehlen",
+        "dontStealMusic": "[TODO] Don't steal music",
+        "neVolezPasLaMusique": "[TODO] Ne volez pas la musique",
+        "pleaseDontStealMusic": "[TODO] 音楽を盗用しないでください"
+      },
+      "name": "[TODO] iPod",
+      "status": {
+        "added": "[TODO] ♬ Added",
+        "hangulOn": "[TODO] Hangul On",
+        "layoutAlternating": "[TODO] Layout: Alternating",
+        "layoutCenter": "[TODO] Layout: Center",
+        "layoutFocus": "[TODO] Layout: Focus",
+        "libraryCleared": "[TODO] Library Cleared",
+        "lightOff": "[TODO] Light OFF",
+        "lightOn": "[TODO] Light ON",
+        "loadingLyrics": "[TODO] Loading lyrics…",
+        "offset": "[TODO] Offset",
+        "repeatAll": "[TODO] Repeat ALL",
+        "repeatOff": "[TODO] Repeat OFF",
+        "repeatOne": "[TODO] Repeat ONE",
+        "romanizationOn": "[TODO] Romanization On",
+        "shuffleOff": "[TODO] Shuffle OFF",
+        "shuffleOn": "[TODO] Shuffle ON",
+        "themeBlack": "[TODO] Theme: Black",
+        "themeClassic": "[TODO] Theme: Classic",
+        "themeU2": "[TODO] Theme: U2",
+        "translatingLyrics": "[TODO] Translating lyrics…"
+      },
+      "translationLanguages": {
+        "chinese": "[TODO] 中文",
+        "english": "[TODO] English",
+        "french": "[TODO] Français",
+        "german": "[TODO] Deutsch",
+        "italian": "[TODO] Italiano",
+        "japanese": "[TODO] 日本語",
+        "korean": "[TODO] 한국어",
+        "original": "[TODO] Original",
+        "portuguese": "[TODO] Português",
+        "russian": "[TODO] Русский",
+        "spanish": "[TODO] Español"
+      }
+    },
+    "minesweeper": {
+      "description": "[TODO] Classic puzzle game",
+      "help": {
+        "desktopControls": {
+          "description": "[TODO] Left-click to reveal, right-click to flag, double-click numbers to auto-reveal neighbors.",
+          "title": "[TODO] Desktop Controls"
+        },
+        "gameRules": {
+          "description": "[TODO] Numbers show adjacent mines. Flag every mine and reveal all safe cells to win.",
+          "title": "[TODO] Game Rules"
+        },
+        "mobileControls": {
+          "description": "[TODO] Tap to reveal, long-press to flag a mine.",
+          "title": "[TODO] Mobile Controls"
+        },
+        "restart": {
+          "description": "[TODO] Press the smiley face or choose Game ▸ New to start a fresh board.",
+          "title": "[TODO] Restart"
+        },
+        "timerCounter": {
+          "description": "[TODO] Top bar shows elapsed time and remaining unflagged mines.",
+          "title": "[TODO] Timer & Counter"
+        }
+      },
+      "lcd": {
+        "left": "[TODO] Left",
+        "total": "[TODO] Total"
+      },
+      "menu": {
+        "aboutMinesweeper": "[TODO] About Minesweeper",
+        "minesweeperHelp": "[TODO] Minesweeper Help",
+        "newGame": "[TODO] New Game"
+      },
+      "name": "[TODO] Minesweeper"
+    },
+    "paint": {
+      "description": "[TODO] Draw and edit images",
+      "dialogs": {
+        "discardChanges": "[TODO] Discard Changes",
+        "discardChangesDescription": "[TODO] You have unsaved changes. Create new file anyway?",
+        "enterImageName": "[TODO] Enter a name for your image",
+        "error": "[TODO] Error",
+        "failedToLoadImageContent": "[TODO] Failed to load image content.",
+        "failedToSaveImage": "[TODO] Failed to save image",
+        "imageSavedSuccessfully": "[TODO] Image saved successfully",
+        "saveImage": "[TODO] Save Image"
+      },
+      "filtersMenu": {
+        "openFiltersMenu": "[TODO] Open filters menu"
+      },
+      "help": {
+        "colors": {
+          "description": "[TODO] Select colors from the palette below the tools to change your drawing color.",
+          "title": "[TODO] Colors"
+        },
+        "drawingTools": {
+          "description": "[TODO] Use the toolbar on the left to select different drawing tools like pencil, brush, shapes, and more.",
+          "title": "[TODO] Drawing Tools"
+        },
+        "filters": {
+          "description": "[TODO] Apply invert, grayscale, brightness & more from the Filters menu.",
+          "title": "[TODO] Filters"
+        },
+        "patterns": {
+          "description": "[TODO] Choose from various patterns in the bottom palette to fill shapes and areas.",
+          "title": "[TODO] Patterns"
+        },
+        "saving": {
+          "description": "[TODO] Use File > Save to save your artwork, or File > Save As to save it with a new name.",
+          "title": "[TODO] Saving"
+        },
+        "undo": {
+          "description": "[TODO] Press ⌘Z or use Edit > Undo to undo your last action.",
+          "title": "[TODO] Undo"
+        }
+      },
+      "menu": {
+        "aboutPaint": "[TODO] About Paint",
+        "export": "[TODO] Export",
+        "filterBlur": "[TODO] Blur",
+        "filterBrightnessMinus": "[TODO] Brightness -",
+        "filterBrightnessPlus": "[TODO] Brightness +",
+        "filterCategoryArtistic": "[TODO] Artistic",
+        "filterCategoryBlur": "[TODO] Blur",
+        "filterCategoryColor": "[TODO] Color",
+        "filterCategoryRetro": "[TODO] Retro",
+        "filterCrt": "[TODO] CRT",
+        "filterDither": "[TODO] Dither",
+        "filterEdgeDetect": "[TODO] Edge Detect",
+        "filterGaussianBlur": "[TODO] Gaussian Blur",
+        "filterGlitch": "[TODO] Glitch",
+        "filterGrayscale": "[TODO] Grayscale",
+        "filterInvert": "[TODO] Invert",
+        "filterMotionBlur": "[TODO] Motion Blur",
+        "filterNoise": "[TODO] Noise",
+        "filterOldPhoto": "[TODO] Old Photo",
+        "filterPixelate": "[TODO] Pixelate",
+        "filterRadialBlur": "[TODO] Radial Blur",
+        "filterSepia": "[TODO] Sepia",
+        "filterSharpen": "[TODO] Sharpen",
+        "filterVhs": "[TODO] VHS",
+        "filters": "[TODO] Filters",
+        "importFromDevice": "[TODO] Import from Device...",
+        "newFile": "[TODO] New File",
+        "open": "[TODO] Open...",
+        "paintHelp": "[TODO] Paint Help",
+        "save": "[TODO] Save",
+        "saveEllipsis": "[TODO] Save..."
+      },
+      "name": "[TODO] Paint",
+      "selectedPattern": "[TODO] Selected Pattern",
+      "toolbar": {
+        "brush": "[TODO] Brush",
+        "eraser": "[TODO] Eraser",
+        "fillColor": "[TODO] Fill Color",
+        "hand": "[TODO] Hand",
+        "line": "[TODO] Line",
+        "oval": "[TODO] Oval",
+        "pencil": "[TODO] Pencil",
+        "rectangle": "[TODO] Rectangle",
+        "rectangleSelect": "[TODO] Rectangle Select",
+        "select": "[TODO] Select",
+        "spray": "[TODO] Spray",
+        "text": "[TODO] Text"
+      },
+      "untitled": "[TODO] Untitled"
+    },
+    "pc": {
+      "description": "[TODO] 3D PC simulation",
+      "dialogs": {
+        "resetVirtualPcDescription": "[TODO] Are you sure you want to reset the PC? This will clear all current state.",
+        "resetVirtualPcTitle": "[TODO] Reset Virtual PC"
+      },
+      "help": {
+        "aspectRatio": {
+          "description": "[TODO] Switch between 4∶3 or widescreen to fit your monitor",
+          "title": "[TODO] Aspect Ratio"
+        },
+        "fullscreenMode": {
+          "description": "[TODO] Toggle View ▸ Full Screen for an immersive display",
+          "title": "[TODO] Full-Screen Mode"
+        },
+        "keyboardControls": {
+          "description": "[TODO] Use your physical keyboard for in-game input",
+          "title": "[TODO] Keyboard Controls"
+        },
+        "mouseCapture": {
+          "description": "[TODO] Click inside the window to capture / release the mouse",
+          "title": "[TODO] Mouse Capture"
+        },
+        "pcEmulator": {
+          "description": "[TODO] Runs classic DOS games & apps right in your browser",
+          "title": "[TODO] PC Emulator"
+        },
+        "saveStates": {
+          "description": "[TODO] Save or load game progress any time from File menu",
+          "title": "[TODO] Save States"
+        }
+      },
+      "loadingEmulator": "[TODO] LOADING EMULATOR",
+      "loadingGame": "[TODO] Loading {{gameName}}...",
+      "menu": {
+        "aboutVirtualPc": "[TODO] About Virtual PC",
+        "aspectRatio": "[TODO] Aspect Ratio",
+        "controls": "[TODO] Controls",
+        "fullScreen": "[TODO] Full Screen",
+        "loadGame": "[TODO] Load Game",
+        "loadState": "[TODO] Load State",
+        "mouseSensitivity": "[TODO] Mouse Sensitivity",
+        "reset": "[TODO] Reset",
+        "saveState": "[TODO] Save State",
+        "toggleMouseCapture": "[TODO] Toggle Mouse Capture",
+        "virtualPcHelp": "[TODO] Virtual PC Help"
+      },
+      "name": "[TODO] Virtual PC",
+      "programsAvailable": "[TODO] {{count}} PROGRAMS AVAILABLE",
+      "virtualPc": "[TODO] Virtual PC"
+    },
+    "photo-booth": {
+      "ariaLabels": {
+        "photo": "[TODO] Photo {{index}}"
+      },
+      "buttons": {
+        "effects": "[TODO] Effects"
+      },
+      "description": "[TODO] Take photos with effects",
+      "effects": {
+        "blackAndWhite": "[TODO] Black & White",
+        "bulge": "[TODO] Bulge",
+        "coldBlue": "[TODO] Cold Blue",
+        "fishEye": "[TODO] Fish Eye",
+        "glitch": "[TODO] Glitch",
+        "highContrast": "[TODO] High Contrast",
+        "kaleidoscope": "[TODO] Kaleidoscope",
+        "neon": "[TODO] Neon",
+        "normal": "[TODO] Normal",
+        "pinch": "[TODO] Pinch",
+        "rainbow": "[TODO] Rainbow",
+        "ripple": "[TODO] Ripple",
+        "squeeze": "[TODO] Squeeze",
+        "stretch": "[TODO] Stretch",
+        "twirl": "[TODO] Twirl",
+        "vibrant": "[TODO] Vibrant",
+        "vintage": "[TODO] Vintage",
+        "xRay": "[TODO] X-Ray"
+      },
+      "errors": {
+        "cameraApiNotAvailable": "[TODO] Camera API not available",
+        "cameraError": "[TODO] Camera error: {{error}}",
+        "cameraPermissionDenied": "[TODO] Camera permission denied",
+        "cameraRequiresHttps": "[TODO] Camera requires HTTPS",
+        "couldNotAccessCamera": "[TODO] Could not access camera",
+        "noCameraFound": "[TODO] No camera found"
+      },
+      "help": {
+        "applyingEffects": {
+          "description": "[TODO] Click the 'Effects' button (right of the camera button) to open the effects panel and apply fun filters to your live camera view.",
+          "title": "[TODO] Applying Effects"
+        },
+        "downloadingPhotos": {
+          "description": "[TODO] Photos are automatically saved. Click on a photo in the photo strip to download it.",
+          "title": "[TODO] Downloading Photos"
+        },
+        "quickSnaps": {
+          "description": "[TODO] Click the timer button (left of the camera button) to start a sequence of four photos taken one second apart.",
+          "title": "[TODO] Quick Snaps"
+        },
+        "switchingCameras": {
+          "description": "[TODO] Use the 'View' menu in the menu bar to switch between available cameras if you have more than one connected.",
+          "title": "[TODO] Switching Cameras"
+        },
+        "takingPhoto": {
+          "description": "[TODO] Click the large red camera button to capture a single image.",
+          "title": "[TODO] Taking a Photo"
+        },
+        "viewingPhotos": {
+          "description": "[TODO] Click the photo stack button (far left) to show or hide the photo strip at the bottom, displaying all your saved photos.",
+          "title": "[TODO] Viewing Photos"
+        }
+      },
+      "menu": {
+        "aboutPhotoBooth": "[TODO] About Photo Booth",
+        "camera": "[TODO] Camera",
+        "clearAllPhotos": "[TODO] Clear All Photos",
+        "effects": "[TODO] Effects",
+        "exportPhotos": "[TODO] Export Photos",
+        "photoBoothHelp": "[TODO] Photo Booth Help"
+      },
+      "name": "[TODO] Photo Booth"
+    },
+    "soundboard": {
+      "description": "Воспроизвести звуковые эффекты",
+      "help": {
+        "customizeSlot": {
+          "description": "[TODO] Add emoji & title to each sample for quick ID",
+          "title": "[TODO] Customize Slot"
+        },
+        "importExport": {
+          "description": "[TODO] Share boards as files; drag-drop to import",
+          "title": "[TODO] Import / Export"
+        },
+        "keyboardPlay": {
+          "description": "[TODO] Press 1-9 to trigger sounds instantly",
+          "title": "Воспроизведение с клавиатуры"
+        },
+        "multipleBoards": {
+          "description": "[TODO] Create, rename & switch boards for sets of sounds",
+          "title": "[TODO] Multiple Boards"
+        },
+        "recordSlot": {
+          "description": "Нажмите на слот, чтобы записать аудио; нажмите еще раз, чтобы остановить",
+          "title": "Слот записи"
+        },
+        "waveformView": {
+          "description": "[TODO] See live waveform while recording or playing back",
+          "title": "[TODO] Waveform View"
+        }
+      },
+      "importedSoundboard": "Импортированная звуковая панель",
+      "menu": {
+        "aboutSoundboard": "О звуковой панели",
+        "deleteSoundboard": "Удалить звуковую панель",
+        "emojis": "Эмодзи",
+        "exportSoundboards": "Экспортировать звуковые панели...",
+        "importSoundboards": "Импортировать звуковые панели...",
+        "loadSpecialSoundboards": "Загрузить специальные звуковые панели",
+        "newSoundboard": "Новая звуковая панель",
+        "renameSoundboard": "Переименовать звуковую панель",
+        "resetSoundboards": "Сбросить звуковые панели",
+        "soundboardHelp": "Справка по звуковой панели",
+        "waveforms": "Осциллограммы"
+      },
+      "name": "Звуковая панель",
+      "newSoundboardDefault": "Новая звуковая панель",
+      "soundboards": "Звуковые панели"
+    },
+    "synth": {
+      "addPreset": "[TODO] ADD PRESET",
+      "controls": "[TODO] CONTROLS",
+      "description": "[TODO] Virtual synthesizer",
+      "dialogs": {
+        "enterPresetName": "[TODO] Enter a name for your preset",
+        "saveNewPreset": "[TODO] Save New Preset",
+        "updatePreset": "[TODO] Update Preset",
+        "updatePresetName": "[TODO] Update the name of your preset"
+      },
+      "effects": "[TODO] Effects",
+      "effectsParams": {
+        "bitcrusher": "[TODO] Bitcrusher",
+        "chorus": "[TODO] Chorus",
+        "delay": "[TODO] Delay",
+        "distortion": "[TODO] Distortion",
+        "gain": "[TODO] Gain",
+        "phaser": "[TODO] Phaser",
+        "reverb": "[TODO] Reverb"
+      },
+      "envelope": "[TODO] Envelope",
+      "envelopeParams": {
+        "attack": "[TODO] Attack",
+        "decay": "[TODO] Decay",
+        "release": "[TODO] Release",
+        "sustain": "[TODO] Sustain"
+      },
+      "help": {
+        "controlsPanel": {
+          "description": "[TODO] Toggle CONTROLS to tweak oscillators, envelope & effects",
+          "title": "[TODO] Controls Panel"
+        },
+        "effects": {
+          "description": "[TODO] Reverb, delay, distortion, chorus, phaser & bit-crusher",
+          "title": "[TODO] Effects"
+        },
+        "midiInput": {
+          "description": "[TODO] Plug in a MIDI keyboard and play instantly",
+          "title": "[TODO] MIDI Input"
+        },
+        "presets": {
+          "description": "[TODO] Save, load & manage custom sound presets",
+          "title": "[TODO] Presets"
+        },
+        "virtualKeyboard": {
+          "description": "[TODO] Play notes with on-screen keys or computer keyboard",
+          "title": "[TODO] Virtual Keyboard"
+        },
+        "waveform3d": {
+          "description": "[TODO] Live animated waveform when controls panel is open",
+          "title": "[TODO] 3D Waveform"
+        }
+      },
+      "menu": {
+        "aboutSynth": "[TODO] About Synth",
+        "keyLabels": "[TODO] Key Labels",
+        "newPreset": "[TODO] New Preset",
+        "noLabels": "[TODO] No Labels",
+        "noteLabels": "[TODO] Note Labels",
+        "presets": "[TODO] Presets",
+        "resetSynth": "[TODO] Reset Synth",
+        "synthHelp": "[TODO] Synth Help"
+      },
+      "name": "[TODO] Synth",
+      "noPresetsYet": "[TODO] No presets yet. Create one with the NEW button.",
+      "oscillator": "[TODO] Oscillator",
+      "selectPreset": "[TODO] Select Preset",
+      "status": {
+        "octave": "[TODO] Octave {{offset}}",
+        "presetLoaded": "[TODO] Preset \"{{name}}\" loaded",
+        "presetSaved": "[TODO] Preset \"{{name}}\" saved",
+        "presetUpdated": "[TODO] Preset \"{{name}}\" updated",
+        "synthResetToDefaults": "[TODO] Synth reset to defaults"
+      },
+      "waveform": "[TODO] Waveform",
+      "waveforms": {
+        "sawtooth": "[TODO] Sawtooth",
+        "sine": "[TODO] Sine",
+        "square": "[TODO] Square",
+        "triangle": "[TODO] Triangle"
+      }
+    },
+    "terminal": {
+      "commands": {
+        "about": "[TODO] About terminal",
+        "ai": "[TODO] Enter AI chat mode with ryo",
+        "cat": "[TODO] View file contents",
+        "cd": "[TODO] Change directory",
+        "chat": "[TODO] Chat with ryo (alias)",
+        "clear": "[TODO] Clear terminal screen",
+        "cowsay": "[TODO] A talking cow",
+        "date": "[TODO] Display current date/time",
+        "echo": "[TODO] Display text",
+        "edit": "[TODO] Open in text editor",
+        "help": "[TODO] Show available commands",
+        "history": "[TODO] Show command history",
+        "logout": "[TODO] Log out current user",
+        "ls": "[TODO] List directory contents",
+        "mkdir": "[TODO] Create directory",
+        "pwd": "[TODO] Show current directory",
+        "rm": "[TODO] Move file to trash",
+        "ryo": "[TODO] Chat with ryo",
+        "su": "[TODO] Switch or create user",
+        "touch": "[TODO] Create empty file",
+        "vim": "[TODO] Open file in vim editor",
+        "whoami": "[TODO] Display current user"
+      },
+      "description": "[TODO] Command line interface",
+      "help": {
+        "aiAssistant": {
+          "description": "[TODO] Type \"ryo <prompt>\" to chat with Ryo AI directly inside the terminal.",
+          "title": "[TODO] AI Assistant"
+        },
+        "basicCommands": {
+          "description": "[TODO] Use commands like ls, cd, cat, pwd, clear, and touch to navigate and manage files.",
+          "title": "[TODO] Basic Commands"
+        },
+        "commandHistory": {
+          "description": "[TODO] Press ↑ / ↓ arrows to cycle through previous commands and re-run them quickly.",
+          "title": "[TODO] Command History"
+        },
+        "fileEditing": {
+          "description": "[TODO] Open documents in TextEdit (edit) or Vim-style editor (vim) right from the prompt.",
+          "title": "[TODO] File Editing"
+        },
+        "navigation": {
+          "description": "[TODO] Browse the same virtual file system as Finder with familiar Unix commands.",
+          "title": "[TODO] Navigation"
+        },
+        "terminalSounds": {
+          "description": "[TODO] Distinct sounds for output, errors & AI replies. Toggle in View ▸ Sounds.",
+          "title": "[TODO] Terminal Sounds"
+        }
+      },
+      "menu": {
+        "aboutTerminal": "[TODO] About Terminal",
+        "clearTerminal": "[TODO] Clear Terminal",
+        "decreaseFontSize": "[TODO] Decrease Font Size",
+        "increaseFontSize": "[TODO] Increase Font Size",
+        "muteSounds": "[TODO] Mute Sounds",
+        "resetFontSize": "[TODO] Reset Font Size",
+        "terminalHelp": "[TODO] Terminal Help"
+      },
+      "name": "[TODO] Terminal",
+      "output": {
+        "addedAndStartedPlaying": "[TODO] Added and started playing new song",
+        "askRyoAnything": "[TODO] ask ryo anything. type 'exit' to return to terminal.",
+        "askRyoWithPrompt": "[TODO] ask ryo anything. type 'exit' to return to terminal.\n→ from your command: {{prompt}}",
+        "chatCleared": "[TODO] chat cleared. you're still chatting with ryo. type 'exit' to return to terminal.",
+        "commandNotFound": "[TODO] command not found: {{cmd}}. type 'help' for a list of available commands.",
+        "contentWritten": "[TODO] Content written",
+        "fileCreated": "[TODO] File created",
+        "fileEdited": "[TODO] File edited",
+        "foundApplets": "[TODO] Found {{count}} applet",
+        "foundAppletsPlural": "[TODO] Found {{count}} applets",
+        "foundApplications": "[TODO] Found {{count}} application",
+        "foundApplicationsPlural": "[TODO] Found {{count}} applications",
+        "foundDocuments": "[TODO] Found {{count}} document",
+        "foundDocumentsPlural": "[TODO] Found {{count}} documents",
+        "isThinking": "[TODO] is thinking",
+        "lastLogin": "[TODO] last login: {{time}}",
+        "listedItems": "[TODO] Listed items",
+        "multipleMatchesFound": "[TODO] Multiple matches found",
+        "noFilesFound": "[TODO] no files found",
+        "noItemsFound": "[TODO] No items found",
+        "noSuchDirectory": "[TODO] cd: {{dir}}: no such directory",
+        "opened": "[TODO] Opened",
+        "pausedIpod": "[TODO] Paused iPod",
+        "playingIpod": "[TODO] Playing iPod",
+        "playingSong": "[TODO] Playing song",
+        "readFile": "[TODO] Read {{fileName}}",
+        "skippedToNextTrack": "[TODO] Skipped to next track",
+        "skippedToPreviousTrack": "[TODO] Skipped to previous track",
+        "textNotFound": "[TODO] Text not found",
+        "toggledIpodPlayback": "[TODO] Toggled iPod playback",
+        "typeHelpForCommands": "[TODO] type 'help' to see available commands",
+        "unknown": "[TODO] Unknown",
+        "untitled": "[TODO] Untitled"
+      }
+    },
+    "textedit": {
+      "alignCenter": "[TODO] Align Center",
+      "alignLeft": "[TODO] Align Left",
+      "alignRight": "[TODO] Align Right",
+      "bold": "[TODO] Bold",
+      "bulletList": "[TODO] Bullet List",
+      "description": "[TODO] A simple rich text editor",
+      "dialogs": {
+        "discardChanges": "[TODO] Discard Changes",
+        "doYouWantToDiscardYourChangesAndCreateANewFile": "[TODO] Do you want to discard your changes and create a new file?",
+        "enterANameForYourFile": "[TODO] Enter a name for your file",
+        "enterFilenameToSaveOrDeleteItBeforeClosing": "[TODO] Enter a filename to save, or delete it before closing.",
+        "keepNewDocument": "[TODO] Keep New Document",
+        "saveChanges": "[TODO] Save Changes",
+        "saveFile": "[TODO] Save File",
+        "saveYourChangesBeforeClosing": "[TODO] Save your changes before closing."
+      },
+      "failedToUpdateEditorWithDocumentUpdatedEvent": "[TODO] Failed to update editor with document updated event:",
+      "heading1": "[TODO] Heading 1",
+      "heading2": "[TODO] Heading 2",
+      "heading3": "[TODO] Heading 3",
+      "help": {
+        "fileManagement": {
+          "description": "[TODO] Create, open, save, and export files (HTML, MD, TXT)",
+          "title": "[TODO] File Management"
+        },
+        "formatting": {
+          "description": "[TODO] Bold, italic, underline, headings & alignment options",
+          "title": "[TODO] Formatting"
+        },
+        "listsTasks": {
+          "description": "[TODO] Create bullet, numbered & check-box task lists",
+          "title": "[TODO] Lists & Tasks"
+        },
+        "richEditing": {
+          "description": "[TODO] Type, copy, cut, paste, undo & redo your text with ease",
+          "title": "[TODO] Rich Editing"
+        },
+        "slashCommands": {
+          "description": "[TODO] Type / for quick actions or let Ryo AI edit lines remotely",
+          "title": "[TODO] Slash Commands"
+        },
+        "voiceDictation": {
+          "description": "[TODO] Dictate text hands-free right into the document",
+          "title": "[TODO] Voice Dictation"
+        }
+      },
+      "italic": "[TODO] Italic",
+      "menu": {
+        "aboutTextEdit": "[TODO] About TextEdit",
+        "alignCenter": "[TODO] Align Center",
+        "alignLeft": "[TODO] Align Left",
+        "alignRight": "[TODO] Align Right",
+        "bold": "[TODO] Bold",
+        "bulletList": "[TODO] Bullet List",
+        "exportAs": "[TODO] Export As...",
+        "format": "[TODO] Format",
+        "heading1": "[TODO] Heading 1",
+        "heading2": "[TODO] Heading 2",
+        "heading3": "[TODO] Heading 3",
+        "html": "[TODO] HTML",
+        "importFromDevice": "[TODO] Import from Device...",
+        "italic": "[TODO] Italic",
+        "markdown": "[TODO] Markdown",
+        "newFile": "[TODO] New File",
+        "numberedList": "[TODO] Numbered List",
+        "open": "[TODO] Open...",
+        "plainText": "[TODO] Plain Text",
+        "save": "[TODO] Save",
+        "saveEllipsis": "[TODO] Save...",
+        "taskList": "[TODO] Task List",
+        "text": "[TODO] Text",
+        "texteditHelp": "[TODO] TextEdit Help",
+        "underline": "[TODO] Underline"
+      },
+      "name": "[TODO] TextEdit",
+      "numberedList": "[TODO] Numbered List",
+      "slashCommands": {
+        "bulletList": {
+          "description": "[TODO] Create a simple bullet list",
+          "title": "[TODO] Bullet List"
+        },
+        "heading1": {
+          "description": "[TODO] Large section heading",
+          "title": "[TODO] Heading 1"
+        },
+        "heading2": {
+          "description": "[TODO] Medium section heading",
+          "title": "[TODO] Heading 2"
+        },
+        "heading3": {
+          "description": "[TODO] Small section heading",
+          "title": "[TODO] Heading 3"
+        },
+        "numberedList": {
+          "description": "[TODO] Create a numbered list",
+          "title": "[TODO] Numbered List"
+        },
+        "taskList": {
+          "description": "[TODO] Create a checklist with checkboxes",
+          "title": "[TODO] Task List"
+        },
+        "text": {
+          "description": "[TODO] Just start typing with plain text",
+          "title": "[TODO] Text"
+        }
+      },
+      "speak": "[TODO] Speak",
+      "stopSpeech": "[TODO] Stop speech",
+      "text": "[TODO] Text",
+      "underline": "[TODO] Underline",
+      "untitled": "[TODO] Untitled"
+    },
+    "videos": {
+      "description": "[TODO] Watch videos",
+      "dialogs": {
+        "addVideoDescription": "[TODO] Enter YouTube, Vimeo, or a video URL",
+        "addVideoTitle": "[TODO] Add Video",
+        "clearPlaylistDescription": "[TODO] Are you sure you want to clear the entire playlist? This action cannot be undone.",
+        "clearPlaylistTitle": "[TODO] Clear Playlist",
+        "failedToLoadSharedVideo": "[TODO] Failed to load shared video",
+        "openedSharedVideo": "[TODO] Opened shared video. Press",
+        "resetPlaylistDescription": "[TODO] Are you sure you want to reset the playlist to default videos? This will replace your current playlist.",
+        "resetPlaylistTitle": "[TODO] Reset Playlist",
+        "toStartPlaying": "[TODO] to start playing.",
+        "videoId": "[TODO] Video ID: {{videoId}}",
+        "videoItemType": "[TODO] Video"
+      },
+      "help": {
+        "addVideo": {
+          "description": "[TODO] Paste any YouTube URL to add to playlist",
+          "title": "[TODO] Add Video"
+        },
+        "loop": {
+          "description": "[TODO] Loop current video or entire playlist",
+          "title": "[TODO] Loop"
+        },
+        "playback": {
+          "description": "[TODO] Play, pause, next, previous controls",
+          "title": "[TODO] Playback"
+        },
+        "playlist": {
+          "description": "[TODO] Manage and organize your video playlist",
+          "title": "[TODO] Playlist"
+        },
+        "retroUi": {
+          "description": "[TODO] Classic QuickTime player aesthetics",
+          "title": "[TODO] Retro UI"
+        },
+        "shuffle": {
+          "description": "[TODO] Randomize playlist order",
+          "title": "[TODO] Shuffle"
+        }
+      },
+      "menu": {
+        "aboutVideos": "[TODO] About Videos",
+        "addToLibrary": "[TODO] Add to Library...",
+        "allVideos": "[TODO] All Videos",
+        "clearLibrary": "[TODO] Clear Library...",
+        "controls": "[TODO] Controls",
+        "fullScreen": "[TODO] Full Screen",
+        "library": "[TODO] Library",
+        "next": "[TODO] Next",
+        "openVideo": "[TODO] Open Video...",
+        "pause": "[TODO] Pause",
+        "play": "[TODO] Play",
+        "previous": "[TODO] Previous",
+        "repeatAll": "[TODO] Repeat All",
+        "repeatOne": "[TODO] Repeat One",
+        "resetLibrary": "[TODO] Reset Library...",
+        "shareVideo": "[TODO] Share Video...",
+        "shuffle": "[TODO] Shuffle",
+        "unknownArtist": "[TODO] Unknown Artist",
+        "videosHelp": "[TODO] Videos Help"
+      },
+      "name": "[TODO] Videos",
+      "status": {
+        "add": "[TODO] ADD",
+        "addVideos": "[TODO] Add videos",
+        "errorAdding": "[TODO] Error adding: {{error}}",
+        "failedToAddVideo": "[TODO] Failed to add video",
+        "failedToProcessVideo": "[TODO] Failed to process video: {{videoId}}",
+        "fullscreen": "[TODO] FULLSCREEN",
+        "next": "[TODO] NEXT ⏭",
+        "paused": "[TODO] PAUSED ⏸",
+        "play": "[TODO] PLAY ▶",
+        "playing": "[TODO] ▶ Playing {{title}}",
+        "playlistReset": "[TODO] PLAYLIST RESET",
+        "pressToPlay": "[TODO] PRESS ⏯ TO PLAY",
+        "prev": "[TODO] PREV ⏮",
+        "repeat": "[TODO] REPEAT",
+        "repeatingPlaylist": "[TODO] REPEATING PLAYLIST",
+        "shuffle": "[TODO] SHUFFLE",
+        "shuffleOff": "[TODO] SHUFFLE OFF",
+        "shuffleOn": "[TODO] SHUFFLE ON",
+        "time": "[TODO] Time",
+        "title": "[TODO] Title",
+        "toGetStarted": "[TODO] to get started",
+        "track": "[TODO] Track",
+        "unknownError": "[TODO] Unknown error",
+        "videoAdded": "[TODO] VIDEO ADDED"
+      }
+    }
+  },
+  "common": {
+    "aboutThisMac": {
+      "builtInMemory": "[TODO] Built-in Memory",
+      "clickToToggle": "Нажмите, чтобы переключить",
+      "description": "[TODO] Information about ryOS on this computer",
+      "largestUnusedBlock": "[TODO] Largest Unused Block",
+      "mb": "МБ",
+      "system": "Система",
+      "title": "[TODO] About This Computer",
+      "virtualMemory": "[TODO] Virtual Memory",
+      "virtualMemoryOff": "[TODO] Off"
+    },
+    "appleMenu": {
+      "aboutThisComputer": "[TODO] About This Computer"
+    },
+    "auth": {
+      "createAccount": "Создать аккаунт",
+      "creatingAccount": "Создание...",
+      "dialogTitle": "Вход в ryOS",
+      "logIn": "Войти",
+      "logOut": "Выйти",
+      "logOutDescription": "Вы уверены, что хотите выйти? Вы будете отключены от своего аккаунта.",
+      "loggingIn": "Вход...",
+      "loginDescription": "Войдите в свой аккаунт",
+      "password": "Пароль",
+      "setPasswordRequired": "Требуется установить пароль",
+      "setPasswordRequiredDescription": "Вам необходимо установить пароль перед выходом, чтобы обеспечить возможность восстановления аккаунта. Хотите установить пароль сейчас?",
+      "signupDescription": "Создайте аккаунт, чтобы получить доступ к чатам и сохранить свои настройки",
+      "username": "Имя пользователя"
+    },
+    "desktop": {
+      "myComputer": "Мой компьютер",
+      "setWallpaper": "Установить обои…"
+    },
+    "dialog": {
+      "about": "О программе",
+      "adding": "Добавление...",
+      "cancel": "Отмена",
+      "close": "Закрыть",
+      "confirm": "Подтвердить",
+      "delete": "Удалить",
+      "discardChanges": "Отменить изменения",
+      "discardChangesDesc": "Вы хотите отменить изменения и создать новый файл?",
+      "emoji": {
+        "chooseEmoji": "Выберите эмодзи",
+        "description": "Выберите эмодзи для этого звукового слота",
+        "setEmoji": "Установить эмодзи"
+      },
+      "enterFileName": "Введите имя для файла",
+      "enterFilenameToSave": "Введите имя файла для сохранения или удалите его перед закрытием.",
+      "help": "Справка",
+      "informationAboutApp": "Информация о приложении",
+      "keepNewDocument": "Сохранить новый документ",
+      "madeBy": "Разработано",
+      "openInGitHub": "Открыть в GitHub",
+      "save": "Сохранить",
+      "saveBeforeClosing": "Сохраните изменения перед закрытием.",
+      "saveChanges": "Сохранить изменения",
+      "saveFile": "Сохранить файл",
+      "share": {
+        "by": "от",
+        "copyLink": "Скопировать ссылку",
+        "couldNotCopyToClipboard": "Не удалось скопировать в буфер обмена. Пожалуйста, попробуйте выделить и скопировать вручную.",
+        "failedToCopyLink": "Не удалось скопировать ссылку",
+        "failedToGenerateShareLink": "Не удалось сгенерировать ссылку для {{itemType}}",
+        "from": "из",
+        "generating": "Генерация...",
+        "itemTypes": {
+          "app": "Приложение",
+          "applet": "Апплет",
+          "item": "Элемент",
+          "page": "Страница",
+          "song": "Песня"
+        },
+        "linkCopied": "Ссылка скопирована",
+        "linkCopiedToClipboard": "Ссылка на {{itemType}} скопирована в буфер обмена",
+        "pleaseTryAgainLater": "Пожалуйста, попробуйте позже",
+        "qrCode": "QR-код",
+        "shareItem": "Поделиться {{itemType}}",
+        "shareItemViaLinkOrQrCode": "Поделиться этим {{itemType}} по ссылке или QR-коду",
+        "shareLinkFor": "Поделиться ссылкой на {{itemType}}",
+        "shareLinkOrScanToOpen": "Поделитесь ссылкой или отсканируйте, чтобы открыть этот {{itemType}}"
+      },
+      "version": "Версия",
+      "welcomeTo": "Добро пожаловать в {{appName}}"
+    },
+    "dock": {
+      "appletStore": "[TODO] Applet Store",
+      "applications": "[TODO] Applications",
+      "folderContents": "[TODO] Folder Contents",
+      "hide": "[TODO] Hide",
+      "minimized": "[TODO] (minimized)",
+      "newWindow": "[TODO] New Window",
+      "open": "Открыть",
+      "quit": "[TODO] Quit",
+      "showAllWindows": "[TODO] Show All Windows",
+      "trash": "[TODO] Trash"
+    },
+    "htmlPreview": {
+      "bannerFallbackTitle": "Безымянный апплет",
+      "codePreviewTitle": "Предварительный просмотр кода ryOS",
+      "codePreviewTitleFullscreen": "Полноэкранный предварительный просмотр кода ryOS",
+      "copyHtml": "Скопировать HTML-код",
+      "downloadHtml": "Скачать HTML",
+      "exitFullscreen": "Выйти из полноэкранного режима",
+      "full": "Полный",
+      "maximizePreview": "Развернуть предпросмотр",
+      "minimizePreview": "Свернуть предпросмотр",
+      "saveApplet": "Сохранить как апплет",
+      "saveAppletDescription": "Введите имя апплета, существующий апплет будет перезаписан:",
+      "split": "Разделенный",
+      "toastOpenAction": "Открыть",
+      "toastSaveFailed": "Не удалось сохранить апплет",
+      "toastSaveFailedDescription": "Произошла ошибка при сохранении апплета.",
+      "toastSaved": "Апплет успешно сохранен",
+      "toggleCode": "Переключить код",
+      "toggleSplitView": "Переключить разделенный вид"
+    },
+    "menu": {
+      "applications": "Программы",
+      "clear": "Очистить",
+      "close": "Закрыть",
+      "copy": "Копировать",
+      "cut": "Вырезать",
+      "documents": "Документы",
+      "edit": "Правка",
+      "file": "Файл",
+      "go": "Переход",
+      "help": "Справка",
+      "images": "Изображения",
+      "music": "Музыка",
+      "paste": "Вставить",
+      "redo": "Повторить",
+      "selectAll": "Выбрать все",
+      "shareApp": "Поделиться приложением...",
+      "sites": "Сайты",
+      "trash": "Корзина",
+      "undo": "Отменить",
+      "videos": "Видео",
+      "view": "Вид"
+    },
+    "startMenu": {
+      "aboutThisComputer": "[TODO] About This Computer",
+      "ryos98": "[TODO] ryOS 98",
+      "ryosProfessional": "[TODO] ryOS Professional",
+      "start": "[TODO] Start"
+    },
+    "system": {
+      "debugBootScreenTest": "Тест экрана загрузки (отладка)...",
+      "formatFileSystem": "Форматировать файловую систему",
+      "formatFileSystemDesc": "Вы уверены, что хотите форматировать файловую систему? Это навсегда удалит все документы (кроме образцов документов), изображения и пользовательские обои. ryOS перезапустится после форматирования.",
+      "formattingFileSystem": "Форматирование файловой системы...",
+      "rebooting": "Перезагрузка...",
+      "resetAllSettings": "Сбросить все настройки",
+      "resetAllSettingsDesc": "Вы уверены, что хотите сбросить все настройки? Это удалит все сохраненные настройки и восстановит состояния по умолчанию. ryOS перезапустится после сброса.",
+      "resettingSystem": "Сброс системы...",
+      "restoringSystem": "Восстановление системы...",
+      "systemRestoring": "Восстановление системы...",
+      "updatingToRyOS": "Обновление до ryOS {{version}}...",
+      "updatingToRyOSWithBuild": "Обновление до ryOS {{version}} ({{buildNumber}})..."
+    },
+    "toast": {
+      "alreadyLatestVersion": "Уже установлена последняя версия",
+      "couldNotCheckUpdates": "Не удалось проверить наличие обновлений",
+      "failedToCacheAssets": "Не удалось кэшировать ресурсы",
+      "failedToLoadAssetManifest": "Не удалось загрузить манифест ресурсов",
+      "files": "файлов",
+      "noAssetsToCache": "Нет ресурсов для кэширования",
+      "reboot": "Перезагрузить",
+      "total": "всего",
+      "updateReady": "Обновление готово для ryOS {{version}} ({{buildNumber}})",
+      "updatingAssets": "Обновление ресурсов",
+      "updatingIcons": "Обновление значков",
+      "updatingSounds": "Обновление звуков",
+      "updatingSystemFiles": "Обновление системных файлов"
+    }
+  },
+  "settings": {
+    "language": {
+      "chineseTraditional": "[TODO] 中文",
+      "description": "[TODO] Select your preferred language for ryOS interface",
+      "english": "[TODO] English",
+      "french": "[TODO] Français",
+      "german": "[TODO] Deutsch",
+      "japanese": "[TODO] 日本語",
+      "korean": "[TODO] 한국어",
+      "title": "[TODO] Language"
+    }
+  }
+}

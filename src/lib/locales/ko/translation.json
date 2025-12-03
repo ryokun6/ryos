@@ -252,6 +252,7 @@
         "loginToRyOS": "ryOS에 로그인",
         "newChat": "새 채팅",
         "noTranscriptionText": "전사된 텍스트를 받지 못했습니다",
+        "nudgeSent": "👋 *콕 찌르기 보냄*",
         "recording": "녹음 중...",
         "retry": "다시 시도",
         "ryo": "@ryo",
@@ -1760,14 +1761,14 @@
     "dock": {
       "appletStore": "애플릿 스토어",
       "applications": "응용 프로그램",
+      "folderContents": "폴더 내용",
       "hide": "가리기",
       "minimized": "(최소화됨)",
       "newWindow": "새 창",
       "open": "열기",
       "quit": "종료",
       "showAllWindows": "모든 창 보기",
-      "trash": "휴지통",
-      "folderContents": "폴더 내용"
+      "trash": "휴지통"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "제목 없는 Applet",

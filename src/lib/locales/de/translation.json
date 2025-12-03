@@ -252,6 +252,7 @@
         "loginToRyOS": "Bei ryOS anmelden",
         "newChat": "Neuer Chat",
         "noTranscriptionText": "Kein Transkriptionstext empfangen",
+        "nudgeSent": "👋 *Stupser gesendet*",
         "recording": "Aufnahme läuft...",
         "retry": "Wiederholen",
         "ryo": "@ryo",
@@ -1760,14 +1761,14 @@
     "dock": {
       "appletStore": "Applet Store",
       "applications": "Anwendungen",
+      "folderContents": "Ordnerinhalt",
       "hide": "Ausblenden",
       "minimized": "(minimiert)",
       "newWindow": "Neues Fenster",
       "open": "Öffnen",
       "quit": "Beenden",
       "showAllWindows": "Alle Fenster anzeigen",
-      "trash": "Papierkorb",
-      "folderContents": "Ordnerinhalt"
+      "trash": "Papierkorb"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Unbenanntes Applet",
