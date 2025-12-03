@@ -698,14 +698,12 @@
   position: absolute;
   left: 1px;
   right: 1px;
-  height: 50%;
+  height: 40%;
   background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(255, 255, 255, 0.4) 60%,
-    rgba(255, 255, 255, 0) 100%
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.3)
   );
-  border-radius: 5px 5px 0 0;
+  border-radius: 5px 5px 2px 2px;
   top: 0px;
   pointer-events: none;
 }
@@ -741,7 +739,7 @@
 
 /* Ensure the gloss effect matches the border radius for standalone buttons */
 :root[data-os-theme="macosx"] .aqua-select-btn:before {
-  border-radius: 5px 5px 0 0 !important;
+  border-radius: 5px 5px 2px 2px !important;
 }
 
 /* Button group styling for aqua-select buttons: only first/last rounded */
