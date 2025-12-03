@@ -252,7 +252,7 @@
         "loginToRyOS": "[TODO] Iniciar sesión en ryOS",
         "newChat": "[TODO] Nuevo chat",
         "noTranscriptionText": "[TODO] No se recibió texto de la transcripción",
-        "nudgeSent": "[TODO] 👋 *toque enviado*",
+        "nudgeSent": "👋 *toque enviado*",
         "recording": "[TODO] Grabando...",
         "retry": "[TODO] Reintentar",
         "ryo": "[TODO] @ryo",
