@@ -1,4 +1,4 @@
-# ryOS — A Web-Based Agentic AI OS, Made with Cursor
+# ryOS — A Web-Based Agentic AI OS, made with Cursor
 
 A modern web-based desktop environment inspired by classic macOS and Windows, built with React, TypeScript, and AI. Features multiple built-in applications, a familiar desktop interface, and a system-aware AI assistant. Works on all devices—desktop, tablet, and mobile.
 
@@ -64,7 +64,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 
 ## Tech Stack
 
-- **Frontend:** React 18, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion
+- **Frontend:** React 19, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion
 - **Audio:** Tone.js, WaveSurfer.js
 - **3D:** Three.js (shaders)
 - **Text Editor:** TipTap
