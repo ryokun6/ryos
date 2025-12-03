@@ -1602,9 +1602,9 @@ export function ControlPanelsAppComponent({
                           currentLanguage === "zh-TW" ? "chineseTraditional" :
                           currentLanguage === "ja" ? "japanese" :
                           currentLanguage === "ko" ? "korean" :
+                          currentLanguage === "es" ? "spanish" :
                           currentLanguage === "fr" ? "french" :
                           currentLanguage === "de" ? "german" :
-                          currentLanguage === "es" ? "spanish" :
                           currentLanguage === "pt" ? "portuguese" :
                           currentLanguage === "ru" ? "russian" :
                           "english"
@@ -1616,9 +1616,9 @@ export function ControlPanelsAppComponent({
                       <SelectItem value="zh-TW">{t("settings.language.chineseTraditional")}</SelectItem>
                       <SelectItem value="ja">{t("settings.language.japanese")}</SelectItem>
                       <SelectItem value="ko">{t("settings.language.korean")}</SelectItem>
+                      <SelectItem value="es">{t("settings.language.spanish")}</SelectItem>
                       <SelectItem value="fr">{t("settings.language.french")}</SelectItem>
                       <SelectItem value="de">{t("settings.language.german")}</SelectItem>
-                      <SelectItem value="es">{t("settings.language.spanish")}</SelectItem>
                       <SelectItem value="pt">{t("settings.language.portuguese")}</SelectItem>
                       <SelectItem value="ru">{t("settings.language.russian")}</SelectItem>
                     </SelectContent>
