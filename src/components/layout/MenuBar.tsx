@@ -79,11 +79,6 @@ const ScrollingContext = React.createContext<{
   preventInteraction: () => false,
 });
 
-// Hook to use scrolling context
-function useScrollingContext() {
-  return React.useContext(ScrollingContext);
-}
-
 // Scrollable menu wrapper with fade masks for mobile
 function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   const isPhone = useIsPhone();
@@ -265,87 +260,6 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Wrapper for dropdown trigger buttons that prevents interaction during scrolling
-function DropdownTriggerButton({
-  children,
-  ...props
-}: React.ComponentProps<typeof Button>) {
-  const { preventInteraction } = useScrollingContext();
-  const isPhone = useIsPhone();
-  const touchStateRef = useRef<{ 
-    startX: number; 
-    startY: number; 
-    startTime: number;
-    hasMoved: boolean;
-  } | null>(null);
-  
-  if (!isPhone) {
-    return <Button {...props}>{children}</Button>;
-  }
-  
-  return (
-    <Button
-      {...props}
-      onPointerDown={(e) => {
-        // For touch events, prevent Radix from opening dropdown immediately
-        // We'll handle it via click after determining if it's a tap vs scroll
-        if (e.pointerType === 'touch') {
-          e.preventDefault();
-          // Track touch start
-          touchStateRef.current = {
-            startX: e.clientX,
-            startY: e.clientY,
-            startTime: Date.now(),
-            hasMoved: false,
-          };
-          return;
-        }
-        // For mouse/pen, use normal behavior
-        if (preventInteraction(e)) {
-          return;
-        }
-        props.onPointerDown?.(e);
-      }}
-      onPointerMove={(e) => {
-        if (e.pointerType !== 'touch' || !touchStateRef.current) return;
-        const deltaX = Math.abs(e.clientX - touchStateRef.current.startX);
-        const deltaY = Math.abs(e.clientY - touchStateRef.current.startY);
-        if (deltaX > 5 || deltaY > 5) {
-          touchStateRef.current.hasMoved = true;
-        }
-      }}
-      onPointerUp={(e) => {
-        if (e.pointerType !== 'touch' || !touchStateRef.current) return;
-        
-        const { hasMoved, startTime } = touchStateRef.current;
-        const duration = Date.now() - startTime;
-        touchStateRef.current = null;
-        
-        // If it was a clean tap (no movement, reasonable duration), trigger click
-        if (!hasMoved && duration < 300 && !preventInteraction(e)) {
-          // Simulate a click to open the dropdown
-          (e.target as HTMLElement).click();
-        }
-      }}
-      onPointerCancel={() => {
-        touchStateRef.current = null;
-      }}
-      onClick={(e) => {
-        // For touch, clicks are triggered programmatically from onPointerUp
-        // For mouse, allow normal clicks
-        if (preventInteraction(e)) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        props.onClick?.(e);
-      }}
-    >
-      {children}
-    </Button>
-  );
-}
-
 function Clock() {
   const [time, setTime] = useState(new Date());
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
@@ -496,14 +410,13 @@ function DefaultMenuItems() {
       {/* File Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <DropdownTriggerButton
+          <Button
             variant="ghost"
             size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
-            style={{ color: "inherit" }}
+            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
             {t("common.menu.file")}
-          </DropdownTriggerButton>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem
@@ -532,7 +445,10 @@ function DefaultMenuItems() {
             {t("common.menu.emptyTrash")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            disabled
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
             {t("common.menu.close")}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -541,14 +457,13 @@ function DefaultMenuItems() {
       {/* Edit Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <DropdownTriggerButton
+          <Button
             variant="ghost"
             size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
-            style={{ color: "inherit" }}
+            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
             {t("common.menu.edit")}
-          </DropdownTriggerButton>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem
@@ -595,36 +510,56 @@ function DefaultMenuItems() {
       {/* View Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <DropdownTriggerButton
+          <Button
             variant="ghost"
             size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
-            style={{ color: "inherit" }}
+            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
             {t("common.menu.view")}
-          </DropdownTriggerButton>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            disabled
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
             <span className="pl-4">{t("common.menu.bySmallIcon")}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            disabled
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
             <span>✓ {t("common.menu.byIcon")}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            disabled
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
             <span className="pl-4">{t("common.menu.byList")}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            disabled
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
             <span>✓ {t("common.menu.byName")}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            disabled
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
             <span className="pl-4">{t("common.menu.byDate")}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            disabled
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
             <span className="pl-4">{t("common.menu.bySize")}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <DropdownMenuItem
+            disabled
+            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+          >
             <span className="pl-4">{t("common.menu.byKind")}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -633,14 +568,13 @@ function DefaultMenuItems() {
       {/* Go Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <DropdownTriggerButton
+          <Button
             variant="ghost"
             size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
-            style={{ color: "inherit" }}
+            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
             {t("common.menu.go")}
-          </DropdownTriggerButton>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem
@@ -739,14 +673,13 @@ function DefaultMenuItems() {
       {/* Help Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <DropdownTriggerButton
+          <Button
             variant="ghost"
             size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0"
-            style={{ color: "inherit" }}
+            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
           >
             {t("common.menu.help")}
-          </DropdownTriggerButton>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={1} className="px-0">
           <DropdownMenuItem
@@ -879,6 +812,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   // Get current theme
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  
+  // Check if on phone (must be called before any early returns)
+  const isPhone = useIsPhone();
 
   // Get file system items for applet icons
   const files = useFilesStore((s) => s.items);
@@ -1344,8 +1280,6 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   }
 
   // Default Mac-style top menubar
-  const isPhone = useIsPhone();
-
   return (
     <div
       className="fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar h-os-menubar items-center font-os-ui"
