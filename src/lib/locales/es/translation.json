@@ -1853,13 +1853,13 @@
     "language": {
       "chineseTraditional": "中文",
       "description": "Selecciona tu idioma preferido para la interfaz de ryOS",
-      "english": "Inglés",
-      "french": "Francés",
-      "german": "Alemán",
+      "english": "English",
+      "french": "Français",
+      "german": "Deutsch",
       "japanese": "日本語",
       "korean": "한국어",
-      "portuguese": "Portugués",
-      "russian": "Ruso",
+      "portuguese": "Português",
+      "russian": "Русский",
       "spanish": "Español",
       "title": "Idioma"
     }

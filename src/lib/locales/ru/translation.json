@@ -1853,14 +1853,14 @@
     "language": {
       "chineseTraditional": "中文",
       "description": "Выберите предпочитаемый язык для интерфейса ryOS",
-      "english": "Английский",
-      "french": "Французский",
-      "german": "Немецкий",
-      "japanese": "Японский",
-      "korean": "Корейский",
-      "portuguese": "Португальский",
+      "english": "English",
+      "french": "Français",
+      "german": "Deutsch",
+      "japanese": "日本語",
+      "korean": "한국어",
+      "portuguese": "Português",
       "russian": "Русский",
-      "spanish": "Испанский",
+      "spanish": "Español",
       "title": "Язык"
     }
   }
