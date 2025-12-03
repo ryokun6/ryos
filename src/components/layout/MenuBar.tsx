@@ -647,6 +647,12 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     return { icon, label, isEmoji };
   };
 
+
+  // Scroll container ref for Mac-style menubar (must be before early returns)
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isScrollingRef = useRef(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+
   // Taskbar overflow handling (used for XP taskbar rendering)
   const runningAreaRef = useRef<HTMLDivElement>(null);
   const [visibleTaskbarIds, setVisibleTaskbarIds] = useState<string[]>([]);
@@ -703,6 +709,83 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       window.removeEventListener("resize", compute);
     };
   }, [isXpTheme, inWindowFrame, allTaskbarIds]);
+
+  // Prevent clicks during scrolling for Mac-style menubar (must be before early returns)
+  useEffect(() => {
+    // Only set up for Mac-style menubar (not XP/98 taskbar)
+    if (isXpTheme && !inWindowFrame) return;
+    
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      isScrollingRef.current = true;
+      setIsScrolling(true);
+      // Reset scrolling state after scroll ends
+      setTimeout(() => {
+        isScrollingRef.current = false;
+        setIsScrolling(false);
+      }, 150);
+    };
+
+    // Prevent clicks during touch scrolling
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isTouchScrolling = false;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isTouchScrolling = false;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const deltaX = Math.abs(e.touches[0].clientX - touchStartX);
+        const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+        if (deltaX > 5 || deltaY > 5) {
+          isTouchScrolling = true;
+          isScrollingRef.current = true;
+          setIsScrolling(true);
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (isTouchScrolling) {
+        setTimeout(() => {
+          isScrollingRef.current = false;
+          setIsScrolling(false);
+          isTouchScrolling = false;
+        }, 100);
+      }
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      if (isScrollingRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
+    container.addEventListener("click", handleClick, true);
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("click", handleClick, true);
+    };
+  }, [isXpTheme, inWindowFrame, hasActiveApp, children]);
 
   // If inside window frame for XP/98, use plain style
   if (inWindowFrame && isXpTheme) {
@@ -1089,8 +1172,49 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       }}
     >
       <AppleMenu apps={apps} />
-      {hasActiveApp ? children : <DefaultMenuItems />}
-      <div className="ml-auto flex items-center">
+      {/* Scrollable menu items container with CSS scroll-driven fade masks */}
+      <div className="flex-1 relative min-w-0 overflow-hidden">
+        <div
+          ref={scrollContainerRef}
+          className="overflow-x-auto scrollbar-hide flex items-center gap-0 menubar-scroll-container flex-nowrap"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <style>{`
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none;
+            }
+            .menubar-scroll-container {
+              animation: menubar-mask;
+              animation-timeline: scroll(self inline);
+              animation-range: 0 2rem;
+              mask-image: linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%);
+              -webkit-mask-image: linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%);
+              mask-position: -2rem 0;
+            }
+            @keyframes menubar-mask {
+              0% {
+                mask-position: -2rem 0;
+              }
+            }
+            .menubar-scroll-content {
+              touch-action: pan-x;
+            }
+          `}</style>
+          <div 
+            className="menubar-scroll-content flex items-center flex-nowrap"
+            style={{
+              pointerEvents: isScrolling ? "none" : "auto",
+            }}
+          >
+            {hasActiveApp ? children : <DefaultMenuItems />}
+          </div>
+        </div>
+      </div>
+      <div className="ml-auto flex items-center flex-shrink-0">
         <OfflineIndicator />
         <div className="hidden sm:flex">
           <VolumeControl />
