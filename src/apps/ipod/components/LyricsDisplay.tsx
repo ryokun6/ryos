@@ -447,6 +447,7 @@ export function LyricsDisplay({
               style={{
                 textAlign: lineTextAlign as CanvasTextAlign,
                 width: "100%",
+                color: isCurrent ? "#ffffff" : undefined,
                 paddingLeft:
                   alignment === LyricsAlignment.Alternating &&
                   index === 0 &&
