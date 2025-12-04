@@ -64,6 +64,7 @@ interface AppStoreState extends AppManagerState {
   navigateToPreviousInstance: (currentInstanceId: string) => void;
   minimizeInstance: (instanceId: string) => void;
   restoreInstance: (instanceId: string) => void;
+  updateInstanceTitle: (instanceId: string, title: string) => void;
   launchApp: (
     appId: AppId,
     initialData?: unknown,
@@ -790,6 +791,20 @@ export const useAppStore = create<AppStoreState>()(
             instances,
             instanceOrder: order,
             foregroundInstanceId: instanceId,
+          };
+        });
+      },
+      updateInstanceTitle: (instanceId, title) => {
+        set((state) => {
+          const inst = state.instances[instanceId];
+          if (!inst) return state;
+          // Only update if title actually changed
+          if (inst.title === title) return state;
+          return {
+            instances: {
+              ...state.instances,
+              [instanceId]: { ...inst, title },
+            },
           };
         });
       },

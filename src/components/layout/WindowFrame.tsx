@@ -90,6 +90,7 @@ export function WindowFrame({
     minimizeInstance,
     instances,
     closeAppInstance,
+    updateInstanceTitle,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     debugMode: state.debugMode,
@@ -98,6 +99,7 @@ export function WindowFrame({
     minimizeInstance: state.minimizeInstance,
     instances: state.instances,
     closeAppInstance: state.closeAppInstance,
+    updateInstanceTitle: state.updateInstanceTitle,
   }));
   
   // Check if this instance is minimized
@@ -172,6 +174,13 @@ export function WindowFrame({
     const timer = setTimeout(() => setIsInitialMount(false), 200);
     return () => clearTimeout(timer);
   }, []); // Play sound when component mounts
+
+  // Sync window title to the app store for the dock context menu
+  useEffect(() => {
+    if (instanceId && title) {
+      updateInstanceTitle(instanceId, title);
+    }
+  }, [instanceId, title, updateInstanceTitle]);
 
   // Track previous minimized state to play sound on restore
   const wasMinimizedRef = useRef(isMinimized);

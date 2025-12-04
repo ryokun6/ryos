@@ -7,8 +7,8 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 
@@ -29,6 +29,13 @@ export type MenuItem =
       label: string;
       items: MenuItem[];
       icon?: string; // Icon path or emoji
+    }
+  | {
+      type: "checkbox";
+      label: string;
+      checked: boolean;
+      onSelect?: () => void;
+      disabled?: boolean;
     }
   | {
       type: "radioGroup";
@@ -104,21 +111,32 @@ function renderItems(items: MenuItem[]): ReactNode {
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         );
+      case "checkbox":
+        return (
+          <DropdownMenuCheckboxItem
+            key={idx}
+            checked={item.checked}
+            onSelect={item.onSelect}
+            disabled={item.disabled}
+            className="text-md h-6 min-w-[140px]"
+          >
+            {item.label}
+          </DropdownMenuCheckboxItem>
+        );
       case "radioGroup":
         return (
           <>
             {item.items.map((ri) => {
               const isActive = item.value === ri.value;
               return (
-                <DropdownMenuItem
+                <DropdownMenuCheckboxItem
                   key={ri.value}
+                  checked={isActive}
                   onSelect={() => item.onChange(ri.value)}
-                  className={menuItemClass}
+                  className="text-md h-6 min-w-[140px]"
                 >
-                  <span className={cn(!isActive && "pl-4")}>
-                    {isActive ? `✓ ${ri.label}` : ri.label}
-                  </span>
-                </DropdownMenuItem>
+                  {ri.label}
+                </DropdownMenuCheckboxItem>
               );
             })}
           </>

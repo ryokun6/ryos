@@ -680,8 +680,9 @@ function MacDock() {
           const { label } = getAppletInfo(instance);
           const isForeground = instance.isForeground && !instance.isMinimized;
           items.push({
-            type: "item",
-            label: `${isForeground ? "✓ " : ""}${label}${instance.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
+            type: "checkbox",
+            label: `${label}${instance.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
+            checked: isForeground,
             onSelect: () => {
               if (instance.isMinimized) {
                 restoreInstance(specificInstanceId);
@@ -760,8 +761,9 @@ function MacDock() {
           
           const isForeground = inst.isForeground && !inst.isMinimized;
           items.push({
-            type: "item",
-            label: `${isForeground ? "✓ " : ""}${windowLabel}${inst.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
+            type: "checkbox",
+            label: `${windowLabel}${inst.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
+            checked: isForeground,
             onSelect: () => {
               if (inst.isMinimized) {
                 restoreInstance(inst.instanceId);
