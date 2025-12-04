@@ -939,12 +939,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           position: "fixed",
         }}
       >
-        <div
-          className="absolute left-0 right-0 flex items-center h-[30px]"
-          style={{
-            bottom: "env(safe-area-inset-bottom, 0px)",
-          }}
-        >
+      <div
+        className="absolute left-0 right-0 flex items-center h-[30px]"
+        style={{
+          bottom: "env(safe-area-inset-bottom, 0px)",
+          paddingLeft: "env(safe-area-inset-left, 0px)",
+          paddingRight: "env(safe-area-inset-right, 0px)",
+        }}
+      >
           {/* Start Button */}
           <div className="flex items-center h-full">
             <StartMenu apps={apps} />
@@ -1286,12 +1288,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
             : undefined,
         fontFamily: "var(--os-font-ui)",
         color: "var(--os-color-menubar-text)",
-        paddingLeft: isPhone 
-          ? "calc(0.5rem + env(safe-area-inset-left, 0px))" 
-          : "0.5rem",
-        paddingRight: isPhone 
-          ? "calc(0.5rem + env(safe-area-inset-right, 0px))" 
-          : "0.5rem",
+        paddingLeft: "calc(0.5rem + env(safe-area-inset-left, 0px))",
+        paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
+        paddingTop: "env(safe-area-inset-top, 0px)",
       }}
     >
       <ScrollableMenuWrapper>
