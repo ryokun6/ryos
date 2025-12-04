@@ -1353,26 +1353,28 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           {hasActiveApp && children ? children : <DefaultMenuItems />}
         </Menubar>
       </ScrollableMenuWrapper>
-      {/* Draggable spacer for Tauri window */}
-      <div 
-        className="flex-1"
-        style={{ 
-          background: debugMode ? 'rgba(255, 0, 0, 0.3)' : undefined,
-          minHeight: '100%',
-        }}
-        onMouseDown={isTauriApp ? async (e) => {
-          if (e.buttons !== 1) return;
-          try {
-            const { getCurrentWindow } = await import("@tauri-apps/api/window");
-            if (e.detail === 2) {
-              await getCurrentWindow().toggleMaximize();
-            } else {
-              await getCurrentWindow().startDragging();
-            }
-          } catch {}
-        } : undefined}
-      />
-      <div className={`${isPhone ? "flex-shrink-0 px-2" : ""} flex items-center`}>
+      {/* Draggable spacer for Tauri window only */}
+      {isTauriApp && (
+        <div
+          className="flex-1"
+          style={{
+            background: debugMode ? 'rgba(255, 0, 0, 0.3)' : undefined,
+            minHeight: '100%',
+          }}
+          onMouseDown={async (e) => {
+            if (e.buttons !== 1) return;
+            try {
+              const { getCurrentWindow } = await import("@tauri-apps/api/window");
+              if (e.detail === 2) {
+                await getCurrentWindow().toggleMaximize();
+              } else {
+                await getCurrentWindow().startDragging();
+              }
+            } catch {}
+          }}
+        />
+      )}
+      <div className={`${isPhone ? "flex-shrink-0 px-2" : "ml-auto"} flex items-center`}>
         <OfflineIndicator />
         <div className="hidden sm:flex">
           <VolumeControl />

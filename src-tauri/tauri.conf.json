@@ -25,7 +25,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https://os.ryo.lu https://*.pusher.com wss://*.pusher.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://www.youtube.com https://i.ytimg.com https://*.wikipedia.org https://*.wikimedia.org https://cursor.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; media-src 'self' https: blob:; frame-src 'self' https://www.youtube.com https://*.wikipedia.org https://*.wikimedia.org https://cursor.com; worker-src 'self' blob:;"
+      "csp": null
     },
     "withGlobalTauri": true
   },
