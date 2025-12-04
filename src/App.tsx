@@ -31,17 +31,19 @@ export function App() {
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
+    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
     const dockHeight = currentTheme === "macosx" ? 56 : 0;
+    const taskbarHeight = isWindowsTheme ? 30 : 0;
     
-    // Mobile: always show at bottom-center with dock and safe area clearance
+    // Mobile: always show at bottom-center with dock/taskbar and safe area clearance
     if (isMobile) {
+      const bottomOffset = dockHeight + taskbarHeight + 16;
       return {
         position: "bottom-center" as const,
-        offset: `calc(env(safe-area-inset-bottom, 0px) + ${dockHeight + 16}px)`,
+        offset: `calc(env(safe-area-inset-bottom, 0px) + ${bottomOffset}px)`,
       };
     }
 
-    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
     if (isWindowsTheme) {
       // Windows themes: bottom-right with taskbar clearance (30px + padding)
       return {
