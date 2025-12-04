@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import leoProfanity from "leo-profanity";
+import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./utils/cors.js";
 // Inlined minimal Ryo prompt to avoid importing TS from JS during dev
 
 // Legacy bad-words usage removed in favor of leo-profanity
@@ -773,6 +774,18 @@ const createErrorResponse = (message, status) => {
   });
 };
 
+// Helper to add CORS headers to any response
+const addCorsHeaders = (response, origin) => {
+  if (!origin) return response;
+  const newHeaders = new Headers(response.headers);
+  newHeaders.set("Access-Control-Allow-Origin", origin);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
+  });
+};
+
 // Utility to ensure user data is an object
 const parseUserData = (data) => {
   if (!data) return null;
@@ -870,6 +883,11 @@ async function ensureUserExists(username, requestId) {
 
 // GET handler
 export async function GET(request) {
+  // Handle CORS preflight
+  const effectiveOrigin = getEffectiveOrigin(request);
+  const preflightResp = preflightIfNeeded(request, ["GET", "OPTIONS"], effectiveOrigin);
+  if (preflightResp) return preflightResp;
+
   const requestId = generateRequestId();
   const startTime = performance.now();
   const url = new URL(request.url);
@@ -877,6 +895,7 @@ export async function GET(request) {
 
   logRequest("GET", request.url, action, requestId);
 
+  let response;
   try {
     // Actions that don't require authentication
     const publicActions = [
@@ -896,45 +915,54 @@ export async function GET(request) {
         // Validate authentication
         const isValid = await validateAuth(username, token, requestId);
         if (!isValid.valid) {
-          return createErrorResponse("Unauthorized", 401);
+          response = createErrorResponse("Unauthorized", 401);
+          return addCorsHeaders(response, effectiveOrigin);
         }
-        return await handleCheckPassword(username, requestId);
+        response = await handleCheckPassword(username, requestId);
+        return addCorsHeaders(response, effectiveOrigin);
       }
 
       // Validate authentication for other protected actions
       const isValid = await validateAuth(username, token, requestId);
       if (!isValid.valid) {
-        return createErrorResponse("Unauthorized", 401);
+        response = createErrorResponse("Unauthorized", 401);
+        return addCorsHeaders(response, effectiveOrigin);
       }
     }
 
     switch (action) {
       case "getRooms":
-        return await handleGetRooms(request, requestId);
+        response = await handleGetRooms(request, requestId);
+        break;
       case "getRoom": {
         const roomId = url.searchParams.get("roomId");
         if (!roomId) {
           logInfo(requestId, "Missing roomId parameter");
-          return createErrorResponse("roomId query parameter is required", 400);
+          response = createErrorResponse("roomId query parameter is required", 400);
+          break;
         }
-        return await handleGetRoom(roomId, requestId);
+        response = await handleGetRoom(roomId, requestId);
+        break;
       }
       case "getMessages": {
         const roomId = url.searchParams.get("roomId");
         if (!roomId) {
           logInfo(requestId, "Missing roomId parameter");
-          return createErrorResponse("roomId query parameter is required", 400);
+          response = createErrorResponse("roomId query parameter is required", 400);
+          break;
         }
-        return await handleGetMessages(roomId, requestId);
+        response = await handleGetMessages(roomId, requestId);
+        break;
       }
       case "getBulkMessages": {
         const roomIdsParam = url.searchParams.get("roomIds");
         if (!roomIdsParam) {
           logInfo(requestId, "Missing roomIds parameter");
-          return createErrorResponse(
+          response = createErrorResponse(
             "roomIds query parameter is required",
             400
           );
+          break;
         }
         // Parse comma-separated string into array
         const roomIds = roomIdsParam
@@ -943,51 +971,57 @@ export async function GET(request) {
           .filter((id) => id.length > 0);
         if (roomIds.length === 0) {
           logInfo(requestId, "No valid room IDs provided");
-          return createErrorResponse("At least one room ID is required", 400);
+          response = createErrorResponse("At least one room ID is required", 400);
+          break;
         }
-        return await handleGetBulkMessages(roomIds, requestId);
+        response = await handleGetBulkMessages(roomIds, requestId);
+        break;
       }
       case "getRoomUsers": {
         const roomId = url.searchParams.get("roomId");
         if (!roomId) {
           logInfo(requestId, "Missing roomId parameter for getRoomUsers");
-          return createErrorResponse("roomId query parameter is required", 400);
+          response = createErrorResponse("roomId query parameter is required", 400);
+          break;
         }
         const users = await getActiveUsersAndPrune(roomId);
-        return new Response(JSON.stringify({ users }), {
+        response = new Response(JSON.stringify({ users }), {
           headers: { "Content-Type": "application/json" },
         });
+        break;
       }
       case "getUsers":
         const searchQuery = url.searchParams.get("search") || "";
-        return await handleGetUsers(requestId, searchQuery);
+        response = await handleGetUsers(requestId, searchQuery);
+        break;
       case "cleanupPresence": {
         // This is an admin-only endpoint for cleaning up expired presence
         const { username, token } = extractAuth(request);
         const isValid = await validateAuth(username, token, requestId);
         if (!isValid.valid || username?.toLowerCase() !== "ryo") {
-          return createErrorResponse(
+          response = createErrorResponse(
             "Unauthorized - Admin access required",
             403
           );
+          break;
         }
 
         const result = await cleanupExpiredPresence();
-        // Optional: targeted updates only
-        // if (result.success) { /* could emit small events here */ }
-        return new Response(JSON.stringify(result), {
+        response = new Response(JSON.stringify(result), {
           headers: { "Content-Type": "application/json" },
         });
+        break;
       }
       case "debugPresence": {
         // Debug endpoint to check presence state
         const { username, token } = extractAuth(request);
         const isValid = await validateAuth(username, token, requestId);
         if (!isValid.valid || username?.toLowerCase() !== "ryo") {
-          return createErrorResponse(
+          response = createErrorResponse(
             "Unauthorized - Admin access required",
             403
           );
+          break;
         }
 
         try {
@@ -1016,7 +1050,7 @@ export async function GET(request) {
           // Get all rooms and their calculated counts
           const rooms = await getDetailedRooms();
 
-          return new Response(
+          response = new Response(
             JSON.stringify({
               presenceKeys: presenceKeys.length,
               presenceData,
@@ -1033,16 +1067,19 @@ export async function GET(request) {
           );
         } catch (error) {
           logError(requestId, "Error in debugPresence:", error);
-          return createErrorResponse("Debug failed", 500);
+          response = createErrorResponse("Debug failed", 500);
         }
+        break;
       }
       default:
         logInfo(requestId, `Invalid action: ${action}`);
-        return createErrorResponse("Invalid action", 400);
+        response = createErrorResponse("Invalid action", 400);
     }
+    return addCorsHeaders(response, effectiveOrigin);
   } catch (error) {
     logError(requestId, "Error handling GET request:", error);
-    return createErrorResponse("Internal server error", 500);
+    response = createErrorResponse("Internal server error", 500);
+    return addCorsHeaders(response, effectiveOrigin);
   } finally {
     const duration = performance.now() - startTime;
     logInfo(requestId, `Request completed in ${duration.toFixed(2)}ms`);
@@ -1051,6 +1088,11 @@ export async function GET(request) {
 
 // POST handler
 export async function POST(request) {
+  // Handle CORS preflight
+  const effectiveOrigin = getEffectiveOrigin(request);
+  const preflightResp = preflightIfNeeded(request, ["POST", "OPTIONS"], effectiveOrigin);
+  if (preflightResp) return preflightResp;
+
   const requestId = generateRequestId();
   const startTime = performance.now();
   const url = new URL(request.url);
@@ -1058,6 +1100,7 @@ export async function POST(request) {
 
   logRequest("POST", request.url, action, requestId);
 
+  let response;
   try {
     // Parse JSON body safely – some actions (e.g. logoutAllDevices) send no body
     let body = {};
@@ -1104,10 +1147,11 @@ export async function POST(request) {
         const isBlocked = await redis.get(blockKey);
         if (isBlocked) {
           logInfo(requestId, `User creation blocked for ${identifier}`);
-          return createErrorResponse(
+          response = createErrorResponse(
             "User creation temporarily blocked due to excessive attempts. Try again in 24 hours.",
             429
           );
+          return addCorsHeaders(response, effectiveOrigin);
         }
 
         // Apply per-minute limiter; if exceeded, set a 24h block
@@ -1118,10 +1162,11 @@ export async function POST(request) {
             requestId,
             `Set 24h block for createUser: ${identifier} after exceeding minute limit`
           );
-          return createErrorResponse(
+          response = createErrorResponse(
             "Too many user creation attempts. You're blocked for 24 hours.",
             429
           );
+          return addCorsHeaders(response, effectiveOrigin);
         }
       } else {
         // For other sensitive actions, prefer authenticated username; otherwise fall back to IP
@@ -1133,10 +1178,11 @@ export async function POST(request) {
         ).toLowerCase();
         const allowed = await checkRateLimit(action, identifier, requestId);
         if (!allowed) {
-          return createErrorResponse(
+          response = createErrorResponse(
             "Too many requests, please slow down",
             429
           );
+          return addCorsHeaders(response, effectiveOrigin);
         }
       }
     }
@@ -1184,7 +1230,8 @@ export async function POST(request) {
           requestId,
           `Auth mismatch: body username (${body.username}) != auth username (${username})`
         );
-        return createErrorResponse("Username mismatch", 401);
+        response = createErrorResponse("Username mismatch", 401);
+        return addCorsHeaders(response, effectiveOrigin);
       }
 
       // Validate authentication
@@ -1194,55 +1241,75 @@ export async function POST(request) {
         requestId
       );
       if (!isValid.valid) {
-        return createErrorResponse("Unauthorized", 401);
+        response = createErrorResponse("Unauthorized", 401);
+        return addCorsHeaders(response, effectiveOrigin);
       }
     }
 
     switch (action) {
       case "createRoom":
         // Pass authenticated username for admin validation
-        return await handleCreateRoom(body, username, requestId);
+        response = await handleCreateRoom(body, username, requestId);
+        break;
       case "joinRoom":
-        return await handleJoinRoom(body, requestId);
+        response = await handleJoinRoom(body, requestId);
+        break;
       case "leaveRoom":
-        return await handleLeaveRoom(body, requestId);
+        response = await handleLeaveRoom(body, requestId);
+        break;
       case "switchRoom":
-        return await handleSwitchRoom(body, requestId);
+        response = await handleSwitchRoom(body, requestId);
+        break;
       case "sendMessage":
-        return await handleSendMessage(body, requestId);
+        response = await handleSendMessage(body, requestId);
+        break;
       case "generateRyoReply":
-        return await handleGenerateRyoReply(body, username, requestId);
+        response = await handleGenerateRyoReply(body, username, requestId);
+        break;
       case "createUser":
-        return await handleCreateUser(body, requestId);
+        response = await handleCreateUser(body, requestId);
+        break;
       case "generateToken":
-        return await handleGenerateToken(body, requestId);
+        response = await handleGenerateToken(body, requestId);
+        break;
       case "refreshToken":
-        return await handleRefreshToken(body, requestId);
+        response = await handleRefreshToken(body, requestId);
+        break;
       case "clearAllMessages":
         // Pass authenticated username for admin validation
-        return await handleClearAllMessages(username, requestId);
+        response = await handleClearAllMessages(username, requestId);
+        break;
       case "resetUserCounts":
         // Pass authenticated username for admin validation
-        return await handleResetUserCounts(username, requestId);
+        response = await handleResetUserCounts(username, requestId);
+        break;
       case "verifyToken":
-        return await handleVerifyToken(request, requestId);
+        response = await handleVerifyToken(request, requestId);
+        break;
       case "authenticateWithPassword":
-        return await handleAuthenticateWithPassword(body, requestId);
+        response = await handleAuthenticateWithPassword(body, requestId);
+        break;
       case "setPassword":
-        return await handleSetPassword(body, username, requestId);
+        response = await handleSetPassword(body, username, requestId);
+        break;
       case "listTokens":
-        return await handleListTokens(username, request, requestId);
+        response = await handleListTokens(username, request, requestId);
+        break;
       case "logoutAllDevices":
-        return await handleLogoutAllDevices(username, request, requestId);
+        response = await handleLogoutAllDevices(username, request, requestId);
+        break;
       case "logoutCurrent":
-        return await handleLogoutCurrent(username, token, requestId);
+        response = await handleLogoutCurrent(username, token, requestId);
+        break;
       default:
         logInfo(requestId, `Invalid action: ${action}`);
-        return createErrorResponse("Invalid action", 400);
+        response = createErrorResponse("Invalid action", 400);
     }
+    return addCorsHeaders(response, effectiveOrigin);
   } catch (error) {
     logError(requestId, "Error handling POST request:", error);
-    return createErrorResponse("Internal server error", 500);
+    response = createErrorResponse("Internal server error", 500);
+    return addCorsHeaders(response, effectiveOrigin);
   } finally {
     const duration = performance.now() - startTime;
     logInfo(requestId, `Request completed in ${duration.toFixed(2)}ms`);
@@ -1251,6 +1318,11 @@ export async function POST(request) {
 
 // DELETE handler
 export async function DELETE(request) {
+  // Handle CORS preflight
+  const effectiveOrigin = getEffectiveOrigin(request);
+  const preflightResp = preflightIfNeeded(request, ["DELETE", "OPTIONS"], effectiveOrigin);
+  if (preflightResp) return preflightResp;
+
   const requestId = generateRequestId();
   const startTime = performance.now();
   const url = new URL(request.url);
@@ -1258,6 +1330,7 @@ export async function DELETE(request) {
 
   logRequest("DELETE", request.url, action, requestId);
 
+  let response;
   try {
     // All DELETE actions require authentication
     const { username, token } = extractAuth(request);
@@ -1265,7 +1338,8 @@ export async function DELETE(request) {
     // Validate authentication
     const isValid = await validateAuth(username, token, requestId);
     if (!isValid.valid) {
-      return createErrorResponse("Unauthorized", 401);
+      response = createErrorResponse("Unauthorized", 401);
+      return addCorsHeaders(response, effectiveOrigin);
     }
 
     switch (action) {
@@ -1273,36 +1347,42 @@ export async function DELETE(request) {
         const roomId = url.searchParams.get("roomId");
         if (!roomId) {
           logInfo(requestId, "Missing roomId parameter");
-          return createErrorResponse("roomId query parameter is required", 400);
+          response = createErrorResponse("roomId query parameter is required", 400);
+          return addCorsHeaders(response, effectiveOrigin);
         }
         // Pass authenticated username to handleDeleteRoom for admin validation
-        return await handleDeleteRoom(roomId, username, requestId);
+        response = await handleDeleteRoom(roomId, username, requestId);
+        break;
       }
       case "deleteMessage": {
         const roomId = url.searchParams.get("roomId");
         const messageId = url.searchParams.get("messageId");
         if (!roomId || !messageId) {
           logInfo(requestId, "Missing roomId or messageId parameter");
-          return createErrorResponse(
+          response = createErrorResponse(
             "roomId and messageId query parameters are required",
             400
           );
+          return addCorsHeaders(response, effectiveOrigin);
         }
         // Pass authenticated username to handleDeleteMessage for admin validation
-        return await handleDeleteMessage(
+        response = await handleDeleteMessage(
           roomId,
           messageId,
           username,
           requestId
         );
+        break;
       }
       default:
         logInfo(requestId, `Invalid action: ${action}`);
-        return createErrorResponse("Invalid action", 400);
+        response = createErrorResponse("Invalid action", 400);
     }
+    return addCorsHeaders(response, effectiveOrigin);
   } catch (error) {
     logError(requestId, "Error handling DELETE request:", error);
-    return createErrorResponse("Internal server error", 500);
+    response = createErrorResponse("Internal server error", 500);
+    return addCorsHeaders(response, effectiveOrigin);
   } finally {
     const duration = performance.now() - startTime;
     logInfo(requestId, `Request completed in ${duration.toFixed(2)}ms`);

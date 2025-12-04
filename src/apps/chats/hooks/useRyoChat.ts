@@ -161,7 +161,7 @@ export function useRyoChat({
         headers["X-Username"] = username;
       }
 
-      await fetch(`/api/chat-rooms?action=generateRyoReply`, {
+      await fetch(getApiUrl(`/api/chat-rooms?action=generateRyoReply`), {
         method: "POST",
         headers,
         body: JSON.stringify({

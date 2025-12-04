@@ -37,6 +37,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import React from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { getApiUrl } from "@/utils/platform";
 import { themes } from "@/themes";
 import { OsThemeId } from "@/themes/types";
 import { getTabStyles } from "@/utils/tabStyles";
@@ -379,7 +380,7 @@ export function ControlPanelsAppComponent({
         return;
       }
 
-      const response = await fetch("/api/chat-rooms?action=logoutAllDevices", {
+      const response = await fetch(getApiUrl("/api/chat-rooms?action=logoutAllDevices"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

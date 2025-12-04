@@ -5,6 +5,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
+import { getApiUrl } from "@/utils/platform";
 
 export interface Applet {
   id: string;
@@ -146,7 +147,7 @@ export const useAppletActions = () => {
     try {
       const isUpdate = isAppletInstalled(applet.id);
       
-      const response = await fetch(`/api/share-applet?id=${encodeURIComponent(applet.id)}`);
+      const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(applet.id)}`));
       if (!response.ok) {
         throw new Error("Failed to fetch applet");
       }

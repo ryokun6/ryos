@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAppletUpdates } from "../hooks/useAppletUpdates";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { toast } from "sonner";
+import { getApiUrl } from "@/utils/platform";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
@@ -94,7 +95,7 @@ export function AppletViewerAppComponent({
   // Check for update for a specific applet by shareId
   const checkForAppletUpdate = useCallback(async (shareId: string) => {
     try {
-      const response = await fetch("/api/share-applet?list=true");
+      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
       if (!response.ok) return null;
       
       const data = await response.json();
@@ -1145,7 +1146,7 @@ export function AppletViewerAppComponent({
       // Get current window dimensions to include in share
       const windowDimensions = currentWindowState?.size;
       
-      const response = await fetch("/api/share-applet", {
+      const response = await fetch(getApiUrl("/api/share-applet"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1225,7 +1226,7 @@ export function AppletViewerAppComponent({
       
       const fetchSharedApplet = async () => {
         try {
-          const response = await fetch(`/api/share-applet?id=${encodeURIComponent(shareCode)}`);
+          const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareCode)}`));
           
           if (!response.ok) {
             if (response.status === 404) {

@@ -9,6 +9,7 @@ import {
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
+import { getApiUrl } from "@/utils/platform";
 
 interface AppStoreFeedProps {
   theme?: string;
@@ -198,7 +199,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       return shuffled;
     };
     try {
-      const response = await fetch("/api/share-applet?list=true");
+      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
       if (response.ok) {
         const data = await response.json();
         const allApplets = data.applets || [];
@@ -261,7 +262,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       setLoadingContents((prev) => new Set(prev).add(appletId));
 
       try {
-        const response = await fetch(`/api/share-applet?id=${encodeURIComponent(appletId)}`);
+        const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`));
         if (response.ok) {
           const data = await response.json();
           loadedRef.current.add(appletId);

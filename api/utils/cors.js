@@ -76,7 +76,7 @@ export function preflightIfNeeded(req, allowedMethods, effectiveOrigin) {
   const headers = {
     "Access-Control-Allow-Origin": effectiveOrigin,
     "Access-Control-Allow-Methods": allowedMethods.join(", "),
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Username",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Username, User-Agent",
   };
   return new Response(null, { headers });
 }

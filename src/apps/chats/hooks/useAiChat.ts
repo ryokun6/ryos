@@ -1302,7 +1302,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ? Math.min(Math.max(limit, 1), 100)
                   : 50;
 
-                const response = await fetch("/api/share-applet?list=true");
+                const response = await fetch(getApiUrl("/api/share-applet?list=true"));
                 if (!response.ok) {
                   throw new Error(`Failed to list shared applets (HTTP ${response.status})`);
                 }
@@ -1494,7 +1494,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Fetch applet metadata to get the name
                 let appletName = shareId;
                 try {
-                  const response = await fetch(`/api/share-applet?id=${encodeURIComponent(shareId)}`);
+                  const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`));
                   if (response.ok) {
                     const data = await response.json();
                     appletName = data.title || data.name || shareId;

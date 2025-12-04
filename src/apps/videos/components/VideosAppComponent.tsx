@@ -16,6 +16,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { toast } from "sonner";
 import { useAppStore } from "@/stores/useAppStore";
+import { getApiUrl } from "@/utils/platform";
 import { SeekBar } from "./SeekBar";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -613,7 +614,7 @@ export function VideosAppComponent({
 
       try {
         // 2. Call our API to parse the title using AI
-        const parseResponse = await fetch("/api/parse-title", {
+        const parseResponse = await fetch(getApiUrl("/api/parse-title"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

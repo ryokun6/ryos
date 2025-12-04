@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { useAppletActions, type Applet } from "../utils/appletActions";
+import { getApiUrl } from "@/utils/platform";
 
 export function useAppletUpdates() {
   const [applets, setApplets] = useState<Applet[]>([]);
@@ -14,7 +15,7 @@ export function useAppletUpdates() {
     }
     setIsLoading(true);
     try {
-      const response = await fetch("/api/share-applet?list=true");
+      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
       if (response.ok) {
         const data = await response.json();
         // Sort by createdAt descending (latest first)

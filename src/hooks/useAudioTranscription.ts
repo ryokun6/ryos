@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { getSupportedMimeType } from "@/utils/audio";
 import { checkOfflineAndShowError } from "@/utils/offline";
+import { getApiUrl } from "@/utils/platform";
 
 // Constants
 const DEFAULT_SILENCE_THRESHOLD = 2000; // ms
@@ -112,7 +113,7 @@ export function useAudioTranscription({
         const extension = mimeType.split(";")[0].split("/")[1];
         formData.append("audio", audioBlob, `recording.${extension}`);
 
-        const response = await fetch("/api/audio-transcribe", {
+        const response = await fetch(getApiUrl("/api/audio-transcribe"), {
           method: "POST",
           body: formData,
         });

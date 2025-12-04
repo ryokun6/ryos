@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { LyricsAlignment, ChineseVariant, KoreanDisplay } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
+import { getApiUrl } from "@/utils/platform";
 
 // Define the Track type (can be shared or defined here)
 export interface Track {
@@ -693,7 +694,7 @@ export const useIpodStore = create<IpodState>()(
 
         try {
           // Call /api/parse-title
-          const parseResponse = await fetch("/api/parse-title", {
+          const parseResponse = await fetch(getApiUrl("/api/parse-title"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

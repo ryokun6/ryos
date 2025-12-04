@@ -1,9 +1,11 @@
+import { getApiUrl } from "./platform";
+
 /**
  * Decodes a shared URL code from the /share/{code} path
  */
 export async function decodeSharedUrl(code: string): Promise<{ url: string; year: string } | null> {
   try {
-    const response = await fetch(`/api/share-link?action=decode&code=${encodeURIComponent(code)}`);
+    const response = await fetch(getApiUrl(`/api/share-link?action=decode&code=${encodeURIComponent(code)}`));
     
     if (!response.ok) {
       console.error('Failed to decode shared URL:', await response.text());

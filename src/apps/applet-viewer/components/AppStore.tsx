@@ -8,6 +8,7 @@ import { Trash2, Star, ArrowLeft, Sparkles, ChevronLeft, ChevronRight } from "lu
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
 import { useTranslation } from "react-i18next";
+import { getApiUrl } from "@/utils/platform";
 
 interface AppStoreProps {
   theme?: string;
@@ -41,7 +42,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
 
   const fetchApplets = async () => {
     try {
-      const response = await fetch("/api/share-applet?list=true");
+      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
       if (response.ok) {
         const data = await response.json();
         // Sort by createdAt descending (latest first)
@@ -177,7 +178,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     if (sharedAppletId) {
       const fetchSharedApplet = async () => {
         try {
-          const response = await fetch(`/api/share-applet?id=${encodeURIComponent(sharedAppletId)}`);
+          const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(sharedAppletId)}`));
           if (response.ok) {
             const data = await response.json();
             const applet: Applet = {
@@ -221,7 +222,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       }
       // Reset content immediately to show loading
       setSelectedAppletContent("");
-      fetch(`/api/share-applet?id=${encodeURIComponent(selectedApplet.id)}`)
+      fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(selectedApplet.id)}`))
         .then((response) => {
           if (response.ok) {
             return response.json();
@@ -313,7 +314,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     }
 
     try {
-      const response = await fetch(`/api/share-applet?id=${encodeURIComponent(appletId)}`, {
+      const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -339,7 +340,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     if (!isAdmin) return;
 
     try {
-      const response = await fetch(`/api/share-applet?id=${encodeURIComponent(appletId)}`, {
+      const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
