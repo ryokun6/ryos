@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-} from "@/components/ui/dropdown-menu";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubTrigger,
+  MenubarSubContent,
+} from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -100,141 +99,123 @@ export function VideosMenuBar({
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.file")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          {t("common.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onOpenVideo}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.videos.menu.openVideo")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onShareVideo}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={videos.length === 0}
           >
             {t("apps.videos.menu.shareVideo")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.close")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Controls Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("apps.videos.menu.controls")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+          {t("apps.videos.menu.controls")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onTogglePlay}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={videos.length === 0}
           >
             {isPlaying ? t("apps.videos.menu.pause") : t("apps.videos.menu.play")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onPrevious}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={videos.length === 0}
           >
             {t("apps.videos.menu.previous")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onNext}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
             disabled={videos.length === 0}
           >
             {t("apps.videos.menu.next")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onFullScreen}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.videos.menu.fullScreen")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onShufflePlaylist}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isShuffled && "pl-4")}>
               {isShuffled ? `✓ ${t("apps.videos.menu.shuffle")}` : t("apps.videos.menu.shuffle")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onToggleLoopAll}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isLoopAll && "pl-4")}>
               {isLoopAll ? `✓ ${t("apps.videos.menu.repeatAll")}` : t("apps.videos.menu.repeatAll")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onToggleLoopCurrent}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!isLoopCurrent && "pl-4")}>
               {isLoopCurrent ? `✓ ${t("apps.videos.menu.repeatOne")}` : t("apps.videos.menu.repeatOne")}
             </span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Library Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("apps.videos.menu.library")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0 max-w-[180px] sm:max-w-[220px]">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+          {t("apps.videos.menu.library")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0 max-w-[180px] sm:max-w-[220px]">
+          <MenubarItem
             onClick={onAddVideo}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.videos.menu.addToLibrary")}
-          </DropdownMenuItem>
+          </MenubarItem>
           
           {videos.length > 0 && (
             <>
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
               
               {/* All Videos section */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+              <MenubarSub>
+                <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
                   <div className="flex justify-between w-full items-center overflow-hidden">
                     <span className="truncate min-w-0">{t("apps.videos.menu.allVideos")}</span>
                   </div>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px]">
+                </MenubarSubTrigger>
+                <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px]">
                   {videos.map((video) => (
-                    <DropdownMenuItem
+                    <MenubarItem
                       key={`all-${video.id}`}
                       onClick={() => onPlayVideo(video.id)}
                       className={cn(
@@ -253,22 +234,22 @@ export function VideosMenuBar({
                         </span>
                         <span className="truncate min-w-0">{video.title}</span>
                       </div>
-                    </DropdownMenuItem>
+                    </MenubarItem>
                   ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+                </MenubarSubContent>
+              </MenubarSub>
               
               {/* Individual Artist submenus */}
               {artists.map((artist) => (
-                <DropdownMenuSub key={artist}>
-                  <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+                <MenubarSub key={artist}>
+                  <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
                     <div className="flex justify-between w-full items-center overflow-hidden">
                       <span className="truncate min-w-0">{artist}</span>
                     </div>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px]">
+                  </MenubarSubTrigger>
+                  <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px]">
                     {videosByArtist[artist].map((video) => (
-                      <DropdownMenuItem
+                      <MenubarItem
                         key={`${artist}-${video.id}`}
                         onClick={() => onPlayVideo(video.id)}
                         className={cn(
@@ -287,64 +268,58 @@ export function VideosMenuBar({
                           </span>
                           <span className="truncate min-w-0">{video.title}</span>
                         </div>
-                      </DropdownMenuItem>
+                      </MenubarItem>
                     ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
+                  </MenubarSubContent>
+                </MenubarSub>
               ))}
               
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
             </>
           )}
           
-          <DropdownMenuItem
+          <MenubarItem
             onClick={onClearPlaylist}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.videos.menu.clearLibrary")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onResetPlaylist}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.videos.menu.resetLibrary")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Help Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("common.menu.help")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.videos.menu.videosHelp")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.shareApp")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.videos.menu.aboutVideos")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
       <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}

@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+} from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -58,53 +57,41 @@ export function PhotoBoothMenuBar({
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.file")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          {t("common.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onExportPhotos}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.photo-booth.menu.exportPhotos")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClearPhotos}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.photo-booth.menu.clearAllPhotos")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.close")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("apps.photo-booth.menu.camera")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          {t("apps.photo-booth.menu.camera")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
           {availableCameras.map((camera) => (
-            <DropdownMenuItem
+            <MenubarItem
               key={camera.deviceId}
               onClick={() => onCameraSelect(camera.deviceId)}
               className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
@@ -115,24 +102,18 @@ export function PhotoBoothMenuBar({
                 {selectedCameraId === camera.deviceId ? "✓ " : ""}
                 {camera.label || `${t("apps.photo-booth.menu.camera")} ${camera.deviceId.slice(0, 4)}`}
               </span>
-            </DropdownMenuItem>
+            </MenubarItem>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("apps.photo-booth.menu.effects")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          {t("apps.photo-booth.menu.effects")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
           {effects.map((effect) => (
-            <DropdownMenuItem
+            <MenubarItem
               key={effect.name}
               onClick={() => onEffectSelect(effect)}
               className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
@@ -143,43 +124,37 @@ export function PhotoBoothMenuBar({
                 {selectedEffect.name === effect.name ? "✓ " : ""}
                 {t(`apps.photo-booth.effects.${effect.translationKey}`)}
               </span>
-            </DropdownMenuItem>
+            </MenubarItem>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("common.menu.help")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.photo-booth.menu.photoBoothHelp")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.shareApp")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.photo-booth.menu.aboutPhotoBooth")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
       <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}

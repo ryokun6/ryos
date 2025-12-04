@@ -1,16 +1,15 @@
 import { Editor } from "@tiptap/react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubTrigger,
+  MenubarSubContent,
+} from "@/components/ui/menubar";
 import React, { useState } from "react";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -64,103 +63,91 @@ export function TextEditMenuBar({
         accept=".txt,.html,.md"
         className="hidden"
       />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.file")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          {t("common.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onNewFile}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.textedit.menu.newFile")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onImportFile}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.textedit.menu.open")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onSave}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {currentFilePath ? t("apps.textedit.menu.save") : t("apps.textedit.menu.saveEllipsis")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => fileInputRef.current?.click()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.textedit.menu.importFromDevice")}
-          </DropdownMenuItem>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          </MenubarItem>
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
               {t("apps.textedit.menu.exportAs")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarItem
                 onClick={() => onExportFile("html")}
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 {t("apps.textedit.menu.html")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onExportFile("md")}
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 {t("apps.textedit.menu.markdown")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onExportFile("txt")}
                 className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
               >
                 {t("apps.textedit.menu.plainText")}
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+              </MenubarItem>
+            </MenubarSubContent>
+          </MenubarSub>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.close")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.edit")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          {t("common.menu.edit")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={() => editor?.chain().focus().undo().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.undo")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().redo().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.redo")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => {
               if (window.getSelection()?.toString()) {
                 document.execCommand("copy");
@@ -169,8 +156,8 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.copy")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => {
               if (window.getSelection()?.toString()) {
                 document.execCommand("cut");
@@ -179,68 +166,62 @@ export function TextEditMenuBar({
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.cut")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => document.execCommand("paste")}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.paste")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => editor?.chain().focus().selectAll().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.selectAll")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("apps.textedit.menu.format")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          {t("apps.textedit.menu.format")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={() => editor?.chain().focus().toggleBold().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("bold") && "pl-4")}>
               {editor?.isActive("bold") ? `✓ ${t("apps.textedit.menu.bold")}` : t("apps.textedit.menu.bold")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().toggleItalic().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("italic") && "pl-4")}>
               {editor?.isActive("italic") ? `✓ ${t("apps.textedit.menu.italic")}` : t("apps.textedit.menu.italic")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().toggleUnderline().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("underline") && "pl-4")}>
               {editor?.isActive("underline") ? `✓ ${t("apps.textedit.menu.underline")}` : t("apps.textedit.menu.underline")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => editor?.chain().focus().setParagraph().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("paragraph") && "pl-4")}>
               {editor?.isActive("paragraph") ? `✓ ${t("apps.textedit.menu.text")}` : t("apps.textedit.menu.text")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
@@ -253,8 +234,8 @@ export function TextEditMenuBar({
                 ? `✓ ${t("apps.textedit.menu.heading1")}`
                 : t("apps.textedit.menu.heading1")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
@@ -267,8 +248,8 @@ export function TextEditMenuBar({
                 ? `✓ ${t("apps.textedit.menu.heading2")}`
                 : t("apps.textedit.menu.heading2")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
@@ -281,9 +262,9 @@ export function TextEditMenuBar({
                 ? `✓ ${t("apps.textedit.menu.heading3")}`
                 : t("apps.textedit.menu.heading3")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => editor?.chain().focus().setTextAlign("left").run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
@@ -296,8 +277,8 @@ export function TextEditMenuBar({
                 ? `✓ ${t("apps.textedit.menu.alignLeft")}`
                 : t("apps.textedit.menu.alignLeft")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().setTextAlign("center").run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
@@ -310,8 +291,8 @@ export function TextEditMenuBar({
                 ? `✓ ${t("apps.textedit.menu.alignCenter")}`
                 : t("apps.textedit.menu.alignCenter")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().setTextAlign("right").run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
@@ -324,17 +305,17 @@ export function TextEditMenuBar({
                 ? `✓ ${t("apps.textedit.menu.alignRight")}`
                 : t("apps.textedit.menu.alignRight")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => editor?.chain().focus().toggleBulletList().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("bulletList") && "pl-4")}>
               {editor?.isActive("bulletList") ? `✓ ${t("apps.textedit.menu.bulletList")}` : t("apps.textedit.menu.bulletList")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().toggleOrderedList().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
@@ -343,50 +324,44 @@ export function TextEditMenuBar({
                 ? `✓ ${t("apps.textedit.menu.numberedList")}`
                 : t("apps.textedit.menu.numberedList")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => editor?.chain().focus().toggleTaskList().run()}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             <span className={cn(!editor?.isActive("taskList") && "pl-4")}>
               {editor?.isActive("taskList") ? `✓ ${t("apps.textedit.menu.taskList")}` : t("apps.textedit.menu.taskList")}
             </span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.help")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onShowHelp}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.textedit.menu.texteditHelp")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("common.menu.shareApp")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onShowAbout}
             className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
           >
             {t("apps.textedit.menu.aboutTextEdit")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
       <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}
