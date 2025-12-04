@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+} from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -51,141 +50,117 @@ export function SynthMenuBar({
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.file")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onAddPreset}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.synth.menu.newPreset")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onReset}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.synth.menu.resetSynth")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Presets Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("apps.synth.menu.presets")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("apps.synth.menu.presets")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
           {presets.map((preset) => (
-            <DropdownMenuItem
+            <MenubarItem
               key={preset.id}
               onClick={() => onLoadPresetById(preset.id)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(currentPresetId !== preset.id && "pl-4")}>
                 {currentPresetId === preset.id ? "✓ " : ""}
                 {preset.name}
               </span>
-            </DropdownMenuItem>
+            </MenubarItem>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* View Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.view")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.view")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={() => onLabelTypeChange("note")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(labelType !== "note" && "pl-4")}>
               {labelType === "note" ? "✓ " : ""}
               {t("apps.synth.menu.noteLabels")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => onLabelTypeChange("key")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(labelType !== "key" && "pl-4")}>
               {labelType === "key" ? "✓ " : ""}
               {t("apps.synth.menu.keyLabels")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => onLabelTypeChange("off")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(labelType !== "off" && "pl-4")}>
               {labelType === "off" ? "✓ " : ""}
               {t("apps.synth.menu.noLabels")}
             </span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Help Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("common.menu.help")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.synth.menu.synthHelp")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.synth.menu.aboutSynth")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
       <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}

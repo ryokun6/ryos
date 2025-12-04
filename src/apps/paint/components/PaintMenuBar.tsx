@@ -1,16 +1,15 @@
 import React, { useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubTrigger,
+  MenubarSubContent,
+} from "@/components/ui/menubar";
 import { Filter } from "./PaintFiltersMenu";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -690,185 +689,161 @@ export function PaintMenuBar({
         accept=".png,.jpg,.jpeg"
         className="hidden"
       />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.file")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onNewFile}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.newFile")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onImportFile}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.open")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onSave}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {currentFilePath ? t("apps.paint.menu.save") : t("apps.paint.menu.saveEllipsis")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => fileInputRef.current?.click()}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.importFromDevice")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onExportFile}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.export")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.edit")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.edit")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onUndo}
             disabled={!canUndo}
-            className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+            className={`text-md h-6 px-3 ${
               !canUndo ? "text-gray-500" : ""
             }`}
           >
             {t("common.menu.undo")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onRedo}
             disabled={!canRedo}
-            className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+            className={`text-md h-6 px-3 ${
               !canRedo ? "text-gray-500" : ""
             }`}
           >
             {t("common.menu.redo")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onCut}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.cut")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onCopy}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.copy")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onPaste}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.paste")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClear}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.clear")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("apps.paint.menu.filters")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("apps.paint.menu.filters")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
           {Object.entries(filterCategories).map(([category, filterNames]) => (
-            <DropdownMenuSub key={category}>
-              <DropdownMenuSubTrigger className="text-md h-6 px-3">
+            <MenubarSub key={category}>
+              <MenubarSubTrigger className="text-md h-6 px-3">
                 {t(categoryKeyMap[category] || category)}
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+              </MenubarSubTrigger>
+              <MenubarSubContent>
                 {filterNames.map((name) => {
                   const filter = filters.find((f) => f.name === name);
                   if (!filter) return null;
                   return (
-                    <DropdownMenuItem
+                    <MenubarItem
                       key={name}
                       onClick={() => onApplyFilter(filter)}
-                      className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                      className="text-md h-6 px-3"
                     >
                       {t(filterKeyMap[name] || name)}
-                    </DropdownMenuItem>
+                    </MenubarItem>
                   );
                 })}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
+              </MenubarSubContent>
+            </MenubarSub>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.help")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.paintHelp")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.aboutPaint")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
       <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}

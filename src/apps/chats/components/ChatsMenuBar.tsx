@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+} from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
 import { type ChatRoom } from "../../../../src/types/chat";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
@@ -112,107 +111,95 @@ export function ChatsMenuBar({
     <>
       <MenuBar inWindowFrame={isXpTheme}>
         {/* File Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="default"
-              className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-            >
-              {t("common.menu.file")}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-            <DropdownMenuItem
+        <MenubarMenu>
+          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+            {t("common.menu.file")}
+          </MenubarTrigger>
+          <MenubarContent align="start" sideOffset={1} className="px-0">
+            <MenubarItem
               onClick={onSaveTranscript}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.saveTranscript")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
+            </MenubarItem>
+            <MenubarItem
               onClick={onClearChats}
               disabled={currentRoom !== null}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.clearChat")}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+            </MenubarItem>
+            <MenubarSeparator className="h-[2px] bg-black my-1" />
 
             {/* Account Section */}
             {username && authToken ? (
               // When logged in: Show Log Out only
-              <DropdownMenuItem
+              <MenubarItem
                 onClick={() => onLogout?.()}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 {t("apps.chats.menu.logOut")}
-              </DropdownMenuItem>
+              </MenubarItem>
             ) : (
               // When not logged in: Show Create Account and Login
               <>
-                <DropdownMenuItem
+                <MenubarItem
                   onClick={onSetUsername}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  className="text-md h-6 px-3"
                 >
                   {t("apps.chats.menu.createAccount")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
+                </MenubarItem>
+                <MenubarItem
                   onClick={onVerifyToken}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  className="text-md h-6 px-3"
                 >
                   {t("apps.chats.menu.login")}
-                </DropdownMenuItem>
+                </MenubarItem>
               </>
             )}
 
-            <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-            <DropdownMenuItem
+            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarItem
               onClick={onClose}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("common.menu.close")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
 
         {/* Chats Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="default"
-              className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-            >
-              {t("apps.chats.menu.chats")}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
+        <MenubarMenu>
+          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+            {t("apps.chats.menu.chats")}
+          </MenubarTrigger>
+          <MenubarContent
             align="start"
             sideOffset={1}
             className="px-0 max-h-[300px] overflow-y-auto"
           >
             {/* New Chat - available to all users */}
-            <DropdownMenuItem
+            <MenubarItem
               onClick={onAddRoom}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.newChat")}
-            </DropdownMenuItem>
+            </MenubarItem>
 
             {/* Show separator between menu actions and chat list */}
             {rooms.length > 0 && (
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
             )}
 
             {/* Ryo Chat Option */}
-            <DropdownMenuItem
+            <MenubarItem
               onClick={() => onRoomSelect(null)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(currentRoom !== null && "pl-4")}>
                 {currentRoom === null ? `✓ ${t("apps.chats.status.ryo")}` : t("apps.chats.status.ryo")}
               </span>
-            </DropdownMenuItem>
+            </MenubarItem>
 
             {/* Chat List */}
             {Array.isArray(rooms) &&
@@ -227,10 +214,10 @@ export function ChatsMenuBar({
                 const sortedRooms = [...privateRooms, ...publicRooms];
 
                 return sortedRooms.map((room) => (
-                  <DropdownMenuItem
+                  <MenubarItem
                     key={room.id}
                     onClick={() => onRoomSelect(room)}
-                    className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                    className="text-md h-6 px-3"
                   >
                     <span
                       className={cn(!(currentRoom?.id === room.id) && "pl-4")}
@@ -246,138 +233,120 @@ export function ChatsMenuBar({
                         ? getPrivateRoomDisplayName(room, username ?? null)
                         : `#${room.name}`}
                     </span>
-                  </DropdownMenuItem>
+                  </MenubarItem>
                 ));
               })()}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </MenubarContent>
+        </MenubarMenu>
 
         {/* Sounds Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="default"
-              className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-            >
-              {t("apps.chats.menu.sound")}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" sideOffset={1} className="px-0">
+        <MenubarMenu>
+          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+            {t("apps.chats.menu.sound")}
+          </MenubarTrigger>
+          <MenubarContent align="start" sideOffset={1} className="px-0">
             {Object.entries(SYNTH_PRESETS).map(([key, preset]) => (
-              <DropdownMenuItem
+              <MenubarItem
                 key={key}
                 onClick={() => setSynthPreset(key)}
                 className={cn(
-                  "text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  "text-md h-6 px-3"
                 )}
               >
                 <span className={cn(!(synthPreset === key) && "pl-4")}>
                   {synthPreset === key ? `✓ ${preset.name}` : preset.name}
                 </span>
-              </DropdownMenuItem>
+              </MenubarItem>
             ))}
-            <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-            <DropdownMenuItem
+            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarItem
               onClick={() => setSpeechEnabled(!speechEnabled)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(!speechEnabled && "pl-4")}>
                 {speechEnabled ? `✓ ${t("apps.chats.menu.chatSpeech")}` : t("apps.chats.menu.chatSpeech")}
               </span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
+            </MenubarItem>
+            <MenubarItem
               onClick={() => setTypingSynthEnabled(!typingSynthEnabled)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(!typingSynthEnabled && "pl-4")}>
                 {typingSynthEnabled ? `✓ ${t("apps.chats.menu.typingSynth")}` : t("apps.chats.menu.typingSynth")}
               </span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
 
         {/* View Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="default"
-              className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-            >
-              {t("common.menu.view")}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" sideOffset={1} className="px-0">
+        <MenubarMenu>
+          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+            {t("common.menu.view")}
+          </MenubarTrigger>
+          <MenubarContent align="start" sideOffset={1} className="px-0">
             {/* Font Size Controls */}
-            <DropdownMenuItem
+            <MenubarItem
               onClick={onIncreaseFontSize}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.increaseFontSize")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
+            </MenubarItem>
+            <MenubarItem
               onClick={onDecreaseFontSize}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.decreaseFontSize")}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-            <DropdownMenuItem
+            </MenubarItem>
+            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarItem
               onClick={onResetFontSize}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.resetFontSize")}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+            </MenubarItem>
+            <MenubarSeparator className="h-[2px] bg-black my-1" />
             {/* Sidebar Toggle */}
-            <DropdownMenuItem
+            <MenubarItem
               onClick={() => {
                 console.log("[MenuBar] Toggle Sidebar menu item clicked");
                 onToggleSidebar();
               }}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(!isSidebarVisible && "pl-4")}>
                 {isSidebarVisible ? `✓ ${t("apps.chats.menu.showRooms")}` : t("apps.chats.menu.showRooms")}
               </span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
 
         {/* Help Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="default"
-              className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-            >
-              {t("common.menu.help")}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-            <DropdownMenuItem
+        <MenubarMenu>
+          <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+            {t("common.menu.help")}
+          </MenubarTrigger>
+          <MenubarContent align="start" sideOffset={1} className="px-0">
+            <MenubarItem
               onClick={onShowHelp}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.chatsHelp")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
+            </MenubarItem>
+            <MenubarItem
               onSelect={() => setIsShareDialogOpen(true)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("common.menu.shareApp")}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-            <DropdownMenuItem
+            </MenubarItem>
+            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarItem
               onClick={onShowAbout}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.aboutChats")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
       </MenuBar>
 
       {/* Log In / Sign Up Dialog */}

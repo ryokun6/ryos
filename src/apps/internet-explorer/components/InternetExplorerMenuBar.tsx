@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-} from "@/components/ui/dropdown-menu";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubTrigger,
+  MenubarSubContent,
+} from "@/components/ui/menubar";
 import { AppProps } from "../../base/types";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
@@ -67,29 +66,29 @@ const renderFavoriteItem = (
   if (favorite.children && favorite.children.length > 0) {
     // Render as a submenu (folder)
     return (
-      <DropdownMenuSub key={favorite.title}>
-        <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2">
+      <MenubarSub key={favorite.title}>
+        <MenubarSubTrigger className="text-md h-6 px-3 flex items-center gap-2">
           <ThemedIcon
             name="directory.png"
             alt="Folder"
             className="w-4 h-4 [image-rendering:pixelated]"
           />
           {favorite.title}
-        </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent className="max-w-xs">
+        </MenubarSubTrigger>
+        <MenubarSubContent className="max-w-xs">
           {favorite.children.map((child) =>
             renderFavoriteItem(child, onNavigate)
           )}
-        </DropdownMenuSubContent>
-      </DropdownMenuSub>
+        </MenubarSubContent>
+      </MenubarSub>
     );
   } else if (favorite.url) {
     // Render as a regular favorite item
     return (
-      <DropdownMenuItem
+      <MenubarItem
         key={favorite.url}
         onClick={() => onNavigate(favorite.url!, favorite.year)}
-        className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+        className="text-md h-6 px-3 flex items-center gap-2"
       >
         {favorite.favicon && typeof navigator !== "undefined" && "onLine" in navigator && navigator.onLine ? (
           <img
@@ -111,7 +110,7 @@ const renderFavoriteItem = (
         {favorite.year && favorite.year !== "current" && (
           <span className="text-xs text-gray-500 ml-1">({favorite.year})</span>
         )}
-      </DropdownMenuItem>
+      </MenubarItem>
     );
   } else {
     // Should not happen for valid data, but return null as fallback
@@ -204,506 +203,482 @@ export function InternetExplorerMenuBar({
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.file")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onFocusUrlInput}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.goToUrl")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onSharePage}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.sharePage")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onOpenTimeMachine}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.openTimeMachine")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Edit Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("common.menu.edit")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("common.menu.edit")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onRefresh}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.refresh")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onStop}
             disabled={!isLoading}
             className={
               !isLoading
                 ? "text-gray-400 text-md h-6 px-3"
-                : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                : "text-md h-6 px-3"
             }
           >
             {t("apps.internet-explorer.menu.stop")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
 
           {/* Year Submenu */}
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.internet-explorer.menu.year")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="min-w-[120px] max-h-[400px] overflow-y-auto">
+            </MenubarSubTrigger>
+            <MenubarSubContent className="min-w-[120px] max-h-[400px] overflow-y-auto">
               {/* Future Years */}
               {futureYears.map((yearOption) => (
-                <DropdownMenuItem
+                <MenubarItem
                   key={yearOption}
                   onClick={() => onYearChange?.(yearOption)}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white text-blue-600"
+                  className="text-md h-6 px-3 text-blue-600"
                 >
                   <span className={cn(year !== yearOption && "pl-4")}>
                     {year === yearOption ? `✓ ${yearOption}` : yearOption}
                   </span>
-                </DropdownMenuItem>
+                </MenubarItem>
               ))}
 
               {/* Current Year */}
-              <DropdownMenuItem
+              <MenubarItem
                 onClick={() => onYearChange?.("current")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(year !== "current" && "pl-4")}>
                   {year === "current" ? `✓ ${t("apps.internet-explorer.menu.now")}` : t("apps.internet-explorer.menu.now")}
                 </span>
-              </DropdownMenuItem>
+              </MenubarItem>
 
               {/* Past Years */}
               {pastYears.map((yearOption) => (
-                <DropdownMenuItem
+                <MenubarItem
                   key={yearOption}
                   onClick={() => onYearChange?.(yearOption)}
-                  className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+                  className={`text-md h-6 px-3 ${
                     parseInt(yearOption) <= 1995 ? "text-blue-600" : ""
                   }`}
                 >
                   <span className={cn(year !== yearOption && "pl-4")}>
                     {year === yearOption ? `✓ ${yearOption}` : yearOption}
                   </span>
-                </DropdownMenuItem>
+                </MenubarItem>
               ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+            </MenubarSubContent>
+          </MenubarSub>
 
           {/* Language Submenu */}
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.internet-explorer.menu.language")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="min-w-[160px]">
-              <DropdownMenuItem
+            </MenubarSubTrigger>
+            <MenubarSubContent className="min-w-[160px]">
+              <MenubarItem
                 onClick={() => onLanguageChange?.("auto")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "auto" && "pl-4")}>
                   {language === "auto" ? `✓ ${t("apps.internet-explorer.menu.auto")}` : t("apps.internet-explorer.menu.auto")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("english")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "english" && "pl-4")}>
                   {language === "english" ? `✓ ${t("apps.internet-explorer.menu.english")}` : t("apps.internet-explorer.menu.english")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("chinese")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "chinese" && "pl-4")}>
                   {language === "chinese" ? `✓ ${t("apps.internet-explorer.menu.chinese")}` : t("apps.internet-explorer.menu.chinese")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("japanese")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "japanese" && "pl-4")}>
                   {language === "japanese" ? `✓ ${t("apps.internet-explorer.menu.japanese")}` : t("apps.internet-explorer.menu.japanese")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("korean")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "korean" && "pl-4")}>
                   {language === "korean" ? `✓ ${t("apps.internet-explorer.menu.korean")}` : t("apps.internet-explorer.menu.korean")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("french")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "french" && "pl-4")}>
                   {language === "french" ? `✓ ${t("apps.internet-explorer.menu.french")}` : t("apps.internet-explorer.menu.french")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("spanish")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "spanish" && "pl-4")}>
                   {language === "spanish" ? `✓ ${t("apps.internet-explorer.menu.spanish")}` : t("apps.internet-explorer.menu.spanish")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("portuguese")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "portuguese" && "pl-4")}>
                   {language === "portuguese" ? `✓ ${t("apps.internet-explorer.menu.portuguese")}` : t("apps.internet-explorer.menu.portuguese")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("german")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "german" && "pl-4")}>
                   {language === "german" ? `✓ ${t("apps.internet-explorer.menu.german")}` : t("apps.internet-explorer.menu.german")}
                 </span>
-              </DropdownMenuItem>
+              </MenubarItem>
 
-              <DropdownMenuItem
+              <MenubarItem
                 onClick={() => onLanguageChange?.("welsh")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "welsh" && "pl-4")}>
                   {language === "welsh" ? `✓ ${t("apps.internet-explorer.menu.welsh")}` : t("apps.internet-explorer.menu.welsh")}
                 </span>
-              </DropdownMenuItem>
+              </MenubarItem>
 
               {/* Ancient Languages */}
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-              <DropdownMenuItem
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
                 onClick={() => onLanguageChange?.("latin")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "latin" && "pl-4")}>
                   {language === "latin" ? `✓ ${t("apps.internet-explorer.menu.latin")}` : t("apps.internet-explorer.menu.latin")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("sanskrit")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "sanskrit" && "pl-4")}>
                   {language === "sanskrit" ? `✓ ${t("apps.internet-explorer.menu.sanskrit")}` : t("apps.internet-explorer.menu.sanskrit")}
                 </span>
-              </DropdownMenuItem>
+              </MenubarItem>
 
               {/* Futuristic/Non-human Languages */}
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-              <DropdownMenuItem
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
                 onClick={() => onLanguageChange?.("alien")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "alien" && "pl-4")}>
                   {language === "alien" ? `✓ ${t("apps.internet-explorer.menu.alien")}` : t("apps.internet-explorer.menu.alien")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("ai_language")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "ai_language" && "pl-4")}>
                   {language === "ai_language" ? `✓ ${t("apps.internet-explorer.menu.aiLanguage")}` : t("apps.internet-explorer.menu.aiLanguage")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLanguageChange?.("digital_being")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "digital_being" && "pl-4")}>
                   {language === "digital_being"
                     ? `✓ ${t("apps.internet-explorer.menu.digitalBeing")}`
                     : t("apps.internet-explorer.menu.digitalBeing")}
                 </span>
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+              </MenubarItem>
+            </MenubarSubContent>
+          </MenubarSub>
 
           {/* Location Submenu */}
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.internet-explorer.menu.location")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="min-w-[160px]">
-              <DropdownMenuItem
+            </MenubarSubTrigger>
+            <MenubarSubContent className="min-w-[160px]">
+              <MenubarItem
                 onClick={() => onLocationChange?.("auto")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "auto" && "pl-4")}>
                   {location === "auto" ? `✓ ${t("apps.internet-explorer.menu.auto")}` : t("apps.internet-explorer.menu.auto")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("united_states")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "united_states" && "pl-4")}>
                   {location === "united_states"
                     ? `✓ ${t("apps.internet-explorer.menu.unitedStates")}`
                     : t("apps.internet-explorer.menu.unitedStates")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("china")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "china" && "pl-4")}>
                   {location === "china" ? `✓ ${t("apps.internet-explorer.menu.china")}` : t("apps.internet-explorer.menu.china")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("japan")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "japan" && "pl-4")}>
                   {location === "japan" ? `✓ ${t("apps.internet-explorer.menu.japan")}` : t("apps.internet-explorer.menu.japan")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("korea")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "korea" && "pl-4")}>
                   {location === "korea" ? `✓ ${t("apps.internet-explorer.menu.korea")}` : t("apps.internet-explorer.menu.korea")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("canada")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "canada" && "pl-4")}>
                   {location === "canada" ? `✓ ${t("apps.internet-explorer.menu.canada")}` : t("apps.internet-explorer.menu.canada")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("uk")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "uk" && "pl-4")}>
                   {location === "uk" ? `✓ ${t("apps.internet-explorer.menu.unitedKingdom")}` : t("apps.internet-explorer.menu.unitedKingdom")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("france")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "france" && "pl-4")}>
                   {location === "france" ? `✓ ${t("apps.internet-explorer.menu.france")}` : t("apps.internet-explorer.menu.france")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("germany")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "germany" && "pl-4")}>
                   {location === "germany" ? `✓ ${t("apps.internet-explorer.menu.germany")}` : t("apps.internet-explorer.menu.germany")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("spain")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "spain" && "pl-4")}>
                   {location === "spain" ? `✓ ${t("apps.internet-explorer.menu.spain")}` : t("apps.internet-explorer.menu.spain")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("portugal")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "portugal" && "pl-4")}>
                   {location === "portugal" ? `✓ ${t("apps.internet-explorer.menu.portugal")}` : t("apps.internet-explorer.menu.portugal")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("india")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "india" && "pl-4")}>
                   {location === "india" ? `✓ ${t("apps.internet-explorer.menu.india")}` : t("apps.internet-explorer.menu.india")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("brazil")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "brazil" && "pl-4")}>
                   {location === "brazil" ? `✓ ${t("apps.internet-explorer.menu.brazil")}` : t("apps.internet-explorer.menu.brazil")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("australia")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "australia" && "pl-4")}>
                   {location === "australia" ? `✓ ${t("apps.internet-explorer.menu.australia")}` : t("apps.internet-explorer.menu.australia")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => onLocationChange?.("russia")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "russia" && "pl-4")}>
                   {location === "russia" ? `✓ ${t("apps.internet-explorer.menu.russia")}` : t("apps.internet-explorer.menu.russia")}
                 </span>
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+              </MenubarItem>
+            </MenubarSubContent>
+          </MenubarSub>
 
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onEditFuture}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.editFuture")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Favorites Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("apps.internet-explorer.menu.favorites")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("apps.internet-explorer.menu.favorites")}
+        </MenubarTrigger>
+        <MenubarContent
           align="start"
           sideOffset={1}
           className="px-0 max-w-xs"
         >
-          <DropdownMenuItem
+          <MenubarItem
             onClick={onHome}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.goHome")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onAddFavorite}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.addToFavorites")}
-          </DropdownMenuItem>
+          </MenubarItem>
           {favorites.length > 0 && (
             <>
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
               {favorites.map((favorite) =>
                 renderFavoriteItem(favorite, (url, year) =>
                   onNavigateToFavorite?.(url, year)
                 )
               )}
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-              <DropdownMenuItem
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
                 onClick={onClearFavorites}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 {t("apps.internet-explorer.menu.clearFavorites")}
-              </DropdownMenuItem>
+              </MenubarItem>
             </>
           )}
-          <DropdownMenuItem
+          <MenubarItem
             onClick={onResetFavorites}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.resetFavorites")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* History Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("apps.internet-explorer.menu.history")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("apps.internet-explorer.menu.history")}
+        </MenubarTrigger>
+        <MenubarContent
           align="start"
           sideOffset={1}
           className="px-0 max-h-[400px] overflow-y-auto max-w-xs"
         >
-          <DropdownMenuItem
+          <MenubarItem
             onClick={onGoBack}
             disabled={!canGoBack}
             className={
               !canGoBack
                 ? "text-gray-400 text-md h-6 px-3"
-                : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                : "text-md h-6 px-3"
             }
           >
             {t("apps.internet-explorer.menu.back")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onGoForward}
             disabled={!canGoForward}
             className={
               !canGoForward
                 ? "text-gray-400 text-md h-6 px-3"
-                : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                : "text-md h-6 px-3"
             }
           >
             {t("apps.internet-explorer.menu.forward")}
-          </DropdownMenuItem>
+          </MenubarItem>
 
           {history.length > 0 && (
             <>
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
               {history.slice(0, 10).map((entry) => (
-                <DropdownMenuItem
+                <MenubarItem
                   key={entry.url + entry.timestamp}
                   onClick={() =>
                     onNavigateToHistory?.(entry.url, entry.year || "current")
                   }
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+                  className="text-md h-6 px-3 flex items-center gap-2"
                 >
                   {entry.favicon && typeof navigator !== "undefined" && "onLine" in navigator && navigator.onLine ? (
                     <img
@@ -729,53 +704,47 @@ export function InternetExplorerMenuBar({
                       </span>
                     )}
                   </span>
-                </DropdownMenuItem>
+                </MenubarItem>
               ))}
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-              <DropdownMenuItem
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
                 onClick={onClearHistory}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 {t("apps.internet-explorer.menu.clearHistory")}
-              </DropdownMenuItem>
+              </MenubarItem>
             </>
           )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Help Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("common.menu.help")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.internetExplorerHelp")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.aboutInternetExplorer")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
       <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}

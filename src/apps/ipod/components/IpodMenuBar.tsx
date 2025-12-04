@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-} from "@/components/ui/dropdown-menu";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubTrigger,
+  MenubarSubContent,
+} from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
 import { useIpodStoreShallow } from "@/stores/helpers";
 import { toast } from "sonner";
@@ -210,154 +209,136 @@ export function IpodMenuBar({
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("apps.ipod.menu.file")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("apps.ipod.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onAddTrack}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.addSong")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onShareSong}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={tracks.length === 0 || currentIndex === -1}
           >
             {t("apps.ipod.menu.shareSong")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={handleExportLibrary}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={tracks.length === 0}
           >
             {t("apps.ipod.menu.exportLibrary")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={handleImportLibrary}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.importLibrary")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Controls Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("apps.ipod.menu.controls")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("apps.ipod.menu.controls")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={togglePlay}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={tracks.length === 0}
           >
             {isPlaying ? t("apps.ipod.menu.pause") : t("apps.ipod.menu.play")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={previousTrack}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={tracks.length === 0}
           >
             {t("apps.ipod.menu.previous")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={nextTrack}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={tracks.length === 0}
           >
             {t("apps.ipod.menu.next")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={toggleShuffle}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!isShuffled && "pl-4")}>
               {isShuffled ? `✓ ${t("apps.ipod.menu.shuffle")}` : t("apps.ipod.menu.shuffle")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={toggleLoopAll}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!isLoopAll && "pl-4")}>
               {isLoopAll ? `✓ ${t("apps.ipod.menu.repeatAll")}` : t("apps.ipod.menu.repeatAll")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={toggleLoopCurrent}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!isLoopCurrent && "pl-4")}>
               {isLoopCurrent ? `✓ ${t("apps.ipod.menu.repeatOne")}` : t("apps.ipod.menu.repeatOne")}
             </span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* View Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("apps.ipod.menu.view")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("apps.ipod.menu.view")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
           {/* Lyrics Submenu */}
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.ipod.menu.lyrics")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="px-0">
-              <DropdownMenuItem
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
+              <MenubarItem
                 onClick={toggleLyrics}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(!showLyrics && "pl-4")}>
                   {showLyrics ? `✓ ${t("apps.ipod.menu.showLyrics")}` : t("apps.ipod.menu.showLyrics")}
                 </span>
-              </DropdownMenuItem>
+              </MenubarItem>
 
-              <DropdownMenuItem
+              <MenubarItem
                 onClick={refreshLyrics}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
                 disabled={tracks.length === 0 || currentIndex === -1}
               >
                 {t("apps.ipod.menu.refreshLyrics")}
-              </DropdownMenuItem>
+              </MenubarItem>
 
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
 
               {/* Chinese toggle */}
-              <DropdownMenuItem
+              <MenubarItem
                 onClick={() =>
                   setChineseVariant(
                     chineseVariant === ChineseVariant.Traditional
@@ -365,7 +346,7 @@ export function IpodMenuBar({
                       : ChineseVariant.Traditional
                   )
                 }
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span
                   className={cn(
@@ -376,10 +357,10 @@ export function IpodMenuBar({
                     ? `✓ ${t("apps.ipod.menu.traditionalChinese")}`
                     : t("apps.ipod.menu.traditionalChinese")}
                 </span>
-              </DropdownMenuItem>
+              </MenubarItem>
 
               {/* Korean toggle */}
-              <DropdownMenuItem
+              <MenubarItem
                 onClick={() =>
                   setKoreanDisplay(
                     koreanDisplay === KoreanDisplay.Original
@@ -387,7 +368,7 @@ export function IpodMenuBar({
                       : KoreanDisplay.Original
                   )
                 }
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span
                   className={cn(
@@ -396,14 +377,14 @@ export function IpodMenuBar({
                 >
                   {koreanDisplay === KoreanDisplay.Original ? `✓ ${t("apps.ipod.menu.korean")}` : t("apps.ipod.menu.korean")}
                 </span>
-              </DropdownMenuItem>
+              </MenubarItem>
 
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
 
               {/* Alignment modes */}
-              <DropdownMenuItem
+              <MenubarItem
                 onClick={() => setLyricsAlignment(LyricsAlignment.FocusThree)}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span
                   className={cn(
@@ -414,10 +395,10 @@ export function IpodMenuBar({
                     ? `✓ ${t("apps.ipod.menu.multi")}`
                     : t("apps.ipod.menu.multi")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => setLyricsAlignment(LyricsAlignment.Center)}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span
                   className={cn(
@@ -428,10 +409,10 @@ export function IpodMenuBar({
                     ? `✓ ${t("apps.ipod.menu.single")}`
                     : t("apps.ipod.menu.single")}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </MenubarItem>
+              <MenubarItem
                 onClick={() => setLyricsAlignment(LyricsAlignment.Alternating)}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span
                   className={cn(
@@ -442,147 +423,141 @@ export function IpodMenuBar({
                     ? `✓ ${t("apps.ipod.menu.alternating")}`
                     : t("apps.ipod.menu.alternating")}
                 </span>
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+              </MenubarItem>
+            </MenubarSubContent>
+          </MenubarSub>
 
           {/* Translate Lyrics Submenu */}
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.ipod.menu.translate")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="px-0 max-h-[400px] overflow-y-auto">
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0 max-h-[400px] overflow-y-auto">
               {translationLanguages.map((lang) => {
                 // Show checkmark if this language is the current persistent preference
                 const isSelected = lyricsTranslationLanguage === lang.code;
                 const isOriginal = !lang.code && !lyricsTranslationLanguage;
                 
                 return (
-                  <DropdownMenuItem
+                  <MenubarItem
                     key={lang.code || "off"}
                     onClick={() => {
                       setLyricsTranslationLanguage(lang.code);
                     }}
-                    className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                    className="text-md h-6 px-3"
                   >
                     <span className={cn((!isSelected && !isOriginal) && "pl-4")}>
                       {(isSelected || isOriginal) ? "✓ " : ""}{lang.label}
                     </span>
-                  </DropdownMenuItem>
+                  </MenubarItem>
                 );
               })}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+            </MenubarSubContent>
+          </MenubarSub>
 
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-          <DropdownMenuItem
+          <MenubarItem
             onClick={toggleBacklight}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!isBacklightOn && "pl-4")}>
               {isBacklightOn ? `✓ ${t("apps.ipod.menu.backlight")}` : t("apps.ipod.menu.backlight")}
             </span>
-          </DropdownMenuItem>
+          </MenubarItem>
 
-          <DropdownMenuItem
+          <MenubarItem
             onClick={toggleLcdFilter}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!isLcdFilterOn && "pl-4")}>
               {isLcdFilterOn ? `✓ ${t("apps.ipod.menu.lcdFilter")}` : t("apps.ipod.menu.lcdFilter")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={toggleVideo}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={!isPlaying}
           >
             <span className={cn(!isVideoOn && "pl-4")}>
               {isVideoOn ? `✓ ${t("apps.ipod.menu.video")}` : t("apps.ipod.menu.video")}
             </span>
-          </DropdownMenuItem>
+          </MenubarItem>
 
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => setTheme("classic")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(currentTheme !== "classic" && "pl-4")}>
               {currentTheme === "classic" ? `✓ ${t("apps.ipod.menu.classic")}` : t("apps.ipod.menu.classic")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => setTheme("black")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(currentTheme !== "black" && "pl-4")}>
               {currentTheme === "black" ? `✓ ${t("apps.ipod.menu.black")}` : t("apps.ipod.menu.black")}
             </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => setTheme("u2")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(currentTheme !== "u2" && "pl-4")}>
               {currentTheme === "u2" ? `✓ ${t("apps.ipod.menu.u2")}` : t("apps.ipod.menu.u2")}
             </span>
-          </DropdownMenuItem>
+          </MenubarItem>
 
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-          <DropdownMenuItem
+          <MenubarItem
             onClick={toggleFullScreen}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!isFullScreen && "pl-4")}>
               {isFullScreen ? `✓ ${t("apps.ipod.menu.fullScreen")}` : t("apps.ipod.menu.fullScreen")}
             </span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Library Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("apps.ipod.menu.library")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("apps.ipod.menu.library")}
+        </MenubarTrigger>
+        <MenubarContent
           align="start"
           sideOffset={1}
           className="px-0 max-w-[180px] sm:max-w-[220px]"
         >
-          <DropdownMenuItem
+          <MenubarItem
             onClick={onAddTrack}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.addToLibrary")}
-          </DropdownMenuItem>
+          </MenubarItem>
 
           {tracks.length > 0 && (
             <>
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
 
               {/* All Tracks section */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+              <MenubarSub>
+                <MenubarSubTrigger className="text-md h-6 px-3">
                   <div className="flex justify-between w-full items-center overflow-hidden">
                     <span className="truncate min-w-0">{t("apps.ipod.menu.allSongs")}</span>
                   </div>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[400px] overflow-y-auto">
+                </MenubarSubTrigger>
+                <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[400px] overflow-y-auto">
                   {tracks.map((track, index) => (
-                    <DropdownMenuItem
+                    <MenubarItem
                       key={`all-${track.id}`}
                       onClick={() => handlePlayTrack(index)}
                       className={cn(
-                        "text-md h-6 px-3 active:bg-gray-900 active:text-white max-w-[220px] truncate",
+                        "text-md h-6 px-3 max-w-[220px] truncate",
                         index === currentIndex && "bg-gray-200"
                       )}
                     >
@@ -597,27 +572,27 @@ export function IpodMenuBar({
                         </span>
                         <span className="truncate min-w-0">{track.title}</span>
                       </div>
-                    </DropdownMenuItem>
+                    </MenubarItem>
                   ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+                </MenubarSubContent>
+              </MenubarSub>
 
               {/* Individual Artist submenus */}
               <div className="max-h-[300px] overflow-y-auto">
                 {artists.map((artist) => (
-                  <DropdownMenuSub key={artist}>
-                    <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+                  <MenubarSub key={artist}>
+                    <MenubarSubTrigger className="text-md h-6 px-3">
                       <div className="flex justify-between w-full items-center overflow-hidden">
                         <span className="truncate min-w-0">{artist}</span>
                       </div>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[200px] overflow-y-auto">
+                    </MenubarSubTrigger>
+                    <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[200px] overflow-y-auto">
                       {tracksByArtist[artist].map(({ track, index }) => (
-                        <DropdownMenuItem
+                        <MenubarItem
                           key={`${artist}-${track.id}`}
                           onClick={() => handlePlayTrack(index)}
                           className={cn(
-                            "text-md h-6 px-3 active:bg-gray-900 active:text-white max-w-[160px] sm:max-w-[200px] truncate",
+                            "text-md h-6 px-3 max-w-[160px] sm:max-w-[200px] truncate",
                             index === currentIndex && "bg-gray-200"
                           )}
                         >
@@ -634,65 +609,59 @@ export function IpodMenuBar({
                               {track.title}
                             </span>
                           </div>
-                        </DropdownMenuItem>
+                        </MenubarItem>
                       ))}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
+                    </MenubarSubContent>
+                  </MenubarSub>
                 ))}
               </div>
 
-              <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
             </>
           )}
 
-          <DropdownMenuItem
+          <MenubarItem
             onClick={onClearLibrary}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.clearLibrary")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onSyncLibrary}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.syncLibrary")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Help Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("common.menu.help")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.ipodHelp")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.shareApp")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.aboutIpod")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
       <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}

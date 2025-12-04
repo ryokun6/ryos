@@ -7,8 +7,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Menubar,
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+} from "@/components/ui/menubar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -408,191 +415,167 @@ function DefaultMenuItems() {
   return (
     <>
       {/* File Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.file")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={() => handleLaunchFinder("/")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.newFinderWindow")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.newFolder")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.moveToTrash")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.emptyTrash")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Edit Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.edit")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.edit")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.undo")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.cut")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.copy")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.paste")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.clear")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.selectAll")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* View Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.view")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.view")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.bySmallIcon")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span>✓ {t("apps.finder.menu.byIcon")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.byList")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span>✓ {t("apps.finder.menu.byName")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.byDate")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.bySize")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.byKind")}</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Go Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.go")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.go")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.back")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.forward")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => handleLaunchFinder("/Applications")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="applications.png"
@@ -600,10 +583,10 @@ function DefaultMenuItems() {
               className="w-4 h-4 [image-rendering:pixelated]"
             />
             {t("common.menu.applications")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => handleLaunchFinder("/Documents")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="documents.png"
@@ -611,10 +594,10 @@ function DefaultMenuItems() {
               className="w-4 h-4 [image-rendering:pixelated]"
             />
             {t("common.menu.documents")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => handleLaunchFinder("/Images")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="images.png"
@@ -622,10 +605,10 @@ function DefaultMenuItems() {
               className="w-4 h-4 [image-rendering:pixelated]"
             />
             {t("common.menu.images")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => handleLaunchFinder("/Music")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="sounds.png"
@@ -633,10 +616,10 @@ function DefaultMenuItems() {
               className="w-4 h-4 [image-rendering:pixelated]"
             />
             {t("common.menu.music")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => handleLaunchFinder("/Sites")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="sites.png"
@@ -644,10 +627,10 @@ function DefaultMenuItems() {
               className="w-4 h-4 [image-rendering:pixelated]"
             />
             {t("common.menu.sites")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => handleLaunchFinder("/Videos")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="movies.png"
@@ -655,10 +638,10 @@ function DefaultMenuItems() {
               className="w-4 h-4 [image-rendering:pixelated]"
             />
             {t("common.menu.videos")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={() => handleLaunchFinder("/Trash")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="trash-empty.png"
@@ -666,37 +649,31 @@ function DefaultMenuItems() {
               className="w-4 h-4 [image-rendering:pixelated]"
             />
             {t("common.menu.trash")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       {/* Help Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.help")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={() => setIsHelpDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.finderHelp")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => setIsAboutDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.aboutFinder")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
       <HelpDialog
         isOpen={isHelpDialogOpen}
@@ -773,7 +750,7 @@ function VolumeControl() {
         <Button
           variant="ghost"
           size="icon"
-          className="mt-2 h-6 w-6 text-md border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
+          className="mt-2 h-6 w-6 text-md border-none focus-visible:ring-0"
           onClick={() => {
             launchApp("control-panels", {
               initialData: { defaultTab: "sound" },
@@ -920,15 +897,15 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   // If inside window frame for XP/98, use plain style
   if (inWindowFrame && isXpTheme) {
     return (
-      <div
-        className="flex items-center h-7 px-1"
+      <Menubar
+        className="flex items-center h-7 pl-2 pr-1 border-none bg-transparent space-x-0 p-0 rounded-none"
         style={{
           fontFamily: isXpTheme ? "var(--font-ms-sans)" : "var(--os-font-ui)",
           fontSize: "11px",
         }}
       >
         {children}
-      </div>
+      </Menubar>
     );
   }
 
@@ -1189,7 +1166,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                             bringInstanceToForeground(instanceId);
                           }
                         }}
-                        className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+                        className="text-md h-6 px-3 flex items-center gap-2"
                       >
                         {isEmoji ? (
                           <span
@@ -1310,7 +1287,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         </div>
       )}
       <ScrollableMenuWrapper>
-        {hasActiveApp ? children : <DefaultMenuItems />}
+        <Menubar className="flex items-center border-none bg-transparent space-x-0 p-0 rounded-none h-auto">
+          {hasActiveApp && children ? children : <DefaultMenuItems />}
+        </Menubar>
       </ScrollableMenuWrapper>
       <div className={`${isPhone ? "flex-shrink-0 px-2" : "ml-auto"} flex items-center`}>
         <OfflineIndicator />

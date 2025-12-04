@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-} from "@/components/ui/dropdown-menu";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubTrigger,
+  MenubarSubContent,
+} from "@/components/ui/menubar";
 import { Game, loadGames } from "@/stores/usePcStore";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -67,161 +66,143 @@ export function PcMenuBar({
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
-          >
-            {t("common.menu.file")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.pc.menu.loadGame")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="px-0">
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
               {availableGames.map((game) => (
-                <DropdownMenuItem
+                <MenubarItem
                   key={game.id}
                   onClick={() => onLoadGame(game)}
-                  className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+                  className={`text-md h-6 px-3 ${
                     selectedGame.id === game.id ? "bg-gray-100" : ""
                   }`}
                 >
                   {game.name}
-                </DropdownMenuItem>
+                </MenubarItem>
               ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+            </MenubarSubContent>
+          </MenubarSub>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onSaveState}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.saveState")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onClick={onLoadState}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.loadState")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onReset}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.reset")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("apps.pc.menu.controls")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-        <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("apps.pc.menu.controls")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={() => onSetFullScreen(!isFullScreen)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.fullScreen")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={() => onSetMouseCapture(!isMouseCaptured)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.toggleMouseCapture")}
-          </DropdownMenuItem>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          </MenubarItem>
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.pc.menu.mouseSensitivity")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="px-0">
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
               {sensitivityOptions.map((sensitivity) => (
-                <DropdownMenuItem
+                <MenubarItem
                   key={sensitivity}
                   onClick={() => onSetMouseSensitivity(sensitivity)}
-                  className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+                  className={`text-md h-6 px-3 ${
                     mouseSensitivity === sensitivity ? "bg-gray-100" : ""
                   }`}
                 >
                   {sensitivity}x
-                </DropdownMenuItem>
+                </MenubarItem>
               ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+            </MenubarSubContent>
+          </MenubarSub>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.pc.menu.aspectRatio")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="px-0">
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
               {renderAspects.map((aspect) => (
-                <DropdownMenuItem
+                <MenubarItem
                   key={aspect}
                   onClick={() => onSetRenderAspect(aspect)}
-                  className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+                  className={`text-md h-6 px-3 ${
                     currentRenderAspect === aspect ? "bg-gray-100" : ""
                   }`}
                 >
                   {aspect}
-                </DropdownMenuItem>
+                </MenubarItem>
               ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            </MenubarSubContent>
+          </MenubarSub>
+        </MenubarContent>
+      </MenubarMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white"
-          >
-            {t("common.menu.help")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.virtualPcHelp")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
-          <DropdownMenuItem
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.aboutVirtualPc")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
       <ShareItemDialog
         isOpen={isShareDialogOpen}
         onClose={() => setIsShareDialogOpen(false)}

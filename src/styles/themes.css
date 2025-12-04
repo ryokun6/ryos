@@ -250,6 +250,21 @@
   -webkit-font-smoothing: antialiased !important;
 }
 
+/* Reset XP/Win98 button styles for menubar triggers - they should look like plain text */
+:root[data-os-theme="xp"] .menubar-trigger,
+:root[data-os-theme="win98"] .menubar-trigger {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+:root[data-os-theme="xp"] .menubar-trigger:active,
+:root[data-os-theme="win98"] .menubar-trigger:active {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 /* Backwards compatibility aliases */
 .bg-system7-window-bg {
   background: var(--os-color-window-bg);
