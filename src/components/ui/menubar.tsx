@@ -313,11 +313,11 @@ const MenubarCheckboxItem = React.forwardRef<
       className={cn(
         "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Theme-specific hover/focus styles
-        isSystem7 && "rounded-none focus:bg-black focus:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white",
-        !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground",
+        isSystem7 && "rounded-none focus:bg-black focus:text-white hover:bg-black hover:text-white mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white hover:bg-[rgba(39,101,202,0.88)] hover:text-white",
+        !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
         className,
-        "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
+        "data-[state=checked]:text-foreground"
       )}
       style={{
         fontFamily: isXpTheme
@@ -331,12 +331,16 @@ const MenubarCheckboxItem = React.forwardRef<
           ? "13px !important"
           : undefined,
         ...(isSystem7 && {
-          padding: "2px 12px 2px 24px",
+          padding: "2px 12px 2px 32px",
+          margin: "0",
+        }),
+        ...(isXpTheme && {
+          padding: "2px 12px 2px 32px",
           margin: "0",
         }),
         ...(isMacOSTheme && {
           borderRadius: "0px",
-          padding: "6px 20px 6px 36px",
+          padding: "6px 20px 6px 32px",
           margin: "1px 0",
           WebkitFontSmoothing: "antialiased",
           textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
@@ -345,7 +349,7 @@ const MenubarCheckboxItem = React.forwardRef<
       checked={checked}
       {...props}
     >
-      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <span className="absolute left-3 flex h-3.5 w-3.5 items-center justify-center">
         <MenubarPrimitive.ItemIndicator>
           <Check className="h-4 w-4" />
         </MenubarPrimitive.ItemIndicator>
@@ -371,11 +375,11 @@ const MenubarRadioItem = React.forwardRef<
       className={cn(
         "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Theme-specific hover/focus styles
-        isSystem7 && "rounded-none focus:bg-black focus:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white",
-        !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground",
+        isSystem7 && "rounded-none focus:bg-black focus:text-white hover:bg-black hover:text-white mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white hover:bg-[rgba(39,101,202,0.88)] hover:text-white",
+        !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
         className,
-        "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
+        "data-[state=checked]:text-foreground"
       )}
       style={{
         fontFamily: isXpTheme
@@ -385,15 +389,28 @@ const MenubarRadioItem = React.forwardRef<
           : undefined,
         fontSize: isXpTheme
           ? "11px"
+          : isMacOSTheme
+          ? "13px !important"
           : undefined,
         ...(isSystem7 && {
-          padding: "2px 12px 2px 24px",
+          padding: "2px 12px 2px 32px",
           margin: "0",
+        }),
+        ...(isXpTheme && {
+          padding: "2px 12px 2px 32px",
+          margin: "0",
+        }),
+        ...(isMacOSTheme && {
+          borderRadius: "0px",
+          padding: "6px 20px 6px 32px",
+          margin: "1px 0",
+          WebkitFontSmoothing: "antialiased",
+          textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
         }),
       }}
       {...props}
     >
-      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <span className="absolute left-3 flex h-3.5 w-3.5 items-center justify-center">
         <MenubarPrimitive.ItemIndicator>
           <Circle className="h-2 w-2 fill-current" />
         </MenubarPrimitive.ItemIndicator>

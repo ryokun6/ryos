@@ -9,6 +9,9 @@ import {
   MenubarSub,
   MenubarSubTrigger,
   MenubarSubContent,
+  MenubarCheckboxItem,
+  MenubarRadioGroup,
+  MenubarRadioItem,
 } from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
 import { useIpodStoreShallow } from "@/stores/helpers";
@@ -279,30 +282,27 @@ export function IpodMenuBar({
             {t("apps.ipod.menu.next")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={toggleShuffle}
+          <MenubarCheckboxItem
+            checked={isShuffled}
+            onCheckedChange={() => toggleShuffle()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!isShuffled && "pl-4")}>
-              {isShuffled ? `✓ ${t("apps.ipod.menu.shuffle")}` : t("apps.ipod.menu.shuffle")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={toggleLoopAll}
+            {t("apps.ipod.menu.shuffle")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={isLoopAll}
+            onCheckedChange={() => toggleLoopAll()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!isLoopAll && "pl-4")}>
-              {isLoopAll ? `✓ ${t("apps.ipod.menu.repeatAll")}` : t("apps.ipod.menu.repeatAll")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={toggleLoopCurrent}
+            {t("apps.ipod.menu.repeatAll")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={isLoopCurrent}
+            onCheckedChange={() => toggleLoopCurrent()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!isLoopCurrent && "pl-4")}>
-              {isLoopCurrent ? `✓ ${t("apps.ipod.menu.repeatOne")}` : t("apps.ipod.menu.repeatOne")}
-            </span>
-          </MenubarItem>
+            {t("apps.ipod.menu.repeatOne")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 
@@ -318,14 +318,78 @@ export function IpodMenuBar({
               {t("apps.ipod.menu.lyrics")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
-              <MenubarItem
-                onClick={toggleLyrics}
+              <MenubarCheckboxItem
+                checked={showLyrics}
+                onCheckedChange={() => toggleLyrics()}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(!showLyrics && "pl-4")}>
-                  {showLyrics ? `✓ ${t("apps.ipod.menu.showLyrics")}` : t("apps.ipod.menu.showLyrics")}
-                </span>
-              </MenubarItem>
+                {t("apps.ipod.menu.showLyrics")}
+              </MenubarCheckboxItem>
+
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+              {/* Chinese toggle */}
+              <MenubarCheckboxItem
+                checked={chineseVariant === ChineseVariant.Traditional}
+                onCheckedChange={(checked) =>
+                  setChineseVariant(
+                    checked
+                      ? ChineseVariant.Traditional
+                      : ChineseVariant.Original
+                  )
+                }
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.traditionalChinese")}
+              </MenubarCheckboxItem>
+
+              {/* Korean toggle */}
+              <MenubarCheckboxItem
+                checked={koreanDisplay === KoreanDisplay.Original}
+                onCheckedChange={(checked) =>
+                  setKoreanDisplay(
+                    checked
+                      ? KoreanDisplay.Original
+                      : KoreanDisplay.Romanized
+                  )
+                }
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.korean")}
+              </MenubarCheckboxItem>
+
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+              {/* Alignment modes */}
+              <MenubarCheckboxItem
+                checked={lyricsAlignment === LyricsAlignment.FocusThree}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsAlignment(LyricsAlignment.FocusThree);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.multi")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={lyricsAlignment === LyricsAlignment.Center}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsAlignment(LyricsAlignment.Center);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.single")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={lyricsAlignment === LyricsAlignment.Alternating}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsAlignment(LyricsAlignment.Alternating);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.alternating")}
+              </MenubarCheckboxItem>
+
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
 
               <MenubarItem
                 onClick={refreshLyrics}
@@ -333,96 +397,6 @@ export function IpodMenuBar({
                 disabled={tracks.length === 0 || currentIndex === -1}
               >
                 {t("apps.ipod.menu.refreshLyrics")}
-              </MenubarItem>
-
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-
-              {/* Chinese toggle */}
-              <MenubarItem
-                onClick={() =>
-                  setChineseVariant(
-                    chineseVariant === ChineseVariant.Traditional
-                      ? ChineseVariant.Original
-                      : ChineseVariant.Traditional
-                  )
-                }
-                className="text-md h-6 px-3"
-              >
-                <span
-                  className={cn(
-                    chineseVariant !== ChineseVariant.Traditional && "pl-4"
-                  )}
-                >
-                  {chineseVariant === ChineseVariant.Traditional
-                    ? `✓ ${t("apps.ipod.menu.traditionalChinese")}`
-                    : t("apps.ipod.menu.traditionalChinese")}
-                </span>
-              </MenubarItem>
-
-              {/* Korean toggle */}
-              <MenubarItem
-                onClick={() =>
-                  setKoreanDisplay(
-                    koreanDisplay === KoreanDisplay.Original
-                      ? KoreanDisplay.Romanized
-                      : KoreanDisplay.Original
-                  )
-                }
-                className="text-md h-6 px-3"
-              >
-                <span
-                  className={cn(
-                    koreanDisplay !== KoreanDisplay.Original && "pl-4"
-                  )}
-                >
-                  {koreanDisplay === KoreanDisplay.Original ? `✓ ${t("apps.ipod.menu.korean")}` : t("apps.ipod.menu.korean")}
-                </span>
-              </MenubarItem>
-
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-
-              {/* Alignment modes */}
-              <MenubarItem
-                onClick={() => setLyricsAlignment(LyricsAlignment.FocusThree)}
-                className="text-md h-6 px-3"
-              >
-                <span
-                  className={cn(
-                    lyricsAlignment !== LyricsAlignment.FocusThree && "pl-4"
-                  )}
-                >
-                  {lyricsAlignment === LyricsAlignment.FocusThree
-                    ? `✓ ${t("apps.ipod.menu.multi")}`
-                    : t("apps.ipod.menu.multi")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => setLyricsAlignment(LyricsAlignment.Center)}
-                className="text-md h-6 px-3"
-              >
-                <span
-                  className={cn(
-                    lyricsAlignment !== LyricsAlignment.Center && "pl-4"
-                  )}
-                >
-                  {lyricsAlignment === LyricsAlignment.Center
-                    ? `✓ ${t("apps.ipod.menu.single")}`
-                    : t("apps.ipod.menu.single")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => setLyricsAlignment(LyricsAlignment.Alternating)}
-                className="text-md h-6 px-3"
-              >
-                <span
-                  className={cn(
-                    lyricsAlignment !== LyricsAlignment.Alternating && "pl-4"
-                  )}
-                >
-                  {lyricsAlignment === LyricsAlignment.Alternating
-                    ? `✓ ${t("apps.ipod.menu.alternating")}`
-                    : t("apps.ipod.menu.alternating")}
-                </span>
               </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>
@@ -433,93 +407,92 @@ export function IpodMenuBar({
               {t("apps.ipod.menu.translate")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0 max-h-[400px] overflow-y-auto">
-              {translationLanguages.map((lang) => {
-                // Show checkmark if this language is the current persistent preference
-                const isSelected = lyricsTranslationLanguage === lang.code;
-                const isOriginal = !lang.code && !lyricsTranslationLanguage;
-                
-                return (
-                  <MenubarItem
-                    key={lang.code || "off"}
-                    onClick={() => {
-                      setLyricsTranslationLanguage(lang.code);
-                    }}
-                    className="text-md h-6 px-3"
-                  >
-                    <span className={cn((!isSelected && !isOriginal) && "pl-4")}>
-                      {(isSelected || isOriginal) ? "✓ " : ""}{lang.label}
-                    </span>
-                  </MenubarItem>
-                );
-              })}
+              <MenubarRadioGroup
+                value={lyricsTranslationLanguage || "off"}
+                onValueChange={(value) => {
+                  setLyricsTranslationLanguage(value === "off" ? null : value);
+                }}
+              >
+                {translationLanguages.map((lang) => {
+                  const value = lang.code || "off";
+                  return (
+                    <MenubarRadioItem
+                      key={value}
+                      value={value}
+                      className="text-md h-6 pr-3"
+                    >
+                      {lang.label}
+                    </MenubarRadioItem>
+                  );
+                })}
+              </MenubarRadioGroup>
             </MenubarSubContent>
           </MenubarSub>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-          <MenubarItem
-            onClick={toggleBacklight}
+          <MenubarCheckboxItem
+            checked={isBacklightOn}
+            onCheckedChange={() => toggleBacklight()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!isBacklightOn && "pl-4")}>
-              {isBacklightOn ? `✓ ${t("apps.ipod.menu.backlight")}` : t("apps.ipod.menu.backlight")}
-            </span>
-          </MenubarItem>
+            {t("apps.ipod.menu.backlight")}
+          </MenubarCheckboxItem>
 
-          <MenubarItem
-            onClick={toggleLcdFilter}
+          <MenubarCheckboxItem
+            checked={isLcdFilterOn}
+            onCheckedChange={() => toggleLcdFilter()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!isLcdFilterOn && "pl-4")}>
-              {isLcdFilterOn ? `✓ ${t("apps.ipod.menu.lcdFilter")}` : t("apps.ipod.menu.lcdFilter")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={toggleVideo}
+            {t("apps.ipod.menu.lcdFilter")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={isVideoOn}
+            onCheckedChange={() => toggleVideo()}
             className="text-md h-6 px-3"
             disabled={!isPlaying}
           >
-            <span className={cn(!isVideoOn && "pl-4")}>
-              {isVideoOn ? `✓ ${t("apps.ipod.menu.video")}` : t("apps.ipod.menu.video")}
-            </span>
-          </MenubarItem>
+            {t("apps.ipod.menu.video")}
+          </MenubarCheckboxItem>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={() => setTheme("classic")}
-            className="text-md h-6 px-3"
+          <MenubarCheckboxItem
+            checked={currentTheme === "classic"}
+            onCheckedChange={(checked) => {
+              if (checked) setTheme("classic");
+            }}
+            className="text-md h-6 pr-3"
           >
-            <span className={cn(currentTheme !== "classic" && "pl-4")}>
-              {currentTheme === "classic" ? `✓ ${t("apps.ipod.menu.classic")}` : t("apps.ipod.menu.classic")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => setTheme("black")}
-            className="text-md h-6 px-3"
+            {t("apps.ipod.menu.classic")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={currentTheme === "black"}
+            onCheckedChange={(checked) => {
+              if (checked) setTheme("black");
+            }}
+            className="text-md h-6 pr-3"
           >
-            <span className={cn(currentTheme !== "black" && "pl-4")}>
-              {currentTheme === "black" ? `✓ ${t("apps.ipod.menu.black")}` : t("apps.ipod.menu.black")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => setTheme("u2")}
-            className="text-md h-6 px-3"
+            {t("apps.ipod.menu.black")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={currentTheme === "u2"}
+            onCheckedChange={(checked) => {
+              if (checked) setTheme("u2");
+            }}
+            className="text-md h-6 pr-3"
           >
-            <span className={cn(currentTheme !== "u2" && "pl-4")}>
-              {currentTheme === "u2" ? `✓ ${t("apps.ipod.menu.u2")}` : t("apps.ipod.menu.u2")}
-            </span>
-          </MenubarItem>
+            {t("apps.ipod.menu.u2")}
+          </MenubarCheckboxItem>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-          <MenubarItem
-            onClick={toggleFullScreen}
+          <MenubarCheckboxItem
+            checked={isFullScreen}
+            onCheckedChange={() => toggleFullScreen()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!isFullScreen && "pl-4")}>
-              {isFullScreen ? `✓ ${t("apps.ipod.menu.fullScreen")}` : t("apps.ipod.menu.fullScreen")}
-            </span>
-          </MenubarItem>
+            {t("apps.ipod.menu.fullScreen")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 
