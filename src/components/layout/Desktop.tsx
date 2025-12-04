@@ -681,6 +681,7 @@ export function Desktop({
             : {
                 height: "calc(100% - 2rem)",
                 padding: "1rem",
+                paddingTop: "2rem",
                 paddingLeft: "calc(1rem + env(safe-area-inset-left, 0px))",
                 paddingRight: "calc(1rem + env(safe-area-inset-right, 0px))",
                 paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
