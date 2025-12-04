@@ -60,22 +60,37 @@ const MenubarTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>
 >(({ className, style, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
+  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isSystem7 = currentTheme === "system7"
+  const isMacOSX = currentTheme === "macosx"
 
-  const macosTextShadow =
-    currentTheme === "macosx"
-      ? {
-          textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
-        }
-      : {}
+  // Theme-specific styles for the trigger
+  const themeStyles: React.CSSProperties = {
+    ...(isMacOSX && {
+      textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
+    }),
+  }
+
+  // Theme-specific classes
+  const themeClasses = cn(
+    // Base styles
+    "flex cursor-default select-none items-center px-2 py-1 text-md font-medium outline-none",
+    // Windows themes: plain text style, no background changes - use ! to override inline hover/active styles
+    isWindowsTheme && "!rounded-none !bg-transparent hover:!bg-transparent active:!bg-transparent data-[state=open]:!bg-transparent !text-inherit hover:!text-inherit active:!text-inherit data-[state=open]:!text-inherit",
+    // System 7: black background, white text when open - override hover styles too
+    isSystem7 && "rounded-none hover:!bg-transparent data-[state=open]:!bg-black data-[state=open]:!text-white",
+    // macOS X: blue background (#1a66d3), white text when open, slightly taller
+    isMacOSX && "rounded-[3px] data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px]",
+    // Default/other themes
+    !isWindowsTheme && !isSystem7 && !isMacOSX && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
+    className
+  )
 
   return (
     <MenubarPrimitive.Trigger
       ref={ref}
-      className={cn(
-        "flex cursor-default select-none items-center rounded-sm px-2 py-1 text-md font-medium outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
-        className
-      )}
-      style={{ ...macosTextShadow, ...style }}
+      className={themeClasses}
+      style={{ ...themeStyles, ...style }}
       {...props}
     />
   )
@@ -89,29 +104,34 @@ const MenubarSubTrigger = React.forwardRef<
   }
 >(({ className, inset, children, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
+  const isMacOSTheme = currentTheme === "macosx"
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isSystem7 = currentTheme === "system7"
 
   return (
     <MenubarPrimitive.SubTrigger
       ref={ref}
       className={cn(
-        "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        // Theme-specific hover/focus styles
+        isSystem7 && "focus:bg-black focus:text-white data-[state=open]:bg-black data-[state=open]:text-white",
+        isMacOSTheme && "focus:bg-[#1a66d3] focus:text-white data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white",
+        !isSystem7 && !isMacOSTheme && "focus:bg-accent data-[state=open]:bg-accent",
         inset && "pl-8",
         className
       )}
       style={{
-        fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-            : currentTheme === "macosx"
-            ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-            : undefined,
-        fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? "11px"
-            : currentTheme === "macosx"
-            ? "12px !important"
-            : undefined,
-        ...(currentTheme === "macosx" && {
+        fontFamily: isXpTheme
+          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+          : isMacOSTheme
+          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          : undefined,
+        fontSize: isXpTheme
+          ? "11px"
+          : isMacOSTheme
+          ? "12px !important"
+          : undefined,
+        ...(isMacOSTheme && {
           borderRadius: "0px",
           padding: "6px 12px 6px 16px",
           margin: "1px 0",
@@ -217,12 +237,17 @@ const MenubarItem = React.forwardRef<
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isSystem7 = currentTheme === "system7"
 
   return (
     <MenubarPrimitive.Item
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
+        "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
+        // Theme-specific hover/focus styles
+        isSystem7 && "focus:bg-black focus:text-white",
+        isMacOSTheme && "focus:bg-[#1a66d3] focus:text-white",
+        !isSystem7 && !isMacOSTheme && "focus:bg-accent focus:text-accent-foreground",
         inset && "pl-8",
         className,
         "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
@@ -259,12 +284,17 @@ const MenubarCheckboxItem = React.forwardRef<
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isSystem7 = currentTheme === "system7"
 
   return (
     <MenubarPrimitive.CheckboxItem
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        // Theme-specific hover/focus styles
+        isSystem7 && "focus:bg-black focus:text-white",
+        isMacOSTheme && "focus:bg-[#1a66d3] focus:text-white",
+        !isSystem7 && !isMacOSTheme && "focus:bg-accent focus:text-accent-foreground",
         className,
         "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
       )}
@@ -306,26 +336,31 @@ const MenubarRadioItem = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.RadioItem>
 >(({ className, children, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
+  const isMacOSTheme = currentTheme === "macosx"
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isSystem7 = currentTheme === "system7"
 
   return (
     <MenubarPrimitive.RadioItem
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        // Theme-specific hover/focus styles
+        isSystem7 && "focus:bg-black focus:text-white",
+        isMacOSTheme && "focus:bg-[#1a66d3] focus:text-white",
+        !isSystem7 && !isMacOSTheme && "focus:bg-accent focus:text-accent-foreground",
         className,
         "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
       )}
       style={{
-        fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-            : currentTheme === "macosx"
-            ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-            : undefined,
-        fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? "11px"
-            : undefined,
+        fontFamily: isXpTheme
+          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+          : isMacOSTheme
+          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          : undefined,
+        fontSize: isXpTheme
+          ? "11px"
+          : undefined,
       }}
       {...props}
     >
