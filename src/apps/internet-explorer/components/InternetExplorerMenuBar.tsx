@@ -8,6 +8,7 @@ import {
   MenubarSub,
   MenubarSubTrigger,
   MenubarSubContent,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { AppProps } from "../../base/types";
 import { MenuBar } from "@/components/layout/MenuBar";
@@ -17,7 +18,6 @@ import {
   LanguageOption,
   LocationOption,
 } from "@/stores/useInternetExplorerStore";
-import { cn } from "@/lib/utils";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -270,40 +270,43 @@ export function InternetExplorerMenuBar({
             <MenubarSubContent className="min-w-[120px] max-h-[400px] overflow-y-auto">
               {/* Future Years */}
               {futureYears.map((yearOption) => (
-                <MenubarItem
+                <MenubarCheckboxItem
                   key={yearOption}
-                  onClick={() => onYearChange?.(yearOption)}
+                  checked={year === yearOption}
+                  onCheckedChange={(checked) => {
+                    if (checked) onYearChange?.(yearOption);
+                  }}
                   className="text-md h-6 px-3 text-blue-600"
                 >
-                  <span className={cn(year !== yearOption && "pl-4")}>
-                    {year === yearOption ? `✓ ${yearOption}` : yearOption}
-                  </span>
-                </MenubarItem>
+                  {yearOption}
+                </MenubarCheckboxItem>
               ))}
 
               {/* Current Year */}
-              <MenubarItem
-                onClick={() => onYearChange?.("current")}
+              <MenubarCheckboxItem
+                checked={year === "current"}
+                onCheckedChange={(checked) => {
+                  if (checked) onYearChange?.("current");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(year !== "current" && "pl-4")}>
-                  {year === "current" ? `✓ ${t("apps.internet-explorer.menu.now")}` : t("apps.internet-explorer.menu.now")}
-                </span>
-              </MenubarItem>
+                {t("apps.internet-explorer.menu.now")}
+              </MenubarCheckboxItem>
 
               {/* Past Years */}
               {pastYears.map((yearOption) => (
-                <MenubarItem
+                <MenubarCheckboxItem
                   key={yearOption}
-                  onClick={() => onYearChange?.(yearOption)}
+                  checked={year === yearOption}
+                  onCheckedChange={(checked) => {
+                    if (checked) onYearChange?.(yearOption);
+                  }}
                   className={`text-md h-6 px-3 ${
                     parseInt(yearOption) <= 1995 ? "text-blue-600" : ""
                   }`}
                 >
-                  <span className={cn(year !== yearOption && "pl-4")}>
-                    {year === yearOption ? `✓ ${yearOption}` : yearOption}
-                  </span>
-                </MenubarItem>
+                  {yearOption}
+                </MenubarCheckboxItem>
               ))}
             </MenubarSubContent>
           </MenubarSub>
@@ -314,135 +317,148 @@ export function InternetExplorerMenuBar({
               {t("apps.internet-explorer.menu.language")}
             </MenubarSubTrigger>
             <MenubarSubContent className="min-w-[160px]">
-              <MenubarItem
-                onClick={() => onLanguageChange?.("auto")}
+              <MenubarCheckboxItem
+                checked={language === "auto"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("auto");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "auto" && "pl-4")}>
-                  {language === "auto" ? `✓ ${t("apps.internet-explorer.menu.auto")}` : t("apps.internet-explorer.menu.auto")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("english")}
+                {t("apps.internet-explorer.menu.auto")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "english"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("english");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "english" && "pl-4")}>
-                  {language === "english" ? `✓ ${t("apps.internet-explorer.menu.english")}` : t("apps.internet-explorer.menu.english")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("chinese")}
+                {t("apps.internet-explorer.menu.english")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "chinese"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("chinese");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "chinese" && "pl-4")}>
-                  {language === "chinese" ? `✓ ${t("apps.internet-explorer.menu.chinese")}` : t("apps.internet-explorer.menu.chinese")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("japanese")}
+                {t("apps.internet-explorer.menu.chinese")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "japanese"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("japanese");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "japanese" && "pl-4")}>
-                  {language === "japanese" ? `✓ ${t("apps.internet-explorer.menu.japanese")}` : t("apps.internet-explorer.menu.japanese")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("korean")}
+                {t("apps.internet-explorer.menu.japanese")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "korean"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("korean");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "korean" && "pl-4")}>
-                  {language === "korean" ? `✓ ${t("apps.internet-explorer.menu.korean")}` : t("apps.internet-explorer.menu.korean")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("french")}
+                {t("apps.internet-explorer.menu.korean")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "french"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("french");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "french" && "pl-4")}>
-                  {language === "french" ? `✓ ${t("apps.internet-explorer.menu.french")}` : t("apps.internet-explorer.menu.french")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("spanish")}
+                {t("apps.internet-explorer.menu.french")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "spanish"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("spanish");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "spanish" && "pl-4")}>
-                  {language === "spanish" ? `✓ ${t("apps.internet-explorer.menu.spanish")}` : t("apps.internet-explorer.menu.spanish")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("portuguese")}
+                {t("apps.internet-explorer.menu.spanish")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "portuguese"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("portuguese");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "portuguese" && "pl-4")}>
-                  {language === "portuguese" ? `✓ ${t("apps.internet-explorer.menu.portuguese")}` : t("apps.internet-explorer.menu.portuguese")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("german")}
+                {t("apps.internet-explorer.menu.portuguese")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "german"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("german");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "german" && "pl-4")}>
-                  {language === "german" ? `✓ ${t("apps.internet-explorer.menu.german")}` : t("apps.internet-explorer.menu.german")}
-                </span>
-              </MenubarItem>
+                {t("apps.internet-explorer.menu.german")}
+              </MenubarCheckboxItem>
 
-              <MenubarItem
-                onClick={() => onLanguageChange?.("welsh")}
+              <MenubarCheckboxItem
+                checked={language === "welsh"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("welsh");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "welsh" && "pl-4")}>
-                  {language === "welsh" ? `✓ ${t("apps.internet-explorer.menu.welsh")}` : t("apps.internet-explorer.menu.welsh")}
-                </span>
-              </MenubarItem>
+                {t("apps.internet-explorer.menu.welsh")}
+              </MenubarCheckboxItem>
 
               {/* Ancient Languages */}
               <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem
-                onClick={() => onLanguageChange?.("latin")}
+              <MenubarCheckboxItem
+                checked={language === "latin"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("latin");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "latin" && "pl-4")}>
-                  {language === "latin" ? `✓ ${t("apps.internet-explorer.menu.latin")}` : t("apps.internet-explorer.menu.latin")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("sanskrit")}
+                {t("apps.internet-explorer.menu.latin")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "sanskrit"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("sanskrit");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "sanskrit" && "pl-4")}>
-                  {language === "sanskrit" ? `✓ ${t("apps.internet-explorer.menu.sanskrit")}` : t("apps.internet-explorer.menu.sanskrit")}
-                </span>
-              </MenubarItem>
+                {t("apps.internet-explorer.menu.sanskrit")}
+              </MenubarCheckboxItem>
 
               {/* Futuristic/Non-human Languages */}
               <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem
-                onClick={() => onLanguageChange?.("alien")}
+              <MenubarCheckboxItem
+                checked={language === "alien"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("alien");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "alien" && "pl-4")}>
-                  {language === "alien" ? `✓ ${t("apps.internet-explorer.menu.alien")}` : t("apps.internet-explorer.menu.alien")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("ai_language")}
+                {t("apps.internet-explorer.menu.alien")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "ai_language"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("ai_language");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "ai_language" && "pl-4")}>
-                  {language === "ai_language" ? `✓ ${t("apps.internet-explorer.menu.aiLanguage")}` : t("apps.internet-explorer.menu.aiLanguage")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLanguageChange?.("digital_being")}
+                {t("apps.internet-explorer.menu.aiLanguage")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={language === "digital_being"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLanguageChange?.("digital_being");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(language !== "digital_being" && "pl-4")}>
-                  {language === "digital_being"
-                    ? `✓ ${t("apps.internet-explorer.menu.digitalBeing")}`
-                    : t("apps.internet-explorer.menu.digitalBeing")}
-                </span>
-              </MenubarItem>
+                {t("apps.internet-explorer.menu.digitalBeing")}
+              </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
 
@@ -452,128 +468,141 @@ export function InternetExplorerMenuBar({
               {t("apps.internet-explorer.menu.location")}
             </MenubarSubTrigger>
             <MenubarSubContent className="min-w-[160px]">
-              <MenubarItem
-                onClick={() => onLocationChange?.("auto")}
+              <MenubarCheckboxItem
+                checked={location === "auto"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("auto");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "auto" && "pl-4")}>
-                  {location === "auto" ? `✓ ${t("apps.internet-explorer.menu.auto")}` : t("apps.internet-explorer.menu.auto")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("united_states")}
+                {t("apps.internet-explorer.menu.auto")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "united_states"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("united_states");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "united_states" && "pl-4")}>
-                  {location === "united_states"
-                    ? `✓ ${t("apps.internet-explorer.menu.unitedStates")}`
-                    : t("apps.internet-explorer.menu.unitedStates")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("china")}
+                {t("apps.internet-explorer.menu.unitedStates")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "china"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("china");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "china" && "pl-4")}>
-                  {location === "china" ? `✓ ${t("apps.internet-explorer.menu.china")}` : t("apps.internet-explorer.menu.china")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("japan")}
+                {t("apps.internet-explorer.menu.china")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "japan"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("japan");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "japan" && "pl-4")}>
-                  {location === "japan" ? `✓ ${t("apps.internet-explorer.menu.japan")}` : t("apps.internet-explorer.menu.japan")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("korea")}
+                {t("apps.internet-explorer.menu.japan")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "korea"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("korea");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "korea" && "pl-4")}>
-                  {location === "korea" ? `✓ ${t("apps.internet-explorer.menu.korea")}` : t("apps.internet-explorer.menu.korea")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("canada")}
+                {t("apps.internet-explorer.menu.korea")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "canada"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("canada");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "canada" && "pl-4")}>
-                  {location === "canada" ? `✓ ${t("apps.internet-explorer.menu.canada")}` : t("apps.internet-explorer.menu.canada")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("uk")}
+                {t("apps.internet-explorer.menu.canada")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "uk"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("uk");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "uk" && "pl-4")}>
-                  {location === "uk" ? `✓ ${t("apps.internet-explorer.menu.unitedKingdom")}` : t("apps.internet-explorer.menu.unitedKingdom")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("france")}
+                {t("apps.internet-explorer.menu.unitedKingdom")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "france"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("france");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "france" && "pl-4")}>
-                  {location === "france" ? `✓ ${t("apps.internet-explorer.menu.france")}` : t("apps.internet-explorer.menu.france")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("germany")}
+                {t("apps.internet-explorer.menu.france")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "germany"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("germany");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "germany" && "pl-4")}>
-                  {location === "germany" ? `✓ ${t("apps.internet-explorer.menu.germany")}` : t("apps.internet-explorer.menu.germany")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("spain")}
+                {t("apps.internet-explorer.menu.germany")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "spain"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("spain");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "spain" && "pl-4")}>
-                  {location === "spain" ? `✓ ${t("apps.internet-explorer.menu.spain")}` : t("apps.internet-explorer.menu.spain")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("portugal")}
+                {t("apps.internet-explorer.menu.spain")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "portugal"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("portugal");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "portugal" && "pl-4")}>
-                  {location === "portugal" ? `✓ ${t("apps.internet-explorer.menu.portugal")}` : t("apps.internet-explorer.menu.portugal")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("india")}
+                {t("apps.internet-explorer.menu.portugal")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "india"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("india");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "india" && "pl-4")}>
-                  {location === "india" ? `✓ ${t("apps.internet-explorer.menu.india")}` : t("apps.internet-explorer.menu.india")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("brazil")}
+                {t("apps.internet-explorer.menu.india")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "brazil"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("brazil");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "brazil" && "pl-4")}>
-                  {location === "brazil" ? `✓ ${t("apps.internet-explorer.menu.brazil")}` : t("apps.internet-explorer.menu.brazil")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("australia")}
+                {t("apps.internet-explorer.menu.brazil")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "australia"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("australia");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "australia" && "pl-4")}>
-                  {location === "australia" ? `✓ ${t("apps.internet-explorer.menu.australia")}` : t("apps.internet-explorer.menu.australia")}
-                </span>
-              </MenubarItem>
-              <MenubarItem
-                onClick={() => onLocationChange?.("russia")}
+                {t("apps.internet-explorer.menu.australia")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={location === "russia"}
+                onCheckedChange={(checked) => {
+                  if (checked) onLocationChange?.("russia");
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(location !== "russia" && "pl-4")}>
-                  {location === "russia" ? `✓ ${t("apps.internet-explorer.menu.russia")}` : t("apps.internet-explorer.menu.russia")}
-                </span>
-              </MenubarItem>
+                {t("apps.internet-explorer.menu.russia")}
+              </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
 
