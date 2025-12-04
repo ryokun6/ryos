@@ -479,6 +479,19 @@
   z-index: 2;
 }
 
+/* Remove focus background on macOS menubar triggers when menu is closed */
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger]:focus,
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger]:focus-visible {
+  background-color: transparent !important;
+  outline: none !important;
+}
+
+/* Keep the blue background only when the menu is open */
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger][data-state="open"]:focus,
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger][data-state="open"]:focus-visible {
+  background-color: #1a66d3 !important;
+}
+
 :root[data-os-theme="macosx"] .title-bar {
   font-size: 13px !important;
   font-weight: 500 !important;
