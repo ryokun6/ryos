@@ -690,46 +690,46 @@ export function PaintMenuBar({
         className="hidden"
       />
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onNewFile}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.newFile")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onImportFile}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.open")}
           </MenubarItem>
           <MenubarItem
             onClick={onSave}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {currentFilePath ? t("apps.paint.menu.save") : t("apps.paint.menu.saveEllipsis")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={() => fileInputRef.current?.click()}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.importFromDevice")}
           </MenubarItem>
           <MenubarItem
             onClick={onExportFile}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.export")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
           </MenubarItem>
@@ -737,14 +737,14 @@ export function PaintMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onUndo}
             disabled={!canUndo}
-            className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+            className={`text-md h-6 px-3 ${
               !canUndo ? "text-gray-500" : ""
             }`}
           >
@@ -753,7 +753,7 @@ export function PaintMenuBar({
           <MenubarItem
             onClick={onRedo}
             disabled={!canRedo}
-            className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+            className={`text-md h-6 px-3 ${
               !canRedo ? "text-gray-500" : ""
             }`}
           >
@@ -762,26 +762,26 @@ export function PaintMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onCut}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.cut")}
           </MenubarItem>
           <MenubarItem
             onClick={onCopy}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.copy")}
           </MenubarItem>
           <MenubarItem
             onClick={onPaste}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.paste")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClear}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.clear")}
           </MenubarItem>
@@ -789,7 +789,7 @@ export function PaintMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("apps.paint.menu.filters")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -806,7 +806,7 @@ export function PaintMenuBar({
                     <MenubarItem
                       key={name}
                       onClick={() => onApplyFilter(filter)}
-                      className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                      className="text-md h-6 px-3"
                     >
                       {t(filterKeyMap[name] || name)}
                     </MenubarItem>
@@ -819,26 +819,26 @@ export function PaintMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.paintHelp")}
           </MenubarItem>
           <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.paint.menu.aboutPaint")}
           </MenubarItem>

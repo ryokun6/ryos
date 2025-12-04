@@ -416,39 +416,39 @@ function DefaultMenuItems() {
     <>
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={() => handleLaunchFinder("/")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.newFinderWindow")}
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.newFolder")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.moveToTrash")}
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.emptyTrash")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
           </MenubarItem>
@@ -457,45 +457,45 @@ function DefaultMenuItems() {
 
       {/* Edit Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.undo")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.cut")}
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.copy")}
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.paste")}
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.clear")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.selectAll")}
           </MenubarItem>
@@ -504,50 +504,50 @@ function DefaultMenuItems() {
 
       {/* View Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.bySmallIcon")}</span>
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span>✓ {t("apps.finder.menu.byIcon")}</span>
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.byList")}</span>
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span>✓ {t("apps.finder.menu.byName")}</span>
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.byDate")}</span>
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.bySize")}</span>
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className="pl-4">{t("apps.finder.menu.byKind")}</span>
           </MenubarItem>
@@ -556,26 +556,26 @@ function DefaultMenuItems() {
 
       {/* Go Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.go")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.back")}
           </MenubarItem>
           <MenubarItem
             disabled
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.forward")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={() => handleLaunchFinder("/Applications")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="applications.png"
@@ -586,7 +586,7 @@ function DefaultMenuItems() {
           </MenubarItem>
           <MenubarItem
             onClick={() => handleLaunchFinder("/Documents")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="documents.png"
@@ -597,7 +597,7 @@ function DefaultMenuItems() {
           </MenubarItem>
           <MenubarItem
             onClick={() => handleLaunchFinder("/Images")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="images.png"
@@ -608,7 +608,7 @@ function DefaultMenuItems() {
           </MenubarItem>
           <MenubarItem
             onClick={() => handleLaunchFinder("/Music")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="sounds.png"
@@ -619,7 +619,7 @@ function DefaultMenuItems() {
           </MenubarItem>
           <MenubarItem
             onClick={() => handleLaunchFinder("/Sites")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="sites.png"
@@ -630,7 +630,7 @@ function DefaultMenuItems() {
           </MenubarItem>
           <MenubarItem
             onClick={() => handleLaunchFinder("/Videos")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="movies.png"
@@ -641,7 +641,7 @@ function DefaultMenuItems() {
           </MenubarItem>
           <MenubarItem
             onClick={() => handleLaunchFinder("/Trash")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name="trash-empty.png"
@@ -655,20 +655,20 @@ function DefaultMenuItems() {
 
       {/* Help Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={() => setIsHelpDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.finderHelp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={() => setIsAboutDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.aboutFinder")}
           </MenubarItem>
@@ -750,7 +750,7 @@ function VolumeControl() {
         <Button
           variant="ghost"
           size="icon"
-          className="mt-2 h-6 w-6 text-md border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0"
+          className="mt-2 h-6 w-6 text-md border-none focus-visible:ring-0"
           onClick={() => {
             launchApp("control-panels", {
               initialData: { defaultTab: "sound" },
@@ -1166,7 +1166,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                             bringInstanceToForeground(instanceId);
                           }
                         }}
-                        className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+                        className="text-md h-6 px-3 flex items-center gap-2"
                       >
                         {isEmoji ? (
                           <span

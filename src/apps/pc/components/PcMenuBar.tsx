@@ -67,12 +67,12 @@ export function PcMenuBar({
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.pc.menu.loadGame")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
@@ -80,7 +80,7 @@ export function PcMenuBar({
                 <MenubarItem
                   key={game.id}
                   onClick={() => onLoadGame(game)}
-                  className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+                  className={`text-md h-6 px-3 ${
                     selectedGame.id === game.id ? "bg-gray-100" : ""
                   }`}
                 >
@@ -92,27 +92,27 @@ export function PcMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onSaveState}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.saveState")}
           </MenubarItem>
           <MenubarItem
             onClick={onLoadState}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.loadState")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onReset}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.reset")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
           </MenubarItem>
@@ -120,25 +120,25 @@ export function PcMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("apps.pc.menu.controls")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={() => onSetFullScreen(!isFullScreen)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.fullScreen")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={() => onSetMouseCapture(!isMouseCaptured)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.toggleMouseCapture")}
           </MenubarItem>
           <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.pc.menu.mouseSensitivity")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
@@ -146,7 +146,7 @@ export function PcMenuBar({
                 <MenubarItem
                   key={sensitivity}
                   onClick={() => onSetMouseSensitivity(sensitivity)}
-                  className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+                  className={`text-md h-6 px-3 ${
                     mouseSensitivity === sensitivity ? "bg-gray-100" : ""
                   }`}
                 >
@@ -157,7 +157,7 @@ export function PcMenuBar({
           </MenubarSub>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.pc.menu.aspectRatio")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
@@ -165,7 +165,7 @@ export function PcMenuBar({
                 <MenubarItem
                   key={aspect}
                   onClick={() => onSetRenderAspect(aspect)}
-                  className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+                  className={`text-md h-6 px-3 ${
                     currentRenderAspect === aspect ? "bg-gray-100" : ""
                   }`}
                 >
@@ -178,26 +178,26 @@ export function PcMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.virtualPcHelp")}
           </MenubarItem>
           <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.pc.menu.aboutVirtualPc")}
           </MenubarItem>

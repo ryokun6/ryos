@@ -75,10 +75,10 @@ const MenubarTrigger = React.forwardRef<
   const themeClasses = cn(
     // Base styles
     "flex cursor-default select-none items-center px-2 py-1 text-md font-medium outline-none",
-    // Windows themes: plain text style, no background changes - use ! to override inline hover/active styles
-    isWindowsTheme && "!rounded-none !bg-transparent hover:!bg-transparent active:!bg-transparent data-[state=open]:!bg-transparent !text-inherit hover:!text-inherit active:!text-inherit data-[state=open]:!text-inherit",
-    // System 7: black background, white text when open - override hover styles too
-    isSystem7 && "rounded-none hover:!bg-transparent data-[state=open]:!bg-black data-[state=open]:!text-white",
+    // Windows themes: plain text style, no background changes
+    isWindowsTheme && "rounded-none",
+    // System 7: black background, white text when open
+    isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white",
     // macOS X: blue background (#1a66d3), white text when open, slightly taller
     isMacOSX && "rounded-[3px] data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px]",
     // Default/other themes

@@ -100,19 +100,19 @@ export function VideosMenuBar({
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onOpenVideo}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.videos.menu.openVideo")}
           </MenubarItem>
           <MenubarItem
             onClick={onShareVideo}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={videos.length === 0}
           >
             {t("apps.videos.menu.shareVideo")}
@@ -120,7 +120,7 @@ export function VideosMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
           </MenubarItem>
@@ -129,27 +129,27 @@ export function VideosMenuBar({
 
       {/* Controls Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("apps.videos.menu.controls")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onTogglePlay}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={videos.length === 0}
           >
             {isPlaying ? t("apps.videos.menu.pause") : t("apps.videos.menu.play")}
           </MenubarItem>
           <MenubarItem
             onClick={onPrevious}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={videos.length === 0}
           >
             {t("apps.videos.menu.previous")}
           </MenubarItem>
           <MenubarItem
             onClick={onNext}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
             disabled={videos.length === 0}
           >
             {t("apps.videos.menu.next")}
@@ -157,14 +157,14 @@ export function VideosMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onFullScreen}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.videos.menu.fullScreen")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onShufflePlaylist}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!isShuffled && "pl-4")}>
               {isShuffled ? `✓ ${t("apps.videos.menu.shuffle")}` : t("apps.videos.menu.shuffle")}
@@ -172,7 +172,7 @@ export function VideosMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={onToggleLoopAll}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!isLoopAll && "pl-4")}>
               {isLoopAll ? `✓ ${t("apps.videos.menu.repeatAll")}` : t("apps.videos.menu.repeatAll")}
@@ -180,7 +180,7 @@ export function VideosMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={onToggleLoopCurrent}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!isLoopCurrent && "pl-4")}>
               {isLoopCurrent ? `✓ ${t("apps.videos.menu.repeatOne")}` : t("apps.videos.menu.repeatOne")}
@@ -191,13 +191,13 @@ export function VideosMenuBar({
 
       {/* Library Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("apps.videos.menu.library")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0 max-w-[180px] sm:max-w-[220px]">
           <MenubarItem
             onClick={onAddVideo}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.videos.menu.addToLibrary")}
           </MenubarItem>
@@ -208,7 +208,7 @@ export function VideosMenuBar({
               
               {/* All Videos section */}
               <MenubarSub>
-                <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+                <MenubarSubTrigger className="text-md h-6 px-3">
                   <div className="flex justify-between w-full items-center overflow-hidden">
                     <span className="truncate min-w-0">{t("apps.videos.menu.allVideos")}</span>
                   </div>
@@ -219,7 +219,7 @@ export function VideosMenuBar({
                       key={`all-${video.id}`}
                       onClick={() => onPlayVideo(video.id)}
                       className={cn(
-                        "text-md h-6 px-3 active:bg-gray-900 active:text-white max-w-[220px] truncate",
+                        "text-md h-6 px-3 max-w-[220px] truncate",
                         video.id === currentVideoId && "bg-gray-200"
                       )}
                     >
@@ -242,7 +242,7 @@ export function VideosMenuBar({
               {/* Individual Artist submenus */}
               {artists.map((artist) => (
                 <MenubarSub key={artist}>
-                  <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+                  <MenubarSubTrigger className="text-md h-6 px-3">
                     <div className="flex justify-between w-full items-center overflow-hidden">
                       <span className="truncate min-w-0">{artist}</span>
                     </div>
@@ -253,7 +253,7 @@ export function VideosMenuBar({
                         key={`${artist}-${video.id}`}
                         onClick={() => onPlayVideo(video.id)}
                         className={cn(
-                          "text-md h-6 px-3 active:bg-gray-900 active:text-white max-w-[160px] sm:max-w-[200px] truncate",
+                          "text-md h-6 px-3 max-w-[160px] sm:max-w-[200px] truncate",
                           video.id === currentVideoId && "bg-gray-200"
                         )}
                       >
@@ -280,13 +280,13 @@ export function VideosMenuBar({
           
           <MenubarItem
             onClick={onClearPlaylist}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.videos.menu.clearLibrary")}
           </MenubarItem>
           <MenubarItem
             onClick={onResetPlaylist}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.videos.menu.resetLibrary")}
           </MenubarItem>
@@ -295,26 +295,26 @@ export function VideosMenuBar({
 
       {/* Help Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.videos.menu.videosHelp")}
           </MenubarItem>
           <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.videos.menu.aboutVideos")}
           </MenubarItem>

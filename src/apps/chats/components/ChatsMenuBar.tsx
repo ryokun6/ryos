@@ -112,20 +112,20 @@ export function ChatsMenuBar({
       <MenuBar inWindowFrame={isXpTheme}>
         {/* File Menu */}
         <MenubarMenu>
-          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
             {t("common.menu.file")}
           </MenubarTrigger>
           <MenubarContent align="start" sideOffset={1} className="px-0">
             <MenubarItem
               onClick={onSaveTranscript}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.saveTranscript")}
             </MenubarItem>
             <MenubarItem
               onClick={onClearChats}
               disabled={currentRoom !== null}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.clearChat")}
             </MenubarItem>
@@ -136,7 +136,7 @@ export function ChatsMenuBar({
               // When logged in: Show Log Out only
               <MenubarItem
                 onClick={() => onLogout?.()}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 {t("apps.chats.menu.logOut")}
               </MenubarItem>
@@ -145,13 +145,13 @@ export function ChatsMenuBar({
               <>
                 <MenubarItem
                   onClick={onSetUsername}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  className="text-md h-6 px-3"
                 >
                   {t("apps.chats.menu.createAccount")}
                 </MenubarItem>
                 <MenubarItem
                   onClick={onVerifyToken}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  className="text-md h-6 px-3"
                 >
                   {t("apps.chats.menu.login")}
                 </MenubarItem>
@@ -161,7 +161,7 @@ export function ChatsMenuBar({
             <MenubarSeparator className="h-[2px] bg-black my-1" />
             <MenubarItem
               onClick={onClose}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("common.menu.close")}
             </MenubarItem>
@@ -170,7 +170,7 @@ export function ChatsMenuBar({
 
         {/* Chats Menu */}
         <MenubarMenu>
-          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
             {t("apps.chats.menu.chats")}
           </MenubarTrigger>
           <MenubarContent
@@ -181,7 +181,7 @@ export function ChatsMenuBar({
             {/* New Chat - available to all users */}
             <MenubarItem
               onClick={onAddRoom}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.newChat")}
             </MenubarItem>
@@ -194,7 +194,7 @@ export function ChatsMenuBar({
             {/* Ryo Chat Option */}
             <MenubarItem
               onClick={() => onRoomSelect(null)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(currentRoom !== null && "pl-4")}>
                 {currentRoom === null ? `✓ ${t("apps.chats.status.ryo")}` : t("apps.chats.status.ryo")}
@@ -217,7 +217,7 @@ export function ChatsMenuBar({
                   <MenubarItem
                     key={room.id}
                     onClick={() => onRoomSelect(room)}
-                    className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                    className="text-md h-6 px-3"
                   >
                     <span
                       className={cn(!(currentRoom?.id === room.id) && "pl-4")}
@@ -241,7 +241,7 @@ export function ChatsMenuBar({
 
         {/* Sounds Menu */}
         <MenubarMenu>
-          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
             {t("apps.chats.menu.sound")}
           </MenubarTrigger>
           <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -250,7 +250,7 @@ export function ChatsMenuBar({
                 key={key}
                 onClick={() => setSynthPreset(key)}
                 className={cn(
-                  "text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  "text-md h-6 px-3"
                 )}
               >
                 <span className={cn(!(synthPreset === key) && "pl-4")}>
@@ -261,7 +261,7 @@ export function ChatsMenuBar({
             <MenubarSeparator className="h-[2px] bg-black my-1" />
             <MenubarItem
               onClick={() => setSpeechEnabled(!speechEnabled)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(!speechEnabled && "pl-4")}>
                 {speechEnabled ? `✓ ${t("apps.chats.menu.chatSpeech")}` : t("apps.chats.menu.chatSpeech")}
@@ -269,7 +269,7 @@ export function ChatsMenuBar({
             </MenubarItem>
             <MenubarItem
               onClick={() => setTypingSynthEnabled(!typingSynthEnabled)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(!typingSynthEnabled && "pl-4")}>
                 {typingSynthEnabled ? `✓ ${t("apps.chats.menu.typingSynth")}` : t("apps.chats.menu.typingSynth")}
@@ -280,27 +280,27 @@ export function ChatsMenuBar({
 
         {/* View Menu */}
         <MenubarMenu>
-          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+          <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
             {t("common.menu.view")}
           </MenubarTrigger>
           <MenubarContent align="start" sideOffset={1} className="px-0">
             {/* Font Size Controls */}
             <MenubarItem
               onClick={onIncreaseFontSize}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.increaseFontSize")}
             </MenubarItem>
             <MenubarItem
               onClick={onDecreaseFontSize}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.decreaseFontSize")}
             </MenubarItem>
             <MenubarSeparator className="h-[2px] bg-black my-1" />
             <MenubarItem
               onClick={onResetFontSize}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.resetFontSize")}
             </MenubarItem>
@@ -311,7 +311,7 @@ export function ChatsMenuBar({
                 console.log("[MenuBar] Toggle Sidebar menu item clicked");
                 onToggleSidebar();
               }}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(!isSidebarVisible && "pl-4")}>
                 {isSidebarVisible ? `✓ ${t("apps.chats.menu.showRooms")}` : t("apps.chats.menu.showRooms")}
@@ -322,26 +322,26 @@ export function ChatsMenuBar({
 
         {/* Help Menu */}
         <MenubarMenu>
-          <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+          <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
             {t("common.menu.help")}
           </MenubarTrigger>
           <MenubarContent align="start" sideOffset={1} className="px-0">
             <MenubarItem
               onClick={onShowHelp}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.chatsHelp")}
             </MenubarItem>
             <MenubarItem
               onSelect={() => setIsShareDialogOpen(true)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("common.menu.shareApp")}
             </MenubarItem>
             <MenubarSeparator className="h-[2px] bg-black my-1" />
             <MenubarItem
               onClick={onShowAbout}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.aboutChats")}
             </MenubarItem>

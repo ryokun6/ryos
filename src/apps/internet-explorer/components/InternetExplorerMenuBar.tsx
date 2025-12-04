@@ -67,7 +67,7 @@ const renderFavoriteItem = (
     // Render as a submenu (folder)
     return (
       <MenubarSub key={favorite.title}>
-        <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2">
+        <MenubarSubTrigger className="text-md h-6 px-3 flex items-center gap-2">
           <ThemedIcon
             name="directory.png"
             alt="Folder"
@@ -88,7 +88,7 @@ const renderFavoriteItem = (
       <MenubarItem
         key={favorite.url}
         onClick={() => onNavigate(favorite.url!, favorite.year)}
-        className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+        className="text-md h-6 px-3 flex items-center gap-2"
       >
         {favorite.favicon && typeof navigator !== "undefined" && "onLine" in navigator && navigator.onLine ? (
           <img
@@ -204,33 +204,33 @@ export function InternetExplorerMenuBar({
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onFocusUrlInput}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.goToUrl")}
           </MenubarItem>
           <MenubarItem
             onClick={onSharePage}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.sharePage")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onOpenTimeMachine}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.openTimeMachine")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
           </MenubarItem>
@@ -239,13 +239,13 @@ export function InternetExplorerMenuBar({
 
       {/* Edit Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onRefresh}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.refresh")}
           </MenubarItem>
@@ -255,7 +255,7 @@ export function InternetExplorerMenuBar({
             className={
               !isLoading
                 ? "text-gray-400 text-md h-6 px-3"
-                : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                : "text-md h-6 px-3"
             }
           >
             {t("apps.internet-explorer.menu.stop")}
@@ -264,7 +264,7 @@ export function InternetExplorerMenuBar({
 
           {/* Year Submenu */}
           <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.internet-explorer.menu.year")}
             </MenubarSubTrigger>
             <MenubarSubContent className="min-w-[120px] max-h-[400px] overflow-y-auto">
@@ -273,7 +273,7 @@ export function InternetExplorerMenuBar({
                 <MenubarItem
                   key={yearOption}
                   onClick={() => onYearChange?.(yearOption)}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white text-blue-600"
+                  className="text-md h-6 px-3 text-blue-600"
                 >
                   <span className={cn(year !== yearOption && "pl-4")}>
                     {year === yearOption ? `✓ ${yearOption}` : yearOption}
@@ -284,7 +284,7 @@ export function InternetExplorerMenuBar({
               {/* Current Year */}
               <MenubarItem
                 onClick={() => onYearChange?.("current")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(year !== "current" && "pl-4")}>
                   {year === "current" ? `✓ ${t("apps.internet-explorer.menu.now")}` : t("apps.internet-explorer.menu.now")}
@@ -296,7 +296,7 @@ export function InternetExplorerMenuBar({
                 <MenubarItem
                   key={yearOption}
                   onClick={() => onYearChange?.(yearOption)}
-                  className={`text-md h-6 px-3 active:bg-gray-900 active:text-white ${
+                  className={`text-md h-6 px-3 ${
                     parseInt(yearOption) <= 1995 ? "text-blue-600" : ""
                   }`}
                 >
@@ -310,13 +310,13 @@ export function InternetExplorerMenuBar({
 
           {/* Language Submenu */}
           <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.internet-explorer.menu.language")}
             </MenubarSubTrigger>
             <MenubarSubContent className="min-w-[160px]">
               <MenubarItem
                 onClick={() => onLanguageChange?.("auto")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "auto" && "pl-4")}>
                   {language === "auto" ? `✓ ${t("apps.internet-explorer.menu.auto")}` : t("apps.internet-explorer.menu.auto")}
@@ -324,7 +324,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("english")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "english" && "pl-4")}>
                   {language === "english" ? `✓ ${t("apps.internet-explorer.menu.english")}` : t("apps.internet-explorer.menu.english")}
@@ -332,7 +332,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("chinese")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "chinese" && "pl-4")}>
                   {language === "chinese" ? `✓ ${t("apps.internet-explorer.menu.chinese")}` : t("apps.internet-explorer.menu.chinese")}
@@ -340,7 +340,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("japanese")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "japanese" && "pl-4")}>
                   {language === "japanese" ? `✓ ${t("apps.internet-explorer.menu.japanese")}` : t("apps.internet-explorer.menu.japanese")}
@@ -348,7 +348,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("korean")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "korean" && "pl-4")}>
                   {language === "korean" ? `✓ ${t("apps.internet-explorer.menu.korean")}` : t("apps.internet-explorer.menu.korean")}
@@ -356,7 +356,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("french")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "french" && "pl-4")}>
                   {language === "french" ? `✓ ${t("apps.internet-explorer.menu.french")}` : t("apps.internet-explorer.menu.french")}
@@ -364,7 +364,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("spanish")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "spanish" && "pl-4")}>
                   {language === "spanish" ? `✓ ${t("apps.internet-explorer.menu.spanish")}` : t("apps.internet-explorer.menu.spanish")}
@@ -372,7 +372,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("portuguese")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "portuguese" && "pl-4")}>
                   {language === "portuguese" ? `✓ ${t("apps.internet-explorer.menu.portuguese")}` : t("apps.internet-explorer.menu.portuguese")}
@@ -380,7 +380,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("german")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "german" && "pl-4")}>
                   {language === "german" ? `✓ ${t("apps.internet-explorer.menu.german")}` : t("apps.internet-explorer.menu.german")}
@@ -389,7 +389,7 @@ export function InternetExplorerMenuBar({
 
               <MenubarItem
                 onClick={() => onLanguageChange?.("welsh")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "welsh" && "pl-4")}>
                   {language === "welsh" ? `✓ ${t("apps.internet-explorer.menu.welsh")}` : t("apps.internet-explorer.menu.welsh")}
@@ -400,7 +400,7 @@ export function InternetExplorerMenuBar({
               <MenubarSeparator className="h-[2px] bg-black my-1" />
               <MenubarItem
                 onClick={() => onLanguageChange?.("latin")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "latin" && "pl-4")}>
                   {language === "latin" ? `✓ ${t("apps.internet-explorer.menu.latin")}` : t("apps.internet-explorer.menu.latin")}
@@ -408,7 +408,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("sanskrit")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "sanskrit" && "pl-4")}>
                   {language === "sanskrit" ? `✓ ${t("apps.internet-explorer.menu.sanskrit")}` : t("apps.internet-explorer.menu.sanskrit")}
@@ -419,7 +419,7 @@ export function InternetExplorerMenuBar({
               <MenubarSeparator className="h-[2px] bg-black my-1" />
               <MenubarItem
                 onClick={() => onLanguageChange?.("alien")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "alien" && "pl-4")}>
                   {language === "alien" ? `✓ ${t("apps.internet-explorer.menu.alien")}` : t("apps.internet-explorer.menu.alien")}
@@ -427,7 +427,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("ai_language")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "ai_language" && "pl-4")}>
                   {language === "ai_language" ? `✓ ${t("apps.internet-explorer.menu.aiLanguage")}` : t("apps.internet-explorer.menu.aiLanguage")}
@@ -435,7 +435,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLanguageChange?.("digital_being")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(language !== "digital_being" && "pl-4")}>
                   {language === "digital_being"
@@ -448,13 +448,13 @@ export function InternetExplorerMenuBar({
 
           {/* Location Submenu */}
           <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+            <MenubarSubTrigger className="text-md h-6 px-3">
               {t("apps.internet-explorer.menu.location")}
             </MenubarSubTrigger>
             <MenubarSubContent className="min-w-[160px]">
               <MenubarItem
                 onClick={() => onLocationChange?.("auto")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "auto" && "pl-4")}>
                   {location === "auto" ? `✓ ${t("apps.internet-explorer.menu.auto")}` : t("apps.internet-explorer.menu.auto")}
@@ -462,7 +462,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("united_states")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "united_states" && "pl-4")}>
                   {location === "united_states"
@@ -472,7 +472,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("china")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "china" && "pl-4")}>
                   {location === "china" ? `✓ ${t("apps.internet-explorer.menu.china")}` : t("apps.internet-explorer.menu.china")}
@@ -480,7 +480,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("japan")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "japan" && "pl-4")}>
                   {location === "japan" ? `✓ ${t("apps.internet-explorer.menu.japan")}` : t("apps.internet-explorer.menu.japan")}
@@ -488,7 +488,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("korea")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "korea" && "pl-4")}>
                   {location === "korea" ? `✓ ${t("apps.internet-explorer.menu.korea")}` : t("apps.internet-explorer.menu.korea")}
@@ -496,7 +496,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("canada")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "canada" && "pl-4")}>
                   {location === "canada" ? `✓ ${t("apps.internet-explorer.menu.canada")}` : t("apps.internet-explorer.menu.canada")}
@@ -504,7 +504,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("uk")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "uk" && "pl-4")}>
                   {location === "uk" ? `✓ ${t("apps.internet-explorer.menu.unitedKingdom")}` : t("apps.internet-explorer.menu.unitedKingdom")}
@@ -512,7 +512,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("france")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "france" && "pl-4")}>
                   {location === "france" ? `✓ ${t("apps.internet-explorer.menu.france")}` : t("apps.internet-explorer.menu.france")}
@@ -520,7 +520,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("germany")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "germany" && "pl-4")}>
                   {location === "germany" ? `✓ ${t("apps.internet-explorer.menu.germany")}` : t("apps.internet-explorer.menu.germany")}
@@ -528,7 +528,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("spain")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "spain" && "pl-4")}>
                   {location === "spain" ? `✓ ${t("apps.internet-explorer.menu.spain")}` : t("apps.internet-explorer.menu.spain")}
@@ -536,7 +536,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("portugal")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "portugal" && "pl-4")}>
                   {location === "portugal" ? `✓ ${t("apps.internet-explorer.menu.portugal")}` : t("apps.internet-explorer.menu.portugal")}
@@ -544,7 +544,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("india")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "india" && "pl-4")}>
                   {location === "india" ? `✓ ${t("apps.internet-explorer.menu.india")}` : t("apps.internet-explorer.menu.india")}
@@ -552,7 +552,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("brazil")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "brazil" && "pl-4")}>
                   {location === "brazil" ? `✓ ${t("apps.internet-explorer.menu.brazil")}` : t("apps.internet-explorer.menu.brazil")}
@@ -560,7 +560,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("australia")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "australia" && "pl-4")}>
                   {location === "australia" ? `✓ ${t("apps.internet-explorer.menu.australia")}` : t("apps.internet-explorer.menu.australia")}
@@ -568,7 +568,7 @@ export function InternetExplorerMenuBar({
               </MenubarItem>
               <MenubarItem
                 onClick={() => onLocationChange?.("russia")}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 <span className={cn(location !== "russia" && "pl-4")}>
                   {location === "russia" ? `✓ ${t("apps.internet-explorer.menu.russia")}` : t("apps.internet-explorer.menu.russia")}
@@ -580,7 +580,7 @@ export function InternetExplorerMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onEditFuture}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.editFuture")}
           </MenubarItem>
@@ -589,7 +589,7 @@ export function InternetExplorerMenuBar({
 
       {/* Favorites Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("apps.internet-explorer.menu.favorites")}
         </MenubarTrigger>
         <MenubarContent
@@ -599,14 +599,14 @@ export function InternetExplorerMenuBar({
         >
           <MenubarItem
             onClick={onHome}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.goHome")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onAddFavorite}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.addToFavorites")}
           </MenubarItem>
@@ -621,7 +621,7 @@ export function InternetExplorerMenuBar({
               <MenubarSeparator className="h-[2px] bg-black my-1" />
               <MenubarItem
                 onClick={onClearFavorites}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 {t("apps.internet-explorer.menu.clearFavorites")}
               </MenubarItem>
@@ -629,7 +629,7 @@ export function InternetExplorerMenuBar({
           )}
           <MenubarItem
             onClick={onResetFavorites}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.resetFavorites")}
           </MenubarItem>
@@ -638,7 +638,7 @@ export function InternetExplorerMenuBar({
 
       {/* History Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("apps.internet-explorer.menu.history")}
         </MenubarTrigger>
         <MenubarContent
@@ -652,7 +652,7 @@ export function InternetExplorerMenuBar({
             className={
               !canGoBack
                 ? "text-gray-400 text-md h-6 px-3"
-                : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                : "text-md h-6 px-3"
             }
           >
             {t("apps.internet-explorer.menu.back")}
@@ -663,7 +663,7 @@ export function InternetExplorerMenuBar({
             className={
               !canGoForward
                 ? "text-gray-400 text-md h-6 px-3"
-                : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                : "text-md h-6 px-3"
             }
           >
             {t("apps.internet-explorer.menu.forward")}
@@ -678,7 +678,7 @@ export function InternetExplorerMenuBar({
                   onClick={() =>
                     onNavigateToHistory?.(entry.url, entry.year || "current")
                   }
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+                  className="text-md h-6 px-3 flex items-center gap-2"
                 >
                   {entry.favicon && typeof navigator !== "undefined" && "onLine" in navigator && navigator.onLine ? (
                     <img
@@ -709,7 +709,7 @@ export function InternetExplorerMenuBar({
               <MenubarSeparator className="h-[2px] bg-black my-1" />
               <MenubarItem
                 onClick={onClearHistory}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 {t("apps.internet-explorer.menu.clearHistory")}
               </MenubarItem>
@@ -720,26 +720,26 @@ export function InternetExplorerMenuBar({
 
       {/* Help Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.internetExplorerHelp")}
           </MenubarItem>
           <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.internet-explorer.menu.aboutInternetExplorer")}
           </MenubarItem>

@@ -51,26 +51,26 @@ export function SynthMenuBar({
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onAddPreset}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.synth.menu.newPreset")}
           </MenubarItem>
           <MenubarItem
             onClick={onReset}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.synth.menu.resetSynth")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
           </MenubarItem>
@@ -79,7 +79,7 @@ export function SynthMenuBar({
 
       {/* Presets Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("apps.synth.menu.presets")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -87,7 +87,7 @@ export function SynthMenuBar({
             <MenubarItem
               key={preset.id}
               onClick={() => onLoadPresetById(preset.id)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               <span className={cn(currentPresetId !== preset.id && "pl-4")}>
                 {currentPresetId === preset.id ? "✓ " : ""}
@@ -100,13 +100,13 @@ export function SynthMenuBar({
 
       {/* View Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={() => onLabelTypeChange("note")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(labelType !== "note" && "pl-4")}>
               {labelType === "note" ? "✓ " : ""}
@@ -115,7 +115,7 @@ export function SynthMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={() => onLabelTypeChange("key")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(labelType !== "key" && "pl-4")}>
               {labelType === "key" ? "✓ " : ""}
@@ -124,7 +124,7 @@ export function SynthMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={() => onLabelTypeChange("off")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(labelType !== "off" && "pl-4")}>
               {labelType === "off" ? "✓ " : ""}
@@ -136,26 +136,26 @@ export function SynthMenuBar({
 
       {/* Help Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.synth.menu.synthHelp")}
           </MenubarItem>
           <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.synth.menu.aboutSynth")}
           </MenubarItem>

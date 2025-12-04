@@ -98,26 +98,26 @@ export function FinderMenuBar({
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onNewWindow}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.newFinderWindow")}
           </MenubarItem>
           <MenubarItem
             onClick={onNewFolder}
             disabled={!canCreateFolder}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.newFolder")}
           </MenubarItem>
           <MenubarItem
             onClick={onImportFile}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.importFromDevice")}
           </MenubarItem>
@@ -125,14 +125,14 @@ export function FinderMenuBar({
           <MenubarItem
             onClick={onRename}
             disabled={!canRename}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.rename")}
           </MenubarItem>
           <MenubarItem
             onClick={onDuplicate}
             disabled={!canDuplicate}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.duplicate")}
           </MenubarItem>
@@ -140,7 +140,7 @@ export function FinderMenuBar({
           {isInTrash ? (
             <MenubarItem
               onClick={onRestore}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.finder.menu.putBack")}
             </MenubarItem>
@@ -148,7 +148,7 @@ export function FinderMenuBar({
             <MenubarItem
               onClick={() => canMoveToTrash && onMoveToTrash(selectedFile!)}
               disabled={!canMoveToTrash}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t("apps.finder.menu.moveToTrash")}
             </MenubarItem>
@@ -156,14 +156,14 @@ export function FinderMenuBar({
           <MenubarItem
             onClick={onEmptyTrash}
             disabled={isTrashEmpty}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.emptyTrash")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
           </MenubarItem>
@@ -172,28 +172,28 @@ export function FinderMenuBar({
 
       {/* Edit Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.undo")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.cut")}
           </MenubarItem>
-          <MenubarItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.copy")}
           </MenubarItem>
-          <MenubarItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.paste")}
           </MenubarItem>
-          <MenubarItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.clear")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+          <MenubarItem className="text-md h-6 px-3">
             {t("common.menu.selectAll")}
           </MenubarItem>
         </MenubarContent>
@@ -201,13 +201,13 @@ export function FinderMenuBar({
 
       {/* View Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={() => onViewTypeChange("small")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(viewType !== "small" && "pl-4")}> 
               {viewType === "small" ? `✓ ${t("apps.finder.menu.bySmallIcon")}` : t("apps.finder.menu.bySmallIcon")}
@@ -215,7 +215,7 @@ export function FinderMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={() => onViewTypeChange("large")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(viewType !== "large" && "pl-4")}> 
               {viewType === "large" ? `✓ ${t("apps.finder.menu.byIcon")}` : t("apps.finder.menu.byIcon")}
@@ -223,7 +223,7 @@ export function FinderMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={() => onViewTypeChange("list")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(viewType !== "list" && "pl-4")}> 
               {viewType === "list" ? `✓ ${t("apps.finder.menu.byList")}` : t("apps.finder.menu.byList")}
@@ -232,7 +232,7 @@ export function FinderMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={() => onSortTypeChange("name")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(sortType !== "name" && "pl-4")}>
               {sortType === "name" ? `✓ ${t("apps.finder.menu.byName")}` : t("apps.finder.menu.byName")}
@@ -240,7 +240,7 @@ export function FinderMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={() => onSortTypeChange("date")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(sortType !== "date" && "pl-4")}>
               {sortType === "date" ? `✓ ${t("apps.finder.menu.byDate")}` : t("apps.finder.menu.byDate")}
@@ -248,7 +248,7 @@ export function FinderMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={() => onSortTypeChange("size")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(sortType !== "size" && "pl-4")}>
               {sortType === "size" ? `✓ ${t("apps.finder.menu.bySize")}` : t("apps.finder.menu.bySize")}
@@ -256,7 +256,7 @@ export function FinderMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={() => onSortTypeChange("kind")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(sortType !== "kind" && "pl-4")}>
               {sortType === "kind" ? `✓ ${t("apps.finder.menu.byKind")}` : t("apps.finder.menu.byKind")}
@@ -267,21 +267,21 @@ export function FinderMenuBar({
 
       {/* Go Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.go")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onNavigateBack}
             disabled={!canNavigateBack}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.back")}
           </MenubarItem>
           <MenubarItem
             onClick={onNavigateForward}
             disabled={!canNavigateForward}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-md h-6 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t("apps.finder.menu.forward")}
           </MenubarItem>
@@ -292,7 +292,7 @@ export function FinderMenuBar({
             <MenubarItem
               key={folder.path}
               onClick={() => onNavigateToPath?.(folder.path)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+              className="text-md h-6 px-3 flex items-center gap-2"
             >
               <ThemedIcon
                 name={folder.icon || "/icons/directory.png"}
@@ -306,7 +306,7 @@ export function FinderMenuBar({
           {/* Always show Trash at the end */}
           <MenubarItem
             onClick={() => onNavigateToPath?.("/Trash")}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
               name={
@@ -324,26 +324,26 @@ export function FinderMenuBar({
 
       {/* Help Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.finderHelp")}
           </MenubarItem>
           <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.finder.menu.aboutFinder")}
           </MenubarItem>

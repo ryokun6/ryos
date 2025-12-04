@@ -88,20 +88,20 @@ export function AppletViewerMenuBar({
       />
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={() => launchApp("finder", { initialPath: "/Applets" })}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.applet-viewer.menu.open")}
           </MenubarItem>
           {hasAppletContent && isLoggedIn && (
             <MenubarItem
               onClick={onShareApplet}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.applet-viewer.menu.shareApplet")}
             </MenubarItem>
@@ -109,25 +109,25 @@ export function AppletViewerMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={() => fileInputRef.current?.click()}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.applet-viewer.menu.importFromDevice")}
           </MenubarItem>
           {hasAppletContent && (
             <MenubarSub>
-              <MenubarSubTrigger className="text-md h-6 px-3 active:bg-gray-900 active:text-white">
+              <MenubarSubTrigger className="text-md h-6 px-3">
                 {t("apps.applet-viewer.menu.exportAs")}
               </MenubarSubTrigger>
               <MenubarSubContent>
                 <MenubarItem
                   onClick={onExportAsApp}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  className="text-md h-6 px-3"
                 >
                   {t("apps.applet-viewer.menu.ryosApp")}
                 </MenubarItem>
                 <MenubarItem
                   onClick={onExportAsHtml}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  className="text-md h-6 px-3"
                 >
                   {t("apps.applet-viewer.menu.html")}
                 </MenubarItem>
@@ -137,7 +137,7 @@ export function AppletViewerMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
           </MenubarItem>
@@ -146,7 +146,7 @@ export function AppletViewerMenuBar({
 
       {/* Store Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("apps.applet-viewer.menu.store")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -154,7 +154,7 @@ export function AppletViewerMenuBar({
             onClick={() => launchApp("applet-viewer", { 
               initialData: { path: "", content: "" } 
             })}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.applet-viewer.menu.openAppletStore")}
           </MenubarItem>
@@ -166,7 +166,7 @@ export function AppletViewerMenuBar({
                 await onCheckForUpdates();
               }
             }}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {updateCount > 0
               ? updateCount === 1
@@ -178,7 +178,7 @@ export function AppletViewerMenuBar({
           {username && authToken ? (
             <MenubarItem
               onClick={() => onLogout?.()}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.applet-viewer.menu.logOut")}
             </MenubarItem>
@@ -186,13 +186,13 @@ export function AppletViewerMenuBar({
             <>
               <MenubarItem
                 onClick={onSetUsername}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 {t("apps.applet-viewer.menu.createAccount")}
               </MenubarItem>
               <MenubarItem
                 onClick={onVerifyToken}
-                className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                className="text-md h-6 px-3"
               >
                 {t("apps.applet-viewer.menu.login")}
               </MenubarItem>
@@ -203,7 +203,7 @@ export function AppletViewerMenuBar({
 
       {/* Window Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("apps.applet-viewer.menu.window")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -223,7 +223,7 @@ export function AppletViewerMenuBar({
                 <MenubarItem
                   key={inst.instanceId}
                   onClick={() => bringInstanceToForeground(inst.instanceId)}
-                  className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                  className="text-md h-6 px-3"
                 >
                   <span className={cn(!isActive && "pl-4")}>
                     {isActive ? `✓ ${fileName}` : fileName}
@@ -241,26 +241,26 @@ export function AppletViewerMenuBar({
 
       {/* Help Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.applet-viewer.menu.appletsHelp")}
           </MenubarItem>
           <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.applet-viewer.menu.aboutApplets")}
           </MenubarItem>

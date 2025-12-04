@@ -83,39 +83,39 @@ export function SoundboardMenuBar({
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none hover:bg-gray-200 active:bg-gray-900 active:text-white focus-visible:ring-0">
+        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onNewBoard}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.soundboard.menu.newSoundboard")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onImportBoard}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.soundboard.menu.importSoundboards")}
           </MenubarItem>
           <MenubarItem
             onClick={onExportBoard}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.soundboard.menu.exportSoundboards")}
           </MenubarItem>
           <MenubarItem
             onClick={onReloadBoard}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.soundboard.menu.resetSoundboards")}
           </MenubarItem>
           {isOptionPressed && (
             <MenubarItem
               onClick={onReloadAllSounds}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+              className="text-md h-6 px-3"
             >
               {t("apps.soundboard.menu.loadSpecialSoundboards")}
             </MenubarItem>
@@ -123,7 +123,7 @@ export function SoundboardMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.close")}
           </MenubarItem>
@@ -132,13 +132,13 @@ export function SoundboardMenuBar({
 
       {/* Edit Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onRenameBoard}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.soundboard.menu.renameSoundboard")}
           </MenubarItem>
@@ -148,7 +148,7 @@ export function SoundboardMenuBar({
             className={
               !canDeleteBoard
                 ? "text-gray-400 text-md h-6 px-3"
-                : "text-md h-6 px-3 active:bg-gray-900 active:text-white"
+                : "text-md h-6 px-3"
             }
           >
             {t("apps.soundboard.menu.deleteSoundboard")}
@@ -158,13 +158,13 @@ export function SoundboardMenuBar({
 
       {/* View Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={() => onToggleWaveforms?.(!showWaveforms)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!showWaveforms && "pl-4")}>
               {showWaveforms ? `✓ ${t("apps.soundboard.menu.waveforms")}` : t("apps.soundboard.menu.waveforms")}
@@ -172,7 +172,7 @@ export function SoundboardMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={() => onToggleEmojis?.(!showEmojis)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             <span className={cn(!showEmojis && "pl-4")}>
               {showEmojis ? `✓ ${t("apps.soundboard.menu.emojis")}` : t("apps.soundboard.menu.emojis")}
@@ -183,26 +183,26 @@ export function SoundboardMenuBar({
 
       {/* Help Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0 hover:bg-gray-200 active:bg-gray-900 active:text-white">
+        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={onShowHelp}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.soundboard.menu.soundboardHelp")}
           </MenubarItem>
           <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.menu.shareApp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onShowAbout}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("apps.soundboard.menu.aboutSoundboard")}
           </MenubarItem>
