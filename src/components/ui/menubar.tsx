@@ -74,13 +74,14 @@ const MenubarTrigger = React.forwardRef<
   // Theme-specific classes
   const themeClasses = cn(
     // Base styles
-    "flex cursor-default select-none items-center px-2 py-1 text-md font-medium outline-none",
+    "flex cursor-default select-none items-center px-2 py-1 text-md font-medium outline-none focus:outline-none focus-visible:outline-none",
     // Windows themes: plain text style, no background changes, add menubar-trigger class for CSS override
     isWindowsTheme && "rounded-none menubar-trigger",
     // System 7: black background, white text when open, full height
     isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white data-[state=open]:py-[3px] data-[state=open]:my-[-2px]",
     // macOS X: blue background (#1a66d3), white text when open, no rounded corners, slightly taller
-    isMacOSX && "rounded-none data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px]",
+    // Also ensure no focus/highlighted background when menu is closed
+    isMacOSX && "rounded-none data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px] focus:bg-transparent focus-visible:bg-transparent data-[highlighted]:bg-transparent data-[state=closed]:bg-transparent",
     // Default/other themes
     !isWindowsTheme && !isSystem7 && !isMacOSX && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
     className
