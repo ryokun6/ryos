@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Menubar,
   MenubarMenu,
   MenubarTrigger,
   MenubarContent,
@@ -896,15 +897,15 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   // If inside window frame for XP/98, use plain style
   if (inWindowFrame && isXpTheme) {
     return (
-      <div
-        className="flex items-center h-7 px-1"
+      <Menubar
+        className="flex items-center h-7 px-1 border-none bg-transparent space-x-0 p-0 rounded-none"
         style={{
           fontFamily: isXpTheme ? "var(--font-ms-sans)" : "var(--os-font-ui)",
           fontSize: "11px",
         }}
       >
         {children}
-      </div>
+      </Menubar>
     );
   }
 
@@ -1286,7 +1287,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         </div>
       )}
       <ScrollableMenuWrapper>
-        {hasActiveApp ? children : <DefaultMenuItems />}
+        <Menubar className="flex items-center border-none bg-transparent space-x-0 p-0 rounded-none h-auto">
+          {hasActiveApp && children ? children : <DefaultMenuItems />}
+        </Menubar>
       </ScrollableMenuWrapper>
       <div className={`${isPhone ? "flex-shrink-0 px-2" : "ml-auto"} flex items-center`}>
         <OfflineIndicator />
