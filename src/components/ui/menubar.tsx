@@ -80,7 +80,8 @@ const MenubarTrigger = React.forwardRef<
     // System 7: black background, white text when open, full height
     isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white data-[state=open]:py-[3px] data-[state=open]:my-[-2px]",
     // macOS X: blue background (#1a66d3), white text when open, no rounded corners, slightly taller
-    isMacOSX && "rounded-none data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px]",
+    // Only show background when menu is actually open, not on focus
+    isMacOSX && "rounded-none bg-transparent data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px]",
     // Default/other themes
     !isWindowsTheme && !isSystem7 && !isMacOSX && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
     className
