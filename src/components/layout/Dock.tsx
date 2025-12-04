@@ -678,7 +678,7 @@ function MacDock() {
         if (instance) {
           // Single applet instance - show its window
           const { label } = getAppletInfo(instance);
-          const isForeground = instance.isForeground && !instance.isMinimized;
+          const isForeground = !!(instance.isForeground && !instance.isMinimized);
           items.push({
             type: "checkbox",
             label: `${label}${instance.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
@@ -759,7 +759,7 @@ function MacDock() {
             }
           }
           
-          const isForeground = inst.isForeground && !inst.isMinimized;
+          const isForeground = !!(inst.isForeground && !inst.isMinimized);
           items.push({
             type: "checkbox",
             label: `${windowLabel}${inst.isMinimized ? ` ${t("common.dock.minimized")}` : ""}`,
