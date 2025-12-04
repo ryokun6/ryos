@@ -479,16 +479,20 @@
   z-index: 2;
 }
 
-/* Remove focus background on macOS menubar triggers when menu is closed */
+/* Remove focus/highlighted background on macOS menubar triggers when menu is closed */
 :root[data-os-theme="macosx"] [data-radix-menubar-trigger]:focus,
-:root[data-os-theme="macosx"] [data-radix-menubar-trigger]:focus-visible {
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger]:focus-visible,
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger][data-highlighted],
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger][data-state="closed"] {
   background-color: transparent !important;
   outline: none !important;
 }
 
 /* Keep the blue background only when the menu is open */
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger][data-state="open"],
 :root[data-os-theme="macosx"] [data-radix-menubar-trigger][data-state="open"]:focus,
-:root[data-os-theme="macosx"] [data-radix-menubar-trigger][data-state="open"]:focus-visible {
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger][data-state="open"]:focus-visible,
+:root[data-os-theme="macosx"] [data-radix-menubar-trigger][data-state="open"][data-highlighted] {
   background-color: #1a66d3 !important;
 }
 
@@ -1076,7 +1080,8 @@
 }
 
 /* macOS dropdown menu item hover/focus styles */
-:root[data-os-theme="macosx"] [role="menuitem"]:focus,
+/* Note: Exclude menubar triggers from this rule - they have their own styling */
+:root[data-os-theme="macosx"] [role="menuitem"]:focus:not([data-radix-menubar-trigger]),
 :root[data-os-theme="macosx"] [role="menuitemcheckbox"]:focus,
 :root[data-os-theme="macosx"] [role="menuitemradio"]:focus,
 :root[data-os-theme="macosx"] [role="option"]:focus,
