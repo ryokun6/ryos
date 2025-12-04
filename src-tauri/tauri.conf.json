@@ -1,0 +1,60 @@
+{
+  "productName": "ryOS",
+  "version": "1.0.0",
+  "identifier": "lu.ryo.os",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "bun run build:tauri",
+    "beforeDevCommand": "bun run dev"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "ryOS",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": true,
+        "transparent": true,
+        "decorations": true,
+        "alwaysOnTop": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' https://os.ryo.lu https://*.pusher.com wss://*.pusher.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://www.youtube.com https://i.ytimg.com https://*.wikipedia.org https://*.wikimedia.org https://cursor.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; media-src 'self' https: blob:; frame-src 'self' https://www.youtube.com https://*.wikipedia.org https://*.wikimedia.org https://cursor.com; worker-src 'self' blob:;"
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [],
+    "externalBin": [],
+    "copyright": "Copyright Ryo Lu",
+    "category": "Utility",
+    "shortDescription": "A web-based agentic AI OS",
+    "longDescription": "A web-based agentic AI OS, made with Cursor",
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    },
+    "windows": {
+      "digestAlgorithm": "sha256"
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
+  }
+}
+

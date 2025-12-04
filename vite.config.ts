@@ -22,8 +22,10 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    vercel(),
-    VitePWA({
+    // Only include Vercel and PWA plugins when not building for Tauri
+    ...(process.env.TAURI_ENV ? [] : [
+      vercel(),
+      VitePWA({
       registerType: "autoUpdate",
       manifestFilename: "manifest.json",
       includeAssets: [
@@ -228,6 +230,7 @@ export default defineConfig({
         enabled: false, // Disable in dev to avoid confusion
       },
     }),
+    ]),
   ],
   resolve: {
     alias: {

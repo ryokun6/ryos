@@ -28,3 +28,6 @@ version.json
 .vercel
 .env*.local
 package-lock.json
+
+# Tauri
+src-tauri/target

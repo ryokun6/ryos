@@ -3,6 +3,7 @@ import { LyricLine } from "@/types/lyrics";
 import { parseLRC } from "@/utils/lrcParser";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { isOffline } from "@/utils/offline";
+import { getApiUrl } from "@/utils/platform";
 
 interface UseLyricsParams {
   /** Song title */
@@ -93,7 +94,7 @@ export function useLyrics({
       console.warn("Lyrics fetch timed out");
     }, 15000);
 
-    fetch("/api/lyrics", {
+    fetch(getApiUrl("/api/lyrics"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, artist, album, force: isForced }),
@@ -190,7 +191,7 @@ export function useLyrics({
       console.warn("Lyrics translation timed out");
     }, 120000);
 
-    fetch("/api/translate-lyrics", {
+    fetch(getApiUrl("/api/translate-lyrics"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

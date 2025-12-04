@@ -8,6 +8,7 @@ import { useVideoStore } from "@/stores/useVideoStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
+import { getApiUrl } from "@/utils/platform";
 
 // Helper function to get system state for AI chat
 const getSystemState = () => {
@@ -124,7 +125,7 @@ export function useRyoChat({
     stop: stopRyo,
   } = useChat({
     transport: new DefaultChatTransport({
-      api: "/api/chat",
+      api: getApiUrl("/api/chat"),
       body: {
         systemState: getSystemState(),
       },

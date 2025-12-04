@@ -10,6 +10,7 @@ import {
 import { useAppStore } from "@/stores/useAppStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import i18n from "@/lib/i18n";
+import { getApiUrl } from "@/utils/platform";
 
 interface UseAiGenerationProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -209,7 +210,7 @@ export function useAiGeneration({
     messages: [],
     onFinish: handleAiFinish,
     transport: new DefaultChatTransport({
-      api: "/api/ie-generate",
+      api: getApiUrl("/api/ie-generate"),
       body: {
         model: aiModel, // Pass the selected model to the API
       },

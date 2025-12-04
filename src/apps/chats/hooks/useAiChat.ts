@@ -8,6 +8,7 @@ import { useChatsStore } from "../../../stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
+import { getApiUrl } from "@/utils/platform";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -546,7 +547,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const chatTransport = useMemo(() => {
     return new DefaultChatTransport({
-      api: "/api/chat",
+      api: getApiUrl("/api/chat"),
       headers: async () => {
         const { username: currentUsername, authToken: currentToken } =
           useChatsStore.getState();
@@ -1660,7 +1661,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (path.startsWith("/Applets Store/")) {
                 // Fetch shared applet content
                 const shareId = path.replace("/Applets Store/", "");
-                const response = await fetch(`/api/share-applet?id=${encodeURIComponent(shareId)}`);
+                const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`));
 
                 if (!response.ok) {
                   throw new Error(`Failed to fetch shared applet (HTTP ${response.status})`);
