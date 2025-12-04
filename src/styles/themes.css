@@ -1073,6 +1073,12 @@
   outline: none !important;
 }
 
+/* Prevent menubar trigger highlight when menu is closed - only show highlight when open */
+:root[data-os-theme="macosx"] .menubar [role="menuitem"]:focus:not([data-state="open"]) {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
 /* Override the 11px font size for dropdown menu items */
 :root[data-os-theme="macosx"] [role="menuitem"],
 :root[data-os-theme="macosx"] [role="menuitemcheckbox"],
