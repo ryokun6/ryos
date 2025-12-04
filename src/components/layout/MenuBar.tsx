@@ -898,10 +898,12 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   if (inWindowFrame && isXpTheme) {
     return (
       <Menubar
-        className="flex items-center h-7 pl-3 pr-1 border-none bg-transparent space-x-0 p-0 rounded-none"
+        className="flex items-center h-7 border-none bg-transparent space-x-0 rounded-none"
         style={{
           fontFamily: isXpTheme ? "var(--font-ms-sans)" : "var(--os-font-ui)",
           fontSize: "11px",
+          paddingLeft: "6px",
+          paddingRight: "2px",
         }}
       >
         {children}

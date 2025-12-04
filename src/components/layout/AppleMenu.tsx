@@ -36,20 +36,20 @@ export function AppleMenu({ apps }: AppleMenuProps) {
     <>
       <MenubarMenu>
         <MenubarTrigger
-          className={cn(
+            className={cn(
             "h-6 border-none focus-visible:ring-0 flex items-center justify-center",
             isMacOsxTheme ? "px-1" : "px-3"
-          )}
-        >
-          {isMacOsxTheme ? (
-            <ThemedIcon
-              name="apple.png"
-              alt="Apple Menu"
-              style={{ width: 30, height: 30 }}
-            />
-          ) : (
-            "\uf8ff" // 
-          )}
+            )}
+          >
+            {isMacOsxTheme ? (
+              <ThemedIcon
+                name="apple.png"
+                alt="Apple Menu"
+                style={{ width: 30, height: 30 }}
+              />
+            ) : (
+              "\uf8ff" // 
+            )}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem

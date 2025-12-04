@@ -7,6 +7,9 @@ import { useMediaQuery } from "@/hooks/useMediaQuery"
 
 import { cn } from "@/lib/utils"
 
+// Context to track if we're switching between menus (to skip animations)
+const MenubarSwitchingContext = React.createContext<boolean>(false)
+
 const MenubarMenu = MenubarPrimitive.Menu
 
 const MenubarGroup = MenubarPrimitive.Group
@@ -24,33 +27,38 @@ const Menubar = React.forwardRef<
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN)
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE)
   const [previousValue, setPreviousValue] = React.useState<string | undefined>(undefined)
+  const [isSwitching, setIsSwitching] = React.useState(false)
 
   const handleValueChange = (value: string) => {
     // Play sound based on menu state change
     if (value && !previousValue) {
       // Opening a menu from closed state
       playMenuOpen()
+      setIsSwitching(false)
     } else if (!value && previousValue) {
       // Closing a menu completely
       playMenuClose()
+      setIsSwitching(false)
     } else if (value && previousValue && value !== previousValue) {
-      // Switching between menus - play open sound
-      playMenuOpen()
+      // Switching between menus - skip sound and animation for instant swap
+      setIsSwitching(true)
     }
     setPreviousValue(value)
     onValueChange?.(value)
   }
 
   return (
-    <MenubarPrimitive.Root
-      ref={ref}
-      className={cn(
-        "flex h-9 items-center space-x-1 rounded-md p-1",
-        className
-      )}
-      onValueChange={handleValueChange}
-      {...props}
-    />
+    <MenubarSwitchingContext.Provider value={isSwitching}>
+      <MenubarPrimitive.Root
+        ref={ref}
+        className={cn(
+          "flex h-9 items-center space-x-1 rounded-md p-1",
+          className
+        )}
+        onValueChange={handleValueChange}
+        {...props}
+      />
+    </MenubarSwitchingContext.Provider>
   )
 })
 Menubar.displayName = MenubarPrimitive.Root.displayName
@@ -201,6 +209,7 @@ const MenubarContent = React.forwardRef<
     const currentTheme = useThemeStore((state) => state.current)
     const isMacOSTheme = currentTheme === "macosx"
     const isMobile = useMediaQuery("(max-width: 768px)")
+    const isSwitching = React.useContext(MenubarSwitchingContext)
 
     return (
       <MenubarPrimitive.Portal>
@@ -210,7 +219,9 @@ const MenubarContent = React.forwardRef<
           alignOffset={alignOffset}
           sideOffset={sideOffset}
           className={cn(
-            "z-50 min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+            "z-50 min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+            // Only animate when not switching between menus
+            !isSwitching && "data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             className
           )}
           style={{
