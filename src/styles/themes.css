@@ -1081,6 +1081,11 @@
   font-size: 13px !important;
 }
 
+/* Make Apple icon white when menubar trigger is open */
+:root[data-os-theme="macosx"] [data-state="open"] img[alt="Apple Menu"] {
+  filter: brightness(0) invert(1) !important;
+}
+
 /* Enhanced shadow for macOS foreground windows */
 :root[data-os-theme="macosx"] .shadow-os-window.is-foreground {
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);

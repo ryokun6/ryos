@@ -78,9 +78,11 @@ const MenubarTrigger = React.forwardRef<
     // Windows themes: plain text style, no background changes, add menubar-trigger class for CSS override
     isWindowsTheme && "rounded-none menubar-trigger",
     // System 7: black background, white text when open, full height
-    isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white data-[state=open]:py-[3px] data-[state=open]:my-[-2px]",
-    // macOS X: blue background (#1a66d3), white text when open, no rounded corners, slightly taller
-    isMacOSX && "rounded-none data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px]",
+    // Explicitly clear state when closed to prevent lingering styles
+    isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white data-[state=open]:py-[3px] data-[state=open]:my-[-2px] data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit data-[state=closed]:!py-1 data-[state=closed]:!my-0",
+    // macOS X: blue background (matches menu selection color), white text when open, no rounded corners, slightly taller
+    // Explicitly clear state when closed to prevent lingering styles (use !important to override focus states)
+    isMacOSX && "rounded-none data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px] data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit data-[state=closed]:!py-1 data-[state=closed]:!my-0",
     // Default/other themes
     !isWindowsTheme && !isSystem7 && !isMacOSX && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
     className
@@ -115,7 +117,7 @@ const MenubarSubTrigger = React.forwardRef<
         "flex cursor-default gap-2 select-none items-center px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         // Theme-specific hover/focus styles
         isSystem7 && "rounded-none focus:bg-black focus:text-white data-[state=open]:bg-black data-[state=open]:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[#1a66d3] focus:text-white data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white",
+        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white",
         !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent data-[state=open]:bg-accent",
         inset && "pl-8",
         className
@@ -250,7 +252,7 @@ const MenubarItem = React.forwardRef<
         "relative flex cursor-default select-none items-center gap-2 px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
         // Theme-specific hover/focus styles
         isSystem7 && "rounded-none focus:bg-black focus:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[#1a66d3] focus:text-white",
+        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white",
         !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground",
         inset && "pl-8",
         className,
@@ -301,7 +303,7 @@ const MenubarCheckboxItem = React.forwardRef<
         "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Theme-specific hover/focus styles
         isSystem7 && "rounded-none focus:bg-black focus:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[#1a66d3] focus:text-white",
+        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white",
         !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground",
         className,
         "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
@@ -359,7 +361,7 @@ const MenubarRadioItem = React.forwardRef<
         "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Theme-specific hover/focus styles
         isSystem7 && "rounded-none focus:bg-black focus:text-white mx-0",
-        isMacOSTheme && "rounded-none focus:bg-[#1a66d3] focus:text-white",
+        isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white",
         !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground",
         className,
         "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"

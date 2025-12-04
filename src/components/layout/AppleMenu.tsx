@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+} from "@/components/ui/menubar";
 import { AboutFinderDialog } from "@/components/dialogs/AboutFinderDialog";
 import { AnyApp } from "@/apps/base/types";
 import { AppId } from "@/config/appRegistry";
@@ -35,41 +34,36 @@ export function AppleMenu({ apps }: AppleMenuProps) {
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="default"
-            className={cn(
-              "h-6 px-3 py-1 border-none hover:bg-black/10 active:bg-black/20 focus-visible:ring-0",
-              isMacOsxTheme ? "text-xl px-1" : "text-md"
-            )}
-            style={{ color: "inherit" }}
-          >
-            {isMacOsxTheme ? (
-              <ThemedIcon
-                name="apple.png"
-                alt="Apple Menu"
-                style={{ width: 30, height: 30 }}
-              />
-            ) : (
-              "\uf8ff" // 
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={1} className="px-0">
-          <DropdownMenuItem
+      <MenubarMenu>
+        <MenubarTrigger
+          className={cn(
+            "h-6 border-none focus-visible:ring-0 flex items-center justify-center",
+            isMacOsxTheme ? "px-1" : "px-3"
+          )}
+        >
+          {isMacOsxTheme ? (
+            <ThemedIcon
+              name="apple.png"
+              alt="Apple Menu"
+              style={{ width: 30, height: 30 }}
+            />
+          ) : (
+            "\uf8ff" // 
+          )}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
             onClick={() => setAboutFinderOpen(true)}
-            className="text-md h-6 px-3 active:bg-gray-900 active:text-white"
+            className="text-md h-6 px-3"
           >
             {t("common.appleMenu.aboutThisComputer")}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="h-[2px] bg-black my-1" />
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
           {apps.map((app) => (
-            <DropdownMenuItem
+            <MenubarItem
               key={app.id}
               onClick={() => handleAppClick(app.id)}
-              className="text-md h-6 px-3 active:bg-gray-900 active:text-white flex items-center gap-2"
+              className="text-md h-6 px-3 flex items-center gap-2"
             >
               {typeof app.icon === "string" ? (
                 <div className="w-4 h-4 flex items-center justify-center">
@@ -83,10 +77,10 @@ export function AppleMenu({ apps }: AppleMenuProps) {
                 />
               )}
               {getTranslatedAppName(app.id as AppId)}
-            </DropdownMenuItem>
+            </MenubarItem>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </MenubarContent>
+      </MenubarMenu>
 
       <AboutFinderDialog
         isOpen={aboutFinderOpen}

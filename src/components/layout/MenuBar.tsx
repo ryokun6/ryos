@@ -1280,14 +1280,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         paddingRight: isPhone ? "0" : "0.5rem",
       }}
     >
-      {!isPhone && <AppleMenu apps={apps} />}
-      {isPhone && (
-        <div className="flex-shrink-0 flex items-center pl-2">
-          <AppleMenu apps={apps} />
-        </div>
-      )}
       <ScrollableMenuWrapper>
         <Menubar className="flex items-center border-none bg-transparent space-x-0 p-0 rounded-none h-auto">
+          <AppleMenu apps={apps} />
           {hasActiveApp && children ? children : <DefaultMenuItems />}
         </Menubar>
       </ScrollableMenuWrapper>
