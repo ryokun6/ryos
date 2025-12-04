@@ -6,8 +6,8 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { cn } from "@/lib/utils";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
@@ -84,16 +84,16 @@ export function SynthMenuBar({
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           {presets.map((preset) => (
-            <MenubarItem
+            <MenubarCheckboxItem
               key={preset.id}
-              onClick={() => onLoadPresetById(preset.id)}
+              checked={currentPresetId === preset.id}
+              onCheckedChange={(checked) => {
+                if (checked) onLoadPresetById(preset.id);
+              }}
               className="text-md h-6 px-3"
             >
-              <span className={cn(currentPresetId !== preset.id && "pl-4")}>
-                {currentPresetId === preset.id ? "✓ " : ""}
-                {preset.name}
-              </span>
-            </MenubarItem>
+              {preset.name}
+            </MenubarCheckboxItem>
           ))}
         </MenubarContent>
       </MenubarMenu>
@@ -104,33 +104,33 @@ export function SynthMenuBar({
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={() => onLabelTypeChange("note")}
+          <MenubarCheckboxItem
+            checked={labelType === "note"}
+            onCheckedChange={(checked) => {
+              if (checked) onLabelTypeChange("note");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(labelType !== "note" && "pl-4")}>
-              {labelType === "note" ? "✓ " : ""}
-              {t("apps.synth.menu.noteLabels")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => onLabelTypeChange("key")}
+            {t("apps.synth.menu.noteLabels")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={labelType === "key"}
+            onCheckedChange={(checked) => {
+              if (checked) onLabelTypeChange("key");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(labelType !== "key" && "pl-4")}>
-              {labelType === "key" ? "✓ " : ""}
-              {t("apps.synth.menu.keyLabels")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => onLabelTypeChange("off")}
+            {t("apps.synth.menu.keyLabels")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={labelType === "off"}
+            onCheckedChange={(checked) => {
+              if (checked) onLabelTypeChange("off");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(labelType !== "off" && "pl-4")}>
-              {labelType === "off" ? "✓ " : ""}
-              {t("apps.synth.menu.noLabels")}
-            </span>
-          </MenubarItem>
+            {t("apps.synth.menu.noLabels")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 

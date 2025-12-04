@@ -15,6 +15,7 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -508,49 +509,56 @@ function DefaultMenuItems() {
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
+          <MenubarCheckboxItem
+            checked={false}
             disabled
             className="text-md h-6 px-3"
           >
-            <span className="pl-4">{t("apps.finder.menu.bySmallIcon")}</span>
-          </MenubarItem>
-          <MenubarItem
+            {t("apps.finder.menu.bySmallIcon")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={true}
             disabled
             className="text-md h-6 px-3"
           >
-            <span>✓ {t("apps.finder.menu.byIcon")}</span>
-          </MenubarItem>
-          <MenubarItem
+            {t("apps.finder.menu.byIcon")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={false}
             disabled
             className="text-md h-6 px-3"
           >
-            <span className="pl-4">{t("apps.finder.menu.byList")}</span>
-          </MenubarItem>
+            {t("apps.finder.menu.byList")}
+          </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
+          <MenubarCheckboxItem
+            checked={true}
             disabled
             className="text-md h-6 px-3"
           >
-            <span>✓ {t("apps.finder.menu.byName")}</span>
-          </MenubarItem>
-          <MenubarItem
+            {t("apps.finder.menu.byName")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={false}
             disabled
             className="text-md h-6 px-3"
           >
-            <span className="pl-4">{t("apps.finder.menu.byDate")}</span>
-          </MenubarItem>
-          <MenubarItem
+            {t("apps.finder.menu.byDate")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={false}
             disabled
             className="text-md h-6 px-3"
           >
-            <span className="pl-4">{t("apps.finder.menu.bySize")}</span>
-          </MenubarItem>
-          <MenubarItem
+            {t("apps.finder.menu.bySize")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={false}
             disabled
             className="text-md h-6 px-3"
           >
-            <span className="pl-4">{t("apps.finder.menu.byKind")}</span>
-          </MenubarItem>
+            {t("apps.finder.menu.byKind")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 

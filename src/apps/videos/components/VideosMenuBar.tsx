@@ -9,6 +9,7 @@ import {
   MenubarSub,
   MenubarSubTrigger,
   MenubarSubContent,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { cn } from "@/lib/utils";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
@@ -162,30 +163,33 @@ export function VideosMenuBar({
             {t("apps.videos.menu.fullScreen")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={onShufflePlaylist}
+          <MenubarCheckboxItem
+            checked={isShuffled}
+            onCheckedChange={(checked) => {
+              if (checked !== isShuffled) onShufflePlaylist();
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!isShuffled && "pl-4")}>
-              {isShuffled ? `✓ ${t("apps.videos.menu.shuffle")}` : t("apps.videos.menu.shuffle")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={onToggleLoopAll}
+            {t("apps.videos.menu.shuffle")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={isLoopAll}
+            onCheckedChange={(checked) => {
+              if (checked !== isLoopAll) onToggleLoopAll();
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!isLoopAll && "pl-4")}>
-              {isLoopAll ? `✓ ${t("apps.videos.menu.repeatAll")}` : t("apps.videos.menu.repeatAll")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={onToggleLoopCurrent}
+            {t("apps.videos.menu.repeatAll")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={isLoopCurrent}
+            onCheckedChange={(checked) => {
+              if (checked !== isLoopCurrent) onToggleLoopCurrent();
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!isLoopCurrent && "pl-4")}>
-              {isLoopCurrent ? `✓ ${t("apps.videos.menu.repeatOne")}` : t("apps.videos.menu.repeatOne")}
-            </span>
-          </MenubarItem>
+            {t("apps.videos.menu.repeatOne")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 

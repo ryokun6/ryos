@@ -6,8 +6,8 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { cn } from "@/lib/utils";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
@@ -115,14 +115,15 @@ export function TerminalMenuBar({
           {onToggleMute && (
             <>
               <MenubarSeparator className="h-[2px] bg-black my-1" />
-              <MenubarItem
-                onClick={onToggleMute}
+              <MenubarCheckboxItem
+                checked={isMuted}
+                onCheckedChange={(checked) => {
+                  if (checked !== isMuted) onToggleMute();
+                }}
                 className="text-md h-6 px-3"
               >
-                <span className={cn(!isMuted && "pl-4")}>
-                  {isMuted ? `✓ ${t("apps.terminal.menu.muteSounds")}` : t("apps.terminal.menu.muteSounds")}
-                </span>
-              </MenubarItem>
+                {t("apps.terminal.menu.muteSounds")}
+              </MenubarCheckboxItem>
             </>
           )}
         </MenubarContent>

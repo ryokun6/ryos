@@ -8,6 +8,7 @@ import {
   MenubarSub,
   MenubarSubTrigger,
   MenubarSubContent,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -15,7 +16,6 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import React from "react";
 import { useAppStore } from "@/stores/useAppStore";
-import { cn } from "@/lib/utils";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
@@ -220,15 +220,16 @@ export function AppletViewerMenuBar({
               const isActive = inst.instanceId === instanceId;
 
               return (
-                <MenubarItem
+                <MenubarCheckboxItem
                   key={inst.instanceId}
-                  onClick={() => bringInstanceToForeground(inst.instanceId)}
+                  checked={isActive}
+                  onCheckedChange={(checked) => {
+                    if (checked) bringInstanceToForeground(inst.instanceId);
+                  }}
                   className="text-md h-6 px-3"
                 >
-                  <span className={cn(!isActive && "pl-4")}>
-                    {isActive ? `✓ ${fileName}` : fileName}
-                  </span>
-                </MenubarItem>
+                  {fileName}
+                </MenubarCheckboxItem>
               );
             })
           ) : (

@@ -6,8 +6,8 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { cn } from "@/lib/utils";
 import { type ChatRoom } from "../../../../src/types/chat";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useAppStoreShallow } from "@/stores/helpers";
@@ -192,14 +192,15 @@ export function ChatsMenuBar({
             )}
 
             {/* Ryo Chat Option */}
-            <MenubarItem
-              onClick={() => onRoomSelect(null)}
+            <MenubarCheckboxItem
+              checked={currentRoom === null}
+              onCheckedChange={(checked) => {
+                if (checked) onRoomSelect(null);
+              }}
               className="text-md h-6 px-3"
             >
-              <span className={cn(currentRoom !== null && "pl-4")}>
-                {currentRoom === null ? `✓ ${t("apps.chats.status.ryo")}` : t("apps.chats.status.ryo")}
-              </span>
-            </MenubarItem>
+              {t("apps.chats.status.ryo")}
+            </MenubarCheckboxItem>
 
             {/* Chat List */}
             {Array.isArray(rooms) &&
@@ -214,26 +215,18 @@ export function ChatsMenuBar({
                 const sortedRooms = [...privateRooms, ...publicRooms];
 
                 return sortedRooms.map((room) => (
-                  <MenubarItem
+                  <MenubarCheckboxItem
                     key={room.id}
-                    onClick={() => onRoomSelect(room)}
+                    checked={currentRoom?.id === room.id}
+                    onCheckedChange={(checked) => {
+                      if (checked) onRoomSelect(room);
+                    }}
                     className="text-md h-6 px-3"
                   >
-                    <span
-                      className={cn(!(currentRoom?.id === room.id) && "pl-4")}
-                    >
-                      {currentRoom?.id === room.id
-                        ? room.type === "private"
-                          ? `✓ ${getPrivateRoomDisplayName(
-                              room,
-                              username ?? null
-                            )}`
-                          : `✓ #${room.name}`
-                        : room.type === "private"
-                        ? getPrivateRoomDisplayName(room, username ?? null)
-                        : `#${room.name}`}
-                    </span>
-                  </MenubarItem>
+                    {room.type === "private"
+                      ? getPrivateRoomDisplayName(room, username ?? null)
+                      : `#${room.name}`}
+                  </MenubarCheckboxItem>
                 ));
               })()}
           </MenubarContent>
@@ -246,35 +239,32 @@ export function ChatsMenuBar({
           </MenubarTrigger>
           <MenubarContent align="start" sideOffset={1} className="px-0">
             {Object.entries(SYNTH_PRESETS).map(([key, preset]) => (
-              <MenubarItem
+              <MenubarCheckboxItem
                 key={key}
-                onClick={() => setSynthPreset(key)}
-                className={cn(
-                  "text-md h-6 px-3"
-                )}
+                checked={synthPreset === key}
+                onCheckedChange={(checked) => {
+                  if (checked) setSynthPreset(key);
+                }}
+                className="text-md h-6 px-3"
               >
-                <span className={cn(!(synthPreset === key) && "pl-4")}>
-                  {synthPreset === key ? `✓ ${preset.name}` : preset.name}
-                </span>
-              </MenubarItem>
+                {preset.name}
+              </MenubarCheckboxItem>
             ))}
             <MenubarSeparator className="h-[2px] bg-black my-1" />
-            <MenubarItem
-              onClick={() => setSpeechEnabled(!speechEnabled)}
+            <MenubarCheckboxItem
+              checked={speechEnabled}
+              onCheckedChange={(checked) => setSpeechEnabled(checked)}
               className="text-md h-6 px-3"
             >
-              <span className={cn(!speechEnabled && "pl-4")}>
-                {speechEnabled ? `✓ ${t("apps.chats.menu.chatSpeech")}` : t("apps.chats.menu.chatSpeech")}
-              </span>
-            </MenubarItem>
-            <MenubarItem
-              onClick={() => setTypingSynthEnabled(!typingSynthEnabled)}
+              {t("apps.chats.menu.chatSpeech")}
+            </MenubarCheckboxItem>
+            <MenubarCheckboxItem
+              checked={typingSynthEnabled}
+              onCheckedChange={(checked) => setTypingSynthEnabled(checked)}
               className="text-md h-6 px-3"
             >
-              <span className={cn(!typingSynthEnabled && "pl-4")}>
-                {typingSynthEnabled ? `✓ ${t("apps.chats.menu.typingSynth")}` : t("apps.chats.menu.typingSynth")}
-              </span>
-            </MenubarItem>
+              {t("apps.chats.menu.typingSynth")}
+            </MenubarCheckboxItem>
           </MenubarContent>
         </MenubarMenu>
 
@@ -306,17 +296,16 @@ export function ChatsMenuBar({
             </MenubarItem>
             <MenubarSeparator className="h-[2px] bg-black my-1" />
             {/* Sidebar Toggle */}
-            <MenubarItem
-              onClick={() => {
+            <MenubarCheckboxItem
+              checked={isSidebarVisible}
+              onCheckedChange={(checked) => {
                 console.log("[MenuBar] Toggle Sidebar menu item clicked");
-                onToggleSidebar();
+                if (checked !== isSidebarVisible) onToggleSidebar();
               }}
               className="text-md h-6 px-3"
             >
-              <span className={cn(!isSidebarVisible && "pl-4")}>
-                {isSidebarVisible ? `✓ ${t("apps.chats.menu.showRooms")}` : t("apps.chats.menu.showRooms")}
-              </span>
-            </MenubarItem>
+              {t("apps.chats.menu.showRooms")}
+            </MenubarCheckboxItem>
           </MenubarContent>
         </MenubarMenu>
 

@@ -4,8 +4,8 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { cn } from "@/lib/utils";
 import { AppProps } from "../../base/types";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { useState, useEffect } from "react";
@@ -162,22 +162,20 @@ export function SoundboardMenuBar({
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={() => onToggleWaveforms?.(!showWaveforms)}
+          <MenubarCheckboxItem
+            checked={showWaveforms ?? false}
+            onCheckedChange={(checked) => onToggleWaveforms?.(checked)}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!showWaveforms && "pl-4")}>
-              {showWaveforms ? `✓ ${t("apps.soundboard.menu.waveforms")}` : t("apps.soundboard.menu.waveforms")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => onToggleEmojis?.(!showEmojis)}
+            {t("apps.soundboard.menu.waveforms")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={showEmojis ?? false}
+            onCheckedChange={(checked) => onToggleEmojis?.(checked)}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!showEmojis && "pl-4")}>
-              {showEmojis ? `✓ ${t("apps.soundboard.menu.emojis")}` : t("apps.soundboard.menu.emojis")}
-            </span>
-          </MenubarItem>
+            {t("apps.soundboard.menu.emojis")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 

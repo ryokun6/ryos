@@ -6,8 +6,8 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { cn } from "@/lib/utils";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
@@ -91,18 +91,16 @@ export function PhotoBoothMenuBar({
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           {availableCameras.map((camera) => (
-            <MenubarItem
+            <MenubarCheckboxItem
               key={camera.deviceId}
-              onClick={() => onCameraSelect(camera.deviceId)}
+              checked={selectedCameraId === camera.deviceId}
+              onCheckedChange={(checked) => {
+                if (checked) onCameraSelect(camera.deviceId);
+              }}
               className="text-md h-6 px-3"
             >
-              <span
-                className={cn(selectedCameraId !== camera.deviceId && "pl-4")}
-              >
-                {selectedCameraId === camera.deviceId ? "✓ " : ""}
-                {camera.label || `${t("apps.photo-booth.menu.camera")} ${camera.deviceId.slice(0, 4)}`}
-              </span>
-            </MenubarItem>
+              {camera.label || `${t("apps.photo-booth.menu.camera")} ${camera.deviceId.slice(0, 4)}`}
+            </MenubarCheckboxItem>
           ))}
         </MenubarContent>
       </MenubarMenu>
@@ -113,18 +111,16 @@ export function PhotoBoothMenuBar({
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           {effects.map((effect) => (
-            <MenubarItem
+            <MenubarCheckboxItem
               key={effect.name}
-              onClick={() => onEffectSelect(effect)}
+              checked={selectedEffect.name === effect.name}
+              onCheckedChange={(checked) => {
+                if (checked) onEffectSelect(effect);
+              }}
               className="text-md h-6 px-3"
             >
-              <span
-                className={cn(selectedEffect.name !== effect.name && "pl-4")}
-              >
-                {selectedEffect.name === effect.name ? "✓ " : ""}
-                {t(`apps.photo-booth.effects.${effect.translationKey}`)}
-              </span>
-            </MenubarItem>
+              {t(`apps.photo-booth.effects.${effect.translationKey}`)}
+            </MenubarCheckboxItem>
           ))}
         </MenubarContent>
       </MenubarMenu>

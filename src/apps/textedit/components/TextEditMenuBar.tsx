@@ -9,11 +9,11 @@ import {
   MenubarSub,
   MenubarSubTrigger,
   MenubarSubContent,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import React, { useState } from "react";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { cn } from "@/lib/utils";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
@@ -188,151 +188,100 @@ export function TextEditMenuBar({
           {t("apps.textedit.menu.format")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={() => editor?.chain().focus().toggleBold().run()}
+          <MenubarCheckboxItem
+            checked={editor?.isActive("bold") ?? false}
+            onCheckedChange={() => editor?.chain().focus().toggleBold().run()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!editor?.isActive("bold") && "pl-4")}>
-              {editor?.isActive("bold") ? `✓ ${t("apps.textedit.menu.bold")}` : t("apps.textedit.menu.bold")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => editor?.chain().focus().toggleItalic().run()}
+            {t("apps.textedit.menu.bold")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={editor?.isActive("italic") ?? false}
+            onCheckedChange={() => editor?.chain().focus().toggleItalic().run()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!editor?.isActive("italic") && "pl-4")}>
-              {editor?.isActive("italic") ? `✓ ${t("apps.textedit.menu.italic")}` : t("apps.textedit.menu.italic")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => editor?.chain().focus().toggleUnderline().run()}
+            {t("apps.textedit.menu.italic")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={editor?.isActive("underline") ?? false}
+            onCheckedChange={() => editor?.chain().focus().toggleUnderline().run()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!editor?.isActive("underline") && "pl-4")}>
-              {editor?.isActive("underline") ? `✓ ${t("apps.textedit.menu.underline")}` : t("apps.textedit.menu.underline")}
-            </span>
-          </MenubarItem>
+            {t("apps.textedit.menu.underline")}
+          </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={() => editor?.chain().focus().setParagraph().run()}
+          <MenubarCheckboxItem
+            checked={editor?.isActive("paragraph") ?? false}
+            onCheckedChange={() => editor?.chain().focus().setParagraph().run()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!editor?.isActive("paragraph") && "pl-4")}>
-              {editor?.isActive("paragraph") ? `✓ ${t("apps.textedit.menu.text")}` : t("apps.textedit.menu.text")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+            {t("apps.textedit.menu.text")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={editor?.isActive("heading", { level: 1 }) ?? false}
+            onCheckedChange={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
             className="text-md h-6 px-3"
           >
-            <span
-              className={cn(
-                !editor?.isActive("heading", { level: 1 }) && "pl-4"
-              )}
-            >
-              {editor?.isActive("heading", { level: 1 })
-                ? `✓ ${t("apps.textedit.menu.heading1")}`
-                : t("apps.textedit.menu.heading1")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+            {t("apps.textedit.menu.heading1")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={editor?.isActive("heading", { level: 2 }) ?? false}
+            onCheckedChange={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
             className="text-md h-6 px-3"
           >
-            <span
-              className={cn(
-                !editor?.isActive("heading", { level: 2 }) && "pl-4"
-              )}
-            >
-              {editor?.isActive("heading", { level: 2 })
-                ? `✓ ${t("apps.textedit.menu.heading2")}`
-                : t("apps.textedit.menu.heading2")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+            {t("apps.textedit.menu.heading2")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={editor?.isActive("heading", { level: 3 }) ?? false}
+            onCheckedChange={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
             className="text-md h-6 px-3"
           >
-            <span
-              className={cn(
-                !editor?.isActive("heading", { level: 3 }) && "pl-4"
-              )}
-            >
-              {editor?.isActive("heading", { level: 3 })
-                ? `✓ ${t("apps.textedit.menu.heading3")}`
-                : t("apps.textedit.menu.heading3")}
-            </span>
-          </MenubarItem>
+            {t("apps.textedit.menu.heading3")}
+          </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={() => editor?.chain().focus().setTextAlign("left").run()}
+          <MenubarCheckboxItem
+            checked={editor?.isActive({ textAlign: "left" }) ?? false}
+            onCheckedChange={() => editor?.chain().focus().setTextAlign("left").run()}
             className="text-md h-6 px-3"
           >
-            <span
-              className={cn(
-                !editor?.isActive({ textAlign: "left" }) && "pl-4"
-              )}
-            >
-              {editor?.isActive({ textAlign: "left" })
-                ? `✓ ${t("apps.textedit.menu.alignLeft")}`
-                : t("apps.textedit.menu.alignLeft")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => editor?.chain().focus().setTextAlign("center").run()}
+            {t("apps.textedit.menu.alignLeft")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={editor?.isActive({ textAlign: "center" }) ?? false}
+            onCheckedChange={() => editor?.chain().focus().setTextAlign("center").run()}
             className="text-md h-6 px-3"
           >
-            <span
-              className={cn(
-                !editor?.isActive({ textAlign: "center" }) && "pl-4"
-              )}
-            >
-              {editor?.isActive({ textAlign: "center" })
-                ? `✓ ${t("apps.textedit.menu.alignCenter")}`
-                : t("apps.textedit.menu.alignCenter")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => editor?.chain().focus().setTextAlign("right").run()}
+            {t("apps.textedit.menu.alignCenter")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={editor?.isActive({ textAlign: "right" }) ?? false}
+            onCheckedChange={() => editor?.chain().focus().setTextAlign("right").run()}
             className="text-md h-6 px-3"
           >
-            <span
-              className={cn(
-                !editor?.isActive({ textAlign: "right" }) && "pl-4"
-              )}
-            >
-              {editor?.isActive({ textAlign: "right" })
-                ? `✓ ${t("apps.textedit.menu.alignRight")}`
-                : t("apps.textedit.menu.alignRight")}
-            </span>
-          </MenubarItem>
+            {t("apps.textedit.menu.alignRight")}
+          </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          <MenubarCheckboxItem
+            checked={editor?.isActive("bulletList") ?? false}
+            onCheckedChange={() => editor?.chain().focus().toggleBulletList().run()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!editor?.isActive("bulletList") && "pl-4")}>
-              {editor?.isActive("bulletList") ? `✓ ${t("apps.textedit.menu.bulletList")}` : t("apps.textedit.menu.bulletList")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+            {t("apps.textedit.menu.bulletList")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={editor?.isActive("orderedList") ?? false}
+            onCheckedChange={() => editor?.chain().focus().toggleOrderedList().run()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!editor?.isActive("orderedList") && "pl-4")}>
-              {editor?.isActive("orderedList")
-                ? `✓ ${t("apps.textedit.menu.numberedList")}`
-                : t("apps.textedit.menu.numberedList")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => editor?.chain().focus().toggleTaskList().run()}
+            {t("apps.textedit.menu.numberedList")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={editor?.isActive("taskList") ?? false}
+            onCheckedChange={() => editor?.chain().focus().toggleTaskList().run()}
             className="text-md h-6 px-3"
           >
-            <span className={cn(!editor?.isActive("taskList") && "pl-4")}>
-              {editor?.isActive("taskList") ? `✓ ${t("apps.textedit.menu.taskList")}` : t("apps.textedit.menu.taskList")}
-            </span>
-          </MenubarItem>
+            {t("apps.textedit.menu.taskList")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 

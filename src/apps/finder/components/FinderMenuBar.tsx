@@ -6,8 +6,8 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { cn } from "@/lib/utils";
 import { FileItem } from "./FileList";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -205,63 +205,70 @@ export function FinderMenuBar({
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem
-            onClick={() => onViewTypeChange("small")}
+          <MenubarCheckboxItem
+            checked={viewType === "small"}
+            onCheckedChange={(checked) => {
+              if (checked) onViewTypeChange("small");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(viewType !== "small" && "pl-4")}> 
-              {viewType === "small" ? `✓ ${t("apps.finder.menu.bySmallIcon")}` : t("apps.finder.menu.bySmallIcon")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => onViewTypeChange("large")}
+            {t("apps.finder.menu.bySmallIcon")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={viewType === "large"}
+            onCheckedChange={(checked) => {
+              if (checked) onViewTypeChange("large");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(viewType !== "large" && "pl-4")}> 
-              {viewType === "large" ? `✓ ${t("apps.finder.menu.byIcon")}` : t("apps.finder.menu.byIcon")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => onViewTypeChange("list")}
+            {t("apps.finder.menu.byIcon")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={viewType === "list"}
+            onCheckedChange={(checked) => {
+              if (checked) onViewTypeChange("list");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(viewType !== "list" && "pl-4")}> 
-              {viewType === "list" ? `✓ ${t("apps.finder.menu.byList")}` : t("apps.finder.menu.byList")}
-            </span>
-          </MenubarItem>
+            {t("apps.finder.menu.byList")}
+          </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={() => onSortTypeChange("name")}
+          <MenubarCheckboxItem
+            checked={sortType === "name"}
+            onCheckedChange={(checked) => {
+              if (checked) onSortTypeChange("name");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(sortType !== "name" && "pl-4")}>
-              {sortType === "name" ? `✓ ${t("apps.finder.menu.byName")}` : t("apps.finder.menu.byName")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => onSortTypeChange("date")}
+            {t("apps.finder.menu.byName")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={sortType === "date"}
+            onCheckedChange={(checked) => {
+              if (checked) onSortTypeChange("date");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(sortType !== "date" && "pl-4")}>
-              {sortType === "date" ? `✓ ${t("apps.finder.menu.byDate")}` : t("apps.finder.menu.byDate")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => onSortTypeChange("size")}
+            {t("apps.finder.menu.byDate")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={sortType === "size"}
+            onCheckedChange={(checked) => {
+              if (checked) onSortTypeChange("size");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(sortType !== "size" && "pl-4")}>
-              {sortType === "size" ? `✓ ${t("apps.finder.menu.bySize")}` : t("apps.finder.menu.bySize")}
-            </span>
-          </MenubarItem>
-          <MenubarItem
-            onClick={() => onSortTypeChange("kind")}
+            {t("apps.finder.menu.bySize")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={sortType === "kind"}
+            onCheckedChange={(checked) => {
+              if (checked) onSortTypeChange("kind");
+            }}
             className="text-md h-6 px-3"
           >
-            <span className={cn(sortType !== "kind" && "pl-4")}>
-              {sortType === "kind" ? `✓ ${t("apps.finder.menu.byKind")}` : t("apps.finder.menu.byKind")}
-            </span>
-          </MenubarItem>
+            {t("apps.finder.menu.byKind")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 
