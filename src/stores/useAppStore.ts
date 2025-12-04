@@ -18,6 +18,7 @@ export interface AppInstance extends AppState {
   instanceId: string;
   appId: AppId;
   title?: string;
+  displayTitle?: string; // Dynamic title for dock menu (updated by WindowFrame)
   createdAt: number; // stable ordering for taskbar (creation time)
   isLoading?: boolean;
   isMinimized?: boolean;
@@ -798,12 +799,12 @@ export const useAppStore = create<AppStoreState>()(
         set((state) => {
           const inst = state.instances[instanceId];
           if (!inst) return state;
-          // Only update if title actually changed
-          if (inst.title === title) return state;
+          // Only update if displayTitle actually changed
+          if (inst.displayTitle === title) return state;
           return {
             instances: {
               ...state.instances,
-              [instanceId]: { ...inst, title },
+              [instanceId]: { ...inst, displayTitle: title },
             },
           };
         });

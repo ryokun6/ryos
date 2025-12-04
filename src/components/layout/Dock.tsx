@@ -737,7 +737,7 @@ function MacDock() {
       // List existing windows if any
       if (appInstances.length > 0) {
         appInstances.forEach((inst) => {
-          let windowLabel = inst.title || appRegistry[appId]?.name || appId;
+          let windowLabel = inst.displayTitle || inst.title || appRegistry[appId]?.name || appId;
           
           // For Finder, show the current path with localized folder name
           if (appId === "finder") {
