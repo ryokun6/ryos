@@ -75,12 +75,12 @@ const MenubarTrigger = React.forwardRef<
   const themeClasses = cn(
     // Base styles
     "flex cursor-default select-none items-center px-2 py-1 text-md font-medium outline-none",
-    // Windows themes: plain text style, no background changes
-    isWindowsTheme && "rounded-none",
-    // System 7: black background, white text when open
-    isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white",
-    // macOS X: blue background (#1a66d3), white text when open, slightly taller
-    isMacOSX && "rounded-[3px] data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px]",
+    // Windows themes: plain text style, no background changes, add menubar-trigger class for CSS override
+    isWindowsTheme && "rounded-none menubar-trigger",
+    // System 7: black background, white text when open, full height
+    isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white data-[state=open]:py-[3px] data-[state=open]:my-[-2px]",
+    // macOS X: blue background (#1a66d3), white text when open, no rounded corners, slightly taller
+    isMacOSX && "rounded-none data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px]",
     // Default/other themes
     !isWindowsTheme && !isSystem7 && !isMacOSX && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
     className
@@ -112,11 +112,11 @@ const MenubarSubTrigger = React.forwardRef<
     <MenubarPrimitive.SubTrigger
       ref={ref}
       className={cn(
-        "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        "flex cursor-default gap-2 select-none items-center px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         // Theme-specific hover/focus styles
-        isSystem7 && "focus:bg-black focus:text-white data-[state=open]:bg-black data-[state=open]:text-white",
-        isMacOSTheme && "focus:bg-[#1a66d3] focus:text-white data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white",
-        !isSystem7 && !isMacOSTheme && "focus:bg-accent data-[state=open]:bg-accent",
+        isSystem7 && "rounded-none focus:bg-black focus:text-white data-[state=open]:bg-black data-[state=open]:text-white mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[#1a66d3] focus:text-white data-[state=open]:bg-[#1a66d3] data-[state=open]:text-white",
+        !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent data-[state=open]:bg-accent",
         inset && "pl-8",
         className
       )}
@@ -131,6 +131,10 @@ const MenubarSubTrigger = React.forwardRef<
           : isMacOSTheme
           ? "12px !important"
           : undefined,
+        ...(isSystem7 && {
+          padding: "2px 8px",
+          margin: "0",
+        }),
         ...(isMacOSTheme && {
           borderRadius: "0px",
           padding: "6px 12px 6px 16px",
@@ -243,11 +247,11 @@ const MenubarItem = React.forwardRef<
     <MenubarPrimitive.Item
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
+        "relative flex cursor-default select-none items-center gap-2 px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
         // Theme-specific hover/focus styles
-        isSystem7 && "focus:bg-black focus:text-white",
-        isMacOSTheme && "focus:bg-[#1a66d3] focus:text-white",
-        !isSystem7 && !isMacOSTheme && "focus:bg-accent focus:text-accent-foreground",
+        isSystem7 && "rounded-none focus:bg-black focus:text-white mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[#1a66d3] focus:text-white",
+        !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground",
         inset && "pl-8",
         className,
         "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
@@ -263,6 +267,10 @@ const MenubarItem = React.forwardRef<
           : isMacOSTheme
           ? "13px !important"
           : undefined,
+        ...(isSystem7 && {
+          padding: "2px 8px",
+          margin: "0",
+        }),
         ...(isMacOSTheme && {
           borderRadius: "0px",
           padding: "6px 20px 6px 16px",
@@ -290,11 +298,11 @@ const MenubarCheckboxItem = React.forwardRef<
     <MenubarPrimitive.CheckboxItem
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Theme-specific hover/focus styles
-        isSystem7 && "focus:bg-black focus:text-white",
-        isMacOSTheme && "focus:bg-[#1a66d3] focus:text-white",
-        !isSystem7 && !isMacOSTheme && "focus:bg-accent focus:text-accent-foreground",
+        isSystem7 && "rounded-none focus:bg-black focus:text-white mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[#1a66d3] focus:text-white",
+        !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground",
         className,
         "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
       )}
@@ -309,6 +317,10 @@ const MenubarCheckboxItem = React.forwardRef<
           : isMacOSTheme
           ? "13px !important"
           : undefined,
+        ...(isSystem7 && {
+          padding: "2px 8px 2px 24px",
+          margin: "0",
+        }),
         ...(isMacOSTheme && {
           borderRadius: "0px",
           padding: "6px 20px 6px 36px",
@@ -344,11 +356,11 @@ const MenubarRadioItem = React.forwardRef<
     <MenubarPrimitive.RadioItem
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Theme-specific hover/focus styles
-        isSystem7 && "focus:bg-black focus:text-white",
-        isMacOSTheme && "focus:bg-[#1a66d3] focus:text-white",
-        !isSystem7 && !isMacOSTheme && "focus:bg-accent focus:text-accent-foreground",
+        isSystem7 && "rounded-none focus:bg-black focus:text-white mx-0",
+        isMacOSTheme && "rounded-none focus:bg-[#1a66d3] focus:text-white",
+        !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground",
         className,
         "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
       )}
@@ -361,6 +373,10 @@ const MenubarRadioItem = React.forwardRef<
         fontSize: isXpTheme
           ? "11px"
           : undefined,
+        ...(isSystem7 && {
+          padding: "2px 8px 2px 24px",
+          margin: "0",
+        }),
       }}
       {...props}
     >
