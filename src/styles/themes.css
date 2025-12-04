@@ -592,9 +592,14 @@
 }
 
 /* Preserve LCD display styling in Videos app - keep original pixel fonts */
+/* But use Aqua Kana for player control buttons */
 :root[data-os-theme="macosx"] .videos-player-controls button.font-geneva-12 {
-  font-family: Geneva-12, monospace !important;
+  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
+    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif !important;
   font-size: 9px !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
 }
 :root[data-os-theme="macosx"] .videos-lcd .font-geneva-12.text-\[10px\] {
   font-family: Geneva-12, monospace !important;
