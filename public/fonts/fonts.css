@@ -100,6 +100,14 @@
 }
 
 @font-face {
+  font-family: "AquaKana";
+  src: url("/fonts/AquaKana.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "LucidaGrande";
   src: url("/fonts/LucidaGrande.ttf") format("truetype");
   font-weight: normal;

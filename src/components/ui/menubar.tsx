@@ -134,7 +134,7 @@ const MenubarSubTrigger = React.forwardRef<
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
         fontSize: isXpTheme
           ? "11px"
@@ -273,7 +273,7 @@ const MenubarItem = React.forwardRef<
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
         fontSize: isXpTheme
           ? "11px"
@@ -323,7 +323,7 @@ const MenubarCheckboxItem = React.forwardRef<
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
         fontSize: isXpTheme
           ? "11px"
@@ -385,7 +385,7 @@ const MenubarRadioItem = React.forwardRef<
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
         fontSize: isXpTheme
           ? "11px"
@@ -442,7 +442,7 @@ const MenubarLabel = React.forwardRef<
           currentTheme === "xp" || currentTheme === "win98"
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : currentTheme === "macosx"
-            ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+            ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
             : undefined,
         fontSize:
           currentTheme === "xp" || currentTheme === "win98"

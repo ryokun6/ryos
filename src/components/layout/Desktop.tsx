@@ -665,8 +665,8 @@ export function Desktop({
       <div
         className={`flex flex-col relative z-[1] ${
           isXpTheme
-            ? "items-start pt-2 pr-2 pl-1 pb-0" // Reserve space via height, not padding, to avoid clipping
-            : "items-end pt-8 h-[calc(100%-2rem)] p-4" // Account for top menubar - keep right alignment for other themes
+            ? "items-start pt-2" // Reserve space via height, not padding, to avoid clipping
+            : "items-end pt-8" // Account for top menubar - keep right alignment for other themes
         }`}
         style={
           isXpTheme
@@ -674,9 +674,17 @@ export function Desktop({
                 // Exclude menubar, safe area, and an extra visual buffer to prevent clipping
                 height:
                   "calc(100% - (30px + var(--sat-safe-area-bottom) + 48px))",
-                paddingBottom: 0,
+                paddingLeft: "calc(0.25rem + env(safe-area-inset-left, 0px))",
+                paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
+                paddingBottom: "env(safe-area-inset-bottom, 0px)",
               }
-            : undefined
+            : {
+                height: "calc(100% - 2rem)",
+                padding: "1rem",
+                paddingLeft: "calc(1rem + env(safe-area-inset-left, 0px))",
+                paddingRight: "calc(1rem + env(safe-area-inset-right, 0px))",
+                paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
+              }
         }
       >
         <div

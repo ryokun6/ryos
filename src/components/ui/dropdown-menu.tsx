@@ -85,7 +85,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
           currentTheme === "xp" || currentTheme === "win98"
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : currentTheme === "macosx"
-            ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+            ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
             : undefined,
         fontSize:
           currentTheme === "xp" || currentTheme === "win98"
@@ -209,7 +209,7 @@ const DropdownMenuItem = React.forwardRef<
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
         fontSize: isXpTheme
           ? "11px"
@@ -250,7 +250,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
         fontSize: isXpTheme
           ? "11px"
@@ -299,7 +299,7 @@ const DropdownMenuRadioItem = React.forwardRef<
           currentTheme === "xp" || currentTheme === "win98"
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : currentTheme === "macosx"
-            ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+            ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
             : undefined,
         fontSize:
           currentTheme === "xp" || currentTheme === "win98"
@@ -340,7 +340,7 @@ const DropdownMenuLabel = React.forwardRef<
           currentTheme === "xp" || currentTheme === "win98"
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : currentTheme === "macosx"
-            ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+            ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
             : undefined,
         fontSize:
           currentTheme === "xp" || currentTheme === "win98"

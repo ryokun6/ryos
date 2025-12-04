@@ -60,7 +60,7 @@ const SelectTrigger = React.forwardRef<
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
         fontSize: isXpTheme ? "11px" : isMacOSTheme ? "14px" : undefined,
         ...(isXpTheme && {
@@ -224,7 +224,7 @@ const SelectLabel = React.forwardRef<
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
         fontSize: isXpTheme ? "11px" : isMacOSTheme ? "11px" : undefined,
         ...(isMacOSTheme && {
@@ -260,7 +260,7 @@ const SelectItem = React.forwardRef<
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
           : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
         fontSize: isXpTheme
           ? "11px"

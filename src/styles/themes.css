@@ -67,7 +67,7 @@
 
 /* Mac OS X Theme */
 :root[data-os-theme="macosx"] {
-  --os-font-ui: "LucidaGrande", "Lucida Grande", "Hiragino Sans",
+  --os-font-ui: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, sans-serif;
   --os-font-mono: Monaco, Menlo, monospace;
@@ -669,7 +669,7 @@
 
 /* macOS select styling - similar to aqua buttons */
 :root[data-os-theme="macosx"] select {
-  font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans",
+  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
   font-size: 14px !important;
@@ -968,7 +968,7 @@
   ):not(.videos-player-controls .font-geneva-12):not(
     .synth-force-font .font-geneva-12
   ):not(.videos-status .font-geneva-12) {
-  font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans",
+  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
