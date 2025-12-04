@@ -1286,8 +1286,12 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
             : undefined,
         fontFamily: "var(--os-font-ui)",
         color: "var(--os-color-menubar-text)",
-        paddingLeft: isPhone ? "0" : "0.5rem",
-        paddingRight: isPhone ? "0" : "0.5rem",
+        paddingLeft: isPhone 
+          ? "calc(0.5rem + env(safe-area-inset-left, 0px))" 
+          : "0.5rem",
+        paddingRight: isPhone 
+          ? "calc(0.5rem + env(safe-area-inset-right, 0px))" 
+          : "0.5rem",
       }}
     >
       <ScrollableMenuWrapper>
