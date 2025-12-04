@@ -906,12 +906,15 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   if (inWindowFrame && isXpTheme) {
     return (
       <Menubar
-        className="flex items-center h-7 border-none bg-transparent space-x-0 rounded-none"
+        className="flex items-center border-none bg-transparent space-x-0 rounded-none"
         style={{
           fontFamily: isXpTheme ? "var(--font-ms-sans)" : "var(--os-font-ui)",
           fontSize: "11px",
           paddingLeft: "6px",
           paddingRight: "2px",
+          height: "28px",
+          minHeight: "28px",
+          maxHeight: "28px",
         }}
       >
         {children}
@@ -1271,7 +1274,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   // Default Mac-style top menubar
   return (
     <div
-      className="fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar h-os-menubar items-center font-os-ui"
+      className="fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar items-center font-os-ui"
       style={{
         background:
           currentTheme === "macosx"
@@ -1291,10 +1294,20 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         paddingLeft: "calc(0.5rem + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
         paddingTop: "env(safe-area-inset-top, 0px)",
+        height: "var(--os-metrics-menubar-height)",
+        minHeight: "var(--os-metrics-menubar-height)",
+        maxHeight: "var(--os-metrics-menubar-height)",
       }}
     >
       <ScrollableMenuWrapper>
-        <Menubar className="flex items-center border-none bg-transparent space-x-0 p-0 rounded-none h-auto">
+        <Menubar 
+          className="flex items-center border-none bg-transparent space-x-0 p-0 rounded-none"
+          style={{
+            height: "var(--os-metrics-menubar-height)",
+            minHeight: "var(--os-metrics-menubar-height)",
+            maxHeight: "var(--os-metrics-menubar-height)",
+          }}
+        >
           <AppleMenu apps={apps} />
           {hasActiveApp && children ? children : <DefaultMenuItems />}
         </Menubar>
