@@ -1,0 +1,13 @@
+AI Notes:
+
+src/components/layout/Dock.tsx: -683[0],-763[0]
+src/components/layout/WindowFrame.tsx: +179[1],+182[2]
+src/components/ui/right-click-menu.tsx: +125[0]
+src/stores/useAppStore.ts: +804[3],+807-810[3]
+
+Conversations:
+
+[0]: 88d329a4-4157-4820-9c8d-b8df97f2265f; 88d329a4; unknown;
+[1]: 89f0f481-ff35-4d06-8097-b981134305c4; 89f0f481; unknown;
+[2]: 29422871-79a9-48e2-9ed0-3bb336f4ae31; 29422871; unknown;
+[3]: 163fbc4c-4465-442e-b62b-1568d00bc0c8; 163fbc4c; unknown;
