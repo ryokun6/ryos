@@ -132,7 +132,7 @@ const MenubarSubTrigger = React.forwardRef<
           ? "12px !important"
           : undefined,
         ...(isSystem7 && {
-          padding: "2px 8px",
+          padding: "2px 12px",
           margin: "0",
         }),
         ...(isMacOSTheme && {
@@ -268,7 +268,7 @@ const MenubarItem = React.forwardRef<
           ? "13px !important"
           : undefined,
         ...(isSystem7 && {
-          padding: "2px 8px",
+          padding: "2px 12px",
           margin: "0",
         }),
         ...(isMacOSTheme && {
@@ -318,7 +318,7 @@ const MenubarCheckboxItem = React.forwardRef<
           ? "13px !important"
           : undefined,
         ...(isSystem7 && {
-          padding: "2px 8px 2px 24px",
+          padding: "2px 12px 2px 24px",
           margin: "0",
         }),
         ...(isMacOSTheme && {
@@ -374,7 +374,7 @@ const MenubarRadioItem = React.forwardRef<
           ? "11px"
           : undefined,
         ...(isSystem7 && {
-          padding: "2px 8px 2px 24px",
+          padding: "2px 12px 2px 24px",
           margin: "0",
         }),
       }}
