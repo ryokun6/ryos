@@ -2672,6 +2672,8 @@ export function IpodAppComponent({
                               gapClass="gap-0"
                               containerStyle={{
                                 gap: "clamp(0.25rem, calc(min(10vw,10vh) * 0.12), 2.5rem)",
+                                paddingLeft: "env(safe-area-inset-left, 0px)",
+                                paddingRight: "env(safe-area-inset-right, 0px)",
                               }}
                               interactive={isIOSSafari ? false : isPlaying}
                               bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
