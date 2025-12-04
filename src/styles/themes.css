@@ -479,6 +479,11 @@
   z-index: 2;
 }
 
+/* macOS menubar triggers: only show blue background when menu is open, not on focus */
+:root[data-os-theme="macosx"] .menubar button:not([data-state="open"]) {
+  background-color: transparent !important;
+}
+
 :root[data-os-theme="macosx"] .title-bar {
   font-size: 13px !important;
   font-weight: 500 !important;
