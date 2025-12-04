@@ -38,6 +38,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useIsPhone } from "@/hooks/useIsPhone";
+import { isTauri } from "@/utils/platform";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -782,6 +783,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     bringInstanceToForeground,
     restoreInstance,
     foregroundInstanceId, // Add this to get the foreground instance ID
+    debugMode,
   } = useAppStoreShallow((s) => ({
     getForegroundInstance: s.getForegroundInstance,
     instances: s.instances,
@@ -789,6 +791,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     bringInstanceToForeground: s.bringInstanceToForeground,
     restoreInstance: s.restoreInstance,
     foregroundInstanceId: s.foregroundInstanceId, // Add this
+    debugMode: s.debugMode,
   }));
 
   const foregroundInstance = getForegroundInstance();
@@ -1272,6 +1275,40 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   }
 
   // Default Mac-style top menubar
+  // In Tauri with titleBarStyle: overlay, add clearance for traffic lights (but not in fullscreen)
+  const isTauriApp = isTauri();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Track fullscreen state in Tauri
+  useEffect(() => {
+    if (!isTauriApp) return;
+    
+    let unlisten: (() => void) | undefined;
+    
+    (async () => {
+      try {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const win = getCurrentWindow();
+        
+        // Get initial fullscreen state
+        const fullscreen = await win.isFullscreen();
+        setIsFullscreen(fullscreen);
+        
+        // Listen for fullscreen changes
+        unlisten = await win.onResized(async () => {
+          const fs = await win.isFullscreen();
+          setIsFullscreen(fs);
+        });
+      } catch {}
+    })();
+    
+    return () => {
+      unlisten?.();
+    };
+  }, [isTauriApp]);
+  
+  const needsTrafficLightClearance = isTauriApp && !isFullscreen && (currentTheme === "macosx" || currentTheme === "system7");
+  
   return (
     <div
       className="fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar items-center font-os-ui"
@@ -1291,12 +1328,16 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
             : undefined,
         fontFamily: "var(--os-font-ui)",
         color: "var(--os-color-menubar-text)",
-        paddingLeft: "calc(0.5rem + env(safe-area-inset-left, 0px))",
+        // Add extra left padding for macOS traffic lights in Tauri
+        paddingLeft: needsTrafficLightClearance 
+          ? "calc(78px + env(safe-area-inset-left, 0px))" 
+          : "calc(0.5rem + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
         paddingTop: "env(safe-area-inset-top, 0px)",
-        height: "var(--os-metrics-menubar-height)",
-        minHeight: "var(--os-metrics-menubar-height)",
-        maxHeight: "var(--os-metrics-menubar-height)",
+        // Make menubar taller in Tauri for better traffic light alignment
+        height: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
+        minHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
+        maxHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
       }}
     >
       <ScrollableMenuWrapper>
@@ -1312,7 +1353,26 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           {hasActiveApp && children ? children : <DefaultMenuItems />}
         </Menubar>
       </ScrollableMenuWrapper>
-      <div className={`${isPhone ? "flex-shrink-0 px-2" : "ml-auto"} flex items-center`}>
+      {/* Draggable spacer for Tauri window */}
+      <div 
+        className="flex-1"
+        style={{ 
+          background: debugMode ? 'rgba(255, 0, 0, 0.3)' : undefined,
+          minHeight: '100%',
+        }}
+        onMouseDown={isTauriApp ? async (e) => {
+          if (e.buttons !== 1) return;
+          try {
+            const { getCurrentWindow } = await import("@tauri-apps/api/window");
+            if (e.detail === 2) {
+              await getCurrentWindow().toggleMaximize();
+            } else {
+              await getCurrentWindow().startDragging();
+            }
+          } catch {}
+        } : undefined}
+      />
+      <div className={`${isPhone ? "flex-shrink-0 px-2" : ""} flex items-center`}>
         <OfflineIndicator />
         <div className="hidden sm:flex">
           <VolumeControl />

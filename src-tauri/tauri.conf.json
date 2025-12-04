@@ -11,15 +11,16 @@
   "app": {
     "windows": [
       {
-        "title": "ryOS",
+        "title": "",
         "width": 1280,
         "height": 800,
         "minWidth": 800,
         "minHeight": 600,
         "resizable": true,
-        "fullscreen": true,
-        "transparent": true,
+        "fullscreen": false,
+        "transparent": false,
         "decorations": true,
+        "titleBarStyle": "Overlay",
         "alwaysOnTop": false
       }
     ],
