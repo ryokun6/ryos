@@ -237,7 +237,9 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   if (!isPhone) {
     return (
       <ScrollingContext.Provider value={{ isScrolling: false, preventInteraction: () => false }}>
-        {children}
+        <div className="flex items-stretch h-full">
+          {children}
+        </div>
       </ScrollingContext.Provider>
     );
   }
@@ -1342,12 +1344,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     >
       <ScrollableMenuWrapper>
         <Menubar 
-          className="flex items-center border-none bg-transparent space-x-0 p-0 rounded-none"
-          style={{
-            height: "var(--os-metrics-menubar-height)",
-            minHeight: "var(--os-metrics-menubar-height)",
-            maxHeight: "var(--os-metrics-menubar-height)",
-          }}
+          className="flex items-stretch border-none bg-transparent space-x-0 p-0 rounded-none h-full"
         >
           <AppleMenu apps={apps} />
           {hasActiveApp && children ? children : <DefaultMenuItems />}

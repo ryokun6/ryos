@@ -203,7 +203,7 @@ const MenubarContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content>
 >(
   (
-    { className, align = "start", alignOffset = -4, sideOffset = 8, style, ...props },
+    { className, align = "start", alignOffset = 0, sideOffset = 8, style, ...props },
     ref
   ) => {
     const currentTheme = useThemeStore((state) => state.current)
