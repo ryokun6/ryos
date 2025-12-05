@@ -670,6 +670,12 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   line-height: 0;
 }
 
+/* Extend react-player to cover 1px gap on right and bottom */
+.react-player {
+  width: calc(100% + 1px) !important;
+  height: calc(100% + 1px) !important;
+}
+
 /* Hide default scrollbars for custom implementation */
 .ipod-menu-container {
   scrollbar-width: none; /* Firefox */
