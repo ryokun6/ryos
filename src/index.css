@@ -661,6 +661,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   filter: brightness(1.05) contrast(1.02) saturate(1.1);
 }
 
+/* Fix 1px gap on right and bottom for video players and iframes */
+.react-player,
+.react-player > div,
+.react-player iframe,
+.react-player video {
+  display: block !important;
+  line-height: 0;
+}
+
 /* Hide default scrollbars for custom implementation */
 .ipod-menu-container {
   scrollbar-width: none; /* Firefox */
