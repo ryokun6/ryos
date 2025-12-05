@@ -2562,7 +2562,11 @@ export function InternetExplorerAppComponent({
                 <iframe
                   ref={iframeRef}
                   src={finalUrl || ""}
-                  className="absolute inset-0 w-full h-full border-0 block"
+                  className="border-0 block"
+                  style={{
+                    width: "calc(100% + 1px)",
+                    height: "calc(100% + 1px)",
+                  }}
                   sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
                   onLoad={handleIframeLoad}
                   onError={handleIframeError}
