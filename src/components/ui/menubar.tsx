@@ -81,16 +81,14 @@ const MenubarTrigger = React.forwardRef<
 
   // Theme-specific classes
   const themeClasses = cn(
-    // Base styles - h-full ensures trigger fills menubar height regardless of theme
-    "flex cursor-default select-none items-center h-full px-2 py-1 text-md font-medium outline-none",
+    // Base styles - h-os-menubar ensures trigger matches menubar height exactly
+    "flex cursor-default select-none items-center h-os-menubar px-2 text-md font-medium outline-none",
     // Windows themes: plain text style, no background changes, add menubar-trigger class for CSS override
     isWindowsTheme && "rounded-none menubar-trigger",
-    // System 7: black background, white text when open, full height
-    // Explicitly clear state when closed to prevent lingering styles
-    isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white data-[state=open]:py-[3px] data-[state=open]:my-[-2px] data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit data-[state=closed]:!py-1 data-[state=closed]:!my-0",
-    // macOS X: blue background (matches menu selection color), white text when open, no rounded corners, slightly taller
-    // Explicitly clear state when closed to prevent lingering styles (use !important to override focus states)
-    isMacOSX && "rounded-none data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white data-[state=open]:py-[5px] data-[state=open]:my-[-1px] data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit data-[state=closed]:!py-1 data-[state=closed]:!my-0",
+    // System 7: black background, white text when open
+    isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white",
+    // macOS X: blue background (matches menu selection color), white text when open
+    isMacOSX && "rounded-none data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white",
     // Default/other themes
     !isWindowsTheme && !isSystem7 && !isMacOSX && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
     className

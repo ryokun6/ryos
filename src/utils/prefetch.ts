@@ -212,7 +212,7 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
 /**
  * Force refresh cache and show update ready toast
  * Use this for manual "Check for Updates" action
- * Always clears cache and refetches, regardless of version
+ * Only shows reboot button if version is actually new
  */
 export async function forceRefreshCache(): Promise<void> {
   console.log('[Prefetch] Manual update check triggered...');
@@ -229,15 +229,26 @@ export async function forceRefreshCache(): Promise<void> {
     return;
   }
   
+  const stored = getStoredVersion();
+  const isNewVersion = serverVersion.buildNumber !== stored.buildNumber;
+  
+  // If already on latest version, just show success message without reboot
+  if (!isNewVersion) {
+    toast.success('Already running the latest version', {
+      description: stored.version ? `ryOS ${stored.version} (${stored.buildNumber})` : undefined,
+    });
+    return;
+  }
+  
   isUpdateInProgress = true;
   
   try {
-    // Always clear caches for manual refresh
+    // Clear caches and refetch for new version
     toast.dismiss('prefetch-progress');
     clearPrefetchFlag();
     await clearAllCaches();
     
-    // Always show update ready toast for manual refresh
+    // Show update ready toast with reboot button (only for new versions)
     await runPrefetchWithToast(true, serverVersion);
   } finally {
     isUpdateInProgress = false;
