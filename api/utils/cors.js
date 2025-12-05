@@ -7,11 +7,6 @@ export const ALLOWED_ORIGINS = new Set([
   "http://localhost:5173",
   "http://100.110.251.60",
   "http://100.110.251.60:3000",
-  // Tauri desktop app origins
-  "tauri://localhost",
-  "lu.ryo.os://localhost",
-  "http://tauri.localhost",
-  "http://lu.ryo.os.localhost",
 ]);
 
 export function getEffectiveOrigin(req) {
