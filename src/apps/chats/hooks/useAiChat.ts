@@ -2741,8 +2741,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const handleSaveSubmit = useCallback(
     async (fileName: string) => {
       const transcript = aiMessages // Use messages from store
-        .map((msg: UIMessage) => {
-          const time = ""; // v5 UIMessage doesn't have createdAt
+        .map((msg) => {
+          const aiMsg = msg as AIChatMessage;
+          const createdAt = aiMsg.metadata?.createdAt;
+          const time = createdAt
+            ? createdAt.toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "";
           const sender = msg.role === "user" ? username || "You" : "Ryo";
           const content = getAssistantVisibleText(msg);
           return `**${sender}** (${time}):\n${content}`;
