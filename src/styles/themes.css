@@ -24,7 +24,7 @@
   --os-metrics-border-width: 2px;
   --os-metrics-radius: 0.5rem;
   --os-metrics-titlebar-height: 1.5rem;
-  --os-metrics-menubar-height: 1.75rem; /* 28px */
+  --os-metrics-menubar-height: 28px;
   --os-window-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5);
 }
 
@@ -55,7 +55,7 @@
   --os-metrics-border-width: 2px;
   --os-metrics-radius: 0px; /* System 7 has square corners */
   --os-metrics-titlebar-height: 1.5rem;
-  --os-metrics-menubar-height: 1.75rem; /* 28px */
+  --os-metrics-menubar-height: 30px;
   --os-window-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5);
 }
 
@@ -105,7 +105,7 @@
   --os-metrics-titlebar-border-width: 1px;
   --os-metrics-radius: 0.45rem;
   --os-metrics-titlebar-height: 1.375rem;
-  --os-metrics-menubar-height: 1.5rem;
+  --os-metrics-menubar-height: 25px;
   --os-window-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
   /* Shared texture variables */
   --os-texture-toolbar-image: url("/assets/brushed-metal.jpg");
@@ -172,7 +172,7 @@
   --os-metrics-border-width: 2px;
   --os-metrics-radius: 0px;
   --os-metrics-titlebar-height: 1.375rem;
-  --os-metrics-menubar-height: 1.375rem;
+  --os-metrics-menubar-height: 30px;
   --os-window-shadow: none;
 }
 
@@ -225,7 +225,7 @@
   --os-metrics-border-width: 3px;
   --os-metrics-radius: 0.5rem;
   --os-metrics-titlebar-height: 1.875rem;
-  --os-metrics-menubar-height: 1.875rem;
+  --os-metrics-menubar-height: 30px;
   --os-window-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 
