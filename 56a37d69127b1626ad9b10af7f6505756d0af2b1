@@ -1,0 +1,4 @@
+AI Notes:
+
+.vercelignore: +1-38
+src/apps/videos/components/VideosAppComponent.tsx: +253-262,+1051,+1064-1065,+1109-1117 -253-254,-1056-1057,-1064,-1108
