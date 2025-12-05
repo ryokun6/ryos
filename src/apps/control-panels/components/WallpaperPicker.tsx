@@ -451,7 +451,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             ))
           ) : (
             <div className="col-span-4 text-center py-8 text-gray-500">
-              Photos coming soon for this category...
+              No wallpapers
             </div>
           )}
         </div>
