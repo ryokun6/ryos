@@ -1,13 +1,38 @@
 // Shared CORS utilities for API routes (JS file so JS and TS can both import)
 
-export const ALLOWED_ORIGINS = new Set([
-  "https://os.ryo.lu",
-  "https://ryo.lu",
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://100.110.251.60",
-  "http://100.110.251.60:3000",
-]);
+const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
+const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
+const LOCALHOST_PORTS = new Set(["80", "443", "3000", "5173"]);
+
+function getRuntimeEnv() {
+  const env = process.env.VERCEL_ENV;
+  if (env === "production" || env === "preview" || env === "development") {
+    return env;
+  }
+  return "development";
+}
+
+function parseOrigin(origin) {
+  try {
+    return new URL(origin);
+  } catch {
+    return null;
+  }
+}
+
+function isLocalhostOrigin(origin) {
+  const parsed = parseOrigin(origin);
+  if (!parsed) return false;
+  if (!LOCALHOST_HOSTNAMES.has(parsed.hostname)) return false;
+  const port = parsed.port || (parsed.protocol === "https:" ? "443" : "80");
+  return LOCALHOST_PORTS.has(port);
+}
+
+function isVercelPreviewOrigin(origin) {
+  const parsed = parseOrigin(origin);
+  if (!parsed) return false;
+  return parsed.hostname.endsWith(".vercel.app");
+}
 
 export function getEffectiveOrigin(req) {
   try {
@@ -23,34 +48,16 @@ export function getEffectiveOrigin(req) {
 
 export function isAllowedOrigin(origin) {
   if (!origin) return false;
-  // Check explicit allowed origins
-  if (ALLOWED_ORIGINS.has(origin)) return true;
-  
-  // Allow specific localhost ports for development, local network IPs, or Vercel preview links
-  try {
-    const url = new URL(origin);
-    const hostname = url.hostname;
-    const port = url.port || (url.protocol === "https:" ? "443" : "80");
-    
-    // Only allow specific localhost ports for security
-    const allowedLocalhostPorts = new Set(["3000", "5173", "80", "443"]);
-    
-    if ((hostname === "localhost" || hostname === "127.0.0.1") && allowedLocalhostPorts.has(port)) {
-      return true;
-    }
-    
-    // Allow the specific local network IP (no port restriction for this one as it's a specific IP)
-    if (hostname === "100.110.251.60") {
-      return true;
-    }
-    // Allow Vercel preview deployments (e.g., ryos-git-main-ryo-lus-projects.vercel.app)
-    if (url.hostname.endsWith("-ryo-lus-projects.vercel.app")) {
-      return true;
-    }
-  } catch {
-    // Invalid URL, fall through to return false
+  const env = getRuntimeEnv();
+
+  if (env === "production") {
+    return origin === PROD_ALLOWED_ORIGIN;
   }
-  return false;
+  if (env === "preview") {
+    return isVercelPreviewOrigin(origin);
+  }
+  // Development is default fallback
+  return isLocalhostOrigin(origin);
 }
 
 export function preflightIfNeeded(req, allowedMethods, effectiveOrigin) {
