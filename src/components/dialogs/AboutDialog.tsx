@@ -41,7 +41,7 @@ export function AboutDialog({
   const displayName = appId ? getTranslatedAppName(appId) : metadata.name;
 
   const dialogContent = (
-    <div className="flex flex-col items-center justify-center space-y-2 py-8">
+    <div className="flex flex-col items-center justify-center space-y-2 py-8 px-6">
       <div>
         <ThemedIcon
           name={metadata.icon}
@@ -102,7 +102,7 @@ export function AboutDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
+        className={cn("w-fit min-w-[240px] max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
         style={isXpTheme ? { fontSize: "11px" } : undefined}
       >
         {isXpTheme ? (
