@@ -2767,6 +2767,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         toast.success("Transcript saved", {
           description: `Saved to ${finalFileName}`,
           duration: 3000,
+          action: {
+            label: "Open",
+            onClick: () => {
+              launchApp("textedit", {
+                initialData: { path: filePath, content: transcript },
+              });
+            },
+          },
         });
       } catch (error) {
         console.error("Error saving transcript:", error);
@@ -2775,7 +2783,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
       }
     },
-    [aiMessages, username, saveFile],
+    [aiMessages, username, saveFile, launchApp],
   );
 
   // Stop both chat streaming and TTS queue
