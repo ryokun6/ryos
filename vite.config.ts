@@ -16,7 +16,7 @@ export default defineConfig({
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
     cors: { origin: ["*"] },
     watch: {
-      ignored: ["**/.terminals/**, dist/**, .vercel/**, src-tauri/**"],
+      ignored: ["**/.terminals/**, dist/**, .vercel/**, src-tauri/**, api/**"],
     },
     warmup: {
       clientFiles: [
