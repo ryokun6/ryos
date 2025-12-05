@@ -2606,6 +2606,13 @@ export function IpodAppComponent({
                                   cc_load_policy: 0, // Disable captions by default
                                   fs: 1, // Allow fullscreen toggle inside YouTube player
                                   playsinline: 1, // iOS inline playback
+                                  enablejsapi: 1,
+                                  // Origin for YouTube postMessage communication
+                                  origin: window.location.origin,
+                                },
+                                // Required for Tauri: sets referrer policy on iframe to prevent YouTube Error 153
+                                embedOptions: {
+                                  referrerPolicy: "strict-origin-when-cross-origin",
                                 },
                               },
                             }}

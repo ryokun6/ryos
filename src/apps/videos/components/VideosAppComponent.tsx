@@ -1063,20 +1063,28 @@ export function VideosAppComponent({
                     onReady={handleReady}
                     loop={loopCurrent}
                     playsinline
-                    config={{
-                      youtube: {
-                        playerVars: {
-                          modestbranding: 1,
-                          rel: 0,
-                          showinfo: 0,
-                          iv_load_policy: 3,
-                          fs: 0,
-                          disablekb: 1,
-                          playsinline: 1,
-                          autoplay: 0,
-                        },
-                      },
-                    }}
+                                config={{
+                                      youtube: {
+                                        playerVars: {
+                                          modestbranding: 1,
+                                          rel: 0,
+                                          showinfo: 0,
+                                          iv_load_policy: 3,
+                                          fs: 0,
+                                          disablekb: 1,
+                                          playsinline: 1,
+                                          autoplay: 0,
+                                          enablejsapi: 1,
+                                          // Origin for YouTube postMessage communication
+                                          // With tauri-plugin-localhost, Tauri now uses http://localhost which YouTube accepts
+                                          origin: window.location.origin,
+                                        },
+                                        // Required for Tauri: sets referrer policy on iframe to prevent YouTube Error 153
+                                        embedOptions: {
+                                          referrerPolicy: "strict-origin-when-cross-origin",
+                                        },
+                                      },
+                                    }}
                   />
                   {/* White noise effect (z-10) */}
                   <AnimatePresence>

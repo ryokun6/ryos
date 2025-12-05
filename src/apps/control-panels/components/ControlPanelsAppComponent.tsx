@@ -194,7 +194,7 @@ function VersionDisplay() {
   }));
   
   const displayVersion = ryOSVersion || "...";
-  const displayBuild = ryOSBuildNumber ? ` (${ryOSBuildNumber})` : "";
+  const displayBuild = ryOSBuildNumber ? ` (Build ${ryOSBuildNumber})` : "";
   
   return (
     <p className="text-[11px] text-gray-600 font-geneva-12">

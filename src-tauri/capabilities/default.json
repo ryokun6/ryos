@@ -3,6 +3,9 @@
   "identifier": "default",
   "description": "Capabilities for the default window",
   "windows": ["main"],
+  "remote": {
+    "urls": ["http://localhost:*"]
+  },
   "permissions": [
     "core:default",
     "shell:allow-open",
