@@ -50,8 +50,7 @@ export function isAllowedOrigin(origin) {
     const port = url.port || (url.protocol === "https:" ? "443" : "80");
     
     // Only allow specific localhost ports for security
-    // Port 1430 is used by tauri-plugin-localhost for YouTube embed compatibility
-    const allowedLocalhostPorts = new Set(["3000", "5173", "1430", "80", "443"]);
+    const allowedLocalhostPorts = new Set(["3000", "5173", "80", "443"]);
     
     if ((hostname === "localhost" || hostname === "127.0.0.1") && allowedLocalhostPorts.has(port)) {
       return true;

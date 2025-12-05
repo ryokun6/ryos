@@ -4,7 +4,11 @@
   "description": "Capabilities for the default window",
   "windows": ["main"],
   "remote": {
-    "urls": ["http://localhost:*"]
+    "urls": [
+      "https://os.ryo.lu",
+      "https://ryo.lu",
+      "http://localhost:*"
+    ]
   },
   "permissions": [
     "core:default",
