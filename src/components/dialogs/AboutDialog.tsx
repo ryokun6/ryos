@@ -102,7 +102,7 @@ export function AboutDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("w-fit min-w-[240px] max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
+        className={cn("w-fit min-w-[280px] max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
         style={isXpTheme ? { fontSize: "11px" } : undefined}
       >
         {isXpTheme ? (
