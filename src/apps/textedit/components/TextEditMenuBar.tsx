@@ -64,7 +64,7 @@ export function TextEditMenuBar({
         className="hidden"
       />
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -130,7 +130,7 @@ export function TextEditMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -184,7 +184,7 @@ export function TextEditMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("apps.textedit.menu.format")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -286,7 +286,7 @@ export function TextEditMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">

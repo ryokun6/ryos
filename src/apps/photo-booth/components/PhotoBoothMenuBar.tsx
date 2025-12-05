@@ -58,7 +58,7 @@ export function PhotoBoothMenuBar({
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -86,7 +86,7 @@ export function PhotoBoothMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("apps.photo-booth.menu.camera")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -106,7 +106,7 @@ export function PhotoBoothMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("apps.photo-booth.menu.effects")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -126,7 +126,7 @@ export function PhotoBoothMenuBar({
       </MenubarMenu>
 
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">

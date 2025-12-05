@@ -37,7 +37,7 @@ export function AppleMenu({ apps }: AppleMenuProps) {
       <MenubarMenu>
         <MenubarTrigger
             className={cn(
-            "h-6 border-none focus-visible:ring-0 flex items-center justify-center",
+            "border-none focus-visible:ring-0 flex items-center justify-center",
             isMacOsxTheme ? "px-1" : "px-3"
             )}
           >

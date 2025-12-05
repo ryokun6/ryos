@@ -213,7 +213,7 @@ export function IpodMenuBar({
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 text-md px-2 py-1 border-none focus-visible:ring-0">
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("apps.ipod.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -256,7 +256,7 @@ export function IpodMenuBar({
 
       {/* Controls Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
           {t("apps.ipod.menu.controls")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -308,7 +308,7 @@ export function IpodMenuBar({
 
       {/* View Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
           {t("apps.ipod.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
@@ -498,7 +498,7 @@ export function IpodMenuBar({
 
       {/* Library Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
           {t("apps.ipod.menu.library")}
         </MenubarTrigger>
         <MenubarContent
@@ -610,7 +610,7 @@ export function IpodMenuBar({
 
       {/* Help Menu */}
       <MenubarMenu>
-        <MenubarTrigger className="h-6 px-2 py-1 text-md focus-visible:ring-0">
+        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.help")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">

@@ -81,8 +81,8 @@ const MenubarTrigger = React.forwardRef<
 
   // Theme-specific classes
   const themeClasses = cn(
-    // Base styles
-    "flex cursor-default select-none items-center px-2 py-1 text-md font-medium outline-none",
+    // Base styles - h-full ensures trigger fills menubar height regardless of theme
+    "flex cursor-default select-none items-center h-full px-2 py-1 text-md font-medium outline-none",
     // Windows themes: plain text style, no background changes, add menubar-trigger class for CSS override
     isWindowsTheme && "rounded-none menubar-trigger",
     // System 7: black background, white text when open, full height
