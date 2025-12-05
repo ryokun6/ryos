@@ -2762,6 +2762,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         : `${fileName}.md`;
       const filePath = `/Documents/${finalFileName}`;
 
+      // Check if file already exists
+      const fileStore = useFilesStore.getState();
+      const existingFile = fileStore.getItem(filePath);
+      const isOverwriting = !!existingFile;
+
       try {
         await saveFile({
           path: filePath,
@@ -2772,18 +2777,23 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
 
         setIsSaveDialogOpen(false);
-        toast.success("Transcript saved", {
-          description: `Saved to ${finalFileName}`,
-          duration: 3000,
-          action: {
-            label: "Open",
-            onClick: () => {
-              launchApp("textedit", {
-                initialData: { path: filePath, content: transcript },
-              });
+        toast.success(
+          isOverwriting ? "Transcript updated" : "Transcript saved",
+          {
+            description: isOverwriting
+              ? `Updated ${finalFileName}`
+              : `Saved to ${finalFileName}`,
+            duration: 3000,
+            action: {
+              label: "Open",
+              onClick: () => {
+                launchApp("textedit", {
+                  initialData: { path: filePath, content: transcript },
+                });
+              },
             },
-          },
-        });
+          }
+        );
       } catch (error) {
         console.error("Error saving transcript:", error);
         toast.error("Failed to save transcript", {
