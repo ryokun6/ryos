@@ -250,8 +250,16 @@ function WhiteNoiseEffect() {
   return (
     <canvas
       ref={canvasRef}
-      className="w-full h-full pointer-events-none"
-      style={{ position: "absolute", top: 0, left: 0 }}
+      className="pointer-events-none"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: "-1px",
+        bottom: "-1px",
+        width: "calc(100% + 1px)",
+        height: "calc(100% + 1px)",
+      }}
     />
   );
 }
@@ -1040,7 +1048,7 @@ export function VideosAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
       >
         <div className="flex flex-col w-full h-full bg-[#1a1a1a] text-white">
-          <div className="flex-1 relative">
+          <div className="flex-1 relative overflow-hidden">
             {videos.length > 0 ? (
               <div
                 className="w-full h-full overflow-hidden relative"
@@ -1053,15 +1061,8 @@ export function VideosAppComponent({
                     url={getCurrentVideo()?.url || ""}
                     playing={isPlaying}
                     controls={false}
-                    width="100%"
-                    height="100%"
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      right: 0,
-                      bottom: 0,
-                      left: 0,
-                    }}
+                    width="calc(100% + 1px)"
+                    height="calc(100% + 1px)"
                     onEnded={handleVideoEnd}
                     onProgress={handleProgress}
                     onDuration={handleDuration}
@@ -1105,7 +1106,15 @@ export function VideosAppComponent({
                           delay: 0.1,
                           ease: [0.4, 0, 0.2, 1],
                         }}
-                        className="absolute inset-0 z-10"
+                        className="absolute z-10"
+                        style={{
+                          top: 0,
+                          left: 0,
+                          right: "-1px",
+                          bottom: "-1px",
+                          width: "calc(100% + 1px)",
+                          height: "calc(100% + 1px)",
+                        }}
                       >
                         <WhiteNoiseEffect />
                       </motion.div>

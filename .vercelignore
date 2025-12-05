@@ -1,0 +1,38 @@
+# Build outputs
+dist/
+.vercel/output/
+.vercel/cache/
+
+# Dependencies
+node_modules/
+
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/gen/
+
+# Test results
+test-results/
+
+# IDE and editor files
+.cursor/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

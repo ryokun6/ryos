@@ -1327,13 +1327,14 @@ export default function HtmlPreview({
             // srcDoc is now set by useEffect after streaming finishes
             // srcDoc={processedHtmlContent()}
             title={t("common.htmlPreview.codePreviewTitle")}
-            className={`w-full border-0 ${
-              !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : "h-full"
+            className={`border-0 block ${
+              !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : ""
             }`}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
             style={{
+              width: isInternetExplorer ? "calc(100% + 1px)" : "100%",
               height: isInternetExplorer
-                ? "100%"
+                ? "calc(100% + 1px)"
                 : !isInternetExplorer && (appletTitle || appletIcon)
                 ? "100%"
                 : typeof minHeight === "string"
