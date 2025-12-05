@@ -554,7 +554,7 @@
           "title": "瀏覽與導航"
         },
         "fileManagement": {
-          "description": "建立資料夾、重新命名、移動和拖曳項目以整理檔案",
+          "description": "建立檔案夾、重新命名、移動和拖曳項目以整理檔案",
           "title": "檔案管理"
         },
         "quickAccess": {
@@ -661,7 +661,7 @@
       "fetch": "擷取",
       "fetchingContentForReconstruction": "正在擷取 {{hostname}} 的內容以進行重建...",
       "fetchingFromYear": "正在擷取 {{year}} 年的 {{hostname}}...",
-      "folder": "資料夾",
+      "folder": "檔案夾",
       "france": "法國",
       "french": "法文",
       "from": "從",
@@ -733,7 +733,7 @@
         "editFuture": "編輯未來...",
         "english": "英文",
         "favorites": "我的最愛",
-        "folder": "資料夾",
+        "folder": "檔案夾",
         "forward": "前進",
         "france": "法國",
         "french": "法文",
@@ -1762,7 +1762,7 @@
     "dock": {
       "appletStore": "小程式商店",
       "applications": "應用程式",
-      "folderContents": "資料夾內容",
+      "folderContents": "檔案夾內容",
       "hide": "隱藏",
       "minimized": "(已最小化)",
       "newWindow": "新增視窗",
@@ -1818,7 +1818,7 @@
       "moveToTrash": "移到垃圾桶",
       "music": "音樂",
       "newFinderWindow": "新增 Finder 視窗",
-      "newFolder": "新增資料夾",
+      "newFolder": "新增檔案夾",
       "paste": "貼上",
       "redo": "重做",
       "selectAll": "全選",

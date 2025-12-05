@@ -62,10 +62,21 @@ const LoadSignal = ({ instanceId }: { instanceId?: string }) => {
   return null;
 };
 
+// Cache for lazy components to maintain stable references across HMR
+const lazyComponentCache = new Map<string, ComponentType<AppProps<unknown>>>();
+
 // Helper to create a lazy-loaded component with Suspense
+// Uses a cache to maintain stable component references across HMR
 function createLazyComponent<T = unknown>(
-  importFn: () => Promise<{ default: ComponentType<AppProps<T>> }>
+  importFn: () => Promise<{ default: ComponentType<AppProps<T>> }>,
+  cacheKey: string
 ): ComponentType<AppProps<T>> {
+  // Return cached component if it exists (prevents HMR issues)
+  const cached = lazyComponentCache.get(cacheKey);
+  if (cached) {
+    return cached as ComponentType<AppProps<T>>;
+  }
+
   const LazyComponent = lazy(importFn);
   
   // Wrap with Suspense to handle loading state
@@ -75,6 +86,9 @@ function createLazyComponent<T = unknown>(
       <LoadSignal instanceId={props.instanceId} />
     </Suspense>
   );
+  
+  // Cache the component
+  lazyComponentCache.set(cacheKey, WrappedComponent as ComponentType<AppProps<unknown>>);
   
   return WrappedComponent;
 }
@@ -88,60 +102,75 @@ function createLazyComponent<T = unknown>(
 import { FinderAppComponent } from "@/apps/finder/components/FinderAppComponent";
 
 // Lazy-loaded apps (loaded on-demand when opened)
+// Each uses a cache key to maintain stable references across HMR
 const LazyTextEditApp = createLazyComponent<unknown>(
-  () => import("@/apps/textedit/components/TextEditAppComponent").then(m => ({ default: m.TextEditAppComponent }))
+  () => import("@/apps/textedit/components/TextEditAppComponent").then(m => ({ default: m.TextEditAppComponent })),
+  "textedit"
 );
 
 const LazyInternetExplorerApp = createLazyComponent<InternetExplorerInitialData>(
-  () => import("@/apps/internet-explorer/components/InternetExplorerAppComponent").then(m => ({ default: m.InternetExplorerAppComponent }))
+  () => import("@/apps/internet-explorer/components/InternetExplorerAppComponent").then(m => ({ default: m.InternetExplorerAppComponent })),
+  "internet-explorer"
 );
 
 const LazyChatsApp = createLazyComponent<unknown>(
-  () => import("@/apps/chats/components/ChatsAppComponent").then(m => ({ default: m.ChatsAppComponent }))
+  () => import("@/apps/chats/components/ChatsAppComponent").then(m => ({ default: m.ChatsAppComponent })),
+  "chats"
 );
 
 const LazyControlPanelsApp = createLazyComponent<ControlPanelsInitialData>(
-  () => import("@/apps/control-panels/components/ControlPanelsAppComponent").then(m => ({ default: m.ControlPanelsAppComponent }))
+  () => import("@/apps/control-panels/components/ControlPanelsAppComponent").then(m => ({ default: m.ControlPanelsAppComponent })),
+  "control-panels"
 );
 
 const LazyMinesweeperApp = createLazyComponent<unknown>(
-  () => import("@/apps/minesweeper/components/MinesweeperAppComponent").then(m => ({ default: m.MinesweeperAppComponent }))
+  () => import("@/apps/minesweeper/components/MinesweeperAppComponent").then(m => ({ default: m.MinesweeperAppComponent })),
+  "minesweeper"
 );
 
 const LazySoundboardApp = createLazyComponent<unknown>(
-  () => import("@/apps/soundboard/components/SoundboardAppComponent").then(m => ({ default: m.SoundboardAppComponent }))
+  () => import("@/apps/soundboard/components/SoundboardAppComponent").then(m => ({ default: m.SoundboardAppComponent })),
+  "soundboard"
 );
 
 const LazyPaintApp = createLazyComponent<PaintInitialData>(
-  () => import("@/apps/paint/components/PaintAppComponent").then(m => ({ default: m.PaintAppComponent }))
+  () => import("@/apps/paint/components/PaintAppComponent").then(m => ({ default: m.PaintAppComponent })),
+  "paint"
 );
 
 const LazyVideosApp = createLazyComponent<VideosInitialData>(
-  () => import("@/apps/videos/components/VideosAppComponent").then(m => ({ default: m.VideosAppComponent }))
+  () => import("@/apps/videos/components/VideosAppComponent").then(m => ({ default: m.VideosAppComponent })),
+  "videos"
 );
 
 const LazyPcApp = createLazyComponent<unknown>(
-  () => import("@/apps/pc/components/PcAppComponent").then(m => ({ default: m.PcAppComponent }))
+  () => import("@/apps/pc/components/PcAppComponent").then(m => ({ default: m.PcAppComponent })),
+  "pc"
 );
 
 const LazyPhotoBoothApp = createLazyComponent<unknown>(
-  () => import("@/apps/photo-booth/components/PhotoBoothComponent").then(m => ({ default: m.PhotoBoothComponent }))
+  () => import("@/apps/photo-booth/components/PhotoBoothComponent").then(m => ({ default: m.PhotoBoothComponent })),
+  "photo-booth"
 );
 
 const LazySynthApp = createLazyComponent<unknown>(
-  () => import("@/apps/synth/components/SynthAppComponent").then(m => ({ default: m.SynthAppComponent }))
+  () => import("@/apps/synth/components/SynthAppComponent").then(m => ({ default: m.SynthAppComponent })),
+  "synth"
 );
 
 const LazyIpodApp = createLazyComponent<IpodInitialData>(
-  () => import("@/apps/ipod/components/IpodAppComponent").then(m => ({ default: m.IpodAppComponent }))
+  () => import("@/apps/ipod/components/IpodAppComponent").then(m => ({ default: m.IpodAppComponent })),
+  "ipod"
 );
 
 const LazyTerminalApp = createLazyComponent<unknown>(
-  () => import("@/apps/terminal/components/TerminalAppComponent").then(m => ({ default: m.TerminalAppComponent }))
+  () => import("@/apps/terminal/components/TerminalAppComponent").then(m => ({ default: m.TerminalAppComponent })),
+  "terminal"
 );
 
 const LazyAppletViewerApp = createLazyComponent<AppletViewerInitialData>(
-  () => import("@/apps/applet-viewer/components/AppletViewerAppComponent").then(m => ({ default: m.AppletViewerAppComponent }))
+  () => import("@/apps/applet-viewer/components/AppletViewerAppComponent").then(m => ({ default: m.AppletViewerAppComponent })),
+  "applet-viewer"
 );
 
 // ============================================================================
