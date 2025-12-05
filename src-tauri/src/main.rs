@@ -9,20 +9,16 @@ fn main() {
     #[cfg(not(debug_assertions))]
     let port: u16 = 1430;
 
-    let mut builder = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init());
 
     // Only use localhost plugin in release builds (for YouTube embed compatibility)
     #[cfg(not(debug_assertions))]
-    {
-        builder = builder.plugin(tauri_plugin_localhost::Builder::new(port).build());
-    }
-
-    // In release builds, retarget the default window to the localhost plugin URL
-    // (provides a valid HTTP Referer header for YouTube embeds)
-    #[cfg(not(debug_assertions))]
-    {
-        builder = builder.setup(move |app| {
+    let builder = builder
+        .plugin(tauri_plugin_localhost::Builder::new(port).build())
+        // In release builds, retarget the default window to the localhost plugin URL
+        // (provides a valid HTTP Referer header for YouTube embeds)
+        .setup(move |app| {
             if let Some(window) = app.get_webview_window("main") {
                 let url = Url::parse(&format!("http://localhost:{}", port))?;
                 window.set_title("")?;
@@ -30,7 +26,9 @@ fn main() {
             }
             Ok(())
         });
-    }
+
+    #[cfg(debug_assertions)]
+    let builder = builder;
 
     builder
         .run(tauri::generate_context!())

@@ -74,10 +74,19 @@ export function isAllowedOrigin(origin) {
 export function preflightIfNeeded(req, allowedMethods, effectiveOrigin) {
   if (req.method !== "OPTIONS") return null;
   if (!isAllowedOrigin(effectiveOrigin)) return new Response("Unauthorized", { status: 403 });
+
+  // Echo back requested headers when provided to avoid missing-case issues
+  const requestedHeaders = req.headers.get("Access-Control-Request-Headers");
+  const allowHeaders =
+    requestedHeaders && requestedHeaders.trim().length > 0
+      ? requestedHeaders
+      : "Content-Type, Authorization, X-Username, User-Agent";
+
   const headers = {
     "Access-Control-Allow-Origin": effectiveOrigin,
     "Access-Control-Allow-Methods": allowedMethods.join(", "),
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Username, User-Agent",
+    "Access-Control-Allow-Headers": allowHeaders,
+    "Access-Control-Allow-Credentials": "true",
   };
   return new Response(null, { headers });
 }
