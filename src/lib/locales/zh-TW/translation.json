@@ -192,7 +192,7 @@
           "title": "控制應用程式"
         },
         "createEditFiles": {
-          "description": "請 Ryo 建立 HTML 小程式、編輯文件、讀取檔案或搜尋小程式商店。",
+          "description": "請 Ryo 建立 HTML 小程式、編輯檔案、讀取檔案或搜尋小程式商店。",
           "title": "建立與編輯檔案"
         },
         "joinChatRooms": {
@@ -300,8 +300,8 @@
         "foundApplicationsList": "找到 {{count}} 個應用程式",
         "foundApplicationsListPlural": "找到 {{count}} 個應用程式",
         "foundApplicationsPlural": "找到 {{count}} 個應用程式",
-        "foundDocuments": "找到 {{count}} 個文件",
-        "foundDocumentsPlural": "找到 {{count}} 個文件",
+        "foundDocuments": "找到 {{count}} 個檔案",
+        "foundDocumentsPlural": "找到 {{count}} 個檔案",
         "foundFileType": "找到 {{count}} 個 {{fileType}}",
         "foundFileTypePlural": "找到 {{count}} 個 {{fileType}}",
         "foundSharedApplets": "找到 {{count}} 個共享小程式",
@@ -350,7 +350,7 @@
         "noSharedAppletsMatched": "沒有共享小程式符合「{{query}}」",
         "opened": "已開啟",
         "openedApplet": "已開啟 {{appletName}}",
-        "openedDocument": "已開啟文件：{{fileName}}",
+        "openedDocument": "已開啟檔案：{{fileName}}",
         "openedFile": "已開啟 {{fileName}}",
         "openingAppletPreview": "開啟小程式預覽…",
         "openingFile": "開啟檔案…",
@@ -411,7 +411,7 @@
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 語音 ID",
       "formatFileSystem": "格式化檔案系統",
-      "formatFileSystemDescription": "這將清除所有檔案（範例文件除外）、圖片和自訂桌布。格式化後 ryOS 將重新啟動。",
+      "formatFileSystemDescription": "這將清除所有檔案（範例檔案除外）、圖片和自訂桌布。格式化後 ryOS 將重新啟動。",
       "help": {
         "aiModel": {
           "description": "選擇聊天和終端機助理使用的 AI 模型",
@@ -525,7 +525,7 @@
       "fileTypes": {
         "application": "應用程式",
         "bmpImage": "BMP 影像",
-        "document": "文件",
+        "document": "檔案",
         "folder": "檔案夾",
         "gifImage": "GIF 影像",
         "htmlApplet": "HTML 小程式",
@@ -558,7 +558,7 @@
           "title": "檔案管理"
         },
         "quickAccess": {
-          "description": "從「前往」選單立即跳至文件、應用程式或垃圾桶",
+          "description": "從「前往」選單立即跳至檔案、應用程式或垃圾桶",
           "title": "快速存取"
         },
         "storageInfo": {
@@ -1405,7 +1405,7 @@
           "title": "指令歷史"
         },
         "fileEditing": {
-          "description": "從提示直接開啟文件至文字編輯（edit）或 Vim 風格編輯器（vim）。",
+          "description": "從提示直接開啟檔案至文字編輯（edit）或 Vim 風格編輯器（vim）。",
           "title": "檔案編輯"
         },
         "navigation": {
@@ -1440,8 +1440,8 @@
         "foundAppletsPlural": "找到 {{count}} 個小程式",
         "foundApplications": "找到 {{count}} 個應用程式",
         "foundApplicationsPlural": "找到 {{count}} 個應用程式",
-        "foundDocuments": "找到 {{count}} 份文件",
-        "foundDocumentsPlural": "找到 {{count}} 份文件",
+        "foundDocuments": "找到 {{count}} 份檔案",
+        "foundDocumentsPlural": "找到 {{count}} 份檔案",
         "isThinking": "思考中",
         "lastLogin": "上次登入：{{time}}",
         "listedItems": "已列出項目",
@@ -1481,12 +1481,12 @@
         "doYouWantToDiscardYourChangesAndCreateANewFile": "您要捨棄變更並建立新檔案嗎？",
         "enterANameForYourFile": "輸入檔案名稱",
         "enterFilenameToSaveOrDeleteItBeforeClosing": "輸入要儲存的檔案名稱，或在關閉前將其刪除。",
-        "keepNewDocument": "保留新文件",
+        "keepNewDocument": "保留新檔案",
         "saveChanges": "儲存變更",
         "saveFile": "儲存檔案",
         "saveYourChangesBeforeClosing": "在關閉前儲存您的變更。"
       },
-      "failedToUpdateEditorWithDocumentUpdatedEvent": "更新編輯器失敗，文件更新事件：",
+      "failedToUpdateEditorWithDocumentUpdatedEvent": "更新編輯器失敗，檔案更新事件：",
       "heading1": "標題 1",
       "heading2": "標題 2",
       "heading3": "標題 3",
@@ -1512,7 +1512,7 @@
           "title": "斜線指令"
         },
         "voiceDictation": {
-          "description": "免持聽寫文字到文件中",
+          "description": "免持聽寫文字到檔案中",
           "title": "語音聽寫"
         }
       },
@@ -1725,7 +1725,7 @@
       "enterFilenameToSave": "輸入要儲存的檔案名稱，或在關閉前刪除。",
       "help": "輔助說明",
       "informationAboutApp": "應用程式資訊",
-      "keepNewDocument": "保留新文件",
+      "keepNewDocument": "保留新檔案",
       "madeBy": "製作：",
       "openInGitHub": "在 GitHub 開啟",
       "save": "儲存",
@@ -1806,7 +1806,7 @@
       "close": "關閉",
       "copy": "複製",
       "cut": "剪下",
-      "documents": "文件",
+      "documents": "檔案",
       "edit": "編輯",
       "emptyTrash": "清除垃圾桶...",
       "file": "檔案",
@@ -1838,7 +1838,7 @@
     "system": {
       "debugBootScreenTest": "偵錯開機畫面測試...",
       "formatFileSystem": "格式化檔案系統",
-      "formatFileSystemDesc": "您確定要格式化檔案系統嗎？這將永久刪除所有文件（範例文件除外）、圖片和自訂桌布。格式化後 ryOS 將重新啟動。",
+      "formatFileSystemDesc": "您確定要格式化檔案系統嗎？這將永久刪除所有檔案（範例檔案除外）、圖片和自訂桌布。格式化後 ryOS 將重新啟動。",
       "formattingFileSystem": "格式化檔案系統...",
       "rebooting": "重新開機中...",
       "resetAllSettings": "重設所有設定",
