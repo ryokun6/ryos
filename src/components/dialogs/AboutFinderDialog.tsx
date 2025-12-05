@@ -208,7 +208,7 @@ export function AboutFinderDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
+        className={cn("min-w-[280px] max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
         style={isXpTheme ? { fontSize: "11px" } : undefined}
       >
         {isXpTheme ? (
