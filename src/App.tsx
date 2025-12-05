@@ -13,6 +13,7 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isTauri } from "./utils/platform";
+import { Download } from "lucide-react";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -95,7 +96,7 @@ export function App() {
       // Delay slightly to let the app render first
       const timer = setTimeout(() => {
         toast("ryOS is available as a Mac app", {
-          description: "Download the app for the best experience.",
+          icon: <Download className="h-4 w-4" />,
           duration: 10000,
           action: {
             label: "Download",
