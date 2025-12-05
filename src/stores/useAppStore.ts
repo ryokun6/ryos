@@ -124,6 +124,8 @@ interface AppStoreState extends AppManagerState {
   getWallpaperData: (reference: string) => Promise<string | null>;
   isFirstBoot: boolean;
   setHasBooted: () => void;
+  macAppToastShown: boolean;
+  setMacAppToastShown: () => void;
   htmlPreviewSplit: boolean;
   setHtmlPreviewSplit: (v: boolean) => void;
   uiVolume: number;
@@ -183,6 +185,8 @@ export const useAppStore = create<AppStoreState>()(
       setDisplayMode: (m) => set({ displayMode: m }),
       isFirstBoot: true,
       setHasBooted: () => set({ isFirstBoot: false }),
+      macAppToastShown: false,
+      setMacAppToastShown: () => set({ macAppToastShown: true }),
       masterVolume: 1,
       setMasterVolume: (vol) => set({ masterVolume: vol }),
 
@@ -915,6 +919,7 @@ export const useAppStore = create<AppStoreState>()(
         currentWallpaper: state.currentWallpaper,
         displayMode: state.displayMode,
         isFirstBoot: state.isFirstBoot,
+        macAppToastShown: state.macAppToastShown,
         wallpaperSource: state.wallpaperSource,
         uiVolume: state.uiVolume,
         chatSynthVolume: state.chatSynthVolume,

@@ -19,11 +19,13 @@ const apps: AnyApp[] = Object.values(appRegistry);
 
 export function App() {
   const { t } = useTranslation();
-  const { displayMode, isFirstBoot, setHasBooted } = useAppStoreShallow(
+  const { displayMode, isFirstBoot, setHasBooted, macAppToastShown, setMacAppToastShown } = useAppStoreShallow(
     (state) => ({
       displayMode: state.displayMode,
       isFirstBoot: state.isFirstBoot,
       setHasBooted: state.setHasBooted,
+      macAppToastShown: state.macAppToastShown,
+      setMacAppToastShown: state.setMacAppToastShown,
     })
   );
   const currentTheme = useThemeStore((state) => state.current);
@@ -87,11 +89,9 @@ export function App() {
 
   // Show download toast for macOS web users on first visit
   useEffect(() => {
-    const MAC_APP_TOAST_KEY = "ryos-mac-app-toast-shown";
     const isMacOS = navigator.platform.toLowerCase().includes("mac");
-    const hasShownToast = localStorage.getItem(MAC_APP_TOAST_KEY);
 
-    if (isMacOS && !isTauri() && !hasShownToast) {
+    if (isMacOS && !isTauri() && !macAppToastShown) {
       // Delay slightly to let the app render first
       const timer = setTimeout(() => {
         toast("ryOS is available as a Mac app", {
@@ -107,12 +107,12 @@ export function App() {
             },
           },
         });
-        localStorage.setItem(MAC_APP_TOAST_KEY, "true");
+        setMacAppToastShown();
       }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [macAppToastShown, setMacAppToastShown]);
 
   if (showBootScreen) {
     return (
