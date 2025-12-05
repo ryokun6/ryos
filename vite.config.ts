@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
 import vercel from "vite-plugin-vercel";
 import { VitePWA } from "vite-plugin-pwa";
@@ -16,8 +16,33 @@ export default defineConfig({
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
     cors: { origin: ["*"] },
     watch: {
-      ignored: ["**/.terminals/**"],
+      ignored: ["**/.terminals/**, dist/**, .vercel/**, src-tauri/**"],
     },
+    warmup: {
+      clientFiles: [
+        "./src/main.tsx",
+        "./src/App.tsx",
+        "./src/components/**/*.tsx",
+      ],
+    },
+  },
+  optimizeDeps: {
+    // Force pre-bundle these commonly used deps
+    include: [
+      "react",
+      "react-dom",
+      "zustand",
+      "framer-motion",
+      "clsx",
+      "tailwind-merge",
+    ],
+    // Exclude heavy deps that are lazy-loaded
+    exclude: [
+      "tone",
+      "wavesurfer.js",
+      "three",
+      "shiki",
+    ],
   },
   plugins: [
     react(),
