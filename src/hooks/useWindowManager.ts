@@ -109,7 +109,9 @@ export const useWindowManager = ({
       currentTheme === "system7" ? 30 : currentTheme === "macosx" ? 25 : 0;
     const taskbarHeight = isXpTheme ? 30 : 0;
     const dockHeight = currentTheme === "macosx" ? 56 : 0; // Dock visual height
-    const topInset = menuBarHeight;
+    // Add extra inset for Tauri's native title bar overlay (28px for traffic lights)
+    const tauriTitleBarHeight = typeof window !== "undefined" && "__TAURI__" in window ? 28 : 0;
+    const topInset = menuBarHeight + tauriTitleBarHeight;
     const bottomInset = taskbarHeight + dockHeight + safe;
     return {
       menuBarHeight,
@@ -118,6 +120,7 @@ export const useWindowManager = ({
       topInset,
       bottomInset,
       dockHeight,
+      tauriTitleBarHeight,
     };
   }, [currentTheme, isXpTheme, getSafeAreaBottomInset]);
 
