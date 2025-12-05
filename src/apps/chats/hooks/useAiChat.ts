@@ -2740,6 +2740,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const handleSaveSubmit = useCallback(
     async (fileName: string) => {
+      // Validate filename
+      if (!fileName || fileName.trim() === "") {
+        toast.error("Invalid filename", {
+          description: "Please enter a filename",
+        });
+        return;
+      }
+
       const transcript = aiMessages // Use messages from store
         .map((msg) => {
           const aiMsg = msg as AIChatMessage;

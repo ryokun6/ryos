@@ -1280,20 +1280,24 @@ export function useFileSystem(
               `[useFileSystem:saveFile] Error saving content to IndexedDB for ${path}:`,
               err
             );
-            setError(`Failed to save file content for ${name}`);
+            const errorMessage = `Failed to save file content for ${name}`;
+            setError(errorMessage);
+            throw new Error(errorMessage);
           }
         } else {
-          console.warn(
-            `[useFileSystem:saveFile] No valid content store for path: ${path}`
-          );
+          const errorMessage = `No valid content store for path: ${path}`;
+          console.warn(`[useFileSystem:saveFile] ${errorMessage}`);
+          setError(errorMessage);
+          throw new Error(errorMessage);
         }
       } catch (metaError) {
         console.error(
           `[useFileSystem:saveFile] Error updating metadata store for ${path}:`,
           metaError
         );
-        setError(`Failed to save file metadata for ${name}`);
-        return;
+        const errorMessage = `Failed to save file metadata for ${name}`;
+        setError(errorMessage);
+        throw metaError instanceof Error ? metaError : new Error(errorMessage);
       }
     },
     [fileStore]
