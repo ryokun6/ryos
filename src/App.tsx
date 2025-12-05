@@ -3,6 +3,7 @@ import { appRegistry } from "./config/appRegistry";
 import { useEffect, useState, useMemo } from "react";
 import { applyDisplayMode } from "./utils/displayMode";
 import { Toaster } from "./components/ui/sonner";
+import { toast } from "sonner";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { BootScreen } from "./components/dialogs/BootScreen";
 import { getNextBootMessage, clearNextBootMessage } from "./utils/bootMessage";
@@ -11,6 +12,7 @@ import { useThemeStore } from "./stores/useThemeStore";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
+import { isTauri } from "./utils/platform";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -82,6 +84,35 @@ export function App() {
       setHasBooted();
     }
   }, [isFirstBoot, setHasBooted]);
+
+  // Show download toast for macOS web users on first visit
+  useEffect(() => {
+    const MAC_APP_TOAST_KEY = "ryos-mac-app-toast-shown";
+    const isMacOS = navigator.platform.toLowerCase().includes("mac");
+    const hasShownToast = localStorage.getItem(MAC_APP_TOAST_KEY);
+
+    if (isMacOS && !isTauri() && !hasShownToast) {
+      // Delay slightly to let the app render first
+      const timer = setTimeout(() => {
+        toast("ryOS is available as a Mac app", {
+          description: "Download the app for the best experience.",
+          duration: 10000,
+          action: {
+            label: "Download",
+            onClick: () => {
+              window.open(
+                "https://github.com/ryokun6/ryos/releases/download/v1.0.0/ryOS_1.0.0_aarch64.dmg",
+                "_blank"
+              );
+            },
+          },
+        });
+        localStorage.setItem(MAC_APP_TOAST_KEY, "true");
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   if (showBootScreen) {
     return (
