@@ -2740,9 +2740,25 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const handleSaveSubmit = useCallback(
     async (fileName: string) => {
+      // Validate filename
+      if (!fileName || fileName.trim() === "") {
+        toast.error("Invalid filename", {
+          description: "Please enter a filename",
+        });
+        return;
+      }
+
       const transcript = aiMessages // Use messages from store
-        .map((msg: UIMessage) => {
-          const time = ""; // v5 UIMessage doesn't have createdAt
+        .map((msg) => {
+          const aiMsg = msg as AIChatMessage;
+          const createdAt = aiMsg.metadata?.createdAt;
+          const time = createdAt
+            ? createdAt.toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "";
           const sender = msg.role === "user" ? username || "You" : "Ryo";
           const content = getAssistantVisibleText(msg);
           return `**${sender}** (${time}):\n${content}`;
@@ -2754,6 +2770,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         : `${fileName}.md`;
       const filePath = `/Documents/${finalFileName}`;
 
+      // Check if file already exists
+      const fileStore = useFilesStore.getState();
+      const existingFile = fileStore.getItem(filePath);
+      const isOverwriting = !!existingFile;
+
       try {
         await saveFile({
           path: filePath,
@@ -2764,10 +2785,23 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
 
         setIsSaveDialogOpen(false);
-        toast.success("Transcript saved", {
-          description: `Saved to ${finalFileName}`,
-          duration: 3000,
-        });
+        toast.success(
+          isOverwriting ? "Transcript updated" : "Transcript saved",
+          {
+            description: isOverwriting
+              ? `Updated ${finalFileName}`
+              : `Saved to ${finalFileName}`,
+            duration: 3000,
+            action: {
+              label: "Open",
+              onClick: () => {
+                launchApp("textedit", {
+                  initialData: { path: filePath, content: transcript },
+                });
+              },
+            },
+          }
+        );
       } catch (error) {
         console.error("Error saving transcript:", error);
         toast.error("Failed to save transcript", {
@@ -2775,7 +2809,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
       }
     },
-    [aiMessages, username, saveFile],
+    [aiMessages, username, saveFile, launchApp],
   );
 
   // Stop both chat streaming and TTS queue
