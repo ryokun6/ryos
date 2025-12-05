@@ -1,0 +1,10 @@
+AI Notes:
+
+api/applet-ai.ts: +27,+35 -27,-35
+api/translate-lyrics.ts: -184
+api/utils/aiPrompts.ts: +9-21,+23-26,+28-30,+33-36,+38-49,+55,+57-64,+67-68,+72-75,+79,+81-82,+93-148,+150-152,+259-273 -9,-14-16,-23,-25,-27,-31-32,-36,-47-92,-94-95,-202-211
+vite.config.ts: +19[0]
+
+Conversations:
+
+[0]: fda86939-ef82-4352-8b2d-e9170639bcba; Tab Request fda86939; unknown;
