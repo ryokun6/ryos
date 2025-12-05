@@ -1040,14 +1040,14 @@ export function VideosAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
       >
         <div className="flex flex-col w-full h-full bg-[#1a1a1a] text-white">
-          <div className="flex-1 relative">
+          <div className="flex-1 relative min-h-0">
             {videos.length > 0 ? (
               <div
-                className="w-full h-full overflow-hidden relative"
+                className="absolute inset-0 overflow-hidden"
                 onMouseEnter={() => setIsVideoHovered(true)}
                 onMouseLeave={() => setIsVideoHovered(false)}
               >
-                <div className="w-full h-[calc(100%+120px)] mt-[-60px] relative">
+                <div className="absolute inset-0 h-[calc(100%+120px)] mt-[-60px]">
                   <ReactPlayer
                     ref={playerRef}
                     url={getCurrentVideo()?.url || ""}
