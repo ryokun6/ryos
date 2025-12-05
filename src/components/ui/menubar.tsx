@@ -86,9 +86,11 @@ const MenubarTrigger = React.forwardRef<
     // Windows themes: plain text style, no background changes, add menubar-trigger class for CSS override
     isWindowsTheme && "rounded-none menubar-trigger",
     // System 7: black background, white text when open
-    isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white",
+    // Explicitly clear state when closed to prevent lingering styles (overrides focus states)
+    isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit",
     // macOS X: blue background (matches menu selection color), white text when open
-    isMacOSX && "rounded-none data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white",
+    // Explicitly clear state when closed to prevent lingering styles (use !important to override focus states)
+    isMacOSX && "rounded-none data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit",
     // Default/other themes
     !isWindowsTheme && !isSystem7 && !isMacOSX && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
     className
