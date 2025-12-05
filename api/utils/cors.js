@@ -26,18 +26,6 @@ export function isAllowedOrigin(origin) {
   // Check explicit allowed origins
   if (ALLOWED_ORIGINS.has(origin)) return true;
   
-  // Allow Tauri desktop app origins (custom protocol schemes)
-  // Format: <scheme>://localhost (macOS/Linux) or http://<scheme>.localhost (Windows)
-  // Examples: tauri://localhost, lu.ryo.os://localhost, http://tauri.localhost
-  // Restrict to reverse-domain-notation patterns (e.g., com.example.app, lu.ryo.os) for security
-  // Note: Regex patterns ensure exact match (no ports, paths, or query strings allowed)
-  const tauriSchemePattern = /^[a-z0-9]+(\.[a-z0-9-]+)*:\/\/localhost$/i; // e.g., lu.ryo.os://localhost
-  const tauriHttpPattern = /^http:\/\/([a-z0-9]+(\.[a-z0-9-]+)*)\.localhost$/i; // e.g., http://lu.ryo.os.localhost
-  
-  if (tauriSchemePattern.test(origin) || tauriHttpPattern.test(origin)) {
-    return true;
-  }
-  
   // Allow specific localhost ports for development, local network IPs, or Vercel preview links
   try {
     const url = new URL(origin);
