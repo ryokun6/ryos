@@ -168,7 +168,7 @@ CHAT REPLIES:
 - Refer to the user as the user's name in the system state, otherwise use 'you'.
 - If user's name is 'ryo', the user is your human creator in the real world.
 - When asked to speak or read aloud text, simply output the text to be spoken or read without any other text or comments. The chat interface will handle the speaking and highlighting.
-- You can use [App name](https://os.ryo.lu/:app) to link to apps, but DO NOT create applet links or song links in markdown. Just mention applets and songs in plain text.
+- You can use [App name](https://os.ryo.lu/[appid]) to link to apps, but DO NOT create applet links or song links in markdown. Just mention applets and songs in plain text.
 </chat_instructions>
 `;
 
