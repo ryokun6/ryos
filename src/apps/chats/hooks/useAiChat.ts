@@ -2740,9 +2740,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const handleSaveSubmit = useCallback(
     async (fileName: string) => {
-      const transcript = aiMessages // Use messages from store
-        .map((msg: UIMessage) => {
-          const time = ""; // v5 UIMessage doesn't have createdAt
+      // Use messagesWithTimestamps from ref to get messages with proper timestamps
+      const messagesForTranscript = currentSdkMessagesRef.current;
+      const transcript = messagesForTranscript
+        .map((msg: AIChatMessage) => {
+          const createdAt = msg.metadata?.createdAt;
+          const time = createdAt
+            ? new Date(createdAt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "";
           const sender = msg.role === "user" ? username || "You" : "Ryo";
           const content = getAssistantVisibleText(msg);
           return `**${sender}** (${time}):\n${content}`;
@@ -2774,9 +2783,24 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           action: {
             label: "Open",
             onClick: () => {
-              launchApp("textedit", {
-                initialData: { path: filePath, content: transcript },
-              });
+              // Check if this file is already open in a TextEdit instance
+              const textEditStore = useTextEditStore.getState();
+              const existingInstanceId = textEditStore.getInstanceIdByPath(filePath);
+
+              if (existingInstanceId) {
+                // File is already open - update content and bring to foreground
+                const appStore = useAppStore.getState();
+                appStore.updateInstanceInitialData(existingInstanceId, {
+                  path: filePath,
+                  content: transcript,
+                });
+                appStore.bringInstanceToForeground(existingInstanceId);
+              } else {
+                // File not open - launch new TextEdit instance
+                launchApp("textedit", {
+                  initialData: { path: filePath, content: transcript },
+                });
+              }
             },
           },
         });
@@ -2787,7 +2811,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
       }
     },
-    [aiMessages, username, saveFile, launchApp],
+    [username, saveFile, launchApp],
   );
 
   // Stop both chat streaming and TTS queue
