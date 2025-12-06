@@ -1,10 +1,12 @@
-// Shared CORS utilities for API routes (JS file so JS and TS can both import)
+// Shared CORS utilities for API routes
+
+type VercelEnv = "production" | "preview" | "development";
 
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
 const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
 const LOCALHOST_PORTS = new Set(["80", "443", "3000", "5173"]);
 
-function getRuntimeEnv() {
+function getRuntimeEnv(): VercelEnv {
   const env = process.env.VERCEL_ENV;
   if (env === "production" || env === "preview" || env === "development") {
     return env;
@@ -12,7 +14,7 @@ function getRuntimeEnv() {
   return "development";
 }
 
-function parseOrigin(origin) {
+function parseOrigin(origin: string): URL | null {
   try {
     return new URL(origin);
   } catch {
@@ -20,7 +22,7 @@ function parseOrigin(origin) {
   }
 }
 
-function isLocalhostOrigin(origin) {
+function isLocalhostOrigin(origin: string): boolean {
   const parsed = parseOrigin(origin);
   if (!parsed) return false;
   if (!LOCALHOST_HOSTNAMES.has(parsed.hostname)) return false;
@@ -28,13 +30,13 @@ function isLocalhostOrigin(origin) {
   return LOCALHOST_PORTS.has(port);
 }
 
-function isVercelPreviewOrigin(origin) {
+function isVercelPreviewOrigin(origin: string): boolean {
   const parsed = parseOrigin(origin);
   if (!parsed) return false;
   return parsed.hostname.endsWith(".vercel.app");
 }
 
-export function getEffectiveOrigin(req) {
+export function getEffectiveOrigin(req: Request): string | null {
   try {
     const origin = req.headers.get("origin");
     if (origin) return origin;
@@ -46,7 +48,7 @@ export function getEffectiveOrigin(req) {
   }
 }
 
-export function isAllowedOrigin(origin) {
+export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   const env = getRuntimeEnv();
 
@@ -60,9 +62,15 @@ export function isAllowedOrigin(origin) {
   return isLocalhostOrigin(origin);
 }
 
-export function preflightIfNeeded(req, allowedMethods, effectiveOrigin) {
+export function preflightIfNeeded(
+  req: Request,
+  allowedMethods: string[],
+  effectiveOrigin: string | null
+): Response | null {
   if (req.method !== "OPTIONS") return null;
-  if (!isAllowedOrigin(effectiveOrigin)) return new Response("Unauthorized", { status: 403 });
+  if (!effectiveOrigin || !isAllowedOrigin(effectiveOrigin)) {
+    return new Response("Unauthorized", { status: 403 });
+  }
 
   // Echo back requested headers when provided to avoid missing-case issues
   const requestedHeaders = req.headers.get("Access-Control-Request-Headers");
@@ -71,7 +79,7 @@ export function preflightIfNeeded(req, allowedMethods, effectiveOrigin) {
       ? requestedHeaders
       : "Content-Type, Authorization, X-Username, User-Agent";
 
-  const headers = {
+  const headers: Record<string, string> = {
     "Access-Control-Allow-Origin": effectiveOrigin,
     "Access-Control-Allow-Methods": allowedMethods.join(", "),
     "Access-Control-Allow-Headers": allowHeaders,
@@ -79,5 +87,3 @@ export function preflightIfNeeded(req, allowedMethods, effectiveOrigin) {
   };
   return new Response(null, { headers });
 }
-
-

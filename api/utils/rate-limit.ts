@@ -2,31 +2,37 @@ import { Redis } from "@upstash/redis";
 
 // Set up Redis client
 const redis = new Redis({
-  url: process.env.REDIS_KV_REST_API_URL,
-  token: process.env.REDIS_KV_REST_API_TOKEN,
+  url: process.env.REDIS_KV_REST_API_URL!,
+  token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
 // Constants for rate limiting
 const AI_RATE_LIMIT_PREFIX = "rl:ai:";
-const AI_LIMIT_PER_5_HOURS = 25;
-const AI_LIMIT_ANON_PER_5_HOURS = 3;
+export const AI_LIMIT_PER_5_HOURS = 25;
+export const AI_LIMIT_ANON_PER_5_HOURS = 3;
 
 // Helper function to get rate limit key for a user
-const getAIRateLimitKey = (identifier) => {
+const getAIRateLimitKey = (identifier: string): string => {
   // Simple key format: rl:ai:{identifier}
   // For authenticated users: rl:ai:username
   // For anonymous users: rl:ai:anon:123.45.67.89
   return `${AI_RATE_LIMIT_PREFIX}${identifier}`;
 };
 
+interface AIRateLimitResult {
+  allowed: boolean;
+  count: number;
+  limit: number;
+}
+
 // Helper function to check and increment AI message count
-async function checkAndIncrementAIMessageCount(
-  identifier,
-  isAuthenticated,
-  authToken = null
-) {
+export async function checkAndIncrementAIMessageCount(
+  identifier: string,
+  isAuthenticated: boolean,
+  authToken: string | null = null
+): Promise<AIRateLimitResult> {
   const key = getAIRateLimitKey(identifier);
-  const currentCount = await redis.get(key);
+  const currentCount = await redis.get<string>(key);
   const count = currentCount ? parseInt(currentCount) : 0;
 
   // Determine if user is anonymous (identifier starts with "anon:")
@@ -68,7 +74,7 @@ async function checkAndIncrementAIMessageCount(
     };
   }
 
-  if (count >= limit && !isRyo) {
+  if (count >= limit) {
     return { allowed: false, count, limit };
   }
 
@@ -84,23 +90,35 @@ async function checkAndIncrementAIMessageCount(
   return { allowed: true, count: count + 1, limit };
 }
 
-// Export rate limit functions
-export {
-  checkAndIncrementAIMessageCount,
-  AI_LIMIT_PER_5_HOURS,
-  AI_LIMIT_ANON_PER_5_HOURS,
-};
-
 // ------------------------------
 // Generic rate-limit utilities
 // ------------------------------
+
+interface CounterLimitArgs {
+  key: string;
+  windowSeconds: number;
+  limit: number;
+}
+
+interface CounterLimitResult {
+  allowed: boolean;
+  count: number;
+  limit: number;
+  remaining: number;
+  windowSeconds: number;
+  resetSeconds: number;
+}
 
 /**
  * Increment a counter under a key with a TTL window and enforce a limit.
  * Returns details including remaining and reset seconds.
  */
-async function checkCounterLimit({ key, windowSeconds, limit }) {
-  const current = await redis.get(key);
+export async function checkCounterLimit({
+  key,
+  windowSeconds,
+  limit,
+}: CounterLimitArgs): Promise<CounterLimitResult> {
+  const current = await redis.get<string>(key);
 
   if (!current) {
     await redis.set(key, 1, { ex: windowSeconds });
@@ -143,7 +161,7 @@ async function checkCounterLimit({ key, windowSeconds, limit }) {
 /**
  * Extract a best-effort client IP from common proxy headers.
  */
-function getClientIp(req) {
+export function getClientIp(req: Request): string {
   try {
     const h = req.headers;
     const origin = h.get("origin") || "";
@@ -178,11 +196,11 @@ function getClientIp(req) {
 /**
  * Build a stable key string from key parts.
  */
-function makeKey(parts) {
+export function makeKey(
+  parts: Array<string | null | undefined>
+): string {
   return parts
-    .filter((p) => p !== undefined && p !== null && p !== "")
+    .filter((p): p is string => p !== undefined && p !== null && p !== "")
     .map((p) => encodeURIComponent(String(p)))
     .join(":");
 }
-
-export { checkCounterLimit, getClientIp, makeKey };
