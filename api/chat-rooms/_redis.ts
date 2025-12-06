@@ -4,13 +4,13 @@
 
 import { Redis } from "@upstash/redis";
 import crypto from "crypto";
-import type { Room, User, Message } from "./types.js";
+import type { Room, User, Message } from "./_types.js";
 import {
   CHAT_ROOM_PREFIX,
   CHAT_MESSAGES_PREFIX,
   CHAT_USERS_PREFIX,
   CHAT_ROOMS_SET,
-} from "./constants.js";
+} from "./_constants.js";
 
 // ============================================================================
 // Redis Client

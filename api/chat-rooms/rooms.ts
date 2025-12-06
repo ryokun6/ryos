@@ -13,12 +13,12 @@ import {
   generateId,
   getCurrentTimestamp,
   deleteAllMessages,
-} from "./redis.js";
+} from "./_redis.js";
 import {
   CHAT_ROOM_PREFIX,
   CHAT_ROOM_USERS_PREFIX,
   CHAT_ROOMS_SET,
-} from "./constants.js";
+} from "./_constants.js";
 import {
   setRoomPresence,
   refreshRoomPresence,
@@ -34,16 +34,16 @@ import {
   broadcastRoomCreated,
   broadcastRoomDeleted,
   broadcastToSpecificUsers,
-} from "./pusher.js";
+} from "./_pusher.js";
 import { logInfo, logError } from "../utils/logging.js";
 import {
   isProfaneUsername,
   assertValidUsername,
   assertValidRoomId,
 } from "../utils/validation.js";
-import { createErrorResponse } from "./helpers.js";
+import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./users.js";
-import type { Room, CreateRoomData, JoinLeaveRoomData, SwitchRoomData } from "./types.js";
+import type { Room, CreateRoomData, JoinLeaveRoomData, SwitchRoomData } from "./_types.js";
 
 // ============================================================================
 // Handler Functions

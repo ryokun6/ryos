@@ -8,10 +8,10 @@
  */
 
 import Pusher from "pusher";
-import { redis, parseRoomData } from "./redis.js";
+import { redis, parseRoomData } from "./_redis.js";
 import { refreshRoomUserCount } from "./presence.js";
-import { CHAT_ROOM_PREFIX } from "./constants.js";
-import type { Room, Message } from "./types.js";
+import { CHAT_ROOM_PREFIX } from "./_constants.js";
+import type { Room, Message } from "./_types.js";
 
 // ============================================================================
 // Pusher Client

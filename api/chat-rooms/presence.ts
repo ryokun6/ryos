@@ -3,14 +3,14 @@
  * Handles user presence tracking using Redis ZSETs
  */
 
-import { redis, parseRoomData, setRoom } from "./redis.js";
+import { redis, parseRoomData, setRoom } from "./_redis.js";
 import {
   CHAT_ROOM_PREFIX,
   CHAT_ROOM_PRESENCE_ZSET_PREFIX,
   CHAT_ROOMS_SET,
   ROOM_PRESENCE_TTL_SECONDS,
-} from "./constants.js";
-import type { Room, RoomWithUsers } from "./types.js";
+} from "./_constants.js";
+import type { Room, RoomWithUsers } from "./_types.js";
 
 // ============================================================================
 // Presence Operations

@@ -5,7 +5,7 @@
  * It delegates to specialized handler modules for specific functionality.
  */
 
-import { redis } from "./redis.js";
+import { redis } from "./_redis.js";
 import {
   CHAT_ROOM_PREFIX,
   CHAT_ROOM_PRESENCE_PREFIX,
@@ -14,7 +14,7 @@ import {
   CHAT_ROOMS_SET,
   runtime as apiRuntime,
   maxDuration as apiMaxDuration,
-} from "./constants.js";
+} from "./_constants.js";
 import {
   getEffectiveOrigin,
   preflightIfNeeded,
@@ -23,7 +23,7 @@ import { logRequest, logInfo, logError, generateRequestId } from "../utils/loggi
 import { extractAuth, validateAuth, checkRateLimit } from "../utils/auth.js";
 import { setAuthLoggers, setIsProfaneUsername } from "../utils/auth.js";
 import { setValidationLogger, isProfaneUsername } from "../utils/validation.js";
-import { createErrorResponse, addCorsHeaders, getClientIp } from "./helpers.js";
+import { createErrorResponse, addCorsHeaders, getClientIp } from "./_helpers.js";
 
 // Room handlers
 import {
