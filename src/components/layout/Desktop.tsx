@@ -228,6 +228,25 @@ export function Desktop({
     e.preventDefault();
     e.stopPropagation();
 
+    // Check if drop is over the dock area (bottom 70px of screen for macOS X theme)
+    // If so, don't handle it here - let the dock handle it
+    if (currentTheme === "macosx") {
+      const dockHeight = 70;
+      const windowHeight = window.innerHeight;
+      if (e.clientY > windowHeight - dockHeight) {
+        // Drop is over dock area, dispatch a custom event for the dock to handle
+        const dockDropEvent = new CustomEvent("dockDrop", {
+          detail: {
+            clientX: e.clientX,
+            clientY: e.clientY,
+            data: e.dataTransfer.getData("application/json"),
+          },
+        });
+        window.dispatchEvent(dockDropEvent);
+        return;
+      }
+    }
+
     try {
       const jsonData = e.dataTransfer.getData("application/json");
       if (!jsonData) return;

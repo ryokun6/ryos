@@ -217,6 +217,7 @@
         "createAccount": "Создать учетную запись...",
         "decreaseFontSize": "Уменьшить размер шрифта",
         "increaseFontSize": "Увеличить размер шрифта",
+        "keepTalking": "Продолжать разговор",
         "logOut": "Выйти",
         "login": "Войти...",
         "newChat": "Новый чат...",
@@ -224,8 +225,7 @@
         "saveTranscript": "Сохранить стенограмму...",
         "showRooms": "Показать комнаты",
         "sound": "Звук",
-        "typingSynth": "Синтезатор набора текста",
-        "keepTalking": "Продолжать разговор"
+        "typingSynth": "Синтезатор набора текста"
       },
       "messages": {
         "delete": "Удалить",
@@ -1762,6 +1762,7 @@
       "welcomeTo": "Добро пожаловать в {{appName}}"
     },
     "dock": {
+      "addToDock": "Добавить в Dock",
       "appletStore": "Магазин апплетов",
       "applications": "Приложения",
       "folderContents": "Содержимое папки",
@@ -1770,6 +1771,7 @@
       "newWindow": "Новое окно",
       "open": "Открыть",
       "quit": "Выход",
+      "removeFromDock": "Удалить из Dock",
       "showAllWindows": "Показать все окна",
       "trash": "Корзина"
     },

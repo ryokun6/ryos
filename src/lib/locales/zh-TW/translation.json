@@ -217,6 +217,7 @@
         "createAccount": "建立帳號...",
         "decreaseFontSize": "縮小字體",
         "increaseFontSize": "放大字體",
+        "keepTalking": "繼續對話",
         "logOut": "登出",
         "login": "登入...",
         "newChat": "新增聊天...",
@@ -224,8 +225,7 @@
         "saveTranscript": "儲存聊天記錄...",
         "showRooms": "顯示聊天室",
         "sound": "聲音",
-        "typingSynth": "輸入合成器",
-        "keepTalking": "繼續對話"
+        "typingSynth": "輸入合成器"
       },
       "messages": {
         "delete": "刪除",
@@ -1762,6 +1762,7 @@
       "welcomeTo": "歡迎使用{{appName}}"
     },
     "dock": {
+      "addToDock": "加入 Dock",
       "appletStore": "小程式商店",
       "applications": "應用程式",
       "folderContents": "檔案夾內容",
@@ -1770,6 +1771,7 @@
       "newWindow": "新增視窗",
       "open": "開啟",
       "quit": "結束",
+      "removeFromDock": "從 Dock 移除",
       "showAllWindows": "顯示所有視窗",
       "trash": "垃圾桶"
     },

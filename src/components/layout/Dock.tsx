@@ -1,4 +1,4 @@
-import {
+import React, {
   useMemo,
   useRef,
   useState,
@@ -6,7 +6,6 @@ import {
   useEffect,
   forwardRef,
 } from "react";
-import type React from "react";
 import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStoreShallow } from "@/stores/helpers";
@@ -16,6 +15,7 @@ import { getTranslatedAppName, getTranslatedFolderNameFromName } from "@/utils/i
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
+import { useDockStore, PROTECTED_DOCK_ITEMS, type DockItem } from "@/stores/useDockStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -58,7 +58,38 @@ interface IconButtonProps {
   onHover: () => void;
   onLeave: () => void;
   isLoading?: boolean;
+  // Drag-and-drop props for reordering
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
+  isDragging?: boolean;
+  isDraggedOutside?: boolean;
 }
+
+// Animated spacer for drop preview - minimal styling
+const DockSpacer = forwardRef<HTMLDivElement, { idKey: string }>(
+  ({ idKey }, ref) => (
+    <motion.div
+      ref={ref}
+      layout
+      layoutId={`dock-spacer-${idKey}`}
+      initial={{ width: 0 }}
+      animate={{ width: 56 }}
+      exit={{ width: 0 }}
+      transition={{
+        type: "spring",
+        stiffness: 400,
+        damping: 30,
+      }}
+      className="flex-shrink-0"
+      style={{
+        height: 48,
+        marginLeft: 4,
+        marginRight: 4,
+      }}
+    />
+  )
+);
 
 const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
   (
@@ -81,6 +112,11 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
       isSwapping,
       onHover,
       onLeave,
+      draggable = false,
+      onDragStart,
+      onDragEnd,
+      isDragging = false,
+      isDraggedOutside = false,
     },
     forwardedRef
   ) => {
@@ -141,40 +177,50 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
     );
 
     return (
-      <motion.div
-        ref={setCombinedRef}
-        layout
-        layoutId={`dock-icon-${idKey}`}
-        data-dock-icon={idKey}
-        initial={isNew ? { scale: 0, opacity: 0 } : undefined}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{
-          scale: 0,
-          opacity: 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 300,
-          damping: 30,
-          mass: 0.8,
-          layout: {
+      <div
+        draggable={draggable}
+        onDragStart={onDragStart as React.DragEventHandler<HTMLDivElement>}
+        onDragEnd={onDragEnd as React.DragEventHandler<HTMLDivElement>}
+        style={{ display: "contents" }}
+      >
+        <motion.div
+          ref={setCombinedRef}
+          layout
+          layoutId={`dock-icon-${idKey}`}
+          data-dock-icon={idKey}
+          initial={isNew ? { scale: 0, opacity: 0 } : undefined}
+          animate={{ 
+            scale: isDraggedOutside ? 0.5 : 1, 
+            opacity: isDragging ? 0.5 : isDraggedOutside ? 0.3 : 1 
+          }}
+          exit={{
+            scale: 0,
+            opacity: 0,
+          }}
+          transition={{
             type: "spring",
             stiffness: 300,
             damping: 30,
             mass: 0.8,
-          },
-        }}
-        style={{
-          transformOrigin: "bottom center",
-          willChange: "width, height, transform",
-          width: widthValue,
-          height: widthValue,
-          marginLeft: isPresent ? 4 : 0,
-          marginRight: isPresent ? 4 : 0,
-          overflow: "visible",
-        }}
-        className="flex-shrink-0 relative"
-      >
+            layout: {
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              mass: 0.8,
+            },
+          }}
+          style={{
+            transformOrigin: "bottom center",
+            willChange: "width, height, transform",
+            width: widthValue,
+            height: widthValue,
+            marginLeft: isPresent ? 4 : 0,
+            marginRight: isPresent ? 4 : 0,
+            overflow: "visible",
+            cursor: draggable ? "grab" : "pointer",
+          }}
+          className="flex-shrink-0 relative"
+        >
         <AnimatePresence>
           {isHovered && (
             <motion.div
@@ -290,6 +336,7 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
           ) : null}
         </button>
       </motion.div>
+      </div>
     );
   }
 );
@@ -342,6 +389,10 @@ function MacDock() {
     (s) => s.items["/Trash"]?.icon || "/icons/trash-empty.png"
   );
   const finderInstances = useFinderStore((s) => s.instances);
+  
+  // Dock store for customization
+  const { pinnedItems, addItem: addDockItem, removeItem: removeDockItem, reorderItems } = useDockStore();
+  
   const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
   const [trashContextMenuPos, setTrashContextMenuPos] = useState<{
     x: number;
@@ -353,6 +404,8 @@ function MacDock() {
   } | null>(null);
   const [isEmptyTrashDialogOpen, setIsEmptyTrashDialogOpen] = useState(false);
   const dockContainerRef = useRef<HTMLDivElement | null>(null);
+  const dockBarRef = useRef<HTMLDivElement | null>(null);
+  const iconRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   
   // App context menu state
   const [appContextMenu, setAppContextMenu] = useState<{
@@ -365,6 +418,11 @@ function MacDock() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isSwapping, setIsSwapping] = useState(false);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Drag-and-drop state
+  const [externalDragIndex, setExternalDragIndex] = useState<number | null>(null);
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+  const [isDraggedOutside, setIsDraggedOutside] = useState(false);
 
   const handleIconHover = useCallback((id: string) => {
     if (hoverTimeoutRef.current) {
@@ -447,11 +505,193 @@ function MacDock() {
     [files]
   );
 
-  // Pinned apps on the left side (in order)
+  // Pinned apps on the left side (from dock store)
   const pinnedLeft: AppId[] = useMemo(
-    () => ["finder", "chats", "internet-explorer"] as AppId[],
-    []
+    () => pinnedItems.filter(item => item.type === "app").map(item => item.id as AppId),
+    [pinnedItems]
   );
+  
+  // Calculate drop index based on cursor position
+  const calculateDropIndex = useCallback((clientX: number): number => {
+    // Get dock bar bounds
+    const dockBar = dockBarRef.current;
+    if (!dockBar) return pinnedItems.length;
+    
+    const dockRect = dockBar.getBoundingClientRect();
+    
+    // If no pinned items, return 0
+    if (pinnedItems.length === 0) return 0;
+    
+    // Calculate icon width (including margin) based on dock width
+    // Each icon is about 56px wide (48px + 8px margin)
+    const iconWidth = 56;
+    
+    // Get the starting X position of the first icon
+    // Account for padding (px-1 = 4px each side)
+    const startX = dockRect.left + 4;
+    
+    // Calculate relative position
+    const relativeX = clientX - startX;
+    
+    // Calculate which slot the cursor is in
+    const slotIndex = Math.floor(relativeX / iconWidth);
+    
+    // Clamp to valid range
+    return Math.max(0, Math.min(slotIndex, pinnedItems.length));
+  }, [pinnedItems.length]);
+  
+  // Check if this is an external drag (from desktop/finder, not internal dock reorder)
+  const isExternalDrag = useCallback((e: React.DragEvent): boolean => {
+    const types = Array.from(e.dataTransfer.types);
+    return types.includes("application/json") && !types.includes("application/x-dock-item");
+  }, []);
+
+  // Handle external drag over dock (from desktop/finder)
+  const handleDockDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    // Always allow drops so drop event fires
+    e.preventDefault();
+
+    // Only show spacer for external drags
+    if (!isExternalDrag(e)) return;
+
+    const dropIndex = calculateDropIndex(e.clientX);
+    setExternalDragIndex(dropIndex);
+  }, [calculateDropIndex, isExternalDrag]);
+  
+  const handleDockDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!isExternalDrag(e)) return;
+    setExternalDragIndex((prev) => prev ?? pinnedItems.length);
+  }, [isExternalDrag, pinnedItems.length]);
+  
+  const handleDockDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!isExternalDrag(e)) return;
+    setExternalDragIndex(null);
+  }, [isExternalDrag]);
+  
+  const handleDockDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Only handle external drops
+    if (!isExternalDrag(e)) return;
+    
+    const dropIndex = externalDragIndex ?? pinnedItems.length;
+    setExternalDragIndex(null);
+    
+    try {
+      const jsonData = e.dataTransfer.getData("application/json");
+      if (!jsonData) {
+        console.warn("[Dock] No JSON data in drop");
+        return;
+      }
+      
+      const data = JSON.parse(jsonData);
+      console.log("[Dock] Drop data:", data);
+      
+      const { path, name, appId, aliasType, aliasTarget } = data;
+      
+      // Determine what to add to dock
+      let newItem: DockItem | null = null;
+      
+      // Case 1: App alias from desktop shortcuts (aliasType === "app")
+      if (aliasType === "app" && aliasTarget) {
+        newItem = { type: "app", id: aliasTarget };
+      }
+      // Case 2: Direct app ID (from Applications folder files)
+      else if (appId) {
+        newItem = { type: "app", id: appId };
+      }
+      // Case 3: Application from /Applications/ path
+      else if (path && path.startsWith("/Applications/")) {
+        const appFile = fileStore.getItem(path);
+        if (appFile?.appId) {
+          newItem = { type: "app", id: appFile.appId };
+        }
+      }
+      // Case 4: Applet file (.app or .html)
+      else if (path && (path.endsWith(".app") || path.endsWith(".html"))) {
+        const file = fileStore.getItem(path);
+        const fileName = path.split("/").pop()?.replace(/\.(app|html)$/i, "") || name;
+        newItem = {
+          type: "file",
+          id: `file-${path}`,
+          path,
+          name: fileName,
+          icon: file?.icon,
+        };
+      }
+      
+      console.log("[Dock] Adding item:", newItem, "at index:", dropIndex);
+      
+      if (newItem) {
+        const added = addDockItem(newItem, dropIndex);
+        console.log("[Dock] Item added:", added);
+      }
+    } catch (err) {
+      console.warn("[Dock] Failed to handle drop:", err);
+    }
+  }, [externalDragIndex, pinnedItems.length, fileStore, addDockItem, isExternalDrag]);
+  
+  // Handle internal dock item drag start
+  const handleItemDragStart = useCallback((e: React.DragEvent<HTMLDivElement>, itemId: string, index: number) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("application/x-dock-item", JSON.stringify({ id: itemId, index }));
+    // Also set application/json so we can distinguish from external drags
+    e.dataTransfer.setData("text/plain", itemId);
+    setDraggingItemId(itemId);
+    setIsDraggedOutside(false);
+  }, []);
+  
+  // Handle internal dock item drag end
+  const handleItemDragEnd = useCallback((e: React.DragEvent<HTMLDivElement>, itemId: string) => {
+    // Check if dropped outside the dock
+    const dockRect = dockBarRef.current?.getBoundingClientRect();
+    if (dockRect) {
+      const isOutside = 
+        e.clientX < dockRect.left ||
+        e.clientX > dockRect.right ||
+        e.clientY < dockRect.top - 50 || // Allow some margin above
+        e.clientY > dockRect.bottom + 50; // Allow some margin below
+      
+      if (isOutside && !PROTECTED_DOCK_ITEMS.has(itemId)) {
+        // Remove item from dock
+        removeDockItem(itemId);
+      }
+    }
+    
+    setDraggingItemId(null);
+    setIsDraggedOutside(false);
+  }, [removeDockItem]);
+  
+  // Track when drag leaves dock area
+  const handleItemDrag = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const dockRect = dockBarRef.current?.getBoundingClientRect();
+    if (dockRect && draggingItemId) {
+      const isOutside = 
+        e.clientX < dockRect.left - 20 ||
+        e.clientX > dockRect.right + 20 ||
+        e.clientY < dockRect.top - 60 ||
+        e.clientY > dockRect.bottom + 60;
+      
+      setIsDraggedOutside(isOutside);
+    }
+  }, [draggingItemId]);
+  
+  // Handle internal reordering when dragging over another item
+  const handleItemDragOver = useCallback((e: React.DragEvent<HTMLDivElement>, targetIndex: number) => {
+    e.preventDefault();
+    const types = Array.from(e.dataTransfer.types);
+    
+    if (types.includes("application/x-dock-item") && draggingItemId) {
+      e.dataTransfer.dropEffect = "move";
+      
+      const currentIndex = pinnedItems.findIndex(item => item.id === draggingItemId);
+      if (currentIndex !== -1 && currentIndex !== targetIndex) {
+        reorderItems(currentIndex, targetIndex);
+      }
+    }
+  }, [draggingItemId, pinnedItems, reorderItems]);
 
   // Compute open apps and individual applet instances
   const openItems = useMemo(() => {
@@ -656,7 +896,7 @@ function MacDock() {
         (inst) => inst.appId === appId && inst.isOpen
       );
       
-      // For non-opened apps, show only "Open"
+      // For non-opened apps, show "Open" and optionally "Remove from Dock"
       if (appInstances.length === 0 && !specificInstanceId) {
         items.push({
           type: "item",
@@ -669,6 +909,22 @@ function MacDock() {
             }
           },
         });
+        
+        // Add "Remove from Dock" for pinned, non-protected items
+        const isPinned = pinnedItems.some(item => item.type === "app" && item.id === appId);
+        const isProtected = PROTECTED_DOCK_ITEMS.has(appId);
+        
+        if (isPinned && !isProtected) {
+          items.push({ type: "separator" });
+          items.push({
+            type: "item",
+            label: t("common.dock.removeFromDock") || "Remove from Dock",
+            onSelect: () => {
+              removeDockItem(appId);
+            },
+          });
+        }
+        
         return items;
       }
       
@@ -793,6 +1049,32 @@ function MacDock() {
         items.push({ type: "separator" });
       }
       
+      // Add/Remove from Dock options (before Show All Windows section)
+      const isPinned = pinnedItems.some(item => item.type === "app" && item.id === appId);
+      const isProtected = PROTECTED_DOCK_ITEMS.has(appId);
+      
+      if (isPinned && !isProtected) {
+        // Show "Remove from Dock" for pinned, non-protected items
+        items.push({
+          type: "item",
+          label: t("common.dock.removeFromDock"),
+          onSelect: () => {
+            removeDockItem(appId);
+          },
+        });
+        items.push({ type: "separator" });
+      } else if (!isPinned && !isProtected && appInstances.length > 0) {
+        // Show "Add to Dock" for running apps that aren't pinned
+        items.push({
+          type: "item",
+          label: t("common.dock.addToDock"),
+          onSelect: () => {
+            addDockItem({ type: "app", id: appId });
+          },
+        });
+        items.push({ type: "separator" });
+      }
+      
       // Show All Windows
       items.push({
         type: "item",
@@ -848,7 +1130,7 @@ function MacDock() {
       
       return items;
     },
-    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, playZoomMinimize, launchApp]
+    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, playZoomMinimize, launchApp, pinnedItems, removeDockItem, addDockItem]
   );
 
   // Generate context menu items for a folder shortcut
@@ -1125,7 +1407,7 @@ function MacDock() {
   // Mark all currently visible ids as seen whenever the set changes
   const allVisibleIds = useMemo(() => {
     const ids = [
-      ...pinnedLeft,
+      ...pinnedItems.map(item => item.id),
       ...openItems.map((item) =>
         item.type === "applet" ? item.instanceId! : item.appId
       ),
@@ -1133,7 +1415,7 @@ function MacDock() {
       "__trash__",
     ];
     return ids;
-  }, [pinnedLeft, openItems]);
+  }, [pinnedItems, openItems]);
   // After first paint, mark everything present as seen and mark mounted
   // Also update seen set whenever visible ids change
   useEffect(() => {
@@ -1161,6 +1443,7 @@ function MacDock() {
         }}
       >
         <motion.div
+          ref={dockBarRef}
           layout
           layoutRoot
           className="inline-flex items-end px-1 py-1"
@@ -1199,43 +1482,124 @@ function MacDock() {
                 }
               : undefined
           }
+          onDragOver={(e: React.DragEvent<HTMLDivElement>) => {
+            handleDockDragOver(e);
+            if (draggingItemId) {
+              handleItemDrag(e);
+            }
+          }}
+          onDragEnter={handleDockDragEnter}
+          onDragLeave={handleDockDragLeave}
+          onDrop={handleDockDrop}
         >
           <LayoutGroup>
             <AnimatePresence mode="popLayout" initial={false}>
-              {/* Left pinned */}
-              {pinnedLeft.map((appId) => {
-                const icon = getAppIconPath(appId);
-                const isOpen = openAppsAllSet.has(appId);
-                const isLoading = Object.values(instances).some(
-                  (i) => i.appId === appId && i.isOpen && i.isLoading
-                );
-                const label = getTranslatedAppName(appId);
-                return (
-                  <IconButton
-                    key={appId}
-                    label={label}
-                    icon={icon}
-                    idKey={appId}
-                    onClick={() => {
-                      if (appId === "finder") {
-                        focusOrLaunchFinder("/");
-                      } else {
-                        focusOrLaunchApp(appId);
-                      }
-                    }}
-                    onContextMenu={(e) => handleAppContextMenu(e, appId)}
-                    showIndicator={isOpen}
-                    isLoading={isLoading}
-                    mouseX={mouseX}
-                    magnifyEnabled={magnifyEnabled}
-                    isNew={hasMounted && !seenIdsRef.current.has(appId)}
-                    isHovered={hoveredId === appId}
-                    isSwapping={isSwapping}
-                    onHover={() => handleIconHover(appId)}
-                    onLeave={handleIconLeave}
-                  />
-                );
-              })}
+              {/* Left pinned items from dock store */}
+              {(() => {
+                // Build array of elements with spacer inserted at correct position
+                const elements: React.ReactNode[] = [];
+                
+                pinnedItems.forEach((item, index) => {
+                  // Insert spacer before this item if it's the drop target
+                  if (externalDragIndex === index) {
+                    elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" />);
+                  }
+                  
+                  if (item.type === "app") {
+                    const appId = item.id as AppId;
+                    const icon = getAppIconPath(appId);
+                    const isOpen = openAppsAllSet.has(appId);
+                    const isLoading = Object.values(instances).some(
+                      (i) => i.appId === appId && i.isOpen && i.isLoading
+                    );
+                    const label = getTranslatedAppName(appId);
+                    const isProtected = PROTECTED_DOCK_ITEMS.has(item.id);
+                    
+                    elements.push(
+                      <IconButton
+                        key={appId}
+                        ref={(el) => {
+                          if (el) iconRefsMap.current.set(item.id, el);
+                          else iconRefsMap.current.delete(item.id);
+                        }}
+                        label={label}
+                        icon={icon}
+                        idKey={appId}
+                        onClick={() => {
+                          if (appId === "finder") {
+                            focusOrLaunchFinder("/");
+                          } else {
+                            focusOrLaunchApp(appId);
+                          }
+                        }}
+                        onContextMenu={(e) => handleAppContextMenu(e, appId)}
+                        showIndicator={isOpen}
+                        isLoading={isLoading}
+                        mouseX={mouseX}
+                        magnifyEnabled={magnifyEnabled}
+                        isNew={hasMounted && !seenIdsRef.current.has(appId)}
+                        isHovered={hoveredId === appId}
+                        isSwapping={isSwapping}
+                        onHover={() => handleIconHover(appId)}
+                        onLeave={handleIconLeave}
+                        draggable={!isProtected}
+                        onDragStart={(e) => handleItemDragStart(e, item.id, index)}
+                        onDragEnd={(e) => handleItemDragEnd(e, item.id)}
+                        onDragOver={(e) => handleItemDragOver(e as unknown as React.DragEvent<HTMLDivElement>, index)}
+                        isDragging={draggingItemId === item.id}
+                        isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
+                      />
+                    );
+                  } else {
+                    // File/applet pinned item
+                    const file = item.path ? fileStore.getItem(item.path) : null;
+                    const isEmojiIcon = item.icon && !item.icon.startsWith("/") && !item.icon.startsWith("http") && item.icon.length <= 10;
+                    const icon = isEmojiIcon ? item.icon! : (file?.icon || "📦");
+                    const label = item.name || item.path?.split("/").pop()?.replace(/\.(app|html)$/i, "") || "Applet";
+                    
+                    elements.push(
+                      <IconButton
+                        key={item.id}
+                        ref={(el) => {
+                          if (el) iconRefsMap.current.set(item.id, el);
+                          else iconRefsMap.current.delete(item.id);
+                        }}
+                        label={label}
+                        icon={icon}
+                        idKey={item.id}
+                        isEmoji={isEmojiIcon || (!item.icon?.startsWith("/") && !item.icon?.startsWith("http"))}
+                        onClick={() => {
+                          if (item.path) {
+                            launchApp("applet-viewer", {
+                              initialData: { path: item.path },
+                            });
+                          }
+                        }}
+                        mouseX={mouseX}
+                        magnifyEnabled={magnifyEnabled}
+                        isNew={hasMounted && !seenIdsRef.current.has(item.id)}
+                        isHovered={hoveredId === item.id}
+                        isSwapping={isSwapping}
+                        onHover={() => handleIconHover(item.id)}
+                        onLeave={handleIconLeave}
+                        draggable
+                        onDragStart={(e) => handleItemDragStart(e, item.id, index)}
+                        onDragEnd={(e) => handleItemDragEnd(e, item.id)}
+                        onDragOver={(e) => handleItemDragOver(e as unknown as React.DragEvent<HTMLDivElement>, index)}
+                        isDragging={draggingItemId === item.id}
+                        isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
+                      />
+                    );
+                  }
+                });
+                
+                // Add spacer at end if dropping after all items
+                if (externalDragIndex === pinnedItems.length) {
+                  elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" />);
+                }
+                
+                return elements;
+              })()}
 
               {/* Open apps and applet instances dynamically (excluding pinned) */}
               {openItems.map((item) => {

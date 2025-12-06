@@ -217,6 +217,7 @@
         "createAccount": "계정 생성...",
         "decreaseFontSize": "글자 크기 줄이기",
         "increaseFontSize": "글자 크기 늘리기",
+        "keepTalking": "계속 말하기",
         "logOut": "로그아웃",
         "login": "로그인...",
         "newChat": "새 채팅...",
@@ -224,8 +225,7 @@
         "saveTranscript": "대화 기록 저장...",
         "showRooms": "방 보기",
         "sound": "소리",
-        "typingSynth": "타이핑 신디",
-        "keepTalking": "계속 말하기"
+        "typingSynth": "타이핑 신디"
       },
       "messages": {
         "delete": "삭제",
@@ -1762,6 +1762,7 @@
       "welcomeTo": "{{appName}}에 오신 것을 환영합니다"
     },
     "dock": {
+      "addToDock": "Dock에 추가",
       "appletStore": "애플릿 스토어",
       "applications": "응용 프로그램",
       "folderContents": "폴더 내용",
@@ -1770,6 +1771,7 @@
       "newWindow": "새 창",
       "open": "열기",
       "quit": "종료",
+      "removeFromDock": "Dock에서 제거",
       "showAllWindows": "모든 창 보기",
       "trash": "휴지통"
     },

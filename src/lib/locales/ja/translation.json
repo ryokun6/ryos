@@ -217,6 +217,7 @@
         "createAccount": "アカウントを作成...",
         "decreaseFontSize": "フォントサイズを小さく",
         "increaseFontSize": "フォントサイズを大きく",
+        "keepTalking": "会話を続ける",
         "logOut": "ログアウト",
         "login": "ログイン...",
         "newChat": "新規チャット...",
@@ -224,8 +225,7 @@
         "saveTranscript": "履歴を保存...",
         "showRooms": "ルームを表示",
         "sound": "サウンド",
-        "typingSynth": "タイピングシンセ",
-        "keepTalking": "会話を続ける"
+        "typingSynth": "タイピングシンセ"
       },
       "messages": {
         "delete": "削除",
@@ -1762,6 +1762,7 @@
       "welcomeTo": "{{appName}}へようこそ"
     },
     "dock": {
+      "addToDock": "ドックに追加",
       "appletStore": "アプレットストア",
       "applications": "アプリケーション",
       "folderContents": "フォルダの内容",
@@ -1770,6 +1771,7 @@
       "newWindow": "新規ウィンドウ",
       "open": "開く",
       "quit": "終了",
+      "removeFromDock": "ドックから削除",
       "showAllWindows": "すべてのウィンドウを表示",
       "trash": "ゴミ箱"
     },

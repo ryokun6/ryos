@@ -217,6 +217,7 @@
         "createAccount": "Crea Account...",
         "decreaseFontSize": "Riduci Dimensione Carattere",
         "increaseFontSize": "Aumenta Dimensione Carattere",
+        "keepTalking": "Continua a parlare",
         "logOut": "Esci",
         "login": "Accedi...",
         "newChat": "Nuova Chat...",
@@ -224,8 +225,7 @@
         "saveTranscript": "Salva Trascrizione...",
         "showRooms": "Mostra Stanze",
         "sound": "Suono",
-        "typingSynth": "Sintesi Digitazione",
-        "keepTalking": "Continua a parlare"
+        "typingSynth": "Sintesi Digitazione"
       },
       "messages": {
         "delete": "Elimina",
@@ -1762,6 +1762,7 @@
       "welcomeTo": "Benvenuto in {{appName}}"
     },
     "dock": {
+      "addToDock": "Aggiungi al Dock",
       "appletStore": "Applet Store",
       "applications": "Applicazioni",
       "folderContents": "Contenuto cartella",
@@ -1770,6 +1771,7 @@
       "newWindow": "Nuova finestra",
       "open": "Apri",
       "quit": "Esci",
+      "removeFromDock": "Rimuovi dal Dock",
       "showAllWindows": "Mostra tutte le finestre",
       "trash": "Cestino"
     },

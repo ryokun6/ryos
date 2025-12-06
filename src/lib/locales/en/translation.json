@@ -103,7 +103,9 @@
       "trash": "Trash",
       "minimized": "(minimized)",
       "appletStore": "Applet Store",
-      "folderContents": "Folder Contents"
+      "folderContents": "Folder Contents",
+      "removeFromDock": "Remove from Dock",
+      "addToDock": "Add to Dock"
     },
     "startMenu": {
       "start": "Start",
