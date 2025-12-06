@@ -2754,6 +2754,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         : `${fileName}.md`;
       const filePath = `/Documents/${finalFileName}`;
 
+      // Check if file already exists to determine toast message
+      const existingFile = useFilesStore.getState().items[filePath];
+      const isUpdate = existingFile && existingFile.status === "active";
+
       try {
         await saveFile({
           path: filePath,
@@ -2764,9 +2768,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
 
         setIsSaveDialogOpen(false);
-        toast.success("Transcript saved", {
+        toast.success(isUpdate ? "Transcript updated" : "Transcript saved", {
           description: `Saved to ${finalFileName}`,
-          duration: 3000,
+          duration: 5000,
+          action: {
+            label: "Open",
+            onClick: () => {
+              launchApp("textedit", {
+                initialData: { path: filePath, content: transcript },
+              });
+            },
+          },
         });
       } catch (error) {
         console.error("Error saving transcript:", error);
@@ -2775,7 +2787,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
       }
     },
-    [aiMessages, username, saveFile],
+    [aiMessages, username, saveFile, launchApp],
   );
 
   // Stop both chat streaming and TTS queue
