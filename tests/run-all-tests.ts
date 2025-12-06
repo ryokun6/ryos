@@ -21,6 +21,18 @@ interface TestSuiteResult {
   failed: number;
 }
 
+// ANSI color codes
+const COLOR = {
+  RESET: "\x1b[0m",
+  BOLD: "\x1b[1m",
+  DIM: "\x1b[2m",
+  GREEN: "\x1b[32m",
+  RED: "\x1b[31m",
+  YELLOW: "\x1b[33m",
+  CYAN: "\x1b[36m",
+  WHITE: "\x1b[37m",
+};
+
 // Box drawing characters
 const BOX = {
   TOP_LEFT: "┌",
@@ -55,7 +67,7 @@ function formatDuration(ms: number): string {
 
 async function runAllTests(): Promise<void> {
   console.log("\n" + header("API ENDPOINT TESTS"));
-  console.log(`\n  Server: ${BASE_URL}\n`);
+  console.log(`\n  Server: ${COLOR.CYAN}${BASE_URL}${COLOR.RESET}\n`);
 
   const results: TestSuiteResult[] = [];
   const startTime = Date.now();
@@ -79,9 +91,9 @@ async function runAllTests(): Promise<void> {
     : testSuites;
 
   if (specificTest && suitesToRun.length === 0) {
-    console.error(`  Error: No test suite found matching "${specificTest}"\n`);
+    console.error(`  ${COLOR.RED}Error:${COLOR.RESET} No test suite found matching "${specificTest}"\n`);
     console.log("  Available test suites:");
-    testSuites.forEach((s) => console.log(`    - ${s.name}`));
+    testSuites.forEach((s) => console.log(`    ${COLOR.DIM}-${COLOR.RESET} ${s.name}`));
     console.log("");
     process.exit(1);
   }
@@ -92,7 +104,7 @@ async function runAllTests(): Promise<void> {
       const result = await suite.run();
       results.push({ name: suite.name, ...result });
     } catch (error) {
-      console.error(`\n  Error running ${suite.name} tests:`, error);
+      console.error(`\n  ${COLOR.RED}Error running ${suite.name} tests:${COLOR.RESET}`, error);
       results.push({ name: suite.name, passed: 0, failed: 1 });
     }
   }
@@ -107,27 +119,36 @@ async function runAllTests(): Promise<void> {
   // Results table
   const maxNameLen = Math.max(...results.map((r) => r.name.length), 12);
   
-  console.log(`\n  ${"Suite".padEnd(maxNameLen)}  Passed  Failed  Status`);
+  console.log(`\n  ${COLOR.BOLD}${"Suite".padEnd(maxNameLen)}  Passed  Failed  Status${COLOR.RESET}`);
   console.log(`  ${line(maxNameLen + 24)}`);
   
   for (const result of results) {
-    const status = result.failed === 0 ? "ok" : "FAILED";
+    const isOk = result.failed === 0;
+    const status = isOk 
+      ? `${COLOR.GREEN}ok${COLOR.RESET}` 
+      : `${COLOR.RED}FAILED${COLOR.RESET}`;
     const name = result.name.padEnd(maxNameLen);
-    const passed = String(result.passed).padStart(6);
-    const failed = String(result.failed).padStart(6);
+    const passed = `${COLOR.GREEN}${String(result.passed).padStart(6)}${COLOR.RESET}`;
+    const failed = result.failed > 0 
+      ? `${COLOR.RED}${String(result.failed).padStart(6)}${COLOR.RESET}`
+      : `${COLOR.DIM}${String(result.failed).padStart(6)}${COLOR.RESET}`;
     console.log(`  ${name}  ${passed}  ${failed}  ${status}`);
   }
 
   console.log(`  ${line(maxNameLen + 24)}`);
-  console.log(`  ${"Total".padEnd(maxNameLen)}  ${String(totalPassed).padStart(6)}  ${String(totalFailed).padStart(6)}`);
+  const totalPassedStr = `${COLOR.GREEN}${String(totalPassed).padStart(6)}${COLOR.RESET}`;
+  const totalFailedStr = totalFailed > 0 
+    ? `${COLOR.RED}${String(totalFailed).padStart(6)}${COLOR.RESET}`
+    : `${COLOR.DIM}${String(totalFailed).padStart(6)}${COLOR.RESET}`;
+  console.log(`  ${COLOR.BOLD}${"Total".padEnd(maxNameLen)}${COLOR.RESET}  ${totalPassedStr}  ${totalFailedStr}`);
 
-  console.log(`\n  Duration: ${formatDuration(totalDuration)}`);
+  console.log(`\n  Duration: ${COLOR.DIM}${formatDuration(totalDuration)}${COLOR.RESET}`);
 
   if (totalFailed > 0) {
-    console.log("\n  Status: FAILED\n");
+    console.log(`\n  Status: ${COLOR.RED}${COLOR.BOLD}FAILED${COLOR.RESET}\n`);
     process.exit(1);
   } else {
-    console.log("\n  Status: PASSED\n");
+    console.log(`\n  Status: ${COLOR.GREEN}${COLOR.BOLD}PASSED${COLOR.RESET}\n`);
     process.exit(0);
   }
 }

@@ -14,6 +14,20 @@ export interface TestResult {
 
 export const results: TestResult[] = [];
 
+// ANSI color codes
+export const COLOR = {
+  RESET: "\x1b[0m",
+  BOLD: "\x1b[1m",
+  DIM: "\x1b[2m",
+  GREEN: "\x1b[32m",
+  RED: "\x1b[31m",
+  YELLOW: "\x1b[33m",
+  CYAN: "\x1b[36m",
+  WHITE: "\x1b[37m",
+  BG_GREEN: "\x1b[42m",
+  BG_RED: "\x1b[41m",
+};
+
 // Box drawing characters for clean TUI
 const BOX = {
   TOP_LEFT: "┌",
@@ -29,13 +43,13 @@ const BOX = {
   CROSS: "┼",
 };
 
-// Status indicators (no emojis)
+// Status indicators with colors (no emojis)
 const STATUS = {
-  PASS: "[PASS]",
-  FAIL: "[FAIL]",
-  INFO: "[INFO]",
-  WARN: "[WARN]",
-  RUN: "[....]",
+  PASS: `${COLOR.GREEN}[PASS]${COLOR.RESET}`,
+  FAIL: `${COLOR.RED}[FAIL]${COLOR.RESET}`,
+  INFO: `${COLOR.CYAN}[INFO]${COLOR.RESET}`,
+  WARN: `${COLOR.YELLOW}[WARN]${COLOR.RESET}`,
+  RUN: `${COLOR.DIM}[....]${COLOR.RESET}`,
 };
 
 /**
@@ -63,7 +77,7 @@ export function header(text: string, width: number = 70): string {
  * Create a section header
  */
 export function section(text: string): string {
-  return `\n${BOX.T_RIGHT}${line(3)} ${text} ${line(70 - text.length - 6)}`;
+  return `\n${BOX.T_RIGHT}${line(3)} ${COLOR.CYAN}${text}${COLOR.RESET} ${line(70 - text.length - 6)}`;
 }
 
 /**
@@ -86,13 +100,13 @@ export async function runTest(
     await testFn();
     const duration = Date.now() - start;
     results.push({ name, passed: true, duration });
-    console.log(`  ${STATUS.PASS} ${name} (${formatDuration(duration)})`);
+    console.log(`  ${STATUS.PASS} ${name} ${COLOR.DIM}(${formatDuration(duration)})${COLOR.RESET}`);
   } catch (error) {
     const duration = Date.now() - start;
     const errorMsg = error instanceof Error ? error.message : String(error);
     results.push({ name, passed: false, error: errorMsg, duration });
     console.log(`  ${STATUS.FAIL} ${name}`);
-    console.log(`         ${errorMsg}`);
+    console.log(`         ${COLOR.DIM}${errorMsg}${COLOR.RESET}`);
   }
 }
 
@@ -141,17 +155,22 @@ export function printSummary(): { passed: number; failed: number } {
   const totalDuration = results.reduce((sum, r) => sum + r.duration, 0);
 
   console.log(`\n${line()}`);
-  console.log(`\n  Results: ${passed} passed, ${failed} failed`);
-  console.log(`  Duration: ${formatDuration(totalDuration)}`);
+  
+  const passedStr = `${COLOR.GREEN}${passed} passed${COLOR.RESET}`;
+  const failedStr = failed > 0 
+    ? `${COLOR.RED}${failed} failed${COLOR.RESET}` 
+    : `${COLOR.DIM}${failed} failed${COLOR.RESET}`;
+  console.log(`\n  Results: ${passedStr}, ${failedStr}`);
+  console.log(`  Duration: ${COLOR.DIM}${formatDuration(totalDuration)}${COLOR.RESET}`);
 
   if (failed > 0) {
-    console.log(`\n  Failed tests:`);
+    console.log(`\n  ${COLOR.RED}Failed tests:${COLOR.RESET}`);
     results
       .filter((r) => !r.passed)
       .forEach((r) => {
-        console.log(`    - ${r.name}`);
+        console.log(`    ${COLOR.RED}-${COLOR.RESET} ${r.name}`);
         if (r.error) {
-          console.log(`      ${r.error}`);
+          console.log(`      ${COLOR.DIM}${r.error}${COLOR.RESET}`);
         }
       });
   }
