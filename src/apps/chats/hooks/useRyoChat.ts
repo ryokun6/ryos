@@ -138,6 +138,10 @@ export function useRyoChat({
 
   const handleRyoMention = useCallback(
     async (messageContent: string) => {
+      // Add a delay to ensure the user's message is fully received by the server
+      // and visible to other users before Ryo responds
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       // Get recent chat room messages as context (last 20 messages)
       const recentMessages = roomMessages
         .slice(-20)
