@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
 
 /**
@@ -126,9 +127,19 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           }
           // If ttsModel is null, don't add voice settings - let server decide
 
+          // Get auth credentials for rate limit bypass
+          const { authToken, username } = useChatsStore.getState();
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+          if (authToken && username) {
+            headers["Authorization"] = `Bearer ${authToken}`;
+            headers["X-Username"] = username;
+          }
+
           const res = await fetch(endpoint, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify(requestBody),
             signal: controller.signal,
           });
