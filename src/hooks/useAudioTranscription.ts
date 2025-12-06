@@ -36,14 +36,15 @@ export interface UseAudioTranscriptionProps {
   onDebugState?: (state: DebugState) => void;
   silenceThreshold?: number; // Duration in ms to wait before stopping
   minRecordingDuration?: number; // Minimum recording duration in ms
+  frequencyBands?: number; // Number of frequency bands for visualization (default 4)
 }
 
-const analyzeAudioData = (analyser: AnalyserNode): AudioAnalysis => {
+const analyzeAudioData = (analyser: AnalyserNode, bands: number = 4): AudioAnalysis => {
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(dataArray);
 
-  const bandSize = Math.floor(dataArray.length / 4);
-  const frequencies = Array.from({ length: 4 }, (_, i) => {
+  const bandSize = Math.floor(dataArray.length / bands);
+  const frequencies = Array.from({ length: bands }, (_, i) => {
     const start = i * bandSize;
     const end = start + bandSize;
     const bandData = dataArray.slice(start, end);
@@ -52,7 +53,7 @@ const analyzeAudioData = (analyser: AnalyserNode): AudioAnalysis => {
     return average / 255;
   });
 
-  const averageVolume = frequencies.reduce((acc, val) => acc + val, 0) / 4;
+  const averageVolume = frequencies.reduce((acc, val) => acc + val, 0) / bands;
   const isSilent = averageVolume < DEFAULT_VOLUME_SILENCE_THRESHOLD;
 
   return { frequencies, isSilent };
@@ -65,10 +66,12 @@ export function useAudioTranscription({
   onDebugState,
   silenceThreshold = DEFAULT_SILENCE_THRESHOLD,
   minRecordingDuration = DEFAULT_MIN_RECORDING_DURATION,
+  frequencyBands = 4,
 }: UseAudioTranscriptionProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [frequencies, setFrequencies] = useState<number[]>([0, 0, 0, 0]);
+  const [frequencies, setFrequencies] = useState<number[]>(Array(frequencyBands).fill(0));
   const [isSilent, setIsSilent] = useState(true);
+  const frequencyBandsRef = useRef(frequencyBands);
 
   // Refs for audio handling
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -165,7 +168,7 @@ export function useAudioTranscription({
     if (!analyserRef.current) return;
 
     const { frequencies: newFrequencies, isSilent: currentIsSilent } =
-      analyzeAudioData(analyserRef.current);
+      analyzeAudioData(analyserRef.current, frequencyBandsRef.current);
 
     setFrequencies(newFrequencies);
 
@@ -268,7 +271,7 @@ export function useAudioTranscription({
           await audioContextRef.current.close();
         }
         stream.getTracks().forEach((track) => track.stop());
-        setFrequencies([0, 0, 0, 0]);
+        setFrequencies(Array(frequencyBandsRef.current).fill(0));
         setIsSilent(true);
 
         // Then send for transcription

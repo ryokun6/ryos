@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, Hand, AtSign } from "lucide-react";
+import { ArrowUp, Square, Hand, AtSign, Mic } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { useChatSynth } from "@/hooks/useChatSynth";
@@ -19,6 +19,9 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { CHAT_ANALYTICS } from "@/utils/analytics";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
+
+// Number of frequency bands for the full-width waveform
+const WAVEFORM_BANDS = 48;
 
 // Animated ellipsis component (copied from TerminalAppComponent)
 function AnimatedEllipsis() {
@@ -95,6 +98,10 @@ export function ChatInput({
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [lastTypingTime, setLastTypingTime] = useState(0);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [waveformFrequencies, setWaveformFrequencies] = useState<number[]>(
+    Array(WAVEFORM_BANDS).fill(0)
+  );
+  const [waveformIsSilent, setWaveformIsSilent] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const audioButtonRef = useRef<HTMLButtonElement>(null);
   const { playNote } = useChatSynth();
@@ -214,6 +221,19 @@ export function ChatInput({
     setIsRecording(recording);
   };
 
+  const handleFrequenciesChange = useCallback(
+    (frequencies: number[], isSilent: boolean) => {
+      setWaveformFrequencies(frequencies);
+      setWaveformIsSilent(isSilent);
+    },
+    []
+  );
+
+  // Handle stop recording - trigger the audio button click
+  const handleStopRecording = () => {
+    audioButtonRef.current?.click();
+  };
+
   const handleNudgeClick = () => {
     track(CHAT_ANALYTICS.NUDGE);
     playNudgeSound();
@@ -318,138 +338,222 @@ export function ChatInput({
           }}
           className={`flex ${isMacTheme ? "gap-2" : "gap-1"}`}
         >
+          {/* Hidden AudioInputButton - always mounted to manage recording state */}
+          <div className="sr-only">
+            <AudioInputButton
+              ref={audioButtonRef}
+              onTranscriptionComplete={handleTranscriptionComplete}
+              onTranscriptionStart={handleTranscriptionStart}
+              onRecordingStateChange={handleRecordingStateChange}
+              onFrequenciesChange={handleFrequenciesChange}
+              isLoading={isTranscribing}
+              silenceThreshold={1200}
+              externalWaveform={true}
+              frequencyBands={WAVEFORM_BANDS}
+            />
+          </div>
           <AnimatePresence mode="popLayout" initial={false}>
-            <div className="flex-1 relative">
-              <Input
-                ref={inputRef}
-                value={input}
-                onChange={handleInputChangeWithSound}
-                placeholder={
-                  isLoading
-                    ? ""
-                    : isRecording
-                    ? t("apps.chats.status.recording")
-                    : isTranscribing
-                    ? t("apps.chats.status.transcribing")
-                    : needsUsername && !isInChatRoom
-                    ? t("apps.chats.status.createAccountToContinue")
-                    : isFocused || isTouchDevice
-                    ? t("apps.chats.status.typeMessage")
-                    : t("apps.chats.status.typeOrPushSpace")
-                }
-                className={`w-full border-1 border-gray-800 text-xs font-geneva-12 h-9 ${
-                  isMacTheme ? "pl-3 pr-16 rounded-full" : "pl-2 pr-16"
-                } backdrop-blur-lg bg-white/80 ${
-                  isFocused ? "input--focused" : ""
-                } ${isTypingRyoMention ? "border-blue-600 bg-blue-50" : ""} ${
-                  needsUsername && !isInChatRoom
-                    ? "border-orange-600 bg-orange-50"
-                    : ""
+            {isRecording ? (
+              // Recording mode: Full-width waveform UI
+              <motion.div
+                key="recording-ui"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.15 }}
+                className={`flex-1 relative h-9 flex items-center px-3 gap-2 ${
+                  isMacTheme ? "rounded-full" : isXpTheme ? "rounded-none" : "rounded-md"
                 }`}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                }}
-                disabled={(needsUsername && !isInChatRoom) || isOffline}
-              />
-              <AnimatePresence>
-                {isLoading && input.trim() === "" && (
-                  <motion.div
-                    key="thinking-overlay"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-0 left-0 w-full h-full pointer-events-none flex items-center pl-3"
+                style={
+                  isMacTheme
+                    ? {
+                        border: "1px solid rgba(0, 0, 0, 0.2)",
+                        backgroundColor: "rgba(255, 255, 255, 1)",
+                        boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.1)",
+                      }
+                    : isXpTheme
+                    ? {
+                        border: "1px solid #7f9db9",
+                        backgroundColor: "white",
+                      }
+                    : {
+                        border: "1px solid #000",
+                        backgroundColor: "rgba(255, 255, 255, 0.8)",
+                      }
+                }
+              >
+                {/* Recording indicator */}
+                <div className="flex items-center shrink-0">
+                  <span className="text-gray-500 text-xs font-geneva-12">
+                    {t("apps.chats.status.listening")}
+                  </span>
+                </div>
+                {/* Waveform visualization */}
+                <div className="flex-1 flex items-center h-full overflow-hidden">
+                  <div
+                    className="flex gap-[2px] items-center justify-between w-full"
+                    style={{ opacity: waveformIsSilent ? 0.4 : 1 }}
                   >
-                    <span className="text-gray-500 opacity-70 shimmer-gray text-[13px] font-geneva-12">
-                      {t("apps.chats.status.thinking")}
-                      <AnimatedEllipsis />
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                {showNudgeButton && (
+                    {waveformFrequencies.map((freq, index) => (
+                      <motion.div
+                        key={index}
+                        className="flex-1 max-w-[2px] rounded-full origin-center bg-neutral-300"
+                        initial={{ scaleY: 0.3 }}
+                        animate={{
+                          scaleY: waveformIsSilent
+                            ? 0.3
+                            : Math.max(0.3, Math.min(freq * 2, 1)),
+                        }}
+                        style={{
+                          height: 20,
+                        }}
+                        transition={{
+                          type: "spring",
+                          bounce: 0.5,
+                          duration: 0.12,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              // Normal input mode
+              <motion.div
+                key="input-ui"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.15 }}
+                className="flex-1 relative"
+              >
+                <Input
+                  ref={inputRef}
+                  value={input}
+                  onChange={handleInputChangeWithSound}
+                  placeholder={
+                    isLoading
+                      ? ""
+                      : isTranscribing
+                      ? t("apps.chats.status.transcribing")
+                      : needsUsername && !isInChatRoom
+                      ? t("apps.chats.status.createAccountToContinue")
+                      : isFocused || isTouchDevice
+                      ? t("apps.chats.status.typeMessage")
+                      : t("apps.chats.status.typeOrPushSpace")
+                  }
+                  className={`w-full border-1 border-gray-800 text-xs font-geneva-12 h-9 ${
+                    isMacTheme ? "pl-3 pr-16 rounded-full" : "pl-2 pr-16"
+                  } backdrop-blur-lg bg-white/80 ${
+                    isFocused ? "input--focused" : ""
+                  } ${isTypingRyoMention ? "border-blue-600 bg-blue-50" : ""} ${
+                    needsUsername && !isInChatRoom
+                      ? "border-orange-600 bg-orange-50"
+                      : ""
+                  }`}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                  }}
+                  disabled={(needsUsername && !isInChatRoom) || isOffline}
+                />
+                <AnimatePresence>
+                  {isLoading && input.trim() === "" && (
+                    <motion.div
+                      key="thinking-overlay"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-0 left-0 w-full h-full pointer-events-none flex items-center pl-3"
+                    >
+                      <span className="text-gray-500 opacity-70 shimmer-gray text-[13px] font-geneva-12">
+                        {t("apps.chats.status.thinking")}
+                        <AnimatedEllipsis />
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  {showNudgeButton && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={handleNudgeClick}
+                              className={`w-[22px] h-[22px] flex items-center justify-center ${
+                                isMacTheme
+                                  ? "text-neutral-400 hover:text-neutral-800 transition-colors"
+                                  : ""
+                              }`}
+                              disabled={isLoading}
+                              aria-label={t("apps.chats.ariaLabels.sendNudge")}
+                            >
+                              <Hand className="h-4 w-4 -rotate-40" />
+                            </button>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{t("apps.chats.ariaLabels.sendNudge")}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  {isInChatRoom && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={handleMentionClick}
+                              className={`w-[22px] h-[22px] flex items-center justify-center ${
+                                isMacTheme
+                                  ? "text-neutral-400 hover:text-neutral-800 transition-colors"
+                                  : ""
+                              }`}
+                              disabled={isLoading}
+                              aria-label={t("apps.chats.ariaLabels.mentionRyo")}
+                            >
+                              <AtSign className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{t("apps.chats.ariaLabels.mentionRyo")}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={handleNudgeClick}
-                            className={`w-[22px] h-[22px] flex items-center justify-center ${
-                              isMacTheme
-                                ? "text-neutral-400 hover:text-neutral-800 transition-colors"
-                                : ""
-                            }`}
-                            disabled={isLoading}
-                            aria-label={t("apps.chats.ariaLabels.sendNudge")}
-                          >
-                            <Hand className="h-4 w-4 -rotate-40" />
-                          </button>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t("apps.chats.ariaLabels.sendNudge")}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-                {isInChatRoom && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={handleMentionClick}
-                            className={`w-[22px] h-[22px] flex items-center justify-center ${
-                              isMacTheme
-                                ? "text-neutral-400 hover:text-neutral-800 transition-colors"
-                                : ""
-                            }`}
-                            disabled={isLoading}
-                            aria-label={t("apps.chats.ariaLabels.mentionRyo")}
-                          >
-                            <AtSign className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t("apps.chats.ariaLabels.mentionRyo")}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative">
-                        <AudioInputButton
-                          ref={audioButtonRef}
-                          onTranscriptionComplete={handleTranscriptionComplete}
-                          onTranscriptionStart={handleTranscriptionStart}
-                          onRecordingStateChange={handleRecordingStateChange}
-                          isLoading={isTranscribing}
-                          silenceThreshold={1200}
+                        <button
+                          type="button"
+                          onClick={() => audioButtonRef.current?.click()}
                           className={`w-[22px] h-[22px] flex items-center justify-center ${
                             isMacTheme
                               ? "text-neutral-400 hover:text-neutral-800 transition-colors"
                               : ""
                           }`}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t("apps.chats.ariaLabels.pushToTalk")}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>
-            {isLoading || isSpeechPlaying ? (
+                          disabled={isTranscribing}
+                          aria-label={t("apps.chats.ariaLabels.pushToTalk")}
+                        >
+                          <Mic className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("apps.chats.ariaLabels.pushToTalk")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </motion.div>
+            )}
+            {isLoading || isSpeechPlaying || isRecording ? (
               <motion.div
                 key="stop"
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -460,8 +564,12 @@ export function ChatInput({
                 <Button
                   type="button"
                   onClick={() => {
-                    track(CHAT_ANALYTICS.STOP_GENERATION);
-                    onStop();
+                    if (isRecording) {
+                      handleStopRecording();
+                    } else {
+                      track(CHAT_ANALYTICS.STOP_GENERATION);
+                      onStop();
+                    }
                   }}
                   className={`text-xs w-9 h-9 p-0 flex items-center justify-center ${
                     isMacTheme ? "rounded-full" : "rounded-none"

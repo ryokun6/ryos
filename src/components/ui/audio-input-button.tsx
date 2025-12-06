@@ -7,9 +7,14 @@ interface AudioInputButtonProps {
   onTranscriptionComplete: (text: string) => void;
   onTranscriptionStart?: () => void;
   onRecordingStateChange?: (recording: boolean) => void;
+  onFrequenciesChange?: (frequencies: number[], isSilent: boolean) => void;
   isLoading?: boolean;
   className?: string;
   silenceThreshold?: number;
+  /** If true, only shows mic icon and manages recording - waveform is rendered externally */
+  externalWaveform?: boolean;
+  /** Number of frequency bands to analyze (default 4, use higher for more waveform segments) */
+  frequencyBands?: number;
 }
 
 export const AudioInputButton = forwardRef<
@@ -21,9 +26,12 @@ export const AudioInputButton = forwardRef<
       onTranscriptionComplete,
       onTranscriptionStart,
       onRecordingStateChange,
+      onFrequenciesChange,
       isLoading = false,
       className = "",
       silenceThreshold = 1000,
+      externalWaveform = false,
+      frequencyBands = 4,
     },
     ref
   ) => {
@@ -46,11 +54,16 @@ export const AudioInputButton = forwardRef<
       },
       silenceThreshold,
       minRecordingDuration: 500, // Ensure we get at least 0.5s of audio
+      frequencyBands,
     });
 
     useEffect(() => {
       onRecordingStateChange?.(isRecording);
     }, [isRecording, onRecordingStateChange]);
+
+    useEffect(() => {
+      onFrequenciesChange?.(frequencies, isSilent);
+    }, [frequencies, isSilent, onFrequenciesChange]);
 
     return (
       <div className="relative">
@@ -63,7 +76,7 @@ export const AudioInputButton = forwardRef<
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : isRecording ? (
+          ) : isRecording && !externalWaveform ? (
             <AudioBars
               frequencies={frequencies}
               color="black"
