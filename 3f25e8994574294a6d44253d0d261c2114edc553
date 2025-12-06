@@ -1,0 +1,5 @@
+AI Notes:
+
+package.json: +29
+scripts/seed-dev-users.ts: +1-281
+tests/test-chat-rooms.ts: +21-34,+275-918,+956-989
