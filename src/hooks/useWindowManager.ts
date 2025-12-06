@@ -121,15 +121,12 @@ export const useWindowManager = ({
     const topInset = menuBarHeight;
     // bottomInset includes dock for resize/maximize constraints
     const bottomInset = taskbarHeight + dockHeight + safe;
-    // bottomInsetForDrag excludes dock so windows can be dragged below it on macOS
-    const bottomInsetForDrag = taskbarHeight + safe;
     return {
       menuBarHeight,
       taskbarHeight,
       safeAreaBottom: safe,
       topInset,
       bottomInset,
-      bottomInsetForDrag,
       dockHeight,
     };
   }, [currentTheme, isXpTheme, getSafeAreaBottomInset, dockScale]);
@@ -249,7 +246,7 @@ export const useWindowManager = ({
         const newX = clientX - dragOffset.x;
         const newY = clientY - dragOffset.y;
 
-        const { topInset: menuBarHeight, bottomInsetForDrag } = computeInsets();
+        const { topInset: menuBarHeight } = computeInsets();
 
         // Start playing move sound when movement begins (non-looping, plays repeatedly)
         if (!isMobile && !isMovePlayingRef.current) {
@@ -265,10 +262,11 @@ export const useWindowManager = ({
           // On mobile, only allow vertical dragging and keep window full width
           setWindowPosition({ x: 0, y: Math.max(menuBarHeight, newY) });
         } else {
-          const maxX = window.innerWidth - windowSize.width;
-          // Use bottomInsetForDrag to allow windows to be dragged below the dock on macOS
-          const maxY = window.innerHeight - windowSize.height - bottomInsetForDrag;
-          const x = Math.min(Math.max(0, newX), maxX);
+          // Allow dragging past edges, but keep at least 80px of window visible
+          const minX = -(windowSize.width - 80); // Can drag left, keeping 80px visible on right
+          const maxX = window.innerWidth - 80;    // Can drag right, keeping 80px visible on left
+          const maxY = window.innerHeight - 80;   // Can drag down, keeping 80px visible at top
+          const x = Math.min(Math.max(minX, newX), maxX);
           const y = Math.min(Math.max(menuBarHeight, newY), Math.max(0, maxY));
           setWindowPosition({ x, y });
         }
