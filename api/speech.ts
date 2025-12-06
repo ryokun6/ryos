@@ -3,6 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./utils/cors.js";
 import * as RateLimit from "./utils/rate-limit.js";
 import { Redis } from "@upstash/redis";
+import { validateAuthToken } from "./utils/auth-validate.js";
 
 // --- Default Configuration -----------------------------------------------
 
@@ -51,41 +52,6 @@ const redis = new Redis({
   url: process.env.REDIS_KV_REST_API_URL,
   token: process.env.REDIS_KV_REST_API_TOKEN,
 });
-
-// Authentication constants
-const AUTH_TOKEN_PREFIX = "chat:token:";
-const TOKEN_LAST_PREFIX = "chat:token:last:";
-const USER_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days (for tokens only)
-
-// Validate authentication token function
-async function validateAuthToken(
-  username: string | undefined | null,
-  authToken: string | undefined | null
-): Promise<{ valid: boolean; newToken?: string }> {
-  if (!username || !authToken) {
-    return { valid: false };
-  }
-
-  const normalizedUsername = username.toLowerCase();
-  // 1) New multi-token scheme: chat:token:user:{username}:{token}
-  const userScopedKey = `chat:token:user:${normalizedUsername}:${authToken}`;
-  const exists = await redis.exists(userScopedKey);
-  if (exists) {
-    await redis.expire(userScopedKey, USER_TTL_SECONDS);
-    return { valid: true };
-  }
-
-  // 2) Fallback to legacy single-token mapping (username -> token)
-  const legacyKey = `${AUTH_TOKEN_PREFIX}${normalizedUsername}`;
-  const storedToken = await redis.get(legacyKey);
-
-  if (storedToken && storedToken === authToken) {
-    await redis.expire(legacyKey, USER_TTL_SECONDS);
-    return { valid: true };
-  }
-
-  return { valid: false };
-}
 
 export const runtime = "edge";
 export const maxDuration = 60;
@@ -202,7 +168,7 @@ export default async function handler(req: Request) {
   const authToken: string | undefined = headerAuthToken || undefined;
 
   // Validate authentication
-  const validationResult = await validateAuthToken(username, authToken);
+  const validationResult = await validateAuthToken(redis, username, authToken);
   const isAuthenticated = validationResult.valid;
   const identifier = username ? username.toLowerCase() : null;
 
@@ -353,7 +319,7 @@ export default async function handler(req: Request) {
         speed: speed ?? DEFAULT_OPENAI_SPEED,
       });
 
-      audioData = audio.uint8Array.buffer;
+      audioData = audio.uint8Array.slice().buffer;
       mimeType = audio.mediaType ?? "audio/mpeg";
       logInfo(requestId, "OpenAI speech generated", {
         bytes: audioData.byteLength,

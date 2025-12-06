@@ -6,6 +6,11 @@
 import { Redis } from "@upstash/redis";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import {
+  USER_EXPIRATION_TIME,
+  USER_TTL_SECONDS,
+  TOKEN_GRACE_PERIOD,
+} from "../chat-rooms/constants.js";
 
 // ============================================================================
 // Types
@@ -33,16 +38,14 @@ export interface ExtractedAuth {
 // Token constants
 export const AUTH_TOKEN_PREFIX = "chat:token:";
 export const TOKEN_LENGTH = 32; // 32 bytes = 256 bits
-export const TOKEN_GRACE_PERIOD = 86400 * 365; // 365 days (1 year) grace period for refresh after expiry
 
 // Password constants
 export const PASSWORD_HASH_PREFIX = "chat:password:";
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_BCRYPT_ROUNDS = 10;
 
-// TTL constants
-export const USER_TTL_SECONDS = 7776000; // 90 days (kept for token expiry)
-export const USER_EXPIRATION_TIME = 7776000; // 90 days
+// Re-export TTL constants from central location
+export { USER_TTL_SECONDS, USER_EXPIRATION_TIME, TOKEN_GRACE_PERIOD };
 
 // Rate limiting constants for auth actions
 export const RATE_LIMIT_WINDOW_SECONDS = 60; // 1 minute window
@@ -214,7 +217,7 @@ export async function deleteAllUserTokens(username: string): Promise<number> {
   const normalizedUsername = username.toLowerCase();
   let deletedCount = 0;
 
-  // 1. NEW scheme: chat:token:user:{username}:{token}
+  // 1. Delete all active tokens: chat:token:user:{username}:{token}
   const pattern = getUserTokenPattern(normalizedUsername);
   const userTokenKeys: string[] = [];
   let cursor = 0;
@@ -233,12 +236,7 @@ export async function deleteAllUserTokens(username: string): Promise<number> {
     deletedCount += deleted;
   }
 
-  // 2. Legacy single-token mapping: chat:token:{username}
-  const legacyKey = `${AUTH_TOKEN_PREFIX}${normalizedUsername}`;
-  const legacyDeleted = await redis.del(legacyKey);
-  deletedCount += legacyDeleted;
-
-  // 3. Grace-period token store: chat:token:last:{username}
+  // 2. Delete grace-period token: chat:token:last:{username}
   const lastTokenKey = `${AUTH_TOKEN_PREFIX}last:${normalizedUsername}`;
   const lastDeleted = await redis.del(lastTokenKey);
   deletedCount += lastDeleted;

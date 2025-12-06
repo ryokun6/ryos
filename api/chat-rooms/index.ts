@@ -114,7 +114,6 @@ export async function GET(request: Request): Promise<Response> {
       "getMessages",
       "getBulkMessages",
       "getUsers",
-      "verifyToken",
     ];
 
     // Check authentication for protected actions
@@ -386,8 +385,8 @@ export async function POST(request: Request): Promise<Response> {
           (body.username as string) ||
           request.headers.get("x-username") ||
           `anon:${ip}`
-        ).toLowerCase();
-        const allowed = await checkRateLimit(action, identifier, requestId);
+        )!.toLowerCase();
+        const allowed = await checkRateLimit(action!, identifier, requestId);
         if (!allowed) {
           response = createErrorResponse(
             "Too many requests, please slow down",

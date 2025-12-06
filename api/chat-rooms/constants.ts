@@ -24,6 +24,10 @@ export const ROOM_PRESENCE_TTL_SECONDS = 86400; // 1 day (24 hours)
 
 // User/Token expiration time
 export const USER_EXPIRATION_TIME = 7776000; // 90 days
+export const USER_TTL_SECONDS = USER_EXPIRATION_TIME; // Alias for clarity
+
+// Token grace period - allows refresh after token expires
+export const TOKEN_GRACE_PERIOD = 86400 * 30; // 30 days grace period for refresh after expiry
 
 // ============================================================================
 // Chat Rate Limiting

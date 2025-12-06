@@ -5,58 +5,18 @@ import {
   preflightIfNeeded,
 } from "./utils/cors.js";
 import { z } from "zod";
+import { validateAuthToken, generateToken } from "./utils/auth-validate.js";
 
 // Vercel Edge Function configuration
 export const config = {
   runtime: "edge",
 };
 
-// Authentication constants
-const AUTH_TOKEN_PREFIX = "chat:token:";
-const TOKEN_LAST_PREFIX = "chat:token:last:";
-const USER_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days (for tokens only)
-
 // Applet sharing key prefix
 const APPLET_SHARE_PREFIX = "applet:share:";
 
-// Generate unique ID (128-bit random identifier encoded as hex, 32 chars)
-const generateId = (): string => {
-  // For edge runtime, use crypto.getRandomValues
-  const array = new Uint8Array(16);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
-};
-
-// Validate authentication token function
-async function validateAuthToken(
-  redis: Redis,
-  username: string | undefined | null,
-  authToken: string | undefined | null
-): Promise<{ valid: boolean; newToken?: string }> {
-  if (!username || !authToken) {
-    return { valid: false };
-  }
-
-  const normalizedUsername = username.toLowerCase();
-  // 1) New multi-token scheme: chat:token:user:{username}:{token}
-  const userScopedKey = `chat:token:user:${normalizedUsername}:${authToken}`;
-  const exists = await redis.exists(userScopedKey);
-  if (exists) {
-    await redis.expire(userScopedKey, USER_TTL_SECONDS);
-    return { valid: true };
-  }
-
-  // 2) Fallback to legacy single-token mapping (username -> token)
-  const legacyKey = `${AUTH_TOKEN_PREFIX}${normalizedUsername}`;
-  const storedToken = await redis.get(legacyKey);
-
-  if (storedToken && storedToken === authToken) {
-    await redis.expire(legacyKey, USER_TTL_SECONDS);
-    return { valid: true };
-  }
-
-  return { valid: false };
-}
+// Generate unique ID for applets (uses shared token generator)
+const generateId = (): string => generateToken().substring(0, 32);
 
 // Request schemas
 const SaveAppletRequestSchema = z.object({

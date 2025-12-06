@@ -28,6 +28,7 @@ import {
   AI_LIMIT_PER_5_HOURS,
   } from "./utils/rate-limit.js";
 import { Redis } from "@upstash/redis";
+import { validateAuthToken } from "./utils/auth-validate.js";
 import { getEffectiveOrigin, isAllowedOrigin } from "./utils/cors.js";
 
 // Central list of supported theme IDs for tool validation
@@ -370,86 +371,6 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN,
 });
 
-// Add auth validation function
-const AUTH_TOKEN_PREFIX = "chat:token:";
-const TOKEN_LAST_PREFIX = "chat:token:last:";
-const USER_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days (for tokens only)
-const TOKEN_GRACE_PERIOD = 365 * 24 * 60 * 60; // 365 days (1 year)
-
-async function validateAuthToken(
-  username: string | undefined | null,
-  authToken: string | undefined | null
-): Promise<{ valid: boolean; newToken?: string }> {
-  if (!username || !authToken) {
-    return { valid: false };
-  }
-
-  const normalizedUsername = username.toLowerCase();
-  // 1) New multi-token scheme: chat:token:user:{username}:{token}
-  const userScopedKey = `chat:token:user:${normalizedUsername}:${authToken}`;
-  const exists = await redis.exists(userScopedKey);
-  if (exists) {
-    await redis.expire(userScopedKey, USER_TTL_SECONDS);
-    return { valid: true };
-  }
-
-  // 2) Fallback to legacy single-token mapping (username -> token)
-  const legacyKey = `${AUTH_TOKEN_PREFIX}${normalizedUsername}`;
-  const storedToken = await redis.get(legacyKey);
-
-  if (storedToken && storedToken === authToken) {
-    await redis.expire(legacyKey, USER_TTL_SECONDS);
-    return { valid: true };
-  }
-
-  // Token not found or doesn't match - check if it's in grace period
-  const lastTokenKey = `${TOKEN_LAST_PREFIX}${normalizedUsername}`;
-  const lastTokenData = await redis.get(lastTokenKey);
-
-  if (lastTokenData) {
-    try {
-      const { token: lastToken, expiredAt } = JSON.parse(
-        lastTokenData as string
-      );
-      const gracePeriodEnd = expiredAt + TOKEN_GRACE_PERIOD * 1000;
-
-      // Check if the provided token matches the last valid token and is within grace period
-      if (lastToken === authToken && Date.now() < gracePeriodEnd) {
-        console.log(
-          `[Auth] Token in grace period for user ${username}, refreshing...`
-        );
-
-        // Generate new token using Web Crypto API (Edge Runtime compatible)
-        const tokenBytes = new Uint8Array(32);
-        crypto.getRandomValues(tokenBytes);
-        const newToken = Array.from(tokenBytes, (byte) =>
-          byte.toString(16).padStart(2, "0")
-        ).join("");
-
-        // Store the old token for future grace period use
-        await redis.set(
-          lastTokenKey,
-          JSON.stringify({
-            token: authToken,
-            expiredAt: Date.now(),
-          }),
-          { ex: TOKEN_GRACE_PERIOD }
-        );
-
-        // Issue a new token in the new multi-token scheme
-        const newUserScopedKey = `chat:token:user:${normalizedUsername}:${newToken}`;
-        await redis.set(newUserScopedKey, Date.now(), { ex: USER_TTL_SECONDS });
-
-        return { valid: true, newToken };
-      }
-    } catch (e) {
-      console.error("[Auth] Error parsing last token data:", e);
-    }
-  }
-
-  return { valid: false };
-}
-
 export default async function handler(req: Request) {
   // Check origin before processing request
   const effectiveOrigin = getEffectiveOrigin(req);
@@ -542,7 +463,11 @@ export default async function handler(req: Request) {
     // Rate-limit & auth checks
     // ---------------------------
     // Validate authentication (all users, including "ryo", must present a valid token)
-    const validationResult = await validateAuthToken(username, authToken);
+    // Enable grace period with auto-refresh for expired tokens
+    const validationResult = await validateAuthToken(redis, username, authToken, {
+      allowExpired: true,
+      refreshOnGrace: true,
+    });
 
     // If a username was provided but the token is missing/invalid, reject the request early
     if (username && !validationResult.valid) {

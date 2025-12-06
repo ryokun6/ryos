@@ -14,6 +14,7 @@ import {
 } from "./utils/cors.js";
 import * as RateLimit from "./utils/rate-limit.js";
 import { Redis } from "@upstash/redis";
+import { validateAuthToken } from "./utils/auth-validate.js";
 
 export const runtime = "edge";
 export const edge = true;
@@ -121,41 +122,6 @@ const ALLOWED_HOSTS = new Set([
   "127.0.0.1:3000",
   "127.0.0.1:5173",
 ]);
-
-// Authentication constants
-const AUTH_TOKEN_PREFIX = "chat:token:";
-const USER_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days (for tokens only)
-
-// Validate authentication token function
-async function validateAuthToken(
-  redis: Redis,
-  username: string | undefined | null,
-  authToken: string | undefined | null
-): Promise<{ valid: boolean }> {
-  if (!username || !authToken) {
-    return { valid: false };
-  }
-
-  const normalizedUsername = username.toLowerCase();
-  // 1) New multi-token scheme: chat:token:user:{username}:{token}
-  const userScopedKey = `chat:token:user:${normalizedUsername}:${authToken}`;
-  const exists = await redis.exists(userScopedKey);
-  if (exists) {
-    await redis.expire(userScopedKey, USER_TTL_SECONDS);
-    return { valid: true };
-  }
-
-  // 2) Fallback to legacy single-token mapping (username -> token)
-  const legacyKey = `${AUTH_TOKEN_PREFIX}${normalizedUsername}`;
-  const storedToken = await redis.get(legacyKey);
-
-  if (storedToken && storedToken === authToken) {
-    await redis.expire(legacyKey, USER_TTL_SECONDS);
-    return { valid: true };
-  }
-
-  return { valid: false };
-}
 
 const isRyOSHost = (hostHeader: string | null): boolean => {
   if (!hostHeader) return false;

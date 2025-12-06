@@ -2,8 +2,8 @@
  * Token handlers for chat-rooms API
  */
 
-import { redis, getUser, setUser, getCurrentTimestamp } from "./redis.js";
-import { CHAT_USERS_PREFIX, USER_EXPIRATION_TIME } from "./constants.js";
+import { redis } from "./redis.js";
+import { CHAT_USERS_PREFIX } from "./constants.js";
 import { logInfo, logError } from "../utils/logging.js";
 import { isProfaneUsername } from "../utils/validation.js";
 import {
@@ -19,8 +19,6 @@ import {
   hashPassword,
   getUserPasswordHash,
   setUserPasswordHash,
-  AUTH_TOKEN_PREFIX,
-  USER_TTL_SECONDS,
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
 } from "../utils/auth.js";
@@ -67,13 +65,6 @@ export async function handleGenerateToken(
 
     const authToken = generateAuthToken();
     await storeToken(username, authToken);
-
-    await storeLastValidToken(
-      username,
-      authToken,
-      Date.now() + USER_EXPIRATION_TIME * 1000,
-      USER_EXPIRATION_TIME + TOKEN_GRACE_PERIOD
-    );
 
     logInfo(requestId, `Token generated successfully for user ${username}`);
 
@@ -163,13 +154,15 @@ export async function handleRefreshToken(
 
 /**
  * Handle verify token request
+ * Requires username in X-Username header for O(1) lookup
  */
 export async function handleVerifyToken(
   request: Request,
   requestId: string
 ): Promise<Response> {
   try {
-    const { token: authToken } = extractAuth(request);
+    const { token: authToken, username } = extractAuth(request);
+
     if (!authToken) {
       logInfo(
         requestId,
@@ -178,97 +171,50 @@ export async function handleVerifyToken(
       return createErrorResponse("Authorization token required", 401);
     }
 
-    // Check new scheme: chat:token:user:{username}:{token}
-    const pattern = `${AUTH_TOKEN_PREFIX}user:*:${authToken}`;
-    let cursor = 0;
-    let foundKey: string | null = null;
-    do {
-      const [newCursor, keys] = await redis.scan(cursor, {
-        match: pattern,
-        count: 100,
-      });
-      cursor = parseInt(String(newCursor));
-      if (keys.length > 0) {
-        foundKey = keys[0];
-        break;
-      }
-    } while (cursor !== 0);
-
-    if (foundKey) {
-      const parts = foundKey.split(":");
-      const username = parts[3];
-      if (isProfaneUsername(username)) {
-        logInfo(
-          requestId,
-          `Token verification blocked for profane username: ${username}`
-        );
-        return createErrorResponse("Invalid authentication token", 401);
-      }
-      await redis.expire(foundKey, USER_TTL_SECONDS);
-      return new Response(
-        JSON.stringify({ valid: true, username, message: "Token is valid" }),
-        { headers: { "Content-Type": "application/json" } }
+    if (!username) {
+      logInfo(
+        requestId,
+        "Token verification failed: Missing X-Username header"
       );
+      return createErrorResponse("X-Username header required", 400);
     }
 
-    // Grace-period path: scan last token records
-    const lastPattern = `${AUTH_TOKEN_PREFIX}last:*`;
-    cursor = 0;
-    let graceUsername: string | null = null;
-    let expiredAt = 0;
-    do {
-      const [newCursor, keys] = await redis.scan(cursor, {
-        match: lastPattern,
-        count: 100,
-      });
-      cursor = parseInt(String(newCursor));
-      if (keys.length) {
-        const values = await Promise.all(
-          keys.map((k) => redis.get<string>(k))
-        );
-        for (let i = 0; i < keys.length; i++) {
-          const raw = values[i];
-          if (!raw) continue;
-          try {
-            const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-            if (parsed?.token === authToken) {
-              const exp = Number(parsed.expiredAt) || 0;
-              if (Date.now() < exp + TOKEN_GRACE_PERIOD * 1000) {
-                const keyParts = keys[i].split(":");
-                graceUsername = keyParts[keyParts.length - 1];
-                expiredAt = exp;
-                break;
-              }
-            }
-          } catch {
-            // ignore
-          }
-        }
-        if (graceUsername) break;
-      }
-    } while (cursor !== 0);
+    if (isProfaneUsername(username)) {
+      logInfo(
+        requestId,
+        `Token verification blocked for profane username: ${username}`
+      );
+      return createErrorResponse("Invalid authentication token", 401);
+    }
 
-    if (graceUsername) {
-      if (isProfaneUsername(graceUsername)) {
-        logInfo(
-          requestId,
-          `Grace token verification blocked for profane username: ${graceUsername}`
-        );
-        return createErrorResponse("Invalid authentication token", 401);
-      }
+    // Direct O(1) lookup using validateAuth
+    const validationResult = await validateAuth(
+      username,
+      authToken,
+      requestId,
+      true // allow expired tokens within grace period
+    );
+
+    if (!validationResult.valid) {
+      return createErrorResponse("Invalid authentication token", 401);
+    }
+
+    if (validationResult.expired) {
       return new Response(
         JSON.stringify({
           valid: true,
-          username: graceUsername,
+          username,
           expired: true,
           message: "Token is within grace period",
-          expiredAt,
         }),
         { headers: { "Content-Type": "application/json" } }
       );
     }
 
-    return createErrorResponse("Invalid authentication token", 401);
+    return new Response(
+      JSON.stringify({ valid: true, username, message: "Token is valid" }),
+      { headers: { "Content-Type": "application/json" } }
+    );
   } catch (error) {
     logError(requestId, `Error verifying token:`, error);
     return createErrorResponse("Failed to verify token", 500);
@@ -335,13 +281,6 @@ export async function handleAuthenticateWithPassword(
 
     const authToken = generateAuthToken();
     await storeToken(username, authToken);
-
-    await storeLastValidToken(
-      username,
-      authToken,
-      Date.now() + USER_EXPIRATION_TIME * 1000,
-      USER_EXPIRATION_TIME + TOKEN_GRACE_PERIOD
-    );
 
     logInfo(
       requestId,
