@@ -291,3 +291,4 @@ export function TerminalToolInvocation({
     </div>
   );
 }
+
