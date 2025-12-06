@@ -1042,9 +1042,10 @@ export const useChatsStore = create<ChatsStoreState>()(
                 const byId = new Map<string, ChatMessage>();
                 
                 // Collect temp (optimistic) messages separately for deduplication
+                // Only messages with temp_ prefix IDs are considered optimistic
                 const tempMessages: ChatMessage[] = [];
                 for (const m of existing) {
-                  if (m.id.startsWith("temp_") || m.clientId) {
+                  if (m.id.startsWith("temp_")) {
                     tempMessages.push(m);
                   } else {
                     byId.set(m.id, m);
@@ -1174,9 +1175,10 @@ export const useChatsStore = create<ChatsStoreState>()(
                     const byId = new Map<string, ChatMessage>();
                     
                     // Collect temp (optimistic) messages separately for deduplication
+                    // Only messages with temp_ prefix IDs are considered optimistic
                     const tempMessages: ChatMessage[] = [];
                     for (const m of existing) {
-                      if (m.id.startsWith("temp_") || m.clientId) {
+                      if (m.id.startsWith("temp_")) {
                         tempMessages.push(m);
                       } else {
                         byId.set(m.id, m);
