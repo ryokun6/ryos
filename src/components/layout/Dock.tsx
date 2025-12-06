@@ -46,9 +46,9 @@ interface IconButtonProps {
   idKey: string;
   showIndicator?: boolean;
   isEmoji?: boolean;
-  onDragOver?: (e: React.DragEvent<HTMLButtonElement>) => void;
-  onDrop?: (e: React.DragEvent<HTMLButtonElement>) => void;
-  onDragLeave?: (e: React.DragEvent<HTMLButtonElement>) => void;
+  onDragOver?: React.DragEventHandler;
+  onDrop?: React.DragEventHandler;
+  onDragLeave?: React.DragEventHandler;
   onContextMenu?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   mouseX: MotionValue<number>;
   magnifyEnabled: boolean;
@@ -177,50 +177,39 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
     );
 
     return (
-      <div
-        draggable={draggable}
-        onDragStart={onDragStart as React.DragEventHandler<HTMLDivElement>}
-        onDragEnd={onDragEnd as React.DragEventHandler<HTMLDivElement>}
-        style={{ display: "contents" }}
+      <motion.div
+        ref={setCombinedRef}
+        layout
+        layoutId={`dock-icon-${idKey}`}
+        data-dock-icon={idKey}
+        initial={isNew ? { scale: 0, opacity: 0 } : undefined}
+        animate={{
+          scale: isDraggedOutside ? 0.5 : 1,
+          // Hide original icon while dragging so spacer stands in its place
+          opacity: isDragging ? 0 : isDraggedOutside ? 0.2 : 1,
+        }}
+        exit={{
+          scale: 0,
+          opacity: 0,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 500,
+          damping: 36,
+          mass: 0.7,
+        }}
+        style={{
+          transformOrigin: "bottom center",
+          willChange: "width, height, transform",
+          width: widthValue,
+          height: widthValue,
+          marginLeft: isPresent ? 4 : 0,
+          marginRight: isPresent ? 4 : 0,
+          overflow: "visible",
+          cursor: draggable ? "grab" : "pointer",
+        }}
+        className="flex-shrink-0 relative"
       >
-        <motion.div
-          ref={setCombinedRef}
-          layout
-          layoutId={`dock-icon-${idKey}`}
-          data-dock-icon={idKey}
-          initial={isNew ? { scale: 0, opacity: 0 } : undefined}
-          animate={{ 
-            scale: isDraggedOutside ? 0.5 : 1, 
-            opacity: isDragging ? 0.5 : isDraggedOutside ? 0.3 : 1 
-          }}
-          exit={{
-            scale: 0,
-            opacity: 0,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 30,
-            mass: 0.8,
-            layout: {
-              type: "spring",
-              stiffness: 300,
-              damping: 30,
-              mass: 0.8,
-            },
-          }}
-          style={{
-            transformOrigin: "bottom center",
-            willChange: "width, height, transform",
-            width: widthValue,
-            height: widthValue,
-            marginLeft: isPresent ? 4 : 0,
-            marginRight: isPresent ? 4 : 0,
-            overflow: "visible",
-            cursor: draggable ? "grab" : "pointer",
-          }}
-          className="flex-shrink-0 relative"
-        >
         <AnimatePresence>
           {isHovered && (
             <motion.div
@@ -252,9 +241,12 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
           onContextMenu={onContextMenu}
           onMouseEnter={onHover}
           onMouseLeave={onLeave}
-          {...(onDragOver && { onDragOver })}
-          {...(onDrop && { onDrop })}
-          {...(onDragLeave && { onDragLeave })}
+          draggable={draggable}
+          onDragStart={onDragStart as any}
+          onDragEnd={onDragEnd as any}
+          onDragOver={onDragOver as any}
+          onDrop={onDrop as any}
+          onDragLeave={onDragLeave as any}
           {...longPressHandlers}
           className="relative flex items-end justify-center w-full h-full"
           style={{
@@ -336,7 +328,6 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
           ) : null}
         </button>
       </motion.div>
-      </div>
     );
   }
 );
@@ -634,7 +625,7 @@ function MacDock() {
   }, [externalDragIndex, pinnedItems.length, fileStore, addDockItem, isExternalDrag]);
   
   // Handle internal dock item drag start
-  const handleItemDragStart = useCallback((e: React.DragEvent<HTMLDivElement>, itemId: string, index: number) => {
+  const handleItemDragStart = useCallback((e: React.DragEvent, itemId: string, index: number) => {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("application/x-dock-item", JSON.stringify({ id: itemId, index }));
     // Also set application/json so we can distinguish from external drags
@@ -644,7 +635,7 @@ function MacDock() {
   }, []);
   
   // Handle internal dock item drag end
-  const handleItemDragEnd = useCallback((e: React.DragEvent<HTMLDivElement>, itemId: string) => {
+  const handleItemDragEnd = useCallback((e: React.DragEvent, itemId: string) => {
     // Check if dropped outside the dock
     const dockRect = dockBarRef.current?.getBoundingClientRect();
     if (dockRect) {
@@ -665,7 +656,7 @@ function MacDock() {
   }, [removeDockItem]);
   
   // Track when drag leaves dock area
-  const handleItemDrag = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleItemDrag = useCallback((e: React.DragEvent) => {
     const dockRect = dockBarRef.current?.getBoundingClientRect();
     if (dockRect && draggingItemId) {
       const isOutside = 
@@ -679,7 +670,7 @@ function MacDock() {
   }, [draggingItemId]);
   
   // Handle internal reordering when dragging over another item
-  const handleItemDragOver = useCallback((e: React.DragEvent<HTMLDivElement>, targetIndex: number) => {
+  const handleItemDragOver = useCallback((e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
     const types = Array.from(e.dataTransfer.types);
     
@@ -1543,9 +1534,9 @@ function MacDock() {
                         onHover={() => handleIconHover(appId)}
                         onLeave={handleIconLeave}
                         draggable={!isProtected}
-                        onDragStart={(e) => handleItemDragStart(e, item.id, index)}
-                        onDragEnd={(e) => handleItemDragEnd(e, item.id)}
-                        onDragOver={(e) => handleItemDragOver(e as unknown as React.DragEvent<HTMLDivElement>, index)}
+                      onDragStart={(e) => handleItemDragStart(e, item.id, index)}
+                      onDragEnd={(e) => handleItemDragEnd(e, item.id)}
+                      onDragOver={(e) => handleItemDragOver(e, index)}
                         isDragging={draggingItemId === item.id}
                         isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
                       />
@@ -1583,9 +1574,9 @@ function MacDock() {
                         onHover={() => handleIconHover(item.id)}
                         onLeave={handleIconLeave}
                         draggable
-                        onDragStart={(e) => handleItemDragStart(e, item.id, index)}
-                        onDragEnd={(e) => handleItemDragEnd(e, item.id)}
-                        onDragOver={(e) => handleItemDragOver(e as unknown as React.DragEvent<HTMLDivElement>, index)}
+                      onDragStart={(e) => handleItemDragStart(e, item.id, index)}
+                      onDragEnd={(e) => handleItemDragEnd(e, item.id)}
+                      onDragOver={(e) => handleItemDragOver(e, index)}
                         isDragging={draggingItemId === item.id}
                         isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
                       />
