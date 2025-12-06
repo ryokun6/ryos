@@ -453,52 +453,72 @@ interface DividerProps {
   resizable?: boolean;
   onResizeStart?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
+  isPhone?: boolean;
+  onTouchStart?: React.TouchEventHandler;
+  onTouchEnd?: React.TouchEventHandler;
+  onTouchMove?: React.TouchEventHandler;
+  onTouchCancel?: React.TouchEventHandler;
 }
 
 const Divider = forwardRef<HTMLDivElement, DividerProps>(
-  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart, onContextMenu }, ref) => (
-    <motion.div
-      ref={ref}
-      layout
-      layoutId={`dock-divider-${idKey}`}
-      initial={{ opacity: 0, scaleY: 0.8 }}
-      animate={{ 
-        opacity: 0.9, 
-        scaleY: 1,
-        backgroundColor: isDropTarget ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 0.2)",
-        width: isDropTarget ? 4 : 1,
-      }}
-      exit={{ opacity: 0, scaleY: 0.8 }}
-      transition={{ type: "spring", stiffness: 260, damping: 26 }}
-      onDragOver={onDragOver as React.DragEventHandler<HTMLDivElement>}
-      onDrop={onDrop as React.DragEventHandler<HTMLDivElement>}
-      onDragLeave={onDragLeave as React.DragEventHandler<HTMLDivElement>}
-      onMouseDown={resizable ? onResizeStart : undefined}
-      onContextMenu={onContextMenu as React.MouseEventHandler<HTMLDivElement>}
-      style={{
-        height,
-        marginLeft: 6,
-        marginRight: 6,
-        alignSelf: "center",
-        borderRadius: 2,
-        cursor: resizable ? "ns-resize" : undefined,
-        position: "relative",
-      }}
-    >
-      {/* Invisible wider hit area for resize dragging and context menu */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          left: -10,
-          right: -10,
-          cursor: resizable ? "ns-resize" : "default",
+  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart, onContextMenu, isPhone, onTouchStart, onTouchEnd, onTouchMove, onTouchCancel }, ref) => {
+    const baseWidth = 1;
+    const activeWidth = isDropTarget ? 4 : baseWidth;
+    
+    return (
+      <motion.div
+        ref={ref}
+        layout
+        layoutId={`dock-divider-${idKey}`}
+        initial={{ opacity: 0, scaleY: 0.8, width: baseWidth }}
+        animate={{ 
+          opacity: 0.9, 
+          scaleY: 1,
+          backgroundColor: isDropTarget ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 0.2)",
+          width: activeWidth,
         }}
-        onContextMenu={onContextMenu}
-      />
-    </motion.div>
-  )
+        exit={{ opacity: 0, scaleY: 0.8 }}
+        transition={{ type: "spring", stiffness: 260, damping: 26 }}
+        onDragOver={onDragOver as React.DragEventHandler<HTMLDivElement>}
+        onDrop={onDrop as React.DragEventHandler<HTMLDivElement>}
+        onDragLeave={onDragLeave as React.DragEventHandler<HTMLDivElement>}
+        onMouseDown={resizable ? onResizeStart : undefined}
+        onContextMenu={onContextMenu as React.MouseEventHandler<HTMLDivElement>}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onTouchMove={onTouchMove}
+        onTouchCancel={onTouchCancel}
+        style={{
+          height,
+          minWidth: baseWidth,
+          marginLeft: 6,
+          marginRight: 6,
+          alignSelf: "center",
+          borderRadius: 2,
+          cursor: resizable ? "ns-resize" : undefined,
+          position: "relative",
+          backgroundColor: "rgba(0, 0, 0, 0.2)",
+        }}
+      >
+        {/* Invisible wider hit area for resize dragging and context menu */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: -10,
+            right: -10,
+            cursor: resizable ? "ns-resize" : "default",
+          }}
+          onContextMenu={onContextMenu}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          onTouchMove={onTouchMove}
+          onTouchCancel={onTouchCancel}
+        />
+      </motion.div>
+    );
+  }
 );
 
 // Apps that support multi-window
@@ -720,6 +740,27 @@ function MacDock() {
       },
     ];
   }, [dockHiding, dockMagnification, setDockHiding, setDockMagnification, t]);
+
+  // Long press handler for divider on mobile (opens context menu)
+  const handleDividerLongPress = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0] || e.changedTouches[0];
+    if (!touch) return;
+    
+    const containerRect = dockContainerRef.current?.getBoundingClientRect();
+    if (!containerRect) {
+      setDividerContextMenuPos({ x: touch.clientX, y: touch.clientY });
+      return;
+    }
+    
+    setDividerContextMenuPos({
+      x: touch.clientX - containerRect.left,
+      y: touch.clientY - containerRect.top,
+    });
+  }, []);
+
+  // Use long press hook for divider
+  const dividerLongPress = useLongPress(handleDividerLongPress);
 
   // Get trash items to check if trash is empty
   // Use a selector that directly filters items to avoid infinite loops
@@ -2045,6 +2086,8 @@ function MacDock() {
                   isDropTarget={isDividerDropTarget}
                   height={scaledButtonSize}
                   onContextMenu={handleDividerContextMenu}
+                  isPhone={isPhone}
+                  {...dividerLongPress}
                 />
               )}
 
@@ -2124,6 +2167,8 @@ function MacDock() {
                 resizable={!isPhone}
                 onResizeStart={handleResizeStart}
                 onContextMenu={handleDividerContextMenu}
+                isPhone={isPhone}
+                {...dividerLongPress}
               />
 
               {/* Applications (left of Trash) */}
