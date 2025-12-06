@@ -123,8 +123,6 @@ const getVariants = (
     scale: 0.93,
     filter: "none",
     y: 10,
-    textShadow:
-      "0 0 2px black, 0 0 2px black, 0 0 2px black, 0 0 0px rgba(255,255,255,0)",
   },
   animate: {
     opacity: isAlternating
@@ -143,17 +141,12 @@ const getVariants = (
       : 0.9,
     filter: "none",
     y: 0,
-    textShadow: isCurrent
-      ? "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black"
-      : "0 0 2px black, 0 0 2px black, 0 0 2px black",
   },
   exit: {
     opacity: 0,
     scale: 0.9,
     filter: "none",
     y: -10,
-    textShadow:
-      "0 0 2px black, 0 0 2px black, 0 0 2px black, 0 0 0px rgba(255,255,255,0)",
   },
 });
 
