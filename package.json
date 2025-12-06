@@ -26,6 +26,7 @@
     "tauri:build": "tauri build",
     "tauri:build:mac": "tauri build --target universal-apple-darwin",
     "tauri:build:windows": "tauri build --target x86_64-pc-windows-msvc",
+    "seed:dev": "bun run scripts/seed-dev-users.ts",
     "test": "bun run tests/run-all-tests.ts",
     "test:api": "bun run tests/run-all-tests.ts",
     "test:chat-rooms": "bun run tests/test-chat-rooms.ts",
