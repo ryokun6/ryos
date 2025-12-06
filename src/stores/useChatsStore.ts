@@ -1040,11 +1040,18 @@ export const useChatsStore = create<ChatsStoreState>()(
               set((state) => {
                 const existing = state.roomMessages[roomId] || [];
                 const byId = new Map<string, ChatMessage>();
-                // Seed with existing (preserve temp messages and clientId associations)
+                
+                // Collect temp (optimistic) messages separately for deduplication
+                const tempMessages: ChatMessage[] = [];
                 for (const m of existing) {
-                  byId.set(m.id, m);
+                  if (m.id.startsWith("temp_") || m.clientId) {
+                    tempMessages.push(m);
+                  } else {
+                    byId.set(m.id, m);
+                  }
                 }
-                // Overlay fetched server messages, preserving clientId when present
+                
+                // Overlay fetched server messages
                 for (const m of fetchedMessages) {
                   const prev = byId.get(m.id);
                   if (prev && prev.clientId) {
@@ -1053,6 +1060,46 @@ export const useChatsStore = create<ChatsStoreState>()(
                     byId.set(m.id, m);
                   }
                 }
+                
+                // Auto-delete temp messages that match server messages by clientId, or by username + content + time window
+                const MATCH_WINDOW_MS = 10000; // 10 second window
+                const usedTempIds = new Set<string>();
+                
+                for (const temp of tempMessages) {
+                  const tempClientId = temp.clientId || temp.id;
+                  let matched = false;
+                  
+                  // Check if any server message matches this temp message
+                  for (const serverMsg of fetchedMessages) {
+                    // Match by clientId if the server echoes it back
+                    const serverClientId = (serverMsg as ChatMessage & { clientId?: string }).clientId;
+                    if (serverClientId && serverClientId === tempClientId) {
+                      // Server message has matching clientId - associate and skip temp
+                      byId.set(serverMsg.id, { ...byId.get(serverMsg.id)!, clientId: tempClientId });
+                      matched = true;
+                      break;
+                    }
+                    
+                    // Match by username + content + time window
+                    if (
+                      serverMsg.username === temp.username &&
+                      serverMsg.content === temp.content &&
+                      Math.abs(serverMsg.timestamp - temp.timestamp) <= MATCH_WINDOW_MS
+                    ) {
+                      // Found matching server message - preserve clientId on it
+                      byId.set(serverMsg.id, { ...byId.get(serverMsg.id)!, clientId: tempClientId });
+                      matched = true;
+                      break;
+                    }
+                  }
+                  
+                  // If no match found, keep the temp message (might still be in flight)
+                  if (!matched && !usedTempIds.has(temp.id)) {
+                    byId.set(temp.id, temp);
+                    usedTempIds.add(temp.id);
+                  }
+                }
+                
                 const merged = Array.from(byId.values()).sort(
                   (a, b) => a.timestamp - b.timestamp
                 );
@@ -1125,7 +1172,18 @@ export const useChatsStore = create<ChatsStoreState>()(
 
                     const existing = nextRoomMessages[roomId] || [];
                     const byId = new Map<string, ChatMessage>();
-                    for (const m of existing) byId.set(m.id, m);
+                    
+                    // Collect temp (optimistic) messages separately for deduplication
+                    const tempMessages: ChatMessage[] = [];
+                    for (const m of existing) {
+                      if (m.id.startsWith("temp_") || m.clientId) {
+                        tempMessages.push(m);
+                      } else {
+                        byId.set(m.id, m);
+                      }
+                    }
+                    
+                    // Overlay fetched server messages
                     for (const m of processed) {
                       const prev = byId.get(m.id);
                       if (prev && prev.clientId) {
@@ -1134,6 +1192,40 @@ export const useChatsStore = create<ChatsStoreState>()(
                         byId.set(m.id, m);
                       }
                     }
+                    
+                    // Auto-delete temp messages that match server messages
+                    const MATCH_WINDOW_MS = 10000;
+                    const usedTempIds = new Set<string>();
+                    
+                    for (const temp of tempMessages) {
+                      const tempClientId = temp.clientId || temp.id;
+                      let matched = false;
+                      
+                      for (const serverMsg of processed) {
+                        const serverClientId = (serverMsg as ChatMessage & { clientId?: string }).clientId;
+                        if (serverClientId && serverClientId === tempClientId) {
+                          byId.set(serverMsg.id, { ...byId.get(serverMsg.id)!, clientId: tempClientId });
+                          matched = true;
+                          break;
+                        }
+                        
+                        if (
+                          serverMsg.username === temp.username &&
+                          serverMsg.content === temp.content &&
+                          Math.abs(serverMsg.timestamp - temp.timestamp) <= MATCH_WINDOW_MS
+                        ) {
+                          byId.set(serverMsg.id, { ...byId.get(serverMsg.id)!, clientId: tempClientId });
+                          matched = true;
+                          break;
+                        }
+                      }
+                      
+                      if (!matched && !usedTempIds.has(temp.id)) {
+                        byId.set(temp.id, temp);
+                        usedTempIds.add(temp.id);
+                      }
+                    }
+                    
                     nextRoomMessages[roomId] = Array.from(byId.values()).sort(
                       (a, b) => a.timestamp - b.timestamp
                     );
