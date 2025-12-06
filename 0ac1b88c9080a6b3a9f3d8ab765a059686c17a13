@@ -1,0 +1,11 @@
+AI Notes:
+
+api/applet-ai.ts: +17 -125-158
+api/chat-rooms/constants.ts: +27-30
+api/chat-rooms/index.ts: +388-389 -117,-389-390
+api/chat-rooms/tokens.ts: +5-6,+157,+164-165,+174-177,+179,+182-202,+206,+214-217 -5-6,-22-23,-71-77,-172,-181-210,-214-258,-262,-265,-271,-339-344
+api/chat.ts: +31,+466-470 -373-452,-545
+api/share-applet.ts: +8,+18-19 -14-18,-22-59
+api/speech.ts: +6,+171,+322 -55-89,-205,-356
+api/utils/auth-validate.ts: +1-140
+api/utils/auth.ts: +9-13,+47-48,+220,+239 -36,-43-45,-217,-236-241
