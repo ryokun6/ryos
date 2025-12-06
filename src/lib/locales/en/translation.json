@@ -654,7 +654,11 @@
         "typeMessage": "Type a message...",
         "typeOrPushSpace": "Type or push 'space' to talk...",
         "scrollToBottom": "Scroll to bottom",
-        "nudgeSent": "👋 *nudge sent*"
+        "nudgeSent": "👋 *nudge sent*",
+        "loginRequired": "Please log in to delete messages",
+        "unauthorized": "Authentication required",
+        "forbidden": "You don't have permission to delete this message",
+        "networkError": "Network error occurred"
       },
       "ariaLabels": {
         "sendNudge": "Send a Nudge",
@@ -681,6 +685,7 @@
         "you": "You",
         "ryo": "Ryo",
         "delete": "Delete",
+        "deleteError": "Failed to delete message",
         "greeting": "👋 hey! i'm ryo. ask me anything!"
       },
       "toolCalls": {
