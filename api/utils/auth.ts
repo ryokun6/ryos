@@ -10,7 +10,7 @@ import {
   USER_EXPIRATION_TIME,
   USER_TTL_SECONDS,
   TOKEN_GRACE_PERIOD,
-} from "../chat-rooms/constants.js";
+} from "../chat-rooms/_constants.js";
 
 // ============================================================================
 // Types

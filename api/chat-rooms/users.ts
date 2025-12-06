@@ -8,8 +8,8 @@ import {
   setUser,
   createUserIfNotExists,
   getCurrentTimestamp,
-} from "./redis.js";
-import { CHAT_USERS_PREFIX } from "./constants.js";
+} from "./_redis.js";
+import { CHAT_USERS_PREFIX } from "./_constants.js";
 import { logInfo, logError } from "../utils/logging.js";
 import {
   isProfaneUsername,
@@ -30,8 +30,8 @@ import {
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
 } from "../utils/auth.js";
-import type { User, CreateUserData, UserResponse } from "./types.js";
-import { createErrorResponse } from "./helpers.js";
+import type { User, CreateUserData, UserResponse } from "./_types.js";
+import { createErrorResponse } from "./_helpers.js";
 
 // ============================================================================
 // User Management Functions

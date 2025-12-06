@@ -2,8 +2,8 @@
  * Token handlers for chat-rooms API
  */
 
-import { redis } from "./redis.js";
-import { CHAT_USERS_PREFIX } from "./constants.js";
+import { redis } from "./_redis.js";
+import { CHAT_USERS_PREFIX } from "./_constants.js";
 import { logInfo, logError } from "../utils/logging.js";
 import { isProfaneUsername } from "../utils/validation.js";
 import {
@@ -22,13 +22,13 @@ import {
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
 } from "../utils/auth.js";
-import { createErrorResponse } from "./helpers.js";
+import { createErrorResponse } from "./_helpers.js";
 import type {
   GenerateTokenData,
   RefreshTokenData,
   AuthenticateWithPasswordData,
   SetPasswordData,
-} from "./types.js";
+} from "./_types.js";
 
 // ============================================================================
 // Handler Functions

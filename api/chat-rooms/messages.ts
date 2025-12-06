@@ -17,7 +17,7 @@ import {
   setUser,
   getAllRoomIds,
   deleteAllMessages as deleteAllMessagesFromRedis,
-} from "./redis.js";
+} from "./_redis.js";
 import {
   CHAT_ROOM_PREFIX,
   CHAT_MESSAGES_PREFIX,
@@ -28,9 +28,9 @@ import {
   CHAT_BURST_LONG_LIMIT,
   CHAT_MIN_INTERVAL_SECONDS,
   USER_EXPIRATION_TIME,
-} from "./constants.js";
+} from "./_constants.js";
 import { refreshRoomPresence } from "./presence.js";
-import { broadcastNewMessage, broadcastMessageDeleted } from "./pusher.js";
+import { broadcastNewMessage, broadcastMessageDeleted } from "./_pusher.js";
 import { logInfo, logError } from "../utils/logging.js";
 import {
   isProfaneUsername,
@@ -40,9 +40,9 @@ import {
   filterProfanityPreservingUrls,
   MAX_MESSAGE_LENGTH,
 } from "../utils/validation.js";
-import { createErrorResponse } from "./helpers.js";
+import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./users.js";
-import type { Message, SendMessageData, GenerateRyoReplyData, BulkMessagesResult } from "./types.js";
+import type { Message, SendMessageData, GenerateRyoReplyData, BulkMessagesResult } from "./_types.js";
 import { ROOM_ID_REGEX } from "../utils/validation.js";
 
 // ============================================================================
