@@ -92,6 +92,11 @@ export const useWindowManager = ({
     left: 0,
     top: 0,
   });
+  
+  // Snap to edge state
+  const [snapZone, setSnapZone] = useState<"left" | "right" | null>(null);
+  // Store pre-snap size/position for potential restore
+  const preSnapStateRef = useRef<{ position: WindowPosition; size: WindowSize } | null>(null);
 
   const isMobile = window.innerWidth < 768;
 
@@ -261,6 +266,7 @@ export const useWindowManager = ({
         if (isMobile) {
           // On mobile, only allow vertical dragging and keep window full width
           setWindowPosition({ x: 0, y: Math.max(menuBarHeight, newY) });
+          setSnapZone(null);
         } else {
           // Allow dragging past edges, but keep at least 80px of window visible
           const minX = -(windowSize.width - 80); // Can drag left, keeping 80px visible on right
@@ -269,6 +275,16 @@ export const useWindowManager = ({
           const x = Math.min(Math.max(minX, newX), maxX);
           const y = Math.min(Math.max(menuBarHeight, newY), Math.max(0, maxY));
           setWindowPosition({ x, y });
+          
+          // Detect snap zones - trigger when cursor is within 20px of screen edge
+          const SNAP_THRESHOLD = 20;
+          if (clientX <= SNAP_THRESHOLD) {
+            setSnapZone("left");
+          } else if (clientX >= window.innerWidth - SNAP_THRESHOLD) {
+            setSnapZone("right");
+          } else {
+            setSnapZone(null);
+          }
         }
       }
 
@@ -365,11 +381,43 @@ export const useWindowManager = ({
     const handleEnd = () => {
       if (isDragging) {
         setIsDragging(false);
-        if (instanceId) {
-          updateInstanceWindowState(instanceId, windowPosition, windowSize);
+        
+        // Handle snap to edge
+        if (snapZone && !isMobile) {
+          const { topInset, bottomInset } = computeInsets();
+          const snapHeight = window.innerHeight - topInset - bottomInset;
+          const snapWidth = Math.floor(window.innerWidth / 2);
+          
+          // Save current state before snapping (for potential restore later)
+          preSnapStateRef.current = {
+            position: { ...windowPosition },
+            size: { ...windowSize },
+          };
+          
+          const newSize = { width: snapWidth, height: snapHeight };
+          const newPosition = {
+            x: snapZone === "left" ? 0 : snapWidth,
+            y: topInset,
+          };
+          
+          setWindowSize(newSize);
+          setWindowPosition(newPosition);
+          
+          if (instanceId) {
+            updateInstanceWindowState(instanceId, newPosition, newSize);
+          } else {
+            updateWindowState(appId, newPosition, newSize);
+          }
+          
+          setSnapZone(null);
         } else {
-          updateWindowState(appId, windowPosition, windowSize);
+          if (instanceId) {
+            updateInstanceWindowState(instanceId, windowPosition, windowSize);
+          } else {
+            updateWindowState(appId, windowPosition, windowSize);
+          }
         }
+        
         // Stop move sound immediately and play stop sound
         if (isMovePlayingRef.current) {
           // Clear the interval that was playing the sound repeatedly
@@ -445,6 +493,7 @@ export const useWindowManager = ({
     updateInstanceWindowState,
     instanceId,
     computeInsets,
+    snapZone,
   ]);
 
   return {
@@ -458,5 +507,7 @@ export const useWindowManager = ({
     setWindowPosition,
     maximizeWindowHeight,
     getSafeAreaBottomInset,
+    snapZone,
+    computeInsets,
   };
 };

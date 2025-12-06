@@ -4,6 +4,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { getWindowConfig, getAppIconPath } from "@/config/appRegistry";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
@@ -304,6 +305,8 @@ export function WindowFrame({
     setWindowSize,
     setWindowPosition,
     getSafeAreaBottomInset,
+    snapZone,
+    computeInsets: computeWindowInsets,
   } = useWindowManager({ appId, instanceId });
 
   // Calculate dock icon or taskbar item position relative to window center (used for both minimize and restore animations)
@@ -761,7 +764,52 @@ export function WindowFrame({
     };
   };
 
+  // Calculate snap zone dimensions for the indicator
+  const snapZoneStyle = useMemo(() => {
+    if (!snapZone) return null;
+    const { topInset, bottomInset } = computeWindowInsets();
+    const height = window.innerHeight - topInset - bottomInset;
+    const width = Math.floor(window.innerWidth / 2);
+    return {
+      top: topInset,
+      height,
+      width,
+      left: snapZone === "left" ? 0 : width,
+    };
+  }, [snapZone, computeWindowInsets]);
+
+  // Render snap zone indicator as a portal
+  const snapZoneIndicator = snapZone && snapZoneStyle && isForeground && createPortal(
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      className="fixed pointer-events-none z-[9999]"
+      style={{
+        top: snapZoneStyle.top,
+        left: snapZoneStyle.left,
+        width: snapZoneStyle.width,
+        height: snapZoneStyle.height,
+        padding: 8,
+      }}
+    >
+      <div
+        className="w-full h-full"
+        style={{
+          border: "3px solid rgba(255, 255, 255, 0.8)",
+          backgroundColor: "rgba(255, 255, 255, 0.1)",
+          boxShadow: "0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.1)",
+          borderRadius: currentTheme === "macosx" ? 12 : 4,
+        }}
+      />
+    </motion.div>,
+    document.body
+  );
+
   return (
+    <>
+    {snapZoneIndicator}
     <AnimatePresence>
       {shouldShow && (
         <motion.div
@@ -1448,5 +1496,6 @@ export function WindowFrame({
         </motion.div>
       )}
     </AnimatePresence>
+    </>
   );
 }
