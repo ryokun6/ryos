@@ -131,7 +131,7 @@ export async function getAllRoomIds(): Promise<string[]> {
     } while (cursor !== 0);
 
     if (discovered.length) {
-      await redis.sadd(CHAT_ROOMS_SET, ...discovered);
+      await redis.sadd(CHAT_ROOMS_SET, ...(discovered as [string, ...string[]]));
       roomIds = discovered;
     }
   }

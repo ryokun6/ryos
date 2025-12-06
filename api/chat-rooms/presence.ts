@@ -145,7 +145,7 @@ export async function getDetailedRooms(): Promise<RoomWithUsers[]> {
       discovered.push(...ids);
     } while (cursor !== 0);
     if (discovered.length) {
-      await redis.sadd(CHAT_ROOMS_SET, ...discovered);
+      await redis.sadd(CHAT_ROOMS_SET, ...(discovered as [string, ...string[]]));
       roomIds = discovered;
     } else {
       return [];
@@ -153,7 +153,7 @@ export async function getDetailedRooms(): Promise<RoomWithUsers[]> {
   }
 
   const roomKeys = roomIds.map((id) => `${CHAT_ROOM_PREFIX}${id}`);
-  const roomsData = await redis.mget<(Room | string | null)[]>(...roomKeys);
+  const roomsData = await redis.mget<(Room | string | null)[]>(...(roomKeys as [string, ...string[]]));
 
   const rooms: RoomWithUsers[] = [];
   for (let i = 0; i < roomsData.length; i++) {
@@ -190,7 +190,7 @@ export async function getRoomsWithCountsFast(): Promise<Room[]> {
       discovered.push(...ids);
     } while (cursor !== 0);
     if (discovered.length) {
-      await redis.sadd(CHAT_ROOMS_SET, ...discovered);
+      await redis.sadd(CHAT_ROOMS_SET, ...(discovered as [string, ...string[]]));
       roomIds = discovered;
     } else {
       return [];
@@ -198,7 +198,7 @@ export async function getRoomsWithCountsFast(): Promise<Room[]> {
   }
 
   const roomKeys = roomIds.map((id) => `${CHAT_ROOM_PREFIX}${id}`);
-  const roomsData = await redis.mget<(Room | string | null)[]>(...roomKeys);
+  const roomsData = await redis.mget<(Room | string | null)[]>(...(roomKeys as [string, ...string[]]));
 
   // Batch prune + count ZSET presence for all rooms
   const pipeline = redis.pipeline();
