@@ -9,10 +9,6 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import type { CSSProperties } from "react";
 import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
-import {
-  loadDefaultJapaneseParser,
-  loadDefaultSimplifiedChineseParser,
-} from "budoux";
 import { useTranslation } from "react-i18next";
 
 interface LyricsDisplayProps {
@@ -185,8 +181,6 @@ export function LyricsDisplay({
     () => Converter({ from: "cn", to: "tw" }),
     []
   );
-  const japaneseParser = useMemo(() => loadDefaultJapaneseParser(), []);
-  const chineseParser = useMemo(() => loadDefaultSimplifiedChineseParser(), []);
 
   const isChineseText = (text: string) => {
     const chineseRegex = /[\u4E00-\u9FFF]/;
@@ -206,10 +200,6 @@ export function LyricsDisplay({
       if (/[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3]/.test(processed)) {
         processed = romanize(processed);
       }
-    }
-    if (/[\u3000-\u9fff]/.test(processed)) {
-      const parser = isChineseText(processed) ? chineseParser : japaneseParser;
-      return parser.parse(processed).join("\u200b");
     }
     return processed;
   };

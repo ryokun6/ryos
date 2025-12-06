@@ -9,6 +9,7 @@ import { useAppStoreShallow } from "@/stores/helpers";
 import { extractCodeFromPath } from "@/utils/sharedUrl";
 import { toast } from "sonner";
 import { requestCloseWindow } from "@/utils/windowUtils";
+import { useThemeStore } from "@/stores/useThemeStore";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -25,6 +26,7 @@ export function AppManager({ apps }: AppManagerProps) {
     bringInstanceToForeground,
     navigateToNextInstance,
     navigateToPreviousInstance,
+    foregroundInstanceId,
   } = useAppStoreShallow((state) => ({
     instances: state.instances,
     instanceOrder: state.instanceOrder,
@@ -32,7 +34,17 @@ export function AppManager({ apps }: AppManagerProps) {
     bringInstanceToForeground: state.bringInstanceToForeground,
     navigateToNextInstance: state.navigateToNextInstance,
     navigateToPreviousInstance: state.navigateToPreviousInstance,
+    foregroundInstanceId: state.foregroundInstanceId,
   }));
+
+  // Get current theme to determine if we should show the desktop menubar
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  
+  // For Mac/System7 themes, hide the desktop menubar when there's a foreground app
+  // For XP/98, the menubar is actually a taskbar and should always show
+  const hasForegroundApp = !!foregroundInstanceId;
+  const showDesktopMenuBar = isXpTheme || !hasForegroundApp;
 
   const [isInitialMount, setIsInitialMount] = useState(true);
 
@@ -323,9 +335,9 @@ export function AppManager({ apps }: AppManagerProps) {
       }}
     >
       {/* MenuBar: For XP/Win98, this is the taskbar (always shown).
-          For Mac/System7, this shows default menu items while apps are loading.
-          Once an app renders, it shows its own MenuBar which appears on top. */}
-      <MenuBar />
+          For Mac/System7, hide when a foreground app is loaded since 
+          the app renders its own MenuBar. */}
+      {showDesktopMenuBar && <MenuBar />}
       {/* macOS Dock */}
       <Dock />
       {/* App Instances */}

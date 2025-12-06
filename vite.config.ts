@@ -27,7 +27,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    // Force pre-bundle these commonly used deps
+    // Force pre-bundle these deps to avoid slow unbundled ESM loading
     include: [
       "react",
       "react-dom",
@@ -35,9 +35,7 @@ export default defineConfig({
       "framer-motion",
       "clsx",
       "tailwind-merge",
-    ],
-    // Exclude heavy deps that are lazy-loaded
-    exclude: [
+      // Heavy deps - pre-bundle to avoid slow first load from many small ESM files
       "tone",
       "wavesurfer.js",
       "three",
