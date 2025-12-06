@@ -12,7 +12,7 @@ import {
   printSummary,
   clearResults,
   fetchWithOrigin,
-  fetchWithAuth,
+  section,
 } from "./test-utils";
 
 // ============================================================================
@@ -68,14 +68,12 @@ async function testBasicSpeechGeneration(): Promise<void> {
       text: "Hello, this is a test.",
     }),
   });
-  // May be rate limited or succeed
   if (res.status === 200) {
     const contentType = res.headers.get("content-type") || "";
     assert(contentType.includes("audio"), "Expected audio content type");
     const buffer = await res.arrayBuffer();
     assert(buffer.byteLength > 0, "Expected non-empty audio data");
   } else if (res.status === 429) {
-    // Rate limited is acceptable
     const data = await res.json();
     assert(data.error === "rate_limit_exceeded", "Expected rate limit error");
   } else {
@@ -97,7 +95,6 @@ async function testOpenAIModel(): Promise<void> {
     const contentType = res.headers.get("content-type") || "";
     assert(contentType.includes("audio"), "Expected audio content type");
   } else if (res.status === 429) {
-    // Rate limited
     assert(true, "Rate limited - test passes");
   } else {
     throw new Error(`Unexpected status: ${res.status}`);
@@ -117,10 +114,8 @@ async function testElevenLabsModel(): Promise<void> {
     const contentType = res.headers.get("content-type") || "";
     assert(contentType.includes("audio"), "Expected audio content type");
   } else if (res.status === 429) {
-    // Rate limited
     assert(true, "Rate limited - test passes");
   } else if (res.status === 500) {
-    // May fail if ElevenLabs API key not configured
     assert(true, "ElevenLabs not configured - test passes");
   } else {
     throw new Error(`Unexpected status: ${res.status}`);
@@ -152,7 +147,6 @@ async function testOpenAIVoiceOptions(): Promise<void> {
 }
 
 async function testDefaultModelIsElevenLabs(): Promise<void> {
-  // When model is not specified, should default to elevenlabs
   const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -160,7 +154,6 @@ async function testDefaultModelIsElevenLabs(): Promise<void> {
       text: "Testing default model.",
     }),
   });
-  // Can't directly verify which model was used, just check it succeeds
   assert(res.status === 200 || res.status === 429 || res.status === 500, 
     `Expected 200, 429, or 500, got ${res.status}`);
 }
@@ -179,7 +172,6 @@ async function testRateLimitHeaders(): Promise<void> {
     const limitHeader = res.headers.get("X-RateLimit-Limit");
     assert(limitHeader !== null, "Expected X-RateLimit-Limit header");
   }
-  // If not rate limited, test passes anyway
   assert(true, "Rate limit headers check passed");
 }
 
@@ -191,9 +183,7 @@ async function testCorsHeaders(): Promise<void> {
       text: "CORS test.",
     }),
   });
-  // Should have CORS headers on any response
   const allowOrigin = res.headers.get("Access-Control-Allow-Origin");
-  // Allow origin might be null for error responses
   assert(allowOrigin !== null || res.status >= 400, "Expected CORS headers or error response");
 }
 
@@ -211,39 +201,33 @@ async function testInvalidJson(): Promise<void> {
 // ============================================================================
 
 export async function runSpeechTests(): Promise<{ passed: number; failed: number }> {
-  console.log(`\n🧪 Testing speech API at ${BASE_URL}\n`);
-  console.log("=".repeat(60));
+  console.log(section("speech"));
   clearResults();
 
-  // Method validation
-  console.log("\n📋 Testing HTTP Methods\n");
+  console.log("\n  HTTP Methods\n");
   await runTest("GET method not allowed", testMethodNotAllowed);
   await runTest("OPTIONS request (CORS preflight)", testOptionsRequest);
 
-  // Input validation
-  console.log("\n📋 Testing Input Validation\n");
+  console.log("\n  Input Validation\n");
   await runTest("Missing text", testMissingText);
   await runTest("Empty text", testEmptyText);
   await runTest("Whitespace only text", testWhitespaceOnlyText);
   await runTest("Invalid JSON", testInvalidJson);
 
-  // TTS generation
-  console.log("\n📋 Testing TTS Generation\n");
+  console.log("\n  TTS Generation\n");
   await runTest("Basic speech generation", testBasicSpeechGeneration);
   await runTest("OpenAI model", testOpenAIModel);
   await runTest("ElevenLabs model", testElevenLabsModel);
   await runTest("OpenAI voice options", testOpenAIVoiceOptions);
   await runTest("Default model selection", testDefaultModelIsElevenLabs);
 
-  // Headers and rate limiting
-  console.log("\n📋 Testing Headers\n");
+  console.log("\n  Headers\n");
   await runTest("Rate limit headers", testRateLimitHeaders);
   await runTest("CORS headers", testCorsHeaders);
 
   return printSummary();
 }
 
-// Run if executed directly
 if (import.meta.main) {
   runSpeechTests()
     .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))

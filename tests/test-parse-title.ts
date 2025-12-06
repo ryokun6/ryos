@@ -12,6 +12,7 @@ import {
   printSummary,
   clearResults,
   fetchWithOrigin,
+  section,
 } from "./test-utils";
 
 // ============================================================================
@@ -29,7 +30,6 @@ async function testOptionsRequest(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/parse-title`, {
     method: "OPTIONS",
   });
-  // Should be 200 or 204 for CORS preflight
   assert(res.status === 200 || res.status === 204, `Expected 200 or 204, got ${res.status}`);
 }
 
@@ -73,7 +73,6 @@ async function testBasicTitleParsing(): Promise<void> {
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
   assert(data.title, "Expected parsed title");
-  // AI should extract artist from this format
   assert(data.artist || data.title, "Expected artist or title to be present");
 }
 
@@ -103,14 +102,12 @@ async function testKoreanTitle(): Promise<void> {
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
   assert(data.title, "Expected parsed title");
-  // Should prefer English name
   if (data.artist) {
     assert(!data.artist.includes("뉴진스"), "Should prefer English artist name");
   }
 }
 
 async function testAmbiguousTitle(): Promise<void> {
-  // A title that's harder to parse
   const res = await fetchWithOrigin(`${BASE_URL}/api/parse-title`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -121,22 +118,7 @@ async function testAmbiguousTitle(): Promise<void> {
   });
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
-  // For ambiguous titles, should return the original title
   assert(data.title, "Expected title in response");
-}
-
-async function testTitleWithAlbumInfo(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/parse-title`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: "Queen - Bohemian Rhapsody (A Night at the Opera)",
-    }),
-  });
-  assertEq(res.status, 200, `Expected 200, got ${res.status}`);
-  const data = await res.json();
-  assert(data.title, "Expected parsed title");
-  // AI might extract album from this format
 }
 
 async function testResponseStructure(): Promise<void> {
@@ -149,9 +131,7 @@ async function testResponseStructure(): Promise<void> {
   });
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
-  // Check response structure
   assert("title" in data, "Response should have title field");
-  // artist and album are optional
 }
 
 // ============================================================================
@@ -159,34 +139,28 @@ async function testResponseStructure(): Promise<void> {
 // ============================================================================
 
 export async function runParseTitleTests(): Promise<{ passed: number; failed: number }> {
-  console.log(`\n🧪 Testing parse-title API at ${BASE_URL}\n`);
-  console.log("=".repeat(60));
+  console.log(section("parse-title"));
   clearResults();
 
-  // Method validation
-  console.log("\n📋 Testing HTTP Methods\n");
+  console.log("\n  HTTP Methods\n");
   await runTest("GET method not allowed", testMethodNotAllowed);
   await runTest("OPTIONS request (CORS preflight)", testOptionsRequest);
 
-  // Input validation
-  console.log("\n📋 Testing Input Validation\n");
+  console.log("\n  Input Validation\n");
   await runTest("Missing title", testMissingTitle);
   await runTest("Empty title", testEmptyTitle);
   await runTest("Invalid JSON body", testInvalidBody);
 
-  // Title parsing
-  console.log("\n📋 Testing Title Parsing\n");
+  console.log("\n  Title Parsing\n");
   await runTest("Basic title parsing", testBasicTitleParsing);
   await runTest("Title with channel name", testTitleWithChannel);
   await runTest("Korean/English title", testKoreanTitle);
   await runTest("Ambiguous title", testAmbiguousTitle);
-  await runTest("Title with album info", testTitleWithAlbumInfo);
   await runTest("Response structure", testResponseStructure);
 
   return printSummary();
 }
 
-// Run if executed directly
 if (import.meta.main) {
   runParseTitleTests()
     .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))

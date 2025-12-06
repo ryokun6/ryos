@@ -4,6 +4,7 @@
  * Run with: bun run tests/run-all-tests.ts
  */
 
+import { runChatRoomsTests } from "./test-chat-rooms";
 import { runIframeCheckTests } from "./test-iframe-check";
 import { runLinkPreviewTests } from "./test-link-preview";
 import { runParseTitleTests } from "./test-parse-title";
@@ -20,18 +21,48 @@ interface TestSuiteResult {
   failed: number;
 }
 
+// Box drawing characters
+const BOX = {
+  TOP_LEFT: "┌",
+  TOP_RIGHT: "┐",
+  BOTTOM_LEFT: "└",
+  BOTTOM_RIGHT: "┘",
+  HORIZONTAL: "─",
+  VERTICAL: "│",
+  T_RIGHT: "├",
+  T_LEFT: "┤",
+};
+
+function line(width: number = 70): string {
+  return BOX.HORIZONTAL.repeat(width);
+}
+
+function header(text: string, width: number = 70): string {
+  const padding = width - text.length - 4;
+  const leftPad = Math.floor(padding / 2);
+  const rightPad = padding - leftPad;
+  return [
+    `${BOX.TOP_LEFT}${line(width - 2)}${BOX.TOP_RIGHT}`,
+    `${BOX.VERTICAL} ${" ".repeat(leftPad)}${text}${" ".repeat(rightPad)} ${BOX.VERTICAL}`,
+    `${BOX.BOTTOM_LEFT}${line(width - 2)}${BOX.BOTTOM_RIGHT}`,
+  ].join("\n");
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
+}
+
 async function runAllTests(): Promise<void> {
-  console.log("\n");
-  console.log("╔════════════════════════════════════════════════════════════╗");
-  console.log("║                    API ENDPOINT TESTS                       ║");
-  console.log("╚════════════════════════════════════════════════════════════╝");
-  console.log(`\n🌐 Testing against: ${BASE_URL}\n`);
+  console.log("\n" + header("API ENDPOINT TESTS"));
+  console.log(`\n  Server: ${BASE_URL}\n`);
 
   const results: TestSuiteResult[] = [];
   const startTime = Date.now();
 
   // Define test suites
   const testSuites: { name: string; run: () => Promise<{ passed: number; failed: number }> }[] = [
+    { name: "chat-rooms", run: runChatRoomsTests },
     { name: "iframe-check", run: runIframeCheckTests },
     { name: "link-preview", run: runLinkPreviewTests },
     { name: "parse-title", run: runParseTitleTests },
@@ -48,9 +79,10 @@ async function runAllTests(): Promise<void> {
     : testSuites;
 
   if (specificTest && suitesToRun.length === 0) {
-    console.error(`❌ No test suite found matching: ${specificTest}`);
-    console.log("\nAvailable test suites:");
-    testSuites.forEach((s) => console.log(`  - ${s.name}`));
+    console.error(`  Error: No test suite found matching "${specificTest}"\n`);
+    console.log("  Available test suites:");
+    testSuites.forEach((s) => console.log(`    - ${s.name}`));
+    console.log("");
     process.exit(1);
   }
 
@@ -60,7 +92,7 @@ async function runAllTests(): Promise<void> {
       const result = await suite.run();
       results.push({ name: suite.name, ...result });
     } catch (error) {
-      console.error(`\n❌ Error running ${suite.name} tests:`, error);
+      console.error(`\n  Error running ${suite.name} tests:`, error);
       results.push({ name: suite.name, passed: 0, failed: 1 });
     }
   }
@@ -70,30 +102,32 @@ async function runAllTests(): Promise<void> {
   const totalPassed = results.reduce((sum, r) => sum + r.passed, 0);
   const totalFailed = results.reduce((sum, r) => sum + r.failed, 0);
 
-  console.log("\n");
-  console.log("╔════════════════════════════════════════════════════════════╗");
-  console.log("║                    OVERALL SUMMARY                          ║");
-  console.log("╚════════════════════════════════════════════════════════════╝");
-  console.log("\n📊 Results by Test Suite:\n");
+  console.log("\n" + header("SUMMARY"));
+
+  // Results table
+  const maxNameLen = Math.max(...results.map((r) => r.name.length), 12);
   
-  const maxNameLen = Math.max(...results.map((r) => r.name.length));
+  console.log(`\n  ${"Suite".padEnd(maxNameLen)}  Passed  Failed  Status`);
+  console.log(`  ${line(maxNameLen + 24)}`);
+  
   for (const result of results) {
-    const status = result.failed === 0 ? "✅" : "❌";
+    const status = result.failed === 0 ? "ok" : "FAILED";
     const name = result.name.padEnd(maxNameLen);
-    console.log(`   ${status} ${name}  Passed: ${result.passed}, Failed: ${result.failed}`);
+    const passed = String(result.passed).padStart(6);
+    const failed = String(result.failed).padStart(6);
+    console.log(`  ${name}  ${passed}  ${failed}  ${status}`);
   }
 
-  console.log("\n" + "─".repeat(60));
-  console.log(`\n📈 Total Tests: ${totalPassed + totalFailed}`);
-  console.log(`   ✅ Passed: ${totalPassed}`);
-  console.log(`   ❌ Failed: ${totalFailed}`);
-  console.log(`   ⏱️  Duration: ${(totalDuration / 1000).toFixed(2)}s`);
+  console.log(`  ${line(maxNameLen + 24)}`);
+  console.log(`  ${"Total".padEnd(maxNameLen)}  ${String(totalPassed).padStart(6)}  ${String(totalFailed).padStart(6)}`);
+
+  console.log(`\n  Duration: ${formatDuration(totalDuration)}`);
 
   if (totalFailed > 0) {
-    console.log("\n❌ Some tests failed!\n");
+    console.log("\n  Status: FAILED\n");
     process.exit(1);
   } else {
-    console.log("\n✅ All tests passed!\n");
+    console.log("\n  Status: PASSED\n");
     process.exit(0);
   }
 }
