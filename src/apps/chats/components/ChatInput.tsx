@@ -114,13 +114,12 @@ export function ChatInput({
   const audioButtonRef = useRef<HTMLButtonElement>(null);
   const { playNote } = useChatSynth();
   const { play: playNudgeSound } = useSound(Sounds.MSN_NUDGE);
-  const { typingSynthEnabled, debugMode, aiModel, keepTalkingEnabled, speechEnabled } = useAppStoreShallow(
+  const { typingSynthEnabled, debugMode, aiModel, keepTalkingEnabled } = useAppStoreShallow(
     (s) => ({
       typingSynthEnabled: s.typingSynthEnabled,
       debugMode: s.debugMode,
       aiModel: s.aiModel,
       keepTalkingEnabled: s.keepTalkingEnabled,
-      speechEnabled: s.speechEnabled,
     })
   );
   const currentTheme = useThemeStore((s) => s.current);
@@ -176,8 +175,9 @@ export function ChatInput({
 
   // Keep Talking Mode: Auto-start recording after AI response completes
   useEffect(() => {
-    const wasLoading = prevIsLoadingRef.current;
-    const wasSpeaking = prevIsSpeechPlayingRef.current;
+    // "Busy" means AI is still generating (loading) or TTS is still playing
+    const wasBusy = prevIsLoadingRef.current || prevIsSpeechPlayingRef.current;
+    const isNowDone = !isLoading && !isSpeechPlaying;
     
     // Update refs for next render
     prevIsLoadingRef.current = isLoading;
@@ -186,29 +186,17 @@ export function ChatInput({
     // If not in keep talking mode or keep talking is disabled, do nothing
     if (!isInKeepTalkingMode || !keepTalkingEnabled) return;
     
-    // If speech is enabled, wait for speech to finish
-    if (speechEnabled) {
-      // Detect speech completion: was speaking and now not speaking, and not loading
-      if (wasSpeaking && !isSpeechPlaying && !isLoading) {
-        // Auto-start recording after a small delay
-        setTimeout(() => {
-          if (!isRecording && !isTranscribing) {
-            audioButtonRef.current?.click();
-          }
-        }, 300);
-      }
-    } else {
-      // Speech disabled: trigger when loading completes
-      if (wasLoading && !isLoading) {
-        // Auto-start recording after a small delay
-        setTimeout(() => {
-          if (!isRecording && !isTranscribing) {
-            audioButtonRef.current?.click();
-          }
-        }, 300);
-      }
+    // Trigger auto-record when transitioning from "busy" to "done"
+    // This ensures we wait for BOTH loading AND speech to complete
+    if (wasBusy && isNowDone) {
+      // Auto-start recording after a small delay
+      setTimeout(() => {
+        if (!isRecording && !isTranscribing) {
+          audioButtonRef.current?.click();
+        }
+      }, 300);
     }
-  }, [isLoading, isSpeechPlaying, isInKeepTalkingMode, keepTalkingEnabled, speechEnabled, isRecording, isTranscribing]);
+  }, [isLoading, isSpeechPlaying, isInKeepTalkingMode, keepTalkingEnabled, isRecording, isTranscribing]);
 
   const handleInputChangeWithSound = (
     e: React.ChangeEvent<HTMLInputElement>
