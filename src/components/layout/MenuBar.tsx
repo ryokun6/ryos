@@ -850,6 +850,38 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     return { icon, label, isEmoji };
   };
 
+  // Tauri fullscreen detection (must be declared before any early returns)
+  const isTauriApp = isTauri();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Track fullscreen state in Tauri
+  useEffect(() => {
+    if (!isTauriApp) return;
+    
+    let unlisten: (() => void) | undefined;
+    
+    (async () => {
+      try {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const win = getCurrentWindow();
+        
+        // Get initial fullscreen state
+        const fullscreen = await win.isFullscreen();
+        setIsFullscreen(fullscreen);
+        
+        // Listen for fullscreen changes
+        unlisten = await win.onResized(async () => {
+          const fs = await win.isFullscreen();
+          setIsFullscreen(fs);
+        });
+      } catch {}
+    })();
+    
+    return () => {
+      unlisten?.();
+    };
+  }, [isTauriApp]);
+
   // Taskbar overflow handling (used for XP taskbar rendering)
   const runningAreaRef = useRef<HTMLDivElement>(null);
   const [visibleTaskbarIds, setVisibleTaskbarIds] = useState<string[]>([]);
@@ -1278,37 +1310,6 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 
   // Default Mac-style top menubar
   // In Tauri with titleBarStyle: overlay, add clearance for traffic lights (but not in fullscreen)
-  const isTauriApp = isTauri();
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  
-  // Track fullscreen state in Tauri
-  useEffect(() => {
-    if (!isTauriApp) return;
-    
-    let unlisten: (() => void) | undefined;
-    
-    (async () => {
-      try {
-        const { getCurrentWindow } = await import("@tauri-apps/api/window");
-        const win = getCurrentWindow();
-        
-        // Get initial fullscreen state
-        const fullscreen = await win.isFullscreen();
-        setIsFullscreen(fullscreen);
-        
-        // Listen for fullscreen changes
-        unlisten = await win.onResized(async () => {
-          const fs = await win.isFullscreen();
-          setIsFullscreen(fs);
-        });
-      } catch {}
-    })();
-    
-    return () => {
-      unlisten?.();
-    };
-  }, [isTauriApp]);
-  
   const needsTrafficLightClearance = isTauriApp && !isFullscreen && (currentTheme === "macosx" || currentTheme === "system7");
   
   return (
