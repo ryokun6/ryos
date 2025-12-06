@@ -1,5 +1,10 @@
 /**
  * Pusher client and broadcast helpers for chat-rooms API
+ * 
+ * Performance optimizations:
+ * - Uses triggerBatch for multi-channel broadcasts (up to 10 events per HTTP request)
+ * - Skips redundant fan-out for public rooms
+ * - Caches room data to avoid repeated Redis lookups
  */
 
 import Pusher from "pusher";
@@ -19,6 +24,36 @@ export const pusher = new Pusher({
   cluster: process.env.PUSHER_CLUSTER!,
   useTLS: true,
 });
+
+// ============================================================================
+// Batch Trigger Helper
+// ============================================================================
+
+interface BatchEvent {
+  channel: string;
+  name: string;
+  data: unknown;
+}
+
+/**
+ * Trigger multiple Pusher events in batches of up to 10 (Pusher's limit)
+ * This reduces HTTP requests from N to ceil(N/10)
+ */
+async function triggerBatched(events: BatchEvent[]): Promise<void> {
+  if (events.length === 0) return;
+  
+  // Pusher's triggerBatch supports up to 10 events per request
+  const BATCH_SIZE = 10;
+  const batches: BatchEvent[][] = [];
+  
+  for (let i = 0; i < events.length; i += BATCH_SIZE) {
+    batches.push(events.slice(i, i + BATCH_SIZE));
+  }
+  
+  await Promise.all(
+    batches.map((batch) => pusher.triggerBatch(batch))
+  );
+}
 
 // ============================================================================
 // Helper Functions
@@ -81,19 +116,20 @@ export async function broadcastRoomUpdated(roomId: string): Promise<void> {
 
 /**
  * Broadcast room creation to relevant channels
+ * Uses batch triggers for private rooms with multiple members
  */
 export async function broadcastRoomCreated(room: Room): Promise<void> {
   try {
     if (!room.type || room.type === "public") {
       await pusher.trigger("chats-public", "room-created", { room });
-    } else if (Array.isArray(room.members)) {
-      await Promise.all(
-        room.members.map((m) =>
-          pusher.trigger(`chats-${sanitizeForChannel(m)}`, "room-created", {
-            room,
-          })
-        )
-      );
+    } else if (Array.isArray(room.members) && room.members.length > 0) {
+      // Use batch trigger for multiple members
+      const events: BatchEvent[] = room.members.map((m) => ({
+        channel: `chats-${sanitizeForChannel(m)}`,
+        name: "room-created",
+        data: { room },
+      }));
+      await triggerBatched(events);
     }
   } catch (err) {
     console.error("[broadcastRoomCreated] Failed:", err);
@@ -102,6 +138,7 @@ export async function broadcastRoomCreated(room: Room): Promise<void> {
 
 /**
  * Broadcast room deletion to relevant channels
+ * Uses batch triggers for private rooms with multiple members
  */
 export async function broadcastRoomDeleted(
   roomId: string,
@@ -111,14 +148,14 @@ export async function broadcastRoomDeleted(
   try {
     if (!type || type === "public") {
       await pusher.trigger("chats-public", "room-deleted", { roomId });
-    } else if (Array.isArray(members)) {
-      await Promise.all(
-        members.map((m) =>
-          pusher.trigger(`chats-${sanitizeForChannel(m)}`, "room-deleted", {
-            roomId,
-          })
-        )
-      );
+    } else if (Array.isArray(members) && members.length > 0) {
+      // Use batch trigger for multiple members
+      const events: BatchEvent[] = members.map((m) => ({
+        channel: `chats-${sanitizeForChannel(m)}`,
+        name: "room-deleted",
+        data: { roomId },
+      }));
+      await triggerBatched(events);
     }
   } catch (err) {
     console.error("[broadcastRoomDeleted] Failed:", err);
@@ -127,20 +164,30 @@ export async function broadcastRoomDeleted(
 
 /**
  * Broadcast new message to room channel
+ * Optimized: Only fans out to private members if room is private
  */
 export async function broadcastNewMessage(
   roomId: string,
-  message: Message
+  message: Message,
+  roomData?: Room | null
 ): Promise<void> {
   try {
     const channelName = `room-${roomId}`;
-    await pusher.trigger(channelName, "room-message", {
-      roomId,
-      message,
-    });
+    const payload = { roomId, message };
+    
+    // Always trigger the room-specific channel (clients subscribe to this)
+    await pusher.trigger(channelName, "room-message", payload);
 
-    // Fan-out to private room members as a fallback
-    await fanOutToPrivateMembers(roomId, "room-message", { roomId, message });
+    // Only fan-out to private members if this is a private room
+    // Pass room data if available to avoid redundant Redis lookup
+    if (roomData) {
+      if (roomData.type === "private" && Array.isArray(roomData.members)) {
+        await fanOutToPrivateMembersBatched(roomData.members, "room-message", payload);
+      }
+    } else {
+      // Fallback: check room type from Redis (only for private rooms)
+      await fanOutToPrivateMembers(roomId, "room-message", payload);
+    }
   } catch (err) {
     console.error("[broadcastNewMessage] Failed:", err);
   }
@@ -148,29 +195,55 @@ export async function broadcastNewMessage(
 
 /**
  * Broadcast message deletion to room channel
+ * Optimized: Only fans out to private members if room is private
  */
 export async function broadcastMessageDeleted(
   roomId: string,
-  messageId: string
+  messageId: string,
+  roomData?: Room | null
 ): Promise<void> {
   try {
     const channelName = `room-${roomId}`;
-    await pusher.trigger(channelName, "message-deleted", {
-      roomId,
-      messageId,
-    });
+    const payload = { roomId, messageId };
+    
+    await pusher.trigger(channelName, "message-deleted", payload);
 
-    await fanOutToPrivateMembers(roomId, "message-deleted", {
-      roomId,
-      messageId,
-    });
+    // Only fan-out to private members if this is a private room
+    if (roomData) {
+      if (roomData.type === "private" && Array.isArray(roomData.members)) {
+        await fanOutToPrivateMembersBatched(roomData.members, "message-deleted", payload);
+      }
+    } else {
+      await fanOutToPrivateMembers(roomId, "message-deleted", payload);
+    }
   } catch (err) {
     console.error("[broadcastMessageDeleted] Failed:", err);
   }
 }
 
 /**
+ * Fan out an event to each member's personal channel using batch triggers
+ * This is the optimized version when members list is already available
+ */
+async function fanOutToPrivateMembersBatched(
+  members: string[],
+  eventName: string,
+  payload: unknown
+): Promise<void> {
+  if (!members || members.length === 0) return;
+  
+  const events: BatchEvent[] = members.map((member) => ({
+    channel: `chats-${sanitizeForChannel(member)}`,
+    name: eventName,
+    data: payload,
+  }));
+  
+  await triggerBatched(events);
+}
+
+/**
  * Fan out an event to each member's personal channel for a private room
+ * This version fetches room data from Redis (use fanOutToPrivateMembersBatched when you already have room data)
  */
 export async function fanOutToPrivateMembers(
   roomId: string,
@@ -185,12 +258,8 @@ export async function fanOutToPrivateMembers(
     if (!roomObj) return;
     if (roomObj.type !== "private" || !Array.isArray(roomObj.members)) return;
 
-    await Promise.all(
-      roomObj.members.map((member) => {
-        const safe = sanitizeForChannel(member);
-        return pusher.trigger(`chats-${safe}`, eventName, payload);
-      })
-    );
+    // Use batch trigger for efficiency
+    await fanOutToPrivateMembersBatched(roomObj.members, eventName, payload);
   } catch (err) {
     console.error(
       `[fanOutToPrivateMembers] Failed to fan-out ${eventName} for room ${roomId}:`,
@@ -201,6 +270,7 @@ export async function fanOutToPrivateMembers(
 
 /**
  * Broadcast rooms update to specific users only
+ * Uses batch triggers for efficiency
  */
 export async function broadcastToSpecificUsers(
   usernames: string[],
@@ -209,15 +279,17 @@ export async function broadcastToSpecificUsers(
   if (!usernames || usernames.length === 0) return;
 
   try {
-    const pushPromises = usernames.map((username) => {
+    const events: BatchEvent[] = usernames.map((username) => {
       const safeUsername = sanitizeForChannel(username);
       const userRooms = filterRoomsForUser(rooms, username);
-      return pusher.trigger(`chats-${safeUsername}`, "rooms-updated", {
-        rooms: userRooms,
-      });
+      return {
+        channel: `chats-${safeUsername}`,
+        name: "rooms-updated",
+        data: { rooms: userRooms },
+      };
     });
 
-    await Promise.all(pushPromises);
+    await triggerBatched(events);
   } catch (err) {
     console.error("[broadcastToSpecificUsers] Failed to broadcast:", err);
   }
