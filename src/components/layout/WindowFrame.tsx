@@ -135,8 +135,9 @@ export function WindowFrame({
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const theme = getTheme(currentTheme);
   
-  // Get dock scale for accurate dock height calculations
+  // Get dock scale and hiding state for accurate dock height calculations
   const dockScale = useDockStore((state) => state.scale);
+  const dockHiding = useDockStore((state) => state.hiding);
   // Treat all macOS windows as using a transparent outer background so titlebar/content can be styled separately
   const effectiveTransparentBackground =
     currentTheme === "macosx" ? true : transparentBackground;
@@ -357,8 +358,8 @@ export function WindowFrame({
       ? 32
       : currentTheme === "system7" ? 30 : currentTheme === "macosx" ? 25 : 0;
     const taskbarHeight = isXpTheme ? 30 : 0;
-    // Use scaled dock height for accurate constraints
-    const dockHeight = currentTheme === "macosx" ? Math.round(56 * dockScale) : 0;
+    // Use scaled dock height for accurate constraints (0 if dock hiding is enabled)
+    const dockHeight = currentTheme === "macosx" && !dockHiding ? Math.round(56 * dockScale) : 0;
     const topInset = menuBarHeight;
     const bottomInset = taskbarHeight + dockHeight + safe;
     return {
@@ -369,7 +370,7 @@ export function WindowFrame({
       bottomInset,
       dockHeight,
     };
-  }, [currentTheme, isXpTheme, getSafeAreaBottomInset, dockScale]);
+  }, [currentTheme, isXpTheme, getSafeAreaBottomInset, dockScale, dockHiding]);
 
   // No longer track maximized state based on window dimensions
   useEffect(() => {

@@ -32,8 +32,9 @@ export const useWindowManager = ({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   
-  // Get dock scale for accurate dock height calculations
+  // Get dock scale and hiding state for accurate dock height calculations
   const dockScale = useDockStore((state) => state.scale);
+  const dockHiding = useDockStore((state) => state.hiding);
 
   // Helper to compute default window state (mirrors previous logic)
   const computeDefaultWindowState = (): {
@@ -121,8 +122,8 @@ export const useWindowManager = ({
       ? 32
       : currentTheme === "system7" ? 30 : currentTheme === "macosx" ? 25 : 0;
     const taskbarHeight = isXpTheme ? 30 : 0;
-    // Use scaled dock height for accurate constraints
-    const dockHeight = currentTheme === "macosx" ? Math.round(56 * dockScale) : 0;
+    // Use scaled dock height for accurate constraints (0 if dock hiding is enabled)
+    const dockHeight = currentTheme === "macosx" && !dockHiding ? Math.round(56 * dockScale) : 0;
     const topInset = menuBarHeight;
     // bottomInset includes dock for resize/maximize constraints
     const bottomInset = taskbarHeight + dockHeight + safe;
@@ -134,7 +135,7 @@ export const useWindowManager = ({
       bottomInset,
       dockHeight,
     };
-  }, [currentTheme, isXpTheme, getSafeAreaBottomInset, dockScale]);
+  }, [currentTheme, isXpTheme, getSafeAreaBottomInset, dockScale, dockHiding]);
 
   const { play: playMoveSound, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
   const { play: playMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);
