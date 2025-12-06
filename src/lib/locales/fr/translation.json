@@ -224,7 +224,8 @@
         "saveTranscript": "Enregistrer l'historique...",
         "showRooms": "Afficher les salons",
         "sound": "Son",
-        "typingSynth": "Synthétiseur de frappe"
+        "typingSynth": "Synthétiseur de frappe",
+        "keepTalking": "Continuer à parler"
       },
       "messages": {
         "delete": "Supprimer",
