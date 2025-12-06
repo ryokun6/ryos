@@ -452,10 +452,11 @@ interface DividerProps {
   height?: number;
   resizable?: boolean;
   onResizeStart?: (e: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 const Divider = forwardRef<HTMLDivElement, DividerProps>(
-  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart }, ref) => (
+  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart, onContextMenu }, ref) => (
     <motion.div
       ref={ref}
       layout
@@ -473,6 +474,7 @@ const Divider = forwardRef<HTMLDivElement, DividerProps>(
       onDrop={onDrop as React.DragEventHandler<HTMLDivElement>}
       onDragLeave={onDragLeave as React.DragEventHandler<HTMLDivElement>}
       onMouseDown={resizable ? onResizeStart : undefined}
+      onContextMenu={onContextMenu as React.MouseEventHandler<HTMLDivElement>}
       style={{
         height,
         marginLeft: 6,
@@ -483,19 +485,18 @@ const Divider = forwardRef<HTMLDivElement, DividerProps>(
         position: "relative",
       }}
     >
-      {/* Invisible wider hit area for resize dragging */}
-      {resizable && (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: -10,
-            right: -10,
-            cursor: "ns-resize",
-          }}
-        />
-      )}
+      {/* Invisible wider hit area for resize dragging and context menu */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: -10,
+          right: -10,
+          cursor: resizable ? "ns-resize" : "default",
+        }}
+        onContextMenu={onContextMenu}
+      />
     </motion.div>
   )
 );
@@ -528,7 +529,18 @@ function MacDock() {
   const finderInstances = useFinderStore((s) => s.instances);
   
   // Dock store for customization
-  const { pinnedItems, addItem: addDockItem, removeItem: removeDockItem, reorderItems, scale: dockScale, setScale: setDockScale } = useDockStore();
+  const { 
+    pinnedItems, 
+    addItem: addDockItem, 
+    removeItem: removeDockItem, 
+    reorderItems, 
+    scale: dockScale, 
+    setScale: setDockScale,
+    hiding: dockHiding,
+    setHiding: setDockHiding,
+    magnification: dockMagnification,
+    setMagnification: setDockMagnification,
+  } = useDockStore();
   
   const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
   const [trashContextMenuPos, setTrashContextMenuPos] = useState<{
@@ -552,6 +564,12 @@ function MacDock() {
     instanceId?: string; // For applet instances
   } | null>(null);
   
+  // Divider context menu state (for dock settings)
+  const [dividerContextMenuPos, setDividerContextMenuPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isSwapping, setIsSwapping] = useState(false);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -566,6 +584,10 @@ function MacDock() {
   const [isResizing, setIsResizing] = useState(false);
   const resizeStartY = useRef<number>(0);
   const resizeStartScale = useRef<number>(1);
+  
+  // Dock hiding state
+  const [isDockVisible, setIsDockVisible] = useState(!dockHiding);
+  const isMouseInZoneRef = useRef(false);
 
   const handleIconHover = useCallback((id: string) => {
     if (hoverTimeoutRef.current) {
@@ -634,6 +656,70 @@ function MacDock() {
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isResizing, setDockScale]);
+
+  // Sync visibility state when hiding setting changes
+  useEffect(() => {
+    if (!dockHiding) {
+      // When hiding is disabled, always show the dock
+      setIsDockVisible(true);
+    } else {
+      // When hiding is enabled, hide the dock unless mouse is in zone
+      if (!isMouseInZoneRef.current) {
+        setIsDockVisible(false);
+      }
+    }
+  }, [dockHiding]);
+
+  // Show dock (called when mouse enters dock zone)
+  const showDock = useCallback(() => {
+    isMouseInZoneRef.current = true;
+    setIsDockVisible(true);
+  }, []);
+
+  // Hide dock immediately (called when mouse leaves dock zone)
+  // Won't hide if dragging is in progress or context menu is open
+  const hideDock = useCallback(() => {
+    isMouseInZoneRef.current = false;
+    if (!dockHiding) return;
+    // Don't hide while dragging
+    if (draggingItemId || externalDragIndex !== null) return;
+    // Don't hide while context menu is open
+    if (trashContextMenuPos || applicationsContextMenuPos || appContextMenu || dividerContextMenuPos) return;
+    setIsDockVisible(false);
+  }, [dockHiding, draggingItemId, externalDragIndex, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos]);
+
+  // Divider context menu handler
+  const handleDividerContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const containerRect = dockContainerRef.current?.getBoundingClientRect();
+    if (!containerRect) {
+      setDividerContextMenuPos({ x: e.clientX, y: e.clientY });
+      return;
+    }
+    
+    setDividerContextMenuPos({
+      x: e.clientX - containerRect.left,
+      y: e.clientY - containerRect.top,
+    });
+  }, []);
+
+  // Get divider context menu items (dock settings)
+  const getDividerContextMenuItems = useCallback((): MenuItem[] => {
+    return [
+      {
+        type: "item",
+        label: dockHiding ? t("common.dock.turnHidingOff") : t("common.dock.turnHidingOn"),
+        onSelect: () => setDockHiding(!dockHiding),
+      },
+      {
+        type: "item",
+        label: dockMagnification ? t("common.dock.turnMagnificationOff") : t("common.dock.turnMagnificationOn"),
+        onSelect: () => setDockMagnification(!dockMagnification),
+      },
+    ];
+  }, [dockHiding, dockMagnification, setDockHiding, setDockMagnification, t]);
 
   // Get trash items to check if trash is empty
   // Use a selector that directly filters items to avoid infinite loops
@@ -1718,8 +1804,8 @@ function MacDock() {
     };
   }, []);
 
-  // Effective magnification: disabled when resizing or on touch devices
-  const effectiveMagnifyEnabled = magnifyEnabled && !isResizing;
+  // Effective magnification: disabled when resizing, on touch devices, or user preference
+  const effectiveMagnifyEnabled = magnifyEnabled && !isResizing && dockMagnification;
 
   // Ensure no magnification state is applied when disabled
   useEffect(() => {
@@ -1772,8 +1858,13 @@ function MacDock() {
           layout
           layoutRoot
           className="inline-flex items-end"
+          initial={false}
+          animate={{
+            y: isDockVisible ? 0 : scaledDockHeight + 10,
+            opacity: isDockVisible ? 1 : 0,
+          }}
           style={{
-            pointerEvents: "auto",
+            pointerEvents: isDockVisible ? "auto" : "none",
             background: "rgba(248, 248, 248, 0.75)",
             backgroundImage: "var(--os-pinstripe-menubar)",
             border: "none",
@@ -1789,23 +1880,37 @@ function MacDock() {
             overscrollBehaviorX: isPhone ? "contain" : undefined,
           }}
           transition={{
+            y: {
+              type: "tween",
+              duration: 0.2,
+              ease: "easeOut",
+            },
+            opacity: {
+              duration: 0.15,
+            },
             layout: {
               type: "spring",
               stiffness: 400,
               damping: 30,
             },
           }}
+          onMouseEnter={() => {
+            if (dockHiding) {
+              showDock();
+            }
+          }}
+          onMouseLeave={() => {
+            if (dockHiding) {
+              hideDock();
+            }
+            if (effectiveMagnifyEnabled && !trashContextMenuPos && !appContextMenu) {
+              mouseX.set(Infinity);
+              handleIconLeave();
+            }
+          }}
           onMouseMove={
             effectiveMagnifyEnabled && !trashContextMenuPos && !appContextMenu
               ? (e) => mouseX.set(e.clientX)
-              : undefined
-          }
-          onMouseLeave={
-            effectiveMagnifyEnabled && !trashContextMenuPos && !appContextMenu
-              ? () => {
-                  mouseX.set(Infinity);
-                  handleIconLeave();
-                }
               : undefined
           }
           onDragOver={(e: React.DragEvent<HTMLDivElement>) => {
@@ -1939,6 +2044,7 @@ function MacDock() {
                   onDragLeave={handleDividerDragLeave}
                   isDropTarget={isDividerDropTarget}
                   height={scaledButtonSize}
+                  onContextMenu={handleDividerContextMenu}
                 />
               )}
 
@@ -2017,6 +2123,7 @@ function MacDock() {
                 height={scaledButtonSize}
                 resizable={!isPhone}
                 onResizeStart={handleResizeStart}
+                onContextMenu={handleDividerContextMenu}
               />
 
               {/* Applications (left of Trash) */}
@@ -2160,6 +2267,29 @@ function MacDock() {
           </LayoutGroup>
         </motion.div>
       </div>
+      
+      {/* Invisible hover zone at bottom edge to trigger dock reveal when hiding is enabled */}
+      {dockHiding && !isDockVisible && (
+        <div
+          className="fixed left-0 right-0 z-40"
+          style={{
+            bottom: 0,
+            // Desktop: half dock height, Mobile: full dock height + safe area
+            height: isPhone 
+              ? `calc(${scaledDockHeight}px + env(safe-area-inset-bottom, 0px))` 
+              : Math.max(Math.round(scaledDockHeight / 2), 8),
+            pointerEvents: "auto",
+            // Debug: uncomment to visualize hover zone
+            // backgroundColor: "rgba(255, 0, 0, 0.2)",
+          }}
+          onMouseEnter={showDock}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            showDock();
+          }}
+        />
+      )}
+      
       <RightClickMenu
         items={getFolderContextMenuItems("/Trash", true)}
         position={trashContextMenuPos}
@@ -2182,6 +2312,16 @@ function MacDock() {
           position={appContextMenu}
           onClose={() => {
             setAppContextMenu(null);
+            mouseX.set(Infinity);
+          }}
+        />
+      )}
+      {dividerContextMenuPos && (
+        <RightClickMenu
+          items={getDividerContextMenuItems()}
+          position={dividerContextMenuPos}
+          onClose={() => {
+            setDividerContextMenuPos(null);
             mouseX.set(Infinity);
           }}
         />

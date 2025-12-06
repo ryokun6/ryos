@@ -1773,7 +1773,11 @@
       "quit": "結束",
       "removeFromDock": "從 Dock 移除",
       "showAllWindows": "顯示所有視窗",
-      "trash": "垃圾桶"
+      "trash": "垃圾桶",
+      "turnHidingOn": "開啟自動隱藏",
+      "turnHidingOff": "關閉自動隱藏",
+      "turnMagnificationOn": "開啟放大效果",
+      "turnMagnificationOff": "關閉放大效果"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "未命名 Applet",

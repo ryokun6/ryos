@@ -1773,7 +1773,11 @@
       "quit": "Quitter",
       "removeFromDock": "Retirer du Dock",
       "showAllWindows": "Afficher toutes les fenêtres",
-      "trash": "Corbeille"
+      "trash": "Corbeille",
+      "turnHidingOn": "Activer le masquage automatique",
+      "turnHidingOff": "Désactiver le masquage automatique",
+      "turnMagnificationOn": "Activer l'agrandissement",
+      "turnMagnificationOff": "Désactiver l'agrandissement"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet sans titre",

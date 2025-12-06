@@ -23,12 +23,16 @@ const DEFAULT_PINNED_ITEMS: DockItem[] = [
 interface DockStoreState {
   pinnedItems: DockItem[];
   scale: number; // Dock icon scale (0.5 to 1.5)
+  hiding: boolean; // Whether dock auto-hides
+  magnification: boolean; // Whether magnification is enabled
   // Actions
   addItem: (item: DockItem, insertIndex?: number) => boolean; // Returns false if duplicate
   removeItem: (id: string) => boolean; // Returns false if protected
   reorderItems: (fromIndex: number, toIndex: number) => void;
   hasItem: (id: string) => boolean;
   setScale: (scale: number) => void;
+  setHiding: (hiding: boolean) => void;
+  setMagnification: (magnification: boolean) => void;
   reset: () => void;
 }
 
@@ -37,6 +41,8 @@ export const useDockStore = create<DockStoreState>()(
     (set, get) => ({
       pinnedItems: DEFAULT_PINNED_ITEMS,
       scale: 1, // Default scale
+      hiding: false, // Default: dock always visible
+      magnification: true, // Default: magnification enabled
 
       addItem: (item: DockItem, insertIndex?: number) => {
         const { pinnedItems } = get();
@@ -116,8 +122,16 @@ export const useDockStore = create<DockStoreState>()(
         set({ scale: clampedScale });
       },
 
+      setHiding: (hiding: boolean) => {
+        set({ hiding });
+      },
+
+      setMagnification: (magnification: boolean) => {
+        set({ magnification });
+      },
+
       reset: () => {
-        set({ pinnedItems: DEFAULT_PINNED_ITEMS, scale: 1 });
+        set({ pinnedItems: DEFAULT_PINNED_ITEMS, scale: 1, hiding: false, magnification: true });
       },
     }),
     {

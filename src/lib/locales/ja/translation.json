@@ -1773,7 +1773,11 @@
       "quit": "終了",
       "removeFromDock": "ドックから削除",
       "showAllWindows": "すべてのウィンドウを表示",
-      "trash": "ゴミ箱"
+      "trash": "ゴミ箱",
+      "turnHidingOn": "自動的に隠すをオン",
+      "turnHidingOff": "自動的に隠すをオフ",
+      "turnMagnificationOn": "拡大をオン",
+      "turnMagnificationOff": "拡大をオフ"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "無題のアプレット",

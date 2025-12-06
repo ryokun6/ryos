@@ -1773,7 +1773,11 @@
       "quit": "Beenden",
       "removeFromDock": "Aus dem Dock entfernen",
       "showAllWindows": "Alle Fenster anzeigen",
-      "trash": "Papierkorb"
+      "trash": "Papierkorb",
+      "turnHidingOn": "Automatisch ausblenden aktivieren",
+      "turnHidingOff": "Automatisch ausblenden deaktivieren",
+      "turnMagnificationOn": "Vergrößerung aktivieren",
+      "turnMagnificationOff": "Vergrößerung deaktivieren"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Unbenanntes Applet",

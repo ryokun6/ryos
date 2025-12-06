@@ -1773,7 +1773,11 @@
       "quit": "Salir",
       "removeFromDock": "Quitar del Dock",
       "showAllWindows": "Mostrar Todas las Ventanas",
-      "trash": "Papelera"
+      "trash": "Papelera",
+      "turnHidingOn": "Activar ocultación automática",
+      "turnHidingOff": "Desactivar ocultación automática",
+      "turnMagnificationOn": "Activar ampliación",
+      "turnMagnificationOff": "Desactivar ampliación"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet sin título",

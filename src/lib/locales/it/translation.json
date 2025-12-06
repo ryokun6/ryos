@@ -1773,7 +1773,11 @@
       "quit": "Esci",
       "removeFromDock": "Rimuovi dal Dock",
       "showAllWindows": "Mostra tutte le finestre",
-      "trash": "Cestino"
+      "trash": "Cestino",
+      "turnHidingOn": "Attiva nascondimento automatico",
+      "turnHidingOff": "Disattiva nascondimento automatico",
+      "turnMagnificationOn": "Attiva ingrandimento",
+      "turnMagnificationOff": "Disattiva ingrandimento"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet senza titolo",

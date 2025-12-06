@@ -1773,7 +1773,11 @@
       "quit": "종료",
       "removeFromDock": "Dock에서 제거",
       "showAllWindows": "모든 창 보기",
-      "trash": "휴지통"
+      "trash": "휴지통",
+      "turnHidingOn": "자동 숨김 켜기",
+      "turnHidingOff": "자동 숨김 끄기",
+      "turnMagnificationOn": "확대 켜기",
+      "turnMagnificationOff": "확대 끄기"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "제목 없는 Applet",

@@ -105,7 +105,11 @@
       "appletStore": "Applet Store",
       "folderContents": "Folder Contents",
       "removeFromDock": "Remove from Dock",
-      "addToDock": "Add to Dock"
+      "addToDock": "Add to Dock",
+      "turnHidingOn": "Turn Hiding On",
+      "turnHidingOff": "Turn Hiding Off",
+      "turnMagnificationOn": "Turn Magnification On",
+      "turnMagnificationOff": "Turn Magnification Off"
     },
     "startMenu": {
       "start": "Start",

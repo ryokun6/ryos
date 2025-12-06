@@ -1773,7 +1773,11 @@
       "quit": "Выход",
       "removeFromDock": "Удалить из Dock",
       "showAllWindows": "Показать все окна",
-      "trash": "Корзина"
+      "trash": "Корзина",
+      "turnHidingOn": "Включить автоскрытие",
+      "turnHidingOff": "Выключить автоскрытие",
+      "turnMagnificationOn": "Включить увеличение",
+      "turnMagnificationOff": "Выключить увеличение"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Безымянный апплет",
