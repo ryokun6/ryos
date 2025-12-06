@@ -64,6 +64,8 @@ interface IconButtonProps {
   onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
   isDragging?: boolean;
   isDraggedOutside?: boolean;
+  // Scaled size prop
+  baseSize?: number;
 }
 
 // Animated spacer for drop preview - with magnification support
@@ -71,13 +73,24 @@ interface DockSpacerProps {
   idKey: string;
   mouseX: MotionValue<number>;
   magnifyEnabled: boolean;
+  baseSize?: number;
 }
 
 const DockSpacer = forwardRef<HTMLDivElement, DockSpacerProps>(
-  ({ idKey, mouseX, magnifyEnabled }, ref) => {
+  ({ idKey, mouseX, magnifyEnabled, baseSize: baseSizeProp }, ref) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
-    const baseSize = BASE_BUTTON_SIZE;
+    const baseSize = baseSizeProp ?? BASE_BUTTON_SIZE;
     const maxSize = Math.round(baseSize * MAX_SCALE);
+    
+    // Use a motion value for target size that we can imperatively update
+    const targetSize = useMotionValue(baseSize);
+    
+    // Update target size when base size changes or magnification is disabled
+    useEffect(() => {
+      if (!magnifyEnabled) {
+        targetSize.set(baseSize);
+      }
+    }, [baseSize, magnifyEnabled, targetSize]);
     
     const distanceCalc = useTransform(mouseX, (val) => {
       const bounds = wrapperRef.current?.getBoundingClientRect();
@@ -85,19 +98,34 @@ const DockSpacer = forwardRef<HTMLDivElement, DockSpacerProps>(
       return val - (bounds.left + bounds.width / 2);
     });
     
-    const sizeTransform = useTransform(
-      distanceCalc,
-      [-DISTANCE, 0, DISTANCE],
-      [baseSize, maxSize, baseSize]
-    );
+    // Update target size based on cursor distance when magnification is enabled
+    useEffect(() => {
+      if (!magnifyEnabled) return;
+      
+      const unsubscribe = distanceCalc.on("change", (dist) => {
+        if (!Number.isFinite(dist)) {
+          targetSize.set(baseSize);
+          return;
+        }
+        const absDist = Math.abs(dist);
+        if (absDist > DISTANCE) {
+          targetSize.set(baseSize);
+        } else {
+          const t = 1 - absDist / DISTANCE;
+          targetSize.set(baseSize + t * (maxSize - baseSize));
+        }
+      });
+      
+      return unsubscribe;
+    }, [magnifyEnabled, baseSize, maxSize, distanceCalc, targetSize]);
     
-    const sizeSpring = useSpring(sizeTransform, {
+    const sizeSpring = useSpring(targetSize, {
       mass: 0.15,
       stiffness: 160,
       damping: 18,
     });
     
-    const widthValue = magnifyEnabled ? sizeSpring : baseSize;
+    const widthValue = sizeSpring;
     
     const setCombinedRef = useCallback(
       (node: HTMLDivElement | null) => {
@@ -163,33 +191,59 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
       onDragEnd,
       isDragging = false,
       isDraggedOutside = false,
+      baseSize: baseSizeProp,
     },
     forwardedRef
   ) => {
-    const baseButtonSize = BASE_BUTTON_SIZE;
+    const baseButtonSize = baseSizeProp ?? BASE_BUTTON_SIZE;
     const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const isPresent = useIsPresent();
+    
+    // Use a motion value for target size that we can imperatively update
+    const targetSize = useMotionValue(baseButtonSize);
+    
+    // Update target size when base size changes or magnification is disabled
+    useEffect(() => {
+      if (!magnifyEnabled) {
+        targetSize.set(baseButtonSize);
+      }
+    }, [baseButtonSize, magnifyEnabled, targetSize]);
+    
+    // Calculate distance from cursor to icon center
     const distanceCalc = useTransform(mouseX, (val) => {
       const bounds = wrapperRef.current?.getBoundingClientRect();
       if (!bounds || !Number.isFinite(val)) return Infinity;
       return val - (bounds.left + bounds.width / 2);
     });
-    const sizeTransform = useTransform(
-      distanceCalc,
-      [-DISTANCE, 0, DISTANCE],
-      [baseButtonSize, maxButtonSize, baseButtonSize]
-    );
-    const sizeSpring = useSpring(sizeTransform, {
+    
+    // Update target size based on cursor distance when magnification is enabled
+    useEffect(() => {
+      if (!magnifyEnabled) return;
+      
+      const unsubscribe = distanceCalc.on("change", (dist) => {
+        if (!Number.isFinite(dist)) {
+          targetSize.set(baseButtonSize);
+          return;
+        }
+        const absDist = Math.abs(dist);
+        if (absDist > DISTANCE) {
+          targetSize.set(baseButtonSize);
+        } else {
+          const t = 1 - absDist / DISTANCE;
+          targetSize.set(baseButtonSize + t * (maxButtonSize - baseButtonSize));
+        }
+      });
+      
+      return unsubscribe;
+    }, [magnifyEnabled, baseButtonSize, maxButtonSize, distanceCalc, targetSize]);
+    
+    const sizeSpring = useSpring(targetSize, {
       mass: 0.15,
       stiffness: 160,
       damping: 18,
     });
-    const widthValue = isPresent
-      ? magnifyEnabled
-        ? sizeSpring
-        : baseButtonSize
-      : 0;
+    const widthValue = isPresent ? sizeSpring : 0;
 
     // Scale factor for emoji to match magnification (relative to baseButtonSize)
     const emojiScale = useTransform(sizeSpring, (val) => val / baseButtonSize);
@@ -395,10 +449,13 @@ interface DividerProps {
   onDrop?: React.DragEventHandler;
   onDragLeave?: React.DragEventHandler;
   isDropTarget?: boolean;
+  height?: number;
+  resizable?: boolean;
+  onResizeStart?: (e: React.MouseEvent) => void;
 }
 
 const Divider = forwardRef<HTMLDivElement, DividerProps>(
-  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget }, ref) => (
+  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart }, ref) => (
     <motion.div
       ref={ref}
       layout
@@ -415,14 +472,31 @@ const Divider = forwardRef<HTMLDivElement, DividerProps>(
       onDragOver={onDragOver as React.DragEventHandler<HTMLDivElement>}
       onDrop={onDrop as React.DragEventHandler<HTMLDivElement>}
       onDragLeave={onDragLeave as React.DragEventHandler<HTMLDivElement>}
+      onMouseDown={resizable ? onResizeStart : undefined}
       style={{
-        height: 48,
+        height,
         marginLeft: 6,
         marginRight: 6,
         alignSelf: "center",
         borderRadius: 2,
+        cursor: resizable ? "ns-resize" : undefined,
+        position: "relative",
       }}
-    />
+    >
+      {/* Invisible wider hit area for resize dragging */}
+      {resizable && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: -10,
+            right: -10,
+            cursor: "ns-resize",
+          }}
+        />
+      )}
+    </motion.div>
   )
 );
 
@@ -454,7 +528,7 @@ function MacDock() {
   const finderInstances = useFinderStore((s) => s.instances);
   
   // Dock store for customization
-  const { pinnedItems, addItem: addDockItem, removeItem: removeDockItem, reorderItems } = useDockStore();
+  const { pinnedItems, addItem: addDockItem, removeItem: removeDockItem, reorderItems, scale: dockScale, setScale: setDockScale } = useDockStore();
   
   const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
   const [trashContextMenuPos, setTrashContextMenuPos] = useState<{
@@ -487,6 +561,11 @@ function MacDock() {
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
   const [isDraggedOutside, setIsDraggedOutside] = useState(false);
   const [isDividerDropTarget, setIsDividerDropTarget] = useState(false);
+  
+  // Resize dragging state
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeStartY = useRef<number>(0);
+  const resizeStartScale = useRef<number>(1);
 
   const handleIconHover = useCallback((id: string) => {
     if (hoverTimeoutRef.current) {
@@ -515,6 +594,46 @@ function MacDock() {
       hoverTimeoutRef.current = null;
     }, 50);
   }, []);
+
+  // Computed scaled sizes
+  const scaledButtonSize = Math.round(BASE_BUTTON_SIZE * dockScale);
+  const scaledDockHeight = Math.round(56 * dockScale); // Base dock height is 56px
+  const scaledPadding = Math.round(4 * dockScale); // Base padding is 4px (py-1, px-1)
+
+  // Resize handlers for divider drag (only on desktop)
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    if (isPhone) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    resizeStartY.current = e.clientY;
+    resizeStartScale.current = dockScale;
+  }, [isPhone, dockScale]);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Dragging up (negative deltaY) = larger scale
+      // Dragging down (positive deltaY) = smaller scale
+      const deltaY = resizeStartY.current - e.clientY;
+      const scaleDelta = deltaY / 100; // 100px drag = 1.0 scale change
+      const newScale = resizeStartScale.current + scaleDelta;
+      setDockScale(newScale);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, setDockScale]);
 
   // Get trash items to check if trash is empty
   // Use a selector that directly filters items to avoid infinite loops
@@ -587,12 +706,12 @@ function MacDock() {
     if (pinnedItems.length === 0) return 0;
     
     // Calculate icon width (including margin) based on dock width
-    // Each icon is about 56px wide (48px + 8px margin)
-    const iconWidth = 56;
+    // Each icon is about 56px wide (48px + 8px margin), scaled by dockScale
+    const iconWidth = Math.round(56 * dockScale);
     
     // Get the starting X position of the first icon
-    // Account for padding (px-1 = 4px each side)
-    const startX = dockRect.left + 4;
+    // Account for padding (scaled)
+    const startX = dockRect.left + scaledPadding;
     
     // Calculate relative position
     const relativeX = clientX - startX;
@@ -602,7 +721,7 @@ function MacDock() {
     
     // Clamp to valid range
     return Math.max(0, Math.min(slotIndex, pinnedItems.length));
-  }, [pinnedItems.length]);
+  }, [pinnedItems.length, dockScale, scaledPadding]);
   
   // Check if this is an external drag (from desktop/finder, not internal dock reorder)
   const isExternalDrag = useCallback((e: React.DragEvent): boolean => {
@@ -1599,10 +1718,13 @@ function MacDock() {
     };
   }, []);
 
+  // Effective magnification: disabled when resizing or on touch devices
+  const effectiveMagnifyEnabled = magnifyEnabled && !isResizing;
+
   // Ensure no magnification state is applied when disabled
   useEffect(() => {
-    if (!magnifyEnabled) mouseX.set(Infinity);
-  }, [magnifyEnabled, mouseX]);
+    if (!effectiveMagnifyEnabled) mouseX.set(Infinity);
+  }, [effectiveMagnifyEnabled, mouseX]);
 
   // Track which icons have appeared before to control enter animations
   const seenIdsRef = useRef<Set<string>>(new Set());
@@ -1649,14 +1771,15 @@ function MacDock() {
           ref={dockBarRef}
           layout
           layoutRoot
-          className="inline-flex items-end px-1 py-1"
+          className="inline-flex items-end"
           style={{
             pointerEvents: "auto",
             background: "rgba(248, 248, 248, 0.75)",
             backgroundImage: "var(--os-pinstripe-menubar)",
             border: "none",
             boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-            height: 56,
+            height: scaledDockHeight,
+            padding: scaledPadding,
             maxWidth: "min(92vw, 980px)",
             transformOrigin: "center bottom",
             borderRadius: "0px",
@@ -1673,12 +1796,12 @@ function MacDock() {
             },
           }}
           onMouseMove={
-            magnifyEnabled && !trashContextMenuPos && !appContextMenu
+            effectiveMagnifyEnabled && !trashContextMenuPos && !appContextMenu
               ? (e) => mouseX.set(e.clientX)
               : undefined
           }
           onMouseLeave={
-            magnifyEnabled && !trashContextMenuPos && !appContextMenu
+            effectiveMagnifyEnabled && !trashContextMenuPos && !appContextMenu
               ? () => {
                   mouseX.set(Infinity);
                   handleIconLeave();
@@ -1705,7 +1828,7 @@ function MacDock() {
                 pinnedItems.forEach((item, index) => {
                   // Insert spacer before this item if it's the drop target
                   if (externalDragIndex === index) {
-                    elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={magnifyEnabled} />);
+                    elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={effectiveMagnifyEnabled} baseSize={scaledButtonSize} />);
                   }
                   
                   if (item.type === "app") {
@@ -1739,18 +1862,19 @@ function MacDock() {
                         showIndicator={isOpen}
                         isLoading={isLoading}
                         mouseX={mouseX}
-                        magnifyEnabled={magnifyEnabled}
+                        magnifyEnabled={effectiveMagnifyEnabled}
                         isNew={hasMounted && !seenIdsRef.current.has(appId)}
                         isHovered={hoveredId === appId}
                         isSwapping={isSwapping}
                         onHover={() => handleIconHover(appId)}
                         onLeave={handleIconLeave}
                         draggable={!isProtected}
-                      onDragStart={(e) => handleItemDragStart(e, item.id, index)}
-                      onDragEnd={(e) => handleItemDragEnd(e, item.id)}
-                      onDragOver={(e) => handleItemDragOver(e, index)}
+                        onDragStart={(e) => handleItemDragStart(e, item.id, index)}
+                        onDragEnd={(e) => handleItemDragEnd(e, item.id)}
+                        onDragOver={(e) => handleItemDragOver(e, index)}
                         isDragging={draggingItemId === item.id}
                         isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
+                        baseSize={scaledButtonSize}
                       />
                     );
                   } else {
@@ -1779,18 +1903,19 @@ function MacDock() {
                           }
                         }}
                         mouseX={mouseX}
-                        magnifyEnabled={magnifyEnabled}
+                        magnifyEnabled={effectiveMagnifyEnabled}
                         isNew={hasMounted && !seenIdsRef.current.has(item.id)}
                         isHovered={hoveredId === item.id}
                         isSwapping={isSwapping}
                         onHover={() => handleIconHover(item.id)}
                         onLeave={handleIconLeave}
                         draggable
-                      onDragStart={(e) => handleItemDragStart(e, item.id, index)}
-                      onDragEnd={(e) => handleItemDragEnd(e, item.id)}
-                      onDragOver={(e) => handleItemDragOver(e, index)}
+                        onDragStart={(e) => handleItemDragStart(e, item.id, index)}
+                        onDragEnd={(e) => handleItemDragEnd(e, item.id)}
+                        onDragOver={(e) => handleItemDragOver(e, index)}
                         isDragging={draggingItemId === item.id}
                         isDraggedOutside={draggingItemId === item.id && isDraggedOutside}
+                        baseSize={scaledButtonSize}
                       />
                     );
                   }
@@ -1798,7 +1923,7 @@ function MacDock() {
                 
                 // Add spacer at end if dropping after all items
                 if (externalDragIndex === pinnedItems.length) {
-                  elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={magnifyEnabled} />);
+                  elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={effectiveMagnifyEnabled} baseSize={scaledButtonSize} />);
                 }
                 
                 return elements;
@@ -1813,6 +1938,7 @@ function MacDock() {
                   onDrop={handleDividerDrop}
                   onDragLeave={handleDividerDragLeave}
                   isDropTarget={isDividerDropTarget}
+                  height={scaledButtonSize}
                 />
               )}
 
@@ -1843,12 +1969,13 @@ function MacDock() {
                       isLoading={instance.isLoading}
                       isEmoji={isEmoji}
                       mouseX={mouseX}
-                      magnifyEnabled={magnifyEnabled}
+                      magnifyEnabled={effectiveMagnifyEnabled}
                       isNew={hasMounted && !seenIdsRef.current.has(item.instanceId!)}
                       isHovered={hoveredId === item.instanceId}
                       isSwapping={isSwapping}
                       onHover={() => handleIconHover(item.instanceId!)}
                       onLeave={handleIconLeave}
+                      baseSize={scaledButtonSize}
                     />
                   );
                 } else {
@@ -1869,7 +1996,7 @@ function MacDock() {
                       showIndicator
                       isLoading={isLoading}
                       mouseX={mouseX}
-                      magnifyEnabled={magnifyEnabled}
+                      magnifyEnabled={effectiveMagnifyEnabled}
                       isNew={hasMounted && !seenIdsRef.current.has(item.appId)}
                       isHovered={hoveredId === item.appId}
                       isSwapping={isSwapping}
@@ -1877,13 +2004,20 @@ function MacDock() {
                       onLeave={handleIconLeave}
                       draggable
                       onDragStart={(e) => handleNonPinnedDragStart(e, item.appId)}
+                      baseSize={scaledButtonSize}
                     />
                   );
                 }
               })}
 
               {/* Divider between open apps and Applications/Trash */}
-              <Divider key="divider-between" idKey="between" />
+              <Divider 
+                key="divider-between" 
+                idKey="between" 
+                height={scaledButtonSize}
+                resizable={!isPhone}
+                onResizeStart={handleResizeStart}
+              />
 
               {/* Applications (left of Trash) */}
               {(() => {
@@ -1920,12 +2054,13 @@ function MacDock() {
                     }
                     onContextMenu={handleApplicationsContextMenu}
                     mouseX={mouseX}
-                    magnifyEnabled={magnifyEnabled}
+                    magnifyEnabled={effectiveMagnifyEnabled}
                     isNew={hasMounted && !seenIdsRef.current.has("__applications__")}
                     isHovered={hoveredId === "__applications__"}
                     isSwapping={isSwapping}
                     onHover={() => handleIconHover("__applications__")}
                     onLeave={handleIconLeave}
+                    baseSize={scaledButtonSize}
                   />
                 );
               })()}
@@ -2010,12 +2145,13 @@ function MacDock() {
                       onDragLeave={handleTrashDragLeave}
                       onContextMenu={handleTrashContextMenu}
                       mouseX={mouseX}
-                      magnifyEnabled={magnifyEnabled}
+                      magnifyEnabled={effectiveMagnifyEnabled}
                       isNew={hasMounted && !seenIdsRef.current.has("__trash__")}
                       isHovered={hoveredId === "__trash__"}
                       isSwapping={isSwapping}
                       onHover={() => handleIconHover("__trash__")}
                       onLeave={handleIconLeave}
+                      baseSize={scaledButtonSize}
                     />
                   </motion.div>
                 );

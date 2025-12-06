@@ -22,11 +22,13 @@ const DEFAULT_PINNED_ITEMS: DockItem[] = [
 
 interface DockStoreState {
   pinnedItems: DockItem[];
+  scale: number; // Dock icon scale (0.5 to 1.5)
   // Actions
   addItem: (item: DockItem, insertIndex?: number) => boolean; // Returns false if duplicate
   removeItem: (id: string) => boolean; // Returns false if protected
   reorderItems: (fromIndex: number, toIndex: number) => void;
   hasItem: (id: string) => boolean;
+  setScale: (scale: number) => void;
   reset: () => void;
 }
 
@@ -34,6 +36,7 @@ export const useDockStore = create<DockStoreState>()(
   persist(
     (set, get) => ({
       pinnedItems: DEFAULT_PINNED_ITEMS,
+      scale: 1, // Default scale
 
       addItem: (item: DockItem, insertIndex?: number) => {
         const { pinnedItems } = get();
@@ -107,8 +110,14 @@ export const useDockStore = create<DockStoreState>()(
         return get().pinnedItems.some((item) => item.id === id);
       },
 
+      setScale: (scale: number) => {
+        // Clamp scale between 0.5 and 1.5
+        const clampedScale = Math.max(0.5, Math.min(1.5, scale));
+        set({ scale: clampedScale });
+      },
+
       reset: () => {
-        set({ pinnedItems: DEFAULT_PINNED_ITEMS });
+        set({ pinnedItems: DEFAULT_PINNED_ITEMS, scale: 1 });
       },
     }),
     {
