@@ -11,6 +11,7 @@ import {
   Pause,
   Send,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
@@ -505,9 +506,15 @@ function ChatMessagesContent({
   };
 
   const deleteMessage = async (message: ChatMessage) => {
-    if (!roomId) return;
+    if (!roomId) {
+      console.error("[deleteMessage] No roomId available");
+      return;
+    }
     const serverMessageId = message.serverId || message.id; // prefer serverId when present
-    if (!serverMessageId) return;
+    if (!serverMessageId) {
+      console.error("[deleteMessage] No message ID available");
+      return;
+    }
 
     // Use DELETE method with proper authentication headers (matching deleteRoom pattern)
     const url = `/api/chat-rooms?action=deleteMessage&roomId=${roomId}&messageId=${serverMessageId}`;
@@ -519,9 +526,23 @@ function ChatMessagesContent({
 
     // Add authentication headers - get from store
     const authToken = useChatsStore.getState().authToken;
-    if (username && authToken) {
+    const storeUsername = useChatsStore.getState().username;
+    
+    // Use store username if prop username is not available (for consistency)
+    const effectiveUsername = username || storeUsername;
+    
+    if (effectiveUsername && authToken) {
       headers["Authorization"] = `Bearer ${authToken}`;
-      headers["X-Username"] = username;
+      headers["X-Username"] = effectiveUsername;
+    } else {
+      console.error("[deleteMessage] Missing auth credentials", { 
+        hasUsername: !!effectiveUsername, 
+        hasToken: !!authToken 
+      });
+      toast.error(t("apps.chats.messages.deleteError") || "Failed to delete message", {
+        description: t("apps.chats.status.loginRequired") || "Please log in to delete messages",
+      });
+      return;
     }
 
     try {
@@ -548,8 +569,26 @@ function ChatMessagesContent({
         .json()
         .catch(() => ({ error: `HTTP error! status: ${res.status}` }));
       console.error("Failed to delete message", errorData);
+      
+      // Show user-friendly error message
+      if (res.status === 401) {
+        toast.error(t("apps.chats.messages.deleteError") || "Failed to delete message", {
+          description: t("apps.chats.status.unauthorized") || "Authentication required",
+        });
+      } else if (res.status === 403) {
+        toast.error(t("apps.chats.messages.deleteError") || "Failed to delete message", {
+          description: t("apps.chats.status.forbidden") || "You don't have permission to delete this message",
+        });
+      } else {
+        toast.error(t("apps.chats.messages.deleteError") || "Failed to delete message", {
+          description: errorData.error || `Error ${res.status}`,
+        });
+      }
     } catch (err) {
       console.error("Error deleting message", err);
+      toast.error(t("apps.chats.messages.deleteError") || "Failed to delete message", {
+        description: t("apps.chats.status.networkError") || "Network error occurred",
+      });
     }
   };
 

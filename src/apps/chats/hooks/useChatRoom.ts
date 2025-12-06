@@ -53,8 +53,8 @@ export function useChatRoom(
     messageRenderLimit,
   } = useChatsStore();
 
-  // Derive isAdmin directly from the username
-  const isAdmin = username === "ryo";
+  // Derive isAdmin directly from the username (case-insensitive)
+  const isAdmin = username?.toLowerCase() === "ryo";
 
   // Pusher refs
   const pusherRef = useRef<ReturnType<typeof getPusherClient> | null>(null);

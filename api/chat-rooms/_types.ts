@@ -31,6 +31,7 @@ export interface Message {
   username: string;
   content: string;
   timestamp: number;
+  clientId?: string; // Client-generated ID for optimistic update matching
 }
 
 export interface BulkMessagesResult {
@@ -73,6 +74,7 @@ export interface SendMessageData {
   roomId: string;
   username: string;
   content: string;
+  clientId?: string; // Client-generated ID for optimistic update matching
 }
 
 export interface CreateUserData {

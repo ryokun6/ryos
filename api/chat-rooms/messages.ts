@@ -156,7 +156,7 @@ export async function handleSendMessage(
   data: SendMessageData,
   requestId: string
 ): Promise<Response> {
-  const { roomId, username: originalUsername, content: originalContent } = data;
+  const { roomId, username: originalUsername, content: originalContent, clientId } = data;
   const username = originalUsername?.toLowerCase();
 
   // Validate identifiers early
@@ -324,13 +324,14 @@ export async function handleSendMessage(
       return createErrorResponse("Duplicate message detected", 400);
     }
 
-    // Create and save the message
+    // Create and save the message (include clientId for optimistic update matching)
     const message: Message = {
       id: generateId(),
       roomId,
       username,
       content,
       timestamp: getCurrentTimestamp(),
+      ...(clientId && { clientId }), // Include clientId if provided
     };
 
     await addMessage(roomId, message);
