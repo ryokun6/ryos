@@ -453,7 +453,6 @@ interface DividerProps {
   resizable?: boolean;
   onResizeStart?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
-  isPhone?: boolean;
   onTouchStart?: React.TouchEventHandler;
   onTouchEnd?: React.TouchEventHandler;
   onTouchMove?: React.TouchEventHandler;
@@ -461,21 +460,44 @@ interface DividerProps {
 }
 
 const Divider = forwardRef<HTMLDivElement, DividerProps>(
-  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart, onContextMenu, isPhone, onTouchStart, onTouchEnd, onTouchMove, onTouchCancel }, ref) => {
+  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart, onContextMenu, onTouchStart, onTouchEnd, onTouchMove, onTouchCancel }, ref) => {
     const baseWidth = 1;
-    const activeWidth = isDropTarget ? 4 : baseWidth;
+    
+    // Wrap handlers to stop propagation and prevent icon menus from triggering
+    const handleContextMenu = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onContextMenu?.(e);
+    };
+    
+    const handleTouchStart = (e: React.TouchEvent) => {
+      e.stopPropagation();
+      onTouchStart?.(e);
+    };
+    
+    const handleTouchEnd = (e: React.TouchEvent) => {
+      e.stopPropagation();
+      onTouchEnd?.(e);
+    };
+    
+    const handleTouchMove = (e: React.TouchEvent) => {
+      e.stopPropagation();
+      onTouchMove?.(e);
+    };
+    
+    const handleTouchCancel = (e: React.TouchEvent) => {
+      e.stopPropagation();
+      onTouchCancel?.(e);
+    };
     
     return (
       <motion.div
         ref={ref}
         layout
         layoutId={`dock-divider-${idKey}`}
-        initial={{ opacity: 0, scaleY: 0.8, width: baseWidth }}
+        initial={{ opacity: 0, scaleY: 0.8 }}
         animate={{ 
           opacity: 0.9, 
           scaleY: 1,
-          backgroundColor: isDropTarget ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 0.2)",
-          width: activeWidth,
         }}
         exit={{ opacity: 0, scaleY: 0.8 }}
         transition={{ type: "spring", stiffness: 260, damping: 26 }}
@@ -483,38 +505,33 @@ const Divider = forwardRef<HTMLDivElement, DividerProps>(
         onDrop={onDrop as React.DragEventHandler<HTMLDivElement>}
         onDragLeave={onDragLeave as React.DragEventHandler<HTMLDivElement>}
         onMouseDown={resizable ? onResizeStart : undefined}
-        onContextMenu={onContextMenu as React.MouseEventHandler<HTMLDivElement>}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-        onTouchMove={onTouchMove}
-        onTouchCancel={onTouchCancel}
+        onContextMenu={handleContextMenu}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
+        onTouchCancel={handleTouchCancel}
         style={{
           height,
-          minWidth: baseWidth,
-          marginLeft: 6,
-          marginRight: 6,
+          // Wider touch area with padding, visual line is the inner element
+          padding: "0 10px",
           alignSelf: "center",
-          borderRadius: 2,
           cursor: resizable ? "ns-resize" : undefined,
           position: "relative",
-          backgroundColor: "rgba(0, 0, 0, 0.2)",
+          zIndex: 5,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        {/* Invisible wider hit area for resize dragging and context menu */}
+        {/* Visual divider line */}
         <div
           style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: -10,
-            right: -10,
-            cursor: resizable ? "ns-resize" : "default",
+            width: isDropTarget ? 4 : baseWidth,
+            height: "100%",
+            backgroundColor: isDropTarget ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 0.2)",
+            borderRadius: 2,
+            transition: "width 0.15s ease, background-color 0.15s ease",
           }}
-          onContextMenu={onContextMenu}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-          onTouchMove={onTouchMove}
-          onTouchCancel={onTouchCancel}
         />
       </motion.div>
     );
@@ -2086,7 +2103,6 @@ function MacDock() {
                   isDropTarget={isDividerDropTarget}
                   height={scaledButtonSize}
                   onContextMenu={handleDividerContextMenu}
-                  isPhone={isPhone}
                   {...dividerLongPress}
                 />
               )}
@@ -2167,7 +2183,6 @@ function MacDock() {
                 resizable={!isPhone}
                 onResizeStart={handleResizeStart}
                 onContextMenu={handleDividerContextMenu}
-                isPhone={isPhone}
                 {...dividerLongPress}
               />
 
