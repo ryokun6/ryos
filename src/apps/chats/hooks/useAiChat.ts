@@ -1525,7 +1525,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Launched ${appRegistry[appId].name}`,
+                  output: `Launched ${getTranslatedAppName(appId)}`,
                 });
                 result = "";
               } else if (path.startsWith("/Applets/")) {

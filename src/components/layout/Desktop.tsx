@@ -765,7 +765,7 @@ export function Desktop({
           {desktopShortcuts.length === 0 && displayedApps.map((app) => (
             <FileIcon
               key={app.id}
-              name={app.name}
+              name={getTranslatedAppName(app.id as AppId)}
               isDirectory={false}
               icon={
                 isXpTheme && app.id === "pc"

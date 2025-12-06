@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 /**
  * Seed development users for local testing
- * Run with: bun run scripts/seed-dev-users.ts
+ * Run with: NODE_ENV=development bun run scripts/seed-dev-users.ts
  *
  * Creates admin user 'ryo' with password 'testtest' in dev environment only.
  * If the user exists with a different password, it will be deleted and recreated.
- * This script will only run when NODE_ENV is not 'production'.
+ * This script will ONLY run when NODE_ENV or VERCEL_ENV is set to 'development'.
  */
 
 import { Redis } from "@upstash/redis";
@@ -227,12 +227,22 @@ async function seedUser(
 }
 
 async function main(): Promise<void> {
-  // Safety check: Don't run in production
-  if (process.env.NODE_ENV === "production") {
+  // Safety check: Only allow in development mode
+  const nodeEnv = process.env.NODE_ENV;
+  const vercelEnv = process.env.VERCEL_ENV;
+  const isDev = nodeEnv === "development" || vercelEnv === "development";
+  
+  if (!isDev) {
     console.error(
-      `${COLOR.RED}${COLOR.BOLD}ERROR:${COLOR.RESET} This script cannot run in production!`
+      `${COLOR.RED}${COLOR.BOLD}ERROR:${COLOR.RESET} This script can only run in development mode!`
     );
-    console.error("Set NODE_ENV to 'development' or leave it unset.");
+    console.error(
+      `Current NODE_ENV: ${nodeEnv ? `'${nodeEnv}'` : "(not set)"}`
+    );
+    console.error(
+      `Current VERCEL_ENV: ${vercelEnv ? `'${vercelEnv}'` : "(not set)"}`
+    );
+    console.error("Set NODE_ENV=development or VERCEL_ENV=development to run this script.");
     process.exit(1);
   }
 
