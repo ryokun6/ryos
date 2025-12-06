@@ -55,8 +55,10 @@ export const useDockStore = create<DockStoreState>()(
 
         set((state) => {
           const newItems = [...state.pinnedItems];
+          // Ensure Finder stays at position 0 - insert at minimum position 1
+          const minIndex = newItems[0]?.id === "finder" ? 1 : 0;
           const index = insertIndex !== undefined 
-            ? Math.max(0, Math.min(insertIndex, newItems.length))
+            ? Math.max(minIndex, Math.min(insertIndex, newItems.length))
             : newItems.length;
           newItems.splice(index, 0, item);
           return { pinnedItems: newItems };
@@ -81,9 +83,21 @@ export const useDockStore = create<DockStoreState>()(
       reorderItems: (fromIndex: number, toIndex: number) => {
         set((state) => {
           const newItems = [...state.pinnedItems];
-          const [movedItem] = newItems.splice(fromIndex, 1);
-          if (movedItem) {
-            newItems.splice(toIndex, 0, movedItem);
+          const movedItem = newItems[fromIndex];
+          
+          // Don't allow moving Finder (always stays at position 0)
+          if (movedItem?.id === "finder") {
+            return state;
+          }
+          
+          // Don't allow moving items to position 0 (Finder's spot)
+          if (toIndex === 0 && newItems[0]?.id === "finder") {
+            return state;
+          }
+          
+          const [removed] = newItems.splice(fromIndex, 1);
+          if (removed) {
+            newItems.splice(toIndex, 0, removed);
           }
           return { pinnedItems: newItems };
         });

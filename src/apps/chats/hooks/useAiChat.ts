@@ -16,6 +16,7 @@ import { toast } from "@/hooks/useToast";
 import { useLaunchApp, type LaunchAppOptions } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
 import { appRegistry } from "@/config/appRegistry";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import {
   useFileSystem,

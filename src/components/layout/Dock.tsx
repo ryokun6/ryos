@@ -66,29 +66,75 @@ interface IconButtonProps {
   isDraggedOutside?: boolean;
 }
 
-// Animated spacer for drop preview - minimal styling
-const DockSpacer = forwardRef<HTMLDivElement, { idKey: string }>(
-  ({ idKey }, ref) => (
-    <motion.div
-      ref={ref}
-      layout
-      layoutId={`dock-spacer-${idKey}`}
-      initial={{ width: 0 }}
-      animate={{ width: 56 }}
-      exit={{ width: 0 }}
-      transition={{
-        type: "spring",
-        stiffness: 400,
-        damping: 30,
-      }}
-      className="flex-shrink-0"
-      style={{
-        height: 48,
-        marginLeft: 4,
-        marginRight: 4,
-      }}
-    />
-  )
+// Animated spacer for drop preview - with magnification support
+interface DockSpacerProps {
+  idKey: string;
+  mouseX: MotionValue<number>;
+  magnifyEnabled: boolean;
+}
+
+const DockSpacer = forwardRef<HTMLDivElement, DockSpacerProps>(
+  ({ idKey, mouseX, magnifyEnabled }, ref) => {
+    const wrapperRef = useRef<HTMLDivElement | null>(null);
+    const baseSize = BASE_BUTTON_SIZE;
+    const maxSize = Math.round(baseSize * MAX_SCALE);
+    
+    const distanceCalc = useTransform(mouseX, (val) => {
+      const bounds = wrapperRef.current?.getBoundingClientRect();
+      if (!bounds || !Number.isFinite(val)) return Infinity;
+      return val - (bounds.left + bounds.width / 2);
+    });
+    
+    const sizeTransform = useTransform(
+      distanceCalc,
+      [-DISTANCE, 0, DISTANCE],
+      [baseSize, maxSize, baseSize]
+    );
+    
+    const sizeSpring = useSpring(sizeTransform, {
+      mass: 0.15,
+      stiffness: 160,
+      damping: 18,
+    });
+    
+    const widthValue = magnifyEnabled ? sizeSpring : baseSize;
+    
+    const setCombinedRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        wrapperRef.current = node;
+        if (typeof ref === "function") {
+          ref(node);
+        } else if (ref && "current" in (ref as object)) {
+          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
+      },
+      [ref]
+    );
+    
+    return (
+      <motion.div
+        ref={setCombinedRef}
+        layout
+        layoutId={`dock-spacer-${idKey}`}
+        initial={{ width: 0, height: 0 }}
+        animate={{ width: baseSize + 8, height: baseSize }} // Base size for layout, actual size controlled by style
+        exit={{ width: 0, height: 0 }}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 30,
+        }}
+        className="flex-shrink-0"
+        style={{
+          width: widthValue,
+          height: widthValue,
+          marginLeft: 4,
+          marginRight: 4,
+          transformOrigin: "bottom center",
+        }}
+      />
+    );
+  }
 );
 
 const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
@@ -176,6 +222,11 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
       [forwardedRef]
     );
 
+    // When dragged outside dock, shrink to 0; when dragging inside, use normal size
+    const dragWidth = isDraggedOutside ? 0 : widthValue;
+    const dragHeight = isDraggedOutside ? 0 : widthValue;
+    const dragMargin = isDraggedOutside ? 0 : (isPresent ? 4 : 0);
+
     return (
       <motion.div
         ref={setCombinedRef}
@@ -184,9 +235,9 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
         data-dock-icon={idKey}
         initial={isNew ? { scale: 0, opacity: 0 } : undefined}
         animate={{
-          scale: isDraggedOutside ? 0.5 : 1,
-          // Hide original icon while dragging so spacer stands in its place
-          opacity: isDragging ? 0 : isDraggedOutside ? 0.2 : 1,
+          scale: 1,
+          // Hide icon completely when dragging
+          opacity: isDragging ? 0 : 1,
         }}
         exit={{
           scale: 0,
@@ -197,16 +248,22 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
           stiffness: 500,
           damping: 36,
           mass: 0.7,
+          // Snappier layout transition for reorder snap effect
+          layout: {
+            type: "spring",
+            stiffness: 400,
+            damping: 30,
+          },
         }}
         style={{
           transformOrigin: "bottom center",
           willChange: "width, height, transform",
-          width: widthValue,
-          height: widthValue,
-          marginLeft: isPresent ? 4 : 0,
-          marginRight: isPresent ? 4 : 0,
+          width: dragWidth,
+          height: dragHeight,
+          marginLeft: dragMargin,
+          marginRight: dragMargin,
           overflow: "visible",
-          cursor: draggable ? "grab" : "pointer",
+          cursor: draggable ? (isDragging ? "grabbing" : "grab") : "pointer",
         }}
         className="flex-shrink-0 relative"
       >
@@ -669,20 +726,113 @@ function MacDock() {
     }
   }, [draggingItemId]);
   
+  // Reorder state with hysteresis to prevent flip-flopping
+  const lastReorderTimeRef = useRef<number>(0);
+  const lastReorderTargetRef = useRef<number | null>(null);
+  const pendingReorderRef = useRef<{ targetIndex: number; timeout: ReturnType<typeof setTimeout> } | null>(null);
+  
+  const REORDER_DELAY = 150; // ms delay before reorder commits
+  const REORDER_COOLDOWN = 300; // ms cooldown after a reorder before another can happen
+  const SWAP_THRESHOLD = 0.65; // Must drag past 65% of an icon's width to trigger swap
+  
   // Handle internal reordering when dragging over another item
   const handleItemDragOver = useCallback((e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
     const types = Array.from(e.dataTransfer.types);
     
-    if (types.includes("application/x-dock-item") && draggingItemId) {
-      e.dataTransfer.dropEffect = "move";
+    if (!types.includes("application/x-dock-item") || !draggingItemId) {
+      return;
+    }
+    
+    e.dataTransfer.dropEffect = "move";
+    
+    // Don't allow targeting index 0 (Finder's reserved spot)
+    if (targetIndex === 0 && pinnedItems[0]?.id === "finder") {
+      if (pendingReorderRef.current) {
+        clearTimeout(pendingReorderRef.current.timeout);
+        pendingReorderRef.current = null;
+      }
+      return;
+    }
+    
+    const currentIndex = pinnedItems.findIndex(item => item.id === draggingItemId);
+    if (currentIndex === -1 || currentIndex === targetIndex) {
+      // Clear pending if we're back at current position
+      if (pendingReorderRef.current && currentIndex === targetIndex) {
+        clearTimeout(pendingReorderRef.current.timeout);
+        pendingReorderRef.current = null;
+      }
+      return;
+    }
+    
+    // Check cooldown - don't allow rapid successive reorders
+    const now = Date.now();
+    if (now - lastReorderTimeRef.current < REORDER_COOLDOWN) {
+      return;
+    }
+    
+    // Get the target element to check cursor position within it
+    const targetElement = iconRefsMap.current.get(pinnedItems[targetIndex]?.id);
+    if (targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+      const relativeX = e.clientX - rect.left;
+      const percentAcross = relativeX / rect.width;
       
-      const currentIndex = pinnedItems.findIndex(item => item.id === draggingItemId);
-      if (currentIndex !== -1 && currentIndex !== targetIndex) {
-        reorderItems(currentIndex, targetIndex);
+      // Determine if we should swap based on direction and threshold
+      // For moving right, cursor must be past SWAP_THRESHOLD of the target
+      // For moving left, cursor must be before (1 - SWAP_THRESHOLD) of the target
+      const movingRight = targetIndex > currentIndex;
+      const shouldSwap = movingRight 
+        ? percentAcross > SWAP_THRESHOLD
+        : percentAcross < (1 - SWAP_THRESHOLD);
+      
+      if (!shouldSwap) {
+        // Clear pending if threshold not met
+        if (pendingReorderRef.current) {
+          clearTimeout(pendingReorderRef.current.timeout);
+          pendingReorderRef.current = null;
+        }
+        return;
       }
     }
+    
+    // If we're already pending for this target, do nothing
+    if (pendingReorderRef.current?.targetIndex === targetIndex) {
+      return;
+    }
+    
+    // Clear any existing pending reorder
+    if (pendingReorderRef.current) {
+      clearTimeout(pendingReorderRef.current.timeout);
+    }
+    
+    // Schedule reorder after delay
+    const timeout = setTimeout(() => {
+      // Re-check conditions
+      const newCurrentIndex = pinnedItems.findIndex(item => item.id === draggingItemId);
+      const timeSinceLastReorder = Date.now() - lastReorderTimeRef.current;
+      
+      if (newCurrentIndex !== -1 && newCurrentIndex !== targetIndex && timeSinceLastReorder >= REORDER_COOLDOWN) {
+        reorderItems(newCurrentIndex, targetIndex);
+        lastReorderTimeRef.current = Date.now();
+        lastReorderTargetRef.current = targetIndex;
+      }
+      pendingReorderRef.current = null;
+    }, REORDER_DELAY);
+    
+    pendingReorderRef.current = { targetIndex, timeout };
   }, [draggingItemId, pinnedItems, reorderItems]);
+  
+  // Clean up pending reorder on drag end and reset state
+  useEffect(() => {
+    if (!draggingItemId) {
+      if (pendingReorderRef.current) {
+        clearTimeout(pendingReorderRef.current.timeout);
+        pendingReorderRef.current = null;
+      }
+      lastReorderTargetRef.current = null;
+    }
+  }, [draggingItemId]);
 
   // Compute open apps and individual applet instances
   const openItems = useMemo(() => {
@@ -1493,7 +1643,7 @@ function MacDock() {
                 pinnedItems.forEach((item, index) => {
                   // Insert spacer before this item if it's the drop target
                   if (externalDragIndex === index) {
-                    elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" />);
+                    elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={magnifyEnabled} />);
                   }
                   
                   if (item.type === "app") {
@@ -1586,7 +1736,7 @@ function MacDock() {
                 
                 // Add spacer at end if dropping after all items
                 if (externalDragIndex === pinnedItems.length) {
-                  elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" />);
+                  elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={magnifyEnabled} />);
                 }
                 
                 return elements;
