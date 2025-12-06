@@ -389,23 +389,38 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
   }
 );
 
-const Divider = forwardRef<HTMLDivElement, { idKey: string }>(
-  ({ idKey }, ref) => (
+interface DividerProps {
+  idKey: string;
+  onDragOver?: React.DragEventHandler;
+  onDrop?: React.DragEventHandler;
+  onDragLeave?: React.DragEventHandler;
+  isDropTarget?: boolean;
+}
+
+const Divider = forwardRef<HTMLDivElement, DividerProps>(
+  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget }, ref) => (
     <motion.div
       ref={ref}
       layout
       layoutId={`dock-divider-${idKey}`}
       initial={{ opacity: 0, scaleY: 0.8 }}
-      animate={{ opacity: 0.9, scaleY: 1 }}
+      animate={{ 
+        opacity: 0.9, 
+        scaleY: 1,
+        backgroundColor: isDropTarget ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 0.2)",
+        width: isDropTarget ? 4 : 1,
+      }}
       exit={{ opacity: 0, scaleY: 0.8 }}
       transition={{ type: "spring", stiffness: 260, damping: 26 }}
-      className="bg-black/20"
+      onDragOver={onDragOver as React.DragEventHandler<HTMLDivElement>}
+      onDrop={onDrop as React.DragEventHandler<HTMLDivElement>}
+      onDragLeave={onDragLeave as React.DragEventHandler<HTMLDivElement>}
       style={{
-        width: 1,
         height: 48,
         marginLeft: 6,
         marginRight: 6,
         alignSelf: "center",
+        borderRadius: 2,
       }}
     />
   )
@@ -471,6 +486,7 @@ function MacDock() {
   const [externalDragIndex, setExternalDragIndex] = useState<number | null>(null);
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
   const [isDraggedOutside, setIsDraggedOutside] = useState(false);
+  const [isDividerDropTarget, setIsDividerDropTarget] = useState(false);
 
   const handleIconHover = useCallback((id: string) => {
     if (hoverTimeoutRef.current) {
@@ -833,6 +849,52 @@ function MacDock() {
       lastReorderTargetRef.current = null;
     }
   }, [draggingItemId]);
+
+  // Handle non-pinned app drag start (for pinning)
+  const handleNonPinnedDragStart = useCallback((e: React.DragEvent, appId: AppId) => {
+    e.dataTransfer.effectAllowed = "copy";
+    // Set data as application/json so it's treated like an external drag for pinning
+    e.dataTransfer.setData("application/json", JSON.stringify({ appId }));
+  }, []);
+
+  // Handle divider drag over (for pinning non-pinned apps)
+  const handleDividerDragOver = useCallback((e: React.DragEvent) => {
+    const types = Array.from(e.dataTransfer.types);
+    // Only accept external drags (non-pinned apps or from finder/desktop)
+    if (types.includes("application/json") && !types.includes("application/x-dock-item")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      setIsDividerDropTarget(true);
+      // Set drop index to end of pinned items
+      setExternalDragIndex(pinnedItems.length);
+    }
+  }, [pinnedItems.length]);
+
+  const handleDividerDragLeave = useCallback(() => {
+    setIsDividerDropTarget(false);
+  }, []);
+
+  const handleDividerDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDividerDropTarget(false);
+    setExternalDragIndex(null);
+
+    try {
+      const jsonData = e.dataTransfer.getData("application/json");
+      if (!jsonData) return;
+
+      const data = JSON.parse(jsonData);
+      const { appId } = data;
+
+      if (appId && appRegistry[appId as AppId]) {
+        // Pin the app at the end
+        addDockItem({ type: "app", id: appId }, pinnedItems.length);
+      }
+    } catch (err) {
+      console.warn("[Dock] Failed to handle divider drop:", err);
+    }
+  }, [addDockItem, pinnedItems.length]);
 
   // Compute open apps and individual applet instances
   const openItems = useMemo(() => {
@@ -1742,6 +1804,18 @@ function MacDock() {
                 return elements;
               })()}
 
+              {/* Divider between pinned and non-pinned apps */}
+              {openItems.length > 0 && (
+                <Divider 
+                  key="divider-pinned" 
+                  idKey="pinned"
+                  onDragOver={handleDividerDragOver}
+                  onDrop={handleDividerDrop}
+                  onDragLeave={handleDividerDragLeave}
+                  isDropTarget={isDividerDropTarget}
+                />
+              )}
+
               {/* Open apps and applet instances dynamically (excluding pinned) */}
               {openItems.map((item) => {
                 if (item.type === "applet" && item.instanceId) {
@@ -1801,6 +1875,8 @@ function MacDock() {
                       isSwapping={isSwapping}
                       onHover={() => handleIconHover(item.appId)}
                       onLeave={handleIconLeave}
+                      draggable
+                      onDragStart={(e) => handleNonPinnedDragStart(e, item.appId)}
                     />
                   );
                 }
