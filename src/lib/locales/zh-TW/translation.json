@@ -224,7 +224,8 @@
         "saveTranscript": "儲存聊天記錄...",
         "showRooms": "顯示聊天室",
         "sound": "聲音",
-        "typingSynth": "輸入合成器"
+        "typingSynth": "輸入合成器",
+        "keepTalking": "繼續對話"
       },
       "messages": {
         "delete": "刪除",

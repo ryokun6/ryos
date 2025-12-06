@@ -97,6 +97,8 @@ export function ChatsMenuBar({
     setTypingSynthEnabled,
     synthPreset,
     setSynthPreset,
+    keepTalkingEnabled,
+    setKeepTalkingEnabled,
   } = useAppStoreShallow((s) => ({
     speechEnabled: s.speechEnabled,
     setSpeechEnabled: s.setSpeechEnabled,
@@ -104,6 +106,8 @@ export function ChatsMenuBar({
     setTypingSynthEnabled: s.setTypingSynthEnabled,
     synthPreset: s.synthPreset,
     setSynthPreset: s.setSynthPreset,
+    keepTalkingEnabled: s.keepTalkingEnabled,
+    setKeepTalkingEnabled: s.setKeepTalkingEnabled,
     debugMode: s.debugMode,
   }));
 
@@ -264,6 +268,14 @@ export function ChatsMenuBar({
               className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.typingSynth")}
+            </MenubarCheckboxItem>
+            <MenubarSeparator className="h-[2px] bg-black my-1" />
+            <MenubarCheckboxItem
+              checked={keepTalkingEnabled}
+              onCheckedChange={(checked) => setKeepTalkingEnabled(checked)}
+              className="text-md h-6 px-3"
+            >
+              {t("apps.chats.menu.keepTalking")}
             </MenubarCheckboxItem>
           </MenubarContent>
         </MenubarMenu>

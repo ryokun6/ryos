@@ -69,6 +69,8 @@ interface ChatInputProps {
   } | null;
   needsUsername?: boolean;
   isOffline?: boolean;
+  /** Called when manual stop is triggered (to cancel keep talking mode) */
+  onManualStop?: () => void;
 }
 
 export function ChatInput({
@@ -87,6 +89,7 @@ export function ChatInput({
   rateLimitError,
   needsUsername = false,
   isOffline = false,
+  onManualStop,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
@@ -102,15 +105,22 @@ export function ChatInput({
     Array(WAVEFORM_BANDS).fill(0)
   );
   const [waveformIsSilent, setWaveformIsSilent] = useState(true);
+  // Track if last submitted message was via voice for keep talking mode
+  const [isInKeepTalkingMode, setIsInKeepTalkingMode] = useState(false);
+  // Track previous loading/speaking states for detecting transitions
+  const prevIsLoadingRef = useRef(isLoading);
+  const prevIsSpeechPlayingRef = useRef(isSpeechPlaying);
   const inputRef = useRef<HTMLInputElement>(null);
   const audioButtonRef = useRef<HTMLButtonElement>(null);
   const { playNote } = useChatSynth();
   const { play: playNudgeSound } = useSound(Sounds.MSN_NUDGE);
-  const { typingSynthEnabled, debugMode, aiModel } = useAppStoreShallow(
+  const { typingSynthEnabled, debugMode, aiModel, keepTalkingEnabled, speechEnabled } = useAppStoreShallow(
     (s) => ({
       typingSynthEnabled: s.typingSynthEnabled,
       debugMode: s.debugMode,
       aiModel: s.aiModel,
+      keepTalkingEnabled: s.keepTalkingEnabled,
+      speechEnabled: s.speechEnabled,
     })
   );
   const currentTheme = useThemeStore((s) => s.current);
@@ -164,6 +174,42 @@ export function ChatInput({
     setHistoryIndex(-1);
   }, [input]);
 
+  // Keep Talking Mode: Auto-start recording after AI response completes
+  useEffect(() => {
+    const wasLoading = prevIsLoadingRef.current;
+    const wasSpeaking = prevIsSpeechPlayingRef.current;
+    
+    // Update refs for next render
+    prevIsLoadingRef.current = isLoading;
+    prevIsSpeechPlayingRef.current = isSpeechPlaying;
+    
+    // If not in keep talking mode or keep talking is disabled, do nothing
+    if (!isInKeepTalkingMode || !keepTalkingEnabled) return;
+    
+    // If speech is enabled, wait for speech to finish
+    if (speechEnabled) {
+      // Detect speech completion: was speaking and now not speaking, and not loading
+      if (wasSpeaking && !isSpeechPlaying && !isLoading) {
+        // Auto-start recording after a small delay
+        setTimeout(() => {
+          if (!isRecording && !isTranscribing) {
+            audioButtonRef.current?.click();
+          }
+        }, 300);
+      }
+    } else {
+      // Speech disabled: trigger when loading completes
+      if (wasLoading && !isLoading) {
+        // Auto-start recording after a small delay
+        setTimeout(() => {
+          if (!isRecording && !isTranscribing) {
+            audioButtonRef.current?.click();
+          }
+        }, 300);
+      }
+    }
+  }, [isLoading, isSpeechPlaying, isInKeepTalkingMode, keepTalkingEnabled, speechEnabled, isRecording, isTranscribing]);
+
   const handleInputChangeWithSound = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -185,11 +231,18 @@ export function ChatInput({
 
     if (!text) {
       setTranscriptionError(t("apps.chats.status.noTranscriptionText"));
+      // Exit keep talking mode on empty transcription
+      setIsInKeepTalkingMode(false);
       return;
     }
 
     // Track voice message
     track(CHAT_ANALYTICS.VOICE_MESSAGE);
+
+    // Enter keep talking mode if enabled (for non-chat-room contexts)
+    if (keepTalkingEnabled && !isInChatRoom) {
+      setIsInKeepTalkingMode(true);
+    }
 
     // Submit the transcribed text directly if the function is available
     if (onDirectMessageSubmit) {
@@ -564,11 +617,14 @@ export function ChatInput({
                 <Button
                   type="button"
                   onClick={() => {
+                    // Exit keep talking mode on manual stop
+                    setIsInKeepTalkingMode(false);
                     if (isRecording) {
                       handleStopRecording();
                     } else {
                       track(CHAT_ANALYTICS.STOP_GENERATION);
                       onStop();
+                      onManualStop?.();
                     }
                   }}
                   className={`text-xs w-9 h-9 p-0 flex items-center justify-center ${
