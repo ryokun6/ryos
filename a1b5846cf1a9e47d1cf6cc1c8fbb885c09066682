@@ -1,0 +1,4 @@
+AI Notes:
+
+api/chat-rooms/presence.ts: +148,+156,+193,+201 -148,-156,-193,-201
+api/chat-rooms/redis.ts: +134 -134
