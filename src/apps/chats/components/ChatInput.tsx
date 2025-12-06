@@ -384,7 +384,7 @@ export function ChatInput({
               >
                 {/* Recording indicator */}
                 <div className="flex items-center shrink-0">
-                  <span className="text-gray-500 text-xs font-geneva-12">
+                  <span className="text-muted-foreground text-xs font-geneva-12">
                     {t("apps.chats.status.listening")}
                   </span>
                 </div>
