@@ -1055,37 +1055,37 @@ export function ControlPanelsAppComponent({
                     path: "/Documents",
                     name: "Documents",
                     type: "directory",
-                    icon: "/icons/documents.png",
+                    icon: "/icons/default/documents.png",
                   },
                   {
                     path: "/Images",
                     name: "Images",
                     type: "directory",
-                    icon: "/icons/images.png",
+                    icon: "/icons/default/images.png",
                   },
                   {
                     path: "/Applications",
                     name: "Applications",
                     type: "directory-virtual",
-                    icon: "/icons/applications.png",
+                    icon: "/icons/default/applications.png",
                   },
                   {
                     path: "/Music",
                     name: "Music",
                     type: "directory-virtual",
-                    icon: "/icons/sounds.png",
+                    icon: "/icons/default/sounds.png",
                   },
                   {
                     path: "/Videos",
                     name: "Videos",
                     type: "directory-virtual",
-                    icon: "/icons/movies.png",
+                    icon: "/icons/default/movies.png",
                   },
                   {
                     path: "/Sites",
                     name: "Sites",
                     type: "directory-virtual",
-                    icon: "/icons/sites.png",
+                    icon: "/icons/default/sites.png",
                   },
                   {
                     path: "/Applets",
@@ -1094,10 +1094,16 @@ export function ControlPanelsAppComponent({
                     icon: "/icons/default/applets.png",
                   },
                   {
+                    path: "/Desktop",
+                    name: "Desktop",
+                    type: "directory",
+                    icon: "/icons/default/desktop.png",
+                  },
+                  {
                     path: "/Trash",
                     name: "Trash",
                     type: "directory",
-                    icon: "/icons/trash-empty.png",
+                    icon: "/icons/default/trash-empty.png",
                   },
                 ];
 
@@ -1141,7 +1147,7 @@ export function ControlPanelsAppComponent({
                           path,
                           value.name,
                           type,
-                          "/icons/file-text.png",
+                          "/icons/default/file-text.png",
                           key
                         );
                         count++;
@@ -1182,7 +1188,7 @@ export function ControlPanelsAppComponent({
                           path,
                           value.name,
                           ext,
-                          "/icons/image.png",
+                          "/icons/default/image.png",
                           key
                         );
                         count++;
