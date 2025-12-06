@@ -46,7 +46,9 @@
     "shortDescription": "A web-based agentic AI OS",
     "longDescription": "A web-based agentic AI OS, made with Cursor",
     "macOS": {
-      "minimumSystemVersion": "10.13"
+      "minimumSystemVersion": "10.13",
+      "infoPlist": "./Info.plist",
+      "entitlements": "./entitlements.plist"
     },
     "windows": {
       "digestAlgorithm": "sha256"
