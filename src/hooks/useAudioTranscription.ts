@@ -6,7 +6,6 @@ import { getApiUrl } from "@/utils/platform";
 // Constants
 const DEFAULT_SILENCE_THRESHOLD = 2000; // ms
 const DEFAULT_MIN_RECORDING_DURATION = 1000; // ms
-const DEFAULT_VOLUME_SILENCE_THRESHOLD = 0.05; // Lowered from 0.08 to be more sensitive
 const DEFAULT_FFT_SIZE = 256;
 const CONSECUTIVE_SILENT_FRAMES_THRESHOLD = 3; // Number of consecutive silent frames needed
 const DEFAULT_AUDIO_CONFIG = {
@@ -16,10 +15,20 @@ const DEFAULT_AUDIO_CONFIG = {
   noiseSuppression: true,
 } as const;
 
+// Adaptive silence detection constants
+const CALIBRATION_FRAMES = 10; // Number of frames to calibrate ambient noise
+const SILENCE_MARGIN = 0.03; // How much above ambient noise is still considered "silent"
+const MIN_SPEECH_THRESHOLD = 0.08; // Minimum level to be considered speech (prevents false triggers)
+const FALLBACK_SILENCE_THRESHOLD = 0.05; // Fallback absolute threshold if calibration fails
+const SPEECH_DROP_RATIO = 0.25; // Consider silent when volume drops to 25% of peak speech level
+const LOW_FREQ_CUTOFF_RATIO = 0.15; // Skip lowest 15% of frequency bins (filters out hums/rumble)
+
 // Types
 type AudioAnalysis = {
   frequencies: number[];
   isSilent: boolean;
+  averageVolume: number;
+  speechBandVolume: number; // Volume in speech frequency range only
 };
 
 type DebugState = {
@@ -39,10 +48,17 @@ export interface UseAudioTranscriptionProps {
   frequencyBands?: number; // Number of frequency bands for visualization (default 4)
 }
 
-const analyzeAudioData = (analyser: AnalyserNode, bands: number = 4): AudioAnalysis => {
+const analyzeAudioData = (
+  analyser: AnalyserNode,
+  bands: number = 4,
+  ambientNoiseLevel: number | null = null,
+  hasSpeechStarted: boolean = false,
+  peakSpeechLevel: number = 0
+): AudioAnalysis => {
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(dataArray);
 
+  // Calculate frequency bands for visualization (all frequencies)
   const bandSize = Math.floor(dataArray.length / bands);
   const frequencies = Array.from({ length: bands }, (_, i) => {
     const start = i * bandSize;
@@ -54,9 +70,40 @@ const analyzeAudioData = (analyser: AnalyserNode, bands: number = 4): AudioAnaly
   });
 
   const averageVolume = frequencies.reduce((acc, val) => acc + val, 0) / bands;
-  const isSilent = averageVolume < DEFAULT_VOLUME_SILENCE_THRESHOLD;
 
-  return { frequencies, isSilent };
+  // Calculate speech band volume (skip low frequencies where hums/rumbles live)
+  // With 16kHz sample rate and 256 FFT size, each bin is ~62.5Hz
+  // Skip the lowest 15% of bins to filter out low-frequency noise (0-~600Hz)
+  // Focus on speech frequencies (~300Hz-4kHz)
+  const lowCutoffBin = Math.floor(dataArray.length * LOW_FREQ_CUTOFF_RATIO);
+  const speechBins = dataArray.slice(lowCutoffBin);
+  const speechBandVolume = speechBins.length > 0
+    ? speechBins.reduce((acc, val) => acc + val, 0) / speechBins.length / 255
+    : averageVolume;
+
+  // Adaptive silence detection using speech band:
+  // 1. If we have calibrated ambient noise level, use it as baseline
+  // 2. Consider "silent" when speech band volume drops close to ambient level
+  // 3. Also consider silent if volume drops significantly from peak speech level
+  let isSilent: boolean;
+  
+  if (hasSpeechStarted && peakSpeechLevel > 0) {
+    // Primary: relative drop detection - silent if dropped to 25% of peak speech level
+    const relativeThreshold = peakSpeechLevel * SPEECH_DROP_RATIO;
+    
+    // Secondary: adaptive threshold based on ambient noise
+    const adaptiveThreshold = ambientNoiseLevel !== null 
+      ? ambientNoiseLevel + SILENCE_MARGIN 
+      : FALLBACK_SILENCE_THRESHOLD;
+    
+    // Consider silent if EITHER condition is met (more robust)
+    isSilent = speechBandVolume < relativeThreshold || speechBandVolume < adaptiveThreshold;
+  } else {
+    // During calibration or before speech, use fallback
+    isSilent = speechBandVolume < FALLBACK_SILENCE_THRESHOLD;
+  }
+
+  return { frequencies, isSilent, averageVolume, speechBandVolume };
 };
 
 export function useAudioTranscription({
@@ -85,6 +132,12 @@ export function useAudioTranscription({
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recordingStartTimeRef = useRef<number>(0);
   const silentFramesCountRef = useRef<number>(0);
+
+  // Refs for adaptive silence detection
+  const calibrationFramesRef = useRef<number[]>([]);
+  const ambientNoiseLevelRef = useRef<number | null>(null);
+  const hasSpeechStartedRef = useRef<boolean>(false);
+  const peakVolumeLevelRef = useRef<number>(0);
 
   const sendAudioForTranscription = useCallback(
     async (chunks: Blob[]) => {
@@ -167,10 +220,44 @@ export function useAudioTranscription({
   const analyzeFrequencies = useCallback(() => {
     if (!analyserRef.current) return;
 
-    const { frequencies: newFrequencies, isSilent: currentIsSilent } =
-      analyzeAudioData(analyserRef.current, frequencyBandsRef.current);
+    const { frequencies: newFrequencies, isSilent: currentIsSilent, speechBandVolume } =
+      analyzeAudioData(
+        analyserRef.current,
+        frequencyBandsRef.current,
+        ambientNoiseLevelRef.current,
+        hasSpeechStartedRef.current,
+        peakVolumeLevelRef.current
+      );
 
     setFrequencies(newFrequencies);
+
+    // Calibration phase: collect ambient noise samples (using speech band)
+    if (calibrationFramesRef.current.length < CALIBRATION_FRAMES) {
+      calibrationFramesRef.current.push(speechBandVolume);
+      
+      // Once calibration is complete, calculate ambient noise level
+      if (calibrationFramesRef.current.length === CALIBRATION_FRAMES) {
+        // Use the average of calibration frames as ambient noise baseline
+        const avgAmbient = calibrationFramesRef.current.reduce((a, b) => a + b, 0) / CALIBRATION_FRAMES;
+        ambientNoiseLevelRef.current = avgAmbient;
+      }
+    }
+
+    // Track peak volume in speech band and detect when speech has started
+    if (speechBandVolume > peakVolumeLevelRef.current) {
+      peakVolumeLevelRef.current = speechBandVolume;
+    }
+
+    // Speech is considered started if speech band volume exceeds threshold above ambient
+    if (!hasSpeechStartedRef.current && ambientNoiseLevelRef.current !== null) {
+      const speechThreshold = Math.max(
+        ambientNoiseLevelRef.current + SILENCE_MARGIN + 0.02,
+        MIN_SPEECH_THRESHOLD
+      );
+      if (speechBandVolume > speechThreshold) {
+        hasSpeechStartedRef.current = true;
+      }
+    }
 
     // Only update silence state if we have consecutive silent frames
     if (currentIsSilent) {
@@ -196,7 +283,8 @@ export function useAudioTranscription({
       frequencies: newFrequencies,
     });
 
-    if (recordingDuration >= minRecordingDuration) {
+    // Only trigger auto-stop after speech has been detected
+    if (recordingDuration >= minRecordingDuration && hasSpeechStartedRef.current) {
       if (isConsistentlySilent && !silenceStartRef.current) {
         silenceStartRef.current = Date.now();
       } else if (isConsistentlySilent && silenceStartRef.current) {
@@ -239,6 +327,12 @@ export function useAudioTranscription({
       chunksRef.current = [];
       silentFramesCountRef.current = 0;
       silenceStartRef.current = null;
+
+      // Reset adaptive silence detection
+      calibrationFramesRef.current = [];
+      ambientNoiseLevelRef.current = null;
+      hasSpeechStartedRef.current = false;
+      peakVolumeLevelRef.current = 0;
 
       // Start frequency analysis
       analyzeFrequencies();
