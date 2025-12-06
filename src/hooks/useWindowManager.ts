@@ -10,6 +10,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useSound, Sounds } from "./useSound";
 import { getWindowConfig } from "@/config/appRegistry";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useDockStore } from "@/stores/useDockStore";
 
 interface UseWindowManagerProps {
   appId: AppId;
@@ -30,6 +31,9 @@ export const useWindowManager = ({
   // Theme-dependent constraints
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  
+  // Get dock scale for accurate dock height calculations
+  const dockScale = useDockStore((state) => state.scale);
 
   // Helper to compute default window state (mirrors previous logic)
   const computeDefaultWindowState = (): {
@@ -112,18 +116,23 @@ export const useWindowManager = ({
       ? 32
       : currentTheme === "system7" ? 30 : currentTheme === "macosx" ? 25 : 0;
     const taskbarHeight = isXpTheme ? 30 : 0;
-    const dockHeight = currentTheme === "macosx" ? 56 : 0; // Dock visual height
+    // Use scaled dock height for accurate constraints
+    const dockHeight = currentTheme === "macosx" ? Math.round(56 * dockScale) : 0;
     const topInset = menuBarHeight;
+    // bottomInset includes dock for resize/maximize constraints
     const bottomInset = taskbarHeight + dockHeight + safe;
+    // bottomInsetForDrag excludes dock so windows can be dragged below it on macOS
+    const bottomInsetForDrag = taskbarHeight + safe;
     return {
       menuBarHeight,
       taskbarHeight,
       safeAreaBottom: safe,
       topInset,
       bottomInset,
+      bottomInsetForDrag,
       dockHeight,
     };
-  }, [currentTheme, isXpTheme, getSafeAreaBottomInset]);
+  }, [currentTheme, isXpTheme, getSafeAreaBottomInset, dockScale]);
 
   const { play: playMoveSound, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
   const { play: playMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);
@@ -240,7 +249,7 @@ export const useWindowManager = ({
         const newX = clientX - dragOffset.x;
         const newY = clientY - dragOffset.y;
 
-        const { topInset: menuBarHeight, bottomInset } = computeInsets();
+        const { topInset: menuBarHeight, bottomInsetForDrag } = computeInsets();
 
         // Start playing move sound when movement begins (non-looping, plays repeatedly)
         if (!isMobile && !isMovePlayingRef.current) {
@@ -257,7 +266,8 @@ export const useWindowManager = ({
           setWindowPosition({ x: 0, y: Math.max(menuBarHeight, newY) });
         } else {
           const maxX = window.innerWidth - windowSize.width;
-          const maxY = window.innerHeight - windowSize.height - bottomInset;
+          // Use bottomInsetForDrag to allow windows to be dragged below the dock on macOS
+          const maxY = window.innerHeight - windowSize.height - bottomInsetForDrag;
           const x = Math.min(Math.max(0, newX), maxX);
           const y = Math.min(Math.max(menuBarHeight, newY), Math.max(0, maxY));
           setWindowPosition({ x, y });

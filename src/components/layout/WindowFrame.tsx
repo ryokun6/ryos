@@ -12,6 +12,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useDockStore } from "@/stores/useDockStore";
 import { getTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { motion, AnimatePresence } from "framer-motion";
@@ -132,6 +133,9 @@ export function WindowFrame({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const theme = getTheme(currentTheme);
+  
+  // Get dock scale for accurate dock height calculations
+  const dockScale = useDockStore((state) => state.scale);
   // Treat all macOS windows as using a transparent outer background so titlebar/content can be styled separately
   const effectiveTransparentBackground =
     currentTheme === "macosx" ? true : transparentBackground;
@@ -345,7 +349,8 @@ export function WindowFrame({
       ? 32
       : currentTheme === "system7" ? 30 : currentTheme === "macosx" ? 25 : 0;
     const taskbarHeight = isXpTheme ? 30 : 0;
-    const dockHeight = currentTheme === "macosx" ? 56 : 0; // Dock visual height
+    // Use scaled dock height for accurate constraints
+    const dockHeight = currentTheme === "macosx" ? Math.round(56 * dockScale) : 0;
     const topInset = menuBarHeight;
     const bottomInset = taskbarHeight + dockHeight + safe;
     return {
@@ -356,7 +361,7 @@ export function WindowFrame({
       bottomInset,
       dockHeight,
     };
-  }, [currentTheme, isXpTheme, getSafeAreaBottomInset]);
+  }, [currentTheme, isXpTheme, getSafeAreaBottomInset, dockScale]);
 
   // No longer track maximized state based on window dimensions
   useEffect(() => {
