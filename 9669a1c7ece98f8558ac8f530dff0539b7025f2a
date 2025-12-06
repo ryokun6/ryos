@@ -1,0 +1,12 @@
+AI Notes:
+
+src/components/layout/Desktop.tsx: +231-248
+src/components/layout/Dock.tsx: +1,+18,+61-66,+69-93,+115-119,+180-200,+205-223,+339,+392-395,+407-408,+421-425,+508,+510-511,+513-694,+899,+912-927,+1052-1077,+1133,+1410,+1418,+1446,+1485-1493,+1497-1602 -1,-9,-144-160,-165-177,-450,-452-453,-659,-851,-1128,-1136,-1205-1238
+src/lib/locales/en/translation.json: +106-108 -106
+src/lib/locales/es/translation.json: +1774
+src/lib/locales/it/translation.json: +1774
+src/lib/locales/ko/translation.json: +1774
+src/lib/locales/pt/translation.json: +1774
+src/lib/locales/ru/translation.json: +1774
+src/lib/locales/zh-TW/translation.json: +1774
+src/stores/useDockStore.ts: +1-105
