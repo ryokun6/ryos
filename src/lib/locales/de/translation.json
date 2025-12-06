@@ -224,7 +224,8 @@
         "saveTranscript": "Transkript speichern...",
         "showRooms": "Räume anzeigen",
         "sound": "Ton",
-        "typingSynth": "Tipp-Synthesizer"
+        "typingSynth": "Tipp-Synthesizer",
+        "keepTalking": "Weiter sprechen"
       },
       "messages": {
         "delete": "Löschen",

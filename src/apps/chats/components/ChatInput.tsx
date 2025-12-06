@@ -69,6 +69,8 @@ interface ChatInputProps {
   } | null;
   needsUsername?: boolean;
   isOffline?: boolean;
+  /** Called when manual stop is triggered (to cancel keep talking mode) */
+  onManualStop?: () => void;
 }
 
 export function ChatInput({
@@ -87,6 +89,7 @@ export function ChatInput({
   rateLimitError,
   needsUsername = false,
   isOffline = false,
+  onManualStop,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
@@ -102,15 +105,21 @@ export function ChatInput({
     Array(WAVEFORM_BANDS).fill(0)
   );
   const [waveformIsSilent, setWaveformIsSilent] = useState(true);
+  // Track if last submitted message was via voice for keep talking mode
+  const [isInKeepTalkingMode, setIsInKeepTalkingMode] = useState(false);
+  // Track previous loading/speaking states for detecting transitions
+  const prevIsLoadingRef = useRef(isLoading);
+  const prevIsSpeechPlayingRef = useRef(isSpeechPlaying);
   const inputRef = useRef<HTMLInputElement>(null);
   const audioButtonRef = useRef<HTMLButtonElement>(null);
   const { playNote } = useChatSynth();
   const { play: playNudgeSound } = useSound(Sounds.MSN_NUDGE);
-  const { typingSynthEnabled, debugMode, aiModel } = useAppStoreShallow(
+  const { typingSynthEnabled, debugMode, aiModel, keepTalkingEnabled } = useAppStoreShallow(
     (s) => ({
       typingSynthEnabled: s.typingSynthEnabled,
       debugMode: s.debugMode,
       aiModel: s.aiModel,
+      keepTalkingEnabled: s.keepTalkingEnabled,
     })
   );
   const currentTheme = useThemeStore((s) => s.current);
@@ -164,6 +173,31 @@ export function ChatInput({
     setHistoryIndex(-1);
   }, [input]);
 
+  // Keep Talking Mode: Auto-start recording after AI response completes
+  useEffect(() => {
+    // "Busy" means AI is still generating (loading) or TTS is still playing
+    const wasBusy = prevIsLoadingRef.current || prevIsSpeechPlayingRef.current;
+    const isNowDone = !isLoading && !isSpeechPlaying;
+    
+    // Update refs for next render
+    prevIsLoadingRef.current = isLoading;
+    prevIsSpeechPlayingRef.current = isSpeechPlaying;
+    
+    // If not in keep talking mode or keep talking is disabled, do nothing
+    if (!isInKeepTalkingMode || !keepTalkingEnabled) return;
+    
+    // Trigger auto-record when transitioning from "busy" to "done"
+    // This ensures we wait for BOTH loading AND speech to complete
+    if (wasBusy && isNowDone) {
+      // Auto-start recording after a small delay
+      setTimeout(() => {
+        if (!isRecording && !isTranscribing) {
+          audioButtonRef.current?.click();
+        }
+      }, 300);
+    }
+  }, [isLoading, isSpeechPlaying, isInKeepTalkingMode, keepTalkingEnabled, isRecording, isTranscribing]);
+
   const handleInputChangeWithSound = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -185,11 +219,18 @@ export function ChatInput({
 
     if (!text) {
       setTranscriptionError(t("apps.chats.status.noTranscriptionText"));
+      // Exit keep talking mode on empty transcription
+      setIsInKeepTalkingMode(false);
       return;
     }
 
     // Track voice message
     track(CHAT_ANALYTICS.VOICE_MESSAGE);
+
+    // Enter keep talking mode if enabled (for non-chat-room contexts)
+    if (keepTalkingEnabled && !isInChatRoom) {
+      setIsInKeepTalkingMode(true);
+    }
 
     // Submit the transcribed text directly if the function is available
     if (onDirectMessageSubmit) {
@@ -564,11 +605,14 @@ export function ChatInput({
                 <Button
                   type="button"
                   onClick={() => {
+                    // Exit keep talking mode on manual stop
+                    setIsInKeepTalkingMode(false);
                     if (isRecording) {
                       handleStopRecording();
                     } else {
                       track(CHAT_ANALYTICS.STOP_GENERATION);
                       onStop();
+                      onManualStop?.();
                     }
                   }}
                   className={`text-xs w-9 h-9 p-0 flex items-center justify-center ${

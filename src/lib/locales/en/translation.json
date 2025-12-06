@@ -564,6 +564,7 @@
         "sound": "Sound",
         "chatSpeech": "Chat Speech",
         "typingSynth": "Typing Synth",
+        "keepTalking": "Keep Talking",
         "increaseFontSize": "Increase Font Size",
         "decreaseFontSize": "Decrease Font Size",
         "resetFontSize": "Reset Font Size",

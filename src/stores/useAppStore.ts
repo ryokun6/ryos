@@ -101,6 +101,8 @@ interface AppStoreState extends AppManagerState {
   setTypingSynthEnabled: (v: boolean) => void;
   speechEnabled: boolean;
   setSpeechEnabled: (v: boolean) => void;
+  keepTalkingEnabled: boolean;
+  setKeepTalkingEnabled: (v: boolean) => void;
   speechVolume: number;
   setSpeechVolume: (v: number) => void;
   ttsModel: "openai" | "elevenlabs" | null;
@@ -173,6 +175,8 @@ export const useAppStore = create<AppStoreState>()(
       setTypingSynthEnabled: (v) => set({ typingSynthEnabled: v }),
       speechEnabled: false,
       setSpeechEnabled: (v) => set({ speechEnabled: v }),
+      keepTalkingEnabled: true,
+      setKeepTalkingEnabled: (v) => set({ keepTalkingEnabled: v }),
       speechVolume: 2,
       setSpeechVolume: (v) => set({ speechVolume: v }),
       ttsModel: null,
@@ -914,6 +918,7 @@ export const useAppStore = create<AppStoreState>()(
         uiSoundsEnabled: state.uiSoundsEnabled,
         typingSynthEnabled: state.typingSynthEnabled,
         speechEnabled: state.speechEnabled,
+        keepTalkingEnabled: state.keepTalkingEnabled,
         synthPreset: state.synthPreset,
         htmlPreviewSplit: state.htmlPreviewSplit,
         currentWallpaper: state.currentWallpaper,

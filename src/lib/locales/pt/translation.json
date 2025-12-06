@@ -224,7 +224,8 @@
         "saveTranscript": "Salvar Transcrição...",
         "showRooms": "Mostrar Salas",
         "sound": "Som",
-        "typingSynth": "Sintetizador de Digitação"
+        "typingSynth": "Sintetizador de Digitação",
+        "keepTalking": "Continuar a falar"
       },
       "messages": {
         "delete": "Excluir",
