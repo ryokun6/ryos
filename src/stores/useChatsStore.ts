@@ -632,8 +632,9 @@ export const useChatsStore = create<ChatsStoreState>()(
         removeMessageFromRoom: (roomId, messageId) => {
           set((state) => {
             const existingMessages = state.roomMessages[roomId] || [];
+            // Filter out messages matching by id OR clientId (handles both replaced and unreplaced optimistic messages)
             const updatedMessages = existingMessages.filter(
-              (m) => m.id !== messageId
+              (m) => m.id !== messageId && m.clientId !== messageId
             );
             // Only update if a message was actually removed
             if (updatedMessages.length < existingMessages.length) {
