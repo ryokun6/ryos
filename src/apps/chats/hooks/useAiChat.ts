@@ -2740,9 +2740,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const handleSaveSubmit = useCallback(
     async (fileName: string) => {
-      const transcript = aiMessages // Use messages from store
-        .map((msg: UIMessage) => {
-          const time = ""; // v5 UIMessage doesn't have createdAt
+      // Use messagesWithTimestamps from ref to get messages with proper timestamps
+      const messagesForTranscript = currentSdkMessagesRef.current;
+      const transcript = messagesForTranscript
+        .map((msg: AIChatMessage) => {
+          const createdAt = msg.metadata?.createdAt;
+          const time = createdAt
+            ? new Date(createdAt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "";
           const sender = msg.role === "user" ? username || "You" : "Ryo";
           const content = getAssistantVisibleText(msg);
           return `**${sender}** (${time}):\n${content}`;
@@ -2754,6 +2763,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         : `${fileName}.md`;
       const filePath = `/Documents/${finalFileName}`;
 
+      // Check if file already exists to determine toast message
+      const existingFile = useFilesStore.getState().items[filePath];
+      const isUpdate = existingFile && existingFile.status === "active";
+
       try {
         await saveFile({
           path: filePath,
@@ -2764,9 +2777,32 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
 
         setIsSaveDialogOpen(false);
-        toast.success("Transcript saved", {
+        toast.success(isUpdate ? "Transcript updated" : "Transcript saved", {
           description: `Saved to ${finalFileName}`,
-          duration: 3000,
+          duration: 5000,
+          action: {
+            label: "Open",
+            onClick: () => {
+              // Check if this file is already open in a TextEdit instance
+              const textEditStore = useTextEditStore.getState();
+              const existingInstanceId = textEditStore.getInstanceIdByPath(filePath);
+
+              if (existingInstanceId) {
+                // File is already open - update content and bring to foreground
+                const appStore = useAppStore.getState();
+                appStore.updateInstanceInitialData(existingInstanceId, {
+                  path: filePath,
+                  content: transcript,
+                });
+                appStore.bringInstanceToForeground(existingInstanceId);
+              } else {
+                // File not open - launch new TextEdit instance
+                launchApp("textedit", {
+                  initialData: { path: filePath, content: transcript },
+                });
+              }
+            },
+          },
         });
       } catch (error) {
         console.error("Error saving transcript:", error);
@@ -2775,7 +2811,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
       }
     },
-    [aiMessages, username, saveFile],
+    [username, saveFile, launchApp],
   );
 
   // Stop both chat streaming and TTS queue
