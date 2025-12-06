@@ -56,6 +56,9 @@ export function Desktop({
   // Get current theme for layout adjustments
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  
+  // Check if running in Tauri
+  const isTauriApp = typeof window !== "undefined" && "__TAURI__" in window;
 
   // File system and launch app hooks
   const fileStore = useFilesStore();
@@ -662,6 +665,27 @@ export function Desktop({
           display: isVideoWallpaper ? "block" : "none",
         }}
       />
+      {/* Invisible draggable area for Tauri window on Windows themes */}
+      {isTauriApp && isXpTheme && (
+        <div
+          className="fixed top-0 left-0 right-0 z-[100]"
+          style={{
+            height: 32,
+            cursor: "default",
+          }}
+          onMouseDown={async (e) => {
+            if (e.buttons !== 1) return;
+            try {
+              const { getCurrentWindow } = await import("@tauri-apps/api/window");
+              if (e.detail === 2) {
+                await getCurrentWindow().toggleMaximize();
+              } else {
+                await getCurrentWindow().startDragging();
+              }
+            } catch {}
+          }}
+        />
+      )}
       <div
         className={`flex flex-col relative z-[1] ${
           isXpTheme
@@ -672,8 +696,10 @@ export function Desktop({
           isXpTheme
             ? {
                 // Exclude menubar, safe area, and an extra visual buffer to prevent clipping
+                // Add extra top padding for Tauri traffic lights on Windows themes
                 height:
                   "calc(100% - (30px + var(--sat-safe-area-bottom) + 48px))",
+                paddingTop: isTauriApp ? 36 : undefined,
                 paddingLeft: "calc(0.25rem + env(safe-area-inset-left, 0px))",
                 paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
                 paddingBottom: "env(safe-area-inset-bottom, 0px)",
