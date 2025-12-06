@@ -299,6 +299,7 @@ export function WindowFrame({
   const {
     windowPosition,
     windowSize,
+    isDragging,
     resizeType,
     handleMouseDown,
     handleResizeStart,
@@ -308,6 +309,10 @@ export function WindowFrame({
     snapZone,
     computeInsets: computeWindowInsets,
   } = useWindowManager({ appId, instanceId });
+  
+  // Track if we should animate window transitions (maximize/restore/snap)
+  // Don't animate during drag or resize operations
+  const shouldAnimateWindowTransition = !isDragging && !resizeType;
 
   // Calculate dock icon or taskbar item position relative to window center (used for both minimize and restore animations)
   const dockIconOffset = useMemo(() => {
@@ -813,6 +818,30 @@ export function WindowFrame({
     <AnimatePresence>
       {shouldShow && (
         <motion.div
+          key={`pos-${instanceId || appId}`}
+          className="absolute p-2 md:p-0"
+          initial={false}
+          animate={{
+            left: windowPosition.x,
+            top: Math.max(0, windowPosition.y),
+            width: window.innerWidth >= 768 ? windowSize.width : "100%",
+            height: Math.max(windowSize.height, mergedConstraints.minHeight || 0),
+          }}
+          transition={shouldAnimateWindowTransition ? {
+            duration: 0.15,
+            ease: [0.25, 0.1, 0.25, 1], // cubic-bezier for snappy feel
+          } : {
+            duration: 0,
+          }}
+          style={{
+            minWidth:
+              window.innerWidth >= 768 ? mergedConstraints.minWidth : "100%",
+            minHeight: mergedConstraints.minHeight,
+            maxWidth: mergedConstraints.maxWidth || undefined,
+            maxHeight: mergedConstraints.maxHeight || undefined,
+          }}
+        >
+        <motion.div
           key={instanceId || appId}
           initial={getInitialAnimation()}
           animate={getAnimateState()}
@@ -823,7 +852,7 @@ export function WindowFrame({
           }}
           exit={getExitAnimation()}
           className={cn(
-            "absolute p-2 md:p-0 w-full md:h-full md:mt-0 select-none",
+            "w-full h-full select-none",
             // Disable all pointer events when window is closing
             isClosing && "pointer-events-none",
             // For keepMountedWhenMinimized apps, also disable pointer events when minimized
@@ -839,15 +868,6 @@ export function WindowFrame({
             }
           }}
           style={{
-            left: windowPosition.x,
-            top: Math.max(0, windowPosition.y),
-            width: window.innerWidth >= 768 ? windowSize.width : "100%",
-            height: Math.max(windowSize.height, mergedConstraints.minHeight || 0),
-            minWidth:
-              window.innerWidth >= 768 ? mergedConstraints.minWidth : "100%",
-            minHeight: mergedConstraints.minHeight,
-            maxWidth: mergedConstraints.maxWidth || undefined,
-            maxHeight: mergedConstraints.maxHeight || undefined,
             transformOrigin: "center",
           }}
         >
@@ -1493,6 +1513,7 @@ export function WindowFrame({
           </div>
         </div>
       </div>
+        </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
