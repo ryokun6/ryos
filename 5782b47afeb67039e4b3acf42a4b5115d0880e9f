@@ -1,0 +1,14 @@
+AI Notes:
+
+src/components/layout/Dock.tsx: +489-490,+497,+499,+532,+543,+661,+665,+669-670,+677,+693-697,+699-700,+703-706,+710-712,+715-717,+720-721,+1862,+1865,+1887,+1890,+1900-1901,+1905,+1909-1910,+2273,+2275,+2281,+2284,+2287,+2289-2291,+2326-2328 -489,-496-497,-1776,-1808,-1810
+src/lib/locales/de/translation.json: +1776 -1776
+src/lib/locales/en/translation.json: +108
+src/lib/locales/es/translation.json: +1776 -1776
+src/lib/locales/fr/translation.json: +1776 -1776
+src/lib/locales/it/translation.json: +1776 -1776
+src/lib/locales/ja/translation.json: +1776 -1776
+src/lib/locales/ko/translation.json: +1776 -1776
+src/lib/locales/pt/translation.json: +1776 -1776
+src/lib/locales/ru/translation.json: +1776 -1776
+src/lib/locales/zh-TW/translation.json: +1776 -1776
+src/stores/useDockStore.ts: +127,+131
