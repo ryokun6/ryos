@@ -97,11 +97,18 @@ export function clearPrefetchFlag(): void {
   }
 }
 
+export interface ServerVersion {
+  version: string;
+  buildNumber: string;
+  buildTime?: string;
+  desktopVersion?: string;
+}
+
 /**
  * Fetch version info from version.json
  * This is the single source of truth for version checking
  */
-async function fetchServerVersion(): Promise<{ version: string; buildNumber: string; buildTime?: string } | null> {
+async function fetchServerVersion(): Promise<ServerVersion | null> {
   try {
     const response = await fetch('/version.json', { 
       cache: 'no-store',
@@ -122,6 +129,7 @@ async function fetchServerVersion(): Promise<{ version: string; buildNumber: str
         version: data.version,
         buildNumber: data.buildNumber,
         buildTime: data.buildTime,
+        desktopVersion: data.desktopVersion,
       };
     }
     
@@ -133,10 +141,40 @@ async function fetchServerVersion(): Promise<{ version: string; buildNumber: str
   }
 }
 
+export interface DesktopUpdateResult {
+  type: 'first-time' | 'update' | 'none';
+  version: string | null;
+}
+
+/**
+ * Check for desktop app updates
+ * Returns info about whether this is a first time visit, update available, or no changes
+ */
+export async function checkDesktopUpdate(): Promise<DesktopUpdateResult> {
+  const serverVersion = await fetchServerVersion();
+  if (!serverVersion?.desktopVersion) {
+    return { type: 'none', version: null };
+  }
+  
+  const lastSeenVersion = useAppStore.getState().lastSeenDesktopVersion;
+  
+  // If never seen before, this is the first time
+  if (!lastSeenVersion) {
+    return { type: 'first-time', version: serverVersion.desktopVersion };
+  }
+  
+  // Check if desktop version has changed
+  if (serverVersion.desktopVersion !== lastSeenVersion) {
+    return { type: 'update', version: serverVersion.desktopVersion };
+  }
+  
+  return { type: 'none', version: null };
+}
+
 type CheckResult = 
   | { action: 'none' }  // Already up to date
-  | { action: 'first-time'; server: { version: string; buildNumber: string; buildTime?: string } }
-  | { action: 'update'; server: { version: string; buildNumber: string; buildTime?: string } };
+  | { action: 'first-time'; server: ServerVersion }
+  | { action: 'update'; server: ServerVersion };
 
 /**
  * Check what action is needed based on stored vs server version
@@ -263,7 +301,7 @@ export async function forceRefreshCache(): Promise<void> {
  */
 async function runPrefetchWithToast(
   showVersionToast: boolean,
-  server: { version: string; buildNumber: string; buildTime?: string }
+  server: ServerVersion
 ): Promise<void> {
   console.log('[Prefetch] Starting prefetch...');
   

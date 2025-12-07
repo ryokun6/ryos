@@ -1,8 +1,9 @@
 {
   "version": "10.3",
-  "buildNumber": "0cf3518",
-  "commitSha": "0cf3518ba69f142997c843a172b7549d3a1630a9",
-  "buildTime": "2025-12-07T02:08:53.393Z",
+  "buildNumber": "9cd345c",
+  "commitSha": "9cd345c7a5f8961bf20dab0807cd4905e4b2da42",
+  "buildTime": "2025-12-07T06:25:28.756Z",
   "majorVersion": 10,
-  "minorVersion": 3
+  "minorVersion": 3,
+  "desktopVersion": "1.0.1"
 }

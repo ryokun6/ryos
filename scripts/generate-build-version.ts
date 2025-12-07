@@ -4,6 +4,8 @@
  * 
  * Uses VERCEL_GIT_COMMIT_SHA in production builds, falls back to 'dev' locally.
  * Run manually with `bun run version:bump` to increment MAJOR/MINOR.
+ * 
+ * Also includes desktop app version from tauri.conf.json for update notifications.
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
@@ -21,6 +23,7 @@ const MINOR_VERSION = 3;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const versionPath = join(__dirname, '../.version');
 const publicVersionPath = join(__dirname, '../public/version.json');
+const tauriConfigPath = join(__dirname, '../src-tauri/tauri.conf.json');
 
 // Check if this is a manual version bump (called directly via version:bump)
 const isManualBump = process.argv.includes('--bump');
@@ -64,6 +67,17 @@ const buildTime = new Date().toISOString();
 // Version format: MAJOR.MINOR
 const version = `${majorVersion}.${minorVersion}`;
 
+// Read desktop app version from tauri.conf.json
+let desktopVersion = '1.0.0'; // fallback
+try {
+  if (existsSync(tauriConfigPath)) {
+    const tauriConfig = JSON.parse(readFileSync(tauriConfigPath, 'utf-8'));
+    desktopVersion = tauriConfig.version || desktopVersion;
+  }
+} catch (error) {
+  console.warn('[Build] Could not read tauri.conf.json, using default desktop version');
+}
+
 // Write version.json to public folder for runtime version fetching
 const versionJson = {
   version,
@@ -72,8 +86,9 @@ const versionJson = {
   buildTime,
   majorVersion,
   minorVersion,
+  desktopVersion,
 };
 
 writeFileSync(publicVersionPath, JSON.stringify(versionJson, null, 2));
 
-console.log(`[Build] Generated version: ${version} (${shortSha}) at ${buildTime}`);
+console.log(`[Build] Generated version: ${version} (${shortSha}), desktop: ${desktopVersion} at ${buildTime}`);
