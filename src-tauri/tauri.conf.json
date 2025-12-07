@@ -21,7 +21,8 @@
         "transparent": false,
         "decorations": true,
         "titleBarStyle": "Overlay",
-        "alwaysOnTop": false
+        "alwaysOnTop": false,
+        "dragDropEnabled": false
       }
     ],
     "security": {
