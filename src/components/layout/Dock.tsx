@@ -627,10 +627,10 @@ function MacDock() {
   const isMouseInZoneRef = useRef(false);
   
   // Auto-hide timer for phone (hides dock after inactivity)
-  const autoHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const PHONE_AUTO_HIDE_DELAY = 4000; // 4 seconds of inactivity before hiding on phone
   const PHONE_AUTO_HIDE_COOLDOWN = 500; // Cooldown before dock can be shown again after auto-hide
   const lastAutoHideTimeRef = useRef<number>(0); // Track when dock was last auto-hidden
+  const [lastInteractionTime, setLastInteractionTime] = useState<number>(0); // Track last dock interaction
 
   const handleIconHover = useCallback((id: string) => {
     if (hoverTimeoutRef.current) {
@@ -705,11 +705,6 @@ function MacDock() {
     if (!dockHiding) {
       // When hiding is disabled, always show the dock
       setIsDockVisible(true);
-      // Clear any auto-hide timer
-      if (autoHideTimerRef.current) {
-        clearTimeout(autoHideTimerRef.current);
-        autoHideTimerRef.current = null;
-      }
     } else {
       // When hiding is enabled, hide the dock unless mouse is in zone
       if (!isMouseInZoneRef.current) {
@@ -717,51 +712,36 @@ function MacDock() {
       }
     }
   }, [dockHiding]);
-  
-  // Cleanup auto-hide timer on unmount
-  useEffect(() => {
-    return () => {
-      if (autoHideTimerRef.current) {
-        clearTimeout(autoHideTimerRef.current);
-      }
-    };
-  }, []);
 
-  // Helper to restart the auto-hide timer on phone
-  const restartPhoneAutoHideTimer = useCallback(() => {
-    // Only apply on phone with hiding enabled
-    if (!isPhone || !dockHiding) return;
-    
-    // Clear existing timer
-    if (autoHideTimerRef.current) {
-      clearTimeout(autoHideTimerRef.current);
-      autoHideTimerRef.current = null;
-    }
-    
-    // Don't start timer if dragging or context menu open
-    if (draggingItemId || externalDragIndex !== null || 
-        trashContextMenuPos || applicationsContextMenuPos || appContextMenu || dividerContextMenuPos) {
+  // Single effect to manage auto-hide timer on phone
+  // Timer starts when dock becomes visible, resets on interaction, pauses during menus/dragging
+  useEffect(() => {
+    // Only apply on phone with hiding enabled and dock visible
+    if (!isPhone || !dockHiding || !isDockVisible) {
       return;
     }
     
-    // Start new timer to hide dock
-    autoHideTimerRef.current = setTimeout(() => {
+    // Check if any context menu or dragging is active
+    const hasActiveInteraction = draggingItemId || externalDragIndex !== null || 
+      trashContextMenuPos || applicationsContextMenuPos || appContextMenu || dividerContextMenuPos;
+    
+    if (hasActiveInteraction) {
+      // Don't start timer while interaction is active
+      return;
+    }
+    
+    // Start the hide timer
+    const timerId = setTimeout(() => {
       setIsDockVisible(false);
-      autoHideTimerRef.current = null;
-      // Record time of auto-hide for cooldown
       lastAutoHideTimeRef.current = Date.now();
     }, PHONE_AUTO_HIDE_DELAY);
-  }, [isPhone, dockHiding, draggingItemId, externalDragIndex, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos]);
+    
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [isPhone, dockHiding, isDockVisible, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos, draggingItemId, externalDragIndex, lastInteractionTime]);
   
-  // Clear auto-hide timer when context menus close or dragging ends
-  useEffect(() => {
-    // When context menu closes or drag ends on phone, restart the timer
-    if (isPhone && dockHiding && isDockVisible) {
-      restartPhoneAutoHideTimer();
-    }
-  }, [isPhone, dockHiding, isDockVisible, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos, draggingItemId, externalDragIndex, restartPhoneAutoHideTimer]);
-  
-  // Show dock (called when mouse enters dock zone)
+  // Show dock (called when mouse enters dock zone or user taps on phone)
   const showDock = useCallback(() => {
     // On phone, check cooldown period after auto-hide to prevent immediate re-show
     if (isPhone && dockHiding) {
@@ -773,10 +753,8 @@ function MacDock() {
     
     isMouseInZoneRef.current = true;
     setIsDockVisible(true);
-    
-    // Start auto-hide timer on phone
-    restartPhoneAutoHideTimer();
-  }, [isPhone, dockHiding, restartPhoneAutoHideTimer]);
+    // Auto-hide timer will be started by the effect when isDockVisible becomes true
+  }, [isPhone, dockHiding]);
 
   // Hide dock immediately (called when mouse leaves dock zone)
   // Won't hide if dragging is in progress or context menu is open
@@ -787,12 +765,6 @@ function MacDock() {
     if (draggingItemId || externalDragIndex !== null) return;
     // Don't hide while context menu is open
     if (trashContextMenuPos || applicationsContextMenuPos || appContextMenu || dividerContextMenuPos) return;
-    
-    // Clear auto-hide timer
-    if (autoHideTimerRef.current) {
-      clearTimeout(autoHideTimerRef.current);
-      autoHideTimerRef.current = null;
-    }
     
     setIsDockVisible(false);
   }, [dockHiding, draggingItemId, externalDragIndex, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos]);
@@ -2044,9 +2016,9 @@ function MacDock() {
               : undefined
           }
           onTouchStart={() => {
-            // On phone, restart auto-hide timer on any touch interaction
+            // On phone, reset auto-hide timer on any touch interaction
             if (isPhone && dockHiding) {
-              restartPhoneAutoHideTimer();
+              setLastInteractionTime(Date.now());
             }
           }}
           onDragOver={(e: React.DragEvent<HTMLDivElement>) => {
@@ -2421,10 +2393,9 @@ function MacDock() {
             // backgroundColor: "rgba(255, 0, 0, 0.2)",
           }}
           onMouseEnter={showDock}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            showDock();
-          }}
+          // On mobile, use onClick (tap) instead of onTouchStart to prevent
+          // accidental triggers when DOM changes during dock hide animation
+          onClick={isPhone ? showDock : undefined}
         />
       )}
       
