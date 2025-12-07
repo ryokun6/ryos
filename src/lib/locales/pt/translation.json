@@ -1229,12 +1229,12 @@
         }
       },
       "menu": {
-        "aboutPhotoBooth": "Sobre o Photo Booth",
+        "aboutPhotoBooth": "Sobre a Cabine de Fotos",
         "camera": "Câmera",
         "clearAllPhotos": "Limpar Todas as Fotos",
         "effects": "Efeitos",
         "exportPhotos": "Exportar Fotos",
-        "photoBoothHelp": "Ajuda do Photo Booth"
+        "photoBoothHelp": "Ajuda da Cabine de Fotos"
       },
       "name": "Cabine de Fotos"
     },

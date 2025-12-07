@@ -1229,12 +1229,12 @@
         }
       },
       "menu": {
-        "aboutPhotoBooth": "Photo Booth 정보",
+        "aboutPhotoBooth": "포토 부스 정보",
         "camera": "카메라",
         "clearAllPhotos": "모든 사진 지우기",
         "effects": "효과",
         "exportPhotos": "사진 내보내기",
-        "photoBoothHelp": "Photo Booth 도움말"
+        "photoBoothHelp": "포토 부스 도움말"
       },
       "name": "포토 부스"
     },

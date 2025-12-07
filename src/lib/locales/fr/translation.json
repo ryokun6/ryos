@@ -1229,12 +1229,12 @@
         }
       },
       "menu": {
-        "aboutPhotoBooth": "À propos de Photo Booth",
+        "aboutPhotoBooth": "À propos de Photomaton",
         "camera": "Appareil photo",
         "clearAllPhotos": "Effacer toutes les photos",
         "effects": "Effets",
         "exportPhotos": "Exporter les photos",
-        "photoBoothHelp": "Aide de Photo Booth"
+        "photoBoothHelp": "Aide Photomaton"
       },
       "name": "Photomaton"
     },

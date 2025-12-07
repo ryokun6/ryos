@@ -1229,12 +1229,12 @@
         }
       },
       "menu": {
-        "aboutPhotoBooth": "Photo Booth について",
+        "aboutPhotoBooth": "フォトブースについて",
         "camera": "カメラ",
         "clearAllPhotos": "すべての写真を消去",
         "effects": "エフェクト",
         "exportPhotos": "写真を書き出す",
-        "photoBoothHelp": "Photo Booth ヘルプ"
+        "photoBoothHelp": "フォトブースヘルプ"
       },
       "name": "フォトブース"
     },

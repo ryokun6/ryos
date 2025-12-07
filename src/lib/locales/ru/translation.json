@@ -1229,12 +1229,12 @@
         }
       },
       "menu": {
-        "aboutPhotoBooth": "О Photo Booth",
+        "aboutPhotoBooth": "О приложении Фотокабина",
         "camera": "Камера",
         "clearAllPhotos": "Удалить все фотографии",
         "effects": "Эффекты",
         "exportPhotos": "Экспортировать фотографии",
-        "photoBoothHelp": "Справка Photo Booth"
+        "photoBoothHelp": "Справка Фотокабина"
       },
       "name": "Фотокабина"
     },

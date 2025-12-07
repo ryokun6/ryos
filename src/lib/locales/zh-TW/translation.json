@@ -1229,14 +1229,14 @@
         }
       },
       "menu": {
-        "aboutPhotoBooth": "關於 Photo Booth",
+        "aboutPhotoBooth": "關於照片亭",
         "camera": "相機",
         "clearAllPhotos": "清除所有照片",
         "effects": "效果",
         "exportPhotos": "輸出照片",
-        "photoBoothHelp": "Photo Booth 輔助說明"
+        "photoBoothHelp": "照片亭輔助說明"
       },
-      "name": "照相亭"
+      "name": "照片亭"
     },
     "soundboard": {
       "name": "音效板",
