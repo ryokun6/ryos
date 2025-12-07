@@ -187,11 +187,10 @@ export function onDesktopUpdate(callback: (result: DesktopUpdateResult) => void)
  * Called during periodic checks and manual "Check for Updates"
  */
 async function checkAndNotifyDesktopUpdate(): Promise<void> {
-  // Only check for macOS web users (not in Tauri)
+  // Check for macOS users (both web and Tauri)
   const isMacOS = typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
-  const isTauriEnv = typeof window !== 'undefined' && '__TAURI__' in window;
   
-  if (!isMacOS || isTauriEnv) {
+  if (!isMacOS) {
     return;
   }
   

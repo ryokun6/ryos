@@ -88,18 +88,21 @@ export function App() {
     }
   }, [isFirstBoot, setHasBooted]);
 
-  // Show download toast for macOS web users when new desktop version is available
+  // Show download toast for macOS users when new desktop version is available
+  // For web: show on first visit and updates
+  // For Tauri: only show on updates (not first time)
   useEffect(() => {
     const isMacOS = navigator.platform.toLowerCase().includes("mac");
+    const isInTauri = isTauri();
 
-    if (!isMacOS || isTauri()) {
+    if (!isMacOS) {
       return;
     }
 
     // Handler for showing the desktop update toast
     const showDesktopUpdateToast = (result: DesktopUpdateResult) => {
       if (result.type === 'update' && result.version) {
-        // New version available - show update toast
+        // New version available - show update toast (both web and Tauri)
         toast(`ryOS ${result.version} for Mac is available`, {
           id: 'desktop-update',
           icon: <Download className="h-4 w-4" />,
@@ -116,8 +119,8 @@ export function App() {
             },
           },
         });
-      } else if (result.type === 'first-time' && result.version) {
-        // First time user - show initial download toast
+      } else if (result.type === 'first-time' && result.version && !isInTauri) {
+        // First time user on web - show initial download toast (not in Tauri)
         toast("ryOS is available as a Mac app", {
           id: 'desktop-update',
           icon: <Download className="h-4 w-4" />,
@@ -133,6 +136,9 @@ export function App() {
             },
           },
         });
+      } else if (result.type === 'first-time' && result.version && isInTauri) {
+        // First time in Tauri - just store the version without showing toast
+        setLastSeenDesktopVersion(result.version);
       }
     };
 
