@@ -626,11 +626,14 @@ function MacDock() {
   const [isDockVisible, setIsDockVisible] = useState(!dockHiding);
   const isMouseInZoneRef = useRef(false);
   
-  // Auto-hide timer for phone (hides dock after inactivity)
+  // Auto-hide timer for inactivity (both desktop and mobile)
   const autoHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const PHONE_AUTO_HIDE_DELAY = 4000; // 4 seconds of inactivity before hiding on phone
-  const PHONE_AUTO_HIDE_COOLDOWN = 500; // Cooldown before dock can be shown again after auto-hide
+  const AUTO_HIDE_DELAY_PHONE = 4000; // 4 seconds of inactivity on phone
+  const AUTO_HIDE_DELAY_DESKTOP = 6000; // 6 seconds fallback on desktop (safety net for missed mouseLeave)
+  const AUTO_HIDE_COOLDOWN = 500; // Cooldown before dock can be shown again after auto-hide
+  const AUTO_HIDE_THROTTLE = 1000; // Throttle timer restarts on mouse move to 1 per second
   const lastAutoHideTimeRef = useRef<number>(0); // Track when dock was last auto-hidden
+  const lastTimerRestartRef = useRef<number>(0); // Throttle timer restarts
 
   const handleIconHover = useCallback((id: string) => {
     if (hoverTimeoutRef.current) {
@@ -727,10 +730,10 @@ function MacDock() {
     };
   }, []);
 
-  // Helper to restart the auto-hide timer on phone
-  const restartPhoneAutoHideTimer = useCallback(() => {
-    // Only apply on phone with hiding enabled
-    if (!isPhone || !dockHiding) return;
+  // Helper to restart the auto-hide timer (works on both desktop and mobile)
+  const restartAutoHideTimer = useCallback(() => {
+    // Only apply when hiding is enabled
+    if (!dockHiding) return;
     
     // Clear existing timer
     if (autoHideTimerRef.current) {
@@ -744,29 +747,39 @@ function MacDock() {
       return;
     }
     
+    // Use shorter delay on phone, longer on desktop (desktop uses it as a fallback)
+    const delay = isPhone ? AUTO_HIDE_DELAY_PHONE : AUTO_HIDE_DELAY_DESKTOP;
+    
     // Start new timer to hide dock
     autoHideTimerRef.current = setTimeout(() => {
-      setIsDockVisible(false);
-      autoHideTimerRef.current = null;
-      // Record time of auto-hide for cooldown
-      lastAutoHideTimeRef.current = Date.now();
-    }, PHONE_AUTO_HIDE_DELAY);
+      // Only hide if mouse is not in zone (desktop safety check)
+      if (!isMouseInZoneRef.current) {
+        setIsDockVisible(false);
+        autoHideTimerRef.current = null;
+        // Record time of auto-hide for cooldown
+        lastAutoHideTimeRef.current = Date.now();
+      } else {
+        // Mouse is still in zone, restart timer
+        autoHideTimerRef.current = null;
+        restartAutoHideTimer();
+      }
+    }, delay);
   }, [isPhone, dockHiding, draggingItemId, externalDragIndex, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos]);
   
-  // Clear auto-hide timer when context menus close or dragging ends
+  // Restart auto-hide timer when context menus close or dragging ends
   useEffect(() => {
-    // When context menu closes or drag ends on phone, restart the timer
-    if (isPhone && dockHiding && isDockVisible) {
-      restartPhoneAutoHideTimer();
+    // When context menu closes or drag ends, restart the timer
+    if (dockHiding && isDockVisible) {
+      restartAutoHideTimer();
     }
-  }, [isPhone, dockHiding, isDockVisible, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos, draggingItemId, externalDragIndex, restartPhoneAutoHideTimer]);
+  }, [dockHiding, isDockVisible, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos, draggingItemId, externalDragIndex, restartAutoHideTimer]);
   
   // Show dock (called when mouse enters dock zone)
   const showDock = useCallback(() => {
-    // On phone, check cooldown period after auto-hide to prevent immediate re-show
-    if (isPhone && dockHiding) {
+    // Check cooldown period after auto-hide to prevent immediate re-show
+    if (dockHiding) {
       const timeSinceAutoHide = Date.now() - lastAutoHideTimeRef.current;
-      if (timeSinceAutoHide < PHONE_AUTO_HIDE_COOLDOWN) {
+      if (timeSinceAutoHide < AUTO_HIDE_COOLDOWN) {
         return; // Still in cooldown, don't show
       }
     }
@@ -774,9 +787,9 @@ function MacDock() {
     isMouseInZoneRef.current = true;
     setIsDockVisible(true);
     
-    // Start auto-hide timer on phone
-    restartPhoneAutoHideTimer();
-  }, [isPhone, dockHiding, restartPhoneAutoHideTimer]);
+    // Start auto-hide timer
+    restartAutoHideTimer();
+  }, [dockHiding, restartAutoHideTimer]);
 
   // Hide dock immediately (called when mouse leaves dock zone)
   // Won't hide if dragging is in progress or context menu is open
@@ -2038,15 +2051,24 @@ function MacDock() {
               handleIconLeave();
             }
           }}
-          onMouseMove={
-            effectiveMagnifyEnabled && !trashContextMenuPos && !appContextMenu
-              ? (e) => mouseX.set(e.clientX)
-              : undefined
-          }
+          onMouseMove={(e) => {
+            // Update mouse position for magnification
+            if (effectiveMagnifyEnabled && !trashContextMenuPos && !appContextMenu) {
+              mouseX.set(e.clientX);
+            }
+            // Restart auto-hide timer on mouse movement (desktop fallback, throttled)
+            if (!isPhone && dockHiding) {
+              const now = Date.now();
+              if (now - lastTimerRestartRef.current >= AUTO_HIDE_THROTTLE) {
+                lastTimerRestartRef.current = now;
+                restartAutoHideTimer();
+              }
+            }
+          }}
           onTouchStart={() => {
-            // On phone, restart auto-hide timer on any touch interaction
-            if (isPhone && dockHiding) {
-              restartPhoneAutoHideTimer();
+            // Restart auto-hide timer on any touch interaction
+            if (dockHiding) {
+              restartAutoHideTimer();
             }
           }}
           onDragOver={(e: React.DragEvent<HTMLDivElement>) => {
