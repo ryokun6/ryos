@@ -1236,9 +1236,10 @@
         "exportPhotos": "輸出照片",
         "photoBoothHelp": "Photo Booth 輔助說明"
       },
-      "name": "Photo Booth"
+      "name": "照相亭"
     },
     "soundboard": {
+      "name": "音效板",
       "description": "播放音效",
       "help": {
         "customizeSlot": {
@@ -1285,6 +1286,7 @@
       "soundboards": "音效板"
     },
     "synth": {
+      "name": "合成器",
       "addPreset": "新增預設",
       "controls": "控制",
       "description": "虛擬合成器",
@@ -1472,6 +1474,7 @@
       }
     },
     "textedit": {
+      "name": "文字編輯",
       "alignCenter": "置中對齊",
       "alignLeft": "靠左對齊",
       "alignRight": "靠右對齊",

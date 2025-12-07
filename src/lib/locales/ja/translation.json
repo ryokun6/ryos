@@ -1236,9 +1236,10 @@
         "exportPhotos": "写真を書き出す",
         "photoBoothHelp": "Photo Booth ヘルプ"
       },
-      "name": "Photo Booth"
+      "name": "フォトブース"
     },
     "soundboard": {
+      "name": "サウンドボード",
       "description": "効果音を再生",
       "help": {
         "customizeSlot": {
@@ -1285,6 +1286,7 @@
       "soundboards": "サウンドボード"
     },
     "synth": {
+      "name": "シンセ",
       "addPreset": "プリセットを追加",
       "controls": "コントロール",
       "description": "仮想シンセサイザー",
@@ -1472,6 +1474,7 @@
       }
     },
     "textedit": {
+      "name": "テキストエディット",
       "alignCenter": "中央揃え",
       "alignLeft": "左揃え",
       "alignRight": "右揃え",

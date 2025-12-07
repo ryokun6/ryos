@@ -1236,7 +1236,7 @@
         "exportPhotos": "Esporta foto",
         "photoBoothHelp": "Aiuto Photo Booth"
       },
-      "name": "Photo Booth"
+      "name": "Cabina fotografica"
     },
     "soundboard": {
       "description": "Riproduci effetti sonori",
@@ -1347,7 +1347,7 @@
         "resetSynth": "Resetta Sintetizzatore",
         "synthHelp": "Aiuto Synth"
       },
-      "name": "Synth",
+      "name": "Sintetizzatore",
       "noPresetsYet": "Ancora nessun preset. Creane uno con il pulsante NUOVO.",
       "oscillator": "Oscillatore",
       "selectPreset": "Seleziona Preset",
@@ -1546,7 +1546,7 @@
         "texteditHelp": "Aiuto TextEdit",
         "underline": "Sottolineato"
       },
-      "name": "TextEdit",
+      "name": "Editor di testo",
       "numberedList": "Elenco numerato",
       "slashCommands": {
         "bulletList": {

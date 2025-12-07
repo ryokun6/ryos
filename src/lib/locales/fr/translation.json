@@ -1236,7 +1236,7 @@
         "exportPhotos": "Exporter les photos",
         "photoBoothHelp": "Aide de Photo Booth"
       },
-      "name": "Photo Booth"
+      "name": "Photomaton"
     },
     "soundboard": {
       "description": "Lire des effets sonores",
@@ -1347,7 +1347,7 @@
         "resetSynth": "Réinitialiser Synth",
         "synthHelp": "Aide Synth"
       },
-      "name": "Synth",
+      "name": "Synthétiseur",
       "noPresetsYet": "Aucun préréglage pour l'instant. Créez-en un avec le bouton NOUVEAU.",
       "oscillator": "Oscillateur",
       "selectPreset": "Sélectionner un préréglage",

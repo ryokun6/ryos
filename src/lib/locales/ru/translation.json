@@ -1236,7 +1236,7 @@
         "exportPhotos": "Экспортировать фотографии",
         "photoBoothHelp": "Справка Photo Booth"
       },
-      "name": "Photo Booth"
+      "name": "Фотокабина"
     },
     "soundboard": {
       "description": "Воспроизвести звуковые эффекты",
@@ -1546,7 +1546,7 @@
         "texteditHelp": "Справка TextEdit",
         "underline": "Подчеркнуть"
       },
-      "name": "TextEdit",
+      "name": "Текстовый редактор",
       "numberedList": "Нумерованный список",
       "slashCommands": {
         "bulletList": {

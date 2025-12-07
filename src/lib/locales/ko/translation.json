@@ -1239,6 +1239,7 @@
       "name": "포토 부스"
     },
     "soundboard": {
+      "name": "사운드보드",
       "description": "효과음 재생",
       "help": {
         "customizeSlot": {
@@ -1285,6 +1286,7 @@
       "soundboards": "사운드보드"
     },
     "synth": {
+      "name": "신디",
       "addPreset": "프리셋 추가",
       "controls": "컨트롤",
       "description": "가상 신시사이저",
@@ -1472,6 +1474,7 @@
       }
     },
     "textedit": {
+      "name": "텍스트 편집기",
       "alignCenter": "가운데 정렬",
       "alignLeft": "왼쪽 정렬",
       "alignRight": "오른쪽 정렬",

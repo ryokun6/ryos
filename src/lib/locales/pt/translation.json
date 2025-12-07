@@ -1236,7 +1236,7 @@
         "exportPhotos": "Exportar Fotos",
         "photoBoothHelp": "Ajuda do Photo Booth"
       },
-      "name": "Photo Booth"
+      "name": "Cabine de Fotos"
     },
     "soundboard": {
       "description": "Reproduzir efeitos sonoros",
@@ -1546,7 +1546,7 @@
         "texteditHelp": "Ajuda do TextEdit",
         "underline": "Sublinhado"
       },
-      "name": "TextEdit",
+      "name": "Editor de Texto",
       "numberedList": "Lista Numerada",
       "slashCommands": {
         "bulletList": {

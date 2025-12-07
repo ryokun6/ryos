@@ -1236,7 +1236,7 @@
         "exportPhotos": "Fotos exportieren",
         "photoBoothHelp": "Photo Booth-Hilfe"
       },
-      "name": "Photo Booth"
+      "name": "Fotokabine"
     },
     "soundboard": {
       "description": "Soundeffekte abspielen",
@@ -1347,7 +1347,7 @@
         "resetSynth": "Synth zurücksetzen",
         "synthHelp": "Synth-Hilfe"
       },
-      "name": "Synth",
+      "name": "Synthesizer",
       "noPresetsYet": "Noch keine Voreinstellungen vorhanden. Erstellen Sie eine mit der NEU-Schaltfläche.",
       "oscillator": "Oszillator",
       "selectPreset": "Preset auswählen",
@@ -1472,6 +1472,7 @@
       }
     },
     "textedit": {
+      "name": "Texteditor",
       "alignCenter": "Zentriert ausrichten",
       "alignLeft": "Links ausrichten",
       "alignRight": "Rechts ausrichten",
