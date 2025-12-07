@@ -409,6 +409,7 @@
       "default": "기본값",
       "description": "시스템 설정",
       "displayMode": "디스플레이 모드",
+      "downloadMacApp": "Mac 앱 다운로드",
       "dream": "꿈",
       "elevenlabs": "일레븐랩스",
       "elevenlabsVoiceId": "일레븐랩스 음성 ID",
@@ -1239,7 +1240,6 @@
       "name": "포토 부스"
     },
     "soundboard": {
-      "name": "사운드보드",
       "description": "효과음 재생",
       "help": {
         "customizeSlot": {
@@ -1286,7 +1286,6 @@
       "soundboards": "사운드보드"
     },
     "synth": {
-      "name": "신디",
       "addPreset": "프리셋 추가",
       "controls": "컨트롤",
       "description": "가상 신시사이저",
@@ -1474,7 +1473,6 @@
       }
     },
     "textedit": {
-      "name": "텍스트 편집기",
       "alignCenter": "가운데 정렬",
       "alignLeft": "왼쪽 정렬",
       "alignRight": "오른쪽 정렬",
@@ -1777,10 +1775,10 @@
       "removeFromDock": "Dock에서 제거",
       "showAllWindows": "모든 창 보기",
       "trash": "휴지통",
-      "turnHidingOn": "자동 숨김 켜기",
       "turnHidingOff": "자동 숨김 끄기",
-      "turnMagnificationOn": "확대 켜기",
-      "turnMagnificationOff": "확대 끄기"
+      "turnHidingOn": "자동 숨김 켜기",
+      "turnMagnificationOff": "확대 끄기",
+      "turnMagnificationOn": "확대 켜기"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "제목 없는 Applet",

@@ -409,6 +409,7 @@
       "default": "По умолчанию",
       "description": "Системные настройки",
       "displayMode": "Режим отображения",
+      "downloadMacApp": "Скачать приложение Mac",
       "dream": "Мечта",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID голоса ElevenLabs",
@@ -1774,10 +1775,10 @@
       "removeFromDock": "Удалить из Dock",
       "showAllWindows": "Показать все окна",
       "trash": "Корзина",
-      "turnHidingOn": "Включить автоскрытие",
       "turnHidingOff": "Выключить автоскрытие",
-      "turnMagnificationOn": "Включить увеличение",
-      "turnMagnificationOff": "Выключить увеличение"
+      "turnHidingOn": "Включить автоскрытие",
+      "turnMagnificationOff": "Выключить увеличение",
+      "turnMagnificationOn": "Включить увеличение"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Безымянный апплет",

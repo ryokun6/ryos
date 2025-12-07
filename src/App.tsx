@@ -13,7 +13,7 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isTauri } from "./utils/platform";
-import { checkDesktopUpdate } from "./utils/prefetch";
+import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
 import { Download } from "lucide-react";
 
 // Convert registry to array
@@ -96,15 +96,14 @@ export function App() {
       return;
     }
 
-    // Delay slightly to let the app render first
-    const timer = setTimeout(async () => {
-      const result = await checkDesktopUpdate();
-      
+    // Handler for showing the desktop update toast
+    const showDesktopUpdateToast = (result: DesktopUpdateResult) => {
       if (result.type === 'update' && result.version) {
         // New version available - show update toast
         toast(`ryOS ${result.version} for Mac is available`, {
+          id: 'desktop-update',
           icon: <Download className="h-4 w-4" />,
-          duration: 15000,
+          duration: Infinity,
           action: {
             label: "Download",
             onClick: () => {
@@ -120,8 +119,9 @@ export function App() {
       } else if (result.type === 'first-time' && result.version) {
         // First time user - show initial download toast
         toast("ryOS is available as a Mac app", {
+          id: 'desktop-update',
           icon: <Download className="h-4 w-4" />,
-          duration: 10000,
+          duration: Infinity,
           action: {
             label: "Download",
             onClick: () => {
@@ -134,6 +134,15 @@ export function App() {
           },
         });
       }
+    };
+
+    // Register callback for periodic/manual update checks
+    onDesktopUpdate(showDesktopUpdateToast);
+
+    // Initial check on load (delayed to let app render first)
+    const timer = setTimeout(async () => {
+      const result = await checkDesktopUpdate();
+      showDesktopUpdateToast(result);
     }, 2000);
 
     return () => clearTimeout(timer);

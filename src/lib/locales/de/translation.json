@@ -409,6 +409,7 @@
       "default": "Standard",
       "description": "Systemeinstellungen",
       "displayMode": "Anzeigemodus",
+      "downloadMacApp": "Mac-App herunterladen",
       "dream": "Traum",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs Sprach-ID",
@@ -1472,7 +1473,6 @@
       }
     },
     "textedit": {
-      "name": "Texteditor",
       "alignCenter": "Zentriert ausrichten",
       "alignLeft": "Links ausrichten",
       "alignRight": "Rechts ausrichten",
@@ -1775,10 +1775,10 @@
       "removeFromDock": "Aus dem Dock entfernen",
       "showAllWindows": "Alle Fenster anzeigen",
       "trash": "Papierkorb",
-      "turnHidingOn": "Automatisch ausblenden aktivieren",
       "turnHidingOff": "Automatisch ausblenden deaktivieren",
-      "turnMagnificationOn": "Vergrößerung aktivieren",
-      "turnMagnificationOff": "Vergrößerung deaktivieren"
+      "turnHidingOn": "Automatisch ausblenden aktivieren",
+      "turnMagnificationOff": "Vergrößerung deaktivieren",
+      "turnMagnificationOn": "Vergrößerung aktivieren"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Unbenanntes Applet",

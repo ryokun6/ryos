@@ -11,7 +11,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { cn } from "@/lib/utils";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
 
@@ -38,6 +38,21 @@ export function AboutFinderDialog({
   const buildTime = useAppStore((state) => state.ryOSBuildTime);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const [versionDisplayMode, setVersionDisplayMode] = useState(0); // 0: version, 1: commit, 2: date
+  const [desktopVersion, setDesktopVersion] = useState<string | null>(null);
+  const isMac = useMemo(() => 
+    typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac'), 
+    []
+  );
+
+  // Fetch desktop version for download link
+  useEffect(() => {
+    if (isMac) {
+      fetch('/version.json', { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => setDesktopVersion(data.desktopVersion))
+        .catch(() => setDesktopVersion('1.0.1')); // fallback
+    }
+  }, [isMac]);
 
   const memoryUsage = useMemo(() => {
     const totalMemory = 32; // 32MB total memory
@@ -153,7 +168,19 @@ export function AboutFinderDialog({
                       : undefined,
                   }}
                 >
-                  © Ryo Lu. 1992-{new Date().getFullYear()}
+                  <p>© Ryo Lu. 1992-{new Date().getFullYear()}</p>
+                  {isMac && desktopVersion && (
+                    <p>
+                      <a 
+                        href={`https://github.com/ryokun6/ryos/releases/download/v${desktopVersion}/ryOS_${desktopVersion}_aarch64.dmg`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {t("apps.control-panels.downloadMacApp")}
+                      </a>
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

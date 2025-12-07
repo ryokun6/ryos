@@ -409,6 +409,7 @@
       "default": "預設",
       "description": "系統設定",
       "displayMode": "顯示模式",
+      "downloadMacApp": "下載 Mac 應用程式",
       "dream": "夢幻",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 語音 ID",
@@ -1239,7 +1240,6 @@
       "name": "照片亭"
     },
     "soundboard": {
-      "name": "音效板",
       "description": "播放音效",
       "help": {
         "customizeSlot": {
@@ -1286,7 +1286,6 @@
       "soundboards": "音效板"
     },
     "synth": {
-      "name": "合成器",
       "addPreset": "新增預設",
       "controls": "控制",
       "description": "虛擬合成器",
@@ -1474,7 +1473,6 @@
       }
     },
     "textedit": {
-      "name": "文字編輯",
       "alignCenter": "置中對齊",
       "alignLeft": "靠左對齊",
       "alignRight": "靠右對齊",
@@ -1777,10 +1775,10 @@
       "removeFromDock": "從 Dock 移除",
       "showAllWindows": "顯示所有視窗",
       "trash": "垃圾桶",
-      "turnHidingOn": "開啟自動隱藏",
       "turnHidingOff": "關閉自動隱藏",
-      "turnMagnificationOn": "開啟放大效果",
-      "turnMagnificationOff": "關閉放大效果"
+      "turnHidingOn": "開啟自動隱藏",
+      "turnMagnificationOff": "關閉放大效果",
+      "turnMagnificationOn": "開啟放大效果"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "未命名 Applet",

@@ -409,6 +409,7 @@
       "default": "Predeterminado",
       "description": "Ajustes del sistema",
       "displayMode": "Modo de visualización",
+      "downloadMacApp": "Descargar app para Mac",
       "dream": "Sueño",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID de voz de ElevenLabs",
@@ -1774,10 +1775,10 @@
       "removeFromDock": "Quitar del Dock",
       "showAllWindows": "Mostrar Todas las Ventanas",
       "trash": "Papelera",
-      "turnHidingOn": "Activar ocultación automática",
       "turnHidingOff": "Desactivar ocultación automática",
-      "turnMagnificationOn": "Activar ampliación",
-      "turnMagnificationOff": "Desactivar ampliación"
+      "turnHidingOn": "Activar ocultación automática",
+      "turnMagnificationOff": "Desactivar ampliación",
+      "turnMagnificationOn": "Activar ampliación"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet sin título",

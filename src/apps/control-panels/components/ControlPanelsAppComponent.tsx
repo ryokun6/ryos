@@ -188,10 +188,26 @@ const base64ToBlob = (dataUrl: string): Blob => {
 
 // Version display component that reads from app store
 function VersionDisplay() {
+  const { t } = useTranslation();
   const { ryOSVersion, ryOSBuildNumber } = useAppStoreShallow((state) => ({
     ryOSVersion: state.ryOSVersion,
     ryOSBuildNumber: state.ryOSBuildNumber,
   }));
+  const [desktopVersion, setDesktopVersion] = React.useState<string | null>(null);
+  const isMac = React.useMemo(() => 
+    typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac'), 
+    []
+  );
+  
+  // Fetch desktop version for download link
+  React.useEffect(() => {
+    if (isMac) {
+      fetch('/version.json', { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => setDesktopVersion(data.desktopVersion))
+        .catch(() => setDesktopVersion('1.0.1')); // fallback
+    }
+  }, [isMac]);
   
   const displayVersion = ryOSVersion || "...";
   const displayBuild = ryOSBuildNumber ? ` (Build ${ryOSBuildNumber})` : "";
@@ -199,6 +215,19 @@ function VersionDisplay() {
   return (
     <p className="text-[11px] text-gray-600 font-geneva-12">
       ryOS {displayVersion}{displayBuild}
+      {isMac && desktopVersion && (
+        <>
+          {" · "}
+          <a 
+            href={`https://github.com/ryokun6/ryos/releases/download/v${desktopVersion}/ryOS_${desktopVersion}_aarch64.dmg`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            {t("apps.control-panels.downloadMacApp")}
+          </a>
+        </>
+      )}
     </p>
   );
 }

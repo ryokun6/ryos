@@ -1808,6 +1808,7 @@
       "loginToSendMessages": "Login to send messages and more",
       "login": "Login",
       "checkForUpdates": "Check for Updates",
+      "downloadMacApp": "Download Mac App",
       "backup": "Backup",
       "restore": "Restore",
       "backupRestoreDescription": "Backup or restore all app settings and files.",

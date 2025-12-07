@@ -171,6 +171,37 @@ export async function checkDesktopUpdate(): Promise<DesktopUpdateResult> {
   return { type: 'none', version: null };
 }
 
+// Callback for desktop update notifications (set by App.tsx)
+let desktopUpdateCallback: ((result: DesktopUpdateResult) => void) | null = null;
+
+/**
+ * Register a callback to be called when a desktop update is found
+ * Used by App.tsx to show the download toast
+ */
+export function onDesktopUpdate(callback: (result: DesktopUpdateResult) => void): void {
+  desktopUpdateCallback = callback;
+}
+
+/**
+ * Check for desktop updates and notify via callback
+ * Called during periodic checks and manual "Check for Updates"
+ */
+async function checkAndNotifyDesktopUpdate(): Promise<void> {
+  // Only check for macOS web users (not in Tauri)
+  const isMacOS = typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
+  const isTauriEnv = typeof window !== 'undefined' && '__TAURI__' in window;
+  
+  if (!isMacOS || isTauriEnv) {
+    return;
+  }
+  
+  const result = await checkDesktopUpdate();
+  
+  if (result.type !== 'none' && desktopUpdateCallback) {
+    desktopUpdateCallback(result);
+  }
+}
+
 type CheckResult = 
   | { action: 'none' }  // Already up to date
   | { action: 'first-time'; server: ServerVersion }
@@ -254,6 +285,9 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
  */
 export async function forceRefreshCache(): Promise<void> {
   console.log('[Prefetch] Manual update check triggered...');
+  
+  // Also check for desktop updates when manually checking
+  await checkAndNotifyDesktopUpdate();
   
   if (isUpdateInProgress) {
     console.log('[Prefetch] Update already in progress, skipping');
@@ -698,6 +732,8 @@ function startPeriodicUpdateCheck(): void {
   updateCheckIntervalId = setInterval(async () => {
     console.log('[Prefetch] Periodic update check...');
     await checkAndUpdate(false);
+    // Also check for desktop updates during periodic checks
+    await checkAndNotifyDesktopUpdate();
   }, UPDATE_CHECK_INTERVAL);
 }
 
