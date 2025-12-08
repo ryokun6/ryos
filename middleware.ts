@@ -195,7 +195,7 @@ export default async function middleware(request: Request) {
     const appId = appMatch[1];
     imageUrl = `${baseUrl}/icons/macosx/${APP_ICONS[appId]}`;
     title = `${APP_NAMES[appId]}`;
-    description = APP_DESCRIPTIONS[appId] || "Open in ryOS";
+    description = APP_DESCRIPTIONS[appId] || "Open this app in ryOS";
     matched = true;
   }
 
@@ -244,7 +244,7 @@ export default async function middleware(request: Request) {
   const appletMatch = pathname.match(/^\/applet-viewer\/([a-zA-Z0-9_-]+)$/);
   if (appletMatch) {
     imageUrl = `${baseUrl}/icons/macosx/applet.png`;
-    title = "Shared Applet - ryOS";
+    title = "Shared Applet on ryOS";
     description = "Open this applet in ryOS";
     matched = true;
   }
@@ -252,9 +252,44 @@ export default async function middleware(request: Request) {
   // Internet Explorer URLs: /internet-explorer/{code}
   const ieMatch = pathname.match(/^\/internet-explorer\/([a-zA-Z0-9_-]+)$/);
   if (ieMatch) {
+    const code = ieMatch[1];
     imageUrl = `${baseUrl}/icons/macosx/ie.png`;
-    title = "Shared Page - ryOS";
-    description = "View this page in ryOS";
+    
+    // Decode base64 share code to get URL and year
+    try {
+      // Replace URL-safe characters back to standard Base64
+      const base64 = code.replace(/-/g, "+").replace(/_/g, "/");
+      // Add padding if needed
+      const paddedBase64 = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+      const decoded = atob(paddedBase64);
+      
+      // Parse compact format (url|year)
+      const [sharedUrl, sharedYear] = decoded.split("|");
+      if (sharedUrl && sharedYear) {
+        // Extract hostname from URL for display
+        let hostname = sharedUrl;
+        try {
+          const urlObj = new URL(sharedUrl.startsWith("http") ? sharedUrl : `https://${sharedUrl}`);
+          hostname = urlObj.hostname.replace(/^www\./, "");
+        } catch {
+          // Use the raw URL if parsing fails
+        }
+        
+        if (sharedYear === "current") {
+          title = hostname;
+          description = "Open this page in ryOS";
+        } else {
+          title = `${hostname} (${sharedYear})`;
+          description = "Time travel on ryOS";
+        }
+      } else {
+        title = "Shared Page on ryOS";
+        description = "Open this page in ryOS";
+      }
+    } catch {
+      title = "Shared Page on ryOS";
+      description = "Open this page in ryOS";
+    }
     matched = true;
   }
 
