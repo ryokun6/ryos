@@ -102,6 +102,8 @@ export function App() {
     // Handler for showing the desktop update toast
     const showDesktopUpdateToast = (result: DesktopUpdateResult) => {
       if (result.type === 'update' && result.version) {
+        // Mark as seen immediately so dismissing the toast won't show it again
+        setLastSeenDesktopVersion(result.version);
         // New version available - show update toast (both web and Tauri)
         toast(`ryOS ${result.version} for Mac is available`, {
           id: 'desktop-update',
@@ -114,12 +116,12 @@ export function App() {
                 `https://github.com/ryokun6/ryos/releases/download/v${result.version}/ryOS_${result.version}_aarch64.dmg`,
                 "_blank"
               );
-              // Mark as seen after clicking download
-              setLastSeenDesktopVersion(result.version!);
             },
           },
         });
       } else if (result.type === 'first-time' && result.version && !isInTauri) {
+        // Mark as seen immediately so dismissing the toast won't show it again
+        setLastSeenDesktopVersion(result.version);
         // First time user on web - show initial download toast (not in Tauri)
         toast("ryOS is available as a Mac app", {
           id: 'desktop-update',
@@ -132,7 +134,6 @@ export function App() {
                 `https://github.com/ryokun6/ryos/releases/download/v${result.version}/ryOS_${result.version}_aarch64.dmg`,
                 "_blank"
               );
-              setLastSeenDesktopVersion(result.version!);
             },
           },
         });
