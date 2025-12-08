@@ -36,45 +36,51 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   "control-panels": "System settings",
 };
 
+// App ID to macOS icon mapping
+const APP_ICONS: Record<string, string> = {
+  finder: "mac.png",
+  soundboard: "sound.png",
+  "internet-explorer": "ie.png",
+  chats: "question.png",
+  textedit: "textedit.png",
+  paint: "paint.png",
+  "photo-booth": "photo-booth.png",
+  minesweeper: "minesweeper.png",
+  videos: "videos.png",
+  ipod: "ipod.png",
+  synth: "synth.png",
+  pc: "pc.png",
+  terminal: "terminal.png",
+  "applet-viewer": "applet.png",
+  "control-panels": "control-panels/appearance-manager/app.png",
+};
+
 function generateOgHtml(options: {
   title: string;
   description: string;
   imageUrl: string;
   url: string;
+  redirectUrl: string;
   type?: string;
 }): string {
-  const { title, description, imageUrl, url, type = "website" } = options;
+  const { title, description, imageUrl, url, redirectUrl, type = "website" } = options;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)}</title>
-  <meta name="description" content="${escapeHtml(description)}">
-  
-  <!-- Open Graph / Facebook -->
   <meta property="og:type" content="${type}">
   <meta property="og:url" content="${escapeHtml(url)}">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:image" content="${escapeHtml(imageUrl)}">
-  <meta property="og:image:width" content="800">
-  <meta property="og:image:height" content="400">
   <meta property="og:site_name" content="ryOS">
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(description)}">
   <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
-  
-  <!-- Redirect to actual page for crawlers that follow redirects -->
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(url)}">
+  <script>location.replace("${escapeHtml(redirectUrl)}")</script>
 </head>
-<body>
-  <p>Redirecting to <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>...</p>
-</body>
 </html>`;
 }
 
@@ -114,68 +120,79 @@ export const config = {
 export default function middleware(request: Request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
-
   const baseUrl = url.origin;
 
-  // Match different share URL patterns
-  let ogParams: URLSearchParams | null = null;
+  // Skip if already redirected (has _ryo param)
+  if (url.searchParams.has("_ryo")) {
+    return;
+  }
+
+  // Default values
+  let imageUrl = `${baseUrl}/icons/mac-512.png`;
   let title = "ryOS";
   let description = "An AI OS experience, made with Cursor";
+  let matched = false;
 
   // App URLs: /soundboard, /paint, /ipod, etc.
   const appMatch = pathname.match(/^\/([a-z-]+)$/);
   if (appMatch && APP_NAMES[appMatch[1]]) {
     const appId = appMatch[1];
-    ogParams = new URLSearchParams({ app: appId });
+    imageUrl = `${baseUrl}/icons/macosx/${APP_ICONS[appId]}`;
     title = `${APP_NAMES[appId]} - ryOS`;
     description = APP_DESCRIPTIONS[appId] || "Open in ryOS";
+    matched = true;
   }
 
-  // Video URLs: /videos/{videoId}
+  // Video URLs: /videos/{videoId} - use YouTube thumbnail
   const videoMatch = pathname.match(/^\/videos\/([a-zA-Z0-9_-]+)$/);
   if (videoMatch) {
     const videoId = videoMatch[1];
-    ogParams = new URLSearchParams({ video: videoId });
+    imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
     title = "Shared Video - ryOS";
-    description = "Watch this video in ryOS";
+    description = "Watch on ryOS";
+    matched = true;
   }
 
-  // iPod URLs: /ipod/{videoId}
+  // iPod URLs: /ipod/{videoId} - use YouTube thumbnail
   const ipodMatch = pathname.match(/^\/ipod\/([a-zA-Z0-9_-]+)$/);
   if (ipodMatch) {
     const videoId = ipodMatch[1];
-    ogParams = new URLSearchParams({ video: videoId });
+    imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
     title = "Shared Song - ryOS";
-    description = "Listen in ryOS iPod";
+    description = "Listen on ryOS";
+    matched = true;
   }
 
   // Applet URLs: /applet-viewer/{appletId}
   const appletMatch = pathname.match(/^\/applet-viewer\/([a-zA-Z0-9_-]+)$/);
   if (appletMatch) {
-    const appletId = appletMatch[1];
-    ogParams = new URLSearchParams({ applet: appletId });
+    imageUrl = `${baseUrl}/icons/macosx/applet.png`;
     title = "Shared Applet - ryOS";
     description = "Open this applet in ryOS";
+    matched = true;
   }
 
   // Internet Explorer URLs: /internet-explorer/{code}
   const ieMatch = pathname.match(/^\/internet-explorer\/([a-zA-Z0-9_-]+)$/);
   if (ieMatch) {
-    ogParams = new URLSearchParams({ app: "internet-explorer" });
+    imageUrl = `${baseUrl}/icons/macosx/ie.png`;
     title = "Shared Page - ryOS";
-    description = "View this page in ryOS Internet Explorer";
+    description = "View this page in ryOS";
+    matched = true;
   }
 
   // If we have matched a share URL, return OG HTML
-  if (ogParams) {
-    const imageUrl = `${baseUrl}/api/og?${ogParams.toString()}`;
+  if (matched) {
     const pageUrl = `${baseUrl}${pathname}`;
+    // Redirect URL includes _ryo param to bypass middleware on next request
+    const redirectUrl = `${pageUrl}?_ryo=1`;
 
     const html = generateOgHtml({
       title,
       description,
       imageUrl,
       url: pageUrl,
+      redirectUrl,
     });
 
     return new Response(html, {
@@ -187,6 +204,6 @@ export default function middleware(request: Request) {
     });
   }
 
-  // For all other paths, continue normally (return undefined to pass through)
+  // For all other paths, continue normally
   return;
 }
