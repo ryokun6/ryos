@@ -18,6 +18,7 @@ import { PrefetchToast, PrefetchCompleteToast } from "@/components/shared/Prefet
 import { useAppStore } from "@/stores/useAppStore";
 import { setNextBootMessage } from "@/utils/bootMessage";
 import i18n from "@/lib/i18n";
+import { getApiUrl, isTauri } from "@/utils/platform";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos-manifest-timestamp';
@@ -107,10 +108,16 @@ export interface ServerVersion {
 /**
  * Fetch version info from version.json
  * This is the single source of truth for version checking
+ * @param forceRemote - If true, always fetch from production server (used for desktop update checks in Tauri)
  */
-async function fetchServerVersion(): Promise<ServerVersion | null> {
+async function fetchServerVersion(forceRemote: boolean = false): Promise<ServerVersion | null> {
   try {
-    const response = await fetch('/version.json', { 
+    // In Tauri, /version.json would fetch from the bundled app, not the live server.
+    // For desktop update checks, we need to fetch from the production server.
+    // Use getApiUrl() which returns the production URL in Tauri.
+    const url = forceRemote || isTauri() ? getApiUrl('/version.json') : '/version.json';
+    
+    const response = await fetch(url, { 
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache',
