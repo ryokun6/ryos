@@ -19,21 +19,21 @@ const APP_NAMES: Record<string, string> = {
 
 // App descriptions
 const APP_DESCRIPTIONS: Record<string, string> = {
-  finder: "Browse and manage files",
-  soundboard: "Play sound effects",
-  "internet-explorer": "Browse the web through time",
-  chats: "Chat with Ryo and neighbors on ryOS",
-  textedit: "A simple rich text editor",
-  paint: "Draw and edit images, like it's 1984",
-  "photo-booth": "Take photos with effects",
-  minesweeper: "Classic puzzle game",
+  finder: "Browse and manage files on ryOS",
+  soundboard: "Record and trigger custom sounds on ryOS",
+  "internet-explorer": "Browse the web through time on ryOS",
+  chats: "Talk to Ryo and neighbors online on ryOS",
+  textedit: "Write and edit documents on ryOS",
+  paint: "Draw and edit art, like it's 1984",
+  "photo-booth": "Take photos with shader effects",
+  minesweeper: "Play this classic puzzle game on ryOS",
   videos: "Watch videos on ryOS",
-  ipod: "iPod music player with karaoke",
-  synth: "Virtual synthesizer",
-  pc: "DOS emulator",
+  ipod: "Click-wheel music player with live lyrics",
+  synth: "Virtual synthesizer on ryOS",
+  pc: "DOS emulator on ryOS",
   terminal: "ryOS Command line interface",
-  "applet-viewer": "View and run shared applets",
-  "control-panels": "ryOS System settings",
+  "applet-viewer": "Explore and install shared applets",
+  "control-panels": "Set themes, sounds, and system settings",
 };
 
 // App ID to macOS icon mapping

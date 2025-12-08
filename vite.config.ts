@@ -67,7 +67,7 @@ export default defineConfig({
       manifest: {
         name: "ryOS",
         short_name: "ryOS",
-        description: "A web-based agentic AI OS, made with Cursor",
+        description: "An AI OS experience, made with Cursor",
         theme_color: "#000000",
         background_color: "#000000",
         display: "standalone",

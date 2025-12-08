@@ -44,8 +44,8 @@
     "externalBin": [],
     "copyright": "Copyright Ryo Lu",
     "category": "Utility",
-    "shortDescription": "A web-based agentic AI OS",
-    "longDescription": "A web-based agentic AI OS, made with Cursor",
+    "shortDescription": "An AI OS experience",
+    "longDescription": "An AI OS experience, made with Cursor",
     "macOS": {
       "minimumSystemVersion": "10.13",
       "infoPlist": "./Info.plist",
