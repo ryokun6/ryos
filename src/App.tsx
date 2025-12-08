@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { isTauri } from "./utils/platform";
 import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
 import { Download } from "lucide-react";
+import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -173,6 +174,7 @@ export function App() {
     <>
       <AppManager apps={apps} />
       <Toaster position={toastConfig.position} offset={toastConfig.offset} />
+      <ScreenSaverOverlay />
     </>
   );
 }

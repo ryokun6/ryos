@@ -146,6 +146,14 @@ interface AppStoreState extends AppManagerState {
   exposeMode: boolean;
   setExposeMode: (v: boolean) => void;
   
+  // Screen saver settings
+  screenSaverEnabled: boolean;
+  setScreenSaverEnabled: (v: boolean) => void;
+  screenSaverType: string;
+  setScreenSaverType: (v: string) => void;
+  screenSaverIdleTime: number; // minutes
+  setScreenSaverIdleTime: (v: number) => void;
+  
   // ryOS version (fetched from version.json)
   ryOSVersion: string | null;
   ryOSBuildNumber: string | null;
@@ -205,6 +213,14 @@ export const useAppStore = create<AppStoreState>()(
       // Expose/Mission Control mode
       exposeMode: false,
       setExposeMode: (v) => set({ exposeMode: v }),
+
+      // Screen saver settings
+      screenSaverEnabled: false,
+      setScreenSaverEnabled: (v) => set({ screenSaverEnabled: v }),
+      screenSaverType: "starfield",
+      setScreenSaverType: (v) => set({ screenSaverType: v }),
+      screenSaverIdleTime: 5, // 5 minutes default
+      setScreenSaverIdleTime: (v) => set({ screenSaverIdleTime: v }),
 
       // ryOS version (fetched from version.json)
       ryOSVersion: null,
@@ -949,6 +965,9 @@ export const useAppStore = create<AppStoreState>()(
         ryOSVersion: state.ryOSVersion,
         ryOSBuildNumber: state.ryOSBuildNumber,
         ryOSBuildTime: state.ryOSBuildTime,
+        screenSaverEnabled: state.screenSaverEnabled,
+        screenSaverType: state.screenSaverType,
+        screenSaverIdleTime: state.screenSaverIdleTime,
         instances: Object.fromEntries(
           Object.entries(state.instances)
             .filter(([, inst]) => inst.isOpen)
