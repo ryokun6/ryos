@@ -1,25 +1,3 @@
-// Social media crawler User-Agents
-const CRAWLER_USER_AGENTS = [
-  "facebookexternalhit",
-  "Facebot",
-  "Twitterbot",
-  "LinkedInBot",
-  "WhatsApp",
-  "Slackbot",
-  "Discordbot",
-  "TelegramBot",
-  "Applebot",
-  "Pinterest",
-  "Googlebot",
-  "bingbot",
-  "Embedly",
-  "Quora Link Preview",
-  "Showyoubot",
-  "outbrain",
-  "vkShare",
-  "redditbot",
-];
-
 // App display names for OG titles
 const APP_NAMES: Record<string, string> = {
   finder: "Finder",
@@ -57,12 +35,6 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   "applet-viewer": "View and run HTML applets",
   "control-panels": "System settings",
 };
-
-function isCrawler(userAgent: string | null): boolean {
-  if (!userAgent) return false;
-  const ua = userAgent.toLowerCase();
-  return CRAWLER_USER_AGENTS.some((crawler) => ua.includes(crawler.toLowerCase()));
-}
 
 function generateOgHtml(options: {
   title: string;
@@ -142,12 +114,6 @@ export const config = {
 export default function middleware(request: Request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
-  const userAgent = request.headers.get("user-agent");
-
-  // Only process for crawlers
-  if (!isCrawler(userAgent)) {
-    return;
-  }
 
   const baseUrl = url.origin;
 
