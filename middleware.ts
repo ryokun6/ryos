@@ -280,18 +280,18 @@ export default async function middleware(request: Request) {
         
         if (sharedYear === "current") {
           title = hostname;
-          description = "Open this page in ryOS";
+          description = "Open in ryOS Internet Explorer";
         } else {
-          title = `${hostname} (${sharedYear})`;
+          title = `${hostname} in ${sharedYear}`;
           description = "Time travel on ryOS";
         }
       } else {
         title = "Shared Page on ryOS";
-        description = "Open this page in ryOS";
+        description = "Open in ryOS Internet Explorer";
       }
     } catch {
       title = "Shared Page on ryOS";
-      description = "Open this page in ryOS";
+      description = "Open in ryOS Internet Explorer";
     }
     matched = true;
   }
