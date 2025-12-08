@@ -1500,15 +1500,13 @@ function MacDock() {
           
           items.push({ type: "separator" });
           
-          // Show All Windows
+          // Show All Windows (Expose View)
           items.push({
             type: "item",
             label: t("common.dock.showAllWindows"),
             onSelect: () => {
-              if (instance.isMinimized) {
-                restoreInstance(specificInstanceId);
-              }
-              bringInstanceToForeground(specificInstanceId);
+              // Trigger Expose View
+              window.dispatchEvent(new CustomEvent("toggleExposeView"));
             },
           });
           

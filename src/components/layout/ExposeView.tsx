@@ -35,9 +35,9 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   const files = useFilesStore((s) => s.items);
   const isMobile = useIsMobile();
 
-  // Get all open instances (including minimized)
+  // Get all open instances (excluding minimized)
   const openInstances = useMemo(() => {
-    return Object.values(instances).filter((inst) => inst.isOpen);
+    return Object.values(instances).filter((inst) => inst.isOpen && !inst.isMinimized);
   }, [instances]);
 
   // Set expose mode when view opens/closes
@@ -233,9 +233,6 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
                       {displayLabel}
                     </div>
                   </div>
-                  {instance.isMinimized && (
-                    <div className="text-xs text-white/70">Minimized</div>
-                  )}
                 </div>
               );
             })}
