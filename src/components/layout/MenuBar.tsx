@@ -402,14 +402,25 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
     }
   }
 
+  // Determine fixed width based on viewport and locale for stable layout
+  const getFixedWidth = () => {
+    if (isXpTheme) return undefined;
+    if (viewportWidth < 420) return "70px";
+    if (viewportWidth <= 768) return "70px";
+    // Wider for full date display
+    if (["zh-TW", "ja", "ko"].includes(currentLocale)) return "155px";
+    return "175px";
+  };
+
   return (
     <div
-      className={`${isXpTheme ? "" : "ml-auto mr-2"} ${enableExposeToggle ? "cursor-pointer hover:bg-black/10 active:bg-black/20 rounded px-1.5 py-0.5 -mx-1.5 -my-0.5 transition-colors" : ""}`}
+      className={`${isXpTheme ? "" : "ml-auto mr-2 text-right"} ${enableExposeToggle ? "cursor-pointer" : ""}`}
       style={{
         textShadow:
           currentTheme === "macosx"
             ? "0 2px 3px rgba(0, 0, 0, 0.25)"
             : undefined,
+        width: getFixedWidth(),
       }}
       onClick={handleClick}
       title={enableExposeToggle ? "Click to show all windows (F3)" : undefined}
