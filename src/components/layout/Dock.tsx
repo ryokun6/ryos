@@ -1626,22 +1626,13 @@ function MacDock() {
         items.push({ type: "separator" });
       }
       
-      // Show All Windows
+      // Show All Windows (Expose View)
       items.push({
         type: "item",
         label: t("common.dock.showAllWindows"),
         onSelect: () => {
-          // Restore all minimized instances and bring the last one to foreground
-          let lastRestoredId: string | null = null;
-          appInstances.forEach((inst) => {
-            if (inst.isMinimized) {
-              restoreInstance(inst.instanceId);
-            }
-            lastRestoredId = inst.instanceId;
-          });
-          if (lastRestoredId) {
-            bringInstanceToForeground(lastRestoredId);
-          }
+          // Trigger Expose View
+          window.dispatchEvent(new CustomEvent("toggleExposeView"));
         },
         disabled: appInstances.length === 0,
       });

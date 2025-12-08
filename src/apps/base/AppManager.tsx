@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { AnyApp, AppState } from "./types";
+import type { AnyApp, AppState } from "./types";
 import { AppContext } from "@/contexts/AppContext";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
 import { Dock } from "@/components/layout/Dock";
-import { AppId, getAppComponent, appRegistry } from "@/config/appRegistry";
+import { ExposeView } from "@/components/layout/ExposeView";
+import { getAppComponent, appRegistry } from "@/config/appRegistry";
+import type { AppId } from "@/config/appRegistry";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { extractCodeFromPath } from "@/utils/sharedUrl";
 import { toast } from "sonner";
@@ -27,6 +29,7 @@ export function AppManager({ apps }: AppManagerProps) {
     navigateToNextInstance,
     navigateToPreviousInstance,
     foregroundInstanceId,
+    exposeMode,
   } = useAppStoreShallow((state) => ({
     instances: state.instances,
     instanceOrder: state.instanceOrder,
@@ -35,6 +38,7 @@ export function AppManager({ apps }: AppManagerProps) {
     navigateToNextInstance: state.navigateToNextInstance,
     navigateToPreviousInstance: state.navigateToPreviousInstance,
     foregroundInstanceId: state.foregroundInstanceId,
+    exposeMode: state.exposeMode,
   }));
 
   // Get current theme to determine if we should show the desktop menubar
@@ -43,10 +47,13 @@ export function AppManager({ apps }: AppManagerProps) {
   
   // For Mac/System7 themes, hide the desktop menubar when there's a foreground app
   // For XP/98, the menubar is actually a taskbar and should always show
+  // Always show menubar in expose mode
   const hasForegroundApp = !!foregroundInstanceId;
-  const showDesktopMenuBar = isXpTheme || !hasForegroundApp;
+  const showDesktopMenuBar = isXpTheme || !hasForegroundApp || exposeMode;
 
   const [isInitialMount, setIsInitialMount] = useState(true);
+  const [isExposeViewOpen, setIsExposeViewOpen] = useState(false);
+
 
   // Create legacy-compatible appStates from instances for AppContext
   // NOTE: There can be multiple open instances for the same appId. We need to
@@ -323,6 +330,28 @@ export function AppManager({ apps }: AppManagerProps) {
     };
   }, [instances, launchApp]);
 
+  // Listen for expose view toggle events (e.g., from keyboard shortcut, dock menu)
+  useEffect(() => {
+    const handleExposeToggle = () => {
+      setIsExposeViewOpen((prev) => !prev);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // F3 key to toggle Expose view (Mission Control)
+      if (e.key === "F3" || (e.key === "f" && e.metaKey)) {
+        e.preventDefault();
+        setIsExposeViewOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("toggleExposeView", handleExposeToggle);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("toggleExposeView", handleExposeToggle);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -351,22 +380,23 @@ export function AppManager({ apps }: AppManagerProps) {
         return (
           <div
             key={instance.instanceId}
-            style={{ zIndex }}
+            style={{ zIndex: exposeMode ? 9999 : zIndex }}
             className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
+            role="presentation"
             onMouseDown={() => {
-              if (!instance.isForeground) {
+              if (!instance.isForeground && !exposeMode) {
                 bringInstanceToForeground(instance.instanceId);
               }
             }}
             onTouchStart={() => {
-              if (!instance.isForeground) {
+              if (!instance.isForeground && !exposeMode) {
                 bringInstanceToForeground(instance.instanceId);
               }
             }}
           >
             <AppComponent
               isWindowOpen={instance.isOpen}
-              isForeground={instance.isForeground}
+              isForeground={exposeMode ? false : instance.isForeground}
               onClose={() => requestCloseWindow(instance.instanceId)}
               className="pointer-events-auto"
               helpItems={apps.find((app) => app.id === appId)?.helpItems}
@@ -390,6 +420,12 @@ export function AppManager({ apps }: AppManagerProps) {
           launchApp(appId, initialData);
         }}
         appStates={{ windowOrder: instanceOrder, apps: legacyAppStates }}
+      />
+
+      {/* Expose View (Mission Control) - Backdrop and labels */}
+      <ExposeView
+        isOpen={isExposeViewOpen}
+        onClose={() => setIsExposeViewOpen(false)}
       />
     </AppContext.Provider>
   );

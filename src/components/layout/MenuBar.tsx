@@ -23,7 +23,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { StartMenu } from "./StartMenu";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { Slider } from "@/components/ui/slider";
-import { Volume1, Volume2, VolumeX, Settings, ChevronUp } from "lucide-react";
+import { Volume1, Volume2, VolumeX, Settings, ChevronUp, LayoutGrid } from "lucide-react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getAppIconPath } from "@/config/appRegistry";
@@ -786,6 +786,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     restoreInstance,
     foregroundInstanceId, // Add this to get the foreground instance ID
     debugMode,
+    exposeMode,
   } = useAppStoreShallow((s) => ({
     getForegroundInstance: s.getForegroundInstance,
     instances: s.instances,
@@ -794,6 +795,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     restoreInstance: s.restoreInstance,
     foregroundInstanceId: s.foregroundInstanceId, // Add this
     debugMode: s.debugMode,
+    exposeMode: s.exposeMode,
   }));
 
   const foregroundInstance = getForegroundInstance();
@@ -1314,7 +1316,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   
   return (
     <div
-      className="fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar items-center font-os-ui"
+      className={`fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar items-center font-os-ui ${exposeMode ? "z-[9997]" : "z-[10002]"}`}
       style={{
         background:
           currentTheme === "macosx"
@@ -1374,6 +1376,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       )}
       <div className={`${isPhone ? "flex-shrink-0 px-2" : "ml-auto"} flex items-center`}>
         <OfflineIndicator />
+        <ExposeButton />
         <div className="hidden sm:flex">
           <VolumeControl />
         </div>
@@ -1411,5 +1414,32 @@ function OfflineIndicator() {
         }}
       />
     </div>
+  );
+}
+
+function ExposeButton() {
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  
+  // Don't show on Windows themes (they have their own taskbar)
+  if (isXpTheme) return null;
+
+  const handleClick = () => {
+    window.dispatchEvent(new CustomEvent("toggleExposeView"));
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="flex items-center justify-center px-1.5 py-0.5"
+      style={{
+        marginRight: "4px",
+        color: "var(--os-color-menubar-text)",
+      }}
+      title="Mission Control (F3)"
+    >
+      <LayoutGrid className="w-4 h-4" style={{ opacity: 0.7 }} />
+    </button>
   );
 }

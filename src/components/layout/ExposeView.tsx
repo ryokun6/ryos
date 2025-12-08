@@ -1,0 +1,235 @@
+import { useEffect, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAppStoreShallow } from "@/stores/helpers";
+import { getAppIconPath } from "@/config/appRegistry";
+import { getTranslatedAppName } from "@/utils/i18n";
+import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { useFilesStore } from "@/stores/useFilesStore";
+import type { AppInstance } from "@/stores/useAppStore";
+import type { AppletViewerInitialData } from "@/apps/applet-viewer";
+import {
+  calculateExposeGrid,
+  getExposeCellCenter,
+  getExposeScale,
+} from "./exposeUtils";
+
+interface ExposeViewProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
+  const {
+    instances,
+    setExposeMode,
+    bringInstanceToForeground,
+    restoreInstance,
+  } = useAppStoreShallow((state) => ({
+    instances: state.instances,
+    setExposeMode: state.setExposeMode,
+    bringInstanceToForeground: state.bringInstanceToForeground,
+    restoreInstance: state.restoreInstance,
+  }));
+
+  const files = useFilesStore((s) => s.items);
+
+  // Get all open instances (including minimized)
+  const openInstances = useMemo(() => {
+    return Object.values(instances).filter((inst) => inst.isOpen);
+  }, [instances]);
+
+  // Set expose mode when view opens/closes
+  useEffect(() => {
+    setExposeMode(isOpen);
+  }, [isOpen, setExposeMode]);
+
+  // Helper to get applet info (icon and name) from instance
+  const getAppletInfo = useCallback(
+    (instance: AppInstance) => {
+      const initialData = instance.initialData as
+        | AppletViewerInitialData
+        | undefined;
+      const path = initialData?.path || "";
+      const file = files[path];
+
+      // Get filename from path for label
+      const getFileName = (filePath: string): string => {
+        const parts = filePath.split("/");
+        const fileName = parts[parts.length - 1];
+        return fileName.replace(/\.(html|app)$/i, "");
+      };
+
+      const label = path ? getFileName(path) : "Applet Store";
+
+      // Check if the file icon is an emoji (not a file path)
+      const fileIcon = file?.icon;
+      const isEmojiIcon =
+        fileIcon &&
+        !fileIcon.startsWith("/") &&
+        !fileIcon.startsWith("http") &&
+        fileIcon.length <= 10;
+
+      // If no path (applet store), use the applet viewer icon
+      // Otherwise, use file icon if emoji, or fallback to package emoji
+      let icon: string;
+      let isEmoji: boolean;
+      if (!path) {
+        // Applet store - use app icon
+        icon = getAppIconPath("applet-viewer");
+        isEmoji = false;
+      } else {
+        icon = isEmojiIcon ? fileIcon : "📦";
+        isEmoji = true;
+      }
+
+      return { icon, label, isEmoji };
+    },
+    [files]
+  );
+
+  // Handle window selection (called from AppManager)
+  const handleWindowSelect = useCallback(
+    (instanceId: string) => {
+      const instance = instances[instanceId];
+      if (!instance) return;
+
+      // Restore if minimized
+      if (instance.isMinimized) {
+        restoreInstance(instanceId);
+      }
+
+      // Bring to foreground
+      bringInstanceToForeground(instanceId);
+      onClose();
+    },
+    [instances, restoreInstance, bringInstanceToForeground, onClose]
+  );
+
+  // Expose the handleWindowSelect for AppManager
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ instanceId: string }>) => {
+      handleWindowSelect(e.detail.instanceId);
+    };
+    window.addEventListener(
+      "exposeWindowSelect",
+      handler as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "exposeWindowSelect",
+        handler as EventListener
+      );
+    };
+  }, [handleWindowSelect]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Calculate grid for label positioning
+  const grid = useMemo(() => {
+    return calculateExposeGrid(
+      openInstances.length,
+      window.innerWidth,
+      window.innerHeight
+    );
+  }, [openInstances.length]);
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop - clicking closes expose view */}
+          <motion.div
+            className="fixed inset-0 z-[9998] bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={onClose}
+          />
+
+          {/* Window labels overlay */}
+          <motion.div
+            className="fixed inset-0 z-[10001] pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            {openInstances.map((instance, index) => {
+              const isApplet = instance.appId === "applet-viewer";
+              const appletInfo = isApplet ? getAppletInfo(instance) : null;
+              const displayIcon =
+                appletInfo?.icon || getAppIconPath(instance.appId);
+              const displayLabel =
+                appletInfo?.label ||
+                instance.title ||
+                instance.displayTitle ||
+                getTranslatedAppName(instance.appId);
+              const isEmoji = appletInfo?.isEmoji || false;
+
+              const cellCenter = getExposeCellCenter(
+                index,
+                grid,
+                window.innerWidth,
+                window.innerHeight
+              );
+
+              // Calculate scaled window bottom for accurate label positioning
+              const windowHeight = instance.size?.height || 400;
+              const windowWidth = instance.size?.width || 600;
+              const scale = getExposeScale(windowWidth, windowHeight, grid.cellWidth, grid.cellHeight);
+              const scaledWindowHalfHeight = (windowHeight * scale) / 2;
+
+              return (
+                <div
+                  key={instance.instanceId}
+                  className="absolute flex flex-col items-center gap-1 pointer-events-none"
+                  style={{
+                    left: cellCenter.x,
+                    top: cellCenter.y + scaledWindowHalfHeight + 16,
+                    transform: "translateX(-50%)",
+                  }}
+                >
+                  {/* Icon */}
+                  <div className="flex items-center gap-2">
+                    {isEmoji ? (
+                      <span className="text-2xl">{displayIcon}</span>
+                    ) : (
+                      <ThemedIcon
+                        name={displayIcon}
+                        alt=""
+                        className="w-6 h-6 [image-rendering:pixelated]"
+                      />
+                    )}
+                    {/* Title */}
+                    <div className="text-sm font-medium text-white drop-shadow-lg line-clamp-1 max-w-[200px]">
+                      {displayLabel}
+                    </div>
+                  </div>
+                  {instance.isMinimized && (
+                    <div className="text-xs text-white/70">Minimized</div>
+                  )}
+                </div>
+              );
+            })}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}

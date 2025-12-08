@@ -17,6 +17,7 @@ import { useDockStore } from "@/stores/useDockStore";
 import { getTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { motion, AnimatePresence } from "framer-motion";
+import { calculateExposeGrid, getExposeTransform } from "./exposeUtils";
 
 interface WindowFrameProps {
   children: React.ReactNode;
@@ -93,6 +94,7 @@ export function WindowFrame({
     instances,
     closeAppInstance,
     updateInstanceTitle,
+    exposeMode,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     debugMode: state.debugMode,
@@ -102,6 +104,7 @@ export function WindowFrame({
     instances: state.instances,
     closeAppInstance: state.closeAppInstance,
     updateInstanceTitle: state.updateInstanceTitle,
+    exposeMode: state.exposeMode,
   }));
   
   // Check if this instance is minimized
@@ -347,6 +350,36 @@ export function WindowFrame({
     
     return { x: 0, y: window.innerHeight - windowPosition.y }; // Fallback to bottom of screen
   }, [appId, instanceId, windowPosition, windowSize, currentTheme]);
+
+  // Calculate expose transform for Mission Control view
+  const exposeTransform = useMemo(() => {
+    if (!exposeMode || !instanceId) return null;
+    
+    // Get all open instances and find this instance's index
+    const openInstances = Object.values(instances).filter(inst => inst.isOpen);
+    const myIndex = openInstances.findIndex(inst => inst.instanceId === instanceId);
+    
+    if (myIndex === -1 || openInstances.length === 0) return null;
+    
+    const grid = calculateExposeGrid(
+      openInstances.length,
+      window.innerWidth,
+      window.innerHeight
+    );
+    
+    const transform = getExposeTransform(
+      windowPosition.x,
+      windowPosition.y,
+      windowSize.width,
+      windowSize.height,
+      myIndex,
+      grid,
+      window.innerWidth,
+      window.innerHeight
+    );
+    
+    return { ...transform, index: myIndex };
+  }, [exposeMode, instanceId, instances, windowPosition, windowSize]);
 
   // Centralized insets per theme
   const computeInsets = useCallback(() => {
@@ -827,8 +860,15 @@ export function WindowFrame({
             top: Math.max(0, windowPosition.y),
             width: window.innerWidth >= 768 ? windowSize.width : "100%",
             height: Math.max(windowSize.height, mergedConstraints.minHeight || 0),
+            // Expose mode transform
+            x: exposeTransform?.translateX ?? 0,
+            y: exposeTransform?.translateY ?? 0,
+            scale: exposeTransform?.scale ?? 1,
           }}
-          transition={shouldAnimateWindowTransition ? {
+          transition={exposeMode ? {
+            duration: 0.4,
+            ease: [0.32, 0.72, 0, 1],
+          } : shouldAnimateWindowTransition ? {
             duration: 0.15,
             ease: [0.25, 0.1, 0.25, 1], // cubic-bezier for snappy feel
           } : {
@@ -840,6 +880,24 @@ export function WindowFrame({
             minHeight: mergedConstraints.minHeight,
             maxWidth: mergedConstraints.maxWidth || undefined,
             maxHeight: mergedConstraints.maxHeight || undefined,
+            zIndex: exposeTransform ? 10000 + exposeTransform.index : undefined,
+            cursor: exposeMode ? "pointer" : undefined,
+            transformOrigin: "center center",
+          }}
+          whileHover={exposeMode && exposeTransform ? { 
+            scale: exposeTransform.scale * 1.05,
+            transition: { duration: 0.2 }
+          } : undefined}
+          onClick={(e) => {
+            if (exposeMode && instanceId) {
+              e.stopPropagation();
+              window.dispatchEvent(
+                new CustomEvent("exposeWindowSelect", {
+                  detail: { instanceId },
+                })
+              );
+              return;
+            }
           }}
         >
         <motion.div
@@ -857,7 +915,9 @@ export function WindowFrame({
             // Disable all pointer events when window is closing
             isClosing && "pointer-events-none",
             // For keepMountedWhenMinimized apps, also disable pointer events when minimized
-            (keepMountedWhenMinimized && isMinimized) && "pointer-events-none"
+            (keepMountedWhenMinimized && isMinimized) && "pointer-events-none",
+            // Disable pointer events on content in expose mode
+            exposeMode && "pointer-events-none"
           )}
           onClick={() => {
             if (!isForeground) {

@@ -141,6 +141,10 @@ interface AppStoreState extends AppManagerState {
   masterVolume: number;
   setMasterVolume: (v: number) => void;
   _debugCheckInstanceIntegrity: () => void;
+
+  // Expose/Mission Control mode
+  exposeMode: boolean;
+  setExposeMode: (v: boolean) => void;
   
   // ryOS version (fetched from version.json)
   ryOSVersion: string | null;
@@ -197,6 +201,10 @@ export const useAppStore = create<AppStoreState>()(
       setLastSeenDesktopVersion: (version) => set({ lastSeenDesktopVersion: version }),
       masterVolume: 1,
       setMasterVolume: (vol) => set({ masterVolume: vol }),
+
+      // Expose/Mission Control mode
+      exposeMode: false,
+      setExposeMode: (v) => set({ exposeMode: v }),
 
       // ryOS version (fetched from version.json)
       ryOSVersion: null,
