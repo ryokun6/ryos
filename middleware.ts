@@ -19,21 +19,21 @@ const APP_NAMES: Record<string, string> = {
 
 // App descriptions
 const APP_DESCRIPTIONS: Record<string, string> = {
-  finder: "Browse and manage files on ryOS",
-  soundboard: "Record and trigger custom sounds on ryOS",
-  "internet-explorer": "Browse the web through time on ryOS",
-  chats: "Talk to Ryo and neighbors online on ryOS",
-  textedit: "Write and edit documents on ryOS",
+  finder: "Browse and manage files",
+  soundboard: "Record and trigger custom sounds",
+  "internet-explorer": "Browse the web through time",
+  chats: "Talk to Ryo and neighbors online",
+  textedit: "Write and edit documents",
   paint: "Draw and edit art, like it's 1984",
   "photo-booth": "Take photos with shader effects",
-  minesweeper: "Play this classic puzzle game on ryOS",
+  minesweeper: "Play this classic puzzle game",
   videos: "Watch videos on ryOS",
   ipod: "Click-wheel music player with live lyrics",
-  synth: "Virtual synthesizer on ryOS",
-  pc: "DOS emulator on ryOS",
-  terminal: "ryOS Command line interface",
-  "applet-viewer": "Explore and install shared applets",
-  "control-panels": "Set themes, sounds, and system settings",
+  synth: "Virtual synthesizer with custom sounds",
+  pc: "DOS emulator with classic games",
+  terminal: "Command line interface with Ryo AI",
+  "applet-viewer": "Explore and install community applets",
+  "control-panels": "Set themes, sounds, and system preferences",
 };
 
 // App ID to macOS icon mapping
@@ -69,6 +69,8 @@ function generateOgHtml(options: {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
   <meta property="og:type" content="${type}">
   <meta property="og:url" content="${escapeHtml(url)}">
   <meta property="og:title" content="${escapeHtml(title)}">
@@ -194,7 +196,7 @@ export default async function middleware(request: Request) {
   if (appMatch && APP_NAMES[appMatch[1]]) {
     const appId = appMatch[1];
     imageUrl = `${baseUrl}/icons/macosx/${APP_ICONS[appId]}`;
-    title = `${APP_NAMES[appId]}`;
+    title = `${APP_NAMES[appId]} on ryOS`;
     description = APP_DESCRIPTIONS[appId] || "Open this app in ryOS";
     matched = true;
   }
