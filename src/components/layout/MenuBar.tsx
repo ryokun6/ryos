@@ -404,7 +404,7 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
 
   return (
     <div
-      className={`${isXpTheme ? "" : "ml-auto mr-2"} ${enableExposeToggle ? "cursor-pointer" : ""}`}
+      className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"} ${enableExposeToggle ? "cursor-pointer" : ""}`}
       style={{
         textShadow:
           currentTheme === "macosx"
