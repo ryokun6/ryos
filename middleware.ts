@@ -198,7 +198,7 @@ export default async function middleware(request: Request) {
     const appId = appMatch[1];
     imageUrl = `${baseUrl}/icons/macosx/${APP_ICONS[appId]}`;
     title = `${APP_NAMES[appId]} on ryOS`;
-    description = APP_DESCRIPTIONS[appId] || "Open this app in ryOS";
+    description = APP_DESCRIPTIONS[appId] || "Open app in ryOS";
     matched = true;
   }
 
@@ -211,10 +211,10 @@ export default async function middleware(request: Request) {
     // Fetch YouTube info for title
     const ytInfo = await getYouTubeInfo(videoId);
     if (ytInfo) {
-      title = ytInfo.title;
+      title = `${ytInfo.title}`;
       description = "Watch on ryOS Videos";
     } else {
-      title = "Shared Video";
+      title = "Shared Video on ryOS";
       description = "Watch on ryOS Videos";
     }
     matched = true;
@@ -248,7 +248,7 @@ export default async function middleware(request: Request) {
   if (appletMatch) {
     imageUrl = `${baseUrl}/icons/macosx/applet.png`;
     title = "Shared Applet on ryOS";
-    description = "Open this applet in ryOS";
+    description = "Open applet in ryOS";
     matched = true;
   }
 
@@ -279,11 +279,11 @@ export default async function middleware(request: Request) {
         }
         
         if (sharedYear === "current") {
-          title = hostname;
+          title = `${hostname} on ryOS`;
           description = "Open in ryOS Internet Explorer";
         } else {
-          title = `${hostname} in ${sharedYear}`;
-          description = "Time travel on ryOS";
+          title = `${hostname} in ${sharedYear} on ryOS`;
+          description = "Time travel in ryOS Internet Explorer";
         }
       } else {
         title = "Shared Page on ryOS";
