@@ -1435,11 +1435,10 @@ function ExposeButton() {
       className="flex items-center justify-center px-1.5 py-0.5"
       style={{
         marginRight: "4px",
-        color: "var(--os-color-menubar-text)",
       }}
       title="Mission Control (F3)"
     >
-      <LayoutGrid className="w-4 h-4" style={{ opacity: 0.7 }} />
+      <LayoutGrid className="w-4 h-4" />
     </button>
   );
 }

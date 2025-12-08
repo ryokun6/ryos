@@ -162,6 +162,13 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
             onClick={onClose}
           />
 
+          {/* Global style to disable iframe interactions in expose mode */}
+          <style>{`
+            iframe, webview, object, embed {
+              pointer-events: none !important;
+            }
+          `}</style>
+
           {/* Window labels overlay */}
           <motion.div
             className="fixed inset-0 z-[10001] pointer-events-none"
