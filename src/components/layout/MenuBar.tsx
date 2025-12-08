@@ -237,7 +237,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   if (!isPhone) {
     return (
       <ScrollingContext.Provider value={{ isScrolling: false, preventInteraction: () => false }}>
-        <div className="flex items-stretch h-full max-h-full overflow-hidden">
+        <div className="flex items-stretch h-full">
           {children}
         </div>
       </ScrollingContext.Provider>
@@ -249,7 +249,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 h-full max-h-full overflow-x-auto overflow-y-hidden"
+        className="flex-grow h-full overflow-x-auto overflow-y-hidden"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorX: "contain",
@@ -263,7 +263,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="flex items-stretch h-full max-h-full min-w-max overflow-hidden">
+        <div className="flex items-center h-full min-w-max">
           {children}
         </div>
       </div>
@@ -1329,7 +1329,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   
   return (
     <div
-      className={`fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar items-center font-os-ui ${exposeMode ? "z-[9997]" : "z-[10002]"}`}
+      className={`fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar items-center font-os-ui leading-none ${exposeMode ? "z-[9997]" : "z-[10002]"}`}
       style={{
         background:
           currentTheme === "macosx"
@@ -1356,8 +1356,6 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         height: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
         minHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
         maxHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
-        // Prevent content overflow from making menubar taller
-        overflow: "hidden",
       }}
     >
       <ScrollableMenuWrapper>
