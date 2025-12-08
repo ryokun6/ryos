@@ -1,0 +1,20 @@
+AI Notes:
+
+index.html: +18[0] -18[0]
+middleware.ts: +22[1],+23[2],+24[3],+26[4],+29[5],+31[6],+32-33[7],+36[8] -22[1],-23[9],-24[3],-25[0],-26[7],-27-28[0],-29[7],-32-33[7]
+src-tauri/Cargo.toml: +4[0] -4[0]
+src-tauri/tauri.conf.json: +47-48[0] -47-48[0]
+vite.config.ts: +70[0] -70[0]
+
+Conversations:
+
+[0]: a6b8004d-b9bb-4df5-88d7-9c1c5f4fcd76; Internet explorer parsing and URL decoding; claude-4.5-opus-high-thinking;
+[1]: 1355fecf-3a4c-4683-835d-d1407cb5f0c0; Tab Request 1355fecf; unknown;
+[2]: e0c2e728-59c6-4913-820e-fc14fbcdae1f; Tab Request e0c2e728; unknown;
+[3]: a9501da2-80d5-47f5-9f31-649a47e6298a; Tab Request a9501da2; unknown;
+[4]: da6365a7-1c1c-4ea8-9290-338351e3e3a4; Tab Request da6365a7; unknown;
+[5]: 298a7655-93db-4b75-82a1-edbf2f6b120f; Tab Request 298a7655; unknown;
+[6]: c4e7e041-85e7-4f84-9eaa-1daa79e12817; Tab Request c4e7e041; unknown;
+[7]: 484c5cdf-6907-4b7c-ad1d-cd0767ca6b63; Tab Request 484c5cdf; unknown;
+[8]: a9d7f9b3-b3b8-4387-a1ad-224bc3f19ed0; Tab Request a9d7f9b3; unknown;
+[9]: 6306af1f-5a90-4792-865a-af34d2da632c; Tab Request 6306af1f; unknown;
