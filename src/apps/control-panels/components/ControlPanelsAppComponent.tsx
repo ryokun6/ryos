@@ -1669,14 +1669,14 @@ export function ControlPanelsAppComponent({
                   style={tabStyles.separatorStyle}
                 />
 
-                <WallpaperPicker />
+                <ScreenSaverPicker />
 
                 <div
                   className="border-t my-4"
                   style={tabStyles.separatorStyle}
                 />
 
-                <ScreenSaverPicker />
+                <WallpaperPicker />
               </div>
             </TabsContent>
 
