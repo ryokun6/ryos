@@ -22,18 +22,18 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   finder: "Browse and manage files",
   soundboard: "Play sound effects",
   "internet-explorer": "Browse the web through time",
-  chats: "Chat with Ryo AI assistant",
+  chats: "Chat with Ryo and neighbors on ryOS",
   textedit: "A simple rich text editor",
-  paint: "Draw and edit images",
+  paint: "Draw and edit images, like it's 1984",
   "photo-booth": "Take photos with effects",
   minesweeper: "Classic puzzle game",
-  videos: "Watch YouTube videos",
-  ipod: "Music player with YouTube integration",
+  videos: "Watch videos on ryOS",
+  ipod: "iPod music player with karaoke",
   synth: "Virtual synthesizer",
   pc: "DOS emulator",
-  terminal: "Command line interface",
-  "applet-viewer": "View and run HTML applets",
-  "control-panels": "System settings",
+  terminal: "ryOS Command line interface",
+  "applet-viewer": "View and run shared applets",
+  "control-panels": "ryOS System settings",
 };
 
 // App ID to macOS icon mapping
@@ -194,7 +194,7 @@ export default async function middleware(request: Request) {
   if (appMatch && APP_NAMES[appMatch[1]]) {
     const appId = appMatch[1];
     imageUrl = `${baseUrl}/icons/macosx/${APP_ICONS[appId]}`;
-    title = `${APP_NAMES[appId]} - ryOS`;
+    title = `${APP_NAMES[appId]}`;
     description = APP_DESCRIPTIONS[appId] || "Open in ryOS";
     matched = true;
   }
@@ -209,10 +209,10 @@ export default async function middleware(request: Request) {
     const ytInfo = await getYouTubeInfo(videoId);
     if (ytInfo) {
       title = ytInfo.title;
-      description = "Watch on ryOS";
+      description = "Watch on ryOS Videos";
     } else {
-      title = "Shared Video - ryOS";
-      description = "Watch on ryOS";
+      title = "Shared Video";
+      description = "Watch on ryOS Videos";
     }
     matched = true;
   }
@@ -228,14 +228,14 @@ export default async function middleware(request: Request) {
     if (ytInfo) {
       if (ytInfo.artist) {
         title = `${ytInfo.title} - ${ytInfo.artist}`;
-        description = `Listen to ${ytInfo.artist} on ryOS`;
+        description = `Listen on ryOS iPod`;
       } else {
         title = ytInfo.title;
-        description = "Listen on ryOS";
+        description = "Listen on ryOS iPod";
       }
     } else {
       title = "Shared Song - ryOS";
-      description = "Listen on ryOS";
+      description = "Listen on ryOS iPod";
     }
     matched = true;
   }
