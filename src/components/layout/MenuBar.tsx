@@ -1351,18 +1351,10 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           ? "calc(78px + env(safe-area-inset-left, 0px))" 
           : "calc(0.5rem + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
-        paddingTop: "env(safe-area-inset-top, 0px)",
         // Make menubar taller in Tauri for better traffic light alignment
-        // Height must include safe-area-inset-top to prevent content from being clipped
-        height: needsTrafficLightClearance 
-          ? "calc(32px + env(safe-area-inset-top, 0px))" 
-          : "calc(var(--os-metrics-menubar-height) + env(safe-area-inset-top, 0px))",
-        minHeight: needsTrafficLightClearance 
-          ? "calc(32px + env(safe-area-inset-top, 0px))" 
-          : "calc(var(--os-metrics-menubar-height) + env(safe-area-inset-top, 0px))",
-        maxHeight: needsTrafficLightClearance 
-          ? "calc(32px + env(safe-area-inset-top, 0px))" 
-          : "calc(var(--os-metrics-menubar-height) + env(safe-area-inset-top, 0px))",
+        height: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
+        minHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
+        maxHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
       }}
     >
       <ScrollableMenuWrapper>
