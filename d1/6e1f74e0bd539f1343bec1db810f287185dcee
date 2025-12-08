@@ -1,0 +1,15 @@
+AI Notes:
+
+index.html: +38[0] -38[0]
+src/lib/reactResources.ts: -26[1]
+src/themes/macosx.ts: -58[0]
+src/themes/system7.ts: -46[0]
+src/themes/types.ts: -65[0]
+src/themes/win98.ts: -46[0]
+src/themes/xp.ts: -45[0]
+src/utils/prefetch.ts: +682-687[0] -682[0]
+
+Conversations:
+
+[0]: 902a69b0-c240-4c68-835b-e4e134f79905; Prefetch error: main bundle missing; claude-4.5-opus-high-thinking;
+[1]: 2359e001-057e-42ed-b522-344d4a53ca97; Preloaded manifest.json not used warning; claude-4.5-opus-high-thinking;
