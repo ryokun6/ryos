@@ -51,7 +51,7 @@ const APP_ICONS: Record<string, string> = {
   synth: "synth.png",
   pc: "pc.png",
   terminal: "terminal.png",
-  "applet-viewer": "applet.png",
+  "applet-viewer": "app.png",
   "control-panels": "control-panels/appearance-manager/app.png",
 };
 
