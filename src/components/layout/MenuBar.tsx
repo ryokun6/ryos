@@ -237,7 +237,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   if (!isPhone) {
     return (
       <ScrollingContext.Provider value={{ isScrolling: false, preventInteraction: () => false }}>
-        <div className="flex items-stretch h-full">
+        <div className="flex items-stretch h-full max-h-full overflow-hidden">
           {children}
         </div>
       </ScrollingContext.Provider>
@@ -249,7 +249,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 h-full overflow-x-auto overflow-y-hidden"
+        className="flex-1 h-full max-h-full overflow-x-auto overflow-y-hidden"
         style={{
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorX: "contain",
@@ -263,7 +263,7 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="flex items-stretch h-full min-w-max">
+        <div className="flex items-stretch h-full max-h-full min-w-max overflow-hidden">
           {children}
         </div>
       </div>
