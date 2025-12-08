@@ -1,0 +1,10 @@
+AI Notes:
+
+src/apps/base/AppManager.tsx: -357[0],-362[0]
+src/components/layout/Dock.tsx: -1639,-1644
+src/components/layout/MenuBar.tsx: +1429,+1445
+src/components/layout/WindowFrame.tsx: +355[0],+869[0],+871[0],+885[0],+900[0],+918[0] -831[0],-860[0]
+
+Conversations:
+
+[0]: dd163980-ca85-4c73-9b1e-83e4c7332c1e; Build hot corner expose feature; claude-4.5-opus-high-thinking;
