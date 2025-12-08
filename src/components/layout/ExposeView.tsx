@@ -5,6 +5,7 @@ import { getAppIconPath } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useFilesStore } from "@/stores/useFilesStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import {
@@ -32,6 +33,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   }));
 
   const files = useFilesStore((s) => s.items);
+  const isMobile = useIsMobile();
 
   // Get all open instances (including minimized)
   const openInstances = useMemo(() => {
@@ -142,9 +144,12 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
     return calculateExposeGrid(
       openInstances.length,
       window.innerWidth,
-      window.innerHeight
+      window.innerHeight,
+      60, // padding
+      24, // gap
+      isMobile
     );
-  }, [openInstances.length]);
+  }, [openInstances.length, isMobile]);
 
   if (!isOpen) return null;
 

@@ -364,7 +364,10 @@ export function WindowFrame({
     const grid = calculateExposeGrid(
       openInstances.length,
       window.innerWidth,
-      window.innerHeight
+      window.innerHeight,
+      60, // padding
+      24, // gap
+      isMobile
     );
     
     const transform = getExposeTransform(
@@ -379,7 +382,7 @@ export function WindowFrame({
     );
     
     return { ...transform, index: myIndex };
-  }, [exposeMode, instanceId, instances, windowPosition, windowSize]);
+  }, [exposeMode, instanceId, instances, windowPosition, windowSize, isMobile]);
 
   // Centralized insets per theme
   const computeInsets = useCallback(() => {
