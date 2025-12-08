@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { WallpaperPicker } from "./WallpaperPicker";
+import { ScreenSaverPicker } from "./ScreenSaverPicker";
 import { AppProps, ControlPanelsInitialData } from "@/apps/base/types";
 import { clearAllAppStates } from "@/stores/useAppStore";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
@@ -1669,6 +1670,13 @@ export function ControlPanelsAppComponent({
                 />
 
                 <WallpaperPicker />
+
+                <div
+                  className="border-t my-4"
+                  style={tabStyles.separatorStyle}
+                />
+
+                <ScreenSaverPicker />
               </div>
             </TabsContent>
 

@@ -1833,6 +1833,17 @@
       "bootScreen": "Boot Screen",
       "bootScreenDescription": "Test the boot screen animation",
       "show": "Show",
+      "screenSaver": "Screen Saver",
+      "screenSaverDescription": "Activates after a period of inactivity",
+      "screenSaverType": "Type",
+      "selectScreenSaver": "Select screen saver",
+      "startAfter": "Start after",
+      "minute": "minute",
+      "minutes": "minutes",
+      "min": "min",
+      "preview": "Preview",
+      "previewActive": "Click anywhere to exit",
+      "speech": "Speech",
       "help": {
         "appearance": {
           "title": "Appearance",
