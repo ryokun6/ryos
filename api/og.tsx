@@ -1,29 +1,8 @@
-import React from "react";
 import { ImageResponse } from "@vercel/og";
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { readFileSync } from "fs";
-import { join } from "path";
 
 export const config = {
-  runtime: "nodejs",
-  maxDuration: 30,
+  runtime: "edge",
 };
-
-// Load LucidaGrande font
-const lucidaGrandeFont = readFileSync(
-  join(process.cwd(), "public/fonts/LucidaGrande.ttf")
-);
-
-// Helper to send ImageResponse through Node.js response
-async function sendImageResponse(
-  imageResponse: ImageResponse,
-  res: VercelResponse
-) {
-  const buffer = await imageResponse.arrayBuffer();
-  res.setHeader("Content-Type", "image/png");
-  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
-  res.send(Buffer.from(buffer));
-}
 
 // App ID to macOS icon mapping (filename only)
 const APP_ICONS: Record<string, string> = {
@@ -64,10 +43,12 @@ const APP_NAMES: Record<string, string> = {
 };
 
 // Get base URL from request
-function getBaseUrl(req: VercelRequest): string {
-  const host = req.headers.host || "os.ryo.lu";
-  const protocol = host.includes("localhost") ? "http" : "https";
-  return `${protocol}://${host}`;
+function getBaseUrl(req: Request): string {
+  const url = new URL(req.url);
+  if (url.hostname === "os.ryo.lu") {
+    return "https://os.ryo.lu";
+  }
+  return `${url.protocol}//${url.host}`;
 }
 
 // Fetch applet info from Redis
@@ -108,15 +89,21 @@ async function getAppletInfo(
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: Request) {
   try {
+    const url = new URL(req.url);
     const baseUrl = getBaseUrl(req);
 
+    // Load font
+    const fontData = await fetch(
+      new URL("/fonts/LucidaGrande.ttf", baseUrl)
+    ).then((res) => res.arrayBuffer());
+
     // Parse query parameters
-    const app = req.query.app as string | undefined;
-    const video = req.query.video as string | undefined;
-    const applet = req.query.applet as string | undefined;
-    const title = req.query.title as string | undefined;
+    const app = url.searchParams.get("app");
+    const video = url.searchParams.get("video");
+    const applet = url.searchParams.get("applet");
+    const title = url.searchParams.get("title");
 
     // Default values
     let iconUrl = `${baseUrl}/icons/mac-512.png`;
@@ -128,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let emojiIcon = "";
 
     // Handle different content types
-    if (app && typeof app === "string" && APP_ICONS[app]) {
+    if (app && APP_ICONS[app]) {
       // App share
       iconUrl = `${baseUrl}/icons/macosx/${APP_ICONS[app]}`;
       displayTitle = APP_NAMES[app] || app;
@@ -162,7 +149,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Generate the OG image
     if (showThumbnail && thumbnailUrl) {
       // Video thumbnail layout
-      const imageResponse = new ImageResponse(
+      return new ImageResponse(
         (
           <div
             style={{
@@ -265,17 +252,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           fonts: [
             {
               name: "LucidaGrande",
-              data: lucidaGrandeFont,
+              data: fontData,
               style: "normal",
             },
           ],
         }
       );
-      return sendImageResponse(imageResponse, res);
     }
 
     // Standard app/applet layout - icon left, text right
-    const imageResponse = new ImageResponse(
+    return new ImageResponse(
       (
         <div
           style={{
@@ -361,17 +347,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fonts: [
           {
             name: "LucidaGrande",
-            data: lucidaGrandeFont,
+            data: fontData,
             style: "normal",
           },
         ],
       }
     );
-    return sendImageResponse(imageResponse, res);
   } catch (error) {
     console.error("OG image generation error:", error);
 
-    // Return a simple fallback response
-    return res.status(500).json({ error: "Failed to generate OG image" });
+    return new Response(
+      JSON.stringify({ error: "Failed to generate OG image" }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   }
 }
