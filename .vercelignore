@@ -7,10 +7,10 @@ dist/
 node_modules/
 
 # Tauri build artifacts
-src-tauri/target/
-src-tauri/gen/
+src-tauri/
 
 # Test results
+tests/
 test-results/
 
 # IDE and editor files
