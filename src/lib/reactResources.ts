@@ -23,7 +23,6 @@ const FONT_RESOURCES: FontResource[] = [
 const FETCH_RESOURCES: FetchResource[] = [
   { href: "/data/filesystem.json", priority: "high" },
   { href: "/data/applets.json" },
-  { href: "/icons/manifest.json" },
 ];
 
 const PRECONNECT_RESOURCES = [

@@ -55,6 +55,5 @@ export const macosx: OsTheme = {
   },
   wallpaperDefaults: {
     photo: "/wallpapers/photos/aqua/abstract-7.jpg",
-    video: "/wallpapers/photos/aqua/water.jpg",
   },
 };

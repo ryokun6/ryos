@@ -43,6 +43,5 @@ export const system7: OsTheme = {
   },
   wallpaperDefaults: {
     tile: "/wallpapers/tiles/Property 1=1.svg",
-    video: "/wallpapers/photos/aqua/water.jpg",
   },
 };

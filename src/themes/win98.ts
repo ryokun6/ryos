@@ -43,6 +43,5 @@ export const win98: OsTheme = {
   },
   wallpaperDefaults: {
     tile: "/wallpapers/tiles/bondi.png",
-    video: "/wallpapers/photos/aqua/water.jpg",
   },
 };

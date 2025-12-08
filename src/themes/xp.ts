@@ -42,6 +42,5 @@ export const xp: OsTheme = {
   },
   wallpaperDefaults: {
     photo: "/wallpapers/photos/landscapes/bliss.jpg",
-    video: "/wallpapers/videos/bliss_og.mp4",
   },
 };

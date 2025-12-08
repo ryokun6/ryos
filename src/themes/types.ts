@@ -62,6 +62,5 @@ export interface OsTheme {
   wallpaperDefaults?: {
     photo?: string;
     tile?: string;
-    video?: string;
   };
 }

@@ -679,7 +679,12 @@ async function discoverAllJsChunks(): Promise<string[]> {
     // Find the main index bundle: /assets/index-XXXX.js
     const mainBundleMatch = html.match(/\/assets\/index-[A-Za-z0-9_-]+\.js/);
     if (!mainBundleMatch) {
-      console.warn('[Prefetch] Could not find main bundle in index.html');
+      // In development mode, Vite serves source directly (no bundled assets)
+      if (import.meta.env.DEV) {
+        console.log('[Prefetch] Skipping JS chunk discovery in development mode');
+      } else {
+        console.warn('[Prefetch] Could not find main bundle in index.html');
+      }
       return [];
     }
     
