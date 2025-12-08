@@ -27,7 +27,7 @@ import { Volume1, Volume2, VolumeX, Settings, ChevronUp, LayoutGrid } from "luci
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getAppIconPath } from "@/config/appRegistry";
-import { AppId } from "@/config/appRegistry";
+import type { AppId } from "@/config/appRegistry";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useFilesStore } from "@/stores/useFilesStore";
 import type { AppInstance } from "@/stores/useAppStore";
@@ -329,7 +329,7 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
   // "2-digit" would force leading zeros which Chinese/Japanese don't typically use
   const hourFormat = "numeric";
   
-  let displayTime;
+  let displayTime: string;
 
   if (isXpTheme) {
     // For XP/98 themes: use 24h for locales that prefer it, otherwise 12h
@@ -403,7 +403,9 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
   }
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: Window drag handle for Tauri
     <div
+      role="presentation"
       className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"} ${enableExposeToggle ? "cursor-pointer" : ""}`}
       style={{
         textShadow:
@@ -889,7 +891,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           const fs = await win.isFullscreen();
           setIsFullscreen(fs);
         });
-      } catch {}
+      } catch (error) {
+        console.error("Error setting fullscreen state:", error);
+      }
     })();
     
     return () => {
@@ -1146,6 +1150,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
+                    type="button"
                     className="px-1 border-t border-y rounded-sm flex items-center justify-center"
                     style={{
                       height: "85%",
@@ -1351,7 +1356,6 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           ? "calc(78px + env(safe-area-inset-left, 0px))" 
           : "calc(0.5rem + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
-        paddingTop: "env(safe-area-inset-top, 0px)",
         // Make menubar taller in Tauri for better traffic light alignment
         height: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
         minHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
@@ -1368,6 +1372,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       </ScrollableMenuWrapper>
       {/* Draggable spacer for Tauri window only */}
       {isTauriApp && (
+        // biome-ignore lint/a11y/noStaticElementInteractions: Window drag handle for Tauri
         <div
           className="flex-1"
           style={{
