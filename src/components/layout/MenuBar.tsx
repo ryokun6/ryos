@@ -23,7 +23,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { StartMenu } from "./StartMenu";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { Slider } from "@/components/ui/slider";
-import { Volume1, Volume2, VolumeX, Settings, ChevronUp, LayoutGrid } from "lucide-react";
+import { Volume1, Volume2, VolumeX, Settings, ChevronUp } from "lucide-react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getAppIconPath } from "@/config/appRegistry";
@@ -271,7 +271,11 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Clock() {
+interface ClockProps {
+  enableExposeToggle?: boolean;
+}
+
+function Clock({ enableExposeToggle = false }: ClockProps) {
   const [time, setTime] = useState(new Date());
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const currentTheme = useThemeStore((state) => state.current);
@@ -283,6 +287,13 @@ function Clock() {
   
   // Determine if locale prefers 24-hour format
   const prefers24Hour = ["zh-TW", "ja", "de", "fr", "ko"].includes(currentLocale);
+  
+  // Handle click to toggle expose view
+  const handleClick = () => {
+    if (enableExposeToggle) {
+      window.dispatchEvent(new CustomEvent("toggleExposeView"));
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -393,13 +404,15 @@ function Clock() {
 
   return (
     <div
-      className={isXpTheme ? "" : "ml-auto mr-2"}
+      className={`${isXpTheme ? "" : "ml-auto mr-2"} ${enableExposeToggle ? "cursor-pointer hover:bg-black/10 active:bg-black/20 rounded px-1.5 py-0.5 -mx-1.5 -my-0.5 transition-colors" : ""}`}
       style={{
         textShadow:
           currentTheme === "macosx"
             ? "0 2px 3px rgba(0, 0, 0, 0.25)"
             : undefined,
       }}
+      onClick={handleClick}
+      title={enableExposeToggle ? "Click to show all windows (F3)" : undefined}
     >
       {displayTime}
     </div>
@@ -1376,11 +1389,10 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       )}
       <div className={`${isPhone ? "flex-shrink-0 px-2" : "ml-auto"} flex items-center`}>
         <OfflineIndicator />
-        <ExposeButton />
         <div className="hidden sm:flex">
           <VolumeControl />
         </div>
-        <Clock />
+        <Clock enableExposeToggle />
       </div>
     </div>
   );
@@ -1417,28 +1429,3 @@ function OfflineIndicator() {
   );
 }
 
-function ExposeButton() {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  
-  // Don't show on Windows themes (they have their own taskbar)
-  if (isXpTheme) return null;
-
-  const handleClick = () => {
-    window.dispatchEvent(new CustomEvent("toggleExposeView"));
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="flex items-center justify-center px-1.5 py-0.5"
-      style={{
-        marginRight: "4px",
-      }}
-      title="Mission Control (F3)"
-    >
-      <LayoutGrid className="w-4 h-4" />
-    </button>
-  );
-}
