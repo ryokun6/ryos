@@ -18,9 +18,9 @@ export function calculateExposeGrid(
   let rows: number;
   
   if (isMobile) {
-    // Mobile: 2 columns
-    cols = 2;
-    rows = Math.ceil(windowCount / 2);
+    // Mobile: 1 column for single window (centered), 2 columns otherwise
+    cols = windowCount === 1 ? 1 : 2;
+    rows = Math.ceil(windowCount / cols);
   } else if (windowCount === 1) {
     cols = 1;
     rows = 1;
