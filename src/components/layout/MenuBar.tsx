@@ -406,7 +406,7 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
     // biome-ignore lint/a11y/noStaticElementInteractions: Window drag handle for Tauri
     <div
       role="presentation"
-      className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"} ${enableExposeToggle ? "cursor-pointer" : ""}`}
+      className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"}`}
       style={{
         textShadow:
           currentTheme === "macosx"
@@ -1450,7 +1450,7 @@ function ExposeButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="flex items-center justify-center px-1.5 py-0.5 cursor-pointer"
+      className="flex items-center justify-center px-1.5 py-0.5"
       style={{
         marginRight: "4px",
       }}
