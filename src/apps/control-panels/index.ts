@@ -30,11 +30,6 @@ export const helpItems = [
     title: "Language",
     description: "Select your preferred language for ryOS interface",
   },
-  {
-    icon: "⚙️",
-    title: "System",
-    description: "Reset preferences or format the virtual file system",
-  },
 ];
 
 export const appMetadata = {
