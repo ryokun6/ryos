@@ -355,8 +355,8 @@ export function WindowFrame({
   const exposeTransform = useMemo(() => {
     if (!exposeMode || !instanceId) return null;
     
-    // Get all open instances and find this instance's index
-    const openInstances = Object.values(instances).filter(inst => inst.isOpen);
+    // Get all open instances (excluding minimized) and find this instance's index
+    const openInstances = Object.values(instances).filter(inst => inst.isOpen && !inst.isMinimized);
     const myIndex = openInstances.findIndex(inst => inst.instanceId === instanceId);
     
     if (myIndex === -1 || openInstances.length === 0) return null;
