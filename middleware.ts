@@ -117,7 +117,63 @@ export const config = {
   ],
 };
 
-export default function middleware(request: Request) {
+// Simple title parser - extracts artist and title from common YouTube formats
+function parseYouTubeTitle(rawTitle: string): { title: string; artist: string | null } {
+  // Remove common suffixes
+  let cleaned = rawTitle
+    .replace(/\s*\(Official\s*(Music\s*)?Video\)/gi, "")
+    .replace(/\s*\[Official\s*(Music\s*)?Video\]/gi, "")
+    .replace(/\s*Official\s*(Music\s*)?Video/gi, "")
+    .replace(/\s*\(Official\s*Audio\)/gi, "")
+    .replace(/\s*\[Official\s*Audio\]/gi, "")
+    .replace(/\s*\(Lyric\s*Video\)/gi, "")
+    .replace(/\s*\[Lyric\s*Video\]/gi, "")
+    .replace(/\s*\(Lyrics\)/gi, "")
+    .replace(/\s*\[Lyrics\]/gi, "")
+    .replace(/\s*\(Audio\)/gi, "")
+    .replace(/\s*\[Audio\]/gi, "")
+    .replace(/\s*\(MV\)/gi, "")
+    .replace(/\s*\[MV\]/gi, "")
+    .replace(/\s*MV$/gi, "")
+    .replace(/\s*M\/V$/gi, "")
+    .trim();
+
+  // Try "Artist - Title" format (most common)
+  const dashMatch = cleaned.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+  if (dashMatch) {
+    return { artist: dashMatch[1].trim(), title: dashMatch[2].trim() };
+  }
+
+  // Try "Title by Artist" format
+  const byMatch = cleaned.match(/^(.+?)\s+by\s+(.+)$/i);
+  if (byMatch) {
+    return { artist: byMatch[2].trim(), title: byMatch[1].trim() };
+  }
+
+  // No clear separator, return as title only
+  return { title: cleaned, artist: null };
+}
+
+// Fetch YouTube video info via oEmbed
+async function getYouTubeInfo(videoId: string): Promise<{ title: string; artist: string | null } | null> {
+  try {
+    const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+    const response = await fetch(oEmbedUrl, { 
+      headers: { "User-Agent": "ryOS/1.0" },
+    });
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    const rawTitle = data.title || "";
+    
+    return parseYouTubeTitle(rawTitle);
+  } catch {
+    return null;
+  }
+}
+
+export default async function middleware(request: Request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   const baseUrl = url.origin;
@@ -143,23 +199,44 @@ export default function middleware(request: Request) {
     matched = true;
   }
 
-  // Video URLs: /videos/{videoId} - use YouTube thumbnail
+  // Video URLs: /videos/{videoId} - use YouTube thumbnail and fetch title
   const videoMatch = pathname.match(/^\/videos\/([a-zA-Z0-9_-]+)$/);
   if (videoMatch) {
     const videoId = videoMatch[1];
     imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-    title = "Shared Video - ryOS";
-    description = "Watch on ryOS";
+    
+    // Fetch YouTube info for title
+    const ytInfo = await getYouTubeInfo(videoId);
+    if (ytInfo) {
+      title = ytInfo.title;
+      description = "Watch on ryOS";
+    } else {
+      title = "Shared Video - ryOS";
+      description = "Watch on ryOS";
+    }
     matched = true;
   }
 
-  // iPod URLs: /ipod/{videoId} - use YouTube thumbnail
+  // iPod URLs: /ipod/{videoId} - use YouTube thumbnail and fetch title
   const ipodMatch = pathname.match(/^\/ipod\/([a-zA-Z0-9_-]+)$/);
   if (ipodMatch) {
     const videoId = ipodMatch[1];
     imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-    title = "Shared Song - ryOS";
-    description = "Listen on ryOS";
+    
+    // Fetch YouTube info for title/artist
+    const ytInfo = await getYouTubeInfo(videoId);
+    if (ytInfo) {
+      if (ytInfo.artist) {
+        title = `${ytInfo.title} - ${ytInfo.artist}`;
+        description = `Listen to ${ytInfo.artist} on ryOS`;
+      } else {
+        title = ytInfo.title;
+        description = "Listen on ryOS";
+      }
+    } else {
+      title = "Shared Song - ryOS";
+      description = "Listen on ryOS";
+    }
     matched = true;
   }
 
