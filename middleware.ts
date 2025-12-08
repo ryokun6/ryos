@@ -314,7 +314,9 @@ export default async function middleware(request: Request) {
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        // no-store prevents service worker from caching this redirect page
+        // s-maxage allows CDN to cache for crawlers (they don't have SW)
+        "Cache-Control": "no-store, s-maxage=3600",
       },
     });
   }
