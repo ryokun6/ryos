@@ -1543,10 +1543,6 @@ export function WindowFrame({
               style={{
                 background: "var(--button-face)",
                 borderBottom: "1px solid var(--button-shadow)",
-                height: "28px",
-                minHeight: "28px",
-                maxHeight: "28px",
-                overflow: "hidden",
               }}
             >
               {menuBar}

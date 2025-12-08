@@ -1356,6 +1356,8 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         height: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
         minHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
         maxHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
+        // Prevent content overflow from making menubar taller
+        overflow: "hidden",
       }}
     >
       <ScrollableMenuWrapper>
