@@ -1,10 +1,12 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { getAppIconPath } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useFilesStore } from "@/stores/useFilesStore";
+import { useThemeStore } from "@/stores/useThemeStore";
+import { useSound, Sounds } from "@/hooks/useSound";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
@@ -33,7 +35,16 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   }));
 
   const files = useFilesStore((s) => s.items);
+  const currentTheme = useThemeStore((state) => state.current);
+  const isMacOSXTheme = currentTheme === "macosx";
   const isMobile = useIsMobile();
+
+  // Sounds for expose view open/close
+  const { play: playOpenSound } = useSound(Sounds.WINDOW_ZOOM_MAXIMIZE, 0.5);
+  const { play: playCloseSound } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE, 0.5);
+
+  // Track previous isOpen state to detect changes
+  const prevIsOpenRef = useRef(isOpen);
 
   // Get all open instances (excluding minimized)
   const openInstances = useMemo(() => {
@@ -44,6 +55,18 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   useEffect(() => {
     setExposeMode(isOpen);
   }, [isOpen, setExposeMode]);
+
+  // Play sounds when expose view opens/closes
+  useEffect(() => {
+    if (isOpen !== prevIsOpenRef.current) {
+      if (isOpen) {
+        playOpenSound();
+      } else {
+        playCloseSound();
+      }
+      prevIsOpenRef.current = isOpen;
+    }
+  }, [isOpen, playOpenSound, playCloseSound]);
 
   // Helper to get applet info (icon and name) from instance
   const getAppletInfo = useCallback(
@@ -207,13 +230,18 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
               const scale = getExposeScale(windowWidth, windowHeight, grid.cellWidth, grid.cellHeight);
               const scaledWindowHalfHeight = (windowHeight * scale) / 2;
 
+              // macOS-style text shadow (same as file icon labels)
+              const macOSTextShadow = isMacOSXTheme
+                ? "rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px"
+                : undefined;
+
               return (
                 <div
                   key={instance.instanceId}
                   className="absolute flex flex-col items-center gap-1 pointer-events-none"
                   style={{
                     left: cellCenter.x,
-                    top: cellCenter.y + scaledWindowHalfHeight + 16,
+                    top: cellCenter.y + scaledWindowHalfHeight + 8,
                     transform: "translateX(-50%)",
                   }}
                 >
@@ -229,7 +257,14 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
                       />
                     )}
                     {/* Title */}
-                    <div className="text-sm font-medium text-white drop-shadow-lg line-clamp-1 max-w-[200px]">
+                    <div
+                      className={`text-sm font-medium text-white line-clamp-1 max-w-[200px] ${
+                        isMacOSXTheme ? "font-bold" : "drop-shadow-lg"
+                      }`}
+                      style={{
+                        textShadow: macOSTextShadow,
+                      }}
+                    >
                       {displayLabel}
                     </div>
                   </div>
