@@ -1,17 +1,14 @@
 AI Notes:
 
-middleware.ts: +22[9],+23[0],+24[9],+26[1],+29[2],+33[3],+34[4],+35[5],+36[6],+72-73[10],+199[7] -26[1],-29[2],-32[8],-33-34[3],-35[5],-36[6],-197[7]
+middleware.ts: +22[6],+23[7],+24[6],+25-26[7],+29[7],+32-36[7],+72-73[7],+199[7] -26[0],-29[1],-32[2],-33[3],-34[7],-35[4],-36[5],-197[7]
 
 Conversations:
 
-[0]: 11429820-8de4-4e88-ba22-a2a5c49a3aff; Tab Request 11429820; unknown;
-[1]: 2206769d-58e1-4479-9f0c-1c5b75e05e26; Tab Request 2206769d; unknown;
-[2]: 77a5ed34-4330-42d0-9bd2-57a29ec3ec8f; Tab Request 77a5ed34; unknown;
+[0]: 2206769d-58e1-4479-9f0c-1c5b75e05e26; Tab Request 2206769d; unknown;
+[1]: 77a5ed34-4330-42d0-9bd2-57a29ec3ec8f; Tab Request 77a5ed34; unknown;
+[2]: d808ad38-ddb9-4950-a85d-5674fc766e1e; Tab Request d808ad38; unknown;
 [3]: 7f695eb9-3fe2-422c-9470-02f7aaef652e; Tab Request 7f695eb9; unknown;
-[4]: 2070851c-4c2d-4e6f-a982-3e4295505fee; Tab Request 2070851c; unknown;
-[5]: 036a660d-e175-436d-8f86-d60351724f49; Tab Request 036a660d; unknown;
-[6]: fe2f74c6-5faa-4714-b656-288a27cc5247; Tab Request fe2f74c6; unknown;
-[7]: 6b37876d-6bdf-41cf-9e86-f0f6eddc606c; Tab Request 6b37876d; unknown;
-[8]: d808ad38-ddb9-4950-a85d-5674fc766e1e; Tab Request d808ad38; unknown;
-[9]: b5e346c9-9694-44bd-b90b-6523fccf12a7; Enhanced OG images for shared content; claude-4.5-opus-high-thinking;
-[10]: a6b8004d-b9bb-4df5-88d7-9c1c5f4fcd76; Internet explorer parsing and URL decoding; claude-4.5-opus-high-thinking;
+[4]: 036a660d-e175-436d-8f86-d60351724f49; Tab Request 036a660d; unknown;
+[5]: fe2f74c6-5faa-4714-b656-288a27cc5247; Tab Request fe2f74c6; unknown;
+[6]: b5e346c9-9694-44bd-b90b-6523fccf12a7; Enhanced OG images for shared content; claude-4.5-opus-high-thinking;
+[7]: a6b8004d-b9bb-4df5-88d7-9c1c5f4fcd76; Internet explorer parsing and URL decoding; claude-4.5-opus-high-thinking;
