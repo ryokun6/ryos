@@ -138,6 +138,7 @@ function parseYouTubeTitle(rawTitle: string): { title: string; artist: string | 
     .replace(/\s*\[MV\]/gi, "")
     .replace(/\s*MV$/gi, "")
     .replace(/\s*M\/V$/gi, "")
+    .replace(/\s*【[^】]*】\s*/g, " ") // Remove Japanese brackets and contents
     .trim();
 
   // Try "Artist - Title" format (most common)
