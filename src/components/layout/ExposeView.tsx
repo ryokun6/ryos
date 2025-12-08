@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { getAppIconPath } from "@/config/appRegistry";
@@ -6,6 +6,7 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useSound, Sounds } from "@/hooks/useSound";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
@@ -38,6 +39,13 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   const isMacOSXTheme = currentTheme === "macosx";
   const isMobile = useIsMobile();
 
+  // Sounds for expose view open/close
+  const { play: playOpenSound } = useSound(Sounds.WINDOW_ZOOM_MAXIMIZE, 0.5);
+  const { play: playCloseSound } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE, 0.5);
+
+  // Track previous isOpen state to detect changes
+  const prevIsOpenRef = useRef(isOpen);
+
   // Get all open instances (excluding minimized)
   const openInstances = useMemo(() => {
     return Object.values(instances).filter((inst) => inst.isOpen && !inst.isMinimized);
@@ -47,6 +55,18 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   useEffect(() => {
     setExposeMode(isOpen);
   }, [isOpen, setExposeMode]);
+
+  // Play sounds when expose view opens/closes
+  useEffect(() => {
+    if (isOpen !== prevIsOpenRef.current) {
+      if (isOpen) {
+        playOpenSound();
+      } else {
+        playCloseSound();
+      }
+      prevIsOpenRef.current = isOpen;
+    }
+  }, [isOpen, playOpenSound, playCloseSound]);
 
   // Helper to get applet info (icon and name) from instance
   const getAppletInfo = useCallback(
