@@ -557,16 +557,15 @@ export function InternetExplorerAppComponent({
     visible: { height: 4 },
   };
 
-  // Generate share URL function
+  // Generate share URL function (base64 encoded for clean URLs and OG tags)
   const ieGenerateShareUrl = useCallback(
     (identifier: string, secondaryIdentifier?: string) => {
-      const baseUrl = window.location.origin;
-      const params = new URLSearchParams();
-      params.set("url", identifier);
-      if (secondaryIdentifier) {
-        params.set("year", secondaryIdentifier);
-      }
-      return `${baseUrl}/?app=internet-explorer&${params.toString()}`;
+      const combined = `${identifier}|${secondaryIdentifier || "current"}`;
+      const code = btoa(combined)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+      return `${window.location.origin}/internet-explorer/${code}`;
     },
     []
   );
