@@ -12,11 +12,13 @@ export interface CommandHistory {
   messageId?: string;
   hasAquarium?: boolean;
   toolInvocations?: ToolInvocationData[];
+  isSystemMessage?: boolean; // Gray-styled informational messages (errors, usage hints, etc.)
 }
 
 export interface CommandResult {
   output: string;
   isError: boolean;
+  isSystemMessage?: boolean; // Optional: if true, output will be styled in gray (defaults to isError value)
 }
 
 export interface ParsedCommand {

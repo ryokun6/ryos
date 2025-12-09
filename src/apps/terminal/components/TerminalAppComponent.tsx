@@ -558,6 +558,8 @@ export function TerminalAppComponent({
           command: currentCommand,
           output: result.output,
           path: currentPath,
+          // Style system messages in gray (errors, or explicitly marked system messages)
+          isSystemMessage: result.isSystemMessage ?? result.isError,
         },
       ]);
     });
@@ -1407,7 +1409,7 @@ export function TerminalAppComponent({
 
   const processCommand = async (
     command: string
-  ): Promise<{ output: string; isError: boolean }> => {
+  ): Promise<{ output: string; isError: boolean; isSystemMessage?: boolean }> => {
     const { cmd, args } = parseCommand(command);
 
     // Create command context
@@ -2430,8 +2432,16 @@ export function TerminalAppComponent({
             vimCursorColumn={vimCursorColumn}
             vimMode={vimMode}
           />
-          <div className="flex items-baseline mt-1">
-            <span className="text-green-400 mr-1">
+          <div className="flex items-center mt-1">
+            <span 
+              className="text-green-400 mr-1 flex-shrink-0"
+              style={{ 
+                fontSize: `${fontSize}px`,
+                lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                height: `${Math.round(fontSize * 1.5)}px`,
+                fontFamily: 'inherit',
+              }}
+            >
               {vimMode === "normal" ? "" : vimMode === "insert" ? "" : ":"}
             </span>
             <input
@@ -2449,7 +2459,12 @@ export function TerminalAppComponent({
               className={`flex-1 bg-transparent text-white font-monaco focus:outline-none terminal-input ${
                 inputFocused ? "input--focused" : ""
               }`}
-              style={{ fontSize: `${fontSize}px` }}
+              style={{ 
+                fontSize: `${fontSize}px`,
+                lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                height: `${Math.round(fontSize * 1.5)}px`,
+                fontFamily: 'inherit',
+              }}
               autoFocus
             />
           </div>
@@ -2509,18 +2524,8 @@ export function TerminalAppComponent({
                     // Add urgent message styling
                     item.output && isUrgentMessage(item.output) ? "text-red-400" : ""
                   } ${
-                    // Add system message styling
-                    item.output && (item.output.startsWith("ask ryo anything") ||
-                    item.output.startsWith("usage:") ||
-                    item.output.startsWith("command not found:") ||
-                    item.output.includes("type 'help' for") ||
-                    item.output.includes("no such") ||
-                    item.output.includes("not implemented") ||
-                    item.output.includes("already exists") ||
-                    item.output.startsWith("file not found:") ||
-                    item.output.startsWith("no files found"))
-                      ? "text-gray-400"
-                      : ""
+                    // System messages (errors, usage hints) styled in gray
+                    item.isSystemMessage ? "text-gray-400" : ""
                   }`}
                 >
                   {item.path === "ai-thinking" ? (
@@ -2682,10 +2687,18 @@ export function TerminalAppComponent({
         <div className="relative select-text">
           <form
             onSubmit={handleCommandSubmit}
-            className="flex items-baseline transition-all duration-200 select-text"
+            className="flex items-center transition-all duration-200 select-text"
           >
             {isInAiMode ? (
-              <span className="text-purple-400 mr-2 whitespace-nowrap select-text cursor-text">
+              <span 
+                className="text-purple-400 mr-2 whitespace-nowrap select-text cursor-text flex-shrink-0"
+                style={{ 
+                  fontSize: `${fontSize}px`,
+                  lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                  height: `${Math.round(fontSize * 1.5)}px`,
+                  fontFamily: 'inherit',
+                }}
+              >
                 {isAiLoading ? (
                   <span>
                     <span className="gradient-spin">
@@ -2702,12 +2715,20 @@ export function TerminalAppComponent({
                 )}
               </span>
             ) : (
-              <span className="text-green-400 mr-2 whitespace-nowrap select-text cursor-text">
+              <span 
+                className="text-green-400 mr-2 whitespace-nowrap select-text cursor-text flex-shrink-0"
+                style={{ 
+                  fontSize: `${fontSize}px`,
+                  lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                  height: `${Math.round(fontSize * 1.5)}px`,
+                  fontFamily: 'inherit',
+                }}
+              >
                 <span className="inline-block w-2 text-center">→</span>{" "}
                 {currentPath === "/" ? "/" : currentPath}
               </span>
             )}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative min-w-0">
               <input
                 ref={inputRef}
                 type="text"
@@ -2722,7 +2743,12 @@ export function TerminalAppComponent({
                 className={`w-full text-white font-monaco focus:outline-none bg-transparent terminal-input ${
                   inputFocused ? "input--focused" : ""
                 }`}
-                style={{ fontSize: `${fontSize}px` }}
+                style={{ 
+                  fontSize: `${fontSize}px`,
+                  lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                  height: `${Math.round(fontSize * 1.5)}px`,
+                  fontFamily: 'inherit',
+                }}
                 autoFocus
               />
               {isAiLoading && isInAiMode && (

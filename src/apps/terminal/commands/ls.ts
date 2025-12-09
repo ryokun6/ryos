@@ -6,7 +6,7 @@ export const lsCommand: Command = {
   description: "apps.terminal.commands.ls",
   handler: (_, context) => {
     if (context.files.length === 0) {
-      return { output: i18n.t("apps.terminal.output.noFilesFound"), isError: false };
+      return { output: i18n.t("apps.terminal.output.noFilesFound"), isError: false, isSystemMessage: true };
     }
     return {
       output: context.files

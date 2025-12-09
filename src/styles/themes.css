@@ -435,9 +435,7 @@
 
 /* Ensure Terminal inputs use monospace (Monaco) instead of Lucida Grande on macOS */
 :root[data-os-theme="macosx"] .terminal-input {
-  font-family: var(--os-font-mono) !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
+  font-family: "Monaco", "ArkPixel", "SerenityOS-Emoji", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }

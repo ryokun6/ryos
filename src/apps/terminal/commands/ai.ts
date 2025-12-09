@@ -36,12 +36,14 @@ export const aiCommand: Command = {
       return {
         output: i18n.t("apps.terminal.output.askRyoWithPrompt", { prompt: initialPrompt }),
         isError: false,
+        isSystemMessage: true,
       };
     }
 
     return {
       output: i18n.t("apps.terminal.output.askRyoAnything"),
       isError: false,
+      isSystemMessage: true,
     };
   },
 };
