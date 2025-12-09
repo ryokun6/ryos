@@ -1664,11 +1664,6 @@ export function ControlPanelsAppComponent({
                   </Select>
                 </div>
 
-                <div
-                  className="border-t my-4"
-                  style={tabStyles.separatorStyle}
-                />
-
                 <ScreenSaverPicker />
 
                 <div
