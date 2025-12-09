@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense, useRef } from "react";
 import { useAppStoreShallow } from "@/stores/helpers";
 import type { ScreenSaverType } from "./index";
 
@@ -19,6 +19,8 @@ const SCREEN_SAVER_COMPONENTS: Record<ScreenSaverType, React.LazyExoticComponent
   maze: Maze,
 };
 
+const FADE_DURATION = 500;
+
 export function ScreenSaverOverlay() {
   const {
     screenSaverEnabled,
@@ -31,25 +33,38 @@ export function ScreenSaverOverlay() {
   }));
 
   const [isActive, setIsActive] = useState(false);
-  const [isFadingOut, setIsFadingOut] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [previewType, setPreviewType] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Handle fade-in after mount
+  useEffect(() => {
+    if (isActive && !isVisible) {
+      // Request animation frame to ensure DOM is painted before starting transition
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsVisible(true);
+        });
+      });
+    }
+  }, [isActive, isVisible]);
 
   // Dismiss screen saver - starts fade out
   const dismiss = useCallback(() => {
-    setIsFadingOut(true);
+    setIsVisible(false);
   }, []);
 
   // Called when fade out transition completes
-  const handleTransitionEnd = useCallback(() => {
-    if (isFadingOut) {
+  const handleTransitionEnd = useCallback((e: React.TransitionEvent<HTMLDivElement>) => {
+    // Only handle opacity transitions on this element (not bubbled from children)
+    if (e.propertyName === "opacity" && e.target === e.currentTarget && !isVisible) {
       setIsActive(false);
-      setIsFadingOut(false);
       setIsPreviewMode(false);
       setPreviewType(null);
       window.dispatchEvent(new CustomEvent("screenSaverDismiss"));
     }
-  }, [isFadingOut]);
+  }, [isVisible]);
 
   // Handle idle timeout
   useEffect(() => {
@@ -149,10 +164,13 @@ export function ScreenSaverOverlay() {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] cursor-none transition-opacity duration-500 ease-in-out ${
-        isFadingOut ? "opacity-0" : "animate-screensaver-fade-in"
-      }`}
-      style={{ background: "black" }}
+      ref={containerRef}
+      className="fixed inset-0 z-[9999] cursor-none"
+      style={{
+        background: "black",
+        opacity: isVisible ? 1 : 0,
+        transition: `opacity ${FADE_DURATION}ms ease-in-out`,
+      }}
       onTransitionEnd={handleTransitionEnd}
     >
       <Suspense
