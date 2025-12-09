@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 const COLORS = [
   "#FF0000", // Red
@@ -18,7 +18,28 @@ export function BouncingLogo() {
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [velocity, setVelocity] = useState({ x: 2, y: 2 });
   const [colorIndex, setColorIndex] = useState(0);
-  const logoSize = { width: 120, height: 80 };
+
+  // Calculate logo size based on viewport width (30% of viewport width)
+  const getLogoSize = useCallback(() => {
+    const vw = window.innerWidth;
+    const width = Math.max(200, Math.min(800, vw * 0.3));
+    const height = width * 0.5; // Maintain aspect ratio
+    return { width, height };
+  }, []);
+
+  const [logoSize, setLogoSize] = useState(getLogoSize);
+  const logoSizeRef = useRef(logoSize);
+
+  // Update logo size on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const newSize = getLogoSize();
+      setLogoSize(newSize);
+      logoSizeRef.current = newSize;
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [getLogoSize]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -31,20 +52,21 @@ export function BouncingLogo() {
 
     const animate = () => {
       const bounds = container.getBoundingClientRect();
+      const size = logoSizeRef.current;
       let newX = currentPos.x + currentVel.x;
       let newY = currentPos.y + currentVel.y;
       let bounced = false;
 
       // Bounce off walls
-      if (newX <= 0 || newX + logoSize.width >= bounds.width) {
+      if (newX <= 0 || newX + size.width >= bounds.width) {
         currentVel.x = -currentVel.x;
-        newX = Math.max(0, Math.min(newX, bounds.width - logoSize.width));
+        newX = Math.max(0, Math.min(newX, bounds.width - size.width));
         bounced = true;
       }
 
-      if (newY <= 0 || newY + logoSize.height >= bounds.height) {
+      if (newY <= 0 || newY + size.height >= bounds.height) {
         currentVel.y = -currentVel.y;
-        newY = Math.max(0, Math.min(newY, bounds.height - logoSize.height));
+        newY = Math.max(0, Math.min(newY, bounds.height - size.height));
         bounced = true;
       }
 
@@ -82,11 +104,11 @@ export function BouncingLogo() {
         }}
       >
         <svg
-          viewBox="0 0 120 80"
+          viewBox="0 0 120 60"
           className="w-full h-full"
           style={{ color: COLORS[colorIndex] }}
         >
-          {/* ryOS logo - stylized "ry" */}
+          {/* ryOS logo */}
           <text
             x="50%"
             y="50%"
@@ -99,16 +121,6 @@ export function BouncingLogo() {
           >
             ryOS
           </text>
-          {/* Decorative underline */}
-          <rect
-            x="15"
-            y="55"
-            width="90"
-            height="4"
-            rx="2"
-            fill="currentColor"
-            opacity="0.7"
-          />
         </svg>
       </div>
     </div>
