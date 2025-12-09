@@ -475,6 +475,32 @@
       "ryOSAccount": "Compte ryOS",
       "screenSaver": "Économiseur d'écran",
       "screenSaverDescription": "S'active après une période d'inactivité",
+      "screenSaverOptions": {
+        "bouncingLogo": {
+          "description": "Rebondissement style DVD",
+          "name": "Logo rebondissant"
+        },
+        "flyingToasters": {
+          "description": "Classique After Dark",
+          "name": "Grille-pain volants"
+        },
+        "matrix": {
+          "description": "Effet de pluie numérique",
+          "name": "Matrice"
+        },
+        "maze": {
+          "description": "Explorateur de labyrinthe à la première personne",
+          "name": "Labyrinthe 3D"
+        },
+        "pipes": {
+          "description": "Tuyaux 3D Windows",
+          "name": "Tuyaux 3D"
+        },
+        "starfield": {
+          "description": "Effet de distorsion stellaire classique",
+          "name": "Champ d'étoiles"
+        }
+      },
       "screenSaverType": "Type",
       "select": "Sélectionner",
       "selectACategory": "Sélectionner une catégorie",

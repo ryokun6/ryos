@@ -475,6 +475,32 @@
       "ryOSAccount": "ryOS 계정",
       "screenSaver": "화면 보호기",
       "screenSaverDescription": "일정 시간 동안 활동이 없으면 활성화됩니다.",
+      "screenSaverOptions": {
+        "bouncingLogo": {
+          "description": "DVD 스타일 바운싱",
+          "name": "튀는 로고"
+        },
+        "flyingToasters": {
+          "description": "애프터 다크 클래식",
+          "name": "나는 토스터"
+        },
+        "matrix": {
+          "description": "디지털 비 효과",
+          "name": "매트릭스"
+        },
+        "maze": {
+          "description": "1인칭 미로 탐색",
+          "name": "3D 미로"
+        },
+        "pipes": {
+          "description": "Windows 3D 파이프",
+          "name": "3D 파이프"
+        },
+        "starfield": {
+          "description": "클래식 스타 워프 효과",
+          "name": "스타필드"
+        }
+      },
       "screenSaverType": "유형",
       "select": "선택",
       "selectACategory": "카테고리 선택",

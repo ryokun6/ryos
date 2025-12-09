@@ -11,8 +11,18 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { useAppStoreShallow } from "@/stores/helpers";
-import { SCREEN_SAVER_OPTIONS } from "@/components/screensavers";
+import { SCREEN_SAVER_OPTIONS, type ScreenSaverType } from "@/components/screensavers";
 import { useTranslation } from "react-i18next";
+
+// Map screen saver id to translation key
+const screenSaverTranslationKeys: Record<ScreenSaverType, string> = {
+  "starfield": "starfield",
+  "flying-toasters": "flyingToasters",
+  "matrix": "matrix",
+  "bouncing-logo": "bouncingLogo",
+  "pipes": "pipes",
+  "maze": "maze",
+};
 
 // Preview component that renders a tiny version of the screen saver
 function ScreenSaverPreview({ type }: { type: string }) {
@@ -212,7 +222,7 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
                   <SelectContent>
                     {SCREEN_SAVER_OPTIONS.map((option) => (
                       <SelectItem key={option.id} value={option.id}>
-                        {option.name}
+                        {t(`apps.control-panels.screenSaverOptions.${screenSaverTranslationKeys[option.id]}.name`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -220,7 +230,7 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
               </div>
               {selectedOption && (
                 <p className="text-[11px] text-gray-600 font-geneva-12">
-                  {selectedOption.description}
+                  {t(`apps.control-panels.screenSaverOptions.${screenSaverTranslationKeys[selectedOption.id]}.description`)}
                 </p>
               )}
             </div>

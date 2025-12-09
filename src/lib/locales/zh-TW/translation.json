@@ -475,6 +475,32 @@
       "ryOSAccount": "ryOS 帳戶",
       "screenSaver": "螢幕保護程式",
       "screenSaverDescription": "在閒置一段時間後啟用",
+      "screenSaverOptions": {
+        "bouncingLogo": {
+          "description": "DVD 式彈跳",
+          "name": "彈跳標誌"
+        },
+        "flyingToasters": {
+          "description": "After Dark 經典",
+          "name": "飛行烤麵包機"
+        },
+        "matrix": {
+          "description": "數位雨滴效果",
+          "name": "駭客任務"
+        },
+        "maze": {
+          "description": "第一人稱迷宮漫步",
+          "name": "3D 迷宮"
+        },
+        "pipes": {
+          "description": "Windows 3D 水管",
+          "name": "3D 水管"
+        },
+        "starfield": {
+          "description": "經典星際穿梭效果",
+          "name": "星空"
+        }
+      },
       "screenSaverType": "類型",
       "select": "選取",
       "selectACategory": "選取類別",

@@ -475,6 +475,32 @@
       "ryOSAccount": "ryOS-Konto",
       "screenSaver": "Bildschirmschoner",
       "screenSaverDescription": "Aktiviert sich nach einer Zeit der Inaktivität",
+      "screenSaverOptions": {
+        "bouncingLogo": {
+          "description": "DVD-Stil-Hüpfen",
+          "name": "Hüpfendes Logo"
+        },
+        "flyingToasters": {
+          "description": "After Dark-Klassiker",
+          "name": "Fliegende Toaster"
+        },
+        "matrix": {
+          "description": "Digitaler Regeneffekt",
+          "name": "Matrix"
+        },
+        "maze": {
+          "description": "Labyrinth-Geher aus der Ego-Perspektive",
+          "name": "3D-Labyrinth"
+        },
+        "pipes": {
+          "description": "Windows 3D-Rohre",
+          "name": "3D-Rohre"
+        },
+        "starfield": {
+          "description": "Klassischer Sternenwarp-Effekt",
+          "name": "Sternenfeld"
+        }
+      },
       "screenSaverType": "Typ",
       "select": "Auswählen",
       "selectACategory": "Kategorie auswählen",
