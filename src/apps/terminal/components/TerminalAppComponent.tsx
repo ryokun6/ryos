@@ -558,6 +558,8 @@ export function TerminalAppComponent({
           command: currentCommand,
           output: result.output,
           path: currentPath,
+          // Style system messages in gray (errors, or explicitly marked system messages)
+          isSystemMessage: result.isSystemMessage ?? result.isError,
         },
       ]);
     });
@@ -1407,7 +1409,7 @@ export function TerminalAppComponent({
 
   const processCommand = async (
     command: string
-  ): Promise<{ output: string; isError: boolean }> => {
+  ): Promise<{ output: string; isError: boolean; isSystemMessage?: boolean }> => {
     const { cmd, args } = parseCommand(command);
 
     // Create command context
@@ -2437,6 +2439,7 @@ export function TerminalAppComponent({
                 fontSize: `${fontSize}px`,
                 lineHeight: `${Math.round(fontSize * 1.5)}px`,
                 height: `${Math.round(fontSize * 1.5)}px`,
+                fontFamily: 'inherit',
               }}
             >
               {vimMode === "normal" ? "" : vimMode === "insert" ? "" : ":"}
@@ -2460,6 +2463,7 @@ export function TerminalAppComponent({
                 fontSize: `${fontSize}px`,
                 lineHeight: `${Math.round(fontSize * 1.5)}px`,
                 height: `${Math.round(fontSize * 1.5)}px`,
+                fontFamily: 'inherit',
               }}
               autoFocus
             />
@@ -2520,18 +2524,8 @@ export function TerminalAppComponent({
                     // Add urgent message styling
                     item.output && isUrgentMessage(item.output) ? "text-red-400" : ""
                   } ${
-                    // Add system message styling
-                    item.output && (item.output.startsWith("ask ryo anything") ||
-                    item.output.startsWith("usage:") ||
-                    item.output.startsWith("command not found:") ||
-                    item.output.includes("type 'help' for") ||
-                    item.output.includes("no such") ||
-                    item.output.includes("not implemented") ||
-                    item.output.includes("already exists") ||
-                    item.output.startsWith("file not found:") ||
-                    item.output.startsWith("no files found"))
-                      ? "text-gray-400"
-                      : ""
+                    // System messages (errors, usage hints) styled in gray
+                    item.isSystemMessage ? "text-gray-400" : ""
                   }`}
                 >
                   {item.path === "ai-thinking" ? (
@@ -2702,6 +2696,7 @@ export function TerminalAppComponent({
                   fontSize: `${fontSize}px`,
                   lineHeight: `${Math.round(fontSize * 1.5)}px`,
                   height: `${Math.round(fontSize * 1.5)}px`,
+                  fontFamily: 'inherit',
                 }}
               >
                 {isAiLoading ? (
@@ -2726,6 +2721,7 @@ export function TerminalAppComponent({
                   fontSize: `${fontSize}px`,
                   lineHeight: `${Math.round(fontSize * 1.5)}px`,
                   height: `${Math.round(fontSize * 1.5)}px`,
+                  fontFamily: 'inherit',
                 }}
               >
                 <span className="inline-block w-2 text-center">→</span>{" "}
@@ -2751,6 +2747,7 @@ export function TerminalAppComponent({
                   fontSize: `${fontSize}px`,
                   lineHeight: `${Math.round(fontSize * 1.5)}px`,
                   height: `${Math.round(fontSize * 1.5)}px`,
+                  fontFamily: 'inherit',
                 }}
                 autoFocus
               />
