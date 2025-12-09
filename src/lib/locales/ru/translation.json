@@ -475,6 +475,32 @@
       "ryOSAccount": "Учетная запись ryOS",
       "screenSaver": "Заставка",
       "screenSaverDescription": "Активируется после периода бездействия",
+      "screenSaverOptions": {
+        "bouncingLogo": {
+          "description": "Отскакивание в стиле DVD",
+          "name": "Прыгающий логотип"
+        },
+        "flyingToasters": {
+          "description": "Классика After Dark",
+          "name": "Летающие тостеры"
+        },
+        "matrix": {
+          "description": "Эффект цифрового дождя",
+          "name": "Матрица"
+        },
+        "maze": {
+          "description": "Хождение по лабиринту от первого лица",
+          "name": "3D-лабиринт"
+        },
+        "pipes": {
+          "description": "3D-трубы Windows",
+          "name": "3D-трубы"
+        },
+        "starfield": {
+          "description": "Классический эффект звездного варпа",
+          "name": "Звездное поле"
+        }
+      },
       "screenSaverType": "Тип",
       "select": "Выбрать",
       "selectACategory": "Выберите категорию",

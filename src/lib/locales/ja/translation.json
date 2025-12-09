@@ -475,6 +475,32 @@
       "ryOSAccount": "ryOS アカウント",
       "screenSaver": "スクリーンセーバー",
       "screenSaverDescription": "一定時間操作がないと起動します",
+      "screenSaverOptions": {
+        "bouncingLogo": {
+          "description": "DVD風バウンド",
+          "name": "跳ねるロゴ"
+        },
+        "flyingToasters": {
+          "description": "After Darkクラシック",
+          "name": "フライングトースター"
+        },
+        "matrix": {
+          "description": "デジタルレインエフェクト",
+          "name": "マトリックス"
+        },
+        "maze": {
+          "description": "一人称視点迷路",
+          "name": "3D迷路"
+        },
+        "pipes": {
+          "description": "Windows 3Dパイプ",
+          "name": "3Dパイプ"
+        },
+        "starfield": {
+          "description": "定番スターワープエフェクト",
+          "name": "スターフィールド"
+        }
+      },
       "screenSaverType": "種類",
       "select": "選択",
       "selectACategory": "カテゴリを選択",

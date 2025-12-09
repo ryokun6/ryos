@@ -1843,6 +1843,32 @@
       "min": "min",
       "preview": "Preview",
       "previewActive": "Click anywhere to exit",
+      "screenSaverOptions": {
+        "starfield": {
+          "name": "Starfield",
+          "description": "Classic star warp effect"
+        },
+        "flyingToasters": {
+          "name": "Flying Toasters",
+          "description": "After Dark classic"
+        },
+        "matrix": {
+          "name": "Matrix",
+          "description": "Digital rain effect"
+        },
+        "bouncingLogo": {
+          "name": "Bouncing Logo",
+          "description": "DVD-style bouncing"
+        },
+        "pipes": {
+          "name": "3D Pipes",
+          "description": "Windows 3D pipes"
+        },
+        "maze": {
+          "name": "3D Maze",
+          "description": "First-person maze walker"
+        }
+      },
       "speech": "Speech",
       "help": {
         "appearance": {

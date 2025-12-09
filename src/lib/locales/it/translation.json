@@ -475,6 +475,32 @@
       "ryOSAccount": "Account ryOS",
       "screenSaver": "Salvaschermo",
       "screenSaverDescription": "Si attiva dopo un periodo di inattività",
+      "screenSaverOptions": {
+        "bouncingLogo": {
+          "description": "Rimbalzo stile DVD",
+          "name": "Logo rimbalzante"
+        },
+        "flyingToasters": {
+          "description": "Classico After Dark",
+          "name": "Flying Toasters"
+        },
+        "matrix": {
+          "description": "Effetto pioggia digitale",
+          "name": "Matrix"
+        },
+        "maze": {
+          "description": "Esploratore di labirinti in prima persona",
+          "name": "Labirinto 3D"
+        },
+        "pipes": {
+          "description": "Tubi 3D di Windows",
+          "name": "Tubi 3D"
+        },
+        "starfield": {
+          "description": "Classico effetto curvatura stellare",
+          "name": "Campo stellare"
+        }
+      },
       "screenSaverType": "Tipo",
       "select": "Seleziona",
       "selectACategory": "Seleziona una categoria",
