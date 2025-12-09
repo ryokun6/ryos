@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { useAppStoreShallow } from "@/stores/helpers";
+import { motion, AnimatePresence } from "framer-motion";
 import type { ScreenSaverType } from "./index";
 
 // Lazy load screen saver components
@@ -131,29 +132,38 @@ export function ScreenSaverOverlay() {
     };
   }, [isActive, dismiss]);
 
-  if (!isActive) return null;
-
   const activeType = (isPreviewMode && previewType ? previewType : screenSaverType) as ScreenSaverType;
-  const ScreenSaverComponent = SCREEN_SAVER_COMPONENTS[activeType];
-
-  if (!ScreenSaverComponent) return null;
+  const ScreenSaverComponent = isActive ? SCREEN_SAVER_COMPONENTS[activeType] : null;
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] cursor-none"
-      style={{ background: "black" }}
-    >
-      <Suspense
-        fallback={
-          <div className="w-full h-full bg-black" />
-        }
-      >
-        <ScreenSaverComponent />
-      </Suspense>
-      {/* Hint text - fades out */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/30 text-xs font-geneva-12 animate-pulse">
-        Click or press any key to exit
-      </div>
-    </div>
+    <AnimatePresence>
+      {isActive && ScreenSaverComponent && (
+        <motion.div
+          className="fixed inset-0 z-[9999] cursor-none"
+          style={{ background: "black" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+        >
+          <Suspense
+            fallback={
+              <div className="w-full h-full bg-black" />
+            }
+          >
+            <ScreenSaverComponent />
+          </Suspense>
+          {/* Hint text - fades out */}
+          <motion.div 
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/30 text-xs font-geneva-12"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1, duration: 0.5 }}
+          >
+            Click or press any key to exit
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
