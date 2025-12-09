@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense, useRef } from "react";
 import { useAppStoreShallow } from "@/stores/helpers";
 import type { ScreenSaverType } from "./index";
 
@@ -19,6 +19,8 @@ const SCREEN_SAVER_COMPONENTS: Record<ScreenSaverType, React.LazyExoticComponent
   maze: Maze,
 };
 
+const FADE_DURATION = 500; // ms
+
 export function ScreenSaverOverlay() {
   const {
     screenSaverEnabled,
@@ -31,15 +33,48 @@ export function ScreenSaverOverlay() {
   }));
 
   const [isActive, setIsActive] = useState(false);
+  const [isVisible, setIsVisible] = useState(false); // Controls opacity for fade effect
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [previewType, setPreviewType] = useState<string | null>(null);
+  const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Dismiss screen saver
+  // Handle fade in when becoming active
+  useEffect(() => {
+    if (isActive) {
+      // Small delay to ensure the component is mounted before starting fade
+      const timeoutId = setTimeout(() => {
+        setIsVisible(true);
+      }, 10);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isActive]);
+
+  // Dismiss screen saver with fade out
   const dismiss = useCallback(() => {
-    setIsActive(false);
-    setIsPreviewMode(false);
-    setPreviewType(null);
-    window.dispatchEvent(new CustomEvent("screenSaverDismiss"));
+    // Clear any pending fade timeout
+    if (fadeTimeoutRef.current) {
+      clearTimeout(fadeTimeoutRef.current);
+    }
+    
+    // Start fade out
+    setIsVisible(false);
+    
+    // After fade completes, fully deactivate
+    fadeTimeoutRef.current = setTimeout(() => {
+      setIsActive(false);
+      setIsPreviewMode(false);
+      setPreviewType(null);
+      window.dispatchEvent(new CustomEvent("screenSaverDismiss"));
+    }, FADE_DURATION);
+  }, []);
+
+  // Cleanup fade timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (fadeTimeoutRef.current) {
+        clearTimeout(fadeTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Handle idle timeout
@@ -141,7 +176,11 @@ export function ScreenSaverOverlay() {
   return (
     <div
       className="fixed inset-0 z-[9999] cursor-none"
-      style={{ background: "black" }}
+      style={{
+        background: "black",
+        opacity: isVisible ? 1 : 0,
+        transition: `opacity ${FADE_DURATION}ms ease-in-out`,
+      }}
     >
       <Suspense
         fallback={
