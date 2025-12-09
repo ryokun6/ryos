@@ -2430,8 +2430,15 @@ export function TerminalAppComponent({
             vimCursorColumn={vimCursorColumn}
             vimMode={vimMode}
           />
-          <div className="flex items-baseline mt-1">
-            <span className="text-green-400 mr-1">
+          <div className="flex items-center mt-1">
+            <span 
+              className="text-green-400 mr-1 flex-shrink-0"
+              style={{ 
+                fontSize: `${fontSize}px`,
+                lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                height: `${Math.round(fontSize * 1.5)}px`,
+              }}
+            >
               {vimMode === "normal" ? "" : vimMode === "insert" ? "" : ":"}
             </span>
             <input
@@ -2449,7 +2456,11 @@ export function TerminalAppComponent({
               className={`flex-1 bg-transparent text-white font-monaco focus:outline-none terminal-input ${
                 inputFocused ? "input--focused" : ""
               }`}
-              style={{ fontSize: `${fontSize}px` }}
+              style={{ 
+                fontSize: `${fontSize}px`,
+                lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                height: `${Math.round(fontSize * 1.5)}px`,
+              }}
               autoFocus
             />
           </div>
@@ -2682,10 +2693,17 @@ export function TerminalAppComponent({
         <div className="relative select-text">
           <form
             onSubmit={handleCommandSubmit}
-            className="flex items-baseline transition-all duration-200 select-text"
+            className="flex items-center transition-all duration-200 select-text"
           >
             {isInAiMode ? (
-              <span className="text-purple-400 mr-2 whitespace-nowrap select-text cursor-text">
+              <span 
+                className="text-purple-400 mr-2 whitespace-nowrap select-text cursor-text flex-shrink-0"
+                style={{ 
+                  fontSize: `${fontSize}px`,
+                  lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                  height: `${Math.round(fontSize * 1.5)}px`,
+                }}
+              >
                 {isAiLoading ? (
                   <span>
                     <span className="gradient-spin">
@@ -2702,12 +2720,19 @@ export function TerminalAppComponent({
                 )}
               </span>
             ) : (
-              <span className="text-green-400 mr-2 whitespace-nowrap select-text cursor-text">
+              <span 
+                className="text-green-400 mr-2 whitespace-nowrap select-text cursor-text flex-shrink-0"
+                style={{ 
+                  fontSize: `${fontSize}px`,
+                  lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                  height: `${Math.round(fontSize * 1.5)}px`,
+                }}
+              >
                 <span className="inline-block w-2 text-center">→</span>{" "}
                 {currentPath === "/" ? "/" : currentPath}
               </span>
             )}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative min-w-0">
               <input
                 ref={inputRef}
                 type="text"
@@ -2722,7 +2747,11 @@ export function TerminalAppComponent({
                 className={`w-full text-white font-monaco focus:outline-none bg-transparent terminal-input ${
                   inputFocused ? "input--focused" : ""
                 }`}
-                style={{ fontSize: `${fontSize}px` }}
+                style={{ 
+                  fontSize: `${fontSize}px`,
+                  lineHeight: `${Math.round(fontSize * 1.5)}px`,
+                  height: `${Math.round(fontSize * 1.5)}px`,
+                }}
                 autoFocus
               />
               {isAiLoading && isInAiMode && (

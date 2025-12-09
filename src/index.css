@@ -145,14 +145,14 @@ input.terminal-input[type="text"] {
   padding: 0 !important;
   border: none !important;
   background-color: transparent !important;
-  box-sizing: content-box !important;
+  box-sizing: border-box !important;
   appearance: none !important;
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
   border-radius: 0 !important;
-  height: auto !important;
-  line-height: inherit !important;
   box-shadow: none !important;
+  /* Allow inline styles to control height/line-height for IME alignment */
+  vertical-align: top;
 }
 
 input.terminal-input[type="text"]:focus {
