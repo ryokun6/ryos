@@ -1,5 +1,15 @@
 import { useEffect, useRef } from "react";
 
+export interface ScreenSaverCanvasProps {
+  width?: number;
+  height?: number;
+  /**
+   * Used by `ScreenSaverOverlay` (fixed) vs embedded previews (absolute).
+   */
+  position?: "fixed" | "absolute";
+  className?: string;
+}
+
 interface Star {
   x: number;
   y: number;
@@ -8,8 +18,9 @@ interface Star {
   prevY: number;
 }
 
-export function Starfield() {
+export function Starfield(props: ScreenSaverCanvasProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { width, height, position = "fixed", className } = props;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -20,13 +31,22 @@ export function Starfield() {
 
     let animationId: number;
     const stars: Star[] = [];
-    const numStars = 400;
-    const speed = 15;
+    // Scale down a bit for tiny previews, but keep the same "warp" look.
+    const isPreview = typeof width === "number" && typeof height === "number";
+    const numStars = isPreview
+      ? Math.round(Math.max(120, Math.min(400, (width * height) / 40)))
+      : 400;
+    const speed = isPreview ? 10 : 15;
     const focalLength = 256;
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      if (typeof width === "number" && typeof height === "number") {
+        canvas.width = Math.max(1, Math.floor(width));
+        canvas.height = Math.max(1, Math.floor(height));
+      } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
     };
 
     const initStars = () => {
@@ -88,18 +108,22 @@ export function Starfield() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     animate();
 
-    window.addEventListener("resize", resize);
+    if (!isPreview) {
+      window.addEventListener("resize", resize);
+    }
 
     return () => {
       cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", resize);
+      if (!isPreview) {
+        window.removeEventListener("resize", resize);
+      }
     };
-  }, []);
+  }, [width, height]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full"
+      className={`${position === "fixed" ? "fixed" : "absolute"} inset-0 w-full h-full ${className ?? ""}`}
       style={{ background: "black" }}
     />
   );

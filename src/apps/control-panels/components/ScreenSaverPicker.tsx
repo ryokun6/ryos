@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useAppStoreShallow } from "@/stores/helpers";
-import { SCREEN_SAVER_OPTIONS, type ScreenSaverType } from "@/components/screensavers";
+import { Maze, Pipes, SCREEN_SAVER_OPTIONS, Starfield, type ScreenSaverType } from "@/components/screensavers";
 import { useTranslation } from "react-i18next";
 
 // Map screen saver id to translation key
@@ -33,8 +33,29 @@ interface ScreenSaverPreviewProps {
 
 function ScreenSaverPreview({ type, onClick, disabled, label }: ScreenSaverPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const embeddedContainerRef = useRef<HTMLDivElement>(null);
+  const [embeddedSize, setEmbeddedSize] = useState({ width: 0, height: 0 });
+  const useEmbeddedPreview = type === "starfield" || type === "pipes" || type === "maze";
 
   useEffect(() => {
+    if (!useEmbeddedPreview) return;
+    const el = embeddedContainerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      setEmbeddedSize({ width: Math.floor(rect.width), height: Math.floor(rect.height) });
+    };
+
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => update());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [useEmbeddedPreview]);
+
+  useEffect(() => {
+    if (useEmbeddedPreview) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -138,7 +159,7 @@ function ScreenSaverPreview({ type, onClick, disabled, label }: ScreenSaverPrevi
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [type]);
+  }, [type, useEmbeddedPreview]);
 
   return (
     <button
@@ -147,13 +168,31 @@ function ScreenSaverPreview({ type, onClick, disabled, label }: ScreenSaverPrevi
       disabled={disabled}
       className="py-2 relative group cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
     >
-      <canvas
-        ref={canvasRef}
-        width={120}
-        height={85}
-        className="rounded border border-gray-600 group-hover:border-gray-400 transition-colors"
-        style={{ imageRendering: "pixelated" }}
-      />
+      {useEmbeddedPreview ? (
+        <div
+          ref={embeddedContainerRef}
+          className="relative overflow-hidden rounded border border-gray-600 group-hover:border-gray-400 transition-colors bg-black"
+          style={{ width: 120, height: 85 }}
+        >
+          {type === "starfield" && (
+            <Starfield width={embeddedSize.width} height={embeddedSize.height} position="absolute" />
+          )}
+          {type === "pipes" && (
+            <Pipes width={embeddedSize.width} height={embeddedSize.height} position="absolute" />
+          )}
+          {type === "maze" && (
+            <Maze width={embeddedSize.width} height={embeddedSize.height} position="absolute" />
+          )}
+        </div>
+      ) : (
+        <canvas
+          ref={canvasRef}
+          width={120}
+          height={85}
+          className="rounded border border-gray-600 group-hover:border-gray-400 transition-colors"
+          style={{ imageRendering: "pixelated" }}
+        />
+      )}
       {label && (
         <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-[11px] font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
           {label}

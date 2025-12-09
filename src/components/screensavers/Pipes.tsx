@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { ScreenSaverCanvasProps } from "./Starfield";
 
 interface Pipe {
   x: number;
@@ -20,8 +21,9 @@ const COLORS = [
   "#88FF44",
 ];
 
-export function Pipes() {
+export function Pipes(props: ScreenSaverCanvasProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { width, height, position = "fixed", className } = props;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,13 +34,19 @@ export function Pipes() {
 
     let animationId: number;
     const pipes: Pipe[] = [];
-    const maxPipes = 6;
-    const gridSize = 30;
-    const pipeWidth = 8;
+    const isPreview = typeof width === "number" && typeof height === "number";
+    const maxPipes = isPreview ? 4 : 6;
+    const gridSize = isPreview ? 16 : 30;
+    const pipeWidth = isPreview ? 5 : 8;
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      if (typeof width === "number" && typeof height === "number") {
+        canvas.width = Math.max(1, Math.floor(width));
+        canvas.height = Math.max(1, Math.floor(height));
+      } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
     };
 
     resize();
@@ -198,18 +206,22 @@ export function Pipes() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     animate();
 
-    window.addEventListener("resize", resize);
+    if (!isPreview) {
+      window.addEventListener("resize", resize);
+    }
 
     return () => {
       cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", resize);
+      if (!isPreview) {
+        window.removeEventListener("resize", resize);
+      }
     };
-  }, []);
+  }, [width, height]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full"
+      className={`${position === "fixed" ? "fixed" : "absolute"} inset-0 w-full h-full ${className ?? ""}`}
       style={{ background: "black" }}
     />
   );

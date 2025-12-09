@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
+import type { ScreenSaverCanvasProps } from "./Starfield";
 
-export function Maze() {
+export function Maze(props: ScreenSaverCanvasProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { width, height, position = "fixed", className } = props;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -13,11 +15,17 @@ export function Maze() {
     let animationId: number;
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      if (typeof width === "number" && typeof height === "number") {
+        canvas.width = Math.max(1, Math.floor(width));
+        canvas.height = Math.max(1, Math.floor(height));
+      } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
     };
 
     resize();
+    const isPreview = typeof width === "number" && typeof height === "number";
 
     // First-person 3D maze parameters
     const cellSize = 64;
@@ -76,7 +84,7 @@ export function Maze() {
 
     // Raycasting parameters
     const fov = Math.PI / 3;
-    const numRays = 120;
+    const numRays = isPreview ? 90 : 120;
 
     const castRay = (angle: number) => {
       const sin = Math.sin(angle);
@@ -203,18 +211,22 @@ export function Maze() {
 
     animate();
 
-    window.addEventListener("resize", resize);
+    if (!isPreview) {
+      window.addEventListener("resize", resize);
+    }
 
     return () => {
       cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", resize);
+      if (!isPreview) {
+        window.removeEventListener("resize", resize);
+      }
     };
-  }, []);
+  }, [width, height]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full"
+      className={`${position === "fixed" ? "fixed" : "absolute"} inset-0 w-full h-full ${className ?? ""}`}
       style={{ background: "black" }}
     />
   );
