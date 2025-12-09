@@ -19,10 +19,10 @@ export function BouncingLogo() {
   const [velocity, setVelocity] = useState({ x: 2, y: 2 });
   const [colorIndex, setColorIndex] = useState(0);
 
-  // Calculate logo size based on viewport width (15% of viewport width)
+  // Calculate logo size based on viewport width (30% of viewport width)
   const getLogoSize = useCallback(() => {
     const vw = window.innerWidth;
-    const width = Math.max(150, Math.min(400, vw * 0.15));
+    const width = Math.max(200, Math.min(800, vw * 0.3));
     const height = width * 0.5; // Maintain aspect ratio
     return { width, height };
   }, []);
