@@ -1843,6 +1843,7 @@
       "min": "min",
       "preview": "Preview",
       "previewActive": "Click anywhere to exit",
+      "screenSaverExitHint": "Click or press any key to exit",
       "screenSaverOptions": {
         "starfield": {
           "name": "Starfield",

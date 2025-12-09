@@ -2,14 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Select,
   SelectContent,
-  SelectItem,
+  SelectItemWithDescription,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { SCREEN_SAVER_OPTIONS, type ScreenSaverType } from "@/components/screensavers";
 import { useTranslation } from "react-i18next";
@@ -25,7 +24,14 @@ const screenSaverTranslationKeys: Record<ScreenSaverType, string> = {
 };
 
 // Preview component that renders a tiny version of the screen saver
-function ScreenSaverPreview({ type }: { type: string }) {
+interface ScreenSaverPreviewProps {
+  type: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  label?: string;
+}
+
+function ScreenSaverPreview({ type, onClick, disabled, label }: ScreenSaverPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -135,13 +141,25 @@ function ScreenSaverPreview({ type }: { type: string }) {
   }, [type]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={100}
-      height={75}
-      className="rounded border border-gray-600"
-      style={{ imageRendering: "pixelated" }}
-    />
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="py-2 relative group cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+    >
+      <canvas
+        ref={canvasRef}
+        width={120}
+        height={85}
+        className="rounded border border-gray-600 group-hover:border-gray-400 transition-colors"
+        style={{ imageRendering: "pixelated" }}
+      />
+      {label && (
+        <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-[11px] font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+          {label}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -183,8 +201,6 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
     return () => window.removeEventListener("screenSaverDismiss", handleDismiss);
   }, []);
 
-  const selectedOption = SCREEN_SAVER_OPTIONS.find((opt) => opt.id === screenSaverType);
-
   return (
     <div className="space-y-4">
       {/* Enable/Disable Toggle */}
@@ -204,12 +220,18 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
 
       {screenSaverEnabled && (
         <>
-          {/* Screen Saver Type Selection */}
-          <div className="flex gap-4">
-            <div className="flex-shrink-0">
-              <ScreenSaverPreview type={screenSaverType} />
+          {/* Screen Saver Type Selection and Slider */}
+          <div className="flex gap-6">
+            <div className="flex-shrink-0 flex flex-col">
+              <ScreenSaverPreview
+                type={screenSaverType}
+                onClick={handlePreview}
+                disabled={isPreviewActive}
+                label={t("apps.control-panels.preview")}
+              />
             </div>
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 flex flex-col justify-between gap-4">
+              {/* Type Select */}
               <div>
                 <Label className="text-[11px] mb-1 block">{t("apps.control-panels.screenSaverType")}</Label>
                 <Select
@@ -221,52 +243,41 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
                   </SelectTrigger>
                   <SelectContent>
                     {SCREEN_SAVER_OPTIONS.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
+                      <SelectItemWithDescription
+                        key={option.id}
+                        value={option.id}
+                        description={t(`apps.control-panels.screenSaverOptions.${screenSaverTranslationKeys[option.id]}.description`)}
+                      >
                         {t(`apps.control-panels.screenSaverOptions.${screenSaverTranslationKeys[option.id]}.name`)}
-                      </SelectItem>
+                      </SelectItemWithDescription>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              {selectedOption && (
-                <p className="text-[11px] text-gray-600 font-geneva-12">
-                  {t(`apps.control-panels.screenSaverOptions.${screenSaverTranslationKeys[selectedOption.id]}.description`)}
-                </p>
-              )}
+
+              {/* Idle Time Slider */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[11px]">{t("apps.control-panels.startAfter")}</Label>
+                  <span className="text-[11px] text-gray-600 font-geneva-12">
+                    {screenSaverIdleTime} {screenSaverIdleTime === 1 ? t("apps.control-panels.minute") : t("apps.control-panels.minutes")}
+                  </span>
+                </div>
+                <Slider
+                  value={[screenSaverIdleTime]}
+                  onValueChange={([value]) => setScreenSaverIdleTime(value)}
+                  min={1}
+                  max={30}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-gray-500 font-geneva-12 os-slider-labels">
+                  <span>1 {t("apps.control-panels.min")}</span>
+                  <span>30 {t("apps.control-panels.min")}</span>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* Idle Time Slider */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-[11px]">{t("apps.control-panels.startAfter")}</Label>
-              <span className="text-[11px] text-gray-600 font-geneva-12">
-                {screenSaverIdleTime} {screenSaverIdleTime === 1 ? t("apps.control-panels.minute") : t("apps.control-panels.minutes")}
-              </span>
-            </div>
-            <Slider
-              value={[screenSaverIdleTime]}
-              onValueChange={([value]) => setScreenSaverIdleTime(value)}
-              min={1}
-              max={30}
-              step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-[10px] text-gray-500 font-geneva-12">
-              <span>1 {t("apps.control-panels.min")}</span>
-              <span>30 {t("apps.control-panels.min")}</span>
-            </div>
-          </div>
-
-          {/* Preview Button */}
-          <Button
-            variant="retro"
-            onClick={handlePreview}
-            disabled={isPreviewActive}
-            className="w-full"
-          >
-            {isPreviewActive ? t("apps.control-panels.previewActive") : t("apps.control-panels.preview")}
-          </Button>
         </>
       )}
     </div>

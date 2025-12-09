@@ -475,6 +475,7 @@
       "ryOSAccount": "ryOS 계정",
       "screenSaver": "화면 보호기",
       "screenSaverDescription": "일정 시간 동안 활동이 없으면 활성화됩니다.",
+      "screenSaverExitHint": "종료하려면 아무 키나 누르거나 클릭하십시오.",
       "screenSaverOptions": {
         "bouncingLogo": {
           "description": "DVD 스타일 바운싱",

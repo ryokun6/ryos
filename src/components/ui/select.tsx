@@ -292,6 +292,71 @@ const SelectItem = React.forwardRef<
 });
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
+interface SelectItemWithDescriptionProps
+  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> {
+  description?: string;
+}
+
+const SelectItemWithDescription = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Item>,
+  SelectItemWithDescriptionProps
+>(({ className, children, description, ...props }, ref) => {
+  const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
+  const currentTheme = useThemeStore((state) => state.current);
+
+  const isMacOSTheme = currentTheme === "macosx";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+
+  return (
+    <SelectPrimitive.Item
+      ref={ref}
+      className={cn(
+        "group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className
+      )}
+      style={{
+        fontFamily: isXpTheme
+          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+          : isMacOSTheme
+          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
+          : undefined,
+        fontSize: isXpTheme
+          ? "11px"
+          : isMacOSTheme
+          ? "13px !important"
+          : undefined,
+        ...(isMacOSTheme && {
+          WebkitFontSmoothing: "antialiased",
+          fontSmooth: "auto",
+          borderRadius: "0px",
+          padding: "8px 20px 8px 16px",
+          textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
+        }),
+      }}
+      onSelect={(event) => {
+        playClick();
+        props.onSelect?.(event);
+      }}
+      {...props}
+    >
+      <span className="absolute right-2 top-2 flex h-3.5 w-3.5 items-center justify-center">
+        <SelectPrimitive.ItemIndicator>
+          <Check className="h-4 w-4" />
+        </SelectPrimitive.ItemIndicator>
+      </span>
+      <div className="flex flex-col gap-0.5">
+        <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+        {description && (
+          <span className="text-[11px] text-gray-500 group-focus:text-inherit font-normal leading-tight">
+            {description}
+          </span>
+        )}
+      </div>
+    </SelectPrimitive.Item>
+  );
+});
+SelectItemWithDescription.displayName = "SelectItemWithDescription";
+
 const SelectSeparator = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
@@ -312,6 +377,7 @@ export {
   SelectContent,
   SelectLabel,
   SelectItem,
+  SelectItemWithDescription,
   SelectSeparator,
   SelectScrollUpButton,
   SelectScrollDownButton,

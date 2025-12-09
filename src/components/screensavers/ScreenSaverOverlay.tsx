@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ScreenSaverType } from "./index";
+import { useTranslation } from "react-i18next";
 
 // Lazy load screen saver components
 const Starfield = lazy(() => import("./Starfield").then((m) => ({ default: m.Starfield })));
@@ -21,6 +22,7 @@ const SCREEN_SAVER_COMPONENTS: Record<ScreenSaverType, React.LazyExoticComponent
 };
 
 export function ScreenSaverOverlay() {
+  const { t } = useTranslation();
   const {
     screenSaverEnabled,
     screenSaverType,
@@ -160,7 +162,7 @@ export function ScreenSaverOverlay() {
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.5 }}
           >
-            Click or press any key to exit
+            {t("apps.control-panels.screenSaverExitHint")}
           </motion.div>
         </motion.div>
       )}

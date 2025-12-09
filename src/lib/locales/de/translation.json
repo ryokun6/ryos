@@ -475,6 +475,7 @@
       "ryOSAccount": "ryOS-Konto",
       "screenSaver": "Bildschirmschoner",
       "screenSaverDescription": "Aktiviert sich nach einer Zeit der Inaktivität",
+      "screenSaverExitHint": "Klicken oder eine beliebige Taste drücken zum Beenden",
       "screenSaverOptions": {
         "bouncingLogo": {
           "description": "DVD-Stil-Hüpfen",

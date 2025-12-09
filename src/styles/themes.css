@@ -1452,6 +1452,12 @@
   ) !important; /* neutral gray fill horizontal */
 }
 
+/* Slider tick/label text - preserve explicit sizes */
+:root[data-os-theme="macosx"] .os-slider-labels,
+:root[data-os-theme="macosx"] .os-slider-labels span {
+  font-size: 11px !important;
+}
+
 /* -------------------------------------------------- */
 /* macOS Chat bubble aqua style */
 /* -------------------------------------------------- */

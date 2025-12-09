@@ -475,6 +475,7 @@
       "ryOSAccount": "Compte ryOS",
       "screenSaver": "Économiseur d'écran",
       "screenSaverDescription": "S'active après une période d'inactivité",
+      "screenSaverExitHint": "Cliquez ou appuyez sur n'importe quelle touche pour quitter",
       "screenSaverOptions": {
         "bouncingLogo": {
           "description": "Rebondissement style DVD",

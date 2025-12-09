@@ -475,6 +475,7 @@
       "ryOSAccount": "Account ryOS",
       "screenSaver": "Salvaschermo",
       "screenSaverDescription": "Si attiva dopo un periodo di inattività",
+      "screenSaverExitHint": "Fai clic o premi un tasto qualsiasi per uscire",
       "screenSaverOptions": {
         "bouncingLogo": {
           "description": "Rimbalzo stile DVD",

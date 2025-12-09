@@ -475,6 +475,7 @@
       "ryOSAccount": "Conta ryOS",
       "screenSaver": "Protetor de Tela",
       "screenSaverDescription": "Ativa após um período de inatividade",
+      "screenSaverExitHint": "Clique ou pressione qualquer tecla para sair",
       "screenSaverOptions": {
         "bouncingLogo": {
           "description": "Quicando estilo DVD",

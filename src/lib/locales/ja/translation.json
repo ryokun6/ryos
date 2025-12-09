@@ -475,6 +475,7 @@
       "ryOSAccount": "ryOS アカウント",
       "screenSaver": "スクリーンセーバー",
       "screenSaverDescription": "一定時間操作がないと起動します",
+      "screenSaverExitHint": "クリックまたは、いずれかのキーを押して終了",
       "screenSaverOptions": {
         "bouncingLogo": {
           "description": "DVD風バウンド",

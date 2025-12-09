@@ -475,6 +475,7 @@
       "ryOSAccount": "ryOS 帳戶",
       "screenSaver": "螢幕保護程式",
       "screenSaverDescription": "在閒置一段時間後啟用",
+      "screenSaverExitHint": "點擊或按下任何鍵即可退出",
       "screenSaverOptions": {
         "bouncingLogo": {
           "description": "DVD 式彈跳",

@@ -475,6 +475,7 @@
       "ryOSAccount": "Cuenta de ryOS",
       "screenSaver": "Protector de pantalla",
       "screenSaverDescription": "Se activa después de un período de inactividad",
+      "screenSaverExitHint": "Haz clic o pulsa cualquier tecla para salir",
       "screenSaverOptions": {
         "bouncingLogo": {
           "description": "Rebote estilo DVD",
