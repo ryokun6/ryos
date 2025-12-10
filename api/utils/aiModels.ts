@@ -13,7 +13,6 @@ export type SupportedModel = ImportedSupportedModel;
 // Legacy models that may still be stored in user preferences
 type LegacyModel =
   | "gemini-2.5-pro"
-  | "gemini-2.5-flash"
   | "claude-3.7"
   | "claude-3.5"
   | "gpt-4o"
@@ -30,6 +29,8 @@ export const getModelInstance = (
 
   switch (modelToUse) {
     // Current supported models
+    case "gemini-2.5-flash":
+      return google("gemini-2.5-flash");
     case "gemini-3-pro-preview":
       return google("gemini-3-pro-preview");
     case "claude-4.5":
@@ -45,7 +46,6 @@ export const getModelInstance = (
 
     // Legacy models - map to modern equivalents
     case "gemini-2.5-pro":
-    case "gemini-2.5-flash":
       return google("gemini-3-pro-preview");
     case "claude-3.7":
     case "claude-3.5":

@@ -2,6 +2,10 @@
 
 // Single source of truth for AI models
 export const AI_MODELS = {
+  "gemini-2.5-flash": {
+    name: "gemini-2.5-flash",
+    provider: "Google",
+  },
   "gemini-3-pro-preview": {
     name: "gemini-3-pro-preview",
     provider: "Google",
