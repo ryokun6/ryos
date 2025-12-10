@@ -18,10 +18,6 @@ export const AI_MODELS = {
     name: "gpt-5.1",
     provider: "OpenAI",
   },
-  "gpt-5-mini": {
-    name: "gpt-5-mini",
-    provider: "OpenAI",
-  },
 } as const;
 
 // Derived types

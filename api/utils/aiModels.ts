@@ -17,6 +17,7 @@ type LegacyModel =
   | "claude-3.7"
   | "claude-3.5"
   | "gpt-5"
+  | "gpt-5-mini"
   | "gpt-4o"
   | "gpt-4.1"
   | "gpt-4.1-mini";
@@ -39,8 +40,6 @@ export const getModelInstance = (
       return anthropic("claude-sonnet-4-5");
     case "gpt-5.1":
       return openai("gpt-5.1");
-    case "gpt-5-mini":
-      return openai("gpt-5-mini");
 
     // Legacy models - map to modern equivalents
     case "gemini-2.5-pro":
@@ -50,11 +49,11 @@ export const getModelInstance = (
     case "claude-3.5":
       return anthropic("claude-sonnet-4-5");
     case "gpt-5":
+    case "gpt-5-mini":
     case "gpt-4o":
     case "gpt-4.1":
-      return openai("gpt-5.1");
     case "gpt-4.1-mini":
-      return openai("gpt-5-mini");
+      return openai("gpt-5.1");
 
     default:
       // Fallback – should never happen due to exhaustive switch
