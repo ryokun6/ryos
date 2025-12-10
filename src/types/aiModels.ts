@@ -14,16 +14,8 @@ export const AI_MODELS = {
     name: "claude-4.5",
     provider: "Anthropic",
   },
-  "claude-4": {
-    name: "claude-4",
-    provider: "Anthropic",
-  },
   "gpt-5.1": {
     name: "gpt-5.1",
-    provider: "OpenAI",
-  },
-  "gpt-5": {
-    name: "gpt-5",
     provider: "OpenAI",
   },
   "gpt-5-mini": {
