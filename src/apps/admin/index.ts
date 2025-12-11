@@ -32,7 +32,7 @@ export const appMetadata = {
     url: "https://ryo.lu",
   },
   github: "https://github.com/ryokun6/ryos",
-  icon: "/icons/macosx/bento.png",
+  icon: "/icons/default/mac.png",
 };
 
 export const AdminApp: BaseApp = {
