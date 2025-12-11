@@ -4,23 +4,23 @@ import { AdminAppComponent } from "./components/AdminAppComponent";
 export const helpItems = [
   {
     icon: "👑",
-    titleKey: "adminAccess",
-    descriptionKey: "adminAccess",
+    title: "Admin Access",
+    description: "This app is only accessible to the admin user (ryo).",
   },
   {
     icon: "👥",
-    titleKey: "userManagement",
-    descriptionKey: "userManagement",
+    title: "User Management",
+    description: "View, search, and manage registered users.",
   },
   {
     icon: "💬",
-    titleKey: "roomManagement",
-    descriptionKey: "roomManagement",
+    title: "Room Management",
+    description: "View and manage chat rooms, delete inappropriate content.",
   },
   {
     icon: "📊",
-    titleKey: "statistics",
-    descriptionKey: "statistics",
+    title: "Statistics",
+    description: "View system statistics and usage metrics.",
   },
 ];
 

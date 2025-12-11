@@ -28,6 +28,7 @@ export function useTranslatedHelpItems(
     terminal: ["basicCommands", "navigation", "commandHistory", "aiAssistant", "fileEditing", "terminalSounds"],
     "applet-viewer": ["appletStore", "createWithRyosChat", "viewApplets", "shareApplets", "openFromFinder", "keepUpdated"],
     "control-panels": ["appearance", "sounds", "aiModel", "shaderEffects", "backupRestore", "system"],
+    admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
   };
 
   return useMemo(() => {

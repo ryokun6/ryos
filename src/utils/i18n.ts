@@ -15,7 +15,8 @@ export type AppId =
   | "pc"
   | "terminal"
   | "applet-viewer"
-  | "control-panels";
+  | "control-panels"
+  | "admin";
 
 /**
  * Get translated app name
@@ -119,6 +120,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     terminal: ["basicCommands", "navigation", "commandHistory", "aiAssistant", "fileEditing", "terminalSounds"],
     "applet-viewer": ["appletStore", "createWithRyosChat", "viewApplets", "shareApplets", "openFromFinder", "keepUpdated"],
     "control-panels": ["appearance", "sounds", "aiModel", "shaderEffects", "backupRestore", "system"],
+    admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
   };
 
   const keys = helpKeys[appId] || [];
