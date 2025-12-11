@@ -1897,6 +1897,90 @@
           "description": "Reset preferences or format the virtual file system"
         }
       }
+    },
+    "admin": {
+      "name": "Admin",
+      "description": "System administration panel",
+      "title": "Admin",
+      "menu": {
+        "refreshData": "Refresh Data",
+        "adminHelp": "Admin Help",
+        "aboutAdmin": "About Admin"
+      },
+      "sidebar": {
+        "users": "Users",
+        "rooms": "Rooms",
+        "private": "Private",
+        "messagesCount": "{{count}} messages"
+      },
+      "search": {
+        "placeholder": "Search users (min 2 chars)...",
+        "minChars": "Enter at least 2 characters",
+        "noResults": "No users found"
+      },
+      "room": {
+        "messagesCount": "{{count}} messages",
+        "noMessages": "No messages"
+      },
+      "user": {
+        "admin": "admin"
+      },
+      "time": {
+        "now": "now",
+        "minutesAgo": "{{count}}m",
+        "hoursAgo": "{{count}}h",
+        "daysAgo": "{{count}}d"
+      },
+      "messages": {
+        "userDeleted": "User {{username}} deleted",
+        "roomDeleted": "Room deleted",
+        "messageDeleted": "Message deleted",
+        "dataRefreshed": "Data refreshed"
+      },
+      "errors": {
+        "failedToFetchUsers": "Failed to fetch users",
+        "failedToFetchRooms": "Failed to fetch rooms",
+        "failedToFetchMessages": "Failed to fetch messages",
+        "failedToDeleteUser": "Failed to delete user",
+        "failedToDeleteRoom": "Failed to delete room",
+        "failedToDeleteMessage": "Failed to delete message"
+      },
+      "statusBar": {
+        "usersCount": "{{count}} user",
+        "usersCount_plural": "{{count}} users",
+        "messagesCount": "{{count}} message",
+        "messagesCount_plural": "{{count}} messages",
+        "roomsCount": "{{count}} room",
+        "roomsCount_plural": "{{count}} rooms",
+        "loggedInAs": "Logged in as {{username}}"
+      },
+      "accessDenied": {
+        "title": "Access Denied",
+        "description": "This application is restricted to administrators only.",
+        "loginPrompt": "Please log in with an admin account."
+      },
+      "dialogs": {
+        "deleteTitle": "Delete {{type}}?",
+        "deleteDescription": "Are you sure you want to delete {{type}} \"{{name}}\"? This action cannot be undone."
+      },
+      "help": {
+        "adminAccess": {
+          "title": "Admin Access",
+          "description": "This app is only accessible to the admin user (ryo)."
+        },
+        "userManagement": {
+          "title": "User Management",
+          "description": "View, search, and manage registered users."
+        },
+        "roomManagement": {
+          "title": "Room Management",
+          "description": "View and manage chat rooms, delete inappropriate content."
+        },
+        "statistics": {
+          "title": "Statistics",
+          "description": "View system statistics and usage metrics."
+        }
+      }
     }
   },
   "settings": {

@@ -16,6 +16,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useDockStore, PROTECTED_DOCK_ITEMS, type DockItem } from "@/stores/useDockStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -564,6 +565,10 @@ function MacDock() {
     (s) => s.items["/Trash"]?.icon || "/icons/trash-empty.png"
   );
   const finderInstances = useFinderStore((s) => s.instances);
+  
+  // Get current username for admin check
+  const username = useChatsStore((state) => state.username);
+  const isAdmin = username?.toLowerCase() === "ryo";
   
   // Dock store for customization
   const { 
@@ -1691,7 +1696,7 @@ function MacDock() {
       
       if (folderPath === "/Applications") {
         // Applications is a virtual directory - get apps from registry
-        const apps = getNonFinderApps();
+        const apps = getNonFinderApps(isAdmin);
         sortedItems = apps.map((app) => ({
           name: app.name,
           path: `/Applications/${app.name}`,
@@ -1853,7 +1858,7 @@ function MacDock() {
       
       return items;
     },
-    [fileStore, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, getTranslatedAppName, getTranslatedFolderNameFromName]
+    [fileStore, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, getTranslatedAppName, getTranslatedFolderNameFromName, isAdmin]
   );
 
   // Handle app context menu

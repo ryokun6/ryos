@@ -1,5 +1,89 @@
 {
   "apps": {
+    "admin": {
+      "accessDenied": {
+        "description": "このアプリケーションは管理者専用です。",
+        "loginPrompt": "管理者アカウントでログインしてください。",
+        "title": "アクセス拒否"
+      },
+      "description": "システム管理画面",
+      "dialogs": {
+        "deleteDescription": "{{type}}「{{name}}」を削除しますか？この操作は元に戻せません。",
+        "deleteTitle": "{{type}}を削除しますか？"
+      },
+      "errors": {
+        "failedToDeleteMessage": "メッセージの削除に失敗しました。",
+        "failedToDeleteRoom": "ルームの削除に失敗しました。",
+        "failedToDeleteUser": "ユーザーの削除に失敗しました。",
+        "failedToFetchMessages": "メッセージの取得に失敗しました。",
+        "failedToFetchRooms": "ルームの取得に失敗しました。",
+        "failedToFetchUsers": "ユーザーの取得に失敗しました。"
+      },
+      "help": {
+        "adminAccess": {
+          "description": "このアプリは管理者ユーザー (ryo) のみがアクセスできます。",
+          "title": "管理者アクセス"
+        },
+        "roomManagement": {
+          "description": "チャットルームの表示と管理、不適切なコンテンツの削除を行います。",
+          "title": "ルーム管理"
+        },
+        "statistics": {
+          "description": "システムの統計情報と利用状況の指標を表示します。",
+          "title": "統計情報"
+        },
+        "userManagement": {
+          "description": "登録済みユーザーの表示、検索、管理を行います。",
+          "title": "ユーザー管理"
+        }
+      },
+      "menu": {
+        "aboutAdmin": "Adminについて",
+        "adminHelp": "Adminヘルプ",
+        "refreshData": "データ更新"
+      },
+      "messages": {
+        "dataRefreshed": "データが更新されました",
+        "messageDeleted": "メッセージが削除されました",
+        "roomDeleted": "ルームが削除されました",
+        "userDeleted": "ユーザー {{username}} が削除されました"
+      },
+      "name": "Admin",
+      "room": {
+        "messagesCount": "メッセージ{{count}}件",
+        "noMessages": "メッセージはありません"
+      },
+      "search": {
+        "minChars": "2文字以上入力してください",
+        "noResults": "ユーザーが見つかりません",
+        "placeholder": "ユーザーを検索 (2文字以上)..."
+      },
+      "sidebar": {
+        "messagesCount": "メッセージ{{count}}件",
+        "private": "プライベート",
+        "rooms": "ルーム",
+        "users": "ユーザー"
+      },
+      "statusBar": {
+        "loggedInAs": "{{username}}としてログイン中",
+        "messagesCount": "メッセージ{{count}}件",
+        "messagesCount_plural": "メッセージ{{count}}件",
+        "roomsCount": "{{count}}部屋",
+        "roomsCount_plural": "{{count}}部屋",
+        "usersCount": "{{count}}人",
+        "usersCount_plural": "{{count}}人"
+      },
+      "time": {
+        "daysAgo": "{{count}}日",
+        "hoursAgo": "{{count}}時間",
+        "minutesAgo": "{{count}}分",
+        "now": "今"
+      },
+      "title": "管理者",
+      "user": {
+        "admin": "管理者"
+      }
+    },
     "applet-viewer": {
       "description": "アプレットを表示・実行",
       "dialogs": {

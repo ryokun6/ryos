@@ -1,5 +1,89 @@
 {
   "apps": {
+    "admin": {
+      "accessDenied": {
+        "description": "此應用程式僅限管理員使用。",
+        "loginPrompt": "請使用管理員帳戶登入。",
+        "title": "存取遭拒"
+      },
+      "description": "系統管理面板",
+      "dialogs": {
+        "deleteDescription": "您確定要刪除{{type}}「{{name}}」嗎？此動作無法復原。",
+        "deleteTitle": "刪除{{type}}？"
+      },
+      "errors": {
+        "failedToDeleteMessage": "無法刪除訊息",
+        "failedToDeleteRoom": "無法刪除聊天室",
+        "failedToDeleteUser": "無法刪除使用者",
+        "failedToFetchMessages": "無法擷取訊息",
+        "failedToFetchRooms": "無法擷取聊天室",
+        "failedToFetchUsers": "無法擷取使用者"
+      },
+      "help": {
+        "adminAccess": {
+          "description": "此應用程式僅限管理員使用者 (ryo) 存取。",
+          "title": "管理員存取"
+        },
+        "roomManagement": {
+          "description": "檢視及管理聊天室，刪除不當內容。",
+          "title": "聊天室管理"
+        },
+        "statistics": {
+          "description": "檢視系統統計資料和使用指標。",
+          "title": "統計資料"
+        },
+        "userManagement": {
+          "description": "檢視、搜尋及管理註冊使用者。",
+          "title": "使用者管理"
+        }
+      },
+      "menu": {
+        "aboutAdmin": "關於管理員",
+        "adminHelp": "管理員說明",
+        "refreshData": "重新整理資料"
+      },
+      "messages": {
+        "dataRefreshed": "資料已重新整理",
+        "messageDeleted": "訊息已刪除",
+        "roomDeleted": "聊天室已刪除",
+        "userDeleted": "使用者 {{username}} 已刪除"
+      },
+      "name": "管理員",
+      "room": {
+        "messagesCount": "{{count}} 則訊息",
+        "noMessages": "沒有訊息"
+      },
+      "search": {
+        "minChars": "請輸入至少 2 個字元",
+        "noResults": "找不到使用者",
+        "placeholder": "搜尋使用者 (至少 2 個字元)..."
+      },
+      "sidebar": {
+        "messagesCount": "{{count}} 則訊息",
+        "private": "私人",
+        "rooms": "聊天室",
+        "users": "使用者"
+      },
+      "statusBar": {
+        "loggedInAs": "已登入為 {{username}}",
+        "messagesCount": "{{count}} 則訊息",
+        "messagesCount_plural": "{{count}} 則訊息",
+        "roomsCount": "{{count}} 房間",
+        "roomsCount_plural": "{{count}} 房間",
+        "usersCount": "{{count}} 用戶",
+        "usersCount_plural": "{{count}} 用戶"
+      },
+      "time": {
+        "daysAgo": "{{count}}天",
+        "hoursAgo": "{{count}}小時",
+        "minutesAgo": "{{count}}分鐘",
+        "now": "現在"
+      },
+      "title": "管理員",
+      "user": {
+        "admin": "管理員"
+      }
+    },
     "applet-viewer": {
       "description": "檢視和執行小程式",
       "dialogs": {

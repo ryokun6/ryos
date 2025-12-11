@@ -1,5 +1,89 @@
 {
   "apps": {
+    "admin": {
+      "accessDenied": {
+        "description": "Diese Anwendung ist nur Administratoren vorbehalten.",
+        "loginPrompt": "Bitte melden Sie sich mit einem Administratorkonto an.",
+        "title": "Zugriff verweigert"
+      },
+      "description": "Systemadministrationspanel",
+      "dialogs": {
+        "deleteDescription": "Möchten Sie {{type}} „{{name}}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "deleteTitle": "{{type}} löschen?"
+      },
+      "errors": {
+        "failedToDeleteMessage": "Nachricht konnte nicht gelöscht werden",
+        "failedToDeleteRoom": "Raum konnte nicht gelöscht werden",
+        "failedToDeleteUser": "Benutzer konnte nicht gelöscht werden",
+        "failedToFetchMessages": "Nachrichten konnten nicht abgerufen werden",
+        "failedToFetchRooms": "Räume konnten nicht abgerufen werden",
+        "failedToFetchUsers": "Benutzer konnten nicht abgerufen werden"
+      },
+      "help": {
+        "adminAccess": {
+          "description": "Diese App ist nur für den Administrator (ryo) zugänglich.",
+          "title": "Administratorzugriff"
+        },
+        "roomManagement": {
+          "description": "Chaträume anzeigen und verwalten, unangemessene Inhalte löschen.",
+          "title": "Raumverwaltung"
+        },
+        "statistics": {
+          "description": "Systemstatistiken und Nutzungsmetriken anzeigen.",
+          "title": "Statistiken"
+        },
+        "userManagement": {
+          "description": "Registrierte Benutzer anzeigen, suchen und verwalten.",
+          "title": "Benutzerverwaltung"
+        }
+      },
+      "menu": {
+        "aboutAdmin": "Über Admin",
+        "adminHelp": "Admin-Hilfe",
+        "refreshData": "Daten aktualisieren"
+      },
+      "messages": {
+        "dataRefreshed": "Daten aktualisiert",
+        "messageDeleted": "Nachricht gelöscht",
+        "roomDeleted": "Raum gelöscht",
+        "userDeleted": "Benutzer {{username}} gelöscht"
+      },
+      "name": "Admin",
+      "room": {
+        "messagesCount": "{{count}} Nachrichten",
+        "noMessages": "Keine Nachrichten"
+      },
+      "search": {
+        "minChars": "Mindestens 2 Zeichen eingeben",
+        "noResults": "Keine Benutzer gefunden",
+        "placeholder": "Benutzer suchen (mind. 2 Zeichen)..."
+      },
+      "sidebar": {
+        "messagesCount": "{{count}} Nachrichten",
+        "private": "Privat",
+        "rooms": "Räume",
+        "users": "Benutzer"
+      },
+      "statusBar": {
+        "loggedInAs": "Angemeldet als {{username}}",
+        "messagesCount": "{{count}} Nachricht",
+        "messagesCount_plural": "{{count}} Nachrichten",
+        "roomsCount": "{{count}} Raum",
+        "roomsCount_plural": "{{count}} Räume",
+        "usersCount": "{{count}} Benutzer",
+        "usersCount_plural": "{{count}} Benutzer"
+      },
+      "time": {
+        "daysAgo": "{{count}}T",
+        "hoursAgo": "{{count}}h",
+        "minutesAgo": "{{count}}m",
+        "now": "jetzt"
+      },
+      "title": "Admin",
+      "user": {
+        "admin": "admin"
+      }
+    },
     "applet-viewer": {
       "description": "Applets anzeigen und ausführen",
       "dialogs": {

@@ -1,5 +1,89 @@
 {
   "apps": {
+    "admin": {
+      "accessDenied": {
+        "description": "이 애플리케이션은 관리자만 사용할 수 있습니다.",
+        "loginPrompt": "관리자 계정으로 로그인해 주세요.",
+        "title": "접근 거부됨"
+      },
+      "description": "시스템 관리 패널",
+      "dialogs": {
+        "deleteDescription": "{{type}} \"{{name}}\"을(를) 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+        "deleteTitle": "{{type}}(을)를 삭제하시겠습니까?"
+      },
+      "errors": {
+        "failedToDeleteMessage": "메시지 삭제 실패",
+        "failedToDeleteRoom": "채팅방 삭제 실패",
+        "failedToDeleteUser": "사용자 삭제 실패",
+        "failedToFetchMessages": "메시지 불러오기 실패",
+        "failedToFetchRooms": "채팅방 불러오기 실패",
+        "failedToFetchUsers": "사용자 불러오기 실패"
+      },
+      "help": {
+        "adminAccess": {
+          "description": "이 앱은 관리자 사용자(ryo)만 접근할 수 있습니다.",
+          "title": "관리자 접근"
+        },
+        "roomManagement": {
+          "description": "채팅방을 보고 관리하며, 부적절한 콘텐츠를 삭제합니다.",
+          "title": "채팅방 관리"
+        },
+        "statistics": {
+          "description": "시스템 통계 및 사용량 지표를 확인합니다.",
+          "title": "통계"
+        },
+        "userManagement": {
+          "description": "등록된 사용자를 보고, 검색하고, 관리합니다.",
+          "title": "사용자 관리"
+        }
+      },
+      "menu": {
+        "aboutAdmin": "관리자 정보",
+        "adminHelp": "관리자 도움말",
+        "refreshData": "데이터 새로 고침"
+      },
+      "messages": {
+        "dataRefreshed": "데이터 새로고침 완료",
+        "messageDeleted": "메시지 삭제됨",
+        "roomDeleted": "방 삭제됨",
+        "userDeleted": "사용자 {{username}} 삭제됨"
+      },
+      "name": "관리자",
+      "room": {
+        "messagesCount": "{{count}}개 메시지",
+        "noMessages": "메시지 없음"
+      },
+      "search": {
+        "minChars": "최소 2자 이상 입력하세요.",
+        "noResults": "사용자를 찾을 수 없습니다.",
+        "placeholder": "사용자 검색 (최소 2자)..."
+      },
+      "sidebar": {
+        "messagesCount": "{{count}}개 메시지",
+        "private": "비공개",
+        "rooms": "방",
+        "users": "사용자"
+      },
+      "statusBar": {
+        "loggedInAs": "{{username}}님으로 로그인됨",
+        "messagesCount": "{{count}}개 메시지",
+        "messagesCount_plural": "{{count}}개 메시지",
+        "roomsCount": "{{count}}개",
+        "roomsCount_plural": "{{count}}개",
+        "usersCount": "{{count}}명",
+        "usersCount_plural": "{{count}}명"
+      },
+      "time": {
+        "daysAgo": "{{count}}일",
+        "hoursAgo": "{{count}}시간",
+        "minutesAgo": "{{count}}분",
+        "now": "지금"
+      },
+      "title": "관리자",
+      "user": {
+        "admin": "관리자"
+      }
+    },
     "applet-viewer": {
       "description": "앱렛 보기 및 실행",
       "dialogs": {

@@ -1,5 +1,89 @@
 {
   "apps": {
+    "admin": {
+      "accessDenied": {
+        "description": "Cette application est réservée aux administrateurs uniquement.",
+        "loginPrompt": "Veuillez vous connecter avec un compte administrateur.",
+        "title": "Accès refusé"
+      },
+      "description": "Panneau d'administration système",
+      "dialogs": {
+        "deleteDescription": "Êtes-vous sûr de vouloir supprimer {{type}} « {{name}} » ? Cette action est irréversible.",
+        "deleteTitle": "Supprimer {{type}} ?"
+      },
+      "errors": {
+        "failedToDeleteMessage": "Échec de la suppression du message",
+        "failedToDeleteRoom": "Échec de la suppression du salon",
+        "failedToDeleteUser": "Échec de la suppression de l'utilisateur",
+        "failedToFetchMessages": "Échec de la récupération des messages",
+        "failedToFetchRooms": "Échec de la récupération des salons",
+        "failedToFetchUsers": "Échec de la récupération des utilisateurs"
+      },
+      "help": {
+        "adminAccess": {
+          "description": "Cette application n'est accessible qu'à l'administrateur (ryo).",
+          "title": "Accès administrateur"
+        },
+        "roomManagement": {
+          "description": "Afficher et gérer les salons de discussion, supprimer le contenu inapproprié.",
+          "title": "Gestion des salons"
+        },
+        "statistics": {
+          "description": "Afficher les statistiques système et les métriques d'utilisation.",
+          "title": "Statistiques"
+        },
+        "userManagement": {
+          "description": "Afficher, rechercher et gérer les utilisateurs enregistrés.",
+          "title": "Gestion des utilisateurs"
+        }
+      },
+      "menu": {
+        "aboutAdmin": "À propos d'Admin",
+        "adminHelp": "Aide Admin",
+        "refreshData": "Actualiser les données"
+      },
+      "messages": {
+        "dataRefreshed": "Données actualisées",
+        "messageDeleted": "Message supprimé",
+        "roomDeleted": "Salon supprimé",
+        "userDeleted": "Utilisateur {{username}} supprimé"
+      },
+      "name": "Admin",
+      "room": {
+        "messagesCount": "{{count}} messages",
+        "noMessages": "Aucun message"
+      },
+      "search": {
+        "minChars": "Saisissez au moins 2 caractères",
+        "noResults": "Aucun utilisateur trouvé",
+        "placeholder": "Rechercher des utilisateurs (min 2 car.)..."
+      },
+      "sidebar": {
+        "messagesCount": "{{count}} messages",
+        "private": "Privé",
+        "rooms": "Salons",
+        "users": "Utilisateurs"
+      },
+      "statusBar": {
+        "loggedInAs": "Connecté en tant que {{username}}",
+        "messagesCount": "{{count}} message",
+        "messagesCount_plural": "{{count}} messages",
+        "roomsCount": "{{count}} pièce",
+        "roomsCount_plural": "{{count}} pièces",
+        "usersCount": "{{count}} utilisateur",
+        "usersCount_plural": "{{count}} utilisateurs"
+      },
+      "time": {
+        "daysAgo": "{{count}}j",
+        "hoursAgo": "{{count}}h",
+        "minutesAgo": "{{count}}m",
+        "now": "maintenant"
+      },
+      "title": "Admin",
+      "user": {
+        "admin": "admin"
+      }
+    },
     "applet-viewer": {
       "description": "Voir et exécuter des applets",
       "dialogs": {

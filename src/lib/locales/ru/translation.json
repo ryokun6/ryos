@@ -1,5 +1,89 @@
 {
   "apps": {
+    "admin": {
+      "accessDenied": {
+        "description": "Это приложение доступно только администраторам.",
+        "loginPrompt": "Пожалуйста, войдите с учетной записью администратора.",
+        "title": "Доступ запрещен"
+      },
+      "description": "Панель администрирования системы",
+      "dialogs": {
+        "deleteDescription": "Вы уверены, что хотите удалить {{type}} «{{name}}»? Это действие невозможно отменить.",
+        "deleteTitle": "Удалить {{type}}?"
+      },
+      "errors": {
+        "failedToDeleteMessage": "Не удалось удалить сообщение",
+        "failedToDeleteRoom": "Не удалось удалить комнату",
+        "failedToDeleteUser": "Не удалось удалить пользователя",
+        "failedToFetchMessages": "Не удалось получить сообщения",
+        "failedToFetchRooms": "Не удалось получить комнаты",
+        "failedToFetchUsers": "Не удалось получить пользователей"
+      },
+      "help": {
+        "adminAccess": {
+          "description": "Это приложение доступно только администратору (ryo).",
+          "title": "Доступ администратора"
+        },
+        "roomManagement": {
+          "description": "Просмотр и управление чат-комнатами, удаление неприемлемого контента.",
+          "title": "Управление комнатами"
+        },
+        "statistics": {
+          "description": "Просмотр системной статистики и метрик использования.",
+          "title": "Статистика"
+        },
+        "userManagement": {
+          "description": "Просмотр, поиск и управление зарегистрированными пользователями.",
+          "title": "Управление пользователями"
+        }
+      },
+      "menu": {
+        "aboutAdmin": "Об администрировании",
+        "adminHelp": "Справка по администрированию",
+        "refreshData": "Обновить данные"
+      },
+      "messages": {
+        "dataRefreshed": "Данные обновлены",
+        "messageDeleted": "Сообщение удалено",
+        "roomDeleted": "Комната удалена",
+        "userDeleted": "Пользователь {{username}} удален"
+      },
+      "name": "Администрирование",
+      "room": {
+        "messagesCount": "{{count}} сообщений",
+        "noMessages": "Нет сообщений"
+      },
+      "search": {
+        "minChars": "Введите не менее 2 символов",
+        "noResults": "Пользователи не найдены",
+        "placeholder": "Поиск пользователей (мин. 2 симв.)..."
+      },
+      "sidebar": {
+        "messagesCount": "{{count}} сообщений",
+        "private": "Приватный",
+        "rooms": "Комнаты",
+        "users": "Пользователи"
+      },
+      "statusBar": {
+        "loggedInAs": "Вы вошли как {{username}}",
+        "messagesCount": "{{count}} сообщение",
+        "messagesCount_plural": "{{count}} сообщений",
+        "roomsCount": "{{count}} комната",
+        "roomsCount_plural": "{{count}} комнат",
+        "usersCount": "{{count}} пользователь",
+        "usersCount_plural": "{{count}} пользователей"
+      },
+      "time": {
+        "daysAgo": "{{count}} дн.",
+        "hoursAgo": "{{count}} ч.",
+        "minutesAgo": "{{count}} мин.",
+        "now": "сейчас"
+      },
+      "title": "Админ",
+      "user": {
+        "admin": "админ"
+      }
+    },
     "applet-viewer": {
       "description": "Просмотр и запуск апплетов",
       "dialogs": {

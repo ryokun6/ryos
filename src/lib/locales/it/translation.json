@@ -1,5 +1,89 @@
 {
   "apps": {
+    "admin": {
+      "accessDenied": {
+        "description": "Questa applicazione è riservata solo agli amministratori.",
+        "loginPrompt": "Effettua l'accesso con un account amministratore.",
+        "title": "Accesso Negato"
+      },
+      "description": "Pannello di amministrazione del sistema",
+      "dialogs": {
+        "deleteDescription": "Sei sicuro di voler eliminare {{type}} \"{{name}}\"? Questa azione non può essere annullata.",
+        "deleteTitle": "Eliminare {{type}}?"
+      },
+      "errors": {
+        "failedToDeleteMessage": "Impossibile eliminare il messaggio",
+        "failedToDeleteRoom": "Impossibile eliminare la stanza",
+        "failedToDeleteUser": "Impossibile eliminare l'utente",
+        "failedToFetchMessages": "Impossibile recuperare i messaggi",
+        "failedToFetchRooms": "Impossibile recuperare le stanze",
+        "failedToFetchUsers": "Impossibile recuperare gli utenti"
+      },
+      "help": {
+        "adminAccess": {
+          "description": "Questa app è accessibile solo all'utente amministratore (ryo).",
+          "title": "Accesso Amministratore"
+        },
+        "roomManagement": {
+          "description": "Visualizza e gestisci le chat room, elimina i contenuti inappropriati.",
+          "title": "Gestione Stanze"
+        },
+        "statistics": {
+          "description": "Visualizza le statistiche di sistema e le metriche di utilizzo.",
+          "title": "Statistiche"
+        },
+        "userManagement": {
+          "description": "Visualizza, cerca e gestisci gli utenti registrati.",
+          "title": "Gestione Utenti"
+        }
+      },
+      "menu": {
+        "aboutAdmin": "Informazioni su Admin",
+        "adminHelp": "Guida Admin",
+        "refreshData": "Aggiorna dati"
+      },
+      "messages": {
+        "dataRefreshed": "Dati aggiornati",
+        "messageDeleted": "Messaggio eliminato",
+        "roomDeleted": "Stanza eliminata",
+        "userDeleted": "Utente {{username}} eliminato"
+      },
+      "name": "Admin",
+      "room": {
+        "messagesCount": "{{count}} messaggi",
+        "noMessages": "Nessun messaggio"
+      },
+      "search": {
+        "minChars": "Inserisci almeno 2 caratteri",
+        "noResults": "Nessun utente trovato",
+        "placeholder": "Cerca utenti (min 2 caratteri)..."
+      },
+      "sidebar": {
+        "messagesCount": "{{count}} messaggi",
+        "private": "Privato",
+        "rooms": "Stanze",
+        "users": "Utenti"
+      },
+      "statusBar": {
+        "loggedInAs": "Accesso effettuato come {{username}}",
+        "messagesCount": "{{count}} messaggio",
+        "messagesCount_plural": "{{count}} messaggi",
+        "roomsCount": "{{count}} stanza",
+        "roomsCount_plural": "{{count}} stanze",
+        "usersCount": "{{count}} utente",
+        "usersCount_plural": "{{count}} utenti"
+      },
+      "time": {
+        "daysAgo": "{{count}}g",
+        "hoursAgo": "{{count}}h",
+        "minutesAgo": "{{count}}m",
+        "now": "ora"
+      },
+      "title": "Amministratore",
+      "user": {
+        "admin": "amministratore"
+      }
+    },
     "applet-viewer": {
       "description": "Visualizza ed esegui applet",
       "dialogs": {

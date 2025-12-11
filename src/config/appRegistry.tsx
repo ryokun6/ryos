@@ -173,6 +173,11 @@ const LazyAppletViewerApp = createLazyComponent<AppletViewerInitialData>(
   "applet-viewer"
 );
 
+const LazyAdminApp = createLazyComponent<unknown>(
+  () => import("@/apps/admin/components/AdminAppComponent").then(m => ({ default: m.AdminAppComponent })),
+  "admin"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small)
 // ============================================================================
@@ -192,6 +197,7 @@ import { appMetadata as pcMetadata, helpItems as pcHelpItems } from "@/apps/pc";
 import { appMetadata as terminalMetadata, helpItems as terminalHelpItems } from "@/apps/terminal";
 import { appMetadata as appletViewerMetadata, helpItems as appletViewerHelpItems } from "@/apps/applet-viewer";
 import { appMetadata as controlPanelsMetadata, helpItems as controlPanelsHelpItems } from "@/apps/control-panels";
+import { appMetadata as adminMetadata, helpItems as adminHelpItems } from "@/apps/admin";
 
 // ============================================================================
 // APP REGISTRY
@@ -399,6 +405,20 @@ export const appRegistry = {
       maxSize: { width: 365, height: 600 },
     } as WindowConstraints,
   } as BaseApp<ControlPanelsInitialData> & { windowConfig: WindowConstraints },
+  ["admin"]: {
+    id: "admin",
+    name: "Admin",
+    icon: { type: "image", src: adminMetadata.icon },
+    description: "System administration panel",
+    component: LazyAdminApp,
+    helpItems: adminHelpItems,
+    metadata: adminMetadata,
+    adminOnly: true, // Only visible to admin user (ryo)
+    windowConfig: {
+      defaultSize: { width: 800, height: 500 },
+      minSize: { width: 600, height: 400 },
+    } as WindowConstraints,
+  },
 } as const;
 
 // ============================================================================
@@ -415,13 +435,19 @@ export const getAppIconPath = (appId: AppId): string => {
 };
 
 // Helper function to get all apps except Finder
-export const getNonFinderApps = (): Array<{
+// Pass isAdmin=true to include admin-only apps
+export const getNonFinderApps = (isAdmin: boolean = false): Array<{
   name: string;
   icon: string;
   id: AppId;
 }> => {
   return Object.entries(appRegistry)
-    .filter(([id]) => id !== "finder")
+    .filter(([id, app]) => {
+      if (id === "finder") return false;
+      // Filter out admin-only apps for non-admin users
+      if ((app as { adminOnly?: boolean }).adminOnly && !isAdmin) return false;
+      return true;
+    })
     .map(([id, app]) => ({
       name: app.name,
       icon: getAppIconPath(id as AppId),

@@ -4,6 +4,7 @@ import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 // Re-export STORES for backward compatibility (other modules import from here)
 export { STORES };
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useVideoStore } from "@/stores/useVideoStore";
@@ -309,6 +310,10 @@ export function useFileSystem(
   // Get Finder store methods
   const finderStore = useFinderStore();
   const updateFinderInstance = finderStore.updateInstance;
+  
+  // Get current username for admin check
+  const username = useChatsStore((state) => state.username);
+  const isAdmin = username?.toLowerCase() === "ryo";
   const finderInstance = instanceId
     ? finderStore.getInstance(instanceId)
     : null;
@@ -542,7 +547,7 @@ export function useFileSystem(
 
       // 1. Handle Virtual Directories
       if (currentPath === "/Applications") {
-        displayFiles = getNonFinderApps().map((app) => ({
+        displayFiles = getNonFinderApps(isAdmin).map((app) => ({
           name: app.name,
           isDirectory: false,
           path: `/Applications/${app.name}`,
@@ -854,6 +859,7 @@ export function useFileSystem(
     ipodTracks,
     videoTracks,
     internetExplorerStore.favorites,
+    isAdmin,
   ]);
 
   // Define handleFileOpen

@@ -10,6 +10,7 @@ import { getNonFinderApps } from "@/config/appRegistry";
 import { useAppContext } from "@/contexts/AppContext";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { cn } from "@/lib/utils";
 import { useMemo, useState, useEffect } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -54,10 +55,14 @@ export function AboutFinderDialog({
     }
   }, [isMac]);
 
+  // Get current username for admin check
+  const username = useChatsStore((state) => state.username);
+  const isAdmin = username?.toLowerCase() === "ryo";
+
   const memoryUsage = useMemo(() => {
     const totalMemory = 32; // 32MB total memory
     const systemUsage = 8.5; // System takes about 8.5MB
-    const apps = getNonFinderApps();
+    const apps = getNonFinderApps(isAdmin);
 
     // Get only open apps
     const openApps = apps.filter((app) => appStates[app.id]?.isOpen);
@@ -80,7 +85,7 @@ export function AboutFinderDialog({
     ];
 
     return appUsages;
-  }, [appStates]);
+  }, [appStates, isAdmin]);
 
   const totalUsedMemory = useMemo(() => {
     return memoryUsage.reduce((acc, app) => acc + app.memoryMB, 0);

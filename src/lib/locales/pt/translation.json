@@ -1,5 +1,89 @@
 {
   "apps": {
+    "admin": {
+      "accessDenied": {
+        "description": "Este aplicativo é restrito apenas a administradores.",
+        "loginPrompt": "Faça login com uma conta de administrador.",
+        "title": "Acesso Negado"
+      },
+      "description": "Painel de administração do sistema",
+      "dialogs": {
+        "deleteDescription": "Tem certeza de que deseja excluir {{type}} \"{{name}}\"? Esta ação não pode ser desfeita.",
+        "deleteTitle": "Excluir {{type}}?"
+      },
+      "errors": {
+        "failedToDeleteMessage": "Falha ao excluir mensagem",
+        "failedToDeleteRoom": "Falha ao excluir sala",
+        "failedToDeleteUser": "Falha ao excluir usuário",
+        "failedToFetchMessages": "Falha ao buscar mensagens",
+        "failedToFetchRooms": "Falha ao buscar salas",
+        "failedToFetchUsers": "Falha ao buscar usuários"
+      },
+      "help": {
+        "adminAccess": {
+          "description": "Este aplicativo é acessível apenas ao usuário administrador (ryo).",
+          "title": "Acesso de Administrador"
+        },
+        "roomManagement": {
+          "description": "Visualize e gerencie salas de bate-papo, exclua conteúdo inadequado.",
+          "title": "Gerenciamento de Salas"
+        },
+        "statistics": {
+          "description": "Visualize estatísticas do sistema e métricas de uso.",
+          "title": "Estatísticas"
+        },
+        "userManagement": {
+          "description": "Visualize, pesquise e gerencie usuários registrados.",
+          "title": "Gerenciamento de Usuários"
+        }
+      },
+      "menu": {
+        "aboutAdmin": "Sobre o Admin",
+        "adminHelp": "Ajuda do Admin",
+        "refreshData": "Atualizar Dados"
+      },
+      "messages": {
+        "dataRefreshed": "Dados atualizados",
+        "messageDeleted": "Mensagem eliminada",
+        "roomDeleted": "Sala eliminada",
+        "userDeleted": "Utilizador {{username}} eliminado"
+      },
+      "name": "Admin",
+      "room": {
+        "messagesCount": "{{count}} mensagens",
+        "noMessages": "Nenhuma mensagem"
+      },
+      "search": {
+        "minChars": "Introduza pelo menos 2 carateres",
+        "noResults": "Nenhum utilizador encontrado",
+        "placeholder": "Pesquisar utilizadores (mín. 2 carateres)..."
+      },
+      "sidebar": {
+        "messagesCount": "{{count}} mensagens",
+        "private": "Privado",
+        "rooms": "Salas",
+        "users": "Utilizadores"
+      },
+      "statusBar": {
+        "loggedInAs": "Sessão iniciada como {{username}}",
+        "messagesCount": "{{count}} mensagem",
+        "messagesCount_plural": "{{count}} mensagens",
+        "roomsCount": "{{count}} quarto",
+        "roomsCount_plural": "{{count}} quartos",
+        "usersCount": "{{count}} usuário",
+        "usersCount_plural": "{{count}} usuários"
+      },
+      "time": {
+        "daysAgo": "{{count}}d",
+        "hoursAgo": "{{count}}h",
+        "minutesAgo": "{{count}}m",
+        "now": "agora"
+      },
+      "title": "Admin",
+      "user": {
+        "admin": "admin"
+      }
+    },
     "applet-viewer": {
       "description": "Ver e executar applets",
       "dialogs": {
