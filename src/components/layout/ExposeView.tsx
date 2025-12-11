@@ -8,6 +8,7 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { usePinchGesture } from "@/hooks/usePinchGesture";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import {
@@ -174,13 +175,19 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
     );
   }, [openInstances.length, isMobile]);
 
+  // Pinch-out gesture to close expose view (spreading fingers)
+  const pinchGestureHandlers = usePinchGesture({
+    threshold: 80,
+    onPinchOut: onClose,
+  });
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop - clicking closes expose view */}
+          {/* Backdrop - clicking or pinch-out gesture closes expose view */}
           <motion.div
             className="fixed inset-0 z-[9998] bg-black/50"
             initial={{ opacity: 0 }}
@@ -188,6 +195,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             onClick={onClose}
+            {...pinchGestureHandlers}
           />
 
           {/* Global style to disable iframe interactions in expose mode */}

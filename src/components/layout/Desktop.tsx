@@ -8,6 +8,7 @@ import { useWallpaper } from "@/hooks/useWallpaper";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { SortType } from "@/apps/finder/components/FinderMenuBar";
 import { useLongPress } from "@/hooks/useLongPress";
+import { usePinchGesture } from "@/hooks/usePinchGesture";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -312,6 +313,15 @@ export function Desktop({
     const touch = e.touches[0];
     setContextMenuPos({ x: touch.clientX, y: touch.clientY });
     setContextMenuAppId(null);
+  });
+
+  // ------------------ Mobile pinch gesture support ------------------
+  // Trigger Exposé (Mission Control) when user does a two-finger pinch-in gesture.
+  const pinchGestureHandlers = usePinchGesture({
+    threshold: 80,
+    onPinchIn: () => {
+      window.dispatchEvent(new CustomEvent("toggleExposeView"));
+    },
   });
 
   // Add visibility change and focus handlers to resume video playback
@@ -649,7 +659,22 @@ export function Desktop({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       style={finalStyles}
-      {...longPressHandlers}
+      onTouchStart={(e) => {
+        longPressHandlers.onTouchStart(e);
+        pinchGestureHandlers.onTouchStart(e);
+      }}
+      onTouchEnd={(e) => {
+        longPressHandlers.onTouchEnd();
+        pinchGestureHandlers.onTouchEnd(e);
+      }}
+      onTouchMove={(e) => {
+        longPressHandlers.onTouchMove();
+        pinchGestureHandlers.onTouchMove(e);
+      }}
+      onTouchCancel={(e) => {
+        longPressHandlers.onTouchCancel();
+        pinchGestureHandlers.onTouchCancel(e);
+      }}
     >
       <video
         ref={videoRef}
