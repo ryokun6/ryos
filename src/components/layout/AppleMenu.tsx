@@ -27,6 +27,9 @@ export function AppleMenu({ apps }: AppleMenuProps) {
   const currentTheme = useThemeStore((state) => state.current);
   const isMacOsxTheme = currentTheme === "macosx";
 
+  // Filter out admin-only apps from the Apple menu
+  const visibleApps = apps.filter((app) => app.id !== "admin");
+
   const handleAppClick = (appId: string) => {
     // Simply launch the app - the instance system will handle focus if already open
     launchApp(appId as AppId);
@@ -59,7 +62,7 @@ export function AppleMenu({ apps }: AppleMenuProps) {
             {t("common.appleMenu.aboutThisComputer")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          {apps.map((app) => (
+          {visibleApps.map((app) => (
             <MenubarItem
               key={app.id}
               onClick={() => handleAppClick(app.id)}
