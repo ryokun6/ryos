@@ -18,6 +18,19 @@ const APPLET_SHARE_PREFIX = "applet:share:";
 // Generate unique ID for applets (uses shared token generator)
 const generateId = (): string => generateToken().substring(0, 32);
 
+// Helper function to check if user is admin (ryo) with valid token
+async function isAdmin(
+  redis: Redis,
+  username: string | null,
+  token: string | null
+): Promise<boolean> {
+  if (!username || !token) return false;
+  if (username.toLowerCase() !== "ryo") return false;
+
+  const authResult = await validateAuthToken(redis, username, token);
+  return authResult.valid;
+}
+
 // Request schemas
 const SaveAppletRequestSchema = z.object({
   content: z.string().min(1),
@@ -393,23 +406,9 @@ export default async function handler(req: Request) {
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
-      // Validate authentication
-      const authResult = await validateAuthToken(redis, username, authToken);
-      if (!authResult.valid) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          {
-            status: 401,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
-      }
-
-      // Check if user is ryo
-      if (username?.toLowerCase() !== "ryo") {
+      // Check if user is admin (ryo) with valid token
+      const adminAccess = await isAdmin(redis, username, authToken);
+      if (!adminAccess) {
         return new Response(
           JSON.stringify({ error: "Forbidden" }),
           {
@@ -474,23 +473,9 @@ export default async function handler(req: Request) {
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
-      // Validate authentication
-      const authResult = await validateAuthToken(redis, username, authToken);
-      if (!authResult.valid) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          {
-            status: 401,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
-      }
-
-      // Check if user is ryo
-      if (username?.toLowerCase() !== "ryo") {
+      // Check if user is admin (ryo) with valid token
+      const adminAccess = await isAdmin(redis, username, authToken);
+      if (!adminAccess) {
         return new Response(
           JSON.stringify({ error: "Forbidden" }),
           {

@@ -40,10 +40,27 @@ import {
   filterProfanityPreservingUrls,
   MAX_MESSAGE_LENGTH,
 } from "../utils/validation.js";
+import { validateAuth } from "../utils/auth.js";
 import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./users.js";
 import type { Message, SendMessageData, GenerateRyoReplyData, BulkMessagesResult } from "./_types.js";
 import { ROOM_ID_REGEX } from "../utils/validation.js";
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+async function isAdmin(
+  username: string | null,
+  token: string | null,
+  requestId: string
+): Promise<boolean> {
+  if (!username || !token) return false;
+  if (username.toLowerCase() !== "ryo") return false;
+
+  const authResult = await validateAuth(username, token, requestId);
+  return authResult.valid;
+}
 
 // ============================================================================
 // Handler Functions
@@ -488,6 +505,7 @@ export async function handleDeleteMessage(
   roomId: string,
   messageId: string,
   username: string | null,
+  token: string | null,
   requestId: string
 ): Promise<Response> {
   if (!roomId || !messageId) {
@@ -499,7 +517,8 @@ export async function handleDeleteMessage(
   }
 
   // Only admin user (ryo) can delete
-  if (username?.toLowerCase() !== "ryo") {
+  const adminAccess = await isAdmin(username, token, requestId);
+  if (!adminAccess) {
     logInfo(
       requestId,
       `Unauthorized delete attempt by authenticated user: ${username}`
@@ -555,11 +574,13 @@ export async function handleDeleteMessage(
  */
 export async function handleClearAllMessages(
   username: string | null,
+  token: string | null,
   requestId: string
 ): Promise<Response> {
   logInfo(requestId, "Clearing all chat messages from all rooms");
 
-  if (username?.toLowerCase() !== "ryo") {
+  const adminAccess = await isAdmin(username, token, requestId);
+  if (!adminAccess) {
     logInfo(requestId, `Unauthorized: User ${username} is not the admin`);
     return createErrorResponse("Forbidden - Admin access required", 403);
   }

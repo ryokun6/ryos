@@ -916,6 +916,60 @@ async function testDeletePublicRoomAsNonAdmin(): Promise<void> {
   assertEq(res.status, 403, `Expected 403 for non-admin, got ${res.status}`);
 }
 
+async function testDeleteMessageWithInvalidToken(): Promise<void> {
+  if (!testRoomId || !testMessageId) {
+    throw new Error("No room ID or message ID available");
+  }
+
+  // Try to delete message with invalid token
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/chat-rooms?action=deleteMessage&roomId=${testRoomId}&messageId=${testMessageId}`,
+    "invalid_token_12345",
+    ADMIN_USERNAME,
+    {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+  assertEq(res.status, 401, `Expected 401 for invalid token, got ${res.status}`);
+}
+
+async function testDeletePublicRoomWithInvalidToken(): Promise<void> {
+  if (!publicTestRoomId) {
+    throw new Error("No public room ID available");
+  }
+
+  // Try to delete public room with invalid token
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/chat-rooms?action=deleteRoom&roomId=${publicTestRoomId}`,
+    "invalid_token_12345",
+    ADMIN_USERNAME,
+    {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+  assertEq(res.status, 401, `Expected 401 for invalid token, got ${res.status}`);
+}
+
+async function testCreatePublicRoomWithInvalidToken(): Promise<void> {
+  const roomName = `testroom${Date.now()}`;
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/chat-rooms?action=createRoom`,
+    "invalid_token_12345",
+    ADMIN_USERNAME,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: roomName,
+        type: "public",
+      }),
+    }
+  );
+  assertEq(res.status, 401, `Expected 401 for invalid token, got ${res.status}`);
+}
+
 // ============================================================================
 // Main
 // ============================================================================
@@ -969,11 +1023,13 @@ export async function runChatRoomsTests(): Promise<{ passed: number; failed: num
   await runTest("POST sendMessage - nonexistent room", testSendMessageToNonexistentRoom);
   await runTest("DELETE deleteMessage - as admin", testDeleteMessageAsAdmin);
   await runTest("DELETE deleteMessage - as non-admin (forbidden)", testDeleteMessageAsNonAdmin);
+  await runTest("DELETE deleteMessage - with invalid token (unauthorized)", testDeleteMessageWithInvalidToken);
   await runTest("DELETE deleteMessage - nonexistent message", testDeleteNonexistentMessage);
 
   console.log("\n  Room Creation\n");
   await runTest("POST createRoom - public as admin", testCreatePublicRoomAsAdmin);
   await runTest("POST createRoom - public as non-admin (forbidden)", testCreatePublicRoomAsNonAdmin);
+  await runTest("POST createRoom - public with invalid token (unauthorized)", testCreatePublicRoomWithInvalidToken);
   await runTest("POST createRoom - public missing name", testCreatePublicRoomMissingName);
   await runTest("POST createRoom - private room", testCreatePrivateRoom);
   await runTest("POST createRoom - private missing members", testCreatePrivateRoomMissingMembers);
@@ -985,6 +1041,7 @@ export async function runChatRoomsTests(): Promise<{ passed: number; failed: num
   await runTest("GET getRooms - private room visibility", testPrivateRoomVisibility);
   await runTest("POST sendMessage - admin in private room", testAdminCanMessagePrivateRoom);
   await runTest("DELETE deleteRoom - public as non-admin (forbidden)", testDeletePublicRoomAsNonAdmin);
+  await runTest("DELETE deleteRoom - public with invalid token (unauthorized)", testDeletePublicRoomWithInvalidToken);
   await runTest("DELETE deleteRoom - private as member", testDeletePrivateRoomAsMember);
   await runTest("DELETE deleteRoom - public as admin", testDeletePublicRoomAsAdmin);
 

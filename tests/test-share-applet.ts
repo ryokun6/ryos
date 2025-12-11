@@ -252,7 +252,8 @@ async function testDeleteWithoutAuth(): Promise<void> {
     `${BASE_URL}/api/share-applet?id=someid`,
     { method: "DELETE" }
   );
-  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
+  // Admin endpoints return 403 (Forbidden) when no auth is provided
+  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
 }
 
 async function testDeleteByNonAdmin(): Promise<void> {
@@ -277,7 +278,8 @@ async function testPatchWithoutAuth(): Promise<void> {
       body: JSON.stringify({ featured: true }),
     }
   );
-  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
+  // Admin endpoints return 403 (Forbidden) when no auth is provided
+  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
 }
 
 async function testPatchByNonAdmin(): Promise<void> {
@@ -295,6 +297,36 @@ async function testPatchByNonAdmin(): Promise<void> {
     }
   );
   assertEq(res.status, 403, `Expected 403, got ${res.status}`);
+}
+
+async function testDeleteWithInvalidToken(): Promise<void> {
+  if (!testAppletId) {
+    throw new Error("Test applet ID not set up");
+  }
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/share-applet?id=${testAppletId}`,
+    "invalid_token_12345",
+    "ryo",
+    { method: "DELETE" }
+  );
+  assertEq(res.status, 403, `Expected 403 for invalid token, got ${res.status}`);
+}
+
+async function testPatchWithInvalidToken(): Promise<void> {
+  if (!testAppletId) {
+    throw new Error("Test applet ID not set up");
+  }
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/share-applet?id=${testAppletId}`,
+    "invalid_token_12345",
+    "ryo",
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ featured: true }),
+    }
+  );
+  assertEq(res.status, 403, `Expected 403 for invalid token, got ${res.status}`);
 }
 
 // ============================================================================
@@ -329,10 +361,12 @@ export async function runShareAppletTests(): Promise<{ passed: number; failed: n
   console.log("\n  DELETE Operations\n");
   await runTest("DELETE - without auth", testDeleteWithoutAuth);
   await runTest("DELETE - by non-admin", testDeleteByNonAdmin);
+  await runTest("DELETE - with invalid token (forbidden)", testDeleteWithInvalidToken);
 
   console.log("\n  PATCH Operations\n");
   await runTest("PATCH - without auth", testPatchWithoutAuth);
   await runTest("PATCH - by non-admin", testPatchByNonAdmin);
+  await runTest("PATCH - with invalid token (forbidden)", testPatchWithInvalidToken);
 
   return printSummary();
 }

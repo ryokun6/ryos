@@ -213,8 +213,19 @@ export default async function handler(
   const requestId = generateRequestId();
   logInfo(requestId, `Admin API request: ${req.method}`);
 
-  // Extract auth
-  const { username, token } = extractAuth(req as unknown as Request);
+  // Extract auth from VercelRequest
+  // VercelRequest headers can be either an object or a Headers-like object
+  const authHeader = 
+    typeof req.headers.authorization === "string" 
+      ? req.headers.authorization 
+      : (req.headers.get?.("authorization") as string | undefined);
+  const usernameHeader = 
+    typeof req.headers["x-username"] === "string"
+      ? req.headers["x-username"]
+      : (req.headers.get?.("x-username") as string | undefined);
+  
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+  const username = usernameHeader || null;
 
   // Verify admin access
   const adminAccess = await isAdmin(username, token, requestId);

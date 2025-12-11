@@ -5,6 +5,7 @@
  */
 
 import { runChatRoomsTests } from "./test-chat-rooms";
+import { runAdminTests } from "./test-admin";
 import { runIframeCheckTests } from "./test-iframe-check";
 import { runLinkPreviewTests } from "./test-link-preview";
 import { runParseTitleTests } from "./test-parse-title";
@@ -75,6 +76,7 @@ async function runAllTests(): Promise<void> {
   // Define test suites
   const testSuites: { name: string; run: () => Promise<{ passed: number; failed: number }> }[] = [
     { name: "chat-rooms", run: runChatRoomsTests },
+    { name: "admin", run: runAdminTests },
     { name: "iframe-check", run: runIframeCheckTests },
     { name: "link-preview", run: runLinkPreviewTests },
     { name: "parse-title", run: runParseTitleTests },

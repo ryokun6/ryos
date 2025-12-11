@@ -460,6 +460,7 @@ export async function POST(request: Request): Promise<Response> {
         response = await handleCreateRoom(
           body as { name?: string; type?: "public" | "private"; members?: string[] },
           username,
+          token,
           requestId
         );
         break;
@@ -526,11 +527,11 @@ export async function POST(request: Request): Promise<Response> {
         break;
 
       case "clearAllMessages":
-        response = await handleClearAllMessages(username, requestId);
+        response = await handleClearAllMessages(username, token, requestId);
         break;
 
       case "resetUserCounts":
-        response = await handleResetUserCounts(username, requestId);
+        response = await handleResetUserCounts(username, token, requestId);
         break;
 
       case "verifyToken":
@@ -621,7 +622,7 @@ export async function DELETE(request: Request): Promise<Response> {
           );
           return addCorsHeaders(response, effectiveOrigin);
         }
-        response = await handleDeleteRoom(roomId, username, requestId);
+        response = await handleDeleteRoom(roomId, username, token, requestId);
         break;
       }
 
@@ -640,6 +641,7 @@ export async function DELETE(request: Request): Promise<Response> {
           roomId,
           messageId,
           username,
+          token,
           requestId
         );
         break;
@@ -666,12 +668,22 @@ export async function DELETE(request: Request): Promise<Response> {
 
 async function handleResetUserCounts(
   username: string | null,
+  token: string | null,
   requestId: string
 ): Promise<Response> {
   logInfo(requestId, "Resetting all user counts and clearing room memberships");
 
-  if (username?.toLowerCase() !== "ryo") {
+  if (!username || !token) {
+    return createErrorResponse("Forbidden - Admin access required", 403);
+  }
+  if (username.toLowerCase() !== "ryo") {
     logInfo(requestId, `Unauthorized: User ${username} is not the admin`);
+    return createErrorResponse("Forbidden - Admin access required", 403);
+  }
+
+  const authResult = await validateAuth(username, token, requestId);
+  if (!authResult.valid) {
+    logInfo(requestId, `Unauthorized: Invalid token for admin user ${username}`);
     return createErrorResponse("Forbidden - Admin access required", 403);
   }
 

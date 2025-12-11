@@ -41,9 +41,26 @@ import {
   assertValidUsername,
   assertValidRoomId,
 } from "../utils/validation.js";
+import { validateAuth } from "../utils/auth.js";
 import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./users.js";
 import type { Room, CreateRoomData, JoinLeaveRoomData, SwitchRoomData } from "./_types.js";
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+async function isAdmin(
+  username: string | null,
+  token: string | null,
+  requestId: string
+): Promise<boolean> {
+  if (!username || !token) return false;
+  if (username.toLowerCase() !== "ryo") return false;
+
+  const authResult = await validateAuth(username, token, requestId);
+  return authResult.valid;
+}
 
 // ============================================================================
 // Handler Functions
@@ -118,6 +135,7 @@ export async function handleGetRoom(
 export async function handleCreateRoom(
   data: CreateRoomData,
   username: string | null,
+  token: string | null,
   requestId: string
 ): Promise<Response> {
   const { name: originalName, type = "public", members = [] } = data;
@@ -142,7 +160,8 @@ export async function handleCreateRoom(
       return createErrorResponse("Room name is required for public rooms", 400);
     }
 
-    if (normalizedUsername !== "ryo") {
+    const adminAccess = await isAdmin(username, token, requestId);
+    if (!adminAccess) {
       logInfo(requestId, `Unauthorized: User ${username} is not the admin`);
       return createErrorResponse(
         "Forbidden - Only admin can create public rooms",
@@ -243,6 +262,7 @@ export async function handleCreateRoom(
 export async function handleDeleteRoom(
   roomId: string,
   username: string | null,
+  token: string | null,
   requestId: string
 ): Promise<Response> {
   logInfo(requestId, `Deleting room: ${roomId}`);
@@ -270,7 +290,8 @@ export async function handleDeleteRoom(
         );
       }
     } else {
-      if (username?.toLowerCase() !== "ryo") {
+      const adminAccess = await isAdmin(username, token, requestId);
+      if (!adminAccess) {
         logInfo(requestId, `Unauthorized: User ${username} is not the admin`);
         return createErrorResponse(
           "Unauthorized - admin access required for public rooms",
