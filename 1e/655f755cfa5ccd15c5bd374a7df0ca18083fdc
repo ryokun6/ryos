@@ -8,5 +8,5 @@ src/styles/themes.css: +1455-1459[0]
 
 Conversations:
 
-[0]: 86a71722-2e88-48b5-83fc-46130b7793e4; Fix ScreenSaverPicker macOS label size; robin-alpha-next-2025-11-24;
-[1]: 3043e45d-32a4-44f8-9a90-7bd981ebf8cd; Fix wallpaper preview accuracy; robin-alpha-next-2025-11-24;
+[0]: 86a71722-2e88-48b5-83fc-46130b7793e4; Fix ScreenSaverPicker macOS label size; robin-alpha-next-2025-11-24; composer;
+[1]: 3043e45d-32a4-44f8-9a90-7bd981ebf8cd; Fix wallpaper preview accuracy; robin-alpha-next-2025-11-24; composer;
