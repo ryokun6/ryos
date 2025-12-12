@@ -1924,12 +1924,15 @@
         "noMessages": "No messages"
       },
       "user": {
-        "admin": "admin",
-        "user": "user"
+        "admin": "Admin",
+        "user": "User",
+        "active": "Active",
+        "banned": "Banned"
       },
       "tableHeaders": {
         "username": "Username",
         "role": "Role",
+        "status": "Status",
         "lastActive": "Last Active",
         "user": "User",
         "message": "Message",
@@ -1943,6 +1946,8 @@
       },
       "messages": {
         "userDeleted": "User {{username}} deleted",
+        "userBanned": "User {{username}} banned",
+        "userUnbanned": "User {{username}} unbanned",
         "roomDeleted": "Room deleted",
         "messageDeleted": "Message deleted",
         "dataRefreshed": "Data refreshed"
@@ -1951,9 +1956,12 @@
         "failedToFetchUsers": "Failed to fetch users",
         "failedToFetchRooms": "Failed to fetch rooms",
         "failedToFetchMessages": "Failed to fetch messages",
+        "failedToFetchProfile": "Failed to fetch user profile",
         "failedToDeleteUser": "Failed to delete user",
         "failedToDeleteRoom": "Failed to delete room",
-        "failedToDeleteMessage": "Failed to delete message"
+        "failedToDeleteMessage": "Failed to delete message",
+        "failedToBanUser": "Failed to ban user",
+        "failedToUnbanUser": "Failed to unban user"
       },
       "statusBar": {
         "usersCount": "{{count}} user",
@@ -1969,9 +1977,34 @@
         "description": "This application is restricted to administrators only.",
         "loginPrompt": "Please log in with an admin account."
       },
+      "profile": {
+        "loading": "Loading profile...",
+        "notFound": "User not found",
+        "back": "Back",
+        "banned": "Banned",
+        "lastActive": "Last active",
+        "messages": "Messages",
+        "rooms": "Rooms",
+        "banDetails": "Ban Details",
+        "reason": "Reason",
+        "noReason": "No reason provided",
+        "bannedOn": "Banned on",
+        "actions": "Actions",
+        "ban": "Ban User",
+        "unban": "Unban User",
+        "delete": "Delete User",
+        "confirmBan": "Ban",
+        "banReasonPlaceholder": "Reason for ban (optional)",
+        "activeRooms": "Active in Rooms",
+        "recentMessages": "Recent Messages",
+        "noMessages": "No messages found",
+        "room": "Room"
+      },
       "dialogs": {
         "deleteTitle": "Delete {{type}}?",
-        "deleteDescription": "Are you sure you want to delete {{type}} \"{{name}}\"? This action cannot be undone."
+        "deleteDescription": "Are you sure you want to delete {{type}} \"{{name}}\"? This action cannot be undone.",
+        "banTitle": "Ban User?",
+        "banDescription": "Are you sure you want to ban {{username}}? They will be logged out and unable to access the service."
       },
       "help": {
         "adminAccess": {

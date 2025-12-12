@@ -33,6 +33,17 @@ const redis = new Redis({
 interface AdminRequest {
   action: string;
   targetUsername?: string;
+  reason?: string;
+}
+
+interface UserProfile {
+  username: string;
+  lastActive: number;
+  banned?: boolean;
+  banReason?: string;
+  bannedAt?: number;
+  messageCount?: number;
+  rooms?: { id: string; name: string }[];
 }
 
 // ============================================================================
@@ -101,8 +112,8 @@ async function deleteUser(
 
 async function getAllUsers(
   requestId: string
-): Promise<{ username: string; lastActive: number }[]> {
-  const users: { username: string; lastActive: number }[] = [];
+): Promise<{ username: string; lastActive: number; banned?: boolean }[]> {
+  const users: { username: string; lastActive: number; banned?: boolean }[] = [];
   let cursor = 0;
 
   try {
@@ -115,7 +126,7 @@ async function getAllUsers(
 
       if (keys.length > 0) {
         const userData = await redis.mget<
-          (string | { username: string; lastActive: number } | null)[]
+          (string | { username: string; lastActive: number; banned?: boolean } | null)[]
         >(...keys);
         for (const data of userData) {
           if (!data) continue;
@@ -127,6 +138,7 @@ async function getAllUsers(
             users.push({
               username: parsed.username,
               lastActive: parsed.lastActive || 0,
+              banned: parsed.banned || false,
             });
           }
         }
@@ -138,6 +150,214 @@ async function getAllUsers(
   } catch (error) {
     logError(requestId, "Error fetching all users:", error);
     return [];
+  }
+}
+
+async function getUserProfile(
+  targetUsername: string,
+  requestId: string
+): Promise<UserProfile | null> {
+  const normalizedUsername = targetUsername.toLowerCase();
+
+  try {
+    // Get user data
+    const userKey = `${CHAT_USERS_PREFIX}${normalizedUsername}`;
+    const userData = await redis.get<{ username: string; lastActive: number; banned?: boolean; banReason?: string; bannedAt?: number } | string>(userKey);
+    
+    if (!userData) {
+      return null;
+    }
+
+    const parsed = typeof userData === "string" ? JSON.parse(userData) : userData;
+
+    // Count user messages across all rooms
+    let messageCount = 0;
+    const userRooms: { id: string; name: string }[] = [];
+    
+    // Get all rooms
+    const roomIds = await redis.smembers("chat:rooms");
+    
+    // Build a map of room id -> room name
+    const roomNameMap: Record<string, string> = {};
+    for (const roomId of roomIds || []) {
+      try {
+        const roomData = await redis.get<{ name: string } | string>(`chat:room:${roomId}`);
+        if (roomData) {
+          const parsed = typeof roomData === "string" ? JSON.parse(roomData) : roomData;
+          roomNameMap[roomId] = parsed.name || roomId;
+        } else {
+          roomNameMap[roomId] = roomId;
+        }
+      } catch {
+        roomNameMap[roomId] = roomId; // fallback to ID on error
+      }
+    }
+    
+    for (const roomId of roomIds || []) {
+      const messages = await redis.lrange(`chat:messages:${roomId}`, 0, -1);
+      let roomMessageCount = 0;
+      
+      for (const msg of messages || []) {
+        const msgData = typeof msg === "string" ? JSON.parse(msg) : msg;
+        if (msgData?.username?.toLowerCase() === normalizedUsername) {
+          roomMessageCount++;
+          messageCount++;
+        }
+      }
+      
+      if (roomMessageCount > 0) {
+        userRooms.push({ id: roomId, name: roomNameMap[roomId] || roomId });
+      }
+    }
+
+    logInfo(requestId, `Fetched profile for ${normalizedUsername}: ${messageCount} messages in ${userRooms.length} rooms`);
+
+    return {
+      username: parsed.username,
+      lastActive: parsed.lastActive || 0,
+      banned: parsed.banned || false,
+      banReason: parsed.banReason,
+      bannedAt: parsed.bannedAt,
+      messageCount,
+      rooms: userRooms,
+    };
+  } catch (error) {
+    logError(requestId, `Error fetching user profile for ${normalizedUsername}:`, error);
+    return null;
+  }
+}
+
+async function getUserMessages(
+  targetUsername: string,
+  requestId: string,
+  limit: number = 50
+): Promise<{ id: string; roomId: string; roomName: string; content: string; timestamp: number }[]> {
+  const normalizedUsername = targetUsername.toLowerCase();
+  const messages: { id: string; roomId: string; roomName: string; content: string; timestamp: number }[] = [];
+
+  try {
+    // Get all rooms
+    const roomIds = await redis.smembers("chat:rooms");
+    
+    // Build a map of room id -> room name
+    const roomNameMap: Record<string, string> = {};
+    for (const roomId of roomIds || []) {
+      try {
+        const roomData = await redis.get<{ name: string } | string>(`chat:room:${roomId}`);
+        if (roomData) {
+          const parsed = typeof roomData === "string" ? JSON.parse(roomData) : roomData;
+          roomNameMap[roomId] = parsed.name || roomId;
+        } else {
+          roomNameMap[roomId] = roomId;
+        }
+      } catch {
+        roomNameMap[roomId] = roomId; // fallback to ID on error
+      }
+    }
+    
+    for (const roomId of roomIds || []) {
+      const roomMessages = await redis.lrange(`chat:messages:${roomId}`, 0, -1);
+      
+      for (const msg of roomMessages || []) {
+        const msgData = typeof msg === "string" ? JSON.parse(msg) : msg;
+        if (msgData?.username?.toLowerCase() === normalizedUsername) {
+          messages.push({
+            id: msgData.id,
+            roomId,
+            roomName: roomNameMap[roomId] || roomId,
+            content: msgData.content,
+            timestamp: msgData.timestamp,
+          });
+        }
+      }
+    }
+
+    // Sort by timestamp descending and limit
+    messages.sort((a, b) => b.timestamp - a.timestamp);
+    const limitedMessages = messages.slice(0, limit);
+
+    logInfo(requestId, `Fetched ${limitedMessages.length} messages for ${normalizedUsername}`);
+    return limitedMessages;
+  } catch (error) {
+    logError(requestId, `Error fetching messages for ${normalizedUsername}:`, error);
+    return [];
+  }
+}
+
+async function banUser(
+  targetUsername: string,
+  reason: string | undefined,
+  requestId: string
+): Promise<{ success: boolean; error?: string }> {
+  const normalizedUsername = targetUsername.toLowerCase();
+
+  // Don't allow banning the admin
+  if (normalizedUsername === "ryo") {
+    return { success: false, error: "Cannot ban admin user" };
+  }
+
+  try {
+    const userKey = `${CHAT_USERS_PREFIX}${normalizedUsername}`;
+    const userData = await redis.get<{ username: string; lastActive: number; banned?: boolean } | string>(userKey);
+    
+    if (!userData) {
+      return { success: false, error: "User not found" };
+    }
+
+    const parsed = typeof userData === "string" ? JSON.parse(userData) : userData;
+    
+    // Update user with ban status
+    const updatedUser = {
+      ...parsed,
+      banned: true,
+      banReason: reason || "No reason provided",
+      bannedAt: Date.now(),
+    };
+    
+    await redis.set(userKey, JSON.stringify(updatedUser));
+    
+    // Invalidate all user tokens so they get logged out
+    const deletedTokens = await deleteAllUserTokens(normalizedUsername);
+    logInfo(requestId, `Banned user ${normalizedUsername}, invalidated ${deletedTokens} tokens`);
+
+    return { success: true };
+  } catch (error) {
+    logError(requestId, `Error banning user ${normalizedUsername}:`, error);
+    return { success: false, error: "Failed to ban user" };
+  }
+}
+
+async function unbanUser(
+  targetUsername: string,
+  requestId: string
+): Promise<{ success: boolean; error?: string }> {
+  const normalizedUsername = targetUsername.toLowerCase();
+
+  try {
+    const userKey = `${CHAT_USERS_PREFIX}${normalizedUsername}`;
+    const userData = await redis.get<{ username: string; lastActive: number; banned?: boolean; banReason?: string; bannedAt?: number } | string>(userKey);
+    
+    if (!userData) {
+      return { success: false, error: "User not found" };
+    }
+
+    const parsed = typeof userData === "string" ? JSON.parse(userData) : userData;
+    
+    // Remove ban status
+    const updatedUser = {
+      ...parsed,
+      banned: false,
+      banReason: undefined,
+      bannedAt: undefined,
+    };
+    
+    await redis.set(userKey, JSON.stringify(updatedUser));
+    logInfo(requestId, `Unbanned user ${normalizedUsername}`);
+
+    return { success: true };
+  } catch (error) {
+    logError(requestId, `Error unbanning user ${normalizedUsername}:`, error);
+    return { success: false, error: "Failed to unban user" };
   }
 }
 
@@ -249,6 +469,28 @@ export default async function handler(
         return res.status(200).json({ users });
       }
 
+      case "getUserProfile": {
+        const targetUsername = req.query.username as string;
+        if (!targetUsername) {
+          return createErrorResponse(res, "Username is required", 400);
+        }
+        const profile = await getUserProfile(targetUsername, requestId);
+        if (!profile) {
+          return createErrorResponse(res, "User not found", 404);
+        }
+        return res.status(200).json(profile);
+      }
+
+      case "getUserMessages": {
+        const targetUsername = req.query.username as string;
+        const limit = parseInt(req.query.limit as string) || 50;
+        if (!targetUsername) {
+          return createErrorResponse(res, "Username is required", 400);
+        }
+        const messages = await getUserMessages(targetUsername, requestId, limit);
+        return res.status(200).json({ messages });
+      }
+
       default:
         return createErrorResponse(res, "Invalid action", 400);
     }
@@ -257,7 +499,7 @@ export default async function handler(
   // Handle POST requests
   if (req.method === "POST") {
     const body = req.body as AdminRequest;
-    const { action, targetUsername } = body;
+    const { action, targetUsername, reason } = body;
 
     switch (action) {
       case "deleteUser": {
@@ -270,6 +512,32 @@ export default async function handler(
           return res.status(200).json({ success: true });
         } else {
           return createErrorResponse(res, result.error || "Failed to delete user", 400);
+        }
+      }
+
+      case "banUser": {
+        if (!targetUsername) {
+          return createErrorResponse(res, "Target username is required", 400);
+        }
+
+        const result = await banUser(targetUsername, reason, requestId);
+        if (result.success) {
+          return res.status(200).json({ success: true });
+        } else {
+          return createErrorResponse(res, result.error || "Failed to ban user", 400);
+        }
+      }
+
+      case "unbanUser": {
+        if (!targetUsername) {
+          return createErrorResponse(res, "Target username is required", 400);
+        }
+
+        const result = await unbanUser(targetUsername, requestId);
+        if (result.success) {
+          return res.status(200).json({ success: true });
+        } else {
+          return createErrorResponse(res, result.error || "Failed to unban user", 400);
         }
       }
 

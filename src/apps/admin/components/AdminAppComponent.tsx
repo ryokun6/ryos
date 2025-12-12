@@ -3,6 +3,7 @@ import { AppProps } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { AdminMenuBar } from "./AdminMenuBar";
 import { AdminSidebar } from "./AdminSidebar";
+import { UserProfilePanel } from "./UserProfilePanel";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Trash2, RefreshCw, AlertTriangle } from "lucide-react";
+import { Search, Trash2, RefreshCw, AlertTriangle, Ban } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -29,6 +30,7 @@ import { useTranslation } from "react-i18next";
 interface User {
   username: string;
   lastActive: number;
+  banned?: boolean;
 }
 
 interface Room {
@@ -96,6 +98,7 @@ export function AdminAppComponent({
 
   const [activeSection, setActiveSection] = useState<AdminSection>("users");
   const [isRoomsExpanded, setIsRoomsExpanded] = useState(true);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<string | null>(null);
 
   const isAdmin = username?.toLowerCase() === "ryo";
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId) || null;
@@ -133,10 +136,14 @@ export function AdminAppComponent({
         },
       });
       const data = await response.json();
-      // Sort users alphabetically by username
-      let sortedUsers = (data.users || []).sort((a: User, b: User) =>
-        a.username.toLowerCase().localeCompare(b.username.toLowerCase())
-      );
+      // Sort users: banned first, then alphabetically by username
+      let sortedUsers = (data.users || []).sort((a: User, b: User) => {
+        // Banned users first
+        if (a.banned && !b.banned) return -1;
+        if (!a.banned && b.banned) return 1;
+        // Then alphabetically
+        return a.username.toLowerCase().localeCompare(b.username.toLowerCase());
+      });
       // Filter by search query client-side
       if (search.length > 0) {
         const lowerSearch = search.toLowerCase();
@@ -472,72 +479,86 @@ export function AdminAppComponent({
           {/* Main Content */}
           <div className="flex-1 flex flex-col bg-white overflow-hidden">
             {/* Toolbar */}
-            <div
-              className={cn(
-                "flex items-center gap-2 px-2 py-1.5 border-b",
-                isXpTheme
-                  ? "border-[#919b9c]"
-                  : currentTheme === "macosx"
-                  ? "border-black/10"
-                  : "border-black/20"
-              )}
-              style={
-                currentTheme === "macosx"
-                  ? { backgroundImage: "var(--os-pinstripe-window)" }
-                  : undefined
-              }
-            >
-              {activeSection === "users" && !selectedRoomId && (
-                <div className="relative flex-1">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
-                  <Input
-                    placeholder={t("apps.admin.search.placeholder")}
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    className="pl-7 h-7 text-[12px]"
-                  />
-                </div>
-              )}
-
-              {selectedRoomId && selectedRoom && (
-                <div className="flex-1 flex items-center gap-2">
-                  <span className="text-[12px] font-medium">
-                    #{" "}
-                    {selectedRoom.name}
-                  </span>
-                  <span className="text-[11px] text-neutral-500">
-                    {t("apps.admin.room.messagesCount", { count: roomMessages.length })}
-                  </span>
-                </div>
-              )}
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                className="h-7 w-7 p-0"
+            {!selectedUserProfile && (
+              <div
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1.5 border-b",
+                  isXpTheme
+                    ? "border-[#919b9c]"
+                    : currentTheme === "macosx"
+                    ? "border-black/10"
+                    : "border-black/20"
+                )}
+                style={
+                  currentTheme === "macosx"
+                    ? { backgroundImage: "var(--os-pinstripe-window)" }
+                    : undefined
+                }
               >
-                <RefreshCw
-                  className={cn("h-3.5 w-3.5", isLoading && "animate-spin")}
-                />
-              </Button>
+                {activeSection === "users" && !selectedRoomId && (
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+                    <Input
+                      placeholder={t("apps.admin.search.placeholder")}
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="pl-7 h-7 text-[12px]"
+                    />
+                  </div>
+                )}
 
-              {selectedRoomId && (
+                {selectedRoomId && selectedRoom && (
+                  <div className="flex-1 flex items-center gap-2">
+                    <span className="text-[12px] font-medium">
+                      #{" "}
+                      {selectedRoom.name}
+                    </span>
+                    <span className="text-[11px] text-neutral-500">
+                      {t("apps.admin.room.messagesCount", { count: roomMessages.length })}
+                    </span>
+                  </div>
+                )}
+
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => promptDelete("room", selectedRoomId, selectedRoom?.name || "")}
-                  className="h-7 w-7 p-0 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                  onClick={handleRefresh}
+                  className="h-7 w-7 p-0"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <RefreshCw
+                    className={cn("h-3.5 w-3.5", isLoading && "animate-spin")}
+                  />
                 </Button>
-              )}
-            </div>
+
+                {selectedRoomId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => promptDelete("room", selectedRoomId, selectedRoom?.name || "")}
+                    className="h-7 w-7 p-0 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Content Area */}
             <ScrollArea className="flex-1">
+              {/* User Profile View */}
+              {selectedUserProfile && (
+                <UserProfilePanel
+                  username={selectedUserProfile}
+                  onBack={() => setSelectedUserProfile(null)}
+                  onUserDeleted={() => {
+                    fetchUsers(userSearch);
+                    fetchStats();
+                  }}
+                />
+              )}
+
               {/* Users View */}
-              {activeSection === "users" && !selectedRoomId && (
+              {activeSection === "users" && !selectedRoomId && !selectedUserProfile && (
                 <div className="font-geneva-12">
                   {users.length === 0 && !isLoading ? (
                     <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
@@ -555,7 +576,7 @@ export function AdminAppComponent({
                               {t("apps.admin.tableHeaders.username")}
                             </TableHead>
                             <TableHead className="font-normal bg-gray-100/50 h-[28px]">
-                              {t("apps.admin.tableHeaders.role")}
+                              {t("apps.admin.tableHeaders.status")}
                             </TableHead>
                             <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
                               {t("apps.admin.tableHeaders.lastActive")}
@@ -567,16 +588,38 @@ export function AdminAppComponent({
                           {users.slice(0, visibleUsersCount).map((user) => (
                             <TableRow
                               key={user.username}
-                              className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/50 group"
+                              className={cn(
+                                "border-none hover:bg-gray-100/50 transition-colors cursor-pointer odd:bg-gray-200/50 group",
+                                user.banned && "bg-red-50/50 odd:bg-red-50/70"
+                              )}
+                              onClick={() => setSelectedUserProfile(user.username)}
                             >
                               <TableCell className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded-full bg-neutral-200 flex items-center justify-center text-[9px] font-medium text-neutral-600">
+                                <div className={cn(
+                                  "w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-medium",
+                                  user.banned 
+                                    ? "bg-red-200 text-red-700" 
+                                    : "bg-neutral-200 text-neutral-600"
+                                )}>
                                   {user.username[0].toUpperCase()}
                                 </div>
                                 {user.username}
                               </TableCell>
                               <TableCell>
-                                {user.username === "ryo" ? t("apps.admin.user.admin") : t("apps.admin.user.user")}
+                                {user.banned ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] bg-red-100 text-red-700 rounded">
+                                    <Ban className="h-2.5 w-2.5" />
+                                    {t("apps.admin.user.banned")}
+                                  </span>
+                                ) : user.username.toLowerCase() === "ryo" ? (
+                                  <span className="px-1.5 py-0.5 text-[9px] bg-blue-100 text-blue-700 rounded">
+                                    {t("apps.admin.user.admin")}
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 text-[9px] bg-green-100 text-green-700 rounded">
+                                    {t("apps.admin.user.active")}
+                                  </span>
+                                )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap">
                                 {formatRelativeTime(user.lastActive)}
@@ -586,9 +629,10 @@ export function AdminAppComponent({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() =>
-                                      promptDelete("user", user.username, user.username)
-                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      promptDelete("user", user.username, user.username);
+                                    }}
                                     className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -617,7 +661,7 @@ export function AdminAppComponent({
               )}
 
               {/* Room Messages View */}
-              {selectedRoomId && (
+              {selectedRoomId && !selectedUserProfile && (
                 <div className="font-geneva-12">
                   {roomMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
