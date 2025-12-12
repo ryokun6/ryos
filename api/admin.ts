@@ -114,15 +114,18 @@ async function getAllUsers(
   requestId: string
 ): Promise<{ username: string; lastActive: number; banned?: boolean }[]> {
   const users: { username: string; lastActive: number; banned?: boolean }[] = [];
-  let cursor = 0;
+  let cursor: string | number = 0;
+  let iterations = 0;
+  const maxIterations = 100; // Safety limit
 
   try {
     do {
       const [newCursor, keys] = await redis.scan(cursor, {
         match: `${CHAT_USERS_PREFIX}*`,
-        count: 100,
+        count: 1000,
       });
-      cursor = parseInt(String(newCursor));
+      cursor = newCursor;
+      iterations++;
 
       if (keys.length > 0) {
         const userData = await redis.mget<
@@ -143,9 +146,9 @@ async function getAllUsers(
           }
         }
       }
-    } while (cursor !== 0);
+    } while (cursor !== 0 && cursor !== "0" && iterations < maxIterations);
 
-    logInfo(requestId, `Fetched ${users.length} total users`);
+    logInfo(requestId, `Fetched ${users.length} total users in ${iterations} iterations`);
     return users;
   } catch (error) {
     logError(requestId, "Error fetching all users:", error);
@@ -375,15 +378,19 @@ async function getStats(
   try {
     // Count users
     let userCount = 0;
-    let cursor = 0;
+    let cursor: string | number = 0;
+    let iterations = 0;
+    const maxIterations = 100;
+    
     do {
       const [newCursor, keys] = await redis.scan(cursor, {
         match: `${CHAT_USERS_PREFIX}*`,
-        count: 100,
+        count: 1000,
       });
-      cursor = parseInt(String(newCursor));
+      cursor = newCursor;
       userCount += keys.length;
-    } while (cursor !== 0);
+      iterations++;
+    } while (cursor !== 0 && cursor !== "0" && iterations < maxIterations);
 
     // Count rooms
     const roomIds = await redis.smembers("chat:rooms");
@@ -392,19 +399,21 @@ async function getStats(
     // Count messages (approximate - count keys)
     let messageCount = 0;
     cursor = 0;
+    iterations = 0;
     do {
       const [newCursor, keys] = await redis.scan(cursor, {
         match: "chat:messages:*",
-        count: 100,
+        count: 1000,
       });
-      cursor = parseInt(String(newCursor));
+      cursor = newCursor;
+      iterations++;
 
       // For each message list, get its length
       for (const key of keys) {
         const len = await redis.llen(key);
         messageCount += len;
       }
-    } while (cursor !== 0);
+    } while (cursor !== 0 && cursor !== "0" && iterations < maxIterations);
 
     logInfo(
       requestId,
