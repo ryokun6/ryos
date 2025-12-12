@@ -1,0 +1,8 @@
+AI Notes:
+
+src/hooks/useTranslatedHelpItems.ts: +31[0]
+src/utils/i18n.ts: +18-19[0],+123[0] -18[0]
+
+Conversations:
+
+[0]: e636e93a-3cb8-467b-9631-1d18c0deb2dd; e636e93a; unknown;
