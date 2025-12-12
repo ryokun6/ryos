@@ -255,7 +255,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                             role="button"
                             aria-expanded={isChannelsOpen}
                           >
-                            <span>{t("apps.chats.sidebar.channels")}</span>
+                            <span>{t("apps.chats.sidebar.rooms")}</span>
                             {hasPrivate && (
                               <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <ChevronRight

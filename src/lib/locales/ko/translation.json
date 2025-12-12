@@ -329,7 +329,7 @@
       },
       "name": "채팅",
       "sidebar": {
-        "channels": "채널",
+        "rooms": "방",
         "chats": "채팅",
         "new": "신규",
         "online": "온라인",

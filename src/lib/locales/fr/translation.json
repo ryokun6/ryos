@@ -329,7 +329,7 @@
       },
       "name": "Chats",
       "sidebar": {
-        "channels": "Canaux",
+        "rooms": "Salons",
         "chats": "Discussions",
         "new": "nouveau",
         "online": "en ligne",

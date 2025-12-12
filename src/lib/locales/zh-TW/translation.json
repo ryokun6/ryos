@@ -329,7 +329,7 @@
       },
       "name": "聊天",
       "sidebar": {
-        "channels": "頻道",
+        "rooms": "房間",
         "chats": "聊天",
         "new": "新",
         "online": "線上",

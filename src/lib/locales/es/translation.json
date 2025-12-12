@@ -329,7 +329,7 @@
       },
       "name": "Chats",
       "sidebar": {
-        "channels": "Canales",
+        "rooms": "Salas",
         "chats": "Chats",
         "new": "nuevo",
         "online": "en línea",

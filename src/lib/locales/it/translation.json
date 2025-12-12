@@ -329,7 +329,7 @@
       },
       "name": "Chat",
       "sidebar": {
-        "channels": "Canali",
+        "rooms": "Stanze",
         "chats": "Chat",
         "new": "nuovo",
         "online": "online",

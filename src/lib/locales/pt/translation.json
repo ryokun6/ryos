@@ -329,7 +329,7 @@
       },
       "name": "Bate-papos",
       "sidebar": {
-        "channels": "Canais",
+        "rooms": "Salas",
         "chats": "Chats",
         "new": "novo",
         "online": "online",

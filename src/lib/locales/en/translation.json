@@ -676,7 +676,7 @@
       },
       "sidebar": {
         "chats": "Chats",
-        "channels": "Channels",
+        "rooms": "Rooms",
         "private": "Private",
         "new": "new",
         "online": "online"

@@ -329,7 +329,7 @@
       },
       "name": "チャット",
       "sidebar": {
-        "channels": "チャンネル",
+        "rooms": "ルーム",
         "chats": "チャット",
         "new": "新規",
         "online": "オンライン",

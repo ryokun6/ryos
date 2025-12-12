@@ -329,7 +329,7 @@
       },
       "name": "Chats",
       "sidebar": {
-        "channels": "Kanäle",
+        "rooms": "Räume",
         "chats": "Chats",
         "new": "neu",
         "online": "aktiv",
