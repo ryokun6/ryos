@@ -1,0 +1,8 @@
+AI Notes:
+
+src/apps/ipod/components/IpodAppComponent.tsx: +18[0],+38-92[0],+93-95[1],+96-97[0],+98-100[1],+101[0],+102-104[1],+105-111[0],+112[1],+113-119[0],+120[1],+121-133[0],+134[1],+135-202[0],+1122[0],+1127[0],+2932-2949[0] -18[0],-957[0]
+
+Conversations:
+
+[0]: e69aa14b-2399-440f-9e56-392af951f3fb; Ipod minimized PIP player; claude-4.5-opus-high-thinking;
+[1]: 7eb33006-96b8-4b33-9e4d-b2b78d555cac; PiP player middle alignment on macOS; claude-4.5-opus-high-thinking;
