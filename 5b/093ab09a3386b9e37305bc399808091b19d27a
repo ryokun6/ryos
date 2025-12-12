@@ -1,0 +1,21 @@
+AI Notes:
+
+src/apps/admin/components/AdminAppComponent.tsx: +17-25[0],+89-90[1],+123[0],+125[0],+129-134[0],+136[1],+137[0],+138[1],+139-146[0],+147-148[1],+155[0],+359[1],+377[1],+505[0],+530[0],+541[0],+542[1],+545[0],+546[1],+550-570[0],+572-575[0],+576[2],+577-601[0],+602-603[1],+604-606[0],+607-608[1],+609[0],+610[1],+611[0],+613-614[0],+621[0],+624[0],+627-646[0],+648-679[0],+686[0],+694[0] -17[0],-113[0],-115-117[1],-118[0],-122-124[0],-126[1],-133[1],-337-340[1],-341[0],-359-360[1],-361[0],-489[0],-514[0],-525[0],-526[1],-529[0],-530-532[1],-536[0],-537[1],-538-547[0],-549-568[0],-570-572[0],-574-575[0],-582[0],-585[0],-588-620[0],-622-626[0],-633-642[0],-650[0]
+src/apps/admin/components/AdminSidebar.tsx: +2[0],+53[0],+58[0],+163[0] -2[1],-49[0],-54[0],-59[0],-93[1],-118[1],-120-122[0],-169[0],-176-207[0],-212[1],-213-214[0],-215-220[1],-221-222[0],-223[1],-224[0]
+src/lib/locales/de/translation.json: +40[1],+59[3] -57[1],-59[3]
+src/lib/locales/en/translation.json: +1914-1915[0],+1918[3],+1921[1],+1927-1936[0] -1914[0],-1917[3],-1918[1],-1926[0]
+src/lib/locales/es/translation.json: +40[1],+59[3] -57[1],-59[3]
+src/lib/locales/fr/translation.json: +40[1],+59[3] -57[1],-59[3]
+src/lib/locales/it/translation.json: +40[1],+59[3] -57[1],-59[3]
+src/lib/locales/ja/translation.json: +40[1],+59[3] -57[1],-59[3]
+src/lib/locales/ko/translation.json: +40[1],+59[3] -57[1],-59[3]
+src/lib/locales/pt/translation.json: +40[1],+59[3] -57[1],-59[3]
+src/lib/locales/ru/translation.json: +40[1],+59[3] -57[1],-59[3]
+src/lib/locales/zh-TW/translation.json: +40[1],+59[3] -57[1],-59[3]
+
+Conversations:
+
+[0]: 86fbeecd-8ed2-4d92-a335-fe8bed9e9799; Admin app list view styling; claude-4.5-opus-high-thinking;
+[1]: 17bffb6d-cf90-41f4-94e7-7c100786a590; Admin app sidebar modifications; claude-4.5-opus-high-thinking;
+[2]: e636e93a-3cb8-467b-9631-1d18c0deb2dd; e636e93a; unknown;
+[3]: 27a737bd-f7a0-4853-aa11-810c1bd6b58b; Input placeholder text modification; claude-4.5-opus-high-thinking;
