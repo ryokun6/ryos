@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronRight, Users, MessageSquare, Hash, Lock } from "lucide-react";
+import { ChevronRight, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -46,17 +46,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const isWindowsLegacyTheme = isXpTheme;
 
   const publicRooms = rooms.filter((r) => r.type !== "private");
-  const privateRooms = rooms.filter((r) => r.type === "private");
 
   return (
     <div
       className={cn(
-        "flex flex-col font-geneva-12 text-[12px] bg-neutral-100 w-48 border-r h-full overflow-hidden",
+        "flex flex-col font-geneva-12 text-[11px] bg-gray-100 w-48 border-r h-full overflow-hidden",
         isWindowsLegacyTheme
           ? "border-[#919b9c]"
           : currentTheme === "macosx"
           ? "border-black/10"
-          : "border-black"
+          : "border-gray-300"
       )}
     >
       <div className="pt-3 flex flex-col flex-1 overflow-hidden">
@@ -90,7 +89,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               onRoomSelect(null);
             }}
           >
-            <Users className="w-3.5 h-3.5" />
             <span>{t("apps.admin.sidebar.users")}</span>
             <span
               className={cn(
@@ -115,11 +113,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               onToggleRoomsExpanded();
             }}
           >
-            <MessageSquare className="w-3 h-3 mr-1.5" />
             <span>{t("apps.admin.sidebar.rooms")}</span>
-            <span className="text-[10px] ml-1.5 normal-case lowercase">
-              ({stats.totalRooms})
-            </span>
             <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
               <ChevronRight
                 className={cn(
@@ -166,62 +160,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                             : "text-black/40"
                         )}
                       >
-                        {room.userCount}
+                        {room.userCount} {t("apps.admin.sidebar.online")}
                       </span>
                     </div>
                   ))}
                 </>
               )}
 
-              {privateRooms.length > 0 && (
-                <>
-                  <div className="px-4 pt-2 pb-1 !text-[10px] uppercase tracking-wide text-black/40">
-                    {t("apps.admin.sidebar.private")}
-                  </div>
-                  {privateRooms.map((room) => (
-                    <div
-                      key={room.id}
-                      className={cn(
-                        "group relative py-1 px-5 flex items-center gap-1.5 cursor-pointer",
-                        selectedRoomId === room.id ? "" : "hover:bg-black/5"
-                      )}
-                      style={
-                        selectedRoomId === room.id
-                          ? {
-                              background: "var(--os-color-selection-bg)",
-                              color: "var(--os-color-selection-text)",
-                            }
-                          : undefined
-                      }
-                      onClick={() => {
-                        playButtonClick();
-                        onSectionChange("rooms");
-                        onRoomSelect(room.id);
-                      }}
-                    >
-                      <Lock className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{room.name}</span>
-                    </div>
-                  ))}
-                </>
-              )}
             </>
           )}
         </div>
 
-        {/* Stats Footer */}
-        <div
-          className={cn(
-            "px-3 py-2 text-[10px] text-black/50 border-t flex-shrink-0",
-            isWindowsLegacyTheme
-              ? "border-[#919b9c]"
-              : currentTheme === "macosx"
-              ? "border-black/10"
-              : "border-black/20"
-          )}
-        >
-          <div>{t("apps.admin.sidebar.messagesCount", { count: stats.totalMessages })}</div>
-        </div>
       </div>
     </div>
   );

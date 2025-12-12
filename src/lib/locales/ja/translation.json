@@ -37,6 +37,7 @@
           "title": "ユーザー管理"
         }
       },
+      "loadMore": "さらに読み込む（残り{{remaining}}件）",
       "menu": {
         "aboutAdmin": "Adminについて",
         "adminHelp": "Adminヘルプ",
@@ -54,12 +55,12 @@
         "noMessages": "メッセージはありません"
       },
       "search": {
-        "minChars": "2文字以上入力してください",
         "noResults": "ユーザーが見つかりません",
-        "placeholder": "ユーザーを検索 (2文字以上)..."
+        "placeholder": "ユーザーを検索..."
       },
       "sidebar": {
         "messagesCount": "メッセージ{{count}}件",
+        "online": "オンライン",
         "private": "プライベート",
         "rooms": "ルーム",
         "users": "ユーザー"
@@ -73,6 +74,14 @@
         "usersCount": "{{count}}人",
         "usersCount_plural": "{{count}}人"
       },
+      "tableHeaders": {
+        "lastActive": "最終アクティブ",
+        "message": "メッセージ",
+        "role": "役割",
+        "time": "時間",
+        "user": "ユーザー",
+        "username": "ユーザー名"
+      },
       "time": {
         "daysAgo": "{{count}}日",
         "hoursAgo": "{{count}}時間",
@@ -81,7 +90,8 @@
       },
       "title": "管理者",
       "user": {
-        "admin": "管理者"
+        "admin": "管理者",
+        "user": "ユーザー"
       }
     },
     "applet-viewer": {

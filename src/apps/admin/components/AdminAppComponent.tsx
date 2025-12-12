@@ -14,7 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Trash2, RefreshCw, AlertTriangle, Clock } from "lucide-react";
+import { Search, Trash2, RefreshCw, AlertTriangle } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -78,6 +86,8 @@ export function AdminAppComponent({
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [visibleUsersCount, setVisibleUsersCount] = useState(20);
+  const USERS_PER_PAGE = 20;
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
     totalRooms: 0,
@@ -110,27 +120,39 @@ export function AdminAppComponent({
     }
   }, [username, authToken]);
 
-  // Fetch users
+  // Fetch users (uses admin API to get all users)
   const fetchUsers = useCallback(async (search: string = "") => {
-    if (search.length < 2) {
-      setUsers([]);
-      return;
-    }
+    if (!username || !authToken) return;
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `/api/chat-rooms?action=getUsers&search=${encodeURIComponent(search)}`
-      );
+      const response = await fetch(`/api/admin?action=getAllUsers`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "x-username": username,
+        },
+      });
       const data = await response.json();
-      setUsers(data.users || []);
+      // Sort users alphabetically by username
+      let sortedUsers = (data.users || []).sort((a: User, b: User) =>
+        a.username.toLowerCase().localeCompare(b.username.toLowerCase())
+      );
+      // Filter by search query client-side
+      if (search.length > 0) {
+        const lowerSearch = search.toLowerCase();
+        sortedUsers = sortedUsers.filter((u: User) =>
+          u.username.toLowerCase().includes(lowerSearch)
+        );
+      }
+      setUsers(sortedUsers);
+      setVisibleUsersCount(USERS_PER_PAGE); // Reset pagination when fetching
     } catch (error) {
       console.error("Failed to fetch users:", error);
       toast.error(t("apps.admin.errors.failedToFetchUsers"));
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [username, authToken, t, USERS_PER_PAGE]);
 
   // Fetch rooms
   const fetchRooms = useCallback(async () => {
@@ -334,11 +356,7 @@ export function AdminAppComponent({
   // Handle user search
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (userSearch.length >= 2) {
-        fetchUsers(userSearch);
-      } else {
-        setUsers([]);
-      }
+      fetchUsers(userSearch);
     }, 300);
     return () => clearTimeout(timer);
   }, [userSearch, fetchUsers]);
@@ -356,9 +374,7 @@ export function AdminAppComponent({
     if (selectedRoomId) {
       fetchRoomMessages(selectedRoomId);
     }
-    if (userSearch.length >= 2) {
-      fetchUsers(userSearch);
-    }
+    fetchUsers(userSearch);
     toast.success(t("apps.admin.messages.dataRefreshed"));
   }, [
     fetchRooms,
@@ -486,7 +502,7 @@ export function AdminAppComponent({
               {selectedRoomId && selectedRoom && (
                 <div className="flex-1 flex items-center gap-2">
                   <span className="text-[12px] font-medium">
-                    {selectedRoom.type === "private" ? "🔒" : "#"}{" "}
+                    #{" "}
                     {selectedRoom.name}
                   </span>
                   <span className="text-[11px] text-neutral-500">
@@ -511,7 +527,7 @@ export function AdminAppComponent({
                   variant="ghost"
                   size="sm"
                   onClick={() => promptDelete("room", selectedRoomId, selectedRoom?.name || "")}
-                  className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                  className="h-7 w-7 p-0 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -522,124 +538,152 @@ export function AdminAppComponent({
             <ScrollArea className="flex-1">
               {/* Users View */}
               {activeSection === "users" && !selectedRoomId && (
-                <div className="p-2">
-                  {users.length === 0 ? (
+                <div className="font-geneva-12">
+                  {users.length === 0 && !isLoading ? (
                     <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
                       <Search className="h-8 w-8 mb-2 opacity-50" />
-                      <span className="text-[12px]">
-                        {userSearch.length < 2
-                          ? t("apps.admin.search.minChars")
-                          : t("apps.admin.search.noResults")}
+                      <span className="text-[11px]">
+                        {t("apps.admin.search.noResults")}
                       </span>
                     </div>
                   ) : (
-                    <div className="space-y-0.5">
-                      {users.map((user) => (
-                        <div
-                          key={user.username}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-neutral-100 group"
-                        >
-                          <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center text-[11px] font-medium text-neutral-600">
-                            {user.username[0].toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[12px] font-medium truncate">
-                                {user.username}
-                              </span>
-                              {user.username === "ryo" && (
-                                <span className="text-[10px] text-neutral-500">
-                                  ({t("apps.admin.user.admin")})
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1 text-[10px] text-neutral-400">
-                            <Clock className="h-3 w-3" />
-                            {formatRelativeTime(user.lastActive)}
-                          </div>
-                          {user.username !== "ryo" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                promptDelete("user", user.username, user.username)
-                              }
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 hover:bg-red-50"
+                    <>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="text-[10px] border-none font-normal">
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                              {t("apps.admin.tableHeaders.username")}
+                            </TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                              {t("apps.admin.tableHeaders.role")}
+                            </TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
+                              {t("apps.admin.tableHeaders.lastActive")}
+                            </TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px] w-8"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="text-[11px]">
+                          {users.slice(0, visibleUsersCount).map((user) => (
+                            <TableRow
+                              key={user.username}
+                              className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/50 group"
                             >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
+                              <TableCell className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-full bg-neutral-200 flex items-center justify-center text-[9px] font-medium text-neutral-600">
+                                  {user.username[0].toUpperCase()}
+                                </div>
+                                {user.username}
+                              </TableCell>
+                              <TableCell>
+                                {user.username === "ryo" ? t("apps.admin.user.admin") : t("apps.admin.user.user")}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {formatRelativeTime(user.lastActive)}
+                              </TableCell>
+                              <TableCell>
+                                {user.username !== "ryo" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      promptDelete("user", user.username, user.username)
+                                    }
+                                    className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {users.length > visibleUsersCount && (
+                        <div className="pt-2 pb-1 flex justify-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setVisibleUsersCount((prev) => prev + USERS_PER_PAGE)}
+                            className="h-7 text-[11px] text-neutral-500 hover:text-neutral-700"
+                          >
+                            {t("apps.admin.loadMore", { remaining: users.length - visibleUsersCount })}
+                          </Button>
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
 
               {/* Room Messages View */}
               {selectedRoomId && (
-                <div className="p-2">
+                <div className="font-geneva-12">
                   {roomMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
-                      <span className="text-[12px]">{t("apps.admin.room.noMessages")}</span>
+                      <span className="text-[11px]">{t("apps.admin.room.noMessages")}</span>
                     </div>
                   ) : (
-                    <div className="space-y-1">
-                      {roomMessages.map((message) => (
-                        <div
-                          key={message.id}
-                          className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-neutral-50 group"
-                        >
-                          <div className="w-5 h-5 rounded-full bg-neutral-200 flex items-center justify-center text-[10px] font-medium text-neutral-600 flex-shrink-0 mt-0.5">
-                            {message.username[0].toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-medium">
-                                {message.username}
-                              </span>
-                              <span className="text-[10px] text-neutral-400">
-                                {formatRelativeTime(message.timestamp)}
-                              </span>
-                            </div>
-                            <p className="text-[12px] text-neutral-700 break-words">
-                              {message.content}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              promptDelete(
-                                "message",
-                                message.id,
-                                message.content.substring(0, 30) + "..."
-                              )
-                            }
-                            className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="text-[10px] border-none font-normal">
+                          <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                            {t("apps.admin.tableHeaders.user")}
+                          </TableHead>
+                          <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                            {t("apps.admin.tableHeaders.message")}
+                          </TableHead>
+                          <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
+                            {t("apps.admin.tableHeaders.time")}
+                          </TableHead>
+                          <TableHead className="font-normal bg-gray-100/50 h-[28px] w-8"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="text-[11px]">
+                        {roomMessages.map((message) => (
+                          <TableRow
+                            key={message.id}
+                            className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/50 group"
                           >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
+                            <TableCell className="flex items-center gap-2 whitespace-nowrap">
+                              <div className="w-4 h-4 rounded-full bg-neutral-200 flex items-center justify-center text-[9px] font-medium text-neutral-600">
+                                {message.username[0].toUpperCase()}
+                              </div>
+                              {message.username}
+                            </TableCell>
+                            <TableCell className="max-w-[200px]">
+                              <span className="truncate block">{message.content}</span>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {formatRelativeTime(message.timestamp)}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  promptDelete(
+                                    "message",
+                                    message.id,
+                                    message.content.substring(0, 30) + "..."
+                                  )
+                                }
+                                className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   )}
                 </div>
               )}
             </ScrollArea>
 
             {/* Status Bar */}
-            <div
-              className={cn(
-                "px-2 py-1 text-[10px] font-geneva-12 border-t flex items-center justify-between",
-                isXpTheme
-                  ? "bg-neutral-100 border-[#919b9c]"
-                  : currentTheme === "macosx"
-                  ? "bg-neutral-100 border-black/10"
-                  : "bg-neutral-100 border-black/20"
-              )}
-            >
+            <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-gray-100 border-t border-gray-300">
               <span>
                 {activeSection === "users" && !selectedRoomId
                   ? t("apps.admin.statusBar.usersCount", { count: users.length })
@@ -647,7 +691,7 @@ export function AdminAppComponent({
                   ? t("apps.admin.statusBar.messagesCount", { count: roomMessages.length })
                   : t("apps.admin.statusBar.roomsCount", { count: rooms.length })}
               </span>
-              <span className="text-neutral-500">
+              <span>
                 {t("apps.admin.statusBar.loggedInAs", { username })}
               </span>
             </div>

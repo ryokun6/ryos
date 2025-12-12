@@ -37,6 +37,7 @@
           "title": "Gerenciamento de Usuários"
         }
       },
+      "loadMore": "Carregar mais ({{remaining}} restantes)",
       "menu": {
         "aboutAdmin": "Sobre o Admin",
         "adminHelp": "Ajuda do Admin",
@@ -54,12 +55,12 @@
         "noMessages": "Nenhuma mensagem"
       },
       "search": {
-        "minChars": "Introduza pelo menos 2 carateres",
         "noResults": "Nenhum utilizador encontrado",
-        "placeholder": "Pesquisar utilizadores (mín. 2 carateres)..."
+        "placeholder": "Pesquisar utilizadores..."
       },
       "sidebar": {
         "messagesCount": "{{count}} mensagens",
+        "online": "online",
         "private": "Privado",
         "rooms": "Salas",
         "users": "Utilizadores"
@@ -73,6 +74,14 @@
         "usersCount": "{{count}} usuário",
         "usersCount_plural": "{{count}} usuários"
       },
+      "tableHeaders": {
+        "lastActive": "Última Atividade",
+        "message": "Mensagem",
+        "role": "Função",
+        "time": "Hora",
+        "user": "Usuário",
+        "username": "Nome de Usuário"
+      },
       "time": {
         "daysAgo": "{{count}}d",
         "hoursAgo": "{{count}}h",
@@ -81,7 +90,8 @@
       },
       "title": "Admin",
       "user": {
-        "admin": "admin"
+        "admin": "admin",
+        "user": "usuário"
       }
     },
     "applet-viewer": {

@@ -37,6 +37,7 @@
           "title": "Benutzerverwaltung"
         }
       },
+      "loadMore": "Mehr laden ({{remaining}} übrig)",
       "menu": {
         "aboutAdmin": "Über Admin",
         "adminHelp": "Admin-Hilfe",
@@ -54,12 +55,12 @@
         "noMessages": "Keine Nachrichten"
       },
       "search": {
-        "minChars": "Mindestens 2 Zeichen eingeben",
         "noResults": "Keine Benutzer gefunden",
-        "placeholder": "Benutzer suchen (mind. 2 Zeichen)..."
+        "placeholder": "Benutzer suchen..."
       },
       "sidebar": {
         "messagesCount": "{{count}} Nachrichten",
+        "online": "online",
         "private": "Privat",
         "rooms": "Räume",
         "users": "Benutzer"
@@ -73,6 +74,14 @@
         "usersCount": "{{count}} Benutzer",
         "usersCount_plural": "{{count}} Benutzer"
       },
+      "tableHeaders": {
+        "lastActive": "Zuletzt aktiv",
+        "message": "Nachricht",
+        "role": "Rolle",
+        "time": "Zeit",
+        "user": "Benutzer",
+        "username": "Benutzername"
+      },
       "time": {
         "daysAgo": "{{count}}T",
         "hoursAgo": "{{count}}h",
@@ -81,7 +90,8 @@
       },
       "title": "Admin",
       "user": {
-        "admin": "admin"
+        "admin": "admin",
+        "user": "Benutzer"
       }
     },
     "applet-viewer": {

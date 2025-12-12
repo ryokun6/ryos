@@ -1911,19 +1911,29 @@
         "users": "Users",
         "rooms": "Rooms",
         "private": "Private",
-        "messagesCount": "{{count}} messages"
+        "messagesCount": "{{count}} messages",
+        "online": "online"
       },
       "search": {
-        "placeholder": "Search users (min 2 chars)...",
-        "minChars": "Enter at least 2 characters",
+        "placeholder": "Search users...",
         "noResults": "No users found"
       },
+      "loadMore": "Load more ({{remaining}} remaining)",
       "room": {
         "messagesCount": "{{count}} messages",
         "noMessages": "No messages"
       },
       "user": {
-        "admin": "admin"
+        "admin": "admin",
+        "user": "user"
+      },
+      "tableHeaders": {
+        "username": "Username",
+        "role": "Role",
+        "lastActive": "Last Active",
+        "user": "User",
+        "message": "Message",
+        "time": "Time"
       },
       "time": {
         "now": "now",

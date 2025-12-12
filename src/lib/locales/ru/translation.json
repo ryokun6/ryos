@@ -37,6 +37,7 @@
           "title": "Управление пользователями"
         }
       },
+      "loadMore": "Загрузить ещё ({{remaining}} осталось)",
       "menu": {
         "aboutAdmin": "Об администрировании",
         "adminHelp": "Справка по администрированию",
@@ -54,12 +55,12 @@
         "noMessages": "Нет сообщений"
       },
       "search": {
-        "minChars": "Введите не менее 2 символов",
         "noResults": "Пользователи не найдены",
-        "placeholder": "Поиск пользователей (мин. 2 симв.)..."
+        "placeholder": "Поиск пользователей..."
       },
       "sidebar": {
         "messagesCount": "{{count}} сообщений",
+        "online": "онлайн",
         "private": "Приватный",
         "rooms": "Комнаты",
         "users": "Пользователи"
@@ -73,6 +74,14 @@
         "usersCount": "{{count}} пользователь",
         "usersCount_plural": "{{count}} пользователей"
       },
+      "tableHeaders": {
+        "lastActive": "Последняя активность",
+        "message": "Сообщение",
+        "role": "Роль",
+        "time": "Время",
+        "user": "Пользователь",
+        "username": "Имя пользователя"
+      },
       "time": {
         "daysAgo": "{{count}} дн.",
         "hoursAgo": "{{count}} ч.",
@@ -81,7 +90,8 @@
       },
       "title": "Админ",
       "user": {
-        "admin": "админ"
+        "admin": "админ",
+        "user": "пользователь"
       }
     },
     "applet-viewer": {
