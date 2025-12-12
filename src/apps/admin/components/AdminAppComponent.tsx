@@ -194,7 +194,7 @@ export function AdminAppComponent({
       setIsLoading(true);
       try {
         const response = await fetch(
-          `/api/chat-rooms?action=getMessages&roomId=${encodeURIComponent(roomId)}`,
+          `/api/chat-rooms?action=getMessages&roomId=${encodeURIComponent(roomId)}&limit=200`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,

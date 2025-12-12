@@ -168,7 +168,9 @@ export async function GET(request: Request): Promise<Response> {
           );
           break;
         }
-        response = await handleGetMessages(roomId, requestId);
+        const limitParam = url.searchParams.get("limit");
+        const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 20, 500) : 20;
+        response = await handleGetMessages(roomId, requestId, limit);
         break;
       }
 

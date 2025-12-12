@@ -71,9 +71,10 @@ async function isAdmin(
  */
 export async function handleGetMessages(
   roomId: string,
-  requestId: string
+  requestId: string,
+  limit: number = 20
 ): Promise<Response> {
-  logInfo(requestId, `Fetching messages for room: ${roomId}`);
+  logInfo(requestId, `Fetching messages for room: ${roomId} (limit: ${limit})`);
 
   try {
     assertValidRoomId(roomId, requestId);
@@ -84,7 +85,7 @@ export async function handleGetMessages(
       return createErrorResponse("Room not found", 404);
     }
 
-    const messages = await getMessages(roomId, 20);
+    const messages = await getMessages(roomId, limit);
     logInfo(
       requestId,
       `Processed ${messages.length} valid messages for room ${roomId}`
