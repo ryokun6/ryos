@@ -89,6 +89,9 @@
     @apply border-border;
     user-select: none;
     -webkit-user-select: none;
+    /* Safari-specific: prevent touch callout and tap highlight globally */
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .no-touch-callout {
@@ -727,6 +730,51 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   -moz-user-select: none !important;
   -ms-user-select: none !important;
   user-select: none !important;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Safari-specific selection prevention for interactive UI elements          */
+/* Safari can trigger selection during touch gestures even with user-select: */
+/* none. This class provides comprehensive prevention for all browsers.      */
+/* ------------------------------------------------------------------------- */
+.no-select-all {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation;
+  -ms-touch-action: manipulation;
+}
+
+/* Force no-select on all descendants as well (Safari fix) */
+.no-select-all * {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Variant with touch-action: none for elements that handle their own gestures */
+.no-select-gesture {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: none !important;
+  -ms-touch-action: none !important;
+}
+
+.no-select-gesture * {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
 }
 
 /* ------------------------------------------------------------------------- */

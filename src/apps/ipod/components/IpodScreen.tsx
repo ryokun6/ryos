@@ -553,7 +553,7 @@ export function IpodScreen({
   return (
     <div
       className={cn(
-        "relative w-full h-[150px] border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none",
+        "relative w-full h-[150px] border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none no-select-all",
         lcdFilterOn ? "lcd-screen" : "",
         backlightOn
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
@@ -569,7 +569,9 @@ export function IpodScreen({
         maxWidth: '100%',
         maxHeight: '150px',
         position: 'relative',
-        contain: 'layout style paint'
+        contain: 'layout style paint',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none',
       }}
     >
       {/* LCD screen overlay with scan lines - only show when LCD filter is on */}

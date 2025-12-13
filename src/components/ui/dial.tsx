@@ -142,16 +142,18 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
     const percentage = ((value - min) / (max - min)) * 100;
 
     return (
-      <div className={cn("flex flex-col items-center", className)} ref={ref}>
+      <div className={cn("flex flex-col items-center no-select-gesture", className)} ref={ref}>
         {label && (
           <div
             ref={valueRef}
             className={cn(
-              "mb-1 font-geneva-12 text-center cursor-ew-resize select-none",
+              "mb-1 font-geneva-12 text-center cursor-ew-resize select-none no-select-gesture",
               isDraggingValue && "text-[#ff00ff]"
             )}
             style={{
               touchAction: "none",
+              WebkitUserSelect: "none",
+              WebkitTouchCallout: "none",
             }}
             onMouseDown={handleValueMouseDown}
             onTouchStart={handleValueTouchStart}
@@ -165,13 +167,15 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
         <div
           ref={dialRef}
           className={cn(
-            "relative rounded-full bg-[#333] cursor-ew-resize",
+            "relative rounded-full bg-[#333] cursor-ew-resize select-none no-select-gesture",
             sizeClasses[size],
             isDragging && "ring-1 ring-[#ff00ff]"
           )}
           style={{
             background: `conic-gradient(${color} 0% ${percentage}%, #333 ${percentage}% 100%)`,
             touchAction: "none",
+            WebkitUserSelect: "none",
+            WebkitTouchCallout: "none",
           }}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}

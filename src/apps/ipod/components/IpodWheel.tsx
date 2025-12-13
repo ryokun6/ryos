@@ -296,7 +296,7 @@ export function IpodWheel({
   return (
     <div
       className={cn(
-        "mt-6 relative w-[180px] h-[180px] rounded-full flex items-center justify-center select-none",
+        "mt-6 relative w-[180px] h-[180px] rounded-full flex items-center justify-center select-none no-select-gesture",
         theme === "classic"
           ? "bg-gray-300/60"
           : theme === "u2"
@@ -321,7 +321,7 @@ export function IpodWheel({
           }
         }}
         className={cn(
-          "ipod-wheel-center absolute w-16 h-16 rounded-full z-10 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none",
+          "ipod-wheel-center absolute w-16 h-16 rounded-full z-10 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none select-none no-select-gesture",
           theme === "classic"
             ? "bg-white/30"
             : theme === "u2"
@@ -333,7 +333,7 @@ export function IpodWheel({
       {/* Wheel sections */}
       <div
         ref={wheelRef}
-        className="absolute w-full h-full rounded-full touch-none select-none"
+        className="absolute w-full h-full rounded-full touch-none select-none no-select-gesture"
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -342,7 +342,7 @@ export function IpodWheel({
       >
         {/* Wheel labels - no click handlers */}
         <div
-          className="absolute top-1.5 text-center left-1/2 transform -translate-x-1/2 font-chicago text-xs text-white menu-button cursor-default select-none"
+          className="absolute top-1.5 text-center left-1/2 transform -translate-x-1/2 font-chicago text-xs text-white menu-button cursor-default select-none no-select-gesture"
           onClick={(e) => {
             if (recentTouchRef.current || isInTouchDragRef.current) return;
             e.stopPropagation(); // Prevent triggering wheel mousedown
@@ -351,13 +351,13 @@ export function IpodWheel({
         >
           MENU
         </div>
-        <div className="absolute right-2 text-right top-1/2 transform -translate-y-1/2 font-chicago text-[12px] text-white cursor-default select-none">
+        <div className="absolute right-2 text-right top-1/2 transform -translate-y-1/2 font-chicago text-[12px] text-white cursor-default select-none no-select-gesture">
           ⏭
         </div>
-        <div className="absolute bottom-1 text-center left-1/2 transform -translate-x-1/2 font-chicago text-[12px] text-white cursor-default select-none">
+        <div className="absolute bottom-1 text-center left-1/2 transform -translate-x-1/2 font-chicago text-[12px] text-white cursor-default select-none no-select-gesture">
           ⏯
         </div>
-        <div className="absolute left-2 text-left top-1/2 transform -translate-y-1/2 font-chicago text-[12px] text-white cursor-default select-none">
+        <div className="absolute left-2 text-left top-1/2 transform -translate-y-1/2 font-chicago text-[12px] text-white cursor-default select-none no-select-gesture">
           ⏮
         </div>
       </div>
