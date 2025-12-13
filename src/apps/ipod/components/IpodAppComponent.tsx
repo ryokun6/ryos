@@ -99,9 +99,10 @@ function PipPlayer({
       animate={{ opacity: 1, y: 0, scale: 1, x: isMacOSX ? "-50%" : 0 }}
       exit={{ opacity: 0, y: 20, scale: 0.9, x: isMacOSX ? "-50%" : 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className={`fixed flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 pr-3 cursor-pointer select-none ${
+      className={cn(
+        "fixed flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 pr-3 cursor-pointer select-none font-chicago",
         isMacOSX ? "left-1/2 z-[4]" : "right-3 z-[9998]"
-      }`}
+      )}
       style={{ 
         maxWidth: "min(400px, calc(100vw - 2rem))",
         bottom: bottomOffset,
@@ -175,7 +176,7 @@ function PipPlayer({
           className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
           aria-label={t("apps.ipod.ariaLabels.previousTrack")}
         >
-          <span className="text-sm">⏮</span>
+          <span className="text-sm font-chicago">⏮</span>
         </button>
 
         <button
@@ -184,7 +185,7 @@ function PipPlayer({
           className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors disabled:opacity-50"
           aria-label={t("apps.ipod.ariaLabels.playPause")}
         >
-          <span className="text-base">{isPlaying ? "⏸" : "▶"}</span>
+          <span className="text-base font-chicago">{isPlaying ? "⏸" : "▶"}</span>
         </button>
 
         <button
@@ -192,7 +193,7 @@ function PipPlayer({
           className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
           aria-label={t("apps.ipod.ariaLabels.nextTrack")}
         >
-          <span className="text-sm">⏭</span>
+          <span className="text-sm font-chicago">⏭</span>
         </button>
       </div>
     </motion.div>,
