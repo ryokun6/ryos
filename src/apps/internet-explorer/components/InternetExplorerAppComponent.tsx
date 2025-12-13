@@ -455,11 +455,11 @@ export function InternetExplorerAppComponent({
     return normalized;
   };
 
-  // Strip protocol prefixes for display
-  const stripProtocol = (url: string): string => {
+  // Strip protocol prefixes for display - memoized to prevent dependency issues
+  const stripProtocol = useCallback((url: string): string => {
     if (!url) return "";
     return url.replace(/^(https?:\/\/|ftp:\/\/)/i, "");
-  };
+  }, []);
 
   // Helper to validate if a URL is well-formed enough to be saved
   const isValidUrl = useCallback(
@@ -2161,8 +2161,13 @@ export function InternetExplorerAppComponent({
                       if (!isSelectingText) {
                         setIsSelectingText(true);
                         setTimeout(() => {
-                          if (urlInputRef.current) {
-                            urlInputRef.current.select();
+                          try {
+                            if (urlInputRef.current) {
+                              urlInputRef.current.select();
+                            }
+                          } catch (e) {
+                            // Some mobile browsers throw on programmatic select
+                            console.debug("[IE] Could not select input text:", e);
                           }
                         }, 0);
                       }
