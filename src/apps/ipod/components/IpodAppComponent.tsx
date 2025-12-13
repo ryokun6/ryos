@@ -104,8 +104,9 @@ function PipPlayer({
       exit={{ opacity: 0, y: 20, scale: 0.9, x: shouldCenter ? "-50%" : 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
-        "fixed flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 pr-3 cursor-pointer select-none",
-        shouldCenter ? "left-1/2 z-[9998]" : "right-3 z-[9998]"
+        // Keep PiP below normal application windows (AppManager windows start at z-index 2+)
+        "fixed z-[1] flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 pr-3 cursor-pointer select-none",
+        shouldCenter ? "left-1/2" : "right-3"
       )}
       style={{ 
         ...(isPhone
