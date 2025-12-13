@@ -1,12 +1,13 @@
 version: 1
 conversationId: 8de9e7dd-f816-4fe2-b7eb-04c7c61a2f2c
-title: null
+title: Bun build errors
 model: gpt-5.2
 mode: agent
 updatedAt: 1765591576388
-tldr: The user requested to run  and resolve any resulting
-  errors. The conversation implies an ongoing task to fix build issues.
-overview: The user's intent was to execute the  command and
-  address any compilation or build-related errors that might arise. This
-  indicates a task focused on resolving issues within a project's build process.
+tldr: The user requested to run the  command and fix any errors
+  that might occur during the process. The main purpose is to achieve a
+  successful build.
+overview: The user's intent was to execute the  command. The
+  primary goal was to identify and fix any errors encountered during this build
+  process to ensure a successful completion of the build.
 bullets: []
