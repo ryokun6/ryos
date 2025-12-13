@@ -4,11 +4,21 @@ title: YouTube search API restrictions
 model: gpt-5.2
 mode: agent
 updatedAt: 1765617729981
-tldr: The user is looking for effective methods to integrate YouTube search
-  functionality without encountering API restrictions. This is an initial query
-  to understand potential solutions and best practices.
-overview: The user's intent is to integrate YouTube search into an application
-  or system while avoiding common API limitations. The conversation is currently
-  at the initial inquiry stage, seeking advice on best practices or alternative
-  approaches to manage API quotas effectively.
+tldr: The user asked for effective ways to integrate YouTube search without
+  hitting API restrictions. The assistant provided a comprehensive guide,
+  recommending the official YouTube Data API with robust caching and rate
+  limiting, and also suggested alternative methods like using third-party
+  front-ends or a "paste URL" approach.
+overview: The user wanted to implement YouTube search functionality while
+  avoiding API restrictions. The assistant provided a detailed breakdown of
+  several strategies. The primary recommendation was to use the official YouTube
+  Data API through a server-side proxy, implementing aggressive caching with
+  tools like Vercel KV or CDN, and applying rate limiting per user/IP. This
+  approach aims to minimize quota usage and ensure long-term stability.
+  Alternative methods included leveraging third-party YouTube front-ends like
+  Invidious or Piped, or a user experience where users search on YouTube
+  directly and paste the URL into the app, completely bypassing API usage.
+  Scraping was strongly advised against due to instability and terms of service
+  violations. The assistant also offered to tailor the advice further based on
+  specific application needs.
 bullets: []
