@@ -255,7 +255,7 @@ export function SeekBar({
         {/* Seek bar */}
         <div
           ref={seekBarRef}
-          className={`relative h-[8px] rounded-full cursor-pointer pointer-events-auto overflow-hidden transition-all duration-150 ${
+          className={`relative h-[8px] rounded-full cursor-pointer pointer-events-auto overflow-hidden transition-all duration-150 select-none no-select-gesture ${
             isDragging
               ? "border border-white/80 bg-white/25"
               : "border border-white/50 bg-white/15"
@@ -267,6 +267,8 @@ export function SeekBar({
           onTouchEnd={handleTouchEnd}
           style={{
             touchAction: "none", // Prevent default touch behaviors
+            WebkitUserSelect: "none",
+            WebkitTouchCallout: "none",
           }}
         >
           {/* Progress bar */}
