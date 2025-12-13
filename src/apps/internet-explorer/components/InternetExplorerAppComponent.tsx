@@ -416,24 +416,27 @@ export function InternetExplorerAppComponent({
 
         if (isMobileView) {
           const inputRect = urlInputRef.current.getBoundingClientRect();
-          setDropdownStyle({
-            position: "fixed",
-            top: `${inputRect.bottom}px`, // className's mt-[2px] will provide the visual gap
-            left: "1rem", // Tailwind's space-4
-            right: "1rem", // Tailwind's space-4
-            zIndex: 50,
+          const newTop = `${inputRect.bottom}px`;
+          setDropdownStyle((prev) => {
+            // Only update if values actually changed to prevent re-renders
+            if (prev.top === newTop && prev.position === "fixed") {
+              return prev;
+            }
+            return {
+              position: "fixed",
+              top: newTop,
+              left: "1rem",
+              right: "1rem",
+              zIndex: 50,
+            };
           });
         } else {
-          // Not mobile, or dropdown closed/ref not available
-          if (Object.keys(dropdownStyle).length > 0) {
-            setDropdownStyle({});
-          }
+          // Not mobile, clear style if set
+          setDropdownStyle((prev) => Object.keys(prev).length > 0 ? {} : prev);
         }
       } else {
-        // Dropdown not open or ref not available
-        if (Object.keys(dropdownStyle).length > 0) {
-          setDropdownStyle({});
-        }
+        // Dropdown not open, clear style if set
+        setDropdownStyle((prev) => Object.keys(prev).length > 0 ? {} : prev);
       }
     };
 
@@ -443,7 +446,7 @@ export function InternetExplorerAppComponent({
     return () => {
       window.removeEventListener("resize", updateDropdownStyle);
     };
-  }, [isUrlDropdownOpen, dropdownStyle]);
+  }, [isUrlDropdownOpen]);
 
   // Utility to normalize URLs for comparison
   const normalizeUrlInline = (url: string): string => {
