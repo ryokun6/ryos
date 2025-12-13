@@ -99,7 +99,7 @@ function PipPlayer({
       animate={{ opacity: 1, y: 0, scale: 1, x: isMacOSX ? "-50%" : 0 }}
       exit={{ opacity: 0, y: 20, scale: 0.9, x: isMacOSX ? "-50%" : 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className={`fixed flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 p-2 pr-3 cursor-pointer select-none ${
+      className={`fixed flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 pr-3 cursor-pointer select-none ${
         isMacOSX ? "left-1/2 z-[4]" : "right-3 z-[9998]"
       }`}
       style={{ 
