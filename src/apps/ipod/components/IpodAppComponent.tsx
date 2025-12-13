@@ -33,6 +33,7 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
+import { useIsPhone } from "@/hooks/useIsPhone";
 // Globe icon removed; using text label "Aあ" for translate
 
 // Helper to extract YouTube video ID from URL
@@ -64,6 +65,7 @@ function PipPlayer({
   const { t } = useTranslation();
   const isOffline = useOffline();
   const currentTheme = useThemeStore((state) => state.current);
+  const isPhone = useIsPhone();
 
   // Calculate bottom offset based on theme (similar to Sonner positioning)
   const bottomOffset = useMemo(() => {
@@ -92,19 +94,29 @@ function PipPlayer({
 
   // Determine horizontal positioning based on theme
   const isMacOSX = currentTheme === "macosx";
+  // On phones, match the dock's centered width + side padding/margins
+  const shouldCenter = isPhone || isMacOSX;
 
   return createPortal(
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.9, x: isMacOSX ? "-50%" : 0 }}
-      animate={{ opacity: 1, y: 0, scale: 1, x: isMacOSX ? "-50%" : 0 }}
-      exit={{ opacity: 0, y: 20, scale: 0.9, x: isMacOSX ? "-50%" : 0 }}
+      initial={{ opacity: 0, y: 20, scale: 0.9, x: shouldCenter ? "-50%" : 0 }}
+      animate={{ opacity: 1, y: 0, scale: 1, x: shouldCenter ? "-50%" : 0 }}
+      exit={{ opacity: 0, y: 20, scale: 0.9, x: shouldCenter ? "-50%" : 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
         "fixed flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 pr-3 cursor-pointer select-none",
-        isMacOSX ? "left-1/2 z-[4]" : "right-3 z-[9998]"
+        shouldCenter ? "left-1/2 z-[9998]" : "right-3 z-[9998]"
       )}
       style={{ 
-        maxWidth: "min(400px, calc(100vw - 2rem))",
+        ...(isPhone
+          ? {
+              // Match Dock.tsx: maxWidth = min(92vw, 980px) and centered
+              width: "min(92vw, 980px)",
+              maxWidth: "min(92vw, 980px)",
+            }
+          : {
+              maxWidth: "min(400px, calc(100vw - 2rem))",
+            }),
         bottom: bottomOffset,
       }}
       onClick={onRestore}
