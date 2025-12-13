@@ -384,11 +384,15 @@ export function AppManager({ apps }: AppManagerProps) {
             className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
             role="presentation"
             onMouseDown={() => {
+              // Minimized windows can stay mounted (e.g. audio apps) but should not
+              // intercept pointer input or steal foreground focus.
+              if (instance.isMinimized) return;
               if (!instance.isForeground && !exposeMode) {
                 bringInstanceToForeground(instance.instanceId);
               }
             }}
             onTouchStart={() => {
+              if (instance.isMinimized) return;
               if (!instance.isForeground && !exposeMode) {
                 bringInstanceToForeground(instance.instanceId);
               }
