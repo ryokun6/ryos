@@ -1,3 +1,9 @@
 AI Notes:
 
-api/chat-rooms/messages.ts: +74
+api/chat-rooms/index.ts: +171-173[0] -171[0]
+api/chat-rooms/messages.ts: +74-75[0],+77[0],+88[0] -74[0],-76[0],-87[0]
+src/apps/admin/components/AdminAppComponent.tsx: +197[0] -197[0]
+
+Conversations:
+
+[0]: 3a85bd99-0263-40f8-a50e-7564b86f231d; Padding style adjustment; claude-4.5-opus-high-thinking;
