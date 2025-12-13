@@ -183,10 +183,12 @@ function PipPlayer({
       <div
         className="flex items-center gap-1"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         <button
           onClick={onPreviousTrack}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          onTouchStart={(e) => e.stopPropagation()}
+          className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors touch-manipulation"
           aria-label={t("apps.ipod.ariaLabels.previousTrack")}
         >
           <span className="text-sm font-chicago">⏮</span>
@@ -194,8 +196,9 @@ function PipPlayer({
 
         <button
           onClick={onTogglePlay}
+          onTouchStart={(e) => e.stopPropagation()}
           disabled={isOffline}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50 touch-manipulation"
           aria-label={t("apps.ipod.ariaLabels.playPause")}
         >
           <span className="text-base font-chicago">{isPlaying ? "⏸" : "▶"}</span>
@@ -203,7 +206,8 @@ function PipPlayer({
 
         <button
           onClick={onNextTrack}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          onTouchStart={(e) => e.stopPropagation()}
+          className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors touch-manipulation"
           aria-label={t("apps.ipod.ariaLabels.nextTrack")}
         >
           <span className="text-sm font-chicago">⏭</span>
