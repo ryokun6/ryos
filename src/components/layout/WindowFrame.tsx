@@ -856,7 +856,12 @@ export function WindowFrame({
       {shouldShow && (
         <motion.div
           key={`pos-${instanceId || appId}`}
-          className="absolute p-2 md:p-0"
+          className={cn(
+            "absolute p-2 md:p-0",
+            // For keepMountedWhenMinimized apps, disable pointer events on outer wrapper when minimized
+            // so clicks can pass through to windows/desktop behind it
+            (keepMountedWhenMinimized && isMinimized) && "pointer-events-none"
+          )}
           initial={false}
           animate={{
             left: windowPosition.x,
