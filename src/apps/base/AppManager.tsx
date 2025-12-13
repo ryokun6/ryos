@@ -381,14 +381,24 @@ export function AppManager({ apps }: AppManagerProps) {
           <div
             key={instance.instanceId}
             style={{ zIndex: exposeMode ? 9999 : zIndex }}
-            className="absolute inset-x-0 md:inset-x-auto w-full md:w-auto"
+            // If an app stays mounted while minimized (e.g. iPod for audio),
+            // its instance container can still sit atop the stack and intercept
+            // clicks/taps. Make minimized instances click-through; only their
+            // separate PiP widgets (rendered via portals) should be interactive.
+            className={`absolute inset-x-0 md:inset-x-auto w-full md:w-auto ${
+              instance.isMinimized ? "pointer-events-none" : ""
+            }`}
             role="presentation"
             onMouseDown={() => {
+              // Minimized windows can stay mounted (e.g. audio apps) but should not
+              // intercept pointer input or steal foreground focus.
+              if (instance.isMinimized) return;
               if (!instance.isForeground && !exposeMode) {
                 bringInstanceToForeground(instance.instanceId);
               }
             }}
             onTouchStart={() => {
+              if (instance.isMinimized) return;
               if (!instance.isForeground && !exposeMode) {
                 bringInstanceToForeground(instance.instanceId);
               }

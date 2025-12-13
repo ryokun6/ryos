@@ -104,8 +104,9 @@ function PipPlayer({
       exit={{ opacity: 0, y: 20, scale: 0.9, x: shouldCenter ? "-50%" : 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
-        // Keep PiP below normal application windows (AppManager windows start at z-index 2+)
-        "fixed z-[1] flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 pr-3 cursor-pointer select-none",
+        // PiP should stay interactive above the desktop, but *below* app windows and the dock.
+        // AppManager windows start at z-index 2+; Dock uses z-40/50.
+        "fixed z-[1] pointer-events-auto flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 pr-3 cursor-pointer select-none",
         shouldCenter ? "left-1/2" : "right-3"
       )}
       style={{ 
@@ -598,10 +599,10 @@ function FullScreenPortal({
     }
 
     return () => {
-      window.removeEventListener("mousemove", handleActivity as any);
-      window.removeEventListener("keydown", handleActivity as any);
-      window.removeEventListener("touchstart", handleActivity as any);
-      window.removeEventListener("click", handleActivity as any);
+      window.removeEventListener("mousemove", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("touchstart", handleActivity);
+      window.removeEventListener("click", handleActivity);
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
         hideControlsTimeoutRef.current = null;
