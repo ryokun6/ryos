@@ -8,16 +8,21 @@
       },
       "description": "Panel de administración del sistema",
       "dialogs": {
+        "banDescription": "¿Estás seguro de que quieres banear a {{username}}? Se cerrará su sesión y no podrá acceder al servicio.",
+        "banTitle": "¿Banear usuario?",
         "deleteDescription": "¿Estás seguro de que quieres eliminar {{type}} \"{{name}}\"? Esta acción no se puede deshacer.",
         "deleteTitle": "¿Eliminar {{type}}?"
       },
       "errors": {
+        "failedToBanUser": "Error al banear usuario",
         "failedToDeleteMessage": "Error al eliminar mensaje",
         "failedToDeleteRoom": "Error al eliminar sala",
         "failedToDeleteUser": "Error al eliminar usuario",
         "failedToFetchMessages": "Error al obtener mensajes",
+        "failedToFetchProfile": "Error al cargar el perfil del usuario",
         "failedToFetchRooms": "Error al obtener salas",
-        "failedToFetchUsers": "Error al obtener usuarios"
+        "failedToFetchUsers": "Error al obtener usuarios",
+        "failedToUnbanUser": "Error al desbanear usuario"
       },
       "help": {
         "adminAccess": {
@@ -47,9 +52,34 @@
         "dataRefreshed": "Datos actualizados",
         "messageDeleted": "Mensaje eliminado",
         "roomDeleted": "Sala eliminada",
-        "userDeleted": "Usuario {{username}} eliminado"
+        "userBanned": "Usuario {{username}} baneado",
+        "userDeleted": "Usuario {{username}} eliminado",
+        "userUnbanned": "Usuario {{username}} desbaneado"
       },
       "name": "Admin",
+      "profile": {
+        "actions": "Acciones",
+        "activeRooms": "Activo en salas",
+        "back": "Volver",
+        "ban": "Banear usuario",
+        "banDetails": "Detalles del baneo",
+        "banReasonPlaceholder": "Motivo del baneo (opcional)",
+        "banned": "Baneado",
+        "bannedOn": "Baneado el",
+        "confirmBan": "Banear",
+        "delete": "Eliminar usuario",
+        "lastActive": "Última actividad",
+        "loading": "Cargando perfil...",
+        "messages": "Mensajes",
+        "noMessages": "No se encontraron mensajes",
+        "noReason": "No se proporcionó ninguna razón",
+        "notFound": "Usuario no encontrado",
+        "reason": "Razón",
+        "recentMessages": "Mensajes recientes",
+        "room": "Sala",
+        "rooms": "Salas",
+        "unban": "Desbloquear usuario"
+      },
       "room": {
         "messagesCount": "{{count}} mensajes",
         "noMessages": "No hay mensajes"
@@ -78,6 +108,7 @@
         "lastActive": "Última actividad",
         "message": "Mensaje",
         "role": "Rol",
+        "status": "Estado",
         "time": "Hora",
         "user": "Usuario",
         "username": "Nombre de usuario"
@@ -90,7 +121,9 @@
       },
       "title": "Administrador",
       "user": {
+        "active": "Activo",
         "admin": "administrador",
+        "banned": "Bloqueado",
         "user": "usuario"
       }
     },
@@ -329,11 +362,11 @@
       },
       "name": "Chats",
       "sidebar": {
-        "rooms": "Salas",
         "chats": "Chats",
         "new": "nuevo",
         "online": "en línea",
-        "private": "Privado"
+        "private": "Privado",
+        "rooms": "Salas"
       },
       "status": {
         "chatRequiresInternet": "El chat requiere una conexión a internet",
