@@ -46,7 +46,8 @@
       "menu": {
         "aboutAdmin": "Über Admin",
         "adminHelp": "Admin-Hilfe",
-        "refreshData": "Daten aktualisieren"
+        "refreshData": "Daten aktualisieren",
+        "showSidebar": "Seitenleiste anzeigen"
       },
       "messages": {
         "dataRefreshed": "Daten aktualisiert",

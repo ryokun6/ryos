@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AppProps } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { AdminMenuBar } from "./AdminMenuBar";
@@ -99,6 +99,11 @@ export function AdminAppComponent({
   const [activeSection, setActiveSection] = useState<AdminSection>("users");
   const [isRoomsExpanded, setIsRoomsExpanded] = useState(true);
   const [selectedUserProfile, setSelectedUserProfile] = useState<string | null>(null);
+
+  // Sidebar visibility and mobile detection
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [isFrameNarrow, setIsFrameNarrow] = useState(false);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 
   const isAdmin = username?.toLowerCase() === "ryo";
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId) || null;
@@ -393,6 +398,52 @@ export function AdminAppComponent({
     t,
   ]);
 
+  // Toggle sidebar visibility
+  const toggleSidebarVisibility = useCallback(() => {
+    setIsSidebarVisible((prev) => !prev);
+  }, []);
+
+  // Detect narrow frame for mobile layout
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateWidth = (width: number) => {
+      const narrow = width < 550;
+      setIsFrameNarrow(narrow);
+      // Collapse sidebar by default on mobile
+      if (narrow && isSidebarVisible) {
+        setIsSidebarVisible(false);
+      }
+    };
+
+    // Initial measurement
+    updateWidth(containerRef.current.getBoundingClientRect().width);
+
+    const observer = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        updateWidth(entries[0].contentRect.width);
+      }
+    });
+
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  // Only run on mount to set initial state
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-show sidebar when transitioning from narrow to wide
+  const prevFrameNarrowRef = useRef(isFrameNarrow);
+  useEffect(() => {
+    if (prevFrameNarrowRef.current && !isFrameNarrow) {
+      // Transitioned from narrow -> wide
+      if (!isSidebarVisible) {
+        setIsSidebarVisible(true);
+      }
+    }
+    prevFrameNarrowRef.current = isFrameNarrow;
+  }, [isFrameNarrow, isSidebarVisible]);
+
   const formatRelativeTime = (timestamp: number) => {
     const diff = Date.now() - timestamp;
     const minutes = Math.floor(diff / 60000);
@@ -411,6 +462,8 @@ export function AdminAppComponent({
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onRefresh={handleRefresh}
+      onToggleSidebar={toggleSidebarVisibility}
+      isSidebarVisible={isSidebarVisible}
     />
   );
 
@@ -463,7 +516,7 @@ export function AdminAppComponent({
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
       >
-        <div className="flex h-full w-full">
+        <div ref={containerRef} className="flex h-full w-full">
           {/* Sidebar */}
           <AdminSidebar
             activeSection={activeSection}
@@ -474,6 +527,7 @@ export function AdminAppComponent({
             isRoomsExpanded={isRoomsExpanded}
             onToggleRoomsExpanded={() => setIsRoomsExpanded(!isRoomsExpanded)}
             stats={stats}
+            isVisible={isSidebarVisible}
           />
 
           {/* Main Content */}

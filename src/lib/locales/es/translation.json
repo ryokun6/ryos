@@ -46,7 +46,8 @@
       "menu": {
         "aboutAdmin": "Acerca de Admin",
         "adminHelp": "Ayuda de Admin",
-        "refreshData": "Actualizar datos"
+        "refreshData": "Actualizar datos",
+        "showSidebar": "Mostrar barra lateral"
       },
       "messages": {
         "dataRefreshed": "Datos actualizados",

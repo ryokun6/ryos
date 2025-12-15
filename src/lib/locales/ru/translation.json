@@ -46,7 +46,8 @@
       "menu": {
         "aboutAdmin": "Об администрировании",
         "adminHelp": "Справка по администрированию",
-        "refreshData": "Обновить данные"
+        "refreshData": "Обновить данные",
+        "showSidebar": "Показать боковую панель"
       },
       "messages": {
         "dataRefreshed": "Данные обновлены",
