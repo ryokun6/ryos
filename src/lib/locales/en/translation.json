@@ -1905,6 +1905,7 @@
       "title": "Admin",
       "menu": {
         "refreshData": "Refresh Data",
+        "showSidebar": "Show Sidebar",
         "adminHelp": "Admin Help",
         "aboutAdmin": "About Admin"
       },

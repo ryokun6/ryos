@@ -27,6 +27,7 @@ interface AdminSidebarProps {
     totalRooms: number;
     totalMessages: number;
   };
+  isVisible: boolean;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -38,6 +39,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   isRoomsExpanded,
   onToggleRoomsExpanded,
   stats,
+  isVisible,
 }) => {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
@@ -46,6 +48,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const isWindowsLegacyTheme = isXpTheme;
 
   const publicRooms = rooms.filter((r) => r.type !== "private");
+
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <div

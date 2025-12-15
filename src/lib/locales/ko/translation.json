@@ -46,7 +46,8 @@
       "menu": {
         "aboutAdmin": "관리자 정보",
         "adminHelp": "관리자 도움말",
-        "refreshData": "데이터 새로 고침"
+        "refreshData": "데이터 새로 고침",
+        "showSidebar": "사이드바 표시"
       },
       "messages": {
         "dataRefreshed": "데이터 새로고침 완료",

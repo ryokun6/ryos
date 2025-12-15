@@ -1,5 +1,6 @@
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
+  MenubarCheckboxItem,
   MenubarContent,
   MenubarItem,
   MenubarMenu,
@@ -14,6 +15,8 @@ interface AdminMenuBarProps {
   onShowHelp: () => void;
   onShowAbout: () => void;
   onRefresh: () => void;
+  onToggleSidebar: () => void;
+  isSidebarVisible: boolean;
 }
 
 export function AdminMenuBar({
@@ -21,6 +24,8 @@ export function AdminMenuBar({
   onShowHelp,
   onShowAbout,
   onRefresh,
+  onToggleSidebar,
+  isSidebarVisible,
 }: AdminMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
@@ -41,6 +46,24 @@ export function AdminMenuBar({
           <MenubarItem onClick={onClose} className="text-md h-6 px-3">
             {t("common.menu.close")}
           </MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
+
+      {/* View Menu */}
+      <MenubarMenu>
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.view")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarCheckboxItem
+            checked={isSidebarVisible}
+            onCheckedChange={(checked) => {
+              if (checked !== isSidebarVisible) onToggleSidebar();
+            }}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.admin.menu.showSidebar")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
 

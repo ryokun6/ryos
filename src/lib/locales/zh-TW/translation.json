@@ -46,7 +46,8 @@
       "menu": {
         "aboutAdmin": "關於管理員",
         "adminHelp": "管理員說明",
-        "refreshData": "重新整理資料"
+        "refreshData": "重新整理資料",
+        "showSidebar": "顯示側邊欄"
       },
       "messages": {
         "dataRefreshed": "資料已重新整理",

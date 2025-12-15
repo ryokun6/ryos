@@ -46,7 +46,8 @@
       "menu": {
         "aboutAdmin": "Adminについて",
         "adminHelp": "Adminヘルプ",
-        "refreshData": "データ更新"
+        "refreshData": "データ更新",
+        "showSidebar": "サイドバーを表示"
       },
       "messages": {
         "dataRefreshed": "データが更新されました",
