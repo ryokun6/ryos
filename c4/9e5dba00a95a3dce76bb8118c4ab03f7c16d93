@@ -1,0 +1,11 @@
+AI Notes:
+
+src/apps/admin/components/AdminAppComponent.tsx: +407[0],+416-417[1],+425-426[1],+437[0],+442-443[1]
+src/apps/admin/components/AdminMenuBar.tsx: +53-54[0],+56-57[0],+67-68[0]
+src/apps/admin/components/AdminSidebar.tsx: +54[2]
+
+Conversations:
+
+[0]: e636e93a-3cb8-467b-9631-1d18c0deb2dd; e636e93a; unknown;
+[1]: 4b34fb11-47d4-4cfd-9223-dcd24556fcad; Additional admin features; claude-4.5-opus-high-thinking;
+[2]: 86fbeecd-8ed2-4d92-a335-fe8bed9e9799; Admin app list view styling; claude-4.5-opus-high-thinking;
