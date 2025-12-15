@@ -8,16 +8,21 @@
       },
       "description": "系統管理面板",
       "dialogs": {
+        "banDescription": "您確定要封鎖 {{username}} 嗎？他們將會被登出且無法存取服務。",
+        "banTitle": "封鎖使用者？",
         "deleteDescription": "您確定要刪除{{type}}「{{name}}」嗎？此動作無法復原。",
         "deleteTitle": "刪除{{type}}？"
       },
       "errors": {
+        "failedToBanUser": "封鎖使用者失敗",
         "failedToDeleteMessage": "無法刪除訊息",
         "failedToDeleteRoom": "無法刪除聊天室",
         "failedToDeleteUser": "無法刪除使用者",
         "failedToFetchMessages": "無法擷取訊息",
+        "failedToFetchProfile": "擷取使用者個人資料失敗",
         "failedToFetchRooms": "無法擷取聊天室",
-        "failedToFetchUsers": "無法擷取使用者"
+        "failedToFetchUsers": "無法擷取使用者",
+        "failedToUnbanUser": "解除封鎖使用者失敗"
       },
       "help": {
         "adminAccess": {
@@ -47,9 +52,34 @@
         "dataRefreshed": "資料已重新整理",
         "messageDeleted": "訊息已刪除",
         "roomDeleted": "聊天室已刪除",
-        "userDeleted": "使用者 {{username}} 已刪除"
+        "userBanned": "使用者 {{username}} 已被封鎖",
+        "userDeleted": "使用者 {{username}} 已刪除",
+        "userUnbanned": "使用者 {{username}} 已被解除封鎖"
       },
       "name": "管理員",
+      "profile": {
+        "actions": "動作",
+        "activeRooms": "在聊天室中活躍",
+        "back": "返回",
+        "ban": "封鎖使用者",
+        "banDetails": "封鎖詳情",
+        "banReasonPlaceholder": "封鎖原因（選填）",
+        "banned": "已封鎖",
+        "bannedOn": "封鎖於",
+        "confirmBan": "封鎖",
+        "delete": "刪除使用者",
+        "lastActive": "上次活躍",
+        "loading": "正在載入個人資料...",
+        "messages": "訊息",
+        "noMessages": "未找到訊息",
+        "noReason": "未提供原因",
+        "notFound": "未找到使用者",
+        "reason": "原因",
+        "recentMessages": "最近訊息",
+        "room": "聊天室",
+        "rooms": "聊天室",
+        "unban": "解除封鎖使用者"
+      },
       "room": {
         "messagesCount": "{{count}} 則訊息",
         "noMessages": "沒有訊息"
@@ -78,6 +108,7 @@
         "lastActive": "上次活動",
         "message": "訊息",
         "role": "角色",
+        "status": "狀態",
         "time": "時間",
         "user": "使用者",
         "username": "使用者名稱"
@@ -90,7 +121,9 @@
       },
       "title": "管理員",
       "user": {
+        "active": "啟用中",
         "admin": "管理員",
+        "banned": "已封鎖",
         "user": "使用者"
       }
     },
@@ -329,11 +362,11 @@
       },
       "name": "聊天",
       "sidebar": {
-        "rooms": "房間",
         "chats": "聊天",
         "new": "新",
         "online": "線上",
-        "private": "私人"
+        "private": "私人",
+        "rooms": "房間"
       },
       "status": {
         "chatRequiresInternet": "聊天需要網路連線。",

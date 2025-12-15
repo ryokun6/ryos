@@ -8,16 +8,21 @@
       },
       "description": "Systemadministrationspanel",
       "dialogs": {
+        "banDescription": "Möchten Sie {{username}} wirklich sperren? Die Person wird abgemeldet und kann nicht mehr auf den Dienst zugreifen.",
+        "banTitle": "Benutzer sperren?",
         "deleteDescription": "Möchten Sie {{type}} „{{name}}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
         "deleteTitle": "{{type}} löschen?"
       },
       "errors": {
+        "failedToBanUser": "Benutzer konnte nicht gesperrt werden",
         "failedToDeleteMessage": "Nachricht konnte nicht gelöscht werden",
         "failedToDeleteRoom": "Raum konnte nicht gelöscht werden",
         "failedToDeleteUser": "Benutzer konnte nicht gelöscht werden",
         "failedToFetchMessages": "Nachrichten konnten nicht abgerufen werden",
+        "failedToFetchProfile": "Benutzerprofil konnte nicht abgerufen werden",
         "failedToFetchRooms": "Räume konnten nicht abgerufen werden",
-        "failedToFetchUsers": "Benutzer konnten nicht abgerufen werden"
+        "failedToFetchUsers": "Benutzer konnten nicht abgerufen werden",
+        "failedToUnbanUser": "Benutzer konnte nicht entsperrt werden"
       },
       "help": {
         "adminAccess": {
@@ -47,9 +52,34 @@
         "dataRefreshed": "Daten aktualisiert",
         "messageDeleted": "Nachricht gelöscht",
         "roomDeleted": "Raum gelöscht",
-        "userDeleted": "Benutzer {{username}} gelöscht"
+        "userBanned": "Benutzer {{username}} gesperrt",
+        "userDeleted": "Benutzer {{username}} gelöscht",
+        "userUnbanned": "Benutzer {{username}} entsperrt"
       },
       "name": "Admin",
+      "profile": {
+        "actions": "Aktionen",
+        "activeRooms": "Aktiv in Räumen",
+        "back": "Zurück",
+        "ban": "Benutzer sperren",
+        "banDetails": "Sperrdetails",
+        "banReasonPlaceholder": "Sperrgrund (optional)",
+        "banned": "Gesperrt",
+        "bannedOn": "Gesperrt am",
+        "confirmBan": "Sperren",
+        "delete": "Benutzer löschen",
+        "lastActive": "Zuletzt aktiv",
+        "loading": "Profil wird geladen...",
+        "messages": "Nachrichten",
+        "noMessages": "Keine Nachrichten gefunden",
+        "noReason": "Kein Grund angegeben",
+        "notFound": "Benutzer nicht gefunden",
+        "reason": "Grund",
+        "recentMessages": "Neueste Nachrichten",
+        "room": "Raum",
+        "rooms": "Räume",
+        "unban": "Benutzer entbannen"
+      },
       "room": {
         "messagesCount": "{{count}} Nachrichten",
         "noMessages": "Keine Nachrichten"
@@ -78,6 +108,7 @@
         "lastActive": "Zuletzt aktiv",
         "message": "Nachricht",
         "role": "Rolle",
+        "status": "Status",
         "time": "Zeit",
         "user": "Benutzer",
         "username": "Benutzername"
@@ -90,7 +121,9 @@
       },
       "title": "Admin",
       "user": {
+        "active": "Aktiv",
         "admin": "admin",
+        "banned": "Gesperrt",
         "user": "Benutzer"
       }
     },
@@ -329,11 +362,11 @@
       },
       "name": "Chats",
       "sidebar": {
-        "rooms": "Räume",
         "chats": "Chats",
         "new": "neu",
         "online": "aktiv",
-        "private": "Privat"
+        "private": "Privat",
+        "rooms": "Räume"
       },
       "status": {
         "chatRequiresInternet": "Chat erfordert eine Internetverbindung",

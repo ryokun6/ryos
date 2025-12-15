@@ -8,16 +8,21 @@
       },
       "description": "Painel de administração do sistema",
       "dialogs": {
+        "banDescription": "Tem certeza de que deseja banir {{username}}? Essa pessoa será desconectada e não poderá acessar o serviço.",
+        "banTitle": "Banir Usuário?",
         "deleteDescription": "Tem certeza de que deseja excluir {{type}} \"{{name}}\"? Esta ação não pode ser desfeita.",
         "deleteTitle": "Excluir {{type}}?"
       },
       "errors": {
+        "failedToBanUser": "Falha ao banir usuário",
         "failedToDeleteMessage": "Falha ao excluir mensagem",
         "failedToDeleteRoom": "Falha ao excluir sala",
         "failedToDeleteUser": "Falha ao excluir usuário",
         "failedToFetchMessages": "Falha ao buscar mensagens",
+        "failedToFetchProfile": "Falha ao buscar perfil do usuário",
         "failedToFetchRooms": "Falha ao buscar salas",
-        "failedToFetchUsers": "Falha ao buscar usuários"
+        "failedToFetchUsers": "Falha ao buscar usuários",
+        "failedToUnbanUser": "Falha ao desbanir usuário"
       },
       "help": {
         "adminAccess": {
@@ -47,9 +52,34 @@
         "dataRefreshed": "Dados atualizados",
         "messageDeleted": "Mensagem eliminada",
         "roomDeleted": "Sala eliminada",
-        "userDeleted": "Utilizador {{username}} eliminado"
+        "userBanned": "Usuário {{username}} banido",
+        "userDeleted": "Utilizador {{username}} eliminado",
+        "userUnbanned": "Usuário {{username}} desbanido"
       },
       "name": "Admin",
+      "profile": {
+        "actions": "Ações",
+        "activeRooms": "Ativo em Salas",
+        "back": "Voltar",
+        "ban": "Banir Usuário",
+        "banDetails": "Detalhes do Banimento",
+        "banReasonPlaceholder": "Motivo do banimento (opcional)",
+        "banned": "Banido",
+        "bannedOn": "Banido em",
+        "confirmBan": "Banir",
+        "delete": "Excluir Usuário",
+        "lastActive": "Última atividade",
+        "loading": "Carregando perfil...",
+        "messages": "Mensagens",
+        "noMessages": "Nenhuma mensagem encontrada",
+        "noReason": "Nenhum motivo fornecido",
+        "notFound": "Usuário não encontrado",
+        "reason": "Motivo",
+        "recentMessages": "Mensagens Recentes",
+        "room": "Sala",
+        "rooms": "Salas",
+        "unban": "Desbanir Usuário"
+      },
       "room": {
         "messagesCount": "{{count}} mensagens",
         "noMessages": "Nenhuma mensagem"
@@ -78,6 +108,7 @@
         "lastActive": "Última Atividade",
         "message": "Mensagem",
         "role": "Função",
+        "status": "Status",
         "time": "Hora",
         "user": "Usuário",
         "username": "Nome de Usuário"
@@ -90,7 +121,9 @@
       },
       "title": "Admin",
       "user": {
+        "active": "Ativo",
         "admin": "admin",
+        "banned": "Banido",
         "user": "usuário"
       }
     },
@@ -329,11 +362,11 @@
       },
       "name": "Bate-papos",
       "sidebar": {
-        "rooms": "Salas",
         "chats": "Chats",
         "new": "novo",
         "online": "online",
-        "private": "Privado"
+        "private": "Privado",
+        "rooms": "Salas"
       },
       "status": {
         "chatRequiresInternet": "O chat requer uma conexão com a internet",
