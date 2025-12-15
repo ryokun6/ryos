@@ -1876,7 +1876,7 @@
     },
     "dialog": {
       "about": "關於",
-      "aboutApp": "關於 {{appName}}",
+      "aboutApp": "關於{{appName}}",
       "adding": "新增中...",
       "cancel": "取消",
       "close": "關閉",
