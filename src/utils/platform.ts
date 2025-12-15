@@ -41,3 +41,26 @@ export function getApiUrl(path: string): string {
   return `${baseUrl}${normalizedPath}`;
 }
 
+/**
+ * Check if Tauri is running on Windows (Chromium) or Mac (WebKit)
+ * @returns true if Windows (Chromium), false if Mac (WebKit) or not Tauri
+ */
+export function isTauriWindows(): boolean {
+  if (!isTauri()) {
+    return false;
+  }
+  
+  if (typeof window === "undefined") {
+    return false;
+  }
+  
+  // Chromium detection: check for window.chrome object
+  // On Windows, Tauri uses Chromium which has window.chrome
+  // On Mac, Tauri uses WebKit which doesn't have window.chrome
+  const hasChrome = "chrome" in window && (window as any).chrome !== undefined;
+  
+  // If Chromium (has window.chrome), it's Windows
+  // If WebKit (no window.chrome), it's Mac
+  return hasChrome;
+}
+

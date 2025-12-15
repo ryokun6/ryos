@@ -38,7 +38,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useIsPhone } from "@/hooks/useIsPhone";
-import { isTauri } from "@/utils/platform";
+import { isTauri, isTauriWindows } from "@/utils/platform";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -1330,8 +1330,8 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 
   // Default Mac-style top menubar
   // In Tauri with titleBarStyle: overlay, add clearance for traffic lights (but not in fullscreen)
-  // Don't add clearance on Windows platform (no traffic lights)
-  const isWindowsPlatform = import.meta.env.TAURI_ENV_PLATFORM === 'windows';
+  // Don't add clearance on Windows platform (Chromium - no traffic lights), only on Mac (WebKit)
+  const isWindowsPlatform = isTauriWindows();
   const needsTrafficLightClearance = isTauriApp && !isFullscreen && !isWindowsPlatform && (currentTheme === "macosx" || currentTheme === "system7");
   
   return (
