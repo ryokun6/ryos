@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename);
 
 // https://vite.dev/config/
 export default defineConfig({
+  envPrefix: ['VITE_', 'TAURI_ENV_*'],
   define: {
     // Expose VERCEL_ENV to the client for environment detection
     'import.meta.env.VITE_VERCEL_ENV': JSON.stringify(process.env.VERCEL_ENV || ''),
