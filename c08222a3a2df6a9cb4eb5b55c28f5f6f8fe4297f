@@ -3,22 +3,20 @@ conversationId: da443504-7a9e-4a20-a043-e438401d7bc1
 title: YouTube search API restrictions
 model: gpt-5.2
 mode: agent
-updatedAt: 1765617729981
-tldr: The user asked for effective ways to integrate YouTube search without
-  hitting API restrictions. The assistant provided a comprehensive guide,
-  recommending the official YouTube Data API with robust caching and rate
-  limiting, and also suggested alternative methods like using third-party
-  front-ends or a "paste URL" approach.
-overview: The user wanted to implement YouTube search functionality while
-  avoiding API restrictions. The assistant provided a detailed breakdown of
-  several strategies. The primary recommendation was to use the official YouTube
-  Data API through a server-side proxy, implementing aggressive caching with
-  tools like Vercel KV or CDN, and applying rate limiting per user/IP. This
-  approach aims to minimize quota usage and ensure long-term stability.
-  Alternative methods included leveraging third-party YouTube front-ends like
-  Invidious or Piped, or a user experience where users search on YouTube
-  directly and paste the URL into the app, completely bypassing API usage.
-  Scraping was strongly advised against due to instability and terms of service
-  violations. The assistant also offered to tailor the advice further based on
-  specific application needs.
+updatedAt: 1765788004639
+tldr: The conversation focused on implementing YouTube search functionality
+  while avoiding API restrictions. The assistant provided a detailed plan,
+  recommending the official YouTube Data API with aggressive caching and rate
+  limiting, along with alternative methods like using third-party front-ends or
+  a "paste URL" approach.
+overview: The user sought guidance on integrating YouTube search into an
+  application without encountering API restrictions. The assistant provided a
+  comprehensive strategy, emphasizing the use of the official YouTube Data API
+  through a server-side proxy. Key recommendations included aggressive caching
+  of search results, implementing user-based rate limiting, and optimizing API
+  calls to minimize quota usage. The assistant also presented viable
+  alternatives such as leveraging third-party YouTube front-ends or a user
+  experience that involves pasting YouTube URLs directly, while cautioning
+  against unreliable scraping methods. The goal was to provide a robust and
+  sustainable approach to YouTube search integration.
 bullets: []
