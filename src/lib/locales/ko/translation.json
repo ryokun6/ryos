@@ -8,16 +8,21 @@
       },
       "description": "시스템 관리 패널",
       "dialogs": {
+        "banDescription": "{{username}}님을 차단하시겠습니까? 해당 사용자는 로그아웃되며 서비스에 접속할 수 없게 됩니다.",
+        "banTitle": "사용자 차단",
         "deleteDescription": "{{type}} \"{{name}}\"을(를) 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
         "deleteTitle": "{{type}}(을)를 삭제하시겠습니까?"
       },
       "errors": {
+        "failedToBanUser": "사용자 차단 실패",
         "failedToDeleteMessage": "메시지 삭제 실패",
         "failedToDeleteRoom": "채팅방 삭제 실패",
         "failedToDeleteUser": "사용자 삭제 실패",
         "failedToFetchMessages": "메시지 불러오기 실패",
+        "failedToFetchProfile": "사용자 프로필 가져오기 실패",
         "failedToFetchRooms": "채팅방 불러오기 실패",
-        "failedToFetchUsers": "사용자 불러오기 실패"
+        "failedToFetchUsers": "사용자 불러오기 실패",
+        "failedToUnbanUser": "사용자 차단 해제 실패"
       },
       "help": {
         "adminAccess": {
@@ -47,9 +52,34 @@
         "dataRefreshed": "데이터 새로고침 완료",
         "messageDeleted": "메시지 삭제됨",
         "roomDeleted": "방 삭제됨",
-        "userDeleted": "사용자 {{username}} 삭제됨"
+        "userBanned": "{{username}}님 차단됨",
+        "userDeleted": "사용자 {{username}} 삭제됨",
+        "userUnbanned": "{{username}}님 차단 해제됨"
       },
       "name": "관리자",
+      "profile": {
+        "actions": "작업",
+        "activeRooms": "채팅방 활동",
+        "back": "뒤로",
+        "ban": "사용자 차단",
+        "banDetails": "차단 상세 정보",
+        "banReasonPlaceholder": "차단 사유 (선택 사항)",
+        "banned": "차단됨",
+        "bannedOn": "차단일",
+        "confirmBan": "차단",
+        "delete": "사용자 삭제",
+        "lastActive": "마지막 활동",
+        "loading": "프로필 로드 중...",
+        "messages": "메시지",
+        "noMessages": "메시지를 찾을 수 없음",
+        "noReason": "사유 없음",
+        "notFound": "사용자를 찾을 수 없음",
+        "reason": "사유",
+        "recentMessages": "최근 메시지",
+        "room": "방",
+        "rooms": "방",
+        "unban": "사용자 차단 해제"
+      },
       "room": {
         "messagesCount": "{{count}}개 메시지",
         "noMessages": "메시지 없음"
@@ -78,6 +108,7 @@
         "lastActive": "마지막 활동",
         "message": "메시지",
         "role": "역할",
+        "status": "상태",
         "time": "시간",
         "user": "사용자",
         "username": "사용자 이름"
@@ -90,7 +121,9 @@
       },
       "title": "관리자",
       "user": {
+        "active": "활성",
         "admin": "관리자",
+        "banned": "차단됨",
         "user": "사용자"
       }
     },
@@ -329,11 +362,11 @@
       },
       "name": "채팅",
       "sidebar": {
-        "rooms": "방",
         "chats": "채팅",
         "new": "신규",
         "online": "온라인",
-        "private": "비공개"
+        "private": "비공개",
+        "rooms": "방"
       },
       "status": {
         "chatRequiresInternet": "채팅을 이용하려면 인터넷 연결이 필요합니다",
@@ -1843,6 +1876,7 @@
     },
     "dialog": {
       "about": "정보",
+      "aboutApp": "{{appName}} 정보",
       "adding": "추가 중...",
       "cancel": "취소",
       "close": "닫기",
