@@ -443,15 +443,11 @@ export default async function handler(
   logInfo(requestId, `Admin API request: ${req.method}`);
 
   // Extract auth from VercelRequest
-  // VercelRequest headers can be either an object or a Headers-like object
-  const authHeader = 
-    typeof req.headers.authorization === "string" 
-      ? req.headers.authorization 
-      : (req.headers.get?.("authorization") as string | undefined);
-  const usernameHeader = 
-    typeof req.headers["x-username"] === "string"
-      ? req.headers["x-username"]
-      : (req.headers.get?.("x-username") as string | undefined);
+  // VercelRequest headers are IncomingHttpHeaders (string | string[] | undefined)
+  const rawAuthHeader = req.headers.authorization;
+  const authHeader = Array.isArray(rawAuthHeader) ? rawAuthHeader[0] : rawAuthHeader;
+  const rawUsernameHeader = req.headers["x-username"];
+  const usernameHeader = Array.isArray(rawUsernameHeader) ? rawUsernameHeader[0] : rawUsernameHeader;
   
   const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
   const username = usernameHeader || null;
