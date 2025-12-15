@@ -32,4 +32,4 @@ package-lock.json
 
 # Tauri
 src-tauri/target
-src-tauri/apple.p8
+src-tauri/apple.p8core
