@@ -8,16 +8,21 @@
       },
       "description": "Panneau d'administration système",
       "dialogs": {
+        "banDescription": "Voulez-vous vraiment bannir {{username}} ? Il/Elle sera déconnecté(e) et ne pourra plus accéder au service.",
+        "banTitle": "Bannir l'utilisateur ?",
         "deleteDescription": "Êtes-vous sûr de vouloir supprimer {{type}} « {{name}} » ? Cette action est irréversible.",
         "deleteTitle": "Supprimer {{type}} ?"
       },
       "errors": {
+        "failedToBanUser": "Échec du bannissement de l'utilisateur",
         "failedToDeleteMessage": "Échec de la suppression du message",
         "failedToDeleteRoom": "Échec de la suppression du salon",
         "failedToDeleteUser": "Échec de la suppression de l'utilisateur",
         "failedToFetchMessages": "Échec de la récupération des messages",
+        "failedToFetchProfile": "Échec de la récupération du profil utilisateur",
         "failedToFetchRooms": "Échec de la récupération des salons",
-        "failedToFetchUsers": "Échec de la récupération des utilisateurs"
+        "failedToFetchUsers": "Échec de la récupération des utilisateurs",
+        "failedToUnbanUser": "Échec du débannissement de l'utilisateur"
       },
       "help": {
         "adminAccess": {
@@ -47,9 +52,34 @@
         "dataRefreshed": "Données actualisées",
         "messageDeleted": "Message supprimé",
         "roomDeleted": "Salon supprimé",
-        "userDeleted": "Utilisateur {{username}} supprimé"
+        "userBanned": "Utilisateur {{username}} banni",
+        "userDeleted": "Utilisateur {{username}} supprimé",
+        "userUnbanned": "Utilisateur {{username}} débanni"
       },
       "name": "Admin",
+      "profile": {
+        "actions": "Actions",
+        "activeRooms": "Actif dans les salons",
+        "back": "Retour",
+        "ban": "Bannir l'utilisateur",
+        "banDetails": "Détails du bannissement",
+        "banReasonPlaceholder": "Raison du bannissement (facultatif)",
+        "banned": "Banni",
+        "bannedOn": "Banni le",
+        "confirmBan": "Bannir",
+        "delete": "Supprimer l'utilisateur",
+        "lastActive": "Dernière activité",
+        "loading": "Chargement du profil...",
+        "messages": "Messages",
+        "noMessages": "Aucun message trouvé",
+        "noReason": "Aucune raison fournie",
+        "notFound": "Utilisateur introuvable",
+        "reason": "Raison",
+        "recentMessages": "Messages récents",
+        "room": "Salon",
+        "rooms": "Salons",
+        "unban": "Débannir l'utilisateur"
+      },
       "room": {
         "messagesCount": "{{count}} messages",
         "noMessages": "Aucun message"
@@ -78,6 +108,7 @@
         "lastActive": "Dernière activité",
         "message": "Message",
         "role": "Rôle",
+        "status": "Statut",
         "time": "Heure",
         "user": "Utilisateur",
         "username": "Nom d'utilisateur"
@@ -90,7 +121,9 @@
       },
       "title": "Admin",
       "user": {
+        "active": "Actif",
         "admin": "admin",
+        "banned": "Banni",
         "user": "utilisateur"
       }
     },
@@ -329,11 +362,11 @@
       },
       "name": "Chats",
       "sidebar": {
-        "rooms": "Salons",
         "chats": "Discussions",
         "new": "nouveau",
         "online": "en ligne",
-        "private": "Privé"
+        "private": "Privé",
+        "rooms": "Salons"
       },
       "status": {
         "chatRequiresInternet": "Le chat nécessite une connexion internet",
@@ -1843,6 +1876,7 @@
     },
     "dialog": {
       "about": "À propos",
+      "aboutApp": "À propos de {{appName}}",
       "adding": "Ajout en cours...",
       "cancel": "Annuler",
       "close": "Fermer",

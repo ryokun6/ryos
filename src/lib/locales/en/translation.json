@@ -40,6 +40,7 @@
       "delete": "Delete",
       "help": "Help",
       "about": "About",
+      "aboutApp": "About {{appName}}",
       "welcomeTo": "Welcome to {{appName}}",
       "version": "Version",
       "madeBy": "Made by",

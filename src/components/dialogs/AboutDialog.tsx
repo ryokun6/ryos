@@ -107,21 +107,21 @@ export function AboutDialog({
       >
         {isXpTheme ? (
           <>
-            <DialogHeader>{t("common.dialog.about")}</DialogHeader>
+            <DialogHeader>{t("common.dialog.aboutApp", { appName: displayName })}</DialogHeader>
             <div className={`window-body ${isXpTheme ? "p-2 px-4" : "p-4"}`}>
               {dialogContent}
             </div>
           </>
         ) : currentTheme === "macosx" ? (
           <>
-            <DialogHeader>{t("common.dialog.about")}</DialogHeader>
+            <DialogHeader>{t("common.dialog.aboutApp", { appName: displayName })}</DialogHeader>
             {dialogContent}
           </>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="font-normal text-[16px]">
-                {t("common.dialog.about")}
+                {t("common.dialog.aboutApp", { appName: displayName })}
               </DialogTitle>
               <DialogDescription className="sr-only">
                 {t("common.dialog.informationAboutApp")}

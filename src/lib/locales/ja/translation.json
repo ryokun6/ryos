@@ -8,16 +8,21 @@
       },
       "description": "システム管理画面",
       "dialogs": {
+        "banDescription": "{{username}}をBANしてもよろしいですか？彼らはログアウトされ、サービスにアクセスできなくなります。",
+        "banTitle": "ユーザーをBAN",
         "deleteDescription": "{{type}}「{{name}}」を削除しますか？この操作は元に戻せません。",
         "deleteTitle": "{{type}}を削除しますか？"
       },
       "errors": {
+        "failedToBanUser": "ユーザーのBANに失敗しました",
         "failedToDeleteMessage": "メッセージの削除に失敗しました。",
         "failedToDeleteRoom": "ルームの削除に失敗しました。",
         "failedToDeleteUser": "ユーザーの削除に失敗しました。",
         "failedToFetchMessages": "メッセージの取得に失敗しました。",
+        "failedToFetchProfile": "ユーザープロフィールの取得に失敗しました",
         "failedToFetchRooms": "ルームの取得に失敗しました。",
-        "failedToFetchUsers": "ユーザーの取得に失敗しました。"
+        "failedToFetchUsers": "ユーザーの取得に失敗しました。",
+        "failedToUnbanUser": "ユーザーのBAN解除に失敗しました"
       },
       "help": {
         "adminAccess": {
@@ -47,9 +52,34 @@
         "dataRefreshed": "データが更新されました",
         "messageDeleted": "メッセージが削除されました",
         "roomDeleted": "ルームが削除されました",
-        "userDeleted": "ユーザー {{username}} が削除されました"
+        "userBanned": "ユーザー{{username}}をBANしました",
+        "userDeleted": "ユーザー {{username}} が削除されました",
+        "userUnbanned": "ユーザー{{username}}のBANを解除しました"
       },
       "name": "Admin",
+      "profile": {
+        "actions": "アクション",
+        "activeRooms": "ルームで活動中",
+        "back": "戻る",
+        "ban": "ユーザーをBAN",
+        "banDetails": "BANの詳細",
+        "banReasonPlaceholder": "BAN理由（任意）",
+        "banned": "BAN済み",
+        "bannedOn": "BAN日時",
+        "confirmBan": "BAN",
+        "delete": "ユーザーを削除",
+        "lastActive": "最終アクティブ",
+        "loading": "プロフィールを読み込み中...",
+        "messages": "メッセージ",
+        "noMessages": "メッセージが見つかりませんでした",
+        "noReason": "理由が指定されていません",
+        "notFound": "ユーザーが見つかりませんでした",
+        "reason": "理由",
+        "recentMessages": "最近のメッセージ",
+        "room": "ルーム",
+        "rooms": "ルーム",
+        "unban": "ユーザーのBANを解除"
+      },
       "room": {
         "messagesCount": "メッセージ{{count}}件",
         "noMessages": "メッセージはありません"
@@ -78,6 +108,7 @@
         "lastActive": "最終アクティブ",
         "message": "メッセージ",
         "role": "役割",
+        "status": "ステータス",
         "time": "時間",
         "user": "ユーザー",
         "username": "ユーザー名"
@@ -90,7 +121,9 @@
       },
       "title": "管理者",
       "user": {
+        "active": "アクティブ",
         "admin": "管理者",
+        "banned": "BAN済み",
         "user": "ユーザー"
       }
     },
@@ -329,11 +362,11 @@
       },
       "name": "チャット",
       "sidebar": {
-        "rooms": "ルーム",
         "chats": "チャット",
         "new": "新規",
         "online": "オンライン",
-        "private": "プライベート"
+        "private": "プライベート",
+        "rooms": "ルーム"
       },
       "status": {
         "chatRequiresInternet": "チャットにはインターネット接続が必要です",
@@ -1843,6 +1876,7 @@
     },
     "dialog": {
       "about": "について",
+      "aboutApp": "{{appName}}について",
       "adding": "追加中...",
       "cancel": "キャンセル",
       "close": "閉じる",
