@@ -299,32 +299,12 @@ export function LyricsDisplay({
           {segments.map((segment, index) => {
             if (segment.reading) {
               return (
-                <span
-                  key={index}
-                  style={{
-                    position: "relative",
-                    display: "inline-block",
-                    paddingTop: "0.7em",
-                  }}
-                >
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: "50%",
-                      transform: "translateX(-50%) scale(0.5)",
-                      transformOrigin: "center bottom",
-                      opacity: 0.8,
-                      fontWeight: "normal",
-                      textShadow: "0 1px 2px rgba(0,0,0,0.9)",
-                      whiteSpace: "nowrap",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    {segment.reading}
-                  </span>
+                <ruby key={index} className="lyrics-furigana">
                   {segment.text}
-                </span>
+                  <rp>(</rp>
+                  <rt className="lyrics-furigana-rt">{segment.reading}</rt>
+                  <rp>)</rp>
+                </ruby>
               );
             }
             return <span key={index}>{segment.text}</span>;

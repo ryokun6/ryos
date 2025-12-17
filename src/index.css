@@ -925,3 +925,30 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px grey, inset -2px -2px #dfdfdf !important;
 }
 
+/* ------------------------------------------------------------------------- */
+/* Japanese Furigana (Ruby) styling for lyrics display                       */
+/* Override theme font-size rules with high specificity                      */
+/* ------------------------------------------------------------------------- */
+
+ruby.lyrics-furigana {
+  ruby-align: center;
+  ruby-position: over;
+}
+
+/* Use !important to override macOS theme's blanket font-size rules */
+rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] rt.lyrics-furigana-rt,
+:root[data-os-theme="system7"] rt.lyrics-furigana-rt,
+:root[data-os-theme="win98"] rt.lyrics-furigana-rt,
+:root[data-os-theme="xp"] rt.lyrics-furigana-rt {
+  font-size: 50% !important;
+  line-height: 1 !important;
+  font-weight: normal !important;
+  opacity: 0.8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+ruby.lyrics-furigana rp {
+  display: none;
+}
+
