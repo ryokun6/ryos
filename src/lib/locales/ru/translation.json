@@ -1089,6 +1089,7 @@
         "importLibrary": "Импорт медиатеки...",
         "ipodHelp": "Справка iPod",
         "korean": "한글",
+        "furigana": "振り仮名",
         "lcdFilter": "ЖК-фильтр",
         "library": "Медиатека",
         "lyrics": "Текст песни",
@@ -1151,7 +1152,8 @@
         "themeBlack": "Тема: Черная",
         "themeClassic": "Тема: Классическая",
         "themeU2": "Тема: U2",
-        "translatingLyrics": "Перевод текста…"
+        "translatingLyrics": "Перевод текста…",
+        "loadingFurigana": "Загрузка фуриганы…"
       },
       "translationLanguages": {
         "chinese": "Китайский",

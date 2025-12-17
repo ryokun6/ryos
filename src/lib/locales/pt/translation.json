@@ -1089,6 +1089,7 @@
         "importLibrary": "Importar Biblioteca...",
         "ipodHelp": "Ajuda do iPod",
         "korean": "한글",
+        "furigana": "振り仮名",
         "lcdFilter": "Filtro LCD",
         "library": "Biblioteca",
         "lyrics": "Letras",
@@ -1151,7 +1152,8 @@
         "themeBlack": "Tema: Preto",
         "themeClassic": "Tema: Clássico",
         "themeU2": "Tema: U2",
-        "translatingLyrics": "Traduzindo letras…"
+        "translatingLyrics": "Traduzindo letras…",
+        "loadingFurigana": "Carregando furigana…"
       },
       "translationLanguages": {
         "chinese": "Chinês",

@@ -1089,6 +1089,7 @@
         "importLibrary": "ライブラリを読み込む...",
         "ipodHelp": "iPod ヘルプ",
         "korean": "한글",
+        "furigana": "振り仮名",
         "lcdFilter": "LCD フィルター",
         "library": "ライブラリ",
         "lyrics": "歌詞",
@@ -1151,7 +1152,8 @@
         "themeBlack": "テーマ：ブラック",
         "themeClassic": "テーマ：クラシック",
         "themeU2": "テーマ：U2",
-        "translatingLyrics": "歌詞を翻訳中…"
+        "translatingLyrics": "歌詞を翻訳中…",
+        "loadingFurigana": "振り仮名を読み込み中…"
       },
       "translationLanguages": {
         "chinese": "中国語",

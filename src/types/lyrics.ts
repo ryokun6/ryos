@@ -25,3 +25,8 @@ export enum KoreanDisplay {
   Original = "original",
   Romanized = "romanized",
 }
+
+export enum JapaneseFurigana {
+  Off = "off",
+  On = "on",
+}

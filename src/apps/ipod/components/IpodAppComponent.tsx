@@ -1094,6 +1094,7 @@ export function IpodAppComponent({
     lyricsAlignment,
     chineseVariant,
     koreanDisplay,
+    japaneseFurigana,
     lyricsTranslationLanguage,
     isFullScreen,
     toggleFullScreen,
@@ -1119,6 +1120,7 @@ export function IpodAppComponent({
     lyricsAlignment: s.lyricsAlignment,
     chineseVariant: s.chineseVariant,
     koreanDisplay: s.koreanDisplay,
+    japaneseFurigana: s.japaneseFurigana,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     isFullScreen: s.isFullScreen,
     toggleFullScreen: s.toggleFullScreen,
@@ -2748,6 +2750,7 @@ export function IpodAppComponent({
               lyricsAlignment={lyricsAlignment}
               chineseVariant={chineseVariant}
               koreanDisplay={koreanDisplay}
+              japaneseFurigana={japaneseFurigana}
               lyricOffset={lyricOffset ?? 0}
               adjustLyricOffset={(delta) =>
                 useIpodStore.getState().adjustLyricOffset(currentIndex, delta)
@@ -2901,6 +2904,7 @@ export function IpodAppComponent({
                               alignment={lyricsAlignment}
                               chineseVariant={chineseVariant}
                               koreanDisplay={koreanDisplay}
+                              japaneseFurigana={japaneseFurigana}
                               fontClassName={"font-lyrics-rounded"}
                               onAdjustOffset={(delta) => {
                                 // Update store with the adjusted offset

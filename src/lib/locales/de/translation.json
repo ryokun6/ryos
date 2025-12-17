@@ -1089,6 +1089,7 @@
         "importLibrary": "Mediathek importieren...",
         "ipodHelp": "iPod-Hilfe",
         "korean": "한글",
+        "furigana": "振り仮名",
         "lcdFilter": "LCD-Filter",
         "library": "Mediathek",
         "lyrics": "Liedtext",
@@ -1151,7 +1152,8 @@
         "themeBlack": "Design: Schwarz",
         "themeClassic": "Design: Klassisch",
         "themeU2": "Design: U2",
-        "translatingLyrics": "Liedtexte werden übersetzt…"
+        "translatingLyrics": "Liedtexte werden übersetzt…",
+        "loadingFurigana": "Furigana wird geladen…"
       },
       "translationLanguages": {
         "chinese": "Chinesisch",

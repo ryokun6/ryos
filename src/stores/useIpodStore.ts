@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { LyricsAlignment, ChineseVariant, KoreanDisplay } from "@/types/lyrics";
+import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import { getApiUrl } from "@/utils/platform";
 
@@ -43,6 +43,7 @@ interface IpodData {
   lyricsAlignment: LyricsAlignment;
   chineseVariant: ChineseVariant;
   koreanDisplay: KoreanDisplay;
+  japaneseFurigana: JapaneseFurigana;
   lyricsTranslationRequest: { language: string; songId: string } | null;
   /** Persistent translation language preference that persists across tracks */
   lyricsTranslationLanguage: string | null;
@@ -146,6 +147,7 @@ const initialIpodData: IpodData = {
   lyricsAlignment: LyricsAlignment.FocusThree,
   chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
+  japaneseFurigana: JapaneseFurigana.Off,
   lyricsTranslationRequest: null,
   lyricsTranslationLanguage: null,
   currentLyrics: null,
@@ -186,6 +188,8 @@ export interface IpodState extends IpodData {
   setChineseVariant: (variant: ChineseVariant) => void;
   /** Set Korean text display mode */
   setKoreanDisplay: (display: KoreanDisplay) => void;
+  /** Set Japanese furigana display mode */
+  setJapaneseFurigana: (mode: JapaneseFurigana) => void;
   /** Set the target language for lyrics translation. Pass null to disable translation. */
   setLyricsTranslationRequest: (
     language: string | null,
@@ -226,7 +230,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSearch: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 19; // Incremented version for persistent translation language
+const CURRENT_IPOD_STORE_VERSION = 20; // Incremented version for Japanese furigana setting
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -569,6 +573,7 @@ export const useIpodStore = create<IpodState>()(
       setLyricsAlignment: (alignment) => set({ lyricsAlignment: alignment }),
       setChineseVariant: (variant) => set({ chineseVariant: variant }),
       setKoreanDisplay: (display) => set({ koreanDisplay: display }),
+      setJapaneseFurigana: (mode) => set({ japaneseFurigana: mode }),
       setLyricsTranslationRequest: (language, songId) =>
         set(
           language && songId
@@ -917,6 +922,7 @@ export const useIpodStore = create<IpodState>()(
         lyricsAlignment: state.lyricsAlignment,
         chineseVariant: state.chineseVariant,
         koreanDisplay: state.koreanDisplay,
+        japaneseFurigana: state.japaneseFurigana,
         lyricsTranslationRequest: state.lyricsTranslationRequest, // Persist translation state
         lyricsTranslationLanguage: state.lyricsTranslationLanguage, // Persist translation language preference
         isFullScreen: state.isFullScreen,
@@ -942,6 +948,7 @@ export const useIpodStore = create<IpodState>()(
               state.lyricsAlignment ?? LyricsAlignment.FocusThree,
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
+            japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.Off,
             lyricsTranslationRequest: state.lyricsTranslationRequest ?? null, // Preserve existing translation state
             lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? null, // Preserve existing translation language preference
             libraryState: "uninitialized" as LibraryState, // Reset to uninitialized on migration
@@ -965,6 +972,7 @@ export const useIpodStore = create<IpodState>()(
           lyricsAlignment: state.lyricsAlignment,
           chineseVariant: state.chineseVariant,
           koreanDisplay: state.koreanDisplay,
+          japaneseFurigana: state.japaneseFurigana,
           lyricsTranslationRequest: state.lyricsTranslationRequest, // Persist translation state
           lyricsTranslationLanguage: state.lyricsTranslationLanguage, // Persist translation language preference
           isFullScreen: state.isFullScreen,

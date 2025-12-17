@@ -1089,6 +1089,7 @@
         "importLibrary": "보관함 가져오기...",
         "ipodHelp": "iPod 도움말",
         "korean": "한글",
+        "furigana": "振り仮名",
         "lcdFilter": "LCD 필터",
         "library": "보관함",
         "lyrics": "가사",
@@ -1151,7 +1152,8 @@
         "themeBlack": "테마: 블랙",
         "themeClassic": "테마: 클래식",
         "themeU2": "테마: U2",
-        "translatingLyrics": "가사 번역 중…"
+        "translatingLyrics": "가사 번역 중…",
+        "loadingFurigana": "후리가나 로딩 중…"
       },
       "translationLanguages": {
         "chinese": "중국어",

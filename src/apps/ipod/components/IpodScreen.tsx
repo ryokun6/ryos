@@ -6,7 +6,7 @@ import { Track } from "@/stores/useIpodStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { useLyrics } from "@/hooks/useLyrics";
-import { LyricsAlignment, ChineseVariant, KoreanDisplay } from "@/types/lyrics";
+import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { useTranslation } from "react-i18next";
 
 // Minimal BatteryManager interface for browsers that expose navigator.getBattery
@@ -369,6 +369,7 @@ interface IpodScreenProps {
   lyricsAlignment: LyricsAlignment;
   chineseVariant: ChineseVariant;
   koreanDisplay: KoreanDisplay;
+  japaneseFurigana: JapaneseFurigana;
   lyricOffset: number;
   adjustLyricOffset: (deltaMs: number) => void;
   registerActivity: () => void;
@@ -409,6 +410,7 @@ export function IpodScreen({
   lyricsAlignment,
   chineseVariant,
   koreanDisplay,
+  japaneseFurigana,
   lyricOffset,
   adjustLyricOffset,
   registerActivity,
@@ -701,6 +703,7 @@ export function IpodScreen({
               alignment={lyricsAlignment}
               chineseVariant={chineseVariant}
               koreanDisplay={koreanDisplay}
+              japaneseFurigana={japaneseFurigana}
               isTranslating={lyricsControls.isTranslating}
               onAdjustOffset={(deltaMs) => {
                 adjustLyricOffset(deltaMs);

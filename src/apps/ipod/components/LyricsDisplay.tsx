@@ -3,13 +3,21 @@ import {
   LyricsAlignment,
   ChineseVariant,
   KoreanDisplay,
+  JapaneseFurigana,
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type { CSSProperties } from "react";
 import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
+import { getApiUrl } from "@/utils/platform";
+
+// Type for furigana segments from API
+interface FuriganaSegment {
+  text: string;
+  reading?: string;
+}
 
 interface LyricsDisplayProps {
   lines: LyricLine[];
@@ -23,6 +31,7 @@ interface LyricsDisplayProps {
   alignment?: LyricsAlignment;
   chineseVariant?: ChineseVariant;
   koreanDisplay?: KoreanDisplay;
+  japaneseFurigana?: JapaneseFurigana;
   /** Callback to adjust lyric offset in ms (positive = lyrics earlier) */
   onAdjustOffset?: (deltaMs: number) => void;
   /** Whether lyrics are currently being translated */
@@ -55,6 +64,43 @@ const ANIMATION_CONFIG = {
   },
 } as const;
 
+// Spinner component for loading states
+const Spinner = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={`animate-spin ${className}`}
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    />
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    />
+  </svg>
+);
+
+// Processing indicator shown in top-left when translating or fetching furigana
+const ProcessingIndicator = () => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.8 }}
+    transition={{ duration: 0.2 }}
+    className="absolute top-3 left-3 pointer-events-none z-50"
+  >
+    <Spinner className="w-4 h-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" />
+  </motion.div>
+);
+
 const LoadingState = ({
   bottomPaddingClass = "pb-5",
   textSizeClass = "text-[12px]",
@@ -71,27 +117,6 @@ const LoadingState = ({
     >
       <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
         {t("apps.ipod.status.loadingLyrics")}
-      </div>
-    </div>
-  );
-};
-
-const TranslatingState = ({
-  bottomPaddingClass = "pb-5",
-  textSizeClass = "text-[12px]",
-  fontClassName = "font-geneva-12",
-}: {
-  bottomPaddingClass?: string;
-  textSizeClass?: string;
-  fontClassName?: string;
-}) => {
-  const { t } = useTranslation();
-  return (
-    <div
-      className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
-    >
-      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
-        {t("apps.ipod.status.translatingLyrics")}
       </div>
     </div>
   );
@@ -167,6 +192,7 @@ export function LyricsDisplay({
   alignment = LyricsAlignment.FocusThree,
   chineseVariant = ChineseVariant.Traditional,
   koreanDisplay = KoreanDisplay.Original,
+  japaneseFurigana = JapaneseFurigana.Off,
   onAdjustOffset,
   isTranslating = false,
   textSizeClass = "text-[12px]",
@@ -180,6 +206,113 @@ export function LyricsDisplay({
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
     []
+  );
+
+  // State for furigana annotations
+  const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(
+    new Map()
+  );
+  const furiganaCacheKeyRef = useRef<string>("");
+  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
+
+  // Check if text is Japanese (contains kanji AND hiragana/katakana)
+  // This distinguishes Japanese from Chinese (which only has hanzi, no kana)
+  const isJapaneseText = useCallback((text: string): boolean => {
+    const hasKanji = /[\u4E00-\u9FFF]/.test(text);
+    const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text); // Hiragana or Katakana
+    return hasKanji && hasKana;
+  }, []);
+
+  // Fetch furigana for lines when enabled
+  useEffect(() => {
+    if (japaneseFurigana !== JapaneseFurigana.On || lines.length === 0) {
+      setIsFetchingFurigana(false);
+      return;
+    }
+
+    // Check if any lines are Japanese text (has both kanji and kana)
+    const hasJapanese = lines.some((line) => isJapaneseText(line.words));
+    if (!hasJapanese) {
+      setIsFetchingFurigana(false);
+      return;
+    }
+
+    // Create cache key from lines
+    const cacheKey = JSON.stringify(lines.map((l) => l.startTimeMs + l.words));
+    if (cacheKey === furiganaCacheKeyRef.current) {
+      setIsFetchingFurigana(false);
+      return; // Already fetched for these lines
+    }
+
+    const controller = new AbortController();
+    setIsFetchingFurigana(true);
+
+    fetch(getApiUrl("/api/furigana"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lines }),
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch furigana (status ${res.status})`);
+        }
+        return res.json();
+      })
+      .then((data: { annotatedLines: FuriganaSegment[][] }) => {
+        const newMap = new Map<string, FuriganaSegment[]>();
+        lines.forEach((line, index) => {
+          if (data.annotatedLines[index]) {
+            newMap.set(line.startTimeMs, data.annotatedLines[index]);
+          }
+        });
+        setFuriganaMap(newMap);
+        furiganaCacheKeyRef.current = cacheKey;
+        setIsFetchingFurigana(false);
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          console.error("Failed to fetch furigana:", err);
+        }
+        setIsFetchingFurigana(false);
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [lines, japaneseFurigana, isJapaneseText]);
+
+  // Render text with furigana using ruby elements
+  const renderWithFurigana = useCallback(
+    (line: LyricLine, processedText: string): React.ReactNode => {
+      if (japaneseFurigana !== JapaneseFurigana.On) {
+        return processedText;
+      }
+
+      const segments = furiganaMap.get(line.startTimeMs);
+      if (!segments || segments.length === 0) {
+        return processedText;
+      }
+
+      return (
+        <>
+          {segments.map((segment, index) => {
+            if (segment.reading) {
+              return (
+                <ruby key={index} className="lyrics-furigana">
+                  {segment.text}
+                  <rp>(</rp>
+                  <rt className="lyrics-furigana-rt">{segment.reading}</rt>
+                  <rp>)</rp>
+                </ruby>
+              );
+            }
+            return <span key={index}>{segment.text}</span>;
+          })}
+        </>
+      );
+    },
+    [japaneseFurigana, furiganaMap]
   );
 
   const isChineseText = (text: string) => {
@@ -360,14 +493,6 @@ export function LyricsDisplay({
         fontClassName={fontClassName}
       />
     );
-  if (isTranslating)
-    return (
-      <TranslatingState
-        bottomPaddingClass={bottomPaddingClass}
-        textSizeClass={textSizeClass}
-        fontClassName={fontClassName}
-      />
-    );
   if (error)
     return (
       <ErrorState
@@ -385,8 +510,16 @@ export function LyricsDisplay({
       />
     );
 
+  // Check if any processing is happening
+  const isProcessing = isTranslating || isFetchingFurigana;
+
   return (
-    <motion.div
+    <>
+      {/* Processing indicator in top-left corner */}
+      <AnimatePresence>
+        {isProcessing && <ProcessingIndicator />}
+      </AnimatePresence>
+      <motion.div
       layout={alignment === LyricsAlignment.Alternating}
       transition={ANIMATION_CONFIG.spring}
       className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none no-select-gesture px-0 ${bottomPaddingClass}`}
@@ -458,11 +591,12 @@ export function LyricsDisplay({
                     : undefined,
               }}
             >
-              {processText(line.words)}
+              {renderWithFurigana(line, processText(line.words))}
             </motion.div>
           );
         })}
       </AnimatePresence>
     </motion.div>
+    </>
   );
 }
