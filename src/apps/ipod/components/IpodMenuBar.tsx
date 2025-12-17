@@ -16,7 +16,7 @@ import {
 import { useIpodStoreShallow } from "@/stores/helpers";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { LyricsAlignment, ChineseVariant, KoreanDisplay } from "@/types/lyrics";
+import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
@@ -77,6 +77,7 @@ export function IpodMenuBar({
     lyricsAlignment,
     chineseVariant,
     koreanDisplay,
+    japaneseFurigana,
     lyricsTranslationLanguage,
     // Actions
     setCurrentIndex,
@@ -97,6 +98,7 @@ export function IpodMenuBar({
     refreshLyrics,
     setChineseVariant,
     setKoreanDisplay,
+    setJapaneseFurigana,
     setLyricsTranslationLanguage,
     importLibrary,
     exportLibrary,
@@ -117,6 +119,7 @@ export function IpodMenuBar({
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
     chineseVariant: s.chineseVariant ?? ChineseVariant.Traditional,
     koreanDisplay: s.koreanDisplay ?? KoreanDisplay.Original,
+    japaneseFurigana: s.japaneseFurigana ?? JapaneseFurigana.Off,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     // Actions
     setCurrentIndex: s.setCurrentIndex,
@@ -137,6 +140,7 @@ export function IpodMenuBar({
     refreshLyrics: s.refreshLyrics,
     setChineseVariant: s.setChineseVariant,
     setKoreanDisplay: s.setKoreanDisplay,
+    setJapaneseFurigana: s.setJapaneseFurigana,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
     importLibrary: s.importLibrary,
     exportLibrary: s.exportLibrary,
@@ -357,6 +361,21 @@ export function IpodMenuBar({
                 className="text-md h-6 px-3"
               >
                 {t("apps.ipod.menu.korean")}
+              </MenubarCheckboxItem>
+
+              {/* Japanese furigana toggle */}
+              <MenubarCheckboxItem
+                checked={japaneseFurigana === JapaneseFurigana.On}
+                onCheckedChange={(checked) =>
+                  setJapaneseFurigana(
+                    checked
+                      ? JapaneseFurigana.On
+                      : JapaneseFurigana.Off
+                  )
+                }
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.furigana")}
               </MenubarCheckboxItem>
 
               <MenubarSeparator className="h-[2px] bg-black my-1" />

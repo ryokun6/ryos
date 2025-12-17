@@ -924,3 +924,33 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 :root[data-os-theme="win98"] [data-sonner-toast] button:active {
   box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px grey, inset -2px -2px #dfdfdf !important;
 }
+
+/* ------------------------------------------------------------------------- */
+/* Japanese Furigana (Ruby) styling for lyrics display                       */
+/* ------------------------------------------------------------------------- */
+
+/* Ruby furigana base styles */
+.ruby-furigana {
+  ruby-align: center;
+  ruby-position: over;
+}
+
+/* Ruby text (furigana reading) */
+.ruby-furigana rt {
+  font-size: 0.5em;
+  line-height: 1;
+  font-weight: normal;
+  opacity: 0.9;
+  /* Improve readability with subtle text shadow */
+  text-shadow: inherit;
+}
+
+/* Hide fallback parentheses (for browsers without ruby support) */
+.ruby-furigana rp {
+  display: none;
+}
+
+/* Adjust line height to accommodate furigana */
+.ruby-furigana {
+  line-height: 1.8;
+}

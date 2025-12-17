@@ -3,13 +3,21 @@ import {
   LyricsAlignment,
   ChineseVariant,
   KoreanDisplay,
+  JapaneseFurigana,
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type { CSSProperties } from "react";
 import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
+import { getApiUrl } from "@/utils/platform";
+
+// Type for furigana segments from API
+interface FuriganaSegment {
+  text: string;
+  reading?: string;
+}
 
 interface LyricsDisplayProps {
   lines: LyricLine[];
@@ -23,6 +31,7 @@ interface LyricsDisplayProps {
   alignment?: LyricsAlignment;
   chineseVariant?: ChineseVariant;
   koreanDisplay?: KoreanDisplay;
+  japaneseFurigana?: JapaneseFurigana;
   /** Callback to adjust lyric offset in ms (positive = lyrics earlier) */
   onAdjustOffset?: (deltaMs: number) => void;
   /** Whether lyrics are currently being translated */
@@ -167,6 +176,7 @@ export function LyricsDisplay({
   alignment = LyricsAlignment.FocusThree,
   chineseVariant = ChineseVariant.Traditional,
   koreanDisplay = KoreanDisplay.Original,
+  japaneseFurigana = JapaneseFurigana.Off,
   onAdjustOffset,
   isTranslating = false,
   textSizeClass = "text-[12px]",
@@ -180,6 +190,107 @@ export function LyricsDisplay({
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
     []
+  );
+
+  // State for furigana annotations
+  const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(
+    new Map()
+  );
+  const furiganaCacheKeyRef = useRef<string>("");
+
+  // Check if text contains Japanese with kanji
+  const containsJapaneseKanji = useCallback((text: string): boolean => {
+    const kanjiRegex = /[\u4E00-\u9FFF]/;
+    const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF]/;
+    return kanjiRegex.test(text) && japaneseRegex.test(text);
+  }, []);
+
+  // Fetch furigana for lines when enabled
+  useEffect(() => {
+    if (japaneseFurigana !== JapaneseFurigana.On || lines.length === 0) {
+      return;
+    }
+
+    // Check if any lines contain Japanese with kanji
+    const hasJapaneseKanji = lines.some((line) =>
+      containsJapaneseKanji(line.words)
+    );
+    if (!hasJapaneseKanji) {
+      return;
+    }
+
+    // Create cache key from lines
+    const cacheKey = JSON.stringify(lines.map((l) => l.startTimeMs + l.words));
+    if (cacheKey === furiganaCacheKeyRef.current) {
+      return; // Already fetched for these lines
+    }
+
+    const controller = new AbortController();
+
+    fetch(getApiUrl("/api/furigana"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lines }),
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch furigana (status ${res.status})`);
+        }
+        return res.json();
+      })
+      .then((data: { annotatedLines: FuriganaSegment[][] }) => {
+        const newMap = new Map<string, FuriganaSegment[]>();
+        lines.forEach((line, index) => {
+          if (data.annotatedLines[index]) {
+            newMap.set(line.startTimeMs, data.annotatedLines[index]);
+          }
+        });
+        setFuriganaMap(newMap);
+        furiganaCacheKeyRef.current = cacheKey;
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          console.error("Failed to fetch furigana:", err);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [lines, japaneseFurigana, containsJapaneseKanji]);
+
+  // Render text with furigana using ruby elements
+  const renderWithFurigana = useCallback(
+    (line: LyricLine, processedText: string): React.ReactNode => {
+      if (japaneseFurigana !== JapaneseFurigana.On) {
+        return processedText;
+      }
+
+      const segments = furiganaMap.get(line.startTimeMs);
+      if (!segments || segments.length === 0) {
+        return processedText;
+      }
+
+      return (
+        <>
+          {segments.map((segment, index) => {
+            if (segment.reading) {
+              return (
+                <ruby key={index} className="ruby-furigana">
+                  {segment.text}
+                  <rp>(</rp>
+                  <rt>{segment.reading}</rt>
+                  <rp>)</rp>
+                </ruby>
+              );
+            }
+            return <span key={index}>{segment.text}</span>;
+          })}
+        </>
+      );
+    },
+    [japaneseFurigana, furiganaMap]
   );
 
   const isChineseText = (text: string) => {
@@ -458,7 +569,7 @@ export function LyricsDisplay({
                     : undefined,
               }}
             >
-              {processText(line.words)}
+              {renderWithFurigana(line, processText(line.words))}
             </motion.div>
           );
         })}
