@@ -1026,7 +1026,20 @@
         "openedSharedTrack": "共有トラックを開きました。再生するには⏯を押してください。",
         "syncFailed": "同期失敗",
         "updateCheckFailed": "更新確認失敗",
-        "youreOffline": "オフライン"
+        "youreOffline": "オフライン",
+        "lyricsSearchTitle": "歌詞を更新",
+        "lyricsSearchDescription": "{{artist}}の「{{title}}」の歌詞を検索",
+        "lyricsSearchPlaceholder": "検索クエリを入力（例：曲名、アーティスト）",
+        "lyricsSearchSearch": "検索",
+        "lyricsSearchSearching": "検索中...",
+        "lyricsSearchSelectResult": "結果を選択:",
+        "lyricsSearchCurrentSelection": "現在の選択:",
+        "lyricsSearchUseSelected": "選択したものを使用",
+        "lyricsSearchReset": "自動にリセット",
+        "lyricsSearchEmptyQuery": "検索クエリを入力してください",
+        "lyricsSearchNoResults": "結果が見つかりません",
+        "lyricsSearchError": "歌詞の検索中にエラーが発生しました",
+        "lyricsSearchInvalidResponse": "サーバーからの無効な応答"
       },
       "help": {
         "addSongs": {

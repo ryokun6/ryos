@@ -1026,7 +1026,20 @@
         "openedSharedTrack": "공유 트랙을 열었습니다. 재생하려면 ⏯을 누르세요.",
         "syncFailed": "동기화 실패",
         "updateCheckFailed": "업데이트 확인 실패",
-        "youreOffline": "오프라인 상태입니다."
+        "youreOffline": "오프라인 상태입니다.",
+        "lyricsSearchTitle": "가사 새로 고침",
+        "lyricsSearchDescription": "{{artist}}의 \"{{title}}\" 가사 검색",
+        "lyricsSearchPlaceholder": "검색어 입력 (예: 노래 제목, 아티스트)",
+        "lyricsSearchSearch": "검색",
+        "lyricsSearchSearching": "검색 중...",
+        "lyricsSearchSelectResult": "결과 선택:",
+        "lyricsSearchCurrentSelection": "현재 선택:",
+        "lyricsSearchUseSelected": "선택한 항목 사용",
+        "lyricsSearchReset": "자동으로 재설정",
+        "lyricsSearchEmptyQuery": "검색어를 입력하세요",
+        "lyricsSearchNoResults": "결과를 찾을 수 없습니다",
+        "lyricsSearchError": "가사 검색 중 오류 발생",
+        "lyricsSearchInvalidResponse": "서버에서 잘못된 응답"
       },
       "help": {
         "addSongs": {

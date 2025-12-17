@@ -1026,7 +1026,20 @@
         "openedSharedTrack": "Pista compartida abierta. Pulsa ⏯ para empezar a reproducir.",
         "syncFailed": "Error de Sincronización",
         "updateCheckFailed": "Error al comprobar actualizaciones",
-        "youreOffline": "Estás sin conexión"
+        "youreOffline": "Estás sin conexión",
+        "lyricsSearchTitle": "Actualizar letras",
+        "lyricsSearchDescription": "Buscar letras para \"{{title}}\" de {{artist}}",
+        "lyricsSearchPlaceholder": "Ingrese consulta de búsqueda (ej., título de canción, artista)",
+        "lyricsSearchSearch": "Buscar",
+        "lyricsSearchSearching": "Buscando...",
+        "lyricsSearchSelectResult": "Seleccione un resultado:",
+        "lyricsSearchCurrentSelection": "Selección actual:",
+        "lyricsSearchUseSelected": "Usar seleccionado",
+        "lyricsSearchReset": "Restablecer a automático",
+        "lyricsSearchEmptyQuery": "Por favor ingrese una consulta de búsqueda",
+        "lyricsSearchNoResults": "No se encontraron resultados",
+        "lyricsSearchError": "Error al buscar letras",
+        "lyricsSearchInvalidResponse": "Respuesta inválida del servidor"
       },
       "help": {
         "addSongs": {

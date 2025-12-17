@@ -16,6 +16,16 @@ interface UseLyricsParams {
   currentTime: number;
   /** Target language for translation (e.g., "en", "es", "ja"). If null or undefined, no translation. */
   translateTo?: string | null;
+  /** Override search query for lyrics lookup */
+  searchQueryOverride?: string;
+  /** Override selected match for lyrics fetching */
+  selectedMatch?: {
+    hash: string;
+    albumId: string | number;
+    title?: string;
+    artist?: string;
+    album?: string;
+  };
 }
 
 interface LyricsState {
@@ -38,6 +48,8 @@ export function useLyrics({
   album = "",
   currentTime,
   translateTo,
+  searchQueryOverride,
+  selectedMatch,
 }: UseLyricsParams): LyricsState {
   const [originalLines, setOriginalLines] = useState<LyricLine[]>([]);
   const [translatedLines, setTranslatedLines] = useState<LyricLine[] | null>(
@@ -94,10 +106,44 @@ export function useLyrics({
       console.warn("Lyrics fetch timed out");
     }, 15000);
 
+    // Build request body based on whether we have overrides
+    const requestBody: {
+      title?: string;
+      artist?: string;
+      album?: string;
+      force: boolean;
+      action?: "auto" | "fetch";
+      query?: string;
+      selectedHash?: string;
+      selectedAlbumId?: string | number;
+      selectedTitle?: string;
+      selectedArtist?: string;
+      selectedAlbum?: string;
+    } = {
+      title,
+      artist,
+      album,
+      force: isForced,
+    };
+
+    if (selectedMatch) {
+      // Use fetch action with selected match
+      requestBody.action = "fetch";
+      requestBody.selectedHash = selectedMatch.hash;
+      requestBody.selectedAlbumId = selectedMatch.albumId;
+      if (selectedMatch.title) requestBody.selectedTitle = selectedMatch.title;
+      if (selectedMatch.artist)
+        requestBody.selectedArtist = selectedMatch.artist;
+      if (selectedMatch.album) requestBody.selectedAlbum = selectedMatch.album;
+    } else if (searchQueryOverride) {
+      // Use query override but still auto-fetch (action defaults to "auto")
+      requestBody.query = searchQueryOverride;
+    }
+
     fetch(getApiUrl("/api/lyrics"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, artist, album, force: isForced }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     })
       .then(async (res) => {
@@ -153,7 +199,7 @@ export function useLyrics({
       controller.abort();
       clearTimeout(timeoutId);
     };
-  }, [title, artist, album, refreshNonce]);
+  }, [title, artist, album, refreshNonce, searchQueryOverride, selectedMatch]);
 
   // Effect for translating lyrics
   useEffect(() => {

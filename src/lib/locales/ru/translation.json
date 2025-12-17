@@ -1026,7 +1026,20 @@
         "openedSharedTrack": "Открыт общий трек. Нажмите ⏯, чтобы начать воспроизведение.",
         "syncFailed": "Сбой синхронизации",
         "updateCheckFailed": "Сбой проверки обновлений",
-        "youreOffline": "Вы не в сети"
+        "youreOffline": "Вы не в сети",
+        "lyricsSearchTitle": "Обновить текст",
+        "lyricsSearchDescription": "Поиск текста для \"{{title}}\" от {{artist}}",
+        "lyricsSearchPlaceholder": "Введите поисковый запрос (например, название песни, исполнитель)",
+        "lyricsSearchSearch": "Поиск",
+        "lyricsSearchSearching": "Поиск...",
+        "lyricsSearchSelectResult": "Выберите результат:",
+        "lyricsSearchCurrentSelection": "Текущий выбор:",
+        "lyricsSearchUseSelected": "Использовать выбранное",
+        "lyricsSearchReset": "Сбросить на автоматический",
+        "lyricsSearchEmptyQuery": "Пожалуйста, введите поисковый запрос",
+        "lyricsSearchNoResults": "Результаты не найдены",
+        "lyricsSearchError": "Ошибка при поиске текста",
+        "lyricsSearchInvalidResponse": "Неверный ответ от сервера"
       },
       "help": {
         "addSongs": {

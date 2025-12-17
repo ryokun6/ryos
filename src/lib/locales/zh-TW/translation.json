@@ -1026,7 +1026,20 @@
         "openedSharedTrack": "已開啟共享曲目。按下 ⏯ 開始播放。",
         "syncFailed": "同步失敗",
         "updateCheckFailed": "檢查更新失敗",
-        "youreOffline": "您已離線"
+        "youreOffline": "您已離線",
+        "lyricsSearchTitle": "重新整理歌詞",
+        "lyricsSearchDescription": "搜尋「{{title}}」的歌詞，演唱者：{{artist}}",
+        "lyricsSearchPlaceholder": "輸入搜尋關鍵字（例如：歌曲名稱、歌手）",
+        "lyricsSearchSearch": "搜尋",
+        "lyricsSearchSearching": "搜尋中...",
+        "lyricsSearchSelectResult": "選擇結果：",
+        "lyricsSearchCurrentSelection": "目前選擇：",
+        "lyricsSearchUseSelected": "使用選取的項目",
+        "lyricsSearchReset": "重設為自動",
+        "lyricsSearchEmptyQuery": "請輸入搜尋關鍵字",
+        "lyricsSearchNoResults": "找不到結果",
+        "lyricsSearchError": "搜尋歌詞時發生錯誤",
+        "lyricsSearchInvalidResponse": "伺服器回應無效"
       },
       "help": {
         "addSongs": {

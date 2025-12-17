@@ -19,6 +19,13 @@ const LyricsRequestSchema = z.object({
   artist: z.string().optional(),
   album: z.string().optional(),
   force: z.boolean().optional(),
+  action: z.enum(["auto", "search", "fetch"]).optional(),
+  query: z.string().optional(),
+  selectedHash: z.string().optional(),
+  selectedAlbumId: z.union([z.string(), z.number()]).optional(),
+  selectedTitle: z.string().optional(),
+  selectedArtist: z.string().optional(),
+  selectedAlbum: z.string().optional(),
 });
 
 type LyricsRequest = z.infer<typeof LyricsRequestSchema>;
@@ -227,6 +234,34 @@ const logError = (id: string, message: string, error: unknown) => {
 const generateRequestId = (): string =>
   Math.random().toString(36).substring(2, 10);
 
+// Define minimal response types to avoid any
+type KugouSongInfo = {
+  hash: string;
+  album_id: string | number;
+  songname: string;
+  singername: string;
+  album_name?: string;
+};
+
+type KugouSearchResponse = {
+  data?: {
+    info?: KugouSongInfo[];
+  };
+};
+
+type LyricsCandidate = {
+  id: number | string;
+  accesskey: string;
+};
+
+type CandidateResponse = {
+  candidates?: LyricsCandidate[];
+};
+
+type LyricsDownloadResponse = {
+  content?: string;
+};
+
 /**
  * Main handler
  */
@@ -264,8 +299,42 @@ export default async function handler(req: Request) {
     });
   }
 
-  const { title = "", artist = "", album = "", force = false } = body;
-  if (!title && !artist) {
+  const {
+    title = "",
+    artist = "",
+    album = "",
+    force = false,
+    action = "auto",
+    query,
+    selectedHash,
+    selectedAlbumId,
+    selectedTitle,
+    selectedArtist,
+    selectedAlbum,
+  } = body;
+
+  // For search action, query is required if title/artist not provided
+  if (action === "search" && !query && !title && !artist) {
+    return new Response(
+      JSON.stringify({
+        error: "Query or title/artist is required for search",
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // For fetch action, selectedHash is required
+  if (action === "fetch" && !selectedHash) {
+    return new Response(
+      JSON.stringify({
+        error: "selectedHash is required for fetch action",
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // For auto action (default), require title or artist
+  if (action === "auto" && !title && !artist) {
     return new Response(
       JSON.stringify({
         error: "At least one of title or artist is required",
@@ -274,7 +343,13 @@ export default async function handler(req: Request) {
     );
   }
 
-  logInfo(requestId, "Received lyrics request", { title, artist });
+  logInfo(requestId, "Received lyrics request", {
+    title,
+    artist,
+    action,
+    query,
+    selectedHash,
+  });
 
   // --------------------------
   // 1. Attempt cache lookup (skip if force refresh requested)
@@ -284,6 +359,218 @@ export default async function handler(req: Request) {
     token: process.env.REDIS_KV_REST_API_TOKEN as string,
   });
 
+  // For search action, skip cache and return results list
+  if (action === "search") {
+    try {
+      // Use query if provided, otherwise build from title/artist/album
+      const searchQuery =
+        query ||
+        [stripParentheses(title), stripParentheses(artist), album]
+          .filter(Boolean)
+          .join(" ");
+
+      if (!searchQuery) {
+        return new Response(
+          JSON.stringify({ error: "Search query is required" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      const keyword = encodeURIComponent(searchQuery);
+      const searchUrl = `http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=${keyword}&page=1&pagesize=20&showtype=1`;
+
+      const searchRes = await fetch(searchUrl, { headers: kugouHeaders });
+      if (!searchRes.ok) {
+        throw new Error(
+          `Kugou search request failed with status ${searchRes.status}`
+        );
+      }
+
+      const searchJson =
+        (await searchRes.json()) as unknown as KugouSearchResponse;
+      const infoList: KugouSongInfo[] = searchJson?.data?.info ?? [];
+
+      if (infoList.length === 0) {
+        return new Response(
+          JSON.stringify({ results: [] }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+            },
+          }
+        );
+      }
+
+      // Score and sort results
+      const scoredResults = infoList.map((song) => ({
+        song,
+        score: scoreSongMatch(song, title || "", artist || ""),
+      }));
+      scoredResults.sort((a, b) => b.score - a.score);
+
+      // Return results list without fetching lyrics
+      const results = scoredResults.map(({ song, score }) => ({
+        title: song.songname,
+        artist: song.singername,
+        album: song.album_name ?? undefined,
+        hash: song.hash,
+        albumId: song.album_id,
+        score: Math.round(score * 1000) / 1000, // Round to 3 decimals
+      }));
+
+      return new Response(JSON.stringify({ results }), {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+        },
+      });
+    } catch (error: unknown) {
+      logError(requestId, "Error searching lyrics", error);
+      console.error("Error searching lyrics:", error);
+      return new Response(
+        JSON.stringify({ error: "Unexpected server error during search" }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+          },
+        }
+      );
+    }
+  }
+
+  // For fetch action, use selectedHash directly
+  if (action === "fetch" && selectedHash && selectedAlbumId) {
+    const cacheKey = buildLyricsCacheKey(
+      selectedTitle || title,
+      selectedArtist || artist
+    );
+    if (!force) {
+      try {
+        const cachedRaw = await redis.get(cacheKey);
+        if (cachedRaw) {
+          const cachedStr =
+            typeof cachedRaw === "string"
+              ? cachedRaw
+              : JSON.stringify(cachedRaw);
+          logInfo(requestId, "Lyrics cache HIT (fetch)", { cacheKey });
+          return new Response(cachedStr, {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Lyrics-Cache": "HIT",
+              "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+            },
+          });
+        }
+        logInfo(requestId, "Lyrics cache MISS (fetch)", { cacheKey });
+      } catch (e) {
+        logError(requestId, "Redis cache lookup failed (lyrics fetch)", e);
+        console.error("Redis cache lookup failed (lyrics fetch)", e);
+        // continue without cache
+      }
+    } else {
+      logInfo(requestId, "Bypassing lyrics cache due to force flag (fetch)", {
+        cacheKey,
+      });
+    }
+
+    // Fetch lyrics for selected hash
+    try {
+      const songHash = selectedHash;
+      const albumId = selectedAlbumId;
+
+      // Get lyrics candidate id & access key
+      const candidateUrl = `https://krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword=&duration=&hash=${songHash}&album_audio_id=`;
+      const candidateRes = await fetch(candidateUrl, {
+        headers: kugouHeaders,
+      });
+      if (!candidateRes.ok) {
+        throw new Error(
+          `Failed to get lyrics candidate (status ${candidateRes.status})`
+        );
+      }
+
+      const candidateJson =
+        (await candidateRes.json()) as unknown as CandidateResponse;
+      const candidate = candidateJson?.candidates?.[0];
+      if (!candidate) {
+        throw new Error("No lyrics candidate found");
+      }
+
+      // Download LRC content
+      const lyricsId = candidate.id;
+      const lyricsKey = candidate.accesskey;
+      const lyricsUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=lrc&charset=utf8`;
+      const lyricsRes = await fetch(lyricsUrl, { headers: kugouHeaders });
+      if (!lyricsRes.ok) {
+        throw new Error(`Failed to download lyrics (status ${lyricsRes.status})`);
+      }
+
+      const lyricsJson =
+        (await lyricsRes.json()) as unknown as LyricsDownloadResponse;
+      const encoded = lyricsJson?.content;
+      if (!encoded) {
+        throw new Error("No lyrics content in response");
+      }
+
+      const lyricsText = base64ToUtf8(encoded);
+
+      // Fetch cover image
+      const cover = await getCover(songHash, albumId);
+
+      // Build response object
+      const result = {
+        title: selectedTitle || title,
+        artist: selectedArtist || artist,
+        album: selectedAlbum || album || undefined,
+        lyrics: lyricsText,
+        cover,
+      };
+
+      // Store in cache
+      try {
+        await redis.set(cacheKey, JSON.stringify(result));
+        logInfo(requestId, "Fetched lyrics successfully (fetch)", {
+          title: result.title,
+          artist: result.artist,
+        });
+      } catch (err) {
+        logError(requestId, "Redis cache write failed (lyrics fetch)", err);
+        console.error("Redis cache write failed (lyrics fetch)", err);
+      }
+
+      return new Response(JSON.stringify(result), {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+          "X-Lyrics-Cache": force ? "BYPASS" : "MISS",
+        },
+      });
+    } catch (error: unknown) {
+      logError(requestId, "Error fetching lyrics (fetch action)", error);
+      console.error("Error fetching lyrics (fetch action):", error);
+      return new Response(
+        JSON.stringify({
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unexpected server error during fetch",
+        }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": getEffectiveOrigin(req)!,
+          },
+        }
+      );
+    }
+  }
+
+  // Default auto action - existing behavior
   const cacheKey = buildLyricsCacheKey(title, artist);
   if (!force) {
     try {
@@ -313,33 +600,6 @@ export default async function handler(req: Request) {
   }
 
   try {
-    // Define minimal response types to avoid any
-    type KugouSongInfo = {
-      hash: string;
-      album_id: string | number;
-      songname: string;
-      singername: string;
-      album_name?: string;
-    };
-
-    type KugouSearchResponse = {
-      data?: {
-        info?: KugouSongInfo[];
-      };
-    };
-
-    type LyricsCandidate = {
-      id: number | string;
-      accesskey: string;
-    };
-
-    type CandidateResponse = {
-      candidates?: LyricsCandidate[];
-    };
-
-    type LyricsDownloadResponse = {
-      content?: string;
-    };
 
     // 1. Search song (fetch more results to find best match)
     const keyword = encodeURIComponent(

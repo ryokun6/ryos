@@ -20,6 +20,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow, useAppStoreShallow } from "@/stores/helpers";
 import { useAppStore } from "@/stores/useAppStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
 import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import { LyricsDisplay } from "./LyricsDisplay";
@@ -1106,6 +1107,9 @@ export function IpodAppComponent({
     clearLibrary,
     nextTrack,
     previousTrack,
+    refreshLyrics,
+    setTrackLyricsSearch,
+    clearTrackLyricsSearch,
   } = useIpodStoreShallow((s) => ({
     theme: s.theme,
     lcdFilterOn: s.lcdFilterOn,
@@ -1128,6 +1132,9 @@ export function IpodAppComponent({
     clearLibrary: s.clearLibrary,
     nextTrack: s.nextTrack,
     previousTrack: s.previousTrack,
+    refreshLyrics: s.refreshLyrics,
+    setTrackLyricsSearch: s.setTrackLyricsSearch,
+    clearTrackLyricsSearch: s.clearTrackLyricsSearch,
   }));
 
   const { t } = useTranslation();
@@ -1164,6 +1171,7 @@ export function IpodAppComponent({
 
   const [isAddingTrack, setIsAddingTrack] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
 
   // Always use rounded lyrics font in fullscreen
 
@@ -2438,6 +2446,46 @@ export function IpodAppComponent({
     }
   }, [tracks, currentIndex]);
 
+  // Get current track's lyrics search override (define early for use in callbacks)
+  const currentTrack = tracks[currentIndex];
+  const lyricsSearchOverride = currentTrack?.lyricsSearch;
+
+  const handleRefreshLyrics = useCallback(() => {
+    if (tracks.length > 0 && currentIndex >= 0) {
+      setIsLyricsSearchDialogOpen(true);
+    }
+  }, [tracks, currentIndex]);
+
+  const handleLyricsSearchSelect = useCallback(
+    (result: {
+      hash: string;
+      albumId: string | number;
+      title: string;
+      artist: string;
+      album?: string;
+    }) => {
+      const track = tracks[currentIndex];
+      if (track) {
+        setTrackLyricsSearch(track.id, {
+          query: undefined, // Clear query override when selecting a match
+          selection: result,
+        });
+        // Force refresh to fetch the selected lyrics
+        refreshLyrics();
+      }
+    },
+    [tracks, currentIndex, setTrackLyricsSearch, refreshLyrics]
+  );
+
+  const handleLyricsSearchReset = useCallback(() => {
+    const track = tracks[currentIndex];
+    if (track) {
+      clearTrackLyricsSearch(track.id);
+      // Force refresh to use auto-match
+      refreshLyrics();
+    }
+  }, [tracks, currentIndex, clearTrackLyricsSearch, refreshLyrics]);
+
   const ipodGenerateShareUrl = (videoId: string): string => {
     return `${window.location.origin}/ipod/${videoId}`;
   };
@@ -2447,13 +2495,33 @@ export function IpodAppComponent({
     ipodVolume: state.ipodVolume,
   }));
 
+  // Memoize selectedMatch to prevent infinite re-renders in useLyrics
+  const selectedMatchForLyrics = useMemo(() => {
+    if (!lyricsSearchOverride?.selection) return undefined;
+    return {
+      hash: lyricsSearchOverride.selection.hash,
+      albumId: lyricsSearchOverride.selection.albumId,
+      title: lyricsSearchOverride.selection.title,
+      artist: lyricsSearchOverride.selection.artist,
+      album: lyricsSearchOverride.selection.album,
+    };
+  }, [
+    lyricsSearchOverride?.selection?.hash,
+    lyricsSearchOverride?.selection?.albumId,
+    lyricsSearchOverride?.selection?.title,
+    lyricsSearchOverride?.selection?.artist,
+    lyricsSearchOverride?.selection?.album,
+  ]);
+
   // Always call useLyrics at the top level, outside of any conditional logic
   const fullScreenLyricsControls = useLyrics({
-    title: tracks[currentIndex]?.title ?? "",
-    artist: tracks[currentIndex]?.artist ?? "",
-    album: tracks[currentIndex]?.album ?? "",
-    currentTime: elapsedTime + (tracks[currentIndex]?.lyricOffset ?? 0) / 1000,
+    title: currentTrack?.title ?? "",
+    artist: currentTrack?.artist ?? "",
+    album: currentTrack?.album ?? "",
+    currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
     translateTo: lyricsTranslationLanguage,
+    searchQueryOverride: lyricsSearchOverride?.query,
+    selectedMatch: selectedMatchForLyrics,
   });
 
   // Add a ref to track the previous fullscreen state
@@ -2597,6 +2665,7 @@ export function IpodAppComponent({
       onSyncLibrary={manualSync}
       onAddTrack={() => setIsAddDialogOpen(true)}
       onShareSong={handleShareSong}
+      onRefreshLyrics={handleRefreshLyrics}
     />
   );
 
@@ -2946,6 +3015,22 @@ export function IpodAppComponent({
           details={tracks[currentIndex]?.artist}
           generateShareUrl={ipodGenerateShareUrl}
         />
+        {currentTrack && (
+          <LyricsSearchDialog
+            isOpen={isLyricsSearchDialogOpen}
+            onOpenChange={setIsLyricsSearchDialogOpen}
+            trackTitle={currentTrack.title}
+            trackArtist={currentTrack.artist}
+            initialQuery={
+              lyricsSearchOverride?.query ||
+              `${currentTrack.title} ${currentTrack.artist || ""}`.trim()
+            }
+            onSelect={handleLyricsSearchSelect}
+            onReset={handleLyricsSearchReset}
+            hasOverride={!!lyricsSearchOverride}
+            currentSelection={lyricsSearchOverride?.selection}
+          />
+        )}
       </WindowFrame>
 
       {/* PIP Player - shown when minimized with tracks */}

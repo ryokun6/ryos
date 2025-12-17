@@ -1311,7 +1311,20 @@
         "autoUpdatedTrackMetadata": "Auto-updated {{count}} track metadata",
         "addedNewSongsToTop": "Added {{newCount}} new song{{newPlural}} to the top{{updatedText}}. Total: {{total}} songs",
         "libraryUpToDateWithSongs": "Library is up to date with {{count}} songs",
-        "andUpdated": " and updated {{count}} track{{plural}}"
+        "andUpdated": " and updated {{count}} track{{plural}}",
+        "lyricsSearchTitle": "Refresh Lyrics",
+        "lyricsSearchDescription": "Search for lyrics for \"{{title}}\" by {{artist}}",
+        "lyricsSearchPlaceholder": "Enter search query (e.g., song title, artist)",
+        "lyricsSearchSearch": "Search",
+        "lyricsSearchSearching": "Searching...",
+        "lyricsSearchSelectResult": "Select a result:",
+        "lyricsSearchCurrentSelection": "Current selection:",
+        "lyricsSearchUseSelected": "Use Selected",
+        "lyricsSearchReset": "Reset to Auto",
+        "lyricsSearchEmptyQuery": "Please enter a search query",
+        "lyricsSearchNoResults": "No results found",
+        "lyricsSearchError": "Error searching for lyrics",
+        "lyricsSearchInvalidResponse": "Invalid response from server"
       },
       "menuItems": {
         "music": "Music",

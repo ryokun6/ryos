@@ -31,6 +31,7 @@ interface IpodMenuBarProps {
   onSyncLibrary: () => void;
   onAddTrack: () => void;
   onShareSong: () => void;
+  onRefreshLyrics?: () => void;
 }
 
 export function IpodMenuBar({
@@ -41,6 +42,7 @@ export function IpodMenuBar({
   onSyncLibrary,
   onAddTrack,
   onShareSong,
+  onRefreshLyrics,
 }: IpodMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -392,7 +394,7 @@ export function IpodMenuBar({
               <MenubarSeparator className="h-[2px] bg-black my-1" />
 
               <MenubarItem
-                onClick={refreshLyrics}
+                onClick={onRefreshLyrics || refreshLyrics}
                 className="text-md h-6 px-3"
                 disabled={tracks.length === 0 || currentIndex === -1}
               >

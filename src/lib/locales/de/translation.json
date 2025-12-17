@@ -1026,7 +1026,20 @@
         "openedSharedTrack": "Geteilter Titel geöffnet. Drücken Sie ⏯, um die Wiedergabe zu starten.",
         "syncFailed": "Synchronisierung fehlgeschlagen",
         "updateCheckFailed": "Update-Überprüfung fehlgeschlagen",
-        "youreOffline": "Sie sind offline"
+        "youreOffline": "Sie sind offline",
+        "lyricsSearchTitle": "Liedtext aktualisieren",
+        "lyricsSearchDescription": "Suche nach Liedtext für \"{{title}}\" von {{artist}}",
+        "lyricsSearchPlaceholder": "Suchbegriff eingeben (z.B. Songtitel, Künstler)",
+        "lyricsSearchSearch": "Suchen",
+        "lyricsSearchSearching": "Suche...",
+        "lyricsSearchSelectResult": "Ergebnis auswählen:",
+        "lyricsSearchCurrentSelection": "Aktuelle Auswahl:",
+        "lyricsSearchUseSelected": "Ausgewähltes verwenden",
+        "lyricsSearchReset": "Auf Auto zurücksetzen",
+        "lyricsSearchEmptyQuery": "Bitte geben Sie einen Suchbegriff ein",
+        "lyricsSearchNoResults": "Keine Ergebnisse gefunden",
+        "lyricsSearchError": "Fehler beim Suchen nach Liedtext",
+        "lyricsSearchInvalidResponse": "Ungültige Antwort vom Server"
       },
       "help": {
         "addSongs": {

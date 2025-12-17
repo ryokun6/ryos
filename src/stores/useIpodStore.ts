@@ -13,6 +13,17 @@ export interface Track {
   album?: string;
   /** Offset in milliseconds to adjust lyrics timing for this track (positive = lyrics earlier) */
   lyricOffset?: number;
+  /** Override for lyrics search query and selected match */
+  lyricsSearch?: {
+    query?: string;
+    selection?: {
+      hash: string;
+      albumId: string | number;
+      title: string;
+      artist: string;
+      album?: string;
+    };
+  };
 }
 
 type LibraryState = "uninitialized" | "loaded" | "cleared";
@@ -196,6 +207,22 @@ export interface IpodState extends IpodData {
     tracksUpdated: number;
     totalTracks: number;
   }>;
+  /** Set lyrics search override for a specific track */
+  setTrackLyricsSearch: (
+    trackId: string,
+    lyricsSearch: {
+      query?: string;
+      selection?: {
+        hash: string;
+        albumId: string | number;
+        title: string;
+        artist: string;
+        album?: string;
+      };
+    } | null
+  ) => void;
+  /** Clear lyrics search override for a specific track */
+  clearTrackLyricsSearch: (trackId: string) => void;
 }
 
 const CURRENT_IPOD_STORE_VERSION = 19; // Incremented version for persistent translation language
@@ -825,6 +852,30 @@ export const useIpodStore = create<IpodState>()(
           throw error;
         }
       },
+      setTrackLyricsSearch: (trackId, lyricsSearch) =>
+        set((state) => {
+          const tracks = state.tracks.map((track) =>
+            track.id === trackId
+              ? {
+                  ...track,
+                  lyricsSearch: lyricsSearch || undefined,
+                }
+              : track
+          );
+          return { tracks };
+        }),
+      clearTrackLyricsSearch: (trackId) =>
+        set((state) => {
+          const tracks = state.tracks.map((track) =>
+            track.id === trackId
+              ? {
+                  ...track,
+                  lyricsSearch: undefined,
+                }
+              : track
+          );
+          return { tracks };
+        }),
     }),
     {
       name: "ryos:ipod", // Unique name for localStorage persistence

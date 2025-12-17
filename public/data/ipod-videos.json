@@ -1,6 +1,23 @@
 {
   "videos": [
     {
+      "id": "D1QVkuEzxNk",
+      "url": "https://www.youtube.com/watch?v=D1QVkuEzxNk",
+      "title": "まどろみ",
+      "artist": "具島直子",
+      "lyricOffset": 1400,
+      "lyricsSearch": {
+        "selection": {
+          "title": "まどろみ",
+          "artist": "具島直子",
+          "album": "URBAN BLUES Presents BEST OF NAOKO GUSHIMA",
+          "hash": "4a4f40edb0d1ce5dc074b82cac62fcbb",
+          "albumId": "24647375",
+          "score": 0
+        }
+      }
+    },
+    {
       "id": "8cEdndsuzSE",
       "url": "https://www.youtube.com/watch?v=8cEdndsuzSE",
       "title": "GALA",
