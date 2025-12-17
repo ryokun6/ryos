@@ -37,7 +37,6 @@ function TextEditContent({
   const [isTranscribing, setIsTranscribing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const launchApp = useLaunchApp();
-  const clearInitialData = useAppStore((state) => state.clearInitialData);
   const clearInstanceInitialData = useAppStore(
     (state) => state.clearInstanceInitialData
   );
@@ -60,10 +59,7 @@ function TextEditContent({
     setCurrentFilePath,
     setContentJson,
     setHasUnsavedChanges,
-    legacyFilePath,
-    legacyContentJson,
-    legacyHasUnsavedChanges,
-  } = useTextEditState({ instanceId });
+  } = useTextEditState({ instanceId: instanceId! });
 
   const {
     handleSave,
@@ -141,9 +137,9 @@ function TextEditContent({
     currentFilePath,
   ]);
 
-  // Initial load - Restore last session or use initialData
+  // Initial load - use initialData if provided
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || !instanceId) return;
 
     const loadContent = async () => {
       // Prioritize initialData passed from launch event
@@ -159,11 +155,7 @@ function TextEditContent({
         );
 
         // Clear the initialData from the store now that we've consumed it
-        if (instanceId) {
-          clearInstanceInitialData(instanceId);
-        } else {
-          clearInitialData("textedit");
-        }
+        clearInstanceInitialData(instanceId);
         return;
       } else if (
         typedInitialData?.path &&
@@ -175,50 +167,8 @@ function TextEditContent({
           typedInitialData.path
         );
         await handleLoadFromDatabase(typedInitialData.path);
-        if (instanceId) {
-          clearInstanceInitialData(instanceId);
-        } else {
-          clearInitialData("textedit");
-        }
+        clearInstanceInitialData(instanceId);
         return;
-      }
-
-      // For instance mode, skip legacy store, but we'll handle instance restore below
-      if (instanceId) {
-        return;
-      }
-
-      // For legacy mode, try to restore from persisted state
-      let loadedContent = false;
-
-      // 1) Prefer any unsaved in-memory edits that were never written to disk.
-      if (legacyHasUnsavedChanges && legacyContentJson) {
-        try {
-          editor.commands.setContent(legacyContentJson, false);
-          loadedContent = true;
-          console.log("Restored unsaved TextEdit content from store");
-        } catch (err) {
-          console.warn("Failed to restore unsaved TextEdit content:", err);
-        }
-      }
-
-      // 2) If nothing unsaved, attempt to load from database
-      if (!loadedContent && legacyFilePath) {
-        const success = await handleLoadFromDatabase(legacyFilePath);
-        if (success) {
-          loadedContent = true;
-        }
-      }
-
-      // 3) Finally, fall back to any stored JSON
-      if (!loadedContent && legacyContentJson) {
-        try {
-          editor.commands.setContent(legacyContentJson, false);
-          setHasUnsavedChanges(false);
-          console.log("Loaded content from store JSON (fallback)");
-        } catch (err) {
-          console.warn("Failed to restore stored TextEdit content:", err);
-        }
       }
     };
 
@@ -227,14 +177,9 @@ function TextEditContent({
     editor,
     initialData,
     instanceId,
-    legacyFilePath,
-    legacyContentJson,
-    legacyHasUnsavedChanges,
     handleLoadFromPath,
     handleLoadFromDatabase,
-    clearInitialData,
     clearInstanceInitialData,
-    setHasUnsavedChanges,
   ]);
 
   // Instance restore: if we have a file path but no content yet after reload, load from DB

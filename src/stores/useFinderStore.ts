@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { useAppStore } from "@/stores/useAppStore";
 
-// Re-use types from Finder for consistency
 import type {
   ViewType,
   SortType,
@@ -15,16 +14,11 @@ export interface FinderInstance {
   navigationIndex: number;
   viewType: ViewType;
   sortType: SortType;
-  selectedFile: string | null; // Path of selected file
+  selectedFile: string | null;
 }
 
 interface FinderStoreState {
-  // Instance management
   instances: Record<string, FinderInstance>;
-
-  // Legacy single-window support (deprecated, kept for migration)
-  viewType: ViewType;
-  sortType: SortType;
 
   // Per-path view preferences
   pathViewPreferences: Record<string, ViewType>;
@@ -41,27 +35,15 @@ interface FinderStoreState {
   ) => void;
   getInstance: (instanceId: string) => FinderInstance | null;
   getForegroundInstance: () => FinderInstance | null;
-
-  // Legacy actions (now operate on foreground instance)
-  setViewType: (type: ViewType) => void;
-  setSortType: (type: SortType) => void;
-  reset: () => void;
 }
 
-const STORE_VERSION = 3;
 const STORE_NAME = "ryos:finder";
 
 export const useFinderStore = create<FinderStoreState>()(
   persist(
     (set, get) => ({
-      // Instance state
       instances: {},
 
-      // Legacy state (deprecated)
-      viewType: "list",
-      sortType: "name",
-
-      // Per-path view preferences
       pathViewPreferences: {},
       setViewTypeForPath: (path, type) =>
         set((state) => ({
@@ -78,7 +60,6 @@ export const useFinderStore = create<FinderStoreState>()(
         );
       },
       getDefaultViewTypeForPath: (path) => {
-        // Defaults per user request
         if (path === "/") return "large";
         if (path.startsWith("/Images")) return "large";
         if (path.startsWith("/Videos")) return "large";
@@ -87,14 +68,11 @@ export const useFinderStore = create<FinderStoreState>()(
         if (path.startsWith("/Trash")) return "large";
         if (path.startsWith("/Documents")) return "list";
         if (path.startsWith("/Music")) return "list";
-        // Fallback
         return "list";
       },
 
-      // Instance management
       createInstance: (instanceId, initialPath = "/") =>
         set((state) => {
-          // Don't create if instance already exists
           if (state.instances[instanceId]) {
             return state;
           }
@@ -141,7 +119,6 @@ export const useFinderStore = create<FinderStoreState>()(
       },
 
       getForegroundInstance: () => {
-        // Get the foreground app instance from app store
         const appStore = useAppStore.getState();
         const foregroundInstance = appStore.getForegroundInstance();
 
@@ -151,75 +128,20 @@ export const useFinderStore = create<FinderStoreState>()(
 
         return get().instances[foregroundInstance.instanceId] || null;
       },
-
-      // Legacy actions - kept for backward compatibility
-      setViewType: (type) => {
-        // Only operate on legacy store, not on instances
-        set((state) => ({ ...state, viewType: type }));
-      },
-
-      setSortType: (type) => {
-        // Only operate on legacy store, not on instances
-        set((state) => ({ ...state, sortType: type }));
-      },
-
-      reset: () => {
-        // This method should only be used in legacy mode, not with instances
-        set((state) => ({
-          ...state,
-          viewType: "list",
-          sortType: "name",
-        }));
-      },
     }),
     {
       name: STORE_NAME,
-      version: STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         instances: state.instances,
         pathViewPreferences: state.pathViewPreferences,
-        // Don't persist legacy fields anymore
       }),
-      migrate: (persistedState: unknown, version: number) => {
-        // Migrate from v1 to v2 (single window to multi-instance)
-        if (version < 2) {
-          const oldState = persistedState as {
-            viewType?: ViewType;
-            sortType?: SortType;
-          };
-
-          // Create new state with instances
-          const migratedState: Partial<FinderStoreState> = {
-            instances: {},
-            // Keep legacy fields for backward compatibility
-            viewType: oldState.viewType || "list",
-            sortType: oldState.sortType || "name",
-            pathViewPreferences: {},
-          };
-
-          return migratedState;
-        }
-
-        // Migrate from v2 to v3 (add per-path view preferences)
-        if (version < 3) {
-          const prev = persistedState as Partial<FinderStoreState>;
-          return {
-            ...prev,
-            pathViewPreferences: prev?.pathViewPreferences || {},
-          } as Partial<FinderStoreState>;
-        }
-
-        return persistedState;
-      },
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // Ensure all instances have required fields
           if (state.instances) {
             Object.keys(state.instances).forEach((instanceId) => {
               const instance = state.instances[instanceId];
               if (instance) {
-                // Ensure instance has all required fields with defaults
                 state.instances[instanceId] = {
                   instanceId,
                   currentPath: instance.currentPath || "/",
@@ -236,7 +158,6 @@ export const useFinderStore = create<FinderStoreState>()(
             });
           }
 
-          // Ensure per-path preferences map exists
           const anyState = state as unknown as {
             pathViewPreferences?: Record<string, ViewType>;
           };
