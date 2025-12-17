@@ -91,15 +91,15 @@ export function useLyrics({
       return;
     }
 
-    // Include selectedMatch hash in cache key to ensure re-fetch when selection changes
+    // Include selectedMatch hash in cache key to ensure different versions are cached separately
     const selectedMatchKey = selectedMatch?.hash || "";
     const cacheKey = `${title}__${artist}__${album}__${selectedMatchKey}`;
-    const nonceChanged = lastRefreshNonceRef.current !== refreshNonce;
     
-    // Force refresh when: nonce changed OR user explicitly selected a match from search
-    const isForced = nonceChanged || !!selectedMatch;
+    // Force refresh only when user explicitly triggers via refreshLyrics() (e.g., selecting from search dialog)
+    const isForced = lastRefreshNonceRef.current !== refreshNonce;
     
     // Skip fetch if we have cached data and no force refresh requested
+    // Cache is keyed by hash, so same hash = same cached lyrics
     if (!isForced && cacheKey === cachedKeyRef.current) {
       // If original lyrics are cached, we might still need to translate if translateTo changed.
       // The translation effect will handle this.
@@ -122,8 +122,7 @@ export function useLyrics({
       console.warn("Lyrics fetch timed out");
     }, 15000);
 
-    // Build request body based on whether we have overrides
-    // Always force refresh when user explicitly selected a match from search
+    // Build request body
     const requestBody: {
       title?: string;
       artist?: string;
@@ -144,9 +143,9 @@ export function useLyrics({
     };
 
     if (selectedMatch) {
-      // Use fetch action with selected match - always force to bypass cache
+      // Use fetch action with selected match
+      // force flag is already set based on isForced (nonce change from refreshLyrics())
       requestBody.action = "fetch";
-      requestBody.force = true; // Always force when user explicitly selected
       requestBody.selectedHash = selectedMatch.hash;
       requestBody.selectedAlbumId = selectedMatch.albumId;
       if (selectedMatch.title) requestBody.selectedTitle = selectedMatch.title;
