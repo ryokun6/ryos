@@ -298,31 +298,33 @@ export function LyricsDisplay({
         <>
           {segments.map((segment, index) => {
             if (segment.reading) {
-              // Use custom flexbox-based furigana for reliable sizing
+              // Use absolute positioning for reliable furigana sizing
               return (
                 <span
                   key={index}
                   style={{
-                    display: "inline-flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    verticalAlign: "bottom",
-                    lineHeight: 1.2,
+                    position: "relative",
+                    display: "inline-block",
                   }}
                 >
                   <span
                     style={{
-                      fontSize: "0.45em",
+                      position: "absolute",
+                      top: "-0.6em",
+                      left: 0,
+                      right: 0,
+                      textAlign: "center",
+                      fontSize: "45%",
                       lineHeight: 1,
-                      opacity: 0.75,
+                      opacity: 0.8,
                       fontWeight: "normal",
                       textShadow: "0 1px 2px rgba(0,0,0,0.9)",
-                      marginBottom: "-0.1em",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {segment.reading}
                   </span>
-                  <span>{segment.text}</span>
+                  {segment.text}
                 </span>
               );
             }
