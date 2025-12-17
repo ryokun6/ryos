@@ -208,8 +208,6 @@ export function LyricsDisplay({
     []
   );
 
-  const { t } = useTranslation();
-
   // State for furigana annotations
   const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(
     new Map()
@@ -217,11 +215,9 @@ export function LyricsDisplay({
   const furiganaCacheKeyRef = useRef<string>("");
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
 
-  // Check if text contains Japanese with kanji
-  const containsJapaneseKanji = useCallback((text: string): boolean => {
-    const kanjiRegex = /[\u4E00-\u9FFF]/;
-    const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF]/;
-    return kanjiRegex.test(text) && japaneseRegex.test(text);
+  // Check if text contains kanji (which needs furigana)
+  const containsKanji = useCallback((text: string): boolean => {
+    return /[\u4E00-\u9FFF]/.test(text);
   }, []);
 
   // Fetch furigana for lines when enabled
@@ -231,11 +227,9 @@ export function LyricsDisplay({
       return;
     }
 
-    // Check if any lines contain Japanese with kanji
-    const hasJapaneseKanji = lines.some((line) =>
-      containsJapaneseKanji(line.words)
-    );
-    if (!hasJapaneseKanji) {
+    // Check if any lines contain kanji
+    const hasKanji = lines.some((line) => containsKanji(line.words));
+    if (!hasKanji) {
       setIsFetchingFurigana(false);
       return;
     }
@@ -283,7 +277,7 @@ export function LyricsDisplay({
     return () => {
       controller.abort();
     };
-  }, [lines, japaneseFurigana, containsJapaneseKanji]);
+  }, [lines, japaneseFurigana, containsKanji]);
 
   // Render text with furigana using ruby elements
   const renderWithFurigana = useCallback(

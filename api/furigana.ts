@@ -167,13 +167,16 @@ export default async function handler(req: Request) {
     const cacheKey = buildFuriganaCacheKey(linesFingerprintSrc);
 
     try {
-      const cached = (await redis.get(cacheKey)) as string | null;
+      const cached = await redis.get(cacheKey);
       if (cached) {
         logInfo(requestId, "Furigana cache HIT", { cacheKey });
-        return new Response(cached, {
+        // Upstash may return parsed JSON object or string
+        const responseBody = typeof cached === "string" ? cached : JSON.stringify(cached);
+        return new Response(responseBody, {
           headers: {
             "Content-Type": "application/json; charset=utf-8",
             "X-Furigana-Cache": "HIT",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
           },
         });
       }
