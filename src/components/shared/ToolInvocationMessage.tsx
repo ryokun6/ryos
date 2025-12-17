@@ -1,5 +1,6 @@
-import { Loader2, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useTranslation } from "react-i18next";
 
 // AI SDK v5 tool invocation structure
@@ -415,7 +416,7 @@ export function ToolInvocationMessage({
           key={partKey}
           className="mb-0 px-1 py-0.5 text-xs italic text-gray-600 flex items-center gap-1"
         >
-          <Loader2 className="h-3 w-3 animate-spin text-gray-500" />
+          <ActivityIndicator size="xs" className="text-gray-500" />
           <span className="shimmer">{t("apps.chats.toolCalls.generating")}</span>
         </div>
       );
@@ -453,7 +454,7 @@ export function ToolInvocationMessage({
       {(state === "input-streaming" || state === "input-available") &&
         !output && (
           <div className="flex items-center gap-1 text-gray-700">
-            <Loader2 className="h-3 w-3 animate-spin text-gray-500" />
+            <ActivityIndicator size="xs" className="text-gray-500" />
             {displayCallMessage ? (
               <span className="shimmer">{displayCallMessage}</span>
             ) : (

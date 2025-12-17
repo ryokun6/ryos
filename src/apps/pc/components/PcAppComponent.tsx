@@ -13,6 +13,7 @@ import { useJsDos, DosProps, DosEvent } from "../hooks/useJsDos";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 
 export function PcAppComponent({
   isWindowOpen,
@@ -305,7 +306,7 @@ export function PcAppComponent({
                         t("apps.pc.programsAvailable", { count: loadGames().length })
                       ) : (
                         <>
-                          <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                          <ActivityIndicator size="xs" className="text-gray-400" />
                           {t("apps.pc.loadingEmulator")}
                         </>
                       )}

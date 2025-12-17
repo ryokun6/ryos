@@ -12,6 +12,7 @@ import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 
 // Type for furigana segments from API
 interface FuriganaSegment {
@@ -68,43 +69,33 @@ const ANIMATION_CONFIG = {
   },
 } as const;
 
-// Spinner component for loading states
-const Spinner = ({ className = "" }: { className?: string }) => (
-  <svg
-    className={`animate-spin ${className}`}
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    style={{ transformOrigin: "center center" }}
-  >
-    <circle
-      className="opacity-25"
-      cx="12"
-      cy="12"
-      r="10"
-      stroke="currentColor"
-      strokeWidth="4"
-    />
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M12 2a10 10 0 00-10 10h4a6 6 0 016-6V2z"
-    />
-  </svg>
-);
-
 // Processing indicator shown in top-left when translating or fetching furigana
-const ProcessingIndicator = ({ sizeClass = "w-4 h-4" }: { sizeClass?: string }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.8 }}
-    animate={{ opacity: 1, scale: 1 }}
-    exit={{ opacity: 0, scale: 0.8 }}
-    transition={{ duration: 0.2 }}
-    className="absolute top-3 left-3 pointer-events-none z-50"
-  >
-    <Spinner className={`${sizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`} />
-  </motion.div>
-);
+const ProcessingIndicator = ({ sizeClass = "w-4 h-4" }: { sizeClass?: string }) => {
+  // Parse the size from sizeClass (e.g., "w-4 h-4" -> 16, "w-[min(5vw,5vh)]" -> use md)
+  const getSize = (): number | "sm" | "md" | "lg" => {
+    const match = sizeClass.match(/w-(\d+)/);
+    if (match) {
+      const twSize = parseInt(match[1], 10);
+      return twSize * 4; // Tailwind w-4 = 16px
+    }
+    return "md";
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.2 }}
+      className="absolute top-3 left-3 pointer-events-none z-50"
+    >
+      <ActivityIndicator
+        size={getSize()}
+        className={`${sizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}
+      />
+    </motion.div>
+  );
+};
 
 const LoadingState = ({
   bottomPaddingClass = "pb-5",

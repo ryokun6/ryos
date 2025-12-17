@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { X, Loader2 } from "lucide-react";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { X } from "lucide-react";
 import { type User } from "@/types/chat";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
@@ -281,7 +282,7 @@ export function CreateRoomDialog({
                   disabled={isLoading}
                 />
                 {isSearching && searchTerm.length >= 2 && (
-                  <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-500" />
+                  <ActivityIndicator size="sm" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" />
                 )}
               </div>
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, RefreshCw, Clock, AlertCircle } from "lucide-react";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { useTokenAge } from "../hooks/useTokenRefresh";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
@@ -97,7 +98,7 @@ export function TokenStatus() {
         >
           {isRefreshing ? (
             <>
-              <RefreshCw className="h-3 w-3 animate-spin" />
+              <ActivityIndicator size="xs" />
               <span className="font-geneva-12 text-[11px]">{t("apps.chats.tokenStatus.refreshing")}</span>
             </>
           ) : (

@@ -1,4 +1,5 @@
-import { Loader2, Check } from "lucide-react";
+import { Check } from "lucide-react";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useTranslation } from "react-i18next";
 import type { ToolInvocationData } from "../types";
 import { getTranslatedAppName, type AppId } from "@/utils/i18n";
@@ -284,7 +285,7 @@ export function TerminalToolInvocation({
         </>
       ) : displayCallMessage ? (
         <>
-          <Loader2 className="h-3 w-3 animate-spin text-purple-400 flex-shrink-0" />
+          <ActivityIndicator size="xs" className="text-purple-400 flex-shrink-0" />
           <span className="italic shimmer">{displayCallMessage}</span>
         </>
       ) : null}

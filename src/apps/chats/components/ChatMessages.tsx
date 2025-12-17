@@ -1,6 +1,5 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import {
-  Loader2,
   AlertCircle,
   MessageSquare,
   Copy,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
 import { useChatSynth } from "@/hooks/useChatSynth";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
@@ -772,7 +772,7 @@ function ChatMessagesContent({
                         });
                   })()
                 ) : (
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <ActivityIndicator size="xs" />
                 )}
               </span>
               {message.role === "assistant" && (
@@ -891,7 +891,7 @@ function ChatMessagesContent({
                     >
                       {playingMessageId === messageKey ? (
                         speechLoadingId === messageKey ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <ActivityIndicator size="xs" />
                         ) : (
                           <Pause className="h-3 w-3" />
                         )

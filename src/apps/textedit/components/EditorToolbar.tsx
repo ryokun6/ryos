@@ -18,7 +18,6 @@ import { PlaybackBars } from "@/components/ui/playback-bars";
 import {
   ChevronDown,
   Volume2,
-  Loader2,
   Bold as BoldIcon,
   Italic as ItalicIcon,
   Underline as UnderlineIcon,
@@ -28,6 +27,7 @@ import {
   List as ListIcon,
   ListOrdered,
 } from "lucide-react";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
 
@@ -297,7 +297,7 @@ export function EditorToolbar({
                 aria-label={isSpeaking ? t("apps.textedit.stopSpeech") : t("apps.textedit.speak")}
               >
                 {isTtsLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <ActivityIndicator size="sm" />
                 ) : isSpeaking ? (
                   <PlaybackBars color="black" />
                 ) : (
@@ -543,7 +543,7 @@ export function EditorToolbar({
             aria-label={isSpeaking ? t("apps.textedit.stopSpeech") : t("apps.textedit.speak")}
           >
             {isTtsLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-black" />
+              <ActivityIndicator size="sm" color="black" />
             ) : isSpeaking ? (
               <PlaybackBars color="black" />
             ) : (

@@ -1,6 +1,7 @@
-import { Mic, Loader2 } from "lucide-react";
+import { Mic } from "lucide-react";
 import { useAudioTranscription } from "@/hooks/useAudioTranscription";
 import { AudioBars } from "./audio-bars";
+import { ActivityIndicator } from "./activity-indicator";
 import { forwardRef, useEffect } from "react";
 
 interface AudioInputButtonProps {
@@ -75,7 +76,7 @@ export const AudioInputButton = forwardRef<
           disabled={isLoading}
         >
           {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <ActivityIndicator size="sm" />
           ) : isRecording && !externalWaveform ? (
             <AudioBars
               frequencies={frequencies}

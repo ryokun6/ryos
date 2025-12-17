@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Search, Trash2, RefreshCw, AlertTriangle, Ban } from "lucide-react";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Table,
   TableBody,
@@ -579,9 +580,11 @@ export function AdminAppComponent({
                   onClick={handleRefresh}
                   className="h-7 w-7 p-0"
                 >
-                  <RefreshCw
-                    className={cn("h-3.5 w-3.5", isLoading && "animate-spin")}
-                  />
+                  {isLoading ? (
+                    <ActivityIndicator size={14} />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
                 </Button>
 
                 {selectedRoomId && (
