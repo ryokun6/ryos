@@ -89,22 +89,15 @@ const Spinner = ({ className = "" }: { className?: string }) => (
 );
 
 // Processing indicator shown in top-left when translating or fetching furigana
-const ProcessingIndicator = ({
-  message,
-}: {
-  message: string;
-}) => (
+const ProcessingIndicator = () => (
   <motion.div
-    initial={{ opacity: 0, y: -10 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -10 }}
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.8 }}
     transition={{ duration: 0.2 }}
-    className="absolute top-3 left-3 pointer-events-none z-50 flex items-center gap-2"
+    className="absolute top-3 left-3 pointer-events-none z-50"
   >
-    <Spinner className="w-4 h-4 text-white" />
-    <span className="text-white text-[11px] font-geneva-12 opacity-80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-      {message}
-    </span>
+    <Spinner className="w-4 h-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" />
   </motion.div>
 );
 
@@ -520,20 +513,14 @@ export function LyricsDisplay({
       />
     );
 
-  // Determine processing message if any
-  const processingMessage = isTranslating
-    ? t("apps.ipod.status.translatingLyrics")
-    : isFetchingFurigana
-    ? t("apps.ipod.status.loadingFurigana")
-    : null;
+  // Check if any processing is happening
+  const isProcessing = isTranslating || isFetchingFurigana;
 
   return (
     <>
       {/* Processing indicator in top-left corner */}
       <AnimatePresence>
-        {processingMessage && (
-          <ProcessingIndicator message={processingMessage} />
-        )}
+        {isProcessing && <ProcessingIndicator />}
       </AnimatePresence>
       <motion.div
       layout={alignment === LyricsAlignment.Alternating}
