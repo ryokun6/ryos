@@ -13,7 +13,6 @@ import {
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
-import { cn } from "@/lib/utils";
 import { useIpodStoreShallow } from "@/stores/helpers";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
@@ -527,26 +526,14 @@ export function IpodMenuBar({
                 </MenubarSubTrigger>
                 <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[400px] overflow-y-auto">
                   {tracks.map((track, index) => (
-                    <MenubarItem
+                    <MenubarCheckboxItem
                       key={`all-${track.id}`}
-                      onClick={() => handlePlayTrack(index)}
-                      className={cn(
-                        "text-md h-6 px-3 max-w-[220px] truncate",
-                        index === currentIndex && "bg-gray-200"
-                      )}
+                      checked={index === currentIndex}
+                      onCheckedChange={() => handlePlayTrack(index)}
+                      className="text-md h-6 pr-3 max-w-[220px] truncate"
                     >
-                      <div className="flex items-center w-full">
-                        <span
-                          className={cn(
-                            "flex-none whitespace-nowrap",
-                            index === currentIndex ? "mr-1" : "pl-5"
-                          )}
-                        >
-                          {index === currentIndex ? "♪ " : ""}
-                        </span>
-                        <span className="truncate min-w-0">{track.title}</span>
-                      </div>
-                    </MenubarItem>
+                      <span className="truncate min-w-0">{track.title}</span>
+                    </MenubarCheckboxItem>
                   ))}
                 </MenubarSubContent>
               </MenubarSub>
@@ -562,28 +549,16 @@ export function IpodMenuBar({
                     </MenubarSubTrigger>
                     <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[200px] overflow-y-auto">
                       {tracksByArtist[artist].map(({ track, index }) => (
-                        <MenubarItem
+                        <MenubarCheckboxItem
                           key={`${artist}-${track.id}`}
-                          onClick={() => handlePlayTrack(index)}
-                          className={cn(
-                            "text-md h-6 px-3 max-w-[160px] sm:max-w-[200px] truncate",
-                            index === currentIndex && "bg-gray-200"
-                          )}
+                          checked={index === currentIndex}
+                          onCheckedChange={() => handlePlayTrack(index)}
+                          className="text-md h-6 pr-3 max-w-[160px] sm:max-w-[200px] truncate"
                         >
-                          <div className="flex items-center w-full">
-                            <span
-                              className={cn(
-                                "flex-none whitespace-nowrap",
-                                index === currentIndex ? "mr-1" : "pl-5"
-                              )}
-                            >
-                              {index === currentIndex ? "♪ " : ""}
-                            </span>
-                            <span className="truncate min-w-0">
-                              {track.title}
-                            </span>
-                          </div>
-                        </MenubarItem>
+                          <span className="truncate min-w-0">
+                            {track.title}
+                          </span>
+                        </MenubarCheckboxItem>
                       ))}
                     </MenubarSubContent>
                   </MenubarSub>
