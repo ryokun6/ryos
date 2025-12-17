@@ -1275,6 +1275,8 @@
         "layoutAlternating": "Layout: Alternating",
         "romanizationOn": "Romanization On",
         "hangulOn": "Hangul On",
+        "furiganaOn": "Furigana On",
+        "furiganaOff": "Furigana Off",
         "libraryCleared": "Library Cleared",
         "added": "♬ Added",
         "loadingLyrics": "Loading lyrics…",
@@ -1365,6 +1367,7 @@
         "closeFullscreen": "Close fullscreen",
         "cycleLyricLayout": "Cycle lyric layout",
         "toggleHangulRomanization": "Toggle Hangul / Romanization",
+        "toggleFurigana": "Toggle Furigana",
         "translateLyrics": "Translate lyrics",
         "select": "Select"
       },

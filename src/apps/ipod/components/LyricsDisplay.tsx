@@ -69,8 +69,8 @@ const ANIMATION_CONFIG = {
   },
 } as const;
 
-// Processing indicator shown in top-left when translating or fetching furigana
-const ProcessingIndicator = ({ sizeClass = "w-4 h-4" }: { sizeClass?: string }) => {
+// Processing indicator shown in top-right when translating or fetching furigana
+const ProcessingIndicator = ({ sizeClass = "w-5 h-5" }: { sizeClass?: string }) => {
   // Parse the size from sizeClass (e.g., "w-4 h-4" -> 16, "w-[min(5vw,5vh)]" -> use md)
   const getSize = (): number | "sm" | "md" | "lg" => {
     const match = sizeClass.match(/w-(\d+)/);
@@ -87,7 +87,7 @@ const ProcessingIndicator = ({ sizeClass = "w-4 h-4" }: { sizeClass?: string }) 
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ duration: 0.2 }}
-      className="absolute top-3 left-3 pointer-events-none z-50"
+      className="absolute top-[13px] right-3 pointer-events-none z-50"
     >
       <ActivityIndicator
         size={getSize()}
@@ -101,20 +101,48 @@ const LoadingState = ({
   bottomPaddingClass = "pb-5",
   textSizeClass = "text-[12px]",
   fontClassName = "font-geneva-12",
+  spinnerSizeClass = "w-5 h-5",
 }: {
   bottomPaddingClass?: string;
   textSizeClass?: string;
   fontClassName?: string;
+  spinnerSizeClass?: string;
 }) => {
   const { t } = useTranslation();
+  
+  // Parse the size from sizeClass (e.g., "w-4 h-4" -> 16, "w-[min(5vw,5vh)]" -> use md)
+  const getSize = (): number | "sm" | "md" | "lg" => {
+    const match = spinnerSizeClass.match(/w-(\d+)/);
+    if (match) {
+      const twSize = parseInt(match[1], 10);
+      return twSize * 4; // Tailwind w-4 = 16px
+    }
+    return "md";
+  };
+
   return (
-    <div
-      className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
-    >
-      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
-        {t("apps.ipod.status.loadingLyrics")}
+    <>
+      {/* Spinner in top-right corner */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        transition={{ duration: 0.2 }}
+        className="absolute top-[13px] right-3 pointer-events-none z-50"
+      >
+        <ActivityIndicator
+          size={getSize()}
+          className={`${spinnerSizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}
+        />
+      </motion.div>
+      <div
+        className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
+      >
+        <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
+          {t("apps.ipod.status.loadingLyrics")}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -199,7 +227,7 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
-  spinnerSizeClass = "w-4 h-4",
+  spinnerSizeClass = "w-5 h-5",
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -515,6 +543,7 @@ export function LyricsDisplay({
         bottomPaddingClass={bottomPaddingClass}
         textSizeClass={textSizeClass}
         fontClassName={fontClassName}
+        spinnerSizeClass={spinnerSizeClass}
       />
     );
   if (error)

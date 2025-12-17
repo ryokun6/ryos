@@ -42,14 +42,14 @@ export function ActivityIndicator({
         viewBox="0 0 24 24"
         width={numericSize}
         height={numericSize}
-        className="animate-activity-indicator"
         style={{
           color: color?.startsWith("text-") ? undefined : color,
         }}
       >
         {Array.from({ length: barCount }).map((_, i) => {
           const rotation = (i * 360) / barCount;
-          const delay = (i * 100) / barCount;
+          const animationDuration = 1.6; // seconds - total cycle time
+          const delay = (i * animationDuration * 1000) / barCount;
 
           return (
             <rect
@@ -62,7 +62,7 @@ export function ActivityIndicator({
               fill="currentColor"
               transform={`rotate(${rotation} 12 12)`}
               style={{
-                animation: `activity-indicator-fade 0.8s ease-in-out ${delay}ms infinite`,
+                animation: `activity-indicator-rotate-color ${animationDuration}s linear ${delay}ms infinite`,
               }}
             />
           );
@@ -71,11 +71,23 @@ export function ActivityIndicator({
       <span className="sr-only">Loading...</span>
 
       <style>{`
-        @keyframes activity-indicator-fade {
-          0%, 100% {
-            opacity: 0.25;
+        @keyframes activity-indicator-rotate-color {
+          0% {
+            opacity: 1;
+          }
+          8% {
+            opacity: 0.9;
           }
           12.5% {
+            opacity: 0.2;
+          }
+          17% {
+            opacity: 0.9;
+          }
+          25% {
+            opacity: 1;
+          }
+          100% {
             opacity: 1;
           }
         }

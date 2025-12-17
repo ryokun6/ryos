@@ -27,7 +27,7 @@ import { LyricsDisplay } from "./LyricsDisplay";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, KoreanDisplay } from "@/types/lyrics";
+import { LyricsAlignment, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { isMobileSafari } from "@/utils/device";
 import { track } from "@vercel/analytics";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -244,6 +244,8 @@ interface FullScreenPortalProps {
   onCycleAlignment: () => void;
   currentKoreanDisplay: import("@/types/lyrics").KoreanDisplay;
   onToggleKoreanDisplay: () => void;
+  currentJapaneseFurigana: import("@/types/lyrics").JapaneseFurigana;
+  onToggleJapaneseFurigana: () => void;
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
 }
@@ -266,6 +268,8 @@ function FullScreenPortal({
   onCycleAlignment,
   currentKoreanDisplay,
   onToggleKoreanDisplay,
+  currentJapaneseFurigana,
+  onToggleJapaneseFurigana,
   fullScreenPlayerRef,
 }: FullScreenPortalProps) {
   const { t } = useTranslation();
@@ -338,6 +342,7 @@ function FullScreenPortal({
     onSelectTranslation: (code: string | null) => void;
     onCycleAlignment: () => void;
     onToggleKoreanDisplay: () => void;
+    onToggleJapaneseFurigana: () => void;
     setIsLangMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   }>({
     onClose,
@@ -350,6 +355,7 @@ function FullScreenPortal({
     onSelectTranslation,
     onCycleAlignment,
     onToggleKoreanDisplay,
+    onToggleJapaneseFurigana,
     setIsLangMenuOpen,
   });
 
@@ -367,6 +373,7 @@ function FullScreenPortal({
       onSelectTranslation,
       onCycleAlignment,
       onToggleKoreanDisplay,
+      onToggleJapaneseFurigana,
       setIsLangMenuOpen,
     };
   }, [
@@ -380,6 +387,7 @@ function FullScreenPortal({
     onSelectTranslation,
     onCycleAlignment,
     onToggleKoreanDisplay,
+    onToggleJapaneseFurigana,
   ]);
 
   // Touch handling for swipe gestures (left/right: navigate tracks, down: close fullscreen)
@@ -953,6 +961,22 @@ function FullScreenPortal({
             >
               <span className="text-[16px] md:text-[18px]">
                 {currentKoreanDisplay === "romanized" ? "Ko" : "한"}
+              </span>
+            </button>
+
+            {/* Furigana toggle */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                registerActivity();
+                onToggleJapaneseFurigana();
+              }}
+              aria-label={t("apps.ipod.ariaLabels.toggleFurigana")}
+              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+              title={t("apps.ipod.menu.furigana")}
+            >
+              <span className="text-[16px] md:text-[18px]">
+                {currentJapaneseFurigana === JapaneseFurigana.On ? "ふ" : "漢"}
               </span>
             </button>
 
@@ -2639,6 +2663,19 @@ export function IpodAppComponent({
     );
   }, [showStatus, t]);
 
+  const toggleFurigana = useCallback(() => {
+    const store = useIpodStore.getState();
+    const curr = store.japaneseFurigana;
+    const next =
+      curr === JapaneseFurigana.On
+        ? JapaneseFurigana.Off
+        : JapaneseFurigana.On;
+    store.setJapaneseFurigana(next);
+    showStatus(
+      next === JapaneseFurigana.On ? t("apps.ipod.status.furiganaOn") : t("apps.ipod.status.furiganaOff")
+    );
+  }, [showStatus, t]);
+
   // Add fullscreen change event handler
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -2819,6 +2856,8 @@ export function IpodAppComponent({
             onCycleAlignment={cycleAlignment}
             currentKoreanDisplay={koreanDisplay}
             onToggleKoreanDisplay={toggleKorean}
+            currentJapaneseFurigana={japaneseFurigana}
+            onToggleJapaneseFurigana={toggleFurigana}
             fullScreenPlayerRef={fullScreenPlayerRef}
           >
             {({ controlsVisible }) => (
