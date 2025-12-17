@@ -94,7 +94,10 @@ export function useLyrics({
     // Include selectedMatch hash in cache key to ensure re-fetch when selection changes
     const selectedMatchKey = selectedMatch?.hash || "";
     const cacheKey = `${title}__${artist}__${album}__${selectedMatchKey}`;
-    const isForced = lastRefreshNonceRef.current !== refreshNonce;
+    const nonceChanged = lastRefreshNonceRef.current !== refreshNonce;
+    
+    // Force refresh when: nonce changed OR user explicitly selected a match from search
+    const isForced = nonceChanged || !!selectedMatch;
     
     // Skip fetch if we have cached data and no force refresh requested
     if (!isForced && cacheKey === cachedKeyRef.current) {
@@ -120,6 +123,7 @@ export function useLyrics({
     }, 15000);
 
     // Build request body based on whether we have overrides
+    // Always force refresh when user explicitly selected a match from search
     const requestBody: {
       title?: string;
       artist?: string;
@@ -140,8 +144,9 @@ export function useLyrics({
     };
 
     if (selectedMatch) {
-      // Use fetch action with selected match
+      // Use fetch action with selected match - always force to bypass cache
       requestBody.action = "fetch";
+      requestBody.force = true; // Always force when user explicitly selected
       requestBody.selectedHash = selectedMatch.hash;
       requestBody.selectedAlbumId = selectedMatch.albumId;
       if (selectedMatch.title) requestBody.selectedTitle = selectedMatch.title;
