@@ -20,6 +20,27 @@ interface FuriganaSegment {
   reading?: string;
 }
 
+// Types for SSE streaming events from furigana API
+interface FuriganaChunkEvent {
+  type: "chunk";
+  chunkIndex: number;
+  totalChunks: number;
+  startIndex: number;
+  annotatedLines: FuriganaSegment[][];
+}
+
+interface FuriganaCompleteEvent {
+  type: "complete";
+  totalLines: number;
+}
+
+interface FuriganaErrorEvent {
+  type: "error";
+  message: string;
+}
+
+type FuriganaSSEEvent = FuriganaChunkEvent | FuriganaCompleteEvent | FuriganaErrorEvent;
+
 interface LyricsDisplayProps {
   lines: LyricLine[];
   /** Original untranslated lyrics (used for furigana) */
@@ -256,7 +277,7 @@ export function LyricsDisplay({
   // Use original lines for furigana fetching (furigana only applies to original Japanese text)
   const linesForFurigana = originalLines || lines;
 
-  // Fetch furigana for original lines when enabled
+  // Fetch furigana for original lines when enabled - now handles streaming responses
   useEffect(() => {
     if (japaneseFurigana !== JapaneseFurigana.On || linesForFurigana.length === 0) {
       setIsFetchingFurigana(false);
@@ -283,6 +304,88 @@ export function LyricsDisplay({
     const MAX_RETRIES = 3;
     const INITIAL_DELAY = 1000; // 1 second
 
+    const handleStreamingResponse = async (res: Response): Promise<void> => {
+      const reader = res.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      // Use a Map to collect furigana progressively
+      const collectedFurigana = new Map<string, FuriganaSegment[]>();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (controller.signal.aborted) {
+          reader.cancel();
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const sseLines = buffer.split("\n\n");
+        buffer = sseLines.pop() || "";
+
+        for (const sseLine of sseLines) {
+          if (sseLine.startsWith("data: ")) {
+            try {
+              const eventData = JSON.parse(sseLine.slice(6)) as FuriganaSSEEvent;
+              
+              if (eventData.type === "chunk") {
+                // Update the collected map with this chunk's data
+                eventData.annotatedLines.forEach((segments, index) => {
+                  const globalIndex = eventData.startIndex + index;
+                  if (globalIndex < linesForFurigana.length) {
+                    const lineKey = linesForFurigana[globalIndex].startTimeMs;
+                    collectedFurigana.set(lineKey, segments);
+                  }
+                });
+
+                // Immediately update state with new data - create new Map to trigger re-render
+                if (!controller.signal.aborted) {
+                  const newMap = new Map(collectedFurigana);
+                  setFuriganaMap(newMap);
+                }
+              } else if (eventData.type === "complete") {
+                // Ensure final state is set
+                if (!controller.signal.aborted) {
+                  const finalMap = new Map(collectedFurigana);
+                  setFuriganaMap(finalMap);
+                  furiganaCacheKeyRef.current = cacheKey;
+                  setIsFetchingFurigana(false);
+                }
+              } else if (eventData.type === "error") {
+                throw new Error(eventData.message);
+              }
+            } catch (parseError) {
+              console.warn("Failed to parse furigana SSE event:", parseError);
+            }
+          }
+        }
+      }
+      
+      // If we exited the loop without a complete event, finalize anyway
+      if (!controller.signal.aborted && collectedFurigana.size > 0) {
+        setFuriganaMap(new Map(collectedFurigana));
+        furiganaCacheKeyRef.current = cacheKey;
+        setIsFetchingFurigana(false);
+      }
+    };
+
+    const handleNonStreamingResponse = async (res: Response): Promise<void> => {
+      const data: { annotatedLines: FuriganaSegment[][] } = await res.json();
+      const newMap = new Map<string, FuriganaSegment[]>();
+      linesForFurigana.forEach((line, index) => {
+        if (data.annotatedLines[index]) {
+          newMap.set(line.startTimeMs, data.annotatedLines[index]);
+        }
+      });
+      setFuriganaMap(newMap);
+      furiganaCacheKeyRef.current = cacheKey;
+      setIsFetchingFurigana(false);
+    };
+
     const fetchWithRetry = async (attempt: number): Promise<void> => {
       try {
         const res = await fetch(getApiUrl("/api/furigana"), {
@@ -296,16 +399,16 @@ export function LyricsDisplay({
           throw new Error(`Failed to fetch furigana (status ${res.status})`);
         }
 
-        const data: { annotatedLines: FuriganaSegment[][] } = await res.json();
-        const newMap = new Map<string, FuriganaSegment[]>();
-        linesForFurigana.forEach((line, index) => {
-          if (data.annotatedLines[index]) {
-            newMap.set(line.startTimeMs, data.annotatedLines[index]);
-          }
-        });
-        setFuriganaMap(newMap);
-        furiganaCacheKeyRef.current = cacheKey;
-        setIsFetchingFurigana(false);
+        // Check if this is a streaming response (text/event-stream)
+        const contentType = res.headers.get("content-type") || "";
+        
+        if (contentType.includes("text/event-stream")) {
+          // Handle streaming response
+          await handleStreamingResponse(res);
+        } else {
+          // Handle non-streaming response (small requests or cached)
+          await handleNonStreamingResponse(res);
+        }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
           // Request was aborted, don't retry

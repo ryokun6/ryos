@@ -5,6 +5,27 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { isOffline } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
 
+// Types for SSE streaming events from translation API
+interface TranslationChunkEvent {
+  type: "chunk";
+  chunkIndex: number;
+  totalChunks: number;
+  startIndex: number;
+  lines: string[];
+}
+
+interface TranslationCompleteEvent {
+  type: "complete";
+  totalLines: number;
+}
+
+interface TranslationErrorEvent {
+  type: "error";
+  message: string;
+}
+
+type TranslationSSEEvent = TranslationChunkEvent | TranslationCompleteEvent | TranslationErrorEvent;
+
 interface UseLyricsParams {
   /** Song title */
   title?: string;
@@ -220,7 +241,7 @@ export function useLyrics({
     };
   }, [title, artist, album, refreshNonce, searchQueryOverride, selectedMatch]);
 
-  // Effect for translating lyrics
+  // Effect for translating lyrics - now handles both streaming and non-streaming responses
   useEffect(() => {
     if (!translateTo || originalLines.length === 0) {
       setTranslatedLines(null);
@@ -254,7 +275,103 @@ export function useLyrics({
     const translationTimeoutId = setTimeout(() => {
       controller.abort();
       console.warn("Lyrics translation timed out");
-    }, 120000);
+    }, 180000); // Increased timeout for streaming
+
+    const handleStreamingResponse = async (res: Response) => {
+      const reader = res.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      // Collect LRC lines as they arrive - use array to maintain order
+      const lrcLinesCollected: string[] = new Array(originalLines.length).fill("");
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (cancelled) {
+          reader.cancel();
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const sseLines = buffer.split("\n\n");
+        buffer = sseLines.pop() || "";
+
+        for (const sseLine of sseLines) {
+          if (sseLine.startsWith("data: ")) {
+            try {
+              const eventData = JSON.parse(sseLine.slice(6)) as TranslationSSEEvent;
+              
+              if (eventData.type === "chunk") {
+                // Update the collected LRC lines with this chunk's data
+                eventData.lines.forEach((lrcLine, index) => {
+                  const globalIndex = eventData.startIndex + index;
+                  if (globalIndex < lrcLinesCollected.length) {
+                    lrcLinesCollected[globalIndex] = lrcLine;
+                  }
+                });
+
+                // Build progressive lines: use translated where available, original elsewhere
+                if (!cancelled) {
+                  const progressiveLines: LyricLine[] = originalLines.map((origLine, idx) => {
+                    if (lrcLinesCollected[idx]) {
+                      // Parse the single LRC line to extract the translated text
+                      const lrcLine = lrcLinesCollected[idx];
+                      const match = lrcLine.match(/^\[[\d:.]+\](.*)$/);
+                      const translatedText = match ? match[1] : origLine.words;
+                      return {
+                        ...origLine,
+                        words: translatedText,
+                      };
+                    }
+                    return origLine;
+                  });
+                  setTranslatedLines([...progressiveLines]);
+                }
+              } else if (eventData.type === "complete") {
+                // Final state - all lines should be translated
+                if (!cancelled) {
+                  const finalLines: LyricLine[] = originalLines.map((origLine, idx) => {
+                    if (lrcLinesCollected[idx]) {
+                      const lrcLine = lrcLinesCollected[idx];
+                      const match = lrcLine.match(/^\[[\d:.]+\](.*)$/);
+                      const translatedText = match ? match[1] : origLine.words;
+                      return {
+                        ...origLine,
+                        words: translatedText,
+                      };
+                    }
+                    return origLine;
+                  });
+                  setTranslatedLines(finalLines);
+                }
+              } else if (eventData.type === "error") {
+                throw new Error(eventData.message);
+              }
+            } catch (parseError) {
+              console.warn("Failed to parse SSE event:", parseError);
+            }
+          }
+        }
+      }
+    };
+
+    const handleNonStreamingResponse = async (res: Response) => {
+      const responseText = await res.text();
+      if (!res.ok) {
+        const errorMessage = responseText.startsWith("Error: ")
+          ? responseText.substring(7)
+          : responseText;
+        throw new Error(
+          errorMessage ||
+            `Translation request failed with status ${res.status}`
+        );
+      }
+      return responseText;
+    };
 
     fetch(getApiUrl("/api/translate-lyrics"), {
       method: "POST",
@@ -267,29 +384,23 @@ export function useLyrics({
     })
       .then(async (res) => {
         clearTimeout(translationTimeoutId);
-        const responseText = await res.text();
-        if (!res.ok) {
-          const errorMessage = responseText.startsWith("Error: ")
-            ? responseText.substring(7)
-            : responseText;
-          throw new Error(
-            errorMessage ||
-              `Translation request failed with status ${res.status}`
-          );
-        }
-        return responseText;
-      })
-      .then((lrcText) => {
-        if (cancelled) return;
-        if (lrcText) {
-          const parsedTranslatedLines = parseLRC(lrcText, title, artist);
-          setTranslatedLines(parsedTranslatedLines);
-          // Do NOT overwrite currentLyrics in the store so that it continues
-          // to hold the original (untranslated) lyrics. This ensures that
-          // other features such as AI chat receive the unmodified lyrics.
+        
+        // Check if this is a streaming response (text/event-stream)
+        const contentType = res.headers.get("content-type") || "";
+        
+        if (contentType.includes("text/event-stream")) {
+          // Handle streaming response
+          await handleStreamingResponse(res);
         } else {
-          // If translation returns empty we still keep original in the store.
-          setTranslatedLines([]);
+          // Handle non-streaming response (small requests or cached)
+          const lrcText = await handleNonStreamingResponse(res);
+          if (cancelled) return;
+          if (lrcText) {
+            const parsedTranslatedLines = parseLRC(lrcText, title, artist);
+            setTranslatedLines(parsedTranslatedLines);
+          } else {
+            setTranslatedLines([]);
+          }
         }
       })
       .catch((err: unknown) => {
