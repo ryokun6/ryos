@@ -298,23 +298,32 @@ export function LyricsDisplay({
         <>
           {segments.map((segment, index) => {
             if (segment.reading) {
+              // Use custom flexbox-based furigana for reliable sizing
               return (
-                <ruby key={index} style={{ rubyAlign: "center" }}>
-                  {segment.text}
-                  <rp>(</rp>
-                  <rt
+                <span
+                  key={index}
+                  style={{
+                    display: "inline-flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    verticalAlign: "bottom",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  <span
                     style={{
-                      fontSize: "0.5em",
+                      fontSize: "0.45em",
                       lineHeight: 1,
+                      opacity: 0.75,
                       fontWeight: "normal",
-                      opacity: 0.8,
                       textShadow: "0 1px 2px rgba(0,0,0,0.9)",
+                      marginBottom: "-0.1em",
                     }}
                   >
                     {segment.reading}
-                  </rt>
-                  <rp>)</rp>
-                </ruby>
+                  </span>
+                  <span>{segment.text}</span>
+                </span>
               );
             }
             return <span key={index}>{segment.text}</span>;
