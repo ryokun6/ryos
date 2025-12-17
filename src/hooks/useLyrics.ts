@@ -285,10 +285,7 @@ export function useLyrics({
 
       const decoder = new TextDecoder();
       let buffer = "";
-      // Initialize with original lines as placeholders for progressive display
-      const progressiveLines: LyricLine[] = originalLines.map((line) => ({
-        ...line,
-      }));
+      // Collect LRC lines as they arrive - use array to maintain order
       const lrcLinesCollected: string[] = new Array(originalLines.length).fill("");
 
       while (true) {
@@ -300,13 +297,13 @@ export function useLyrics({
         }
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
+        const sseLines = buffer.split("\n\n");
+        buffer = sseLines.pop() || "";
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
+        for (const sseLine of sseLines) {
+          if (sseLine.startsWith("data: ")) {
             try {
-              const eventData = JSON.parse(line.slice(6)) as TranslationSSEEvent;
+              const eventData = JSON.parse(sseLine.slice(6)) as TranslationSSEEvent;
               
               if (eventData.type === "chunk") {
                 // Update the collected LRC lines with this chunk's data
@@ -317,27 +314,39 @@ export function useLyrics({
                   }
                 });
 
-                // Parse the collected LRC and update progressive lines
-                const partialLrc = lrcLinesCollected.filter((l) => l).join("\n");
-                if (partialLrc && !cancelled) {
-                  const parsedPartial = parseLRC(partialLrc, title, artist);
-                  // Merge parsed lines with progressive display
-                  parsedPartial.forEach((parsed) => {
-                    const idx = progressiveLines.findIndex(
-                      (p) => p.startTimeMs === parsed.startTimeMs
-                    );
-                    if (idx !== -1) {
-                      progressiveLines[idx] = parsed;
+                // Build progressive lines: use translated where available, original elsewhere
+                if (!cancelled) {
+                  const progressiveLines: LyricLine[] = originalLines.map((origLine, idx) => {
+                    if (lrcLinesCollected[idx]) {
+                      // Parse the single LRC line to extract the translated text
+                      const lrcLine = lrcLinesCollected[idx];
+                      const match = lrcLine.match(/^\[[\d:.]+\](.*)$/);
+                      const translatedText = match ? match[1] : origLine.words;
+                      return {
+                        ...origLine,
+                        words: translatedText,
+                      };
                     }
+                    return origLine;
                   });
                   setTranslatedLines([...progressiveLines]);
                 }
               } else if (eventData.type === "complete") {
-                // Final parse with all collected lines
-                const fullLrc = lrcLinesCollected.join("\n");
+                // Final state - all lines should be translated
                 if (!cancelled) {
-                  const parsedFinal = parseLRC(fullLrc, title, artist);
-                  setTranslatedLines(parsedFinal);
+                  const finalLines: LyricLine[] = originalLines.map((origLine, idx) => {
+                    if (lrcLinesCollected[idx]) {
+                      const lrcLine = lrcLinesCollected[idx];
+                      const match = lrcLine.match(/^\[[\d:.]+\](.*)$/);
+                      const translatedText = match ? match[1] : origLine.words;
+                      return {
+                        ...origLine,
+                        words: translatedText,
+                      };
+                    }
+                    return origLine;
+                  });
+                  setTranslatedLines(finalLines);
                 }
               } else if (eventData.type === "error") {
                 throw new Error(eventData.message);

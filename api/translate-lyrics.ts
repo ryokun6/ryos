@@ -37,6 +37,7 @@ type TranslateLyricsRequest = z.infer<typeof TranslateLyricsRequestSchema>;
 // Chunking configuration
 // ------------------------------------------------------------------
 const CHUNK_SIZE = 30; // Number of lines per chunk - balance between speed and reliability
+const MAX_PARALLEL_CHUNKS = 3; // Limit parallel AI calls to avoid rate limits
 
 // ------------------------------------------------------------------
 // Redis cache helpers
@@ -290,32 +291,42 @@ export default async function handler(req: Request) {
       });
     }
 
-    // For larger requests, use streaming with chunked processing
-    logInfo(requestId, "Processing large request with streaming", {
+    // For larger requests, use streaming with parallel chunked processing
+    logInfo(requestId, "Processing large request with parallel streaming", {
       linesCount: lines.length,
       estimatedChunks: Math.ceil(lines.length / CHUNK_SIZE),
     });
 
-    // Create chunks
-    const chunks: LyricLine[][] = [];
+    // Create chunks with their metadata
+    const chunks: { chunk: LyricLine[]; startIndex: number; chunkIndex: number }[] = [];
     for (let i = 0; i < lines.length; i += CHUNK_SIZE) {
-      chunks.push(lines.slice(i, i + CHUNK_SIZE));
+      chunks.push({
+        chunk: lines.slice(i, i + CHUNK_SIZE),
+        startIndex: i,
+        chunkIndex: chunks.length,
+      });
     }
 
     // Stream response using Server-Sent Events format
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        const allTranslations: string[] = [];
-        let chunkStartIndex = 0;
+        const allTranslations: string[] = new Array(lines.length).fill("");
+        const completedChunks = new Set<number>();
 
         try {
-          for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-            const chunk = chunks[chunkIndex];
+          // Process chunks with limited concurrency to avoid rate limits
+          let activePromises: Promise<void>[] = [];
+          let chunkQueueIndex = 0;
+
+          const processChunkWithStreaming = async (
+            chunkData: { chunk: LyricLine[]; startIndex: number; chunkIndex: number }
+          ) => {
+            const { chunk, startIndex, chunkIndex } = chunkData;
             
-            logInfo(requestId, `Processing chunk ${chunkIndex + 1}/${chunks.length}`, {
+            logInfo(requestId, `Starting chunk ${chunkIndex + 1}/${chunks.length}`, {
               chunkSize: chunk.length,
-              startIndex: chunkStartIndex,
+              startIndex,
             });
 
             const translations = await translateChunk(
@@ -325,6 +336,11 @@ export default async function handler(req: Request) {
               requestId
             );
 
+            // Store translations in the correct positions
+            translations.forEach((text, i) => {
+              allTranslations[startIndex + i] = text;
+            });
+
             // Format this chunk as LRC lines
             const lrcLines = chunk.map((originalLine, index) => {
               const translatedText = translations[index] || originalLine.words;
@@ -332,23 +348,46 @@ export default async function handler(req: Request) {
               return `${lrcTimestamp}${translatedText}`;
             });
 
-            allTranslations.push(...translations);
+            completedChunks.add(chunkIndex);
 
             // Send chunk data as SSE event
-            const chunkData = {
+            const eventData = {
               type: "chunk",
               chunkIndex,
               totalChunks: chunks.length,
-              startIndex: chunkStartIndex,
+              startIndex,
               lines: lrcLines,
+              completedCount: completedChunks.size,
             };
-            
+
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(chunkData)}\n\n`)
+              encoder.encode(`data: ${JSON.stringify(eventData)}\n\n`)
             );
 
-            chunkStartIndex += chunk.length;
+            logInfo(requestId, `Completed chunk ${chunkIndex + 1}/${chunks.length}`, {
+              completedCount: completedChunks.size,
+            });
+          };
+
+          // Start initial batch of parallel chunks
+          while (chunkQueueIndex < chunks.length) {
+            // Start up to MAX_PARALLEL_CHUNKS at a time
+            while (activePromises.length < MAX_PARALLEL_CHUNKS && chunkQueueIndex < chunks.length) {
+              const chunkData = chunks[chunkQueueIndex];
+              chunkQueueIndex++;
+              const promise = processChunkWithStreaming(chunkData).then(() => {
+                activePromises = activePromises.filter(p => p !== promise);
+              });
+              activePromises.push(promise);
+            }
+            // Wait for at least one to complete before starting more
+            if (activePromises.length >= MAX_PARALLEL_CHUNKS) {
+              await Promise.race(activePromises);
+            }
           }
+
+          // Wait for all remaining chunks to complete
+          await Promise.all(activePromises);
 
           // Send completion event
           const completeData = {

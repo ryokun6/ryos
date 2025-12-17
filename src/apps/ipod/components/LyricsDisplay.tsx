@@ -312,8 +312,8 @@ export function LyricsDisplay({
 
       const decoder = new TextDecoder();
       let buffer = "";
-      // Use a progressive map that gets updated with each chunk
-      const progressiveMap = new Map<string, FuriganaSegment[]>();
+      // Use a Map to collect furigana progressively
+      const collectedFurigana = new Map<string, FuriganaSegment[]>();
 
       while (true) {
         const { done, value } = await reader.read();
@@ -324,32 +324,34 @@ export function LyricsDisplay({
         }
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
+        const sseLines = buffer.split("\n\n");
+        buffer = sseLines.pop() || "";
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
+        for (const sseLine of sseLines) {
+          if (sseLine.startsWith("data: ")) {
             try {
-              const eventData = JSON.parse(line.slice(6)) as FuriganaSSEEvent;
+              const eventData = JSON.parse(sseLine.slice(6)) as FuriganaSSEEvent;
               
               if (eventData.type === "chunk") {
-                // Update the progressive map with this chunk's data
+                // Update the collected map with this chunk's data
                 eventData.annotatedLines.forEach((segments, index) => {
                   const globalIndex = eventData.startIndex + index;
                   if (globalIndex < linesForFurigana.length) {
                     const lineKey = linesForFurigana[globalIndex].startTimeMs;
-                    progressiveMap.set(lineKey, segments);
+                    collectedFurigana.set(lineKey, segments);
                   }
                 });
 
-                // Update state with progressive results
+                // Immediately update state with new data - create new Map to trigger re-render
                 if (!controller.signal.aborted) {
-                  setFuriganaMap(new Map(progressiveMap));
+                  const newMap = new Map(collectedFurigana);
+                  setFuriganaMap(newMap);
                 }
               } else if (eventData.type === "complete") {
                 // Ensure final state is set
                 if (!controller.signal.aborted) {
-                  setFuriganaMap(new Map(progressiveMap));
+                  const finalMap = new Map(collectedFurigana);
+                  setFuriganaMap(finalMap);
                   furiganaCacheKeyRef.current = cacheKey;
                   setIsFetchingFurigana(false);
                 }
@@ -361,6 +363,13 @@ export function LyricsDisplay({
             }
           }
         }
+      }
+      
+      // If we exited the loop without a complete event, finalize anyway
+      if (!controller.signal.aborted && collectedFurigana.size > 0) {
+        setFuriganaMap(new Map(collectedFurigana));
+        furiganaCacheKeyRef.current = cacheKey;
+        setIsFetchingFurigana(false);
       }
     };
 
