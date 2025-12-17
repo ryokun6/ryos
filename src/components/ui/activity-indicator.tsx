@@ -17,8 +17,8 @@ const sizeMap = {
 };
 
 /**
- * NativeWindUI-style Activity Indicator
- * A circular spinner with 8 bars that fade in sequence
+ * macOS-style Activity Indicator
+ * A circular spinner with 8 bars that form a gradient tail sweeping around
  */
 export function ActivityIndicator({
   size = "sm",
@@ -27,6 +27,11 @@ export function ActivityIndicator({
 }: ActivityIndicatorProps) {
   const numericSize = typeof size === "number" ? size : sizeMap[size];
   const barCount = 8;
+  const animationDuration = 0.8; // seconds - total cycle time
+
+  // Opacity values for each bar position in the gradient tail
+  // Creates a smooth gradient from bright (1.0) trailing off to dim (0.15)
+  const opacitySteps = [1, 0.7, 0.5, 0.35, 0.25, 0.2, 0.17, 0.15];
 
   return (
     <div
@@ -48,8 +53,9 @@ export function ActivityIndicator({
       >
         {Array.from({ length: barCount }).map((_, i) => {
           const rotation = (i * 360) / barCount;
-          const animationDuration = 1.6; // seconds - total cycle time
-          const delay = (i * animationDuration * 1000) / barCount;
+          // Use negative delay so animation starts "in progress" at the correct phase
+          // Reverse order for clockwise rotation
+          const delay = -((barCount - i) % barCount * animationDuration) / barCount;
 
           return (
             <rect
@@ -62,7 +68,8 @@ export function ActivityIndicator({
               fill="currentColor"
               transform={`rotate(${rotation} 12 12)`}
               style={{
-                animation: `activity-indicator-rotate-color ${animationDuration}s linear ${delay}ms infinite`,
+                opacity: opacitySteps[i],
+                animation: `activity-indicator-spin ${animationDuration}s steps(${barCount}, end) ${delay}s infinite`,
               }}
             />
           );
@@ -71,25 +78,16 @@ export function ActivityIndicator({
       <span className="sr-only">Loading...</span>
 
       <style>{`
-        @keyframes activity-indicator-rotate-color {
-          0% {
-            opacity: 1;
-          }
-          8% {
-            opacity: 0.9;
-          }
-          12.5% {
-            opacity: 0.2;
-          }
-          17% {
-            opacity: 0.9;
-          }
-          25% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 1;
-          }
+        @keyframes activity-indicator-spin {
+          0% { opacity: ${opacitySteps[0]}; }
+          12.5% { opacity: ${opacitySteps[1]}; }
+          25% { opacity: ${opacitySteps[2]}; }
+          37.5% { opacity: ${opacitySteps[3]}; }
+          50% { opacity: ${opacitySteps[4]}; }
+          62.5% { opacity: ${opacitySteps[5]}; }
+          75% { opacity: ${opacitySteps[6]}; }
+          87.5% { opacity: ${opacitySteps[7]}; }
+          100% { opacity: ${opacitySteps[0]}; }
         }
       `}</style>
     </div>
