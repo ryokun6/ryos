@@ -12,6 +12,9 @@ export const config = {
   runtime: "edge",
 };
 
+// Extend timeout for AI processing (default is 30s on Vercel)
+export const maxDuration = 60;
+
 const LyricLineSchema = z.object({
   words: z.string(),
   startTimeMs: z.string(),
