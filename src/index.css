@@ -929,24 +929,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 /* Japanese Furigana (Ruby) styling for lyrics display                       */
 /* ------------------------------------------------------------------------- */
 
-/* Ruby furigana base styles */
-ruby.ruby-furigana {
-  ruby-align: center;
-  ruby-position: over;
-}
-
-/* Ruby text (furigana reading) - smaller than main text */
-ruby.ruby-furigana > rt {
-  font-size: 50% !important;
-  line-height: 1 !important;
-  font-weight: normal !important;
-  opacity: 0.75;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.5);
-  letter-spacing: 0;
-  vertical-align: top;
-}
-
 /* Hide fallback parentheses (for browsers without ruby support) */
-ruby.ruby-furigana > rp {
+ruby rp {
   display: none;
 }

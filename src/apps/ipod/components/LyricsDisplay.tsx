@@ -299,10 +299,20 @@ export function LyricsDisplay({
           {segments.map((segment, index) => {
             if (segment.reading) {
               return (
-                <ruby key={index} className="ruby-furigana">
+                <ruby key={index} style={{ rubyAlign: "center" }}>
                   {segment.text}
                   <rp>(</rp>
-                  <rt>{segment.reading}</rt>
+                  <rt
+                    style={{
+                      fontSize: "0.5em",
+                      lineHeight: 1,
+                      fontWeight: "normal",
+                      opacity: 0.8,
+                      textShadow: "0 1px 2px rgba(0,0,0,0.9)",
+                    }}
+                  >
+                    {segment.reading}
+                  </rt>
                   <rp>)</rp>
                 </ruby>
               );
