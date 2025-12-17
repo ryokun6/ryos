@@ -42,7 +42,7 @@ type FuriganaSegment = z.infer<typeof FuriganaSegmentSchema>;
 // ------------------------------------------------------------------
 // Chunking configuration
 // ------------------------------------------------------------------
-const CHUNK_SIZE = 30; // Number of lines per chunk - balance between speed and reliability
+const CHUNK_SIZE = 15; // Number of lines per chunk - smaller chunks for faster progressive loading
 const MAX_PARALLEL_CHUNKS = 3; // Limit parallel AI calls to avoid rate limits
 
 // ------------------------------------------------------------------
