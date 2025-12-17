@@ -196,7 +196,7 @@ export function LyricsDisplay({
   alignment = LyricsAlignment.FocusThree,
   chineseVariant = ChineseVariant.Traditional,
   koreanDisplay = KoreanDisplay.Original,
-  japaneseFurigana = JapaneseFurigana.Off,
+  japaneseFurigana = JapaneseFurigana.On,
   onAdjustOffset,
   isTranslating = false,
   textSizeClass = "text-[12px]",
