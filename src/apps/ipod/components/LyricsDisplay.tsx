@@ -215,9 +215,12 @@ export function LyricsDisplay({
   const furiganaCacheKeyRef = useRef<string>("");
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
 
-  // Check if text contains kanji (which needs furigana)
-  const containsKanji = useCallback((text: string): boolean => {
-    return /[\u4E00-\u9FFF]/.test(text);
+  // Check if text is Japanese (contains kanji AND hiragana/katakana)
+  // This distinguishes Japanese from Chinese (which only has hanzi, no kana)
+  const isJapaneseText = useCallback((text: string): boolean => {
+    const hasKanji = /[\u4E00-\u9FFF]/.test(text);
+    const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text); // Hiragana or Katakana
+    return hasKanji && hasKana;
   }, []);
 
   // Fetch furigana for lines when enabled
@@ -227,9 +230,9 @@ export function LyricsDisplay({
       return;
     }
 
-    // Check if any lines contain kanji
-    const hasKanji = lines.some((line) => containsKanji(line.words));
-    if (!hasKanji) {
+    // Check if any lines are Japanese text (has both kanji and kana)
+    const hasJapanese = lines.some((line) => isJapaneseText(line.words));
+    if (!hasJapanese) {
       setIsFetchingFurigana(false);
       return;
     }
@@ -277,7 +280,7 @@ export function LyricsDisplay({
     return () => {
       controller.abort();
     };
-  }, [lines, japaneseFurigana, containsKanji]);
+  }, [lines, japaneseFurigana, isJapaneseText]);
 
   // Render text with furigana using ruby elements
   const renderWithFurigana = useCallback(

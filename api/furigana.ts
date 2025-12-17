@@ -76,15 +76,15 @@ const logError = (id: string, message: string, error: unknown) => {
 const generateRequestId = (): string =>
   Math.random().toString(36).substring(2, 10);
 
-// Check if text contains Japanese characters (kanji, hiragana, or katakana)
-function containsJapanese(text: string): boolean {
-  // Kanji: \u4E00-\u9FFF
-  // Hiragana: \u3040-\u309F
-  // Katakana: \u30A0-\u30FF
-  return /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(text);
+// Check if text is Japanese (contains both kanji AND hiragana/katakana)
+// This distinguishes Japanese from Chinese (which only has hanzi, no kana)
+function isJapaneseText(text: string): boolean {
+  const hasKanji = /[\u4E00-\u9FFF]/.test(text);
+  const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text); // Hiragana or Katakana
+  return hasKanji && hasKana;
 }
 
-// Check if text contains kanji specifically
+// Check if text contains kanji specifically (for lines that need furigana)
 function containsKanji(text: string): boolean {
   return /[\u4E00-\u9FFF]/.test(text);
 }
@@ -135,18 +135,23 @@ export default async function handler(req: Request) {
       });
     }
 
-    // Filter to only lines that contain Japanese text with kanji
-    const japaneseLines = lines.filter(
-      (line) => containsJapanese(line.words) && containsKanji(line.words)
-    );
-
-    if (japaneseLines.length === 0) {
-      // Return original lines without furigana if no Japanese kanji text
+    // First check if any line is Japanese (has both kanji and kana)
+    // This prevents Chinese text from being processed
+    const hasAnyJapanese = lines.some((line) => isJapaneseText(line.words));
+    
+    if (!hasAnyJapanese) {
+      // Return original lines without furigana if no Japanese text detected
       const result = lines.map((line) => [{ text: line.words }]);
       return new Response(JSON.stringify({ annotatedLines: result }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": effectiveOrigin!,
+        },
       });
     }
+
+    // Filter to only lines that contain kanji (which need furigana)
+    const japaneseLines = lines.filter((line) => containsKanji(line.words));
 
     logInfo(requestId, "Received furigana request", {
       totalLines: lines.length,
@@ -242,14 +247,14 @@ Important rules:
     // Map AI results back to all lines
     let aiIndex = 0;
     const fullAnnotatedLines = lines.map((line) => {
-      if (containsJapanese(line.words) && containsKanji(line.words)) {
+      if (containsKanji(line.words)) {
         const annotated = aiResponse.annotatedLines[aiIndex] || [
           { text: line.words },
         ];
         aiIndex++;
         return annotated;
       }
-      // Non-Japanese lines return as-is
+      // Lines without kanji return as-is
       return [{ text: line.words }];
     });
 
