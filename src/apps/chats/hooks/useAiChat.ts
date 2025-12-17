@@ -1852,7 +1852,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 savedItem.uuid,
               );
 
-              // Find or create TextEdit instance for this file
+              // Find existing TextEdit instance for this file
               let targetInstanceId: string | null = null;
               for (const [instanceId, instance] of Object.entries(textEditStore.instances)) {
                 if (instance.filePath === path) {
@@ -1861,31 +1861,42 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
               }
 
-              // Create new TextEdit instance if not found
-              if (!targetInstanceId) {
+              if (targetInstanceId) {
+                // Update existing TextEdit instance with content
+                const htmlFragment = markdownToHtml(finalContent);
+                const contentJson = generateJSON(htmlFragment, [
+                  StarterKit,
+                  Underline,
+                  TextAlign.configure({ types: ["heading", "paragraph"] }),
+                  TaskList,
+                  TaskItem.configure({ nested: true }),
+                ] as AnyExtension[]);
+
+                textEditStore.updateInstance(targetInstanceId, {
+                  filePath: path,
+                  contentJson,
+                  hasUnsavedChanges: false, // Already saved to disk
+                });
+
+                // Dispatch event to update the editor content
+                window.dispatchEvent(
+                  new CustomEvent("documentUpdated", {
+                    detail: { path, content: JSON.stringify(contentJson) },
+                  })
+                );
+
+                appStore.bringInstanceToForeground(targetInstanceId);
+              } else {
+                // Create new TextEdit instance with initialData (same pattern as Finder)
                 const windowTitle = fileName.replace(/\.md$/, "") || "Untitled";
-                targetInstanceId = appStore.launchApp("textedit", undefined, windowTitle, true);
+                targetInstanceId = appStore.launchApp(
+                  "textedit",
+                  { path, content: finalContent },
+                  windowTitle,
+                  true
+                );
                 trackNewTextEditInstance(targetInstanceId);
-                await new Promise((resolve) => setTimeout(resolve, 200));
               }
-
-              // Update TextEdit instance with content
-              const htmlFragment = markdownToHtml(finalContent);
-              const contentJson = generateJSON(htmlFragment, [
-                StarterKit,
-                Underline,
-                TextAlign.configure({ types: ["heading", "paragraph"] }),
-                TaskList,
-                TaskItem.configure({ nested: true }),
-              ] as AnyExtension[]);
-
-              textEditStore.updateInstance(targetInstanceId, {
-                filePath: path,
-                contentJson,
-                hasUnsavedChanges: false, // Already saved to disk
-              });
-
-              appStore.bringInstanceToForeground(targetInstanceId);
 
               const actionVerb = isNewFile ? "Created" : "Updated";
               addToolResult({
