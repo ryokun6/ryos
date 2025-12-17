@@ -594,12 +594,14 @@ function FullScreenPortal({
     // Fallback for non-touch clicks
     window.addEventListener("click", handleActivity, { passive: true });
 
-    // Prime the timer once on mount
-    const actuallyPlayingOnMount = getActualPlayerState();
-    if (!actuallyPlayingOnMount) {
-      setShowControls(true);
-    } else {
-      handleActivity();
+    // Prime the timer once on mount - use isPlaying prop as fallback since
+    // the actual player state may not be ready yet when fullscreen first opens
+    const actuallyPlayingOnMount = getActualPlayerState() || isPlaying;
+    if (actuallyPlayingOnMount && !isLangMenuOpen) {
+      // Start auto-hide countdown immediately if playing
+      hideControlsTimeoutRef.current = window.setTimeout(() => {
+        setShowControls(false);
+      }, 2000);
     }
 
     return () => {
