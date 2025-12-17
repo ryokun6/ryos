@@ -1152,7 +1152,8 @@
         "themeBlack": "Tema: Negro",
         "themeClassic": "Tema: Clásico",
         "themeU2": "Tema: U2",
-        "translatingLyrics": "Traduciendo letras…"
+        "translatingLyrics": "Traduciendo letras…",
+        "loadingFurigana": "Cargando furigana…"
       },
       "translationLanguages": {
         "chinese": "中文",

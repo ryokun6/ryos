@@ -64,6 +64,50 @@ const ANIMATION_CONFIG = {
   },
 } as const;
 
+// Spinner component for loading states
+const Spinner = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={`animate-spin ${className}`}
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    />
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    />
+  </svg>
+);
+
+// Processing indicator shown in top-left when translating or fetching furigana
+const ProcessingIndicator = ({
+  message,
+}: {
+  message: string;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -10 }}
+    transition={{ duration: 0.2 }}
+    className="absolute top-3 left-3 pointer-events-none z-50 flex items-center gap-2"
+  >
+    <Spinner className="w-4 h-4 text-white" />
+    <span className="text-white text-[11px] font-geneva-12 opacity-80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+      {message}
+    </span>
+  </motion.div>
+);
+
 const LoadingState = ({
   bottomPaddingClass = "pb-5",
   textSizeClass = "text-[12px]",
@@ -80,27 +124,6 @@ const LoadingState = ({
     >
       <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
         {t("apps.ipod.status.loadingLyrics")}
-      </div>
-    </div>
-  );
-};
-
-const TranslatingState = ({
-  bottomPaddingClass = "pb-5",
-  textSizeClass = "text-[12px]",
-  fontClassName = "font-geneva-12",
-}: {
-  bottomPaddingClass?: string;
-  textSizeClass?: string;
-  fontClassName?: string;
-}) => {
-  const { t } = useTranslation();
-  return (
-    <div
-      className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
-    >
-      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
-        {t("apps.ipod.status.translatingLyrics")}
       </div>
     </div>
   );
@@ -192,11 +215,14 @@ export function LyricsDisplay({
     []
   );
 
+  const { t } = useTranslation();
+
   // State for furigana annotations
   const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(
     new Map()
   );
   const furiganaCacheKeyRef = useRef<string>("");
+  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
 
   // Check if text contains Japanese with kanji
   const containsJapaneseKanji = useCallback((text: string): boolean => {
@@ -208,6 +234,7 @@ export function LyricsDisplay({
   // Fetch furigana for lines when enabled
   useEffect(() => {
     if (japaneseFurigana !== JapaneseFurigana.On || lines.length === 0) {
+      setIsFetchingFurigana(false);
       return;
     }
 
@@ -216,16 +243,19 @@ export function LyricsDisplay({
       containsJapaneseKanji(line.words)
     );
     if (!hasJapaneseKanji) {
+      setIsFetchingFurigana(false);
       return;
     }
 
     // Create cache key from lines
     const cacheKey = JSON.stringify(lines.map((l) => l.startTimeMs + l.words));
     if (cacheKey === furiganaCacheKeyRef.current) {
+      setIsFetchingFurigana(false);
       return; // Already fetched for these lines
     }
 
     const controller = new AbortController();
+    setIsFetchingFurigana(true);
 
     fetch(getApiUrl("/api/furigana"), {
       method: "POST",
@@ -248,11 +278,13 @@ export function LyricsDisplay({
         });
         setFuriganaMap(newMap);
         furiganaCacheKeyRef.current = cacheKey;
+        setIsFetchingFurigana(false);
       })
       .catch((err) => {
         if (err.name !== "AbortError") {
           console.error("Failed to fetch furigana:", err);
         }
+        setIsFetchingFurigana(false);
       });
 
     return () => {
@@ -471,14 +503,6 @@ export function LyricsDisplay({
         fontClassName={fontClassName}
       />
     );
-  if (isTranslating)
-    return (
-      <TranslatingState
-        bottomPaddingClass={bottomPaddingClass}
-        textSizeClass={textSizeClass}
-        fontClassName={fontClassName}
-      />
-    );
   if (error)
     return (
       <ErrorState
@@ -496,8 +520,22 @@ export function LyricsDisplay({
       />
     );
 
+  // Determine processing message if any
+  const processingMessage = isTranslating
+    ? t("apps.ipod.status.translatingLyrics")
+    : isFetchingFurigana
+    ? t("apps.ipod.status.loadingFurigana")
+    : null;
+
   return (
-    <motion.div
+    <>
+      {/* Processing indicator in top-left corner */}
+      <AnimatePresence>
+        {processingMessage && (
+          <ProcessingIndicator message={processingMessage} />
+        )}
+      </AnimatePresence>
+      <motion.div
       layout={alignment === LyricsAlignment.Alternating}
       transition={ANIMATION_CONFIG.spring}
       className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none no-select-gesture px-0 ${bottomPaddingClass}`}
@@ -575,5 +613,6 @@ export function LyricsDisplay({
         })}
       </AnimatePresence>
     </motion.div>
+    </>
   );
 }

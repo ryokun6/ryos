@@ -1152,7 +1152,8 @@
         "themeBlack": "Design: Schwarz",
         "themeClassic": "Design: Klassisch",
         "themeU2": "Design: U2",
-        "translatingLyrics": "Liedtexte werden übersetzt…"
+        "translatingLyrics": "Liedtexte werden übersetzt…",
+        "loadingFurigana": "Furigana wird geladen…"
       },
       "translationLanguages": {
         "chinese": "Chinesisch",

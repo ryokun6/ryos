@@ -1279,6 +1279,7 @@
         "added": "♬ Added",
         "loadingLyrics": "Loading lyrics…",
         "translatingLyrics": "Translating lyrics…",
+        "loadingFurigana": "Loading furigana…",
         "offset": "Offset"
       },
       "dialogs": {

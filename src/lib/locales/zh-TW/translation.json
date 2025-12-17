@@ -1152,7 +1152,8 @@
         "themeBlack": "主題：黑色",
         "themeClassic": "主題：經典",
         "themeU2": "主題：U2",
-        "translatingLyrics": "正在翻譯歌詞…"
+        "translatingLyrics": "正在翻譯歌詞…",
+        "loadingFurigana": "正在載入假名…"
       },
       "translationLanguages": {
         "chinese": "中文",

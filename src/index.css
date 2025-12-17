@@ -935,14 +935,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   ruby-position: over;
 }
 
-/* Ruby text (furigana reading) */
+/* Ruby text (furigana reading) - smaller than main text */
 .ruby-furigana rt {
-  font-size: 0.5em;
+  font-size: 0.4em;
   line-height: 1;
   font-weight: normal;
-  opacity: 0.9;
+  opacity: 0.85;
   /* Improve readability with subtle text shadow */
   text-shadow: inherit;
+  letter-spacing: 0.02em;
 }
 
 /* Hide fallback parentheses (for browsers without ruby support) */

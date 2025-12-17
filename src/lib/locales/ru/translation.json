@@ -1152,7 +1152,8 @@
         "themeBlack": "Тема: Черная",
         "themeClassic": "Тема: Классическая",
         "themeU2": "Тема: U2",
-        "translatingLyrics": "Перевод текста…"
+        "translatingLyrics": "Перевод текста…",
+        "loadingFurigana": "Загрузка фуриганы…"
       },
       "translationLanguages": {
         "chinese": "Китайский",
