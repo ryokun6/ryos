@@ -688,6 +688,19 @@ export const useIpodStore = create<IpodState>()(
           throw new Error("Invalid YouTube URL or video ID");
         }
 
+        // Check if track already exists in library - skip fetching metadata if so
+        const existingTrack = get().tracks.find((track) => track.id === videoId);
+        if (existingTrack) {
+          console.log(`[iPod Store] Track ${videoId} already exists in library, skipping metadata fetch`);
+          // Set as current track and optionally autoplay
+          const existingIndex = get().tracks.findIndex((track) => track.id === videoId);
+          set({
+            currentIndex: existingIndex,
+            isPlaying: autoPlay,
+          });
+          return existingTrack;
+        }
+
         const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
         let rawTitle = `Video ID: ${videoId}`; // Default title
         let authorName: string | undefined = undefined; // Store author_name
