@@ -30,6 +30,8 @@ interface UseLyricsParams {
 
 interface LyricsState {
   lines: LyricLine[];
+  /** Original untranslated lyrics (for furigana) */
+  originalLines: LyricLine[];
   currentLine: number;
   isLoading: boolean; // True when fetching original LRC
   isTranslating: boolean; // True when translating lyrics
@@ -91,7 +93,9 @@ export function useLyrics({
       return;
     }
 
-    const cacheKey = `${title}__${artist}__${album}`;
+    // Include selectedMatch hash in cache key to ensure re-fetch when selection changes
+    const selectedMatchKey = selectedMatch?.hash || "";
+    const cacheKey = `${title}__${artist}__${album}__${selectedMatchKey}`;
     const isForced = lastRefreshNonceRef.current !== refreshNonce;
     if (!isForced && cacheKey === cachedKeyRef.current) {
       // If original lyrics are cached, we might still need to translate if translateTo changed.
@@ -348,6 +352,7 @@ export function useLyrics({
 
   return {
     lines: displayLines,
+    originalLines,
     currentLine,
     isLoading: isFetchingOriginal,
     isTranslating,
