@@ -754,8 +754,6 @@
         "playingSongByArtist": "Playing song by {{artist}}",
         "playingSongWithId": "Playing song ({{id}})",
         "playingSongGeneric": "Playing song",
-        "playingTrack": "Playing {{title}}",
-        "playingTrackByArtist": "Playing {{title}} by {{artist}}",
         "skippedToNextTrack": "Skipped to next track",
         "skippedToPreviousTrack": "Skipped to previous track",
         "playingIpod": "Playing iPod",
@@ -796,7 +794,33 @@
         "settingsMasterVolumeSet": "Volume set to {{volume}}%",
         "settingsSpeechEnabled": "Text-to-speech enabled",
         "settingsSpeechDisabled": "Text-to-speech disabled",
-        "settingsCheckingForUpdates": "Checking for updates…"
+        "settingsCheckingForUpdates": "Checking for updates…",
+        "launchedApp": "Launched {{appName}}",
+        "createdDocument": "Created document: {{path}}",
+        "updatedDocument": "Updated document: {{path}}",
+        "editedDocument": "Successfully edited document: {{path}}",
+        "editedApplet": "Successfully edited applet: {{path}}",
+        "applet": "Applet",
+        "document": "Document",
+        "fileContent": "{{fileLabel}} content: {{fileName}} ({{charCount}} characters)",
+        "noAppIdProvided": "No app ID provided",
+        "noPathProvided": "No path provided",
+        "noContentProvided": "No content provided",
+        "invalidPath": "Invalid path: {{path}}",
+        "invalidPathForList": "Invalid path: {{path}}. Supported paths: /Applets, /Documents, /Applications, /Music, /Applets Store",
+        "invalidPathForRead": "Invalid path for read: {{path}}. Use /Applets/*, /Documents/*, or /Applets Store/*",
+        "invalidPathForWrite": "Invalid path: {{path}}. Use /Documents/filename.md for documents. For applets, use generateHtml (new) or edit (small changes).",
+        "invalidPathForEdit": "Invalid path for edit: {{path}}. Use /Documents/* or /Applets/*",
+        "invalidFilename": "Invalid filename: {{fileName}}. Document files must end with .md extension (e.g., /Documents/my-notes.md)",
+        "failedToListItems": "Failed to list items",
+        "failedToOpen": "Failed to open",
+        "failedToReadFile": "Failed to read file",
+        "failedToWriteFile": "Failed to write file",
+        "failedToEditFile": "Failed to edit file",
+        "missingEditParameters": "Missing required parameters: path, old_string, and new_string",
+        "oldStringNotFound": "old_string not found in file. Use read tool to verify current content.",
+        "oldStringMultipleMatches": "old_string matches {{count}} locations. Include more context to make it unique.",
+        "unknownError": "Unknown error"
       },
       "tokenStatus": {
         "clickToRefresh": "Click to manually refresh token",
@@ -1889,7 +1913,6 @@
           "description": "First-person maze walker"
         }
       },
-      "speech": "Speech",
       "help": {
         "appearance": {
           "title": "Appearance",

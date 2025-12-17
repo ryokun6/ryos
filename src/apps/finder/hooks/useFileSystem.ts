@@ -1041,12 +1041,26 @@ export function useFileSystem(
           );
 
           if (existingInstanceId) {
-            // File is already open - bring that window to foreground
-            console.log(
-              `[useFileSystem] File already open in TextEdit instance ${existingInstanceId}, bringing to foreground`
-            );
+            // Verify the instance actually exists in AppStore
             const appStore = useAppStore.getState();
-            appStore.bringInstanceToForeground(existingInstanceId);
+            const instanceExists = !!appStore.instances[existingInstanceId];
+
+            if (instanceExists) {
+              // File is already open - bring that window to foreground
+              console.log(
+                `[useFileSystem] File already open in TextEdit instance ${existingInstanceId}, bringing to foreground`
+              );
+              appStore.bringInstanceToForeground(existingInstanceId);
+            } else {
+              // Stale instance reference - clean it up and open new instance
+              console.log(
+                `[useFileSystem] Stale TextEdit instance ${existingInstanceId} for ${file.path}, removing and opening new instance`
+              );
+              textEditStore.removeInstance(existingInstanceId);
+              launchApp("textedit", {
+                initialData: { path: file.path, content: contentAsString ?? "" },
+              });
+            }
           } else {
             // File not open - launch new TextEdit instance
             launchApp("textedit", {

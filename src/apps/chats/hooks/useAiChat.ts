@@ -635,7 +635,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: "No app ID provided",
+                errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
               });
               break;
             }
@@ -1257,7 +1257,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: "No path provided",
+                errorText: i18n.t("apps.chats.toolCalls.noPathProvided"),
               });
               result = "";
               break;
@@ -1424,7 +1424,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText: `Invalid path: ${path}. Supported paths: /Applets, /Documents, /Applications, /Music, /Applets Store`,
+                  errorText: i18n.t("apps.chats.toolCalls.invalidPathForList", { path }),
                 });
                 result = "";
               }
@@ -1434,7 +1434,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: err instanceof Error ? err.message : "Failed to list items",
+                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToListItems"),
               });
               result = "";
             }
@@ -1448,7 +1448,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: "No path provided",
+                errorText: i18n.t("apps.chats.toolCalls.noPathProvided"),
               });
               result = "";
               break;
@@ -1525,7 +1525,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Launched ${getTranslatedAppName(appId)}`,
+                  output: i18n.t("apps.chats.toolCalls.launchedApp", { appName: getTranslatedAppName(appId) }),
                 });
                 result = "";
               } else if (path.startsWith("/Applets/")) {
@@ -1596,23 +1596,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   content = contentData.content;
                 }
 
-                const htmlContent = markdownToHtml(content);
-                const contentJson = generateJSON(htmlContent, [
-                  StarterKit,
-                  Underline,
-                  TextAlign.configure({ types: ["heading", "paragraph"] }),
-                  TaskList,
-                  TaskItem.configure({ nested: true }),
-                ] as AnyExtension[]);
-
-                const instanceId = launchApp("textedit", { multiWindow: true });
-                await new Promise((resolve) => setTimeout(resolve, 100));
-
-                const textEditStore = useTextEditStore.getState();
-                textEditStore.updateInstance(instanceId, {
-                  filePath: path,
-                  contentJson,
-                  hasUnsavedChanges: false,
+                // Pass initialData directly to launchApp (consistent with Terminal/Finder approach)
+                // TextEdit will handle markdown-to-HTML conversion internally
+                launchApp("textedit", {
+                  multiWindow: true,
+                  initialData: { path, content },
                 });
 
                 addToolResult({
@@ -1626,7 +1614,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText: `Invalid path: ${path}`,
+                  errorText: i18n.t("apps.chats.toolCalls.invalidPath", { path }),
                 });
                 result = "";
               }
@@ -1636,7 +1624,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: err instanceof Error ? err.message : "Failed to open",
+                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToOpen"),
               });
               result = "";
             }
@@ -1650,7 +1638,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: "No path provided",
+                errorText: i18n.t("apps.chats.toolCalls.noPathProvided"),
               });
               result = "";
               break;
@@ -1723,11 +1711,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error("Unsupported content type");
                 }
 
-                const fileLabel = isApplet ? "Applet" : "Document";
+                const fileLabel = isApplet ? i18n.t("apps.chats.toolCalls.applet") : i18n.t("apps.chats.toolCalls.document");
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `${fileLabel} content: ${fileItem.name} (${content.length} characters)\n\n${content}`,
+                  output: i18n.t("apps.chats.toolCalls.fileContent", { fileLabel, fileName: fileItem.name, charCount: content.length }) + `\n\n${content}`,
                 });
                 result = "";
               } else {
@@ -1735,7 +1723,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText: `Invalid path for read: ${path}. Use /Applets/*, /Documents/*, or /Applets Store/*`,
+                  errorText: i18n.t("apps.chats.toolCalls.invalidPathForRead", { path }),
                 });
                 result = "";
               }
@@ -1745,7 +1733,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: err instanceof Error ? err.message : "Failed to read file",
+                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToReadFile"),
               });
               result = "";
             }
@@ -1763,7 +1751,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: "No path provided",
+                errorText: i18n.t("apps.chats.toolCalls.noPathProvided"),
               });
               result = "";
               break;
@@ -1775,7 +1763,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: `Invalid path: ${path}. Use /Documents/filename.md for documents. For applets, use generateHtml (new) or edit (small changes).`,
+                errorText: i18n.t("apps.chats.toolCalls.invalidPathForWrite", { path }),
               });
               result = "";
               break;
@@ -1788,7 +1776,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: `Invalid filename: ${fileName}. Document files must end with .md extension (e.g., /Documents/my-notes.md)`,
+                errorText: i18n.t("apps.chats.toolCalls.invalidFilename", { fileName }),
               });
               result = "";
               break;
@@ -1799,7 +1787,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: "No content provided",
+                errorText: i18n.t("apps.chats.toolCalls.noContentProvided"),
               });
               result = "";
               break;
@@ -1856,7 +1844,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               let targetInstanceId: string | null = null;
               for (const [instanceId, instance] of Object.entries(textEditStore.instances)) {
                 if (instance.filePath === path) {
-                  targetInstanceId = instanceId;
+                  // Verify instance actually exists in AppStore
+                  if (appStore.instances[instanceId]) {
+                    targetInstanceId = instanceId;
+                  } else {
+                    // Stale instance reference - clean it up
+                    textEditStore.removeInstance(instanceId);
+                  }
                   break;
                 }
               }
@@ -1898,11 +1892,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 trackNewTextEditInstance(targetInstanceId);
               }
 
-              const actionVerb = isNewFile ? "Created" : "Updated";
+              const outputKey = isNewFile ? "createdDocument" : "updatedDocument";
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
-                output: `${actionVerb} document: ${path}`,
+                output: i18n.t(`apps.chats.toolCalls.${outputKey}`, { path }),
               });
               result = "";
             } catch (err) {
@@ -1911,7 +1905,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: err instanceof Error ? err.message : "Failed to write file",
+                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToWriteFile"),
               });
               result = "";
             }
@@ -1929,7 +1923,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: "Missing required parameters: path, old_string, and new_string",
+                errorText: i18n.t("apps.chats.toolCalls.missingEditParameters"),
               });
               result = "";
               break;
@@ -1972,7 +1966,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
                     state: "output-error",
-                    errorText: "old_string not found in file. Use read tool to verify current content.",
+                    errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
                   });
                   result = "";
                   break;
@@ -1983,7 +1977,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
                     state: "output-error",
-                    errorText: `old_string matches ${occurrences} locations. Include more context to make it unique.`,
+                    errorText: i18n.t("apps.chats.toolCalls.oldStringMultipleMatches", { count: occurrences }),
                   });
                   result = "";
                   break;
@@ -2029,7 +2023,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Successfully edited document: ${path}`,
+                  output: i18n.t("apps.chats.toolCalls.editedDocument", { path }),
                 });
                 result = "";
               } else if (path.startsWith("/Applets/")) {
@@ -2061,7 +2055,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
                     state: "output-error",
-                    errorText: "old_string not found in file. Use read tool to verify current content.",
+                    errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
                   });
                   result = "";
                   break;
@@ -2072,7 +2066,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     tool: toolCall.toolName,
                     toolCallId: toolCall.toolCallId,
                     state: "output-error",
-                    errorText: `old_string matches ${occurrences} locations. Include more context to make it unique.`,
+                    errorText: i18n.t("apps.chats.toolCalls.oldStringMultipleMatches", { count: occurrences }),
                   });
                   result = "";
                   break;
@@ -2097,7 +2091,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: `Successfully edited applet: ${path}`,
+                  output: i18n.t("apps.chats.toolCalls.editedApplet", { path }),
                 });
                 result = "";
               } else {
@@ -2105,7 +2099,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText: `Invalid path for edit: ${path}. Use /Documents/* or /Applets/*`,
+                  errorText: i18n.t("apps.chats.toolCalls.invalidPathForEdit", { path }),
                 });
                 result = "";
               }
@@ -2115,7 +2109,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: err instanceof Error ? err.message : "Failed to edit file",
+                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToEditFile"),
               });
               result = "";
             }
@@ -2267,7 +2261,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           tool: toolCall.toolName,
           toolCallId: toolCall.toolCallId,
           state: "output-error",
-          errorText: err instanceof Error ? err.message : "Unknown error",
+          errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.unknownError"),
         });
       }
     },
@@ -2800,13 +2794,24 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const existingInstanceId = textEditStore.getInstanceIdByPath(filePath);
 
               if (existingInstanceId) {
-                // File is already open - update content and bring to foreground
+                // Verify the instance actually exists in AppStore
                 const appStore = useAppStore.getState();
-                appStore.updateInstanceInitialData(existingInstanceId, {
-                  path: filePath,
-                  content: transcript,
-                });
-                appStore.bringInstanceToForeground(existingInstanceId);
+                const instanceExists = !!appStore.instances[existingInstanceId];
+
+                if (instanceExists) {
+                  // File is already open - update content and bring to foreground
+                  appStore.updateInstanceInitialData(existingInstanceId, {
+                    path: filePath,
+                    content: transcript,
+                  });
+                  appStore.bringInstanceToForeground(existingInstanceId);
+                } else {
+                  // Stale instance reference - clean it up and open new instance
+                  textEditStore.removeInstance(existingInstanceId);
+                  launchApp("textedit", {
+                    initialData: { path: filePath, content: transcript },
+                  });
+                }
               } else {
                 // File not open - launch new TextEdit instance
                 launchApp("textedit", {
