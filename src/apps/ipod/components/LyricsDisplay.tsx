@@ -298,28 +298,27 @@ export function LyricsDisplay({
         <>
           {segments.map((segment, index) => {
             if (segment.reading) {
-              // Use absolute positioning for reliable furigana sizing
               return (
                 <span
                   key={index}
                   style={{
                     position: "relative",
                     display: "inline-block",
+                    paddingTop: "0.7em",
                   }}
                 >
                   <span
                     style={{
                       position: "absolute",
-                      top: "-0.6em",
-                      left: 0,
-                      right: 0,
-                      textAlign: "center",
-                      fontSize: "45%",
-                      lineHeight: 1,
+                      top: 0,
+                      left: "50%",
+                      transform: "translateX(-50%) scale(0.5)",
+                      transformOrigin: "center bottom",
                       opacity: 0.8,
                       fontWeight: "normal",
                       textShadow: "0 1px 2px rgba(0,0,0,0.9)",
                       whiteSpace: "nowrap",
+                      pointerEvents: "none",
                     }}
                   >
                     {segment.reading}
