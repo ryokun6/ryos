@@ -202,12 +202,15 @@ const hashString = (str: string): string => {
 /**
  * Build a stable cache key for a (title, artist) pair.
  * We use a hash of the normalized input to create a clean, fixed-length key.
+ * @param songHash - Optional song hash for specific version caching (e.g., when user selects a specific match)
  */
-const buildLyricsCacheKey = (title: string, artist: string): string => {
+const buildLyricsCacheKey = (title: string, artist: string, songHash?: string): string => {
   const normalized = [title.trim().toLowerCase(), artist.trim().toLowerCase()]
     .filter(Boolean)
     .join("|");
-  const fingerprint = hashString(normalized);
+  // Include song hash if provided to cache specific versions separately
+  const keySource = songHash ? `${normalized}|${songHash}` : normalized;
+  const fingerprint = hashString(keySource);
   return `${LYRICS_CACHE_PREFIX}${fingerprint}`;
 };
 
@@ -444,9 +447,11 @@ export default async function handler(req: Request) {
 
   // For fetch action, use selectedHash directly
   if (action === "fetch" && selectedHash && selectedAlbumId) {
+    // Include the hash in the cache key to ensure different versions are cached separately
     const cacheKey = buildLyricsCacheKey(
       selectedTitle || title,
-      selectedArtist || artist
+      selectedArtist || artist,
+      selectedHash
     );
     if (!force) {
       try {

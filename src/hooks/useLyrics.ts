@@ -71,23 +71,21 @@ export function useLyrics({
 
   // Effect for fetching original lyrics
   useEffect(() => {
-    setOriginalLines([]);
-    setTranslatedLines(null);
-    setCurrentLine(-1);
-    setIsFetchingOriginal(true);
-    setIsTranslating(false); // Reset translation state
-    setError(undefined);
-
+    // Early return checks - don't clear state for these
     if (!title && !artist && !album) {
+      // Clear state only when there's no track info
+      setOriginalLines([]);
+      setTranslatedLines(null);
+      setCurrentLine(-1);
+      setIsFetchingOriginal(false);
+      setError(undefined);
       // Clear cache key so next valid track will fetch lyrics even if it has the same metadata
       cachedKeyRef.current = null;
-      setIsFetchingOriginal(false);
       return;
     }
 
     // Check if offline before fetching
     if (isOffline()) {
-      setIsFetchingOriginal(false);
       setError("iPod requires an internet connection");
       // Don't show toast here - let the component handle it to avoid duplicates
       return;
@@ -97,13 +95,22 @@ export function useLyrics({
     const selectedMatchKey = selectedMatch?.hash || "";
     const cacheKey = `${title}__${artist}__${album}__${selectedMatchKey}`;
     const isForced = lastRefreshNonceRef.current !== refreshNonce;
+    
+    // Skip fetch if we have cached data and no force refresh requested
     if (!isForced && cacheKey === cachedKeyRef.current) {
       // If original lyrics are cached, we might still need to translate if translateTo changed.
       // The translation effect will handle this.
-      setIsFetchingOriginal(false); // Not fetching if original is cached
       lastRefreshNonceRef.current = refreshNonce;
       return;
     }
+
+    // We're going to fetch - now clear the state
+    setOriginalLines([]);
+    setTranslatedLines(null);
+    setCurrentLine(-1);
+    setIsFetchingOriginal(true);
+    setIsTranslating(false); // Reset translation state
+    setError(undefined);
 
     let cancelled = false;
     const controller = new AbortController();
@@ -195,9 +202,11 @@ export function useLyrics({
         useIpodStore.setState({ currentLyrics: null });
       })
       .finally(() => {
-        if (!cancelled) setIsFetchingOriginal(false);
-        lastRefreshNonceRef.current = refreshNonce;
         clearTimeout(timeoutId);
+        if (!cancelled) {
+          setIsFetchingOriginal(false);
+          lastRefreshNonceRef.current = refreshNonce;
+        }
       });
 
     return () => {
