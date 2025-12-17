@@ -119,7 +119,7 @@ export function IpodMenuBar({
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
     chineseVariant: s.chineseVariant ?? ChineseVariant.Traditional,
     koreanDisplay: s.koreanDisplay ?? KoreanDisplay.Original,
-    japaneseFurigana: s.japaneseFurigana ?? JapaneseFurigana.Off,
+    japaneseFurigana: s.japaneseFurigana ?? JapaneseFurigana.On,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     // Actions
     setCurrentIndex: s.setCurrentIndex,

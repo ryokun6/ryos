@@ -52,6 +52,8 @@ interface LyricsDisplayProps {
   fontClassName?: string;
   /** Optional inline styles for the outer container (e.g., dynamic gap) */
   containerStyle?: CSSProperties;
+  /** Optional tailwind class for loading spinner size (defaults to "w-4 h-4") */
+  spinnerSizeClass?: string;
 }
 
 const ANIMATION_CONFIG = {
@@ -92,7 +94,7 @@ const Spinner = ({ className = "" }: { className?: string }) => (
 );
 
 // Processing indicator shown in top-left when translating or fetching furigana
-const ProcessingIndicator = () => (
+const ProcessingIndicator = ({ sizeClass = "w-4 h-4" }: { sizeClass?: string }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.8 }}
     animate={{ opacity: 1, scale: 1 }}
@@ -100,7 +102,7 @@ const ProcessingIndicator = () => (
     transition={{ duration: 0.2 }}
     className="absolute top-3 left-3 pointer-events-none z-50"
   >
-    <Spinner className="w-4 h-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" />
+    <Spinner className={`${sizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`} />
   </motion.div>
 );
 
@@ -196,7 +198,7 @@ export function LyricsDisplay({
   alignment = LyricsAlignment.FocusThree,
   chineseVariant = ChineseVariant.Traditional,
   koreanDisplay = KoreanDisplay.Original,
-  japaneseFurigana = JapaneseFurigana.Off,
+  japaneseFurigana = JapaneseFurigana.On,
   onAdjustOffset,
   isTranslating = false,
   textSizeClass = "text-[12px]",
@@ -206,6 +208,7 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
+  spinnerSizeClass = "w-4 h-4",
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -258,19 +261,23 @@ export function LyricsDisplay({
     const controller = new AbortController();
     setIsFetchingFurigana(true);
 
-    fetch(getApiUrl("/api/furigana"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lines: linesForFurigana }),
-      signal: controller.signal,
-    })
-      .then(async (res) => {
+    const MAX_RETRIES = 3;
+    const INITIAL_DELAY = 1000; // 1 second
+
+    const fetchWithRetry = async (attempt: number): Promise<void> => {
+      try {
+        const res = await fetch(getApiUrl("/api/furigana"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lines: linesForFurigana }),
+          signal: controller.signal,
+        });
+
         if (!res.ok) {
           throw new Error(`Failed to fetch furigana (status ${res.status})`);
         }
-        return res.json();
-      })
-      .then((data: { annotatedLines: FuriganaSegment[][] }) => {
+
+        const data: { annotatedLines: FuriganaSegment[][] } = await res.json();
         const newMap = new Map<string, FuriganaSegment[]>();
         linesForFurigana.forEach((line, index) => {
           if (data.annotatedLines[index]) {
@@ -280,13 +287,30 @@ export function LyricsDisplay({
         setFuriganaMap(newMap);
         furiganaCacheKeyRef.current = cacheKey;
         setIsFetchingFurigana(false);
-      })
-      .catch((err) => {
-        if (err.name !== "AbortError") {
-          console.error("Failed to fetch furigana:", err);
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          // Request was aborted, don't retry
+          return;
         }
+
+        if (attempt < MAX_RETRIES) {
+          // Exponential backoff: 1s, 2s, 4s
+          const delay = INITIAL_DELAY * Math.pow(2, attempt - 1);
+          console.warn(`Furigana fetch attempt ${attempt} failed, retrying in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          
+          // Check if aborted during delay
+          if (controller.signal.aborted) return;
+          
+          return fetchWithRetry(attempt + 1);
+        }
+
+        console.error("Failed to fetch furigana after all retries:", err);
         setIsFetchingFurigana(false);
-      });
+      }
+    };
+
+    fetchWithRetry(1);
 
     return () => {
       controller.abort();
@@ -526,7 +550,7 @@ export function LyricsDisplay({
     <>
       {/* Processing indicator in top-left corner */}
       <AnimatePresence>
-        {isProcessing && <ProcessingIndicator />}
+        {isProcessing && <ProcessingIndicator sizeClass={spinnerSizeClass} />}
       </AnimatePresence>
       <motion.div
       layout={alignment === LyricsAlignment.Alternating}

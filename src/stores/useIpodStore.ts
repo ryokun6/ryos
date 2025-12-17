@@ -147,7 +147,7 @@ const initialIpodData: IpodData = {
   lyricsAlignment: LyricsAlignment.FocusThree,
   chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
-  japaneseFurigana: JapaneseFurigana.Off,
+  japaneseFurigana: JapaneseFurigana.On,
   lyricsTranslationRequest: null,
   lyricsTranslationLanguage: null,
   currentLyrics: null,
@@ -948,7 +948,7 @@ export const useIpodStore = create<IpodState>()(
               state.lyricsAlignment ?? LyricsAlignment.FocusThree,
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
-            japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.Off,
+            japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
             lyricsTranslationRequest: state.lyricsTranslationRequest ?? null, // Preserve existing translation state
             lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? null, // Preserve existing translation language preference
             libraryState: "uninitialized" as LibraryState, // Reset to uninitialized on migration
