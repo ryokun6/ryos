@@ -30,6 +30,8 @@ interface UseLyricsParams {
 
 interface LyricsState {
   lines: LyricLine[];
+  /** Original untranslated lyrics (for furigana) */
+  originalLines: LyricLine[];
   currentLine: number;
   isLoading: boolean; // True when fetching original LRC
   isTranslating: boolean; // True when translating lyrics
@@ -69,37 +71,49 @@ export function useLyrics({
 
   // Effect for fetching original lyrics
   useEffect(() => {
+    // Early return checks - don't clear state for these
+    if (!title && !artist && !album) {
+      // Clear state only when there's no track info
+      setOriginalLines([]);
+      setTranslatedLines(null);
+      setCurrentLine(-1);
+      setIsFetchingOriginal(false);
+      setError(undefined);
+      // Clear cache key so next valid track will fetch lyrics even if it has the same metadata
+      cachedKeyRef.current = null;
+      return;
+    }
+
+    // Check if offline before fetching
+    if (isOffline()) {
+      setError("iPod requires an internet connection");
+      // Don't show toast here - let the component handle it to avoid duplicates
+      return;
+    }
+
+    // Include selectedMatch hash in cache key to ensure different versions are cached separately
+    const selectedMatchKey = selectedMatch?.hash || "";
+    const cacheKey = `${title}__${artist}__${album}__${selectedMatchKey}`;
+    
+    // Force refresh only when user explicitly triggers via refreshLyrics() (e.g., selecting from search dialog)
+    const isForced = lastRefreshNonceRef.current !== refreshNonce;
+    
+    // Skip fetch if we have cached data and no force refresh requested
+    // Cache is keyed by hash, so same hash = same cached lyrics
+    if (!isForced && cacheKey === cachedKeyRef.current) {
+      // If original lyrics are cached, we might still need to translate if translateTo changed.
+      // The translation effect will handle this.
+      lastRefreshNonceRef.current = refreshNonce;
+      return;
+    }
+
+    // We're going to fetch - now clear the state
     setOriginalLines([]);
     setTranslatedLines(null);
     setCurrentLine(-1);
     setIsFetchingOriginal(true);
     setIsTranslating(false); // Reset translation state
     setError(undefined);
-
-    if (!title && !artist && !album) {
-      // Clear cache key so next valid track will fetch lyrics even if it has the same metadata
-      cachedKeyRef.current = null;
-      setIsFetchingOriginal(false);
-      return;
-    }
-
-    // Check if offline before fetching
-    if (isOffline()) {
-      setIsFetchingOriginal(false);
-      setError("iPod requires an internet connection");
-      // Don't show toast here - let the component handle it to avoid duplicates
-      return;
-    }
-
-    const cacheKey = `${title}__${artist}__${album}`;
-    const isForced = lastRefreshNonceRef.current !== refreshNonce;
-    if (!isForced && cacheKey === cachedKeyRef.current) {
-      // If original lyrics are cached, we might still need to translate if translateTo changed.
-      // The translation effect will handle this.
-      setIsFetchingOriginal(false); // Not fetching if original is cached
-      lastRefreshNonceRef.current = refreshNonce;
-      return;
-    }
 
     let cancelled = false;
     const controller = new AbortController();
@@ -108,7 +122,7 @@ export function useLyrics({
       console.warn("Lyrics fetch timed out");
     }, 15000);
 
-    // Build request body based on whether we have overrides
+    // Build request body
     const requestBody: {
       title?: string;
       artist?: string;
@@ -130,6 +144,7 @@ export function useLyrics({
 
     if (selectedMatch) {
       // Use fetch action with selected match
+      // force flag is already set based on isForced (nonce change from refreshLyrics())
       requestBody.action = "fetch";
       requestBody.selectedHash = selectedMatch.hash;
       requestBody.selectedAlbumId = selectedMatch.albumId;
@@ -191,9 +206,11 @@ export function useLyrics({
         useIpodStore.setState({ currentLyrics: null });
       })
       .finally(() => {
-        if (!cancelled) setIsFetchingOriginal(false);
-        lastRefreshNonceRef.current = refreshNonce;
         clearTimeout(timeoutId);
+        if (!cancelled) {
+          setIsFetchingOriginal(false);
+          lastRefreshNonceRef.current = refreshNonce;
+        }
       });
 
     return () => {
@@ -348,6 +365,7 @@ export function useLyrics({
 
   return {
     lines: displayLines,
+    originalLines,
     currentLine,
     isLoading: isFetchingOriginal,
     isTranslating,

@@ -695,6 +695,7 @@ export function IpodScreen({
             {/* Lyrics Overlay */}
             <LyricsDisplay
               lines={lyricsControls.lines}
+              originalLines={lyricsControls.originalLines}
               currentLine={lyricsControls.currentLine}
               isLoading={lyricsControls.isLoading}
               error={lyricsControls.error}

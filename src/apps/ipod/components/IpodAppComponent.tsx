@@ -2896,6 +2896,7 @@ export function IpodAppComponent({
                             {/* Use the hook result from the top level */}
                             <LyricsDisplay
                               lines={fullScreenLyricsControls.lines}
+                              originalLines={fullScreenLyricsControls.originalLines}
                               currentLine={fullScreenLyricsControls.currentLine}
                               isLoading={fullScreenLyricsControls.isLoading}
                               error={fullScreenLyricsControls.error}

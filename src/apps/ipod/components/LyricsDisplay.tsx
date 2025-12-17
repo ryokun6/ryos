@@ -21,6 +21,8 @@ interface FuriganaSegment {
 
 interface LyricsDisplayProps {
   lines: LyricLine[];
+  /** Original untranslated lyrics (used for furigana) */
+  originalLines?: LyricLine[];
   currentLine: number;
   isLoading: boolean;
   error?: string;
@@ -184,6 +186,7 @@ const getVariants = (
 
 export function LyricsDisplay({
   lines,
+  originalLines,
   currentLine,
   isLoading,
   error,
@@ -215,6 +218,10 @@ export function LyricsDisplay({
   const furiganaCacheKeyRef = useRef<string>("");
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
 
+  // Determine if we're showing original lyrics (not translations)
+  // Furigana should only be applied to original Japanese lyrics
+  const isShowingOriginal = !originalLines || lines === originalLines;
+
   // Check if text is Japanese (contains kanji AND hiragana/katakana)
   // This distinguishes Japanese from Chinese (which only has hanzi, no kana)
   const isJapaneseText = useCallback((text: string): boolean => {
@@ -223,22 +230,25 @@ export function LyricsDisplay({
     return hasKanji && hasKana;
   }, []);
 
-  // Fetch furigana for lines when enabled
+  // Use original lines for furigana fetching (furigana only applies to original Japanese text)
+  const linesForFurigana = originalLines || lines;
+
+  // Fetch furigana for original lines when enabled
   useEffect(() => {
-    if (japaneseFurigana !== JapaneseFurigana.On || lines.length === 0) {
+    if (japaneseFurigana !== JapaneseFurigana.On || linesForFurigana.length === 0) {
       setIsFetchingFurigana(false);
       return;
     }
 
     // Check if any lines are Japanese text (has both kanji and kana)
-    const hasJapanese = lines.some((line) => isJapaneseText(line.words));
+    const hasJapanese = linesForFurigana.some((line) => isJapaneseText(line.words));
     if (!hasJapanese) {
       setIsFetchingFurigana(false);
       return;
     }
 
-    // Create cache key from lines
-    const cacheKey = JSON.stringify(lines.map((l) => l.startTimeMs + l.words));
+    // Create cache key from original lines
+    const cacheKey = JSON.stringify(linesForFurigana.map((l) => l.startTimeMs + l.words));
     if (cacheKey === furiganaCacheKeyRef.current) {
       setIsFetchingFurigana(false);
       return; // Already fetched for these lines
@@ -250,7 +260,7 @@ export function LyricsDisplay({
     fetch(getApiUrl("/api/furigana"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lines }),
+      body: JSON.stringify({ lines: linesForFurigana }),
       signal: controller.signal,
     })
       .then(async (res) => {
@@ -261,7 +271,7 @@ export function LyricsDisplay({
       })
       .then((data: { annotatedLines: FuriganaSegment[][] }) => {
         const newMap = new Map<string, FuriganaSegment[]>();
-        lines.forEach((line, index) => {
+        linesForFurigana.forEach((line, index) => {
           if (data.annotatedLines[index]) {
             newMap.set(line.startTimeMs, data.annotatedLines[index]);
           }
@@ -280,12 +290,14 @@ export function LyricsDisplay({
     return () => {
       controller.abort();
     };
-  }, [lines, japaneseFurigana, isJapaneseText]);
+  }, [linesForFurigana, japaneseFurigana, isJapaneseText]);
 
   // Render text with furigana using ruby elements
+  // Only applies furigana when showing original lyrics (not translations)
   const renderWithFurigana = useCallback(
     (line: LyricLine, processedText: string): React.ReactNode => {
-      if (japaneseFurigana !== JapaneseFurigana.On) {
+      // Don't apply furigana if disabled or if we're showing translations
+      if (japaneseFurigana !== JapaneseFurigana.On || !isShowingOriginal) {
         return processedText;
       }
 
@@ -312,7 +324,7 @@ export function LyricsDisplay({
         </>
       );
     },
-    [japaneseFurigana, furiganaMap]
+    [japaneseFurigana, furiganaMap, isShowingOriginal]
   );
 
   const isChineseText = (text: string) => {
@@ -429,12 +441,8 @@ export function LyricsDisplay({
 
     // Handle initial display before any line is "current" (currentLine < 0)
     if (currentLine < 0) {
-      // Show same number of lines as when currentLine is 0
-      if (alignment === LyricsAlignment.Center) {
-        return lines.slice(0, 1).filter(Boolean) as LyricLine[];
-      }
-      // FocusThree: show first 2 lines (current + next, like when currentLine is 0)
-      return lines.slice(0, 2).filter(Boolean) as LyricLine[];
+      // Show just the first line initially for both Center and FocusThree
+      return lines.slice(0, 1).filter(Boolean) as LyricLine[];
     }
 
     if (alignment === LyricsAlignment.Center) {
