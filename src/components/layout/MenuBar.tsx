@@ -23,7 +23,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { StartMenu } from "./StartMenu";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { Slider } from "@/components/ui/slider";
-import { Volume1, Volume2, VolumeX, Settings, ChevronUp, LayoutGrid } from "lucide-react";
+import { Volume1, Volume2, VolumeX, Settings, ChevronUp, MoreHorizontal } from "lucide-react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getAppIconPath } from "@/config/appRegistry";
@@ -1457,8 +1457,9 @@ function ExposeButton() {
         marginRight: "4px",
       }}
       title="Mission Control (F3)"
+      aria-label="Mission Control (F3)"
     >
-      <LayoutGrid className="w-4 h-4" />
+      <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
     </button>
   );
 }
