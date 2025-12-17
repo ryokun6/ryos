@@ -39,6 +39,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
             artist: v.artist as string | undefined,
             album: (v.album as string | undefined) ?? "",
             lyricOffset: v.lyricOffset as number | undefined,
+            lyricsSearch: v.lyricsSearch as Track["lyricsSearch"],
           })
         );
         const serverVersion = data.version || 1;
@@ -62,7 +63,9 @@ export function useLibraryUpdateChecker(isActive: boolean) {
               currentTrack.artist !== serverTrack.artist ||
               currentTrack.album !== serverTrack.album ||
               currentTrack.url !== serverTrack.url ||
-              currentTrack.lyricOffset !== serverTrack.lyricOffset;
+              currentTrack.lyricOffset !== serverTrack.lyricOffset ||
+              // Check if server has lyricsSearch but user doesn't
+              (serverTrack.lyricsSearch?.selection && !currentTrack.lyricsSearch?.selection);
             if (hasChanges) tracksUpdated++;
           }
         });

@@ -99,7 +99,7 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
       const data = await res.json();
       const videos: unknown[] = data.videos || data;
       const version = data.version || 1;
-      const tracks = videos.map((v) => {
+      const tracks: Track[] = videos.map((v) => {
         const video = v as Record<string, unknown>;
         return {
           id: video.id as string,
@@ -108,6 +108,7 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
           artist: video.artist as string | undefined,
           album: (video.album as string | undefined) ?? "",
           lyricOffset: video.lyricOffset as number | undefined,
+          lyricsSearch: video.lyricsSearch as Track["lyricsSearch"],
         };
       });
       // Update cache with fresh data
@@ -800,14 +801,20 @@ export const useIpodStore = create<IpodState>()(
             const serverTrack = serverTrackMap.get(currentTrack.id);
             if (serverTrack) {
               // Track exists on server, check if metadata needs updating
-              const hasChanges =
+              const hasMetadataChanges =
                 currentTrack.title !== serverTrack.title ||
                 currentTrack.artist !== serverTrack.artist ||
                 currentTrack.album !== serverTrack.album ||
                 currentTrack.url !== serverTrack.url ||
                 currentTrack.lyricOffset !== serverTrack.lyricOffset;
 
-              if (hasChanges) {
+              // Check if we should update lyricsSearch:
+              // - Server has lyricsSearch but user doesn't have one yet
+              const shouldUpdateLyricsSearch =
+                serverTrack.lyricsSearch?.selection &&
+                !currentTrack.lyricsSearch?.selection;
+
+              if (hasMetadataChanges || shouldUpdateLyricsSearch) {
                 tracksUpdated++;
                 // Update with server metadata but preserve any user customizations we want to keep
                 return {
@@ -817,6 +824,10 @@ export const useIpodStore = create<IpodState>()(
                   album: serverTrack.album,
                   url: serverTrack.url,
                   lyricOffset: serverTrack.lyricOffset,
+                  // Only set lyricsSearch from server if user doesn't have one
+                  ...(shouldUpdateLyricsSearch && {
+                    lyricsSearch: serverTrack.lyricsSearch,
+                  }),
                 };
               }
             }
