@@ -15,7 +15,7 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
 
-interface SoundboardMenuBarProps extends Omit<AppProps, "onClose"> {
+interface SoundboardMenuBarProps extends Omit<AppProps, "onClose" | "instanceId"> {
   onClose: () => void;
   onNewBoard?: () => void;
   onImportBoard?: () => void;

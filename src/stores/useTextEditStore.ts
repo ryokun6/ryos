@@ -26,18 +26,13 @@ export interface TextEditStoreState {
   getForegroundInstance: () => TextEditInstance | null;
 }
 
-const CURRENT_TEXTEDIT_STORE_VERSION = 2;
-
 export const useTextEditStore = create<TextEditStoreState>()(
   persist(
     (set, get) => ({
-      // Instance state
       instances: {},
 
-      // Instance management
       createInstance: (instanceId) =>
         set((state) => {
-          // Don't create if instance already exists
           if (state.instances[instanceId]) {
             return state;
           }
@@ -92,7 +87,6 @@ export const useTextEditStore = create<TextEditStoreState>()(
       },
 
       getForegroundInstance: () => {
-        // Get the foreground app instance from app store
         const appStore = useAppStore.getState();
         const foregroundInstance = appStore.getForegroundInstance();
 
@@ -105,18 +99,6 @@ export const useTextEditStore = create<TextEditStoreState>()(
     }),
     {
       name: "ryos:textedit",
-      version: CURRENT_TEXTEDIT_STORE_VERSION,
-      migrate: (persistedState: unknown, version: number) => {
-        // Migrate from v1 to v2 (single window to multi-instance)
-        // Legacy state is migrated but not used at runtime anymore
-        if (version < 2) {
-          return {
-            instances: {},
-          };
-        }
-
-        return persistedState;
-      },
       partialize: (state) => ({
         instances: Object.fromEntries(
           Object.entries(state.instances).map(([id, inst]) => {
@@ -125,7 +107,6 @@ export const useTextEditStore = create<TextEditStoreState>()(
               id,
               {
                 ...inst,
-                // Only persist editor state for new/unsaved documents
                 contentJson: shouldKeepContent ? inst.contentJson : null,
               },
             ];

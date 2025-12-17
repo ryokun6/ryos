@@ -12,12 +12,10 @@ export interface AppProps<TInitialData = unknown> {
     title: string;
     description: string;
   }>;
-  // Instance-specific props (optional for backward compatibility)
-  instanceId?: string;
+  instanceId: string;
   title?: string;
   onNavigateNext?: () => void;
   onNavigatePrevious?: () => void;
-  // Menu bar prop for XP/98 themes
   menuBar?: React.ReactNode;
 }
 

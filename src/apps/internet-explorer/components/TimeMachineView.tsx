@@ -17,12 +17,8 @@ import {
 // Import useAppStore for shader selection
 import { useAppStore } from "@/stores/useAppStore";
 import { cn } from "@/lib/utils";
-// Import sound hook and paths
 import { useSound, Sounds } from "@/hooks/useSound";
-// Import ShareLinkDialog
-// import { ShareLinkDialog } from "./ShareLinkDialog"; // Old import, to be removed
-import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog"; // New import
-// Import the new navigation controls
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import TimeNavigationControls from "./TimeNavigationControls";
 import { useTranslation } from "react-i18next";
 

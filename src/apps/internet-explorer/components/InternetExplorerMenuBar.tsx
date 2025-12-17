@@ -25,7 +25,8 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
 
-interface InternetExplorerMenuBarProps extends Omit<AppProps, "onClose"> {
+interface InternetExplorerMenuBarProps extends Omit<AppProps, "onClose" | "instanceId"> {
+  instanceId?: string;
   onRefresh?: () => void;
   onStop?: () => void;
   onGoToUrl?: () => void;
