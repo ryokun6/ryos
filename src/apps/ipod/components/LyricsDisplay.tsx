@@ -258,9 +258,6 @@ export function LyricsDisplay({
     const controller = new AbortController();
     setIsFetchingFurigana(true);
 
-    // Set a longer timeout for AI processing (60 seconds)
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-
     fetch(getApiUrl("/api/furigana"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -274,7 +271,6 @@ export function LyricsDisplay({
         return res.json();
       })
       .then((data: { annotatedLines: FuriganaSegment[][] }) => {
-        clearTimeout(timeoutId);
         const newMap = new Map<string, FuriganaSegment[]>();
         linesForFurigana.forEach((line, index) => {
           if (data.annotatedLines[index]) {
@@ -286,7 +282,6 @@ export function LyricsDisplay({
         setIsFetchingFurigana(false);
       })
       .catch((err) => {
-        clearTimeout(timeoutId);
         if (err.name !== "AbortError") {
           console.error("Failed to fetch furigana:", err);
         }
@@ -294,7 +289,6 @@ export function LyricsDisplay({
       });
 
     return () => {
-      clearTimeout(timeoutId);
       controller.abort();
     };
   }, [linesForFurigana, japaneseFurigana, isJapaneseText]);
