@@ -77,6 +77,8 @@ export function useLyrics({
     setError(undefined);
 
     if (!title && !artist && !album) {
+      // Clear cache key so next valid track will fetch lyrics even if it has the same metadata
+      cachedKeyRef.current = null;
       setIsFetchingOriginal(false);
       return;
     }

@@ -296,7 +296,12 @@ export function LyricsDisplay({
 
     // Handle initial display before any line is "current" (currentLine < 0)
     if (currentLine < 0) {
-      return lines.slice(0, 1).filter(Boolean) as LyricLine[];
+      // Show same number of lines as when currentLine is 0
+      if (alignment === LyricsAlignment.Center) {
+        return lines.slice(0, 1).filter(Boolean) as LyricLine[];
+      }
+      // FocusThree: show first 2 lines (current + next, like when currentLine is 0)
+      return lines.slice(0, 2).filter(Boolean) as LyricLine[];
     }
 
     if (alignment === LyricsAlignment.Center) {
