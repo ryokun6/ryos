@@ -3,7 +3,7 @@ import { JSONContent } from "@tiptap/core";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 
 interface UseTextEditStateProps {
-  instanceId?: string;
+  instanceId: string;
 }
 
 export function useTextEditState({ instanceId }: UseTextEditStateProps) {
@@ -19,89 +19,45 @@ export function useTextEditState({ instanceId }: UseTextEditStateProps) {
   );
   const textEditInstances = useTextEditStore((state) => state.instances);
 
-  // Legacy store methods for single-window mode
-  const legacySetFilePath = useTextEditStore((state) => state.setLastFilePath);
-  const legacySetContentJson = useTextEditStore(
-    (state) => state.setContentJson
-  );
-  const legacySetHasUnsavedChanges = useTextEditStore(
-    (state) => state.setHasUnsavedChanges
-  );
-  const legacyFilePath = useTextEditStore((state) => state.lastFilePath);
-  const legacyContentJson = useTextEditStore((state) => state.contentJson);
-  const legacyHasUnsavedChanges = useTextEditStore(
-    (state) => state.hasUnsavedChanges
-  );
-
-  // Create instance when component mounts (only if using instanceId)
+  // Create instance when component mounts
   useEffect(() => {
-    if (instanceId) {
-      createTextEditInstance(instanceId);
-    }
+    createTextEditInstance(instanceId);
   }, [instanceId, createTextEditInstance]);
 
-  // Clean up instance when component unmounts (only if using instanceId)
+  // Clean up instance when component unmounts
   useEffect(() => {
-    if (!instanceId) return;
-
     return () => {
       removeTextEditInstance(instanceId);
     };
   }, [instanceId, removeTextEditInstance]);
 
-  // Get current instance data (only if using instanceId)
-  const currentInstance = instanceId ? textEditInstances[instanceId] : null;
+  // Get current instance data
+  const currentInstance = textEditInstances[instanceId] || null;
 
-  // Use instance data if available, otherwise use legacy store
-  const currentFilePath = instanceId
-    ? currentInstance?.filePath || null
-    : legacyFilePath;
-
-  const contentJson = instanceId
-    ? currentInstance?.contentJson || null
-    : legacyContentJson;
-
-  const hasUnsavedChanges = instanceId
-    ? currentInstance?.hasUnsavedChanges || false
-    : legacyHasUnsavedChanges;
+  // Instance state
+  const currentFilePath = currentInstance?.filePath || null;
+  const contentJson = currentInstance?.contentJson || null;
+  const hasUnsavedChanges = currentInstance?.hasUnsavedChanges || false;
 
   const setCurrentFilePath = useCallback(
     (path: string | null) => {
-      if (instanceId) {
-        // Always use instance-specific method for instances
-        updateTextEditInstance(instanceId, { filePath: path });
-      } else {
-        // Only use legacy method for non-instance mode
-        legacySetFilePath(path);
-      }
+      updateTextEditInstance(instanceId, { filePath: path });
     },
-    [instanceId, updateTextEditInstance, legacySetFilePath]
+    [instanceId, updateTextEditInstance]
   );
 
   const setContentJson = useCallback(
     (json: JSONContent | null) => {
-      if (instanceId) {
-        // Always use instance-specific method for instances
-        updateTextEditInstance(instanceId, { contentJson: json });
-      } else {
-        // Only use legacy method for non-instance mode
-        legacySetContentJson(json);
-      }
+      updateTextEditInstance(instanceId, { contentJson: json });
     },
-    [instanceId, updateTextEditInstance, legacySetContentJson]
+    [instanceId, updateTextEditInstance]
   );
 
   const setHasUnsavedChanges = useCallback(
     (val: boolean) => {
-      if (instanceId) {
-        // Always use instance-specific method for instances
-        updateTextEditInstance(instanceId, { hasUnsavedChanges: val });
-      } else {
-        // Only use legacy method for non-instance mode
-        legacySetHasUnsavedChanges(val);
-      }
+      updateTextEditInstance(instanceId, { hasUnsavedChanges: val });
     },
-    [instanceId, updateTextEditInstance, legacySetHasUnsavedChanges]
+    [instanceId, updateTextEditInstance]
   );
 
   return {
@@ -110,18 +66,13 @@ export function useTextEditState({ instanceId }: UseTextEditStateProps) {
     contentJson,
     hasUnsavedChanges,
     currentInstance,
-    
+
     // State setters
     setCurrentFilePath,
     setContentJson,
     setHasUnsavedChanges,
-    
+
     // Instance management
     instanceId,
-    
-    // Legacy state (for backwards compatibility)
-    legacyFilePath,
-    legacyContentJson,
-    legacyHasUnsavedChanges,
   };
 }

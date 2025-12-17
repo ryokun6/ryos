@@ -122,42 +122,36 @@ export function FinderAppComponent({
     (state) => state.setViewTypeForPath
   );
 
-  // Legacy store methods for single-window mode
-  const legacyViewType = useFinderStore((state) => state.viewType);
-  const legacySortType = useFinderStore((state) => state.sortType);
-  const legacySetViewType = useFinderStore((state) => state.setViewType);
-  const legacySetSortType = useFinderStore((state) => state.setSortType);
-
-  // Create instance when component mounts (only if using instanceId)
+  // Create instance when component mounts
   useEffect(() => {
-    if (instanceId) {
-      // Check if instance already exists (from persisted state)
-      const existingInstance = finderInstances[instanceId];
-      if (existingInstance) {
-        // Instance already exists from persisted state, don't recreate
-        return;
-      }
+    if (!instanceId) return;
 
-      // Get initial path from initialData or localStorage
-      const typedInitialData = initialData as FinderInitialData | undefined;
-      const initialPath =
-        typedInitialData?.path ||
-        localStorage.getItem("app_finder_initialPath") ||
-        "/";
-      createFinderInstance(instanceId, initialPath);
+    // Check if instance already exists (from persisted state)
+    const existingInstance = finderInstances[instanceId];
+    if (existingInstance) {
+      // Instance already exists from persisted state, don't recreate
+      return;
+    }
 
-      // Apply initial view preference if provided
-      if (typedInitialData?.viewType) {
-        setViewTypeForPath(initialPath, typedInitialData.viewType);
-        updateFinderInstance(instanceId, {
-          viewType: typedInitialData.viewType,
-        });
-      }
+    // Get initial path from initialData or localStorage
+    const typedInitialData = initialData as FinderInitialData | undefined;
+    const initialPath =
+      typedInitialData?.path ||
+      localStorage.getItem("app_finder_initialPath") ||
+      "/";
+    createFinderInstance(instanceId, initialPath);
 
-      // Clear the localStorage if we used it
-      if (localStorage.getItem("app_finder_initialPath")) {
-        localStorage.removeItem("app_finder_initialPath");
-      }
+    // Apply initial view preference if provided
+    if (typedInitialData?.viewType) {
+      setViewTypeForPath(initialPath, typedInitialData.viewType);
+      updateFinderInstance(instanceId, {
+        viewType: typedInitialData.viewType,
+      });
+    }
+
+    // Clear the localStorage if we used it
+    if (localStorage.getItem("app_finder_initialPath")) {
+      localStorage.removeItem("app_finder_initialPath");
     }
   }, [
     instanceId,
@@ -192,27 +186,20 @@ export function FinderAppComponent({
     };
   }, [instanceId, removeFinderInstance]);
 
-  // Get current instance data (only if using instanceId)
+  // Get current instance data
   const currentInstance = instanceId ? finderInstances[instanceId] : null;
 
-  // Use instance data if available, otherwise use legacy store
-  const viewType = instanceId
-    ? currentInstance?.viewType || "list"
-    : legacyViewType;
-
-  const sortType = instanceId
-    ? currentInstance?.sortType || "name"
-    : legacySortType;
+  // Instance state
+  const viewType = currentInstance?.viewType || "list";
+  const sortType = currentInstance?.sortType || "name";
 
   const setSortType = useCallback(
     (type: SortType) => {
       if (instanceId) {
         updateFinderInstance(instanceId, { sortType: type });
-      } else {
-        legacySetSortType(type);
       }
     },
-    [instanceId, updateFinderInstance, legacySetSortType]
+    [instanceId, updateFinderInstance]
   );
 
   // Get all functionality from useFileSystem hook
@@ -254,17 +241,9 @@ export function FinderAppComponent({
       // Keep instance state in sync for compatibility
       if (instanceId) {
         updateFinderInstance(instanceId, { viewType: type });
-      } else {
-        legacySetViewType(type);
       }
     },
-    [
-      currentPath,
-      instanceId,
-      setViewTypeForPath,
-      updateFinderInstance,
-      legacySetViewType,
-    ]
+    [currentPath, instanceId, setViewTypeForPath, updateFinderInstance]
   );
 
   // Wrap the original handleFileOpen - now only calls the original without TextEditStore updates
