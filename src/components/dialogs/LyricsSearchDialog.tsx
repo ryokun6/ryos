@@ -199,7 +199,7 @@ export function LyricsSearchDialog({
           disabled={isSearching}
         />
         <Button
-          variant={isMacTheme ? "default" : "retro"}
+          variant={isMacTheme ? "secondary" : "retro"}
           onClick={handleSearch}
           disabled={isSearching || !query.trim()}
           className={cn(

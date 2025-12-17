@@ -391,15 +391,6 @@ export function IpodMenuBar({
                 {t("apps.ipod.menu.alternating")}
               </MenubarCheckboxItem>
 
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-
-              <MenubarItem
-                onClick={onRefreshLyrics || refreshLyrics}
-                className="text-md h-6 px-3"
-                disabled={tracks.length === 0 || currentIndex === -1}
-              >
-                {t("apps.ipod.menu.refreshLyrics")}
-              </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>
 
@@ -430,6 +421,14 @@ export function IpodMenuBar({
               </MenubarRadioGroup>
             </MenubarSubContent>
           </MenubarSub>
+
+          <MenubarItem
+            onClick={onRefreshLyrics || refreshLyrics}
+            className="text-md h-6 px-3"
+            disabled={tracks.length === 0 || currentIndex === -1}
+          >
+            {t("apps.ipod.menu.refreshLyrics")}
+          </MenubarItem>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
