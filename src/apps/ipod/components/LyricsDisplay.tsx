@@ -201,7 +201,6 @@ export function LyricsDisplay({
     new Map()
   );
   const furiganaCacheKeyRef = useRef<string>("");
-  const [, setIsFetchingFurigana] = useState(false);
 
   // Determine if we're showing original lyrics (not translations)
   // Furigana should only be applied to original Japanese lyrics
@@ -221,26 +220,22 @@ export function LyricsDisplay({
   // Fetch furigana for original lines when enabled - now handles streaming responses
   useEffect(() => {
     if (japaneseFurigana !== JapaneseFurigana.On || linesForFurigana.length === 0) {
-      setIsFetchingFurigana(false);
       return;
     }
 
     // Check if any lines are Japanese text (has both kanji and kana)
     const hasJapanese = linesForFurigana.some((line) => isJapaneseText(line.words));
     if (!hasJapanese) {
-      setIsFetchingFurigana(false);
       return;
     }
 
     // Create cache key from original lines
     const cacheKey = JSON.stringify(linesForFurigana.map((l) => l.startTimeMs + l.words));
     if (cacheKey === furiganaCacheKeyRef.current) {
-      setIsFetchingFurigana(false);
       return; // Already fetched for these lines
     }
 
     const controller = new AbortController();
-    setIsFetchingFurigana(true);
 
     const MAX_RETRIES = 3;
     const INITIAL_DELAY = 1000; // 1 second
@@ -294,7 +289,6 @@ export function LyricsDisplay({
                   const finalMap = new Map(collectedFurigana);
                   setFuriganaMap(finalMap);
                   furiganaCacheKeyRef.current = cacheKey;
-                  setIsFetchingFurigana(false);
                 }
               } else if (eventData.type === "error") {
                 throw new Error(eventData.message);
@@ -310,7 +304,6 @@ export function LyricsDisplay({
       if (!controller.signal.aborted && collectedFurigana.size > 0) {
         setFuriganaMap(new Map(collectedFurigana));
         furiganaCacheKeyRef.current = cacheKey;
-        setIsFetchingFurigana(false);
       }
     };
 
@@ -324,7 +317,6 @@ export function LyricsDisplay({
       });
       setFuriganaMap(newMap);
       furiganaCacheKeyRef.current = cacheKey;
-      setIsFetchingFurigana(false);
     };
 
     const fetchWithRetry = async (attempt: number): Promise<void> => {
@@ -369,7 +361,6 @@ export function LyricsDisplay({
         }
 
         console.error("Failed to fetch furigana after all retries:", err);
-        setIsFetchingFurigana(false);
       }
     };
 
