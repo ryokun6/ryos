@@ -202,6 +202,7 @@ export function LyricsDisplay({
     new Map()
   );
   const furiganaCacheKeyRef = useRef<string>("");
+  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
   
   // Track cache force nonce for clearing caches
   const lyricsCacheForceNonce = useIpodStore((s) => s.lyricsCacheForceNonce);
@@ -250,6 +251,9 @@ export function LyricsDisplay({
       return; // Already fetched for these lines
     }
 
+    // Start loading
+    setIsFetchingFurigana(true);
+    
     const controller = new AbortController();
 
     const MAX_RETRIES = 3;
@@ -304,6 +308,7 @@ export function LyricsDisplay({
                   const finalMap = new Map(collectedFurigana);
                   setFuriganaMap(finalMap);
                   furiganaCacheKeyRef.current = cacheKey;
+                  setIsFetchingFurigana(false);
                 }
               } else if (eventData.type === "error") {
                 throw new Error(eventData.message);
