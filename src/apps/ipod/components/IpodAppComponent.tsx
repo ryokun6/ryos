@@ -2984,6 +2984,7 @@ export function IpodAppComponent({
                               interactive={isIOSSafari ? false : isPlaying}
                               bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
                               spinnerSizeClass="w-[min(5vw,5vh)] h-[min(5vw,5vh)]"
+                              spinnerTopClass="top-[calc(100px+3dvh)]"
                             />
                           </div>
                         )}

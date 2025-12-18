@@ -76,6 +76,8 @@ interface LyricsDisplayProps {
   containerStyle?: CSSProperties;
   /** Optional tailwind class for loading spinner size (defaults to "w-4 h-4") */
   spinnerSizeClass?: string;
+  /** Optional tailwind class for spinner top position (defaults to "top-[13px]") */
+  spinnerTopClass?: string;
 }
 
 const ANIMATION_CONFIG = {
@@ -91,7 +93,7 @@ const ANIMATION_CONFIG = {
 } as const;
 
 // Processing indicator shown in top-right when translating or fetching furigana
-const ProcessingIndicator = ({ sizeClass = "w-5 h-5" }: { sizeClass?: string }) => {
+const ProcessingIndicator = ({ sizeClass = "w-5 h-5", topClass = "top-[13px]" }: { sizeClass?: string; topClass?: string }) => {
   // Parse the size from sizeClass (e.g., "w-4 h-4" -> 16, "w-[min(5vw,5vh)]" -> use md)
   const getSize = (): number | "sm" | "md" | "lg" => {
     const match = sizeClass.match(/w-(\d+)/);
@@ -108,7 +110,7 @@ const ProcessingIndicator = ({ sizeClass = "w-5 h-5" }: { sizeClass?: string }) 
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ duration: 0.2 }}
-      className="absolute top-[13px] right-3 pointer-events-none z-50"
+      className={`absolute ${topClass} right-3 pointer-events-none z-50`}
     >
       <ActivityIndicator
         size={getSize()}
@@ -123,11 +125,13 @@ const LoadingState = ({
   textSizeClass = "text-[12px]",
   fontClassName = "font-geneva-12",
   spinnerSizeClass = "w-5 h-5",
+  spinnerTopClass = "top-[13px]",
 }: {
   bottomPaddingClass?: string;
   textSizeClass?: string;
   fontClassName?: string;
   spinnerSizeClass?: string;
+  spinnerTopClass?: string;
 }) => {
   const { t } = useTranslation();
   
@@ -149,7 +153,7 @@ const LoadingState = ({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
         transition={{ duration: 0.2 }}
-        className="absolute top-[13px] right-3 pointer-events-none z-50"
+        className={`absolute ${spinnerTopClass} right-3 pointer-events-none z-50`}
       >
         <ActivityIndicator
           size={getSize()}
@@ -249,6 +253,7 @@ export function LyricsDisplay({
   fontClassName = "font-geneva-12",
   containerStyle,
   spinnerSizeClass = "w-5 h-5",
+  spinnerTopClass = "top-[13px]",
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -647,6 +652,7 @@ export function LyricsDisplay({
         textSizeClass={textSizeClass}
         fontClassName={fontClassName}
         spinnerSizeClass={spinnerSizeClass}
+        spinnerTopClass={spinnerTopClass}
       />
     );
   if (error)
@@ -671,9 +677,9 @@ export function LyricsDisplay({
 
   return (
     <>
-      {/* Processing indicator in top-left corner */}
+      {/* Processing indicator in top-right corner */}
       <AnimatePresence>
-        {isProcessing && <ProcessingIndicator sizeClass={spinnerSizeClass} />}
+        {isProcessing && <ProcessingIndicator sizeClass={spinnerSizeClass} topClass={spinnerTopClass} />}
       </AnimatePresence>
       <motion.div
       layout={alignment === LyricsAlignment.Alternating}
