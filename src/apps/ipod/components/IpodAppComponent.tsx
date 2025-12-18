@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { useLyrics } from "@/hooks/useLyrics";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
@@ -248,6 +249,9 @@ interface FullScreenPortalProps {
   onToggleJapaneseFurigana: () => void;
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
+  // Lyrics loading state
+  isLoadingLyrics?: boolean;
+  isProcessingLyrics?: boolean;
 }
 
 function FullScreenPortal({
@@ -271,6 +275,8 @@ function FullScreenPortal({
   currentJapaneseFurigana,
   onToggleJapaneseFurigana,
   fullScreenPlayerRef,
+  isLoadingLyrics,
+  isProcessingLyrics,
 }: FullScreenPortalProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -740,7 +746,7 @@ function FullScreenPortal({
     >
       {/* Toolbar moved into normal flow below children */}
 
-      {/* Status Display - top right with minimal safe-area offsets */}
+      {/* Status Display - top left with minimal safe-area offsets */}
       <AnimatePresence>
         {statusMessage && (
           <motion.div
@@ -769,6 +775,28 @@ function FullScreenPortal({
                 </div>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Activity Indicator - top right, aligned with status display */}
+      <AnimatePresence>
+        {(isLoadingLyrics || isProcessingLyrics) && (
+          <motion.div
+            className="absolute z-40 pointer-events-none"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              top: "calc(max(env(safe-area-inset-top), 0.75rem) + clamp(1rem, 6dvh, 3rem))",
+              right: "calc(max(env(safe-area-inset-right), 0.75rem) + clamp(1rem, 6dvw, 4rem))",
+            }}
+          >
+            <ActivityIndicator
+              size="lg"
+              className="w-[min(6vw,6vh)] h-[min(6vw,6vh)] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -2859,6 +2887,8 @@ export function IpodAppComponent({
             currentJapaneseFurigana={japaneseFurigana}
             onToggleJapaneseFurigana={toggleFurigana}
             fullScreenPlayerRef={fullScreenPlayerRef}
+            isLoadingLyrics={fullScreenLyricsControls.isLoading}
+            isProcessingLyrics={fullScreenLyricsControls.isTranslating}
           >
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
