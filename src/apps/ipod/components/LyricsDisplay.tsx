@@ -126,6 +126,24 @@ const ErrorState = ({
   </div>
 );
 
+const FuriganaLoadingIndicator = ({
+  textSizeClass = "text-[10px]",
+  fontClassName = "font-geneva-12",
+}: {
+  textSizeClass?: string;
+  fontClassName?: string;
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <div className="absolute top-2 left-0 right-0 pointer-events-none flex justify-center z-50">
+      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60 text-white`}>
+        {t("apps.ipod.status.loadingFurigana")}
+      </div>
+    </div>
+  );
+};
+
 const getVariants = (
   position: number,
   isAlternating: boolean,
@@ -324,6 +342,7 @@ export function LyricsDisplay({
       if (!controller.signal.aborted && collectedFurigana.size > 0) {
         setFuriganaMap(new Map(collectedFurigana));
         furiganaCacheKeyRef.current = cacheKey;
+        setIsFetchingFurigana(false);
       }
     };
 
@@ -337,6 +356,7 @@ export function LyricsDisplay({
       });
       setFuriganaMap(newMap);
       furiganaCacheKeyRef.current = cacheKey;
+      setIsFetchingFurigana(false);
     };
 
     const fetchWithRetry = async (attempt: number): Promise<void> => {
@@ -365,6 +385,7 @@ export function LyricsDisplay({
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
           // Request was aborted, don't retry
+          setIsFetchingFurigana(false);
           return;
         }
 
@@ -375,12 +396,16 @@ export function LyricsDisplay({
           await new Promise((resolve) => setTimeout(resolve, delay));
           
           // Check if aborted during delay
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted) {
+            setIsFetchingFurigana(false);
+            return;
+          }
           
           return fetchWithRetry(attempt + 1);
         }
 
         console.error("Failed to fetch furigana after all retries:", err);
+        setIsFetchingFurigana(false);
       }
     };
 
@@ -388,6 +413,7 @@ export function LyricsDisplay({
 
     return () => {
       controller.abort();
+      setIsFetchingFurigana(false);
     };
   }, [linesForFurigana, japaneseFurigana, isJapaneseText, lyricsCacheForceNonce]);
 
@@ -632,6 +658,12 @@ export function LyricsDisplay({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
+      {isFetchingFurigana && (
+        <FuriganaLoadingIndicator
+          textSizeClass={textSizeClass}
+          fontClassName={fontClassName}
+        />
+      )}
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
           const isCurrent = line === lines[currentLine];
