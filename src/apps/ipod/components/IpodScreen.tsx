@@ -725,7 +725,6 @@ export function IpodScreen({
               koreanDisplay={koreanDisplay}
               japaneseFurigana={japaneseFurigana}
               isTranslating={lyricsControls.isTranslating}
-              hideSpinner={true}
               onAdjustOffset={(deltaMs) => {
                 adjustLyricOffset(deltaMs);
                 const newOffset = lyricOffset + deltaMs;

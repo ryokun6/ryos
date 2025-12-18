@@ -12,7 +12,6 @@ import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
-import { ActivityIndicator } from "@/components/ui/activity-indicator";
 
 // Type for furigana segments from API
 interface FuriganaSegment {
@@ -74,14 +73,6 @@ interface LyricsDisplayProps {
   fontClassName?: string;
   /** Optional inline styles for the outer container (e.g., dynamic gap) */
   containerStyle?: CSSProperties;
-  /** Optional tailwind class for loading spinner size (defaults to "w-4 h-4") */
-  spinnerSizeClass?: string;
-  /** Optional tailwind class for spinner top position (defaults to "top-[13px]") */
-  spinnerTopClass?: string;
-  /** Optional inline styles for spinner container position (overrides spinnerTopClass/right-3) */
-  spinnerContainerStyle?: CSSProperties;
-  /** Hide the internal activity indicator (useful when rendering externally) */
-  hideSpinner?: boolean;
 }
 
 const ANIMATION_CONFIG = {
@@ -96,104 +87,25 @@ const ANIMATION_CONFIG = {
   },
 } as const;
 
-// Processing indicator shown in top-right when translating or fetching furigana
-const ProcessingIndicator = ({ 
-  sizeClass = "w-5 h-5", 
-  topClass = "top-[13px]",
-  containerStyle,
-}: { 
-  sizeClass?: string; 
-  topClass?: string;
-  containerStyle?: CSSProperties;
-}) => {
-  // Parse the size from sizeClass (e.g., "w-4 h-4" -> 16, "w-[min(5vw,5vh)]" -> use md)
-  const getSize = (): number | "sm" | "md" | "lg" => {
-    const match = sizeClass.match(/w-(\d+)/);
-    if (match) {
-      const twSize = parseInt(match[1], 10);
-      return twSize * 4; // Tailwind w-4 = 16px
-    }
-    return "md";
-  };
-
-  // Use inline styles if provided, otherwise fall back to class-based positioning
-  const positionClasses = containerStyle ? "" : `${topClass} right-3`;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.2 }}
-      className={`absolute ${positionClasses} pointer-events-none z-50`}
-      style={containerStyle}
-    >
-      <ActivityIndicator
-        size={getSize()}
-        className={`${sizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}
-      />
-    </motion.div>
-  );
-};
-
 const LoadingState = ({
   bottomPaddingClass = "pb-5",
   textSizeClass = "text-[12px]",
   fontClassName = "font-geneva-12",
-  spinnerSizeClass = "w-5 h-5",
-  spinnerTopClass = "top-[13px]",
-  spinnerContainerStyle,
-  hideSpinner = false,
 }: {
   bottomPaddingClass?: string;
   textSizeClass?: string;
   fontClassName?: string;
-  spinnerSizeClass?: string;
-  spinnerTopClass?: string;
-  spinnerContainerStyle?: CSSProperties;
-  hideSpinner?: boolean;
 }) => {
   const { t } = useTranslation();
-  
-  // Parse the size from sizeClass (e.g., "w-4 h-4" -> 16, "w-[min(5vw,5vh)]" -> use md)
-  const getSize = (): number | "sm" | "md" | "lg" => {
-    const match = spinnerSizeClass.match(/w-(\d+)/);
-    if (match) {
-      const twSize = parseInt(match[1], 10);
-      return twSize * 4; // Tailwind w-4 = 16px
-    }
-    return "md";
-  };
-
-  // Use inline styles if provided, otherwise fall back to class-based positioning
-  const positionClasses = spinnerContainerStyle ? "" : `${spinnerTopClass} right-3`;
 
   return (
-    <>
-      {/* Spinner in top-right corner */}
-      {!hideSpinner && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.2 }}
-          className={`absolute ${positionClasses} pointer-events-none z-50`}
-          style={spinnerContainerStyle}
-        >
-          <ActivityIndicator
-            size={getSize()}
-            className={`${spinnerSizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}
-          />
-        </motion.div>
-      )}
-      <div
-        className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
-      >
-        <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
-          {t("apps.ipod.status.loadingLyrics")}
-        </div>
+    <div
+      className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
+    >
+      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
+        {t("apps.ipod.status.loadingLyrics")}
       </div>
-    </>
+    </div>
   );
 };
 
@@ -278,10 +190,6 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
-  spinnerSizeClass = "w-5 h-5",
-  spinnerTopClass = "top-[13px]",
-  spinnerContainerStyle,
-  hideSpinner = false,
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -679,10 +587,6 @@ export function LyricsDisplay({
         bottomPaddingClass={bottomPaddingClass}
         textSizeClass={textSizeClass}
         fontClassName={fontClassName}
-        spinnerSizeClass={spinnerSizeClass}
-        spinnerTopClass={spinnerTopClass}
-        spinnerContainerStyle={spinnerContainerStyle}
-        hideSpinner={hideSpinner}
       />
     );
   if (error)
@@ -702,16 +606,8 @@ export function LyricsDisplay({
       />
     );
 
-  // Check if any processing is happening
-  const isProcessing = isTranslating || isFetchingFurigana;
-
   return (
-    <>
-      {/* Processing indicator in top-right corner */}
-      <AnimatePresence>
-        {isProcessing && !hideSpinner && <ProcessingIndicator sizeClass={spinnerSizeClass} topClass={spinnerTopClass} containerStyle={spinnerContainerStyle} />}
-      </AnimatePresence>
-      <motion.div
+    <motion.div
       layout={alignment === LyricsAlignment.Alternating}
       transition={ANIMATION_CONFIG.spring}
       className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none no-select-gesture px-0 ${bottomPaddingClass}`}
@@ -789,6 +685,5 @@ export function LyricsDisplay({
         })}
       </AnimatePresence>
     </motion.div>
-    </>
   );
 }
