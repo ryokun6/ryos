@@ -103,6 +103,7 @@ export function IpodAppComponent({
     refreshLyrics,
     setTrackLyricsSearch,
     clearTrackLyricsSearch,
+    furiganaRefreshNonce,
   } = useIpodStoreShallow((s) => ({
     theme: s.theme,
     lcdFilterOn: s.lcdFilterOn,
@@ -129,6 +130,7 @@ export function IpodAppComponent({
     refreshLyrics: s.refreshLyrics,
     setTrackLyricsSearch: s.setTrackLyricsSearch,
     clearTrackLyricsSearch: s.clearTrackLyricsSearch,
+    furiganaRefreshNonce: s.furiganaRefreshNonce,
   }));
 
   const lyricOffset = useIpodStore(
@@ -165,6 +167,7 @@ export function IpodAppComponent({
   const [isAddingTrack, setIsAddingTrack] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
+  const [isLoadingFurigana, setIsLoadingFurigana] = useState(false);
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -1211,6 +1214,9 @@ export function IpodAppComponent({
               registerActivity={registerActivity}
               isFullScreen={isFullScreen}
               lyricsControls={fullScreenLyricsControls}
+              furiganaRefreshNonce={furiganaRefreshNonce}
+              isLoadingFurigana={isLoadingFurigana}
+              onFuriganaLoadingChange={setIsLoadingFurigana}
             />
 
             <IpodWheel
@@ -1266,6 +1272,7 @@ export function IpodAppComponent({
             fullScreenPlayerRef={fullScreenPlayerRef}
             isLoadingLyrics={fullScreenLyricsControls.isLoading}
             isProcessingLyrics={fullScreenLyricsControls.isTranslating}
+            isLoadingFurigana={isLoadingFurigana}
           >
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
@@ -1360,6 +1367,8 @@ export function IpodAppComponent({
                               }}
                               interactive={isIOSSafari ? false : isPlaying}
                               bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
+                              furiganaRefreshNonce={furiganaRefreshNonce}
+                              onFuriganaLoadingChange={setIsLoadingFurigana}
                             />
                           </div>
                         )}

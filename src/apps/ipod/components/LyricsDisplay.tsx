@@ -73,6 +73,10 @@ interface LyricsDisplayProps {
   fontClassName?: string;
   /** Optional inline styles for the outer container (e.g., dynamic gap) */
   containerStyle?: CSSProperties;
+  /** Nonce to force refresh furigana (incremented to invalidate cache) */
+  furiganaRefreshNonce?: number;
+  /** Callback when furigana loading state changes */
+  onFuriganaLoadingChange?: (isLoading: boolean) => void;
 }
 
 const ANIMATION_CONFIG = {
@@ -190,6 +194,8 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
+  furiganaRefreshNonce = 0,
+  onFuriganaLoadingChange,
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -200,7 +206,9 @@ export function LyricsDisplay({
   const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(
     new Map()
   );
+  const [isLoadingFurigana, setIsLoadingFurigana] = useState(false);
   const furiganaCacheKeyRef = useRef<string>("");
+  const lastFuriganaNonceRef = useRef<number>(0);
 
   // Determine if we're showing original lyrics (not translations)
   // Furigana should only be applied to original Japanese lyrics
@@ -217,24 +225,40 @@ export function LyricsDisplay({
   // Use original lines for furigana fetching (furigana only applies to original Japanese text)
   const linesForFurigana = originalLines || lines;
 
+  // Notify parent of furigana loading state changes
+  useEffect(() => {
+    onFuriganaLoadingChange?.(isLoadingFurigana);
+  }, [isLoadingFurigana, onFuriganaLoadingChange]);
+
   // Fetch furigana for original lines when enabled - now handles streaming responses
   useEffect(() => {
     if (japaneseFurigana !== JapaneseFurigana.On || linesForFurigana.length === 0) {
+      setIsLoadingFurigana(false);
       return;
     }
 
     // Check if any lines are Japanese text (has both kanji and kana)
     const hasJapanese = linesForFurigana.some((line) => isJapaneseText(line.words));
     if (!hasJapanese) {
+      setIsLoadingFurigana(false);
       return;
     }
 
+    // Check if force refresh is requested via nonce change
+    const isForceRefresh = lastFuriganaNonceRef.current !== furiganaRefreshNonce;
+    
     // Create cache key from original lines
     const cacheKey = JSON.stringify(linesForFurigana.map((l) => l.startTimeMs + l.words));
-    if (cacheKey === furiganaCacheKeyRef.current) {
-      return; // Already fetched for these lines
+    if (!isForceRefresh && cacheKey === furiganaCacheKeyRef.current) {
+      return; // Already fetched for these lines and no force refresh
     }
 
+    // Clear existing furigana map when force refreshing
+    if (isForceRefresh) {
+      setFuriganaMap(new Map());
+    }
+    
+    setIsLoadingFurigana(true);
     const controller = new AbortController();
 
     const MAX_RETRIES = 3;
@@ -361,15 +385,22 @@ export function LyricsDisplay({
         }
 
         console.error("Failed to fetch furigana after all retries:", err);
+        setIsLoadingFurigana(false);
       }
     };
 
-    fetchWithRetry(1);
+    fetchWithRetry(1).finally(() => {
+      if (!controller.signal.aborted) {
+        setIsLoadingFurigana(false);
+        lastFuriganaNonceRef.current = furiganaRefreshNonce;
+      }
+    });
 
     return () => {
       controller.abort();
+      setIsLoadingFurigana(false);
     };
-  }, [linesForFurigana, japaneseFurigana, isJapaneseText]);
+  }, [linesForFurigana, japaneseFurigana, isJapaneseText, furiganaRefreshNonce]);
 
   // Render text with furigana using ruby elements
   // Only applies furigana when showing original lyrics (not translations)
