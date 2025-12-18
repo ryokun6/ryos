@@ -12,6 +12,7 @@ import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
+import { useIpodStore } from "@/stores/useIpodStore";
 
 // Type for furigana segments from API
 interface FuriganaSegment {
@@ -201,6 +202,10 @@ export function LyricsDisplay({
     new Map()
   );
   const furiganaCacheKeyRef = useRef<string>("");
+  
+  // Track cache force nonce for clearing caches
+  const lyricsCacheForceNonce = useIpodStore((s) => s.lyricsCacheForceNonce);
+  const lastCacheForceNonceRef = useRef<number>(0);
 
   // Determine if we're showing original lyrics (not translations)
   // Furigana should only be applied to original Japanese lyrics
@@ -229,9 +234,19 @@ export function LyricsDisplay({
       return;
     }
 
+    // Check if this is a force cache clear request
+    const isForceRequest = lastCacheForceNonceRef.current !== lyricsCacheForceNonce;
+    
+    // If force request, clear local cache first
+    if (isForceRequest) {
+      setFuriganaMap(new Map());
+      furiganaCacheKeyRef.current = "";
+      lastCacheForceNonceRef.current = lyricsCacheForceNonce;
+    }
+
     // Create cache key from original lines
     const cacheKey = JSON.stringify(linesForFurigana.map((l) => l.startTimeMs + l.words));
-    if (cacheKey === furiganaCacheKeyRef.current) {
+    if (!isForceRequest && cacheKey === furiganaCacheKeyRef.current) {
       return; // Already fetched for these lines
     }
 
@@ -324,7 +339,7 @@ export function LyricsDisplay({
         const res = await fetch(getApiUrl("/api/furigana"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lines: linesForFurigana }),
+          body: JSON.stringify({ lines: linesForFurigana, force: isForceRequest }),
           signal: controller.signal,
         });
 
@@ -369,7 +384,7 @@ export function LyricsDisplay({
     return () => {
       controller.abort();
     };
-  }, [linesForFurigana, japaneseFurigana, isJapaneseText]);
+  }, [linesForFurigana, japaneseFurigana, isJapaneseText, lyricsCacheForceNonce]);
 
   // Render text with furigana using ruby elements
   // Only applies furigana when showing original lyrics (not translations)

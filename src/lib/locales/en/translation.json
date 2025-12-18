@@ -1256,6 +1256,8 @@
         "lyrics": "Lyrics",
         "showLyrics": "Show Lyrics",
         "refreshLyrics": "Search Lyrics",
+        "clearCache": "Clear Cache",
+        "cacheCleared": "Cache cleared",
         "traditionalChinese": "繁體",
         "korean": "한글",
         "furigana": "振り仮名",

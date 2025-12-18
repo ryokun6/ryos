@@ -23,6 +23,8 @@ const LyricLineSchema = z.object({
 const TranslateLyricsRequestSchema = z.object({
   lines: z.array(LyricLineSchema),
   targetLanguage: z.string(),
+  /** If true, bypasses cache and forces fresh translation */
+  force: z.boolean().optional(),
 });
 
 // New simplified schema for the AI response object
@@ -115,22 +117,25 @@ async function translateChunk(
   chunk: LyricLine[],
   targetLanguage: string,
   redis: Redis,
-  requestId: string
+  requestId: string,
+  force: boolean = false
 ): Promise<string[]> {
-  // Check chunk cache first
+  // Check chunk cache first (unless force is set)
   const chunkFingerprintSrc = JSON.stringify(
     chunk.map((l) => ({ w: l.words, t: l.startTimeMs }))
   );
   const chunkCacheKey = buildChunkCacheKey(chunkFingerprintSrc, targetLanguage);
 
-  try {
-    const cachedChunk = (await redis.get(chunkCacheKey)) as string[] | null;
-    if (cachedChunk) {
-      logInfo(requestId, "Chunk cache HIT", { chunkCacheKey });
-      return cachedChunk;
+  if (!force) {
+    try {
+      const cachedChunk = (await redis.get(chunkCacheKey)) as string[] | null;
+      if (cachedChunk) {
+        logInfo(requestId, "Chunk cache HIT", { chunkCacheKey });
+        return cachedChunk;
+      }
+    } catch (e) {
+      logError(requestId, "Chunk cache lookup failed", e);
     }
-  } catch (e) {
-    logError(requestId, "Chunk cache lookup failed", e);
   }
 
   // Simplified system prompt for the AI
@@ -210,7 +215,7 @@ export default async function handler(req: Request) {
       );
     }
 
-    const { lines, targetLanguage } = validation.data;
+    const { lines, targetLanguage, force } = validation.data;
 
     if (!lines || lines.length === 0) {
       return new Response("", {
@@ -221,6 +226,7 @@ export default async function handler(req: Request) {
     logInfo(requestId, "Received translate-lyrics request", {
       linesCount: lines.length,
       targetLanguage,
+      force: !!force,
     });
 
     const redis = new Redis({
@@ -228,7 +234,7 @@ export default async function handler(req: Request) {
       token: process.env.REDIS_KV_REST_API_TOKEN as string,
     });
 
-    // Check full cache first
+    // Check full cache first (unless force is set)
     const linesFingerprintSrc = JSON.stringify(
       lines.map((l) => ({ w: l.words, t: l.startTimeMs }))
     );
@@ -237,21 +243,27 @@ export default async function handler(req: Request) {
       targetLanguage
     );
 
-    try {
-      const cached = (await redis.get(transCacheKey)) as string | null;
-      if (cached) {
-        logInfo(requestId, "Translation cache HIT", { transCacheKey });
-        return new Response(cached, {
-          headers: {
-            "Content-Type": "text/plain; charset=utf-8",
-            "X-Lyrics-Translation-Cache": "HIT",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        });
+    if (force) {
+      logInfo(requestId, "Bypassing translation cache due to force flag", {
+        transCacheKey,
+      });
+    } else {
+      try {
+        const cached = (await redis.get(transCacheKey)) as string | null;
+        if (cached) {
+          logInfo(requestId, "Translation cache HIT", { transCacheKey });
+          return new Response(cached, {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "X-Lyrics-Translation-Cache": "HIT",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          });
+        }
+        logInfo(requestId, "Translation cache MISS", { transCacheKey });
+      } catch (e) {
+        logError(requestId, "Redis cache lookup failed (lyrics translation)", e);
       }
-      logInfo(requestId, "Translation cache MISS", { transCacheKey });
-    } catch (e) {
-      logError(requestId, "Redis cache lookup failed (lyrics translation)", e);
     }
 
     // For small requests (less than 2 chunks worth), process without streaming
@@ -264,7 +276,8 @@ export default async function handler(req: Request) {
         lines,
         targetLanguage,
         redis,
-        requestId
+        requestId,
+        !!force
       );
 
       const lrcOutputLines = lines.map((originalLine, index) => {
@@ -333,7 +346,8 @@ export default async function handler(req: Request) {
               chunk,
               targetLanguage,
               redis,
-              requestId
+              requestId,
+              !!force
             );
 
             // Store translations in the correct positions

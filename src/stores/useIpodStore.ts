@@ -50,6 +50,8 @@ interface IpodData {
   currentLyrics: { lines: LyricLine[] } | null;
   /** Incrementing nonce to force-refresh lyrics fetching */
   lyricsRefreshNonce: number;
+  /** Incrementing nonce to force-clear all lyrics caches (lyrics, translation, furigana) */
+  lyricsCacheForceNonce: number;
   isFullScreen: boolean;
   libraryState: LibraryState;
   lastKnownVersion: number;
@@ -152,6 +154,7 @@ const initialIpodData: IpodData = {
   lyricsTranslationLanguage: null,
   currentLyrics: null,
   lyricsRefreshNonce: 0,
+  lyricsCacheForceNonce: 0,
   isFullScreen: false,
   libraryState: "uninitialized",
   lastKnownVersion: 0,
@@ -180,6 +183,8 @@ export interface IpodState extends IpodData {
   toggleLyrics: () => void;
   /** Force refresh lyrics for current track */
   refreshLyrics: () => void;
+  /** Clear all lyrics caches (lyrics, translation, furigana) and refetch */
+  clearLyricsCache: () => void;
   /** Adjust the lyric offset (in ms) for the track at the given index. */
   adjustLyricOffset: (trackIndex: number, deltaMs: number) => void;
   /** Set lyrics alignment mode */
@@ -547,6 +552,12 @@ export const useIpodStore = create<IpodState>()(
       refreshLyrics: () =>
         set((state) => ({
           lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
+          currentLyrics: null,
+        })),
+      clearLyricsCache: () =>
+        set((state) => ({
+          lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
+          lyricsCacheForceNonce: state.lyricsCacheForceNonce + 1,
           currentLyrics: null,
         })),
       adjustLyricOffset: (trackIndex, deltaMs) =>
