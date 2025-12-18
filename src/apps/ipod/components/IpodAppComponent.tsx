@@ -3013,11 +3013,7 @@ export function IpodAppComponent({
                               }}
                               interactive={isIOSSafari ? false : isPlaying}
                               bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
-                              spinnerSizeClass="w-[min(6vw,6vh)] h-[min(6vw,6vh)]"
-                              spinnerContainerStyle={{
-                                top: "calc(max(env(safe-area-inset-top), 0.75rem) + clamp(1rem, 6dvh, 3rem))",
-                                right: "calc(max(env(safe-area-inset-right), 0.75rem) + clamp(1rem, 6dvw, 4rem))",
-                              }}
+                              hideSpinner={true}
                             />
                           </div>
                         )}

@@ -80,6 +80,8 @@ interface LyricsDisplayProps {
   spinnerTopClass?: string;
   /** Optional inline styles for spinner container position (overrides spinnerTopClass/right-3) */
   spinnerContainerStyle?: CSSProperties;
+  /** Hide the internal activity indicator (useful when rendering externally) */
+  hideSpinner?: boolean;
 }
 
 const ANIMATION_CONFIG = {
@@ -141,6 +143,7 @@ const LoadingState = ({
   spinnerSizeClass = "w-5 h-5",
   spinnerTopClass = "top-[13px]",
   spinnerContainerStyle,
+  hideSpinner = false,
 }: {
   bottomPaddingClass?: string;
   textSizeClass?: string;
@@ -148,6 +151,7 @@ const LoadingState = ({
   spinnerSizeClass?: string;
   spinnerTopClass?: string;
   spinnerContainerStyle?: CSSProperties;
+  hideSpinner?: boolean;
 }) => {
   const { t } = useTranslation();
   
@@ -167,19 +171,21 @@ const LoadingState = ({
   return (
     <>
       {/* Spinner in top-right corner */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        transition={{ duration: 0.2 }}
-        className={`absolute ${positionClasses} pointer-events-none z-50`}
-        style={spinnerContainerStyle}
-      >
-        <ActivityIndicator
-          size={getSize()}
-          className={`${spinnerSizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}
-        />
-      </motion.div>
+      {!hideSpinner && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.2 }}
+          className={`absolute ${positionClasses} pointer-events-none z-50`}
+          style={spinnerContainerStyle}
+        >
+          <ActivityIndicator
+            size={getSize()}
+            className={`${spinnerSizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}
+          />
+        </motion.div>
+      )}
       <div
         className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
       >
@@ -275,6 +281,7 @@ export function LyricsDisplay({
   spinnerSizeClass = "w-5 h-5",
   spinnerTopClass = "top-[13px]",
   spinnerContainerStyle,
+  hideSpinner = false,
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -675,6 +682,7 @@ export function LyricsDisplay({
         spinnerSizeClass={spinnerSizeClass}
         spinnerTopClass={spinnerTopClass}
         spinnerContainerStyle={spinnerContainerStyle}
+        hideSpinner={hideSpinner}
       />
     );
   if (error)
@@ -701,7 +709,7 @@ export function LyricsDisplay({
     <>
       {/* Processing indicator in top-right corner */}
       <AnimatePresence>
-        {isProcessing && <ProcessingIndicator sizeClass={spinnerSizeClass} topClass={spinnerTopClass} containerStyle={spinnerContainerStyle} />}
+        {isProcessing && !hideSpinner && <ProcessingIndicator sizeClass={spinnerSizeClass} topClass={spinnerTopClass} containerStyle={spinnerContainerStyle} />}
       </AnimatePresence>
       <motion.div
       layout={alignment === LyricsAlignment.Alternating}
