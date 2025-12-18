@@ -201,7 +201,7 @@ export function LyricsDisplay({
     new Map()
   );
   const furiganaCacheKeyRef = useRef<string>("");
-  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
+  const [, setIsFetchingFurigana] = useState(false);
 
   // Determine if we're showing original lyrics (not translations)
   // Furigana should only be applied to original Japanese lyrics
