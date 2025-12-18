@@ -12,7 +12,6 @@ import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
-import { ActivityIndicator } from "@/components/ui/activity-indicator";
 
 // Type for furigana segments from API
 interface FuriganaSegment {
@@ -74,8 +73,6 @@ interface LyricsDisplayProps {
   fontClassName?: string;
   /** Optional inline styles for the outer container (e.g., dynamic gap) */
   containerStyle?: CSSProperties;
-  /** Optional tailwind class for loading spinner size (defaults to "w-4 h-4") */
-  spinnerSizeClass?: string;
 }
 
 const ANIMATION_CONFIG = {
@@ -90,80 +87,25 @@ const ANIMATION_CONFIG = {
   },
 } as const;
 
-// Processing indicator shown in top-right when translating or fetching furigana
-const ProcessingIndicator = ({ sizeClass = "w-5 h-5" }: { sizeClass?: string }) => {
-  // Parse the size from sizeClass (e.g., "w-4 h-4" -> 16, "w-[min(5vw,5vh)]" -> use md)
-  const getSize = (): number | "sm" | "md" | "lg" => {
-    const match = sizeClass.match(/w-(\d+)/);
-    if (match) {
-      const twSize = parseInt(match[1], 10);
-      return twSize * 4; // Tailwind w-4 = 16px
-    }
-    return "md";
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.2 }}
-      className="absolute top-[13px] right-3 pointer-events-none z-50"
-    >
-      <ActivityIndicator
-        size={getSize()}
-        className={`${sizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}
-      />
-    </motion.div>
-  );
-};
-
 const LoadingState = ({
   bottomPaddingClass = "pb-5",
   textSizeClass = "text-[12px]",
   fontClassName = "font-geneva-12",
-  spinnerSizeClass = "w-5 h-5",
 }: {
   bottomPaddingClass?: string;
   textSizeClass?: string;
   fontClassName?: string;
-  spinnerSizeClass?: string;
 }) => {
   const { t } = useTranslation();
-  
-  // Parse the size from sizeClass (e.g., "w-4 h-4" -> 16, "w-[min(5vw,5vh)]" -> use md)
-  const getSize = (): number | "sm" | "md" | "lg" => {
-    const match = spinnerSizeClass.match(/w-(\d+)/);
-    if (match) {
-      const twSize = parseInt(match[1], 10);
-      return twSize * 4; // Tailwind w-4 = 16px
-    }
-    return "md";
-  };
 
   return (
-    <>
-      {/* Spinner in top-right corner */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        transition={{ duration: 0.2 }}
-        className="absolute top-[13px] right-3 pointer-events-none z-50"
-      >
-        <ActivityIndicator
-          size={getSize()}
-          className={`${spinnerSizeClass} text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}
-        />
-      </motion.div>
-      <div
-        className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
-      >
-        <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
-          {t("apps.ipod.status.loadingLyrics")}
-        </div>
+    <div
+      className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
+    >
+      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
+        {t("apps.ipod.status.loadingLyrics")}
       </div>
-    </>
+    </div>
   );
 };
 
@@ -248,7 +190,6 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
-  spinnerSizeClass = "w-5 h-5",
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -260,7 +201,6 @@ export function LyricsDisplay({
     new Map()
   );
   const furiganaCacheKeyRef = useRef<string>("");
-  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
 
   // Determine if we're showing original lyrics (not translations)
   // Furigana should only be applied to original Japanese lyrics
@@ -280,26 +220,22 @@ export function LyricsDisplay({
   // Fetch furigana for original lines when enabled - now handles streaming responses
   useEffect(() => {
     if (japaneseFurigana !== JapaneseFurigana.On || linesForFurigana.length === 0) {
-      setIsFetchingFurigana(false);
       return;
     }
 
     // Check if any lines are Japanese text (has both kanji and kana)
     const hasJapanese = linesForFurigana.some((line) => isJapaneseText(line.words));
     if (!hasJapanese) {
-      setIsFetchingFurigana(false);
       return;
     }
 
     // Create cache key from original lines
     const cacheKey = JSON.stringify(linesForFurigana.map((l) => l.startTimeMs + l.words));
     if (cacheKey === furiganaCacheKeyRef.current) {
-      setIsFetchingFurigana(false);
       return; // Already fetched for these lines
     }
 
     const controller = new AbortController();
-    setIsFetchingFurigana(true);
 
     const MAX_RETRIES = 3;
     const INITIAL_DELAY = 1000; // 1 second
@@ -353,7 +289,6 @@ export function LyricsDisplay({
                   const finalMap = new Map(collectedFurigana);
                   setFuriganaMap(finalMap);
                   furiganaCacheKeyRef.current = cacheKey;
-                  setIsFetchingFurigana(false);
                 }
               } else if (eventData.type === "error") {
                 throw new Error(eventData.message);
@@ -369,7 +304,6 @@ export function LyricsDisplay({
       if (!controller.signal.aborted && collectedFurigana.size > 0) {
         setFuriganaMap(new Map(collectedFurigana));
         furiganaCacheKeyRef.current = cacheKey;
-        setIsFetchingFurigana(false);
       }
     };
 
@@ -383,7 +317,6 @@ export function LyricsDisplay({
       });
       setFuriganaMap(newMap);
       furiganaCacheKeyRef.current = cacheKey;
-      setIsFetchingFurigana(false);
     };
 
     const fetchWithRetry = async (attempt: number): Promise<void> => {
@@ -428,7 +361,6 @@ export function LyricsDisplay({
         }
 
         console.error("Failed to fetch furigana after all retries:", err);
-        setIsFetchingFurigana(false);
       }
     };
 
@@ -646,7 +578,6 @@ export function LyricsDisplay({
         bottomPaddingClass={bottomPaddingClass}
         textSizeClass={textSizeClass}
         fontClassName={fontClassName}
-        spinnerSizeClass={spinnerSizeClass}
       />
     );
   if (error)
@@ -666,16 +597,8 @@ export function LyricsDisplay({
       />
     );
 
-  // Check if any processing is happening
-  const isProcessing = isTranslating || isFetchingFurigana;
-
   return (
-    <>
-      {/* Processing indicator in top-left corner */}
-      <AnimatePresence>
-        {isProcessing && <ProcessingIndicator sizeClass={spinnerSizeClass} />}
-      </AnimatePresence>
-      <motion.div
+    <motion.div
       layout={alignment === LyricsAlignment.Alternating}
       transition={ANIMATION_CONFIG.spring}
       className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none no-select-gesture px-0 ${bottomPaddingClass}`}
@@ -753,6 +676,5 @@ export function LyricsDisplay({
         })}
       </AnimatePresence>
     </motion.div>
-    </>
   );
 }
