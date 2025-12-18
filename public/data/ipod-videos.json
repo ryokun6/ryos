@@ -1,23 +1,6 @@
 {
   "videos": [
     {
-      "id": "eynCfZYPY8Q",
-      "url": "https://www.youtube.com/watch?v=eynCfZYPY8Q",
-      "title": "no. no. no.",
-      "artist": "具島直子",
-      "lyricOffset": 1400,
-      "lyricsSearch": {
-        "selection": {
-          "title": "no. no. no.",
-          "artist": "具島直子",
-          "album": "Quiet Emotion",
-          "hash": "85848173da963581671e89aa6645de02",
-          "albumId": "715288",
-          "score": 0.55
-        }
-      }
-    },
-    {
       "id": "D1QVkuEzxNk",
       "url": "https://www.youtube.com/watch?v=D1QVkuEzxNk",
       "title": "まどろみ",
@@ -31,6 +14,58 @@
           "hash": "4a4f40edb0d1ce5dc074b82cac62fcbb",
           "albumId": "24647375",
           "score": 0
+        }
+      }
+    },
+    {
+      "id": "h4Q8r60ojSo",
+      "url": "https://www.youtube.com/watch?v=h4Q8r60ojSo",
+      "title": "抱きしめて",
+      "artist": "BENI",
+      "lyricOffset": 1000,
+      "lyricsSearch": {
+        "selection": {
+          "title": "抱きしめて",
+          "artist": "BENI",
+          "album": "Bitter & Sweet",
+          "hash": "928e0d12e6c7f1c33721596ef1a6195f",
+          "albumId": "574854",
+          "score": 0.45
+        }
+      }
+    },
+    {
+      "id": "QLHMhVonF-s",
+      "url": "https://www.youtube.com/watch?v=QLHMhVonF-s",
+      "title": "黄昏のBAY CITY",
+      "artist": "八神純子",
+      "lyricOffset": 1000,
+      "lyricsSearch": {
+        "selection": {
+          "title": "黄昏のBAY CITY",
+          "artist": "八神純子",
+          "album": "FULL MOON",
+          "hash": "e27fad9075957ee0645a9023f09ad0fa",
+          "albumId": "674448",
+          "score": 0.55
+        }
+      }
+    },
+    {
+      "id": "eynCfZYPY8Q",
+      "url": "https://www.youtube.com/watch?v=eynCfZYPY8Q",
+      "title": "no. no. no.",
+      "artist": "具島直子",
+      "album": "",
+      "lyricOffset": 1400,
+      "lyricsSearch": {
+        "selection": {
+          "title": "no. no. no.",
+          "artist": "具島直子",
+          "album": "no.no.no.",
+          "hash": "a6b8aca58838d1007c1e01dedc46c787",
+          "albumId": "87610549",
+          "score": 0.55
         }
       }
     },
