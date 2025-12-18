@@ -66,6 +66,9 @@ export function IpodScreen({
   registerActivity,
   isFullScreen,
   lyricsControls,
+  furiganaRefreshNonce,
+  isLoadingFurigana,
+  onFuriganaLoadingChange,
 }: IpodScreenProps) {
   const { t } = useTranslation();
 
@@ -301,7 +304,7 @@ export function IpodScreen({
 
             {/* Activity Indicator */}
             <AnimatePresence>
-              {(lyricsControls.isLoading || lyricsControls.isTranslating) && (
+              {(lyricsControls.isLoading || lyricsControls.isTranslating || isLoadingFurigana) && (
                 <motion.div
                   className="absolute top-4 right-4 z-40 pointer-events-none"
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -331,6 +334,8 @@ export function IpodScreen({
               koreanDisplay={koreanDisplay}
               japaneseFurigana={japaneseFurigana}
               isTranslating={lyricsControls.isTranslating}
+              furiganaRefreshNonce={furiganaRefreshNonce}
+              onFuriganaLoadingChange={onFuriganaLoadingChange}
               onAdjustOffset={(deltaMs) => {
                 adjustLyricOffset(deltaMs);
                 const newOffset = lyricOffset + deltaMs;

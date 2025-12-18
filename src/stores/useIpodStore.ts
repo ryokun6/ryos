@@ -50,6 +50,8 @@ interface IpodData {
   currentLyrics: { lines: LyricLine[] } | null;
   /** Incrementing nonce to force-refresh lyrics fetching */
   lyricsRefreshNonce: number;
+  /** Incrementing nonce to force-refresh furigana fetching */
+  furiganaRefreshNonce: number;
   isFullScreen: boolean;
   libraryState: LibraryState;
   lastKnownVersion: number;
@@ -152,6 +154,7 @@ const initialIpodData: IpodData = {
   lyricsTranslationLanguage: null,
   currentLyrics: null,
   lyricsRefreshNonce: 0,
+  furiganaRefreshNonce: 0,
   isFullScreen: false,
   libraryState: "uninitialized",
   lastKnownVersion: 0,
@@ -558,6 +561,7 @@ export const useIpodStore = create<IpodState>()(
           if (!currentTrack) {
             return {
               lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
+              furiganaRefreshNonce: state.furiganaRefreshNonce + 1,
               currentLyrics: null,
             };
           }
@@ -572,6 +576,7 @@ export const useIpodStore = create<IpodState>()(
           return {
             tracks: updatedTracks,
             lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
+            furiganaRefreshNonce: state.furiganaRefreshNonce + 1,
             currentLyrics: null,
           };
         }),

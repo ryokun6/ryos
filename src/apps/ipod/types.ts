@@ -66,6 +66,7 @@ export interface FullScreenPortalProps {
   // Lyrics loading state
   isLoadingLyrics?: boolean;
   isProcessingLyrics?: boolean;
+  isLoadingFurigana?: boolean;
 }
 
 // IpodScreen props
@@ -107,6 +108,12 @@ export interface IpodScreenProps {
   registerActivity: () => void;
   isFullScreen: boolean;
   lyricsControls: ReturnType<typeof useLyrics>;
+  /** Nonce to force refresh furigana */
+  furiganaRefreshNonce: number;
+  /** Whether furigana is currently loading */
+  isLoadingFurigana: boolean;
+  /** Callback when furigana loading state changes */
+  onFuriganaLoadingChange: (isLoading: boolean) => void;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery
