@@ -74,6 +74,8 @@ interface LyricsDisplayProps {
   fontClassName?: string;
   /** Optional inline styles for the outer container (e.g., dynamic gap) */
   containerStyle?: CSSProperties;
+  /** Callback when furigana loading state changes */
+  onFuriganaLoadingChange?: (isLoading: boolean) => void;
 }
 
 const ANIMATION_CONFIG = {
@@ -192,6 +194,7 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
+  onFuriganaLoadingChange,
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -204,6 +207,11 @@ export function LyricsDisplay({
   );
   const furiganaCacheKeyRef = useRef<string>("");
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
+  
+  // Notify parent when furigana loading state changes
+  useEffect(() => {
+    onFuriganaLoadingChange?.(isFetchingFurigana);
+  }, [isFetchingFurigana, onFuriganaLoadingChange]);
   
   // Track cache force nonce for clearing caches
   const lyricsCacheForceNonce = useIpodStore((s) => s.lyricsCacheForceNonce);
@@ -641,7 +649,6 @@ export function LyricsDisplay({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
-      {isFetchingFurigana && <FuriganaLoadingIndicator />}
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
           const isCurrent = line === lines[currentLine];

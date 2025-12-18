@@ -165,6 +165,7 @@ export function IpodAppComponent({
   const [isAddingTrack, setIsAddingTrack] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
+  const [isFullScreenFetchingFurigana, setIsFullScreenFetchingFurigana] = useState(false);
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -1266,6 +1267,7 @@ export function IpodAppComponent({
             fullScreenPlayerRef={fullScreenPlayerRef}
             isLoadingLyrics={fullScreenLyricsControls.isLoading}
             isProcessingLyrics={fullScreenLyricsControls.isTranslating}
+            isFetchingFurigana={isFullScreenFetchingFurigana}
           >
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
@@ -1360,6 +1362,7 @@ export function IpodAppComponent({
                               }}
                               interactive={isIOSSafari ? false : isPlaying}
                               bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
+                              onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
                             />
                           </div>
                         )}

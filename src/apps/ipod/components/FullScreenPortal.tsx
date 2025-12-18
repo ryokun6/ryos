@@ -40,6 +40,7 @@ export function FullScreenPortal({
   fullScreenPlayerRef,
   isLoadingLyrics,
   isProcessingLyrics,
+  isFetchingFurigana,
 }: FullScreenPortalProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -489,7 +490,7 @@ export function FullScreenPortal({
 
       {/* Activity Indicator */}
       <AnimatePresence>
-        {(isLoadingLyrics || isProcessingLyrics) && (
+        {(isLoadingLyrics || isProcessingLyrics || isFetchingFurigana) && (
           <motion.div
             className="absolute z-40 pointer-events-none"
             initial={{ opacity: 0, scale: 0.8 }}

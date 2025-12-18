@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -80,6 +80,9 @@ export function IpodScreen({
   const menuScrollRef = useRef<HTMLDivElement>(null);
   const menuItemsRef = useRef<(HTMLDivElement | null)[]>([]);
   const needScrollRef = useRef(false);
+  
+  // State for furigana loading
+  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
 
   const masterVolume = useAppStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
@@ -301,7 +304,7 @@ export function IpodScreen({
 
             {/* Activity Indicator */}
             <AnimatePresence>
-              {(lyricsControls.isLoading || lyricsControls.isTranslating) && (
+              {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana) && (
                 <motion.div
                   className="absolute top-4 right-4 z-40 pointer-events-none"
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -341,6 +344,7 @@ export function IpodScreen({
                 const updatedTime = elapsedTime + newOffset / 1000;
                 lyricsControls.updateCurrentTimeManually(updatedTime);
               }}
+              onFuriganaLoadingChange={setIsFetchingFurigana}
             />
           </div>
         </div>
