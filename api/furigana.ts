@@ -115,7 +115,12 @@ For each line, return an array of segments where:
 - Segments with kanji should have a "reading" field with the hiragana reading
 - Segments without kanji (hiragana, katakana, punctuation, spaces) should NOT have a reading field
 
-Example input: ["夜空の星", "私は走る"]
+CRITICAL: Separate kanji from trailing hiragana (okurigana)
+- The "text" field with a "reading" must contain ONLY kanji characters
+- Trailing hiragana (okurigana) must be in a SEPARATE segment WITHOUT a reading
+- The reading should cover ONLY the kanji, not include the okurigana
+
+Example input: ["夜空の星", "私は走る", "思いを込めて"]
 Example output:
 {
   "annotatedLines": [
@@ -129,12 +134,21 @@ Example output:
       {"text": "は"},
       {"text": "走", "reading": "はし"},
       {"text": "る"}
+    ],
+    [
+      {"text": "思", "reading": "おも"},
+      {"text": "いを"},
+      {"text": "込", "reading": "こ"},
+      {"text": "めて"}
     ]
   ]
 }
 
 Important rules:
-- Only add readings to kanji characters
+- Only add readings to kanji characters - the "text" field must contain ONLY kanji when a "reading" is provided
+- ALWAYS separate trailing hiragana (okurigana) into their own segments without readings
+- Example: 思い should be split into {"text": "思", "reading": "おも"} and {"text": "い"} - NOT {"text": "思い", "reading": "おもい"}
+- Example: 食べる should be split into {"text": "食", "reading": "た"} and {"text": "べる"}
 - Keep the original text exactly as provided
 - Break down compound kanji words appropriately for lyrics display
 - Use standard hiragana readings (not katakana)
