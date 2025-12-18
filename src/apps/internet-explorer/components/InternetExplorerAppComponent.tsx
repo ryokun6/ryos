@@ -691,6 +691,29 @@ export function InternetExplorerAppComponent({
       iframeRef.current.dataset.navToken === navTokenRef.current.toString()
     ) {
       const iframeSrc = iframeRef.current.src;
+
+      // Check if the iframe loaded the app itself (self-referential)
+      // This happens in dev mode when /api/iframe-check falls back to index.html
+      try {
+        const iframeTitle = iframeRef.current.contentDocument?.title;
+        const hasRyOSRoot = iframeRef.current.contentDocument?.getElementById("root");
+        if (iframeTitle === "ryOS" || (hasRyOSRoot && iframeRef.current.contentDocument?.querySelector('script[type="module"]'))) {
+          console.warn("[IE] Detected self-referential load - iframe loaded the app itself");
+          handleNavigationError(
+            {
+              error: true,
+              type: "self_referential",
+              message: "Cannot load this page",
+              details: "The API endpoint returned the application itself. This typically happens in development mode. Try running 'bun run dev:vercel' instead of 'bun run dev'.",
+            },
+            url
+          );
+          return;
+        }
+      } catch {
+        // Cross-origin access denied - this is expected for external sites, continue normally
+      }
+
       if (
         iframeSrc.includes("/api/iframe-check") &&
         iframeRef.current.contentDocument
@@ -2568,7 +2591,7 @@ export function InternetExplorerAppComponent({
               ) : (
                 <iframe
                   ref={iframeRef}
-                  src={finalUrl || ""}
+                  src={finalUrl || "about:blank"}
                   className="border-0 block"
                   style={{
                     width: "calc(100% + 1px)",
