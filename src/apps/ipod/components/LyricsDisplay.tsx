@@ -13,7 +13,6 @@ import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { ActivityIndicator } from "@/components/ui/activity-indicator";
 
 // Type for furigana segments from API
 interface FuriganaSegment {
@@ -127,11 +126,6 @@ const ErrorState = ({
   </div>
 );
 
-const FuriganaLoadingIndicator = () => (
-  <div className="absolute top-2 left-0 right-0 pointer-events-none flex justify-center z-50">
-    <ActivityIndicator size="xs" color="white" className="opacity-70" />
-  </div>
-);
 
 const getVariants = (
   position: number,
