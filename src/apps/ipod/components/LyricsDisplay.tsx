@@ -78,6 +78,8 @@ interface LyricsDisplayProps {
   spinnerSizeClass?: string;
   /** Optional tailwind class for spinner top position (defaults to "top-[13px]") */
   spinnerTopClass?: string;
+  /** Optional inline styles for spinner container position (overrides spinnerTopClass/right-3) */
+  spinnerContainerStyle?: CSSProperties;
 }
 
 const ANIMATION_CONFIG = {
@@ -93,7 +95,15 @@ const ANIMATION_CONFIG = {
 } as const;
 
 // Processing indicator shown in top-right when translating or fetching furigana
-const ProcessingIndicator = ({ sizeClass = "w-5 h-5", topClass = "top-[13px]" }: { sizeClass?: string; topClass?: string }) => {
+const ProcessingIndicator = ({ 
+  sizeClass = "w-5 h-5", 
+  topClass = "top-[13px]",
+  containerStyle,
+}: { 
+  sizeClass?: string; 
+  topClass?: string;
+  containerStyle?: CSSProperties;
+}) => {
   // Parse the size from sizeClass (e.g., "w-4 h-4" -> 16, "w-[min(5vw,5vh)]" -> use md)
   const getSize = (): number | "sm" | "md" | "lg" => {
     const match = sizeClass.match(/w-(\d+)/);
@@ -104,13 +114,17 @@ const ProcessingIndicator = ({ sizeClass = "w-5 h-5", topClass = "top-[13px]" }:
     return "md";
   };
 
+  // Use inline styles if provided, otherwise fall back to class-based positioning
+  const positionClasses = containerStyle ? "" : `${topClass} right-3`;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ duration: 0.2 }}
-      className={`absolute ${topClass} right-3 pointer-events-none z-50`}
+      className={`absolute ${positionClasses} pointer-events-none z-50`}
+      style={containerStyle}
     >
       <ActivityIndicator
         size={getSize()}
@@ -126,12 +140,14 @@ const LoadingState = ({
   fontClassName = "font-geneva-12",
   spinnerSizeClass = "w-5 h-5",
   spinnerTopClass = "top-[13px]",
+  spinnerContainerStyle,
 }: {
   bottomPaddingClass?: string;
   textSizeClass?: string;
   fontClassName?: string;
   spinnerSizeClass?: string;
   spinnerTopClass?: string;
+  spinnerContainerStyle?: CSSProperties;
 }) => {
   const { t } = useTranslation();
   
@@ -145,6 +161,9 @@ const LoadingState = ({
     return "md";
   };
 
+  // Use inline styles if provided, otherwise fall back to class-based positioning
+  const positionClasses = spinnerContainerStyle ? "" : `${spinnerTopClass} right-3`;
+
   return (
     <>
       {/* Spinner in top-right corner */}
@@ -153,7 +172,8 @@ const LoadingState = ({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
         transition={{ duration: 0.2 }}
-        className={`absolute ${spinnerTopClass} right-3 pointer-events-none z-50`}
+        className={`absolute ${positionClasses} pointer-events-none z-50`}
+        style={spinnerContainerStyle}
       >
         <ActivityIndicator
           size={getSize()}
@@ -254,6 +274,7 @@ export function LyricsDisplay({
   containerStyle,
   spinnerSizeClass = "w-5 h-5",
   spinnerTopClass = "top-[13px]",
+  spinnerContainerStyle,
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -653,6 +674,7 @@ export function LyricsDisplay({
         fontClassName={fontClassName}
         spinnerSizeClass={spinnerSizeClass}
         spinnerTopClass={spinnerTopClass}
+        spinnerContainerStyle={spinnerContainerStyle}
       />
     );
   if (error)
@@ -679,7 +701,7 @@ export function LyricsDisplay({
     <>
       {/* Processing indicator in top-right corner */}
       <AnimatePresence>
-        {isProcessing && <ProcessingIndicator sizeClass={spinnerSizeClass} topClass={spinnerTopClass} />}
+        {isProcessing && <ProcessingIndicator sizeClass={spinnerSizeClass} topClass={spinnerTopClass} containerStyle={spinnerContainerStyle} />}
       </AnimatePresence>
       <motion.div
       layout={alignment === LyricsAlignment.Alternating}
