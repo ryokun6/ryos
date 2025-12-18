@@ -180,6 +180,8 @@ export interface IpodState extends IpodData {
   toggleLyrics: () => void;
   /** Force refresh lyrics for current track */
   refreshLyrics: () => void;
+  /** Reset lyrics for current track - clears cache, force refetch, and redo furigana (debug mode) */
+  resetLyrics: () => void;
   /** Adjust the lyric offset (in ms) for the track at the given index. */
   adjustLyricOffset: (trackIndex: number, deltaMs: number) => void;
   /** Set lyrics alignment mode */
@@ -549,6 +551,30 @@ export const useIpodStore = create<IpodState>()(
           lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
           currentLyrics: null,
         })),
+      resetLyrics: () =>
+        set((state) => {
+          // Clear the current track's lyricsSearch to force finding new lyrics
+          const currentTrack = state.tracks[state.currentIndex];
+          if (!currentTrack) {
+            return {
+              lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
+              currentLyrics: null,
+            };
+          }
+          
+          // Update tracks to clear lyricsSearch for current track
+          const updatedTracks = state.tracks.map((track, index) =>
+            index === state.currentIndex
+              ? { ...track, lyricsSearch: undefined }
+              : track
+          );
+          
+          return {
+            tracks: updatedTracks,
+            lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
+            currentLyrics: null,
+          };
+        }),
       adjustLyricOffset: (trackIndex, deltaMs) =>
         set((state) => {
           if (
