@@ -215,7 +215,19 @@ export function LyricsDisplay({
   
   // Track cache force nonce for clearing caches
   const lyricsCacheForceNonce = useIpodStore((s) => s.lyricsCacheForceNonce);
-  const lastCacheForceNonceRef = useRef<number>(0);
+  const lastCacheForceNonceRef = useRef<number>(lyricsCacheForceNonce);
+  
+  // Effect to immediately clear furigana when cache force nonce changes
+  // This runs separately from the fetch effect to ensure immediate visual feedback
+  useEffect(() => {
+    if (lastCacheForceNonceRef.current !== lyricsCacheForceNonce) {
+      // Clear furigana immediately when cache is force-cleared
+      setFuriganaMap(new Map());
+      furiganaCacheKeyRef.current = "";
+      // Note: We intentionally do NOT update lastCacheForceNonceRef here
+      // The fetch effect will update it when the new furigana is successfully fetched
+    }
+  }, [lyricsCacheForceNonce]);
 
   // Determine if we're showing original lyrics (not translations)
   // Furigana should only be applied to original Japanese lyrics
@@ -246,25 +258,18 @@ export function LyricsDisplay({
 
     // Check if this is a force cache clear request
     const isForceRequest = lastCacheForceNonceRef.current !== lyricsCacheForceNonce;
-    
-    // If force request, clear local cache first
-    if (isForceRequest) {
-      setFuriganaMap(new Map());
-      furiganaCacheKeyRef.current = "";
-      // Note: We update lastCacheForceNonceRef AFTER all early return checks
-      // to ensure we don't lose the force flag if the effect re-runs
-    }
 
     // Create cache key from original lines
     const cacheKey = JSON.stringify(linesForFurigana.map((l) => l.startTimeMs + l.words));
+    
+    // Skip if we already have this data and it's not a force request
     if (!isForceRequest && cacheKey === furiganaCacheKeyRef.current) {
       return; // Already fetched for these lines
     }
-
-    // Now that we're committed to making a request, update the force nonce ref
-    if (isForceRequest) {
-      lastCacheForceNonceRef.current = lyricsCacheForceNonce;
-    }
+    
+    // Note: We do NOT update lastCacheForceNonceRef here - it will be updated
+    // when the fetch succeeds, to ensure force requests are retried if they fail
+    // or if the lines change during the fetch
 
     // Start loading
     setIsFetchingFurigana(true);
@@ -323,6 +328,8 @@ export function LyricsDisplay({
                   const finalMap = new Map(collectedFurigana);
                   setFuriganaMap(finalMap);
                   furiganaCacheKeyRef.current = cacheKey;
+                  // Update nonce ref only on successful completion
+                  lastCacheForceNonceRef.current = lyricsCacheForceNonce;
                   setIsFetchingFurigana(false);
                 }
               } else if (eventData.type === "error") {
@@ -339,6 +346,8 @@ export function LyricsDisplay({
       if (!controller.signal.aborted && collectedFurigana.size > 0) {
         setFuriganaMap(new Map(collectedFurigana));
         furiganaCacheKeyRef.current = cacheKey;
+        // Update nonce ref only on successful completion
+        lastCacheForceNonceRef.current = lyricsCacheForceNonce;
         setIsFetchingFurigana(false);
       }
     };
@@ -353,6 +362,8 @@ export function LyricsDisplay({
       });
       setFuriganaMap(newMap);
       furiganaCacheKeyRef.current = cacheKey;
+      // Update nonce ref only on successful completion
+      lastCacheForceNonceRef.current = lyricsCacheForceNonce;
       setIsFetchingFurigana(false);
     };
 
