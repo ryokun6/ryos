@@ -6,6 +6,7 @@ import { Track } from "@/stores/useIpodStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { useLyrics } from "@/hooks/useLyrics";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { useTranslation } from "react-i18next";
 
@@ -692,6 +693,24 @@ export function IpodScreen({
               )}
             </AnimatePresence>
 
+            {/* Activity Indicator - top right, aligned with status display */}
+            <AnimatePresence>
+              {(lyricsControls.isLoading || lyricsControls.isTranslating) && (
+                <motion.div
+                  className="absolute top-4 right-4 z-40 pointer-events-none"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ActivityIndicator
+                    size="md"
+                    className="w-5 h-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Lyrics Overlay */}
             <LyricsDisplay
               lines={lyricsControls.lines}
@@ -706,6 +725,7 @@ export function IpodScreen({
               koreanDisplay={koreanDisplay}
               japaneseFurigana={japaneseFurigana}
               isTranslating={lyricsControls.isTranslating}
+              hideSpinner={true}
               onAdjustOffset={(deltaMs) => {
                 adjustLyricOffset(deltaMs);
                 const newOffset = lyricOffset + deltaMs;
