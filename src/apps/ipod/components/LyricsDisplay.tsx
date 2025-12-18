@@ -12,6 +12,7 @@ import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
+import { useIpodStore } from "@/stores/useIpodStore";
 
 // Type for furigana segments from API
 interface FuriganaSegment {
@@ -73,6 +74,8 @@ interface LyricsDisplayProps {
   fontClassName?: string;
   /** Optional inline styles for the outer container (e.g., dynamic gap) */
   containerStyle?: CSSProperties;
+  /** Callback when furigana loading state changes */
+  onFuriganaLoadingChange?: (isLoading: boolean) => void;
 }
 
 const ANIMATION_CONFIG = {
@@ -124,6 +127,7 @@ const ErrorState = ({
     <div className={`text-white/70 ${textSizeClass} ${fontClassName}`}></div>
   </div>
 );
+
 
 const getVariants = (
   position: number,
@@ -190,6 +194,7 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
+  onFuriganaLoadingChange,
 }: LyricsDisplayProps) {
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -201,6 +206,16 @@ export function LyricsDisplay({
     new Map()
   );
   const furiganaCacheKeyRef = useRef<string>("");
+  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
+  
+  // Notify parent when furigana loading state changes
+  useEffect(() => {
+    onFuriganaLoadingChange?.(isFetchingFurigana);
+  }, [isFetchingFurigana, onFuriganaLoadingChange]);
+  
+  // Track cache force nonce for clearing caches
+  const lyricsCacheForceNonce = useIpodStore((s) => s.lyricsCacheForceNonce);
+  const lastCacheForceNonceRef = useRef<number>(0);
 
   // Determine if we're showing original lyrics (not translations)
   // Furigana should only be applied to original Japanese lyrics
@@ -229,12 +244,25 @@ export function LyricsDisplay({
       return;
     }
 
+    // Check if this is a force cache clear request
+    const isForceRequest = lastCacheForceNonceRef.current !== lyricsCacheForceNonce;
+    
+    // If force request, clear local cache first
+    if (isForceRequest) {
+      setFuriganaMap(new Map());
+      furiganaCacheKeyRef.current = "";
+      lastCacheForceNonceRef.current = lyricsCacheForceNonce;
+    }
+
     // Create cache key from original lines
     const cacheKey = JSON.stringify(linesForFurigana.map((l) => l.startTimeMs + l.words));
-    if (cacheKey === furiganaCacheKeyRef.current) {
+    if (!isForceRequest && cacheKey === furiganaCacheKeyRef.current) {
       return; // Already fetched for these lines
     }
 
+    // Start loading
+    setIsFetchingFurigana(true);
+    
     const controller = new AbortController();
 
     const MAX_RETRIES = 3;
@@ -289,6 +317,7 @@ export function LyricsDisplay({
                   const finalMap = new Map(collectedFurigana);
                   setFuriganaMap(finalMap);
                   furiganaCacheKeyRef.current = cacheKey;
+                  setIsFetchingFurigana(false);
                 }
               } else if (eventData.type === "error") {
                 throw new Error(eventData.message);
@@ -304,6 +333,7 @@ export function LyricsDisplay({
       if (!controller.signal.aborted && collectedFurigana.size > 0) {
         setFuriganaMap(new Map(collectedFurigana));
         furiganaCacheKeyRef.current = cacheKey;
+        setIsFetchingFurigana(false);
       }
     };
 
@@ -317,6 +347,7 @@ export function LyricsDisplay({
       });
       setFuriganaMap(newMap);
       furiganaCacheKeyRef.current = cacheKey;
+      setIsFetchingFurigana(false);
     };
 
     const fetchWithRetry = async (attempt: number): Promise<void> => {
@@ -324,7 +355,7 @@ export function LyricsDisplay({
         const res = await fetch(getApiUrl("/api/furigana"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lines: linesForFurigana }),
+          body: JSON.stringify({ lines: linesForFurigana, force: isForceRequest }),
           signal: controller.signal,
         });
 
@@ -345,6 +376,7 @@ export function LyricsDisplay({
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
           // Request was aborted, don't retry
+          setIsFetchingFurigana(false);
           return;
         }
 
@@ -355,12 +387,16 @@ export function LyricsDisplay({
           await new Promise((resolve) => setTimeout(resolve, delay));
           
           // Check if aborted during delay
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted) {
+            setIsFetchingFurigana(false);
+            return;
+          }
           
           return fetchWithRetry(attempt + 1);
         }
 
         console.error("Failed to fetch furigana after all retries:", err);
+        setIsFetchingFurigana(false);
       }
     };
 
@@ -368,8 +404,9 @@ export function LyricsDisplay({
 
     return () => {
       controller.abort();
+      setIsFetchingFurigana(false);
     };
-  }, [linesForFurigana, japaneseFurigana, isJapaneseText]);
+  }, [linesForFurigana, japaneseFurigana, isJapaneseText, lyricsCacheForceNonce]);
 
   // Render text with furigana using ruby elements
   // Only applies furigana when showing original lyrics (not translations)

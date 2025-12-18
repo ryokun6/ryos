@@ -66,6 +66,7 @@ export interface FullScreenPortalProps {
   // Lyrics loading state
   isLoadingLyrics?: boolean;
   isProcessingLyrics?: boolean;
+  isFetchingFurigana?: boolean;
 }
 
 // IpodScreen props

@@ -14,6 +14,7 @@ import {
   MenubarRadioItem,
 } from "@/components/ui/menubar";
 import { useIpodStoreShallow } from "@/stores/helpers";
+import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
@@ -96,6 +97,7 @@ export function IpodMenuBar({
     toggleLyrics,
     setLyricsAlignment,
     refreshLyrics,
+    clearLyricsCache,
     setChineseVariant,
     setKoreanDisplay,
     setJapaneseFurigana,
@@ -138,6 +140,7 @@ export function IpodMenuBar({
     toggleLyrics: s.toggleLyrics,
     setLyricsAlignment: s.setLyricsAlignment,
     refreshLyrics: s.refreshLyrics,
+    clearLyricsCache: s.clearLyricsCache,
     setChineseVariant: s.setChineseVariant,
     setKoreanDisplay: s.setKoreanDisplay,
     setJapaneseFurigana: s.setJapaneseFurigana,
@@ -148,6 +151,7 @@ export function IpodMenuBar({
 
   const appTheme = useThemeStore((state) => state.current);
   const isXpTheme = appTheme === "xp" || appTheme === "win98";
+  const debugMode = useAppStore((state) => state.debugMode);
 
   const handlePlayTrack = (index: number) => {
     setCurrentIndex(index);
@@ -447,6 +451,19 @@ export function IpodMenuBar({
           >
             {t("apps.ipod.menu.refreshLyrics")}
           </MenubarItem>
+
+          {debugMode && (
+            <MenubarItem
+              onClick={() => {
+                clearLyricsCache();
+                toast.success(t("apps.ipod.menu.cacheCleared"));
+              }}
+              className="text-md h-6 px-3"
+              disabled={tracks.length === 0 || currentIndex === -1}
+            >
+              {t("apps.ipod.menu.clearCache")}
+            </MenubarItem>
+          )}
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 

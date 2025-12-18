@@ -22,6 +22,8 @@ const LyricLineSchema = z.object({
 
 const FuriganaRequestSchema = z.object({
   lines: z.array(LyricLineSchema),
+  /** If true, bypasses cache and forces fresh furigana generation */
+  force: z.boolean().optional(),
 });
 
 // Schema for the AI response - array of lines with furigana annotations
@@ -161,7 +163,8 @@ Important rules:
 async function processChunk(
   chunk: LyricLine[],
   redis: Redis,
-  requestId: string
+  requestId: string,
+  force: boolean = false
 ): Promise<{ annotatedLines: FuriganaSegment[][]; originalIndices: number[] }> {
   // Separate lines that need furigana from those that don't
   const linesNeedingFurigana: { line: LyricLine; originalIndex: number }[] = [];
@@ -183,7 +186,7 @@ async function processChunk(
     };
   }
 
-  // Check chunk cache first
+  // Check chunk cache first (unless force is set)
   const chunkFingerprintSrc = JSON.stringify(
     linesNeedingFurigana.map((item) => ({
       w: item.line.words,
@@ -192,31 +195,33 @@ async function processChunk(
   );
   const chunkCacheKey = buildChunkCacheKey(chunkFingerprintSrc);
 
-  try {
-    const cachedChunk = await redis.get(chunkCacheKey);
-    if (cachedChunk) {
-      logInfo(requestId, "Chunk cache HIT", { chunkCacheKey });
-      const cachedAnnotations = (
-        typeof cachedChunk === "string" ? JSON.parse(cachedChunk) : cachedChunk
-      ) as FuriganaSegment[][];
+  if (!force) {
+    try {
+      const cachedChunk = await redis.get(chunkCacheKey);
+      if (cachedChunk) {
+        logInfo(requestId, "Chunk cache HIT", { chunkCacheKey });
+        const cachedAnnotations = (
+          typeof cachedChunk === "string" ? JSON.parse(cachedChunk) : cachedChunk
+        ) as FuriganaSegment[][];
 
-      // Merge cached results with non-kanji lines
-      linesNeedingFurigana.forEach((item, i) => {
-        results.push({
-          segments: cachedAnnotations[i] || [{ text: item.line.words }],
-          originalIndex: item.originalIndex,
+        // Merge cached results with non-kanji lines
+        linesNeedingFurigana.forEach((item, i) => {
+          results.push({
+            segments: cachedAnnotations[i] || [{ text: item.line.words }],
+            originalIndex: item.originalIndex,
+          });
         });
-      });
 
-      // Sort by original index and return
-      results.sort((a, b) => a.originalIndex - b.originalIndex);
-      return {
-        annotatedLines: results.map((r) => r.segments),
-        originalIndices: results.map((r) => r.originalIndex),
-      };
+        // Sort by original index and return
+        results.sort((a, b) => a.originalIndex - b.originalIndex);
+        return {
+          annotatedLines: results.map((r) => r.segments),
+          originalIndices: results.map((r) => r.originalIndex),
+        };
+      }
+    } catch (e) {
+      logError(requestId, "Chunk cache lookup failed", e);
     }
-  } catch (e) {
-    logError(requestId, "Chunk cache lookup failed", e);
   }
 
   // Process with AI
@@ -302,7 +307,7 @@ export default async function handler(req: Request) {
       );
     }
 
-    const { lines } = validation.data;
+    const { lines, force } = validation.data;
 
     if (!lines || lines.length === 0) {
       return new Response(JSON.stringify({ annotatedLines: [] }), {
@@ -328,6 +333,7 @@ export default async function handler(req: Request) {
     logInfo(requestId, "Received furigana request", {
       totalLines: lines.length,
       japaneseLines: lines.filter((line) => containsKanji(line.words)).length,
+      force: !!force,
     });
 
     const redis = new Redis({
@@ -335,29 +341,35 @@ export default async function handler(req: Request) {
       token: process.env.REDIS_KV_REST_API_TOKEN as string,
     });
 
-    // Check full cache first
+    // Check full cache first (unless force is set)
     const linesFingerprintSrc = JSON.stringify(
       lines.map((l) => ({ w: l.words, t: l.startTimeMs }))
     );
     const cacheKey = buildFuriganaCacheKey(linesFingerprintSrc);
 
-    try {
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        logInfo(requestId, "Furigana cache HIT", { cacheKey });
-        const responseBody =
-          typeof cached === "string" ? cached : JSON.stringify(cached);
-        return new Response(responseBody, {
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "X-Furigana-Cache": "HIT",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        });
+    if (force) {
+      logInfo(requestId, "Bypassing furigana cache due to force flag", {
+        cacheKey,
+      });
+    } else {
+      try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          logInfo(requestId, "Furigana cache HIT", { cacheKey });
+          const responseBody =
+            typeof cached === "string" ? cached : JSON.stringify(cached);
+          return new Response(responseBody, {
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              "X-Furigana-Cache": "HIT",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          });
+        }
+        logInfo(requestId, "Furigana cache MISS", { cacheKey });
+      } catch (e) {
+        logError(requestId, "Redis cache lookup failed (furigana)", e);
       }
-      logInfo(requestId, "Furigana cache MISS", { cacheKey });
-    } catch (e) {
-      logError(requestId, "Redis cache lookup failed (furigana)", e);
     }
 
     // For small requests (less than 2 chunks worth), process without streaming
@@ -366,7 +378,7 @@ export default async function handler(req: Request) {
         linesCount: lines.length,
       });
 
-      const { annotatedLines } = await processChunk(lines, redis, requestId);
+      const { annotatedLines } = await processChunk(lines, redis, requestId, !!force);
 
       const result = JSON.stringify({ annotatedLines });
 
@@ -431,7 +443,8 @@ export default async function handler(req: Request) {
             const { annotatedLines } = await processChunk(
               chunk,
               redis,
-              requestId
+              requestId,
+              !!force
             );
 
             // Store annotated lines in the correct positions

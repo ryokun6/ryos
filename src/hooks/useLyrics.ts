@@ -89,6 +89,9 @@ export function useLyrics({
   // Track refresh nonce from the iPod store to force re-fetching
   const refreshNonce = useIpodStore((s) => s.lyricsRefreshNonce);
   const lastRefreshNonceRef = useRef<number>(0);
+  // Track cache force nonce for forcing cache bypass (including translation)
+  const lyricsCacheForceNonce = useIpodStore((s) => s.lyricsCacheForceNonce);
+  const lastCacheForceNonceRef = useRef<number>(0);
 
   // Effect for fetching original lyrics
   useEffect(() => {
@@ -267,6 +270,9 @@ export function useLyrics({
       return;
     }
 
+    // Check if this is a force cache clear request
+    const isForceRequest = lastCacheForceNonceRef.current !== lyricsCacheForceNonce;
+
     let cancelled = false;
     setIsTranslating(true);
     setError(undefined); // Clear previous errors
@@ -379,6 +385,7 @@ export function useLyrics({
       body: JSON.stringify({
         lines: originalLines,
         targetLanguage: translateTo,
+        force: isForceRequest,
       }),
       signal: controller.signal,
     })
@@ -419,7 +426,10 @@ export function useLyrics({
         // Keep original lyrics in iPod store on translation error
       })
       .finally(() => {
-        if (!cancelled) setIsTranslating(false);
+        if (!cancelled) {
+          setIsTranslating(false);
+          lastCacheForceNonceRef.current = lyricsCacheForceNonce;
+        }
         clearTimeout(translationTimeoutId);
       });
 
@@ -428,7 +438,7 @@ export function useLyrics({
       controller.abort();
       clearTimeout(translationTimeoutId);
     };
-  }, [originalLines, translateTo, isFetchingOriginal, title, artist]);
+  }, [originalLines, translateTo, isFetchingOriginal, title, artist, lyricsCacheForceNonce]);
 
   const displayLines = translatedLines || originalLines;
 
