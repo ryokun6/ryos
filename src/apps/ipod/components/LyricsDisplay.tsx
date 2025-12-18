@@ -13,6 +13,7 @@ import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 
 // Type for furigana segments from API
 interface FuriganaSegment {
@@ -126,23 +127,11 @@ const ErrorState = ({
   </div>
 );
 
-const FuriganaLoadingIndicator = ({
-  textSizeClass = "text-[10px]",
-  fontClassName = "font-geneva-12",
-}: {
-  textSizeClass?: string;
-  fontClassName?: string;
-}) => {
-  const { t } = useTranslation();
-
-  return (
-    <div className="absolute top-2 left-0 right-0 pointer-events-none flex justify-center z-50">
-      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60 text-white`}>
-        {t("apps.ipod.status.loadingFurigana")}
-      </div>
-    </div>
-  );
-};
+const FuriganaLoadingIndicator = () => (
+  <div className="absolute top-2 left-0 right-0 pointer-events-none flex justify-center z-50">
+    <ActivityIndicator size="xs" color="white" className="opacity-70" />
+  </div>
+);
 
 const getVariants = (
   position: number,
@@ -658,12 +647,7 @@ export function LyricsDisplay({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
-      {isFetchingFurigana && (
-        <FuriganaLoadingIndicator
-          textSizeClass={textSizeClass}
-          fontClassName={fontClassName}
-        />
-      )}
+      {isFetchingFurigana && <FuriganaLoadingIndicator />}
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
           const isCurrent = line === lines[currentLine];
