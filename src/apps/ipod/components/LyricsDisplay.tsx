@@ -251,13 +251,19 @@ export function LyricsDisplay({
     if (isForceRequest) {
       setFuriganaMap(new Map());
       furiganaCacheKeyRef.current = "";
-      lastCacheForceNonceRef.current = lyricsCacheForceNonce;
+      // Note: We update lastCacheForceNonceRef AFTER all early return checks
+      // to ensure we don't lose the force flag if the effect re-runs
     }
 
     // Create cache key from original lines
     const cacheKey = JSON.stringify(linesForFurigana.map((l) => l.startTimeMs + l.words));
     if (!isForceRequest && cacheKey === furiganaCacheKeyRef.current) {
       return; // Already fetched for these lines
+    }
+
+    // Now that we're committed to making a request, update the force nonce ref
+    if (isForceRequest) {
+      lastCacheForceNonceRef.current = lyricsCacheForceNonce;
     }
 
     // Start loading
