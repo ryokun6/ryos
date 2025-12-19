@@ -252,23 +252,21 @@ function AnimatedWord({
 
   // Base shadow for text legibility (same as inactive lines)
   const baseShadow = "0 0 2px black, 0 0 2px black, 0 0 2px black";
-  // Only apply glow when there's visible progress (prevents flash from shadow bleeding through mask)
-  const overlayTextShadow = progress > 0
-    ? `0 0 8px rgba(255,255,255,0.9), ${baseShadow}`
-    : baseShadow;
+  // Glow shadow for highlighted text - includes base shadow for legibility
+  const glowShadow = "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black";
 
   return (
     <span className="lyrics-word-highlight">
       {/* Base layer - dimmed to match inactive line opacity */}
       <span className="opacity-50 lyrics-word-layer" style={{ textShadow: baseShadow }}>{content}</span>
-      {/* Overlay layer - gradient mask for soft edge with glow */}
+      {/* Overlay layer - gradient mask for soft feathered edge with glow */}
       <span
         aria-hidden="true"
         className="lyrics-word-layer"
         style={{
           maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
           WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
-          textShadow: overlayTextShadow,
+          textShadow: glowShadow,
         }}
       >
         {content}
@@ -359,7 +357,7 @@ function WordTimingHighlight({
   const timeRef = useRef({
     propTime: currentTimeMs,
     propTimestamp: performance.now(),
-    lastRenderTime: currentTimeMs,
+    lastDisplayedTime: currentTimeMs, // Track last displayed time for monotonic guarantee
   });
   
   // Force re-render on each animation frame
@@ -388,7 +386,20 @@ function WordTimingHighlight({
   const elapsed = performance.now() - timeRef.current.propTimestamp;
   const maxInterpolation = 500; // Don't interpolate more than 500ms ahead
   const clampedElapsed = Math.min(elapsed, maxInterpolation);
-  const interpolatedTime = timeRef.current.propTime + clampedElapsed;
+  const rawInterpolatedTime = timeRef.current.propTime + clampedElapsed;
+  
+  // MONOTONIC TIME FIX: Never allow time to decrease unless it's a significant jump (seek)
+  // Small backward jumps (<500ms) are likely audio player jitter - hold current time
+  // Large backward jumps (>=500ms) are likely intentional seeks - allow them
+  const lastDisplayed = timeRef.current.lastDisplayedTime;
+  const backwardAmount = lastDisplayed - rawInterpolatedTime;
+  const isSignificantSeek = backwardAmount >= 500;
+  const interpolatedTime = isSignificantSeek || rawInterpolatedTime >= lastDisplayed
+    ? rawInterpolatedTime
+    : lastDisplayed; // Hold at last displayed time to prevent jitter
+  
+  // Update last displayed time
+  timeRef.current.lastDisplayedTime = interpolatedTime;
   
   // Calculate time elapsed since the start of this line
   const timeIntoLine = interpolatedTime - lineStartTimeMs;
@@ -433,21 +444,20 @@ function WordTimingHighlight({
           
           // Base shadow for text legibility (same as inactive lines)
           const baseShadow = "0 0 2px black, 0 0 2px black, 0 0 2px black";
-          // Only apply glow when there's visible progress (prevents flash from shadow bleeding through mask)
-          const overlayTextShadow = progress > 0
-            ? `0 0 8px rgba(255,255,255,0.9), ${baseShadow}`
-            : baseShadow;
+          // Glow shadow for highlighted text - includes base shadow for legibility
+          const glowShadow = "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black";
           
           return (
             <span key={`${idx}-${word.text}`} className="lyrics-word-highlight">
               <span className="opacity-50 lyrics-word-layer" style={{ textShadow: baseShadow }}>{content}</span>
+              {/* Overlay layer - gradient mask for soft feathered edge with glow */}
               <span
                 aria-hidden="true"
                 className="lyrics-word-layer"
                 style={{
                   maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
                   WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
-                  textShadow: overlayTextShadow,
+                  textShadow: glowShadow,
                 }}
               >
                 {content}
@@ -480,8 +490,8 @@ const getVariants = (
   isCurrent: boolean,
   hasWordTiming: boolean = false
 ) => {
-  // For lines with word-level timing, don't apply white glow to the parent
-  // The glow is handled by the highlighted overlay layer instead
+  // For lines with word-level timing, glow is handled by the overlay layer
+  // For other lines, apply glow at the parent level
   const currentTextShadow = isCurrent && !hasWordTiming
     ? "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black"
     : "0 0 2px black, 0 0 2px black, 0 0 2px black";
