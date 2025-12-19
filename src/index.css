@@ -935,6 +935,23 @@ ruby.lyrics-furigana {
   ruby-position: over;
 }
 
+/* Word-level highlight container for karaoke-style lyrics animation */
+/* Uses inline-grid to stack dimmed/highlighted layers while maintaining inline text flow */
+.lyrics-word-highlight {
+  display: inline-grid;
+  /* Ensure proper baseline alignment to match regular inline text */
+  vertical-align: baseline;
+  /* Inherit text properties to ensure consistent wrapping behavior */
+  white-space: inherit;
+  word-break: inherit;
+  overflow-wrap: inherit;
+}
+
+/* Layer positioning - both layers share the same grid cell (1/1) */
+.lyrics-word-layer {
+  grid-area: 1 / 1;
+}
+
 /* Use !important to override macOS theme's blanket font-size rules */
 /* Inherit opacity and text-shadow from parent lyrics for consistency */
 rt.lyrics-furigana-rt,

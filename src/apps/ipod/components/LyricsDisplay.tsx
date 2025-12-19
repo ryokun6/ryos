@@ -204,7 +204,7 @@ function mapWordsToFurigana(
 
 /**
  * Single word with karaoke-style clip animation
- * Uses relative/absolute positioning without grid
+ * Uses inline-grid with CSS classes for consistent text flow
  */
 function AnimatedWord({
   word,
@@ -236,14 +236,14 @@ function AnimatedWord({
   const gradientEnd = progressPercent + feather;
 
   return (
-    <span style={{ display: 'inline-grid' }}>
+    <span className="lyrics-word-highlight">
       {/* Base layer - dimmed to match inactive line opacity */}
-      <span className="opacity-50" style={{ gridArea: '1 / 1' }}>{content}</span>
+      <span className="opacity-50 lyrics-word-layer">{content}</span>
       {/* Overlay layer - gradient mask for soft edge */}
       <span
         aria-hidden="true"
+        className="lyrics-word-layer"
         style={{
-          gridArea: '1 / 1',
           maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
           WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
         }}
@@ -342,12 +342,12 @@ function WordTimingHighlight({
             : processText(word.text);
           
           return (
-            <span key={`${idx}-${word.text}`} style={{ display: 'inline-grid' }}>
-              <span className="opacity-50" style={{ gridArea: '1 / 1' }}>{content}</span>
+            <span key={`${idx}-${word.text}`} className="lyrics-word-highlight">
+              <span className="opacity-50 lyrics-word-layer">{content}</span>
               <span
                 aria-hidden="true"
+                className="lyrics-word-layer"
                 style={{
-                  gridArea: '1 / 1',
                   maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
                   WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
                 }}
