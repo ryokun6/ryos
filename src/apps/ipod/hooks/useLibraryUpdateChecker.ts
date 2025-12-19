@@ -5,6 +5,9 @@ import { useTranslation } from "react-i18next";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
+// Temporarily disable auto-updates
+const AUTO_UPDATE_DISABLED = true;
+
 export function useLibraryUpdateChecker(isActive: boolean) {
   const { t } = useTranslation();
   const syncLibrary = useIpodStore((state) => state.syncLibrary);
@@ -12,6 +15,11 @@ export function useLibraryUpdateChecker(isActive: boolean) {
   const lastCheckedRef = useRef<number>(0);
 
   useEffect(() => {
+    // Skip all auto-update logic when disabled
+    if (AUTO_UPDATE_DISABLED) {
+      return;
+    }
+
     if (!isActive) {
       // Clear interval when app is not active
       if (intervalRef.current) {
