@@ -784,7 +784,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ipod.setLyricsTranslationLanguage(enableTranslation);
                   const currentTrack = ipod.tracks[ipod.currentIndex];
                   if (currentTrack?.id) {
-                    ipod.setLyricsTranslationRequest(enableTranslation, currentTrack.id);
+                    ipod.setLyricsTranslationLanguage(enableTranslation);
                   }
                   // Map language codes to readable names
                   const languageNames: Record<string, string> = {

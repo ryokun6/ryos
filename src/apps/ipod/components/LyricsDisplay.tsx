@@ -6,40 +6,14 @@ import {
   JapaneseFurigana,
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import type { CSSProperties } from "react";
 import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
-import { getApiUrl } from "@/utils/platform";
 import { useIpodStore } from "@/stores/useIpodStore";
-
-// Type for furigana segments from API
-interface FuriganaSegment {
-  text: string;
-  reading?: string;
-}
-
-// Types for SSE streaming events from furigana API
-interface FuriganaChunkEvent {
-  type: "chunk";
-  chunkIndex: number;
-  totalChunks: number;
-  startIndex: number;
-  annotatedLines: FuriganaSegment[][];
-}
-
-interface FuriganaCompleteEvent {
-  type: "complete";
-  totalLines: number;
-}
-
-interface FuriganaErrorEvent {
-  type: "error";
-  message: string;
-}
-
-type FuriganaSSEEvent = FuriganaChunkEvent | FuriganaCompleteEvent | FuriganaErrorEvent;
+import { useFurigana } from "@/hooks/useFurigana";
+import { useShallow } from "zustand/react/shallow";
 
 interface LyricsDisplayProps {
   lines: LyricLine[];
@@ -52,9 +26,13 @@ interface LyricsDisplayProps {
   visible?: boolean;
   /** Whether the video is visible */
   videoVisible?: boolean;
+  /** Override alignment (if not provided, reads from store) */
   alignment?: LyricsAlignment;
+  /** Override Chinese variant (if not provided, reads from store) */
   chineseVariant?: ChineseVariant;
+  /** Override Korean display (if not provided, reads from store) */
   koreanDisplay?: KoreanDisplay;
+  /** Override Japanese furigana (if not provided, reads from store) */
   japaneseFurigana?: JapaneseFurigana;
   /** Callback to adjust lyric offset in ms (positive = lyrics earlier) */
   onAdjustOffset?: (deltaMs: number) => void;
@@ -113,10 +91,12 @@ const LoadingState = ({
 };
 
 const ErrorState = ({
+  error,
   bottomPaddingClass = "pb-5",
   textSizeClass = "text-[12px]",
   fontClassName = "font-geneva-12",
 }: {
+  error?: string;
   bottomPaddingClass?: string;
   textSizeClass?: string;
   fontClassName?: string;
@@ -124,7 +104,9 @@ const ErrorState = ({
   <div
     className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
   >
-    <div className={`text-white/70 ${textSizeClass} ${fontClassName}`}></div>
+    <div className={`text-white/70 ${textSizeClass} ${fontClassName}`}>
+      {error || "Unable to load lyrics"}
+    </div>
   </div>
 );
 
@@ -181,10 +163,10 @@ export function LyricsDisplay({
   error,
   visible = true,
   videoVisible = true,
-  alignment = LyricsAlignment.FocusThree,
-  chineseVariant = ChineseVariant.Traditional,
-  koreanDisplay = KoreanDisplay.Original,
-  japaneseFurigana = JapaneseFurigana.On,
+  alignment: alignmentOverride,
+  chineseVariant: chineseVariantOverride,
+  koreanDisplay: koreanDisplayOverride,
+  japaneseFurigana: japaneseFuriganaOverride,
   onAdjustOffset,
   isTranslating = false,
   textSizeClass = "text-[12px]",
@@ -196,269 +178,46 @@ export function LyricsDisplay({
   containerStyle,
   onFuriganaLoadingChange,
 }: LyricsDisplayProps) {
+  // Read display settings from store (can be overridden by props)
+  const {
+    lyricsAlignment: storeAlignment,
+    chineseVariant: storeChineseVariant,
+    koreanDisplay: storeKoreanDisplay,
+    japaneseFurigana: storeJapaneseFurigana,
+  } = useIpodStore(
+    useShallow((s) => ({
+      lyricsAlignment: s.lyricsAlignment,
+      chineseVariant: s.chineseVariant,
+      koreanDisplay: s.koreanDisplay,
+      japaneseFurigana: s.japaneseFurigana,
+    }))
+  );
+
+  // Use override props if provided, otherwise use store values
+  const alignment = alignmentOverride ?? storeAlignment;
+  const chineseVariant = chineseVariantOverride ?? storeChineseVariant;
+  const koreanDisplay = koreanDisplayOverride ?? storeKoreanDisplay;
+  const japaneseFurigana = japaneseFuriganaOverride ?? storeJapaneseFurigana;
+
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
     []
   );
 
-  // State for furigana annotations
-  const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(
-    new Map()
-  );
-  const furiganaCacheKeyRef = useRef<string>("");
-  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
-  
-  // Notify parent when furigana loading state changes
-  useEffect(() => {
-    onFuriganaLoadingChange?.(isFetchingFurigana);
-  }, [isFetchingFurigana, onFuriganaLoadingChange]);
-  
-  // Track cache force nonce for clearing caches
-  const lyricsCacheForceNonce = useIpodStore((s) => s.lyricsCacheForceNonce);
-  const lastCacheForceNonceRef = useRef<number>(lyricsCacheForceNonce);
-  
-  // Effect to immediately clear furigana when cache force nonce changes
-  // This runs separately from the fetch effect to ensure immediate visual feedback
-  useEffect(() => {
-    if (lastCacheForceNonceRef.current !== lyricsCacheForceNonce) {
-      // Clear furigana immediately when cache is force-cleared
-      setFuriganaMap(new Map());
-      furiganaCacheKeyRef.current = "";
-      // Note: We intentionally do NOT update lastCacheForceNonceRef here
-      // The fetch effect will update it when the new furigana is successfully fetched
-    }
-  }, [lyricsCacheForceNonce]);
-
   // Determine if we're showing original lyrics (not translations)
   // Furigana should only be applied to original Japanese lyrics
   const isShowingOriginal = !originalLines || lines === originalLines;
 
-  // Check if text is Japanese (contains kanji AND hiragana/katakana)
-  // This distinguishes Japanese from Chinese (which only has hanzi, no kana)
-  const isJapaneseText = useCallback((text: string): boolean => {
-    const hasKanji = /[\u4E00-\u9FFF]/.test(text);
-    const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text); // Hiragana or Katakana
-    return hasKanji && hasKana;
-  }, []);
-
   // Use original lines for furigana fetching (furigana only applies to original Japanese text)
   const linesForFurigana = originalLines || lines;
 
-  // Fetch furigana for original lines when enabled - now handles streaming responses
-  useEffect(() => {
-    if (japaneseFurigana !== JapaneseFurigana.On || linesForFurigana.length === 0) {
-      return;
-    }
-
-    // Check if any lines are Japanese text (has both kanji and kana)
-    const hasJapanese = linesForFurigana.some((line) => isJapaneseText(line.words));
-    if (!hasJapanese) {
-      return;
-    }
-
-    // Check if this is a force cache clear request
-    const isForceRequest = lastCacheForceNonceRef.current !== lyricsCacheForceNonce;
-
-    // Create cache key from original lines
-    const cacheKey = JSON.stringify(linesForFurigana.map((l) => l.startTimeMs + l.words));
-    
-    // Skip if we already have this data and it's not a force request
-    if (!isForceRequest && cacheKey === furiganaCacheKeyRef.current) {
-      return; // Already fetched for these lines
-    }
-    
-    // Note: We do NOT update lastCacheForceNonceRef here - it will be updated
-    // when the fetch succeeds, to ensure force requests are retried if they fail
-    // or if the lines change during the fetch
-
-    // Start loading
-    setIsFetchingFurigana(true);
-    
-    const controller = new AbortController();
-
-    const MAX_RETRIES = 3;
-    const INITIAL_DELAY = 1000; // 1 second
-
-    const handleStreamingResponse = async (res: Response): Promise<void> => {
-      const reader = res.body?.getReader();
-      if (!reader) {
-        throw new Error("No response body");
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-      // Use a Map to collect furigana progressively
-      const collectedFurigana = new Map<string, FuriganaSegment[]>();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (controller.signal.aborted) {
-          reader.cancel();
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const sseLines = buffer.split("\n\n");
-        buffer = sseLines.pop() || "";
-
-        for (const sseLine of sseLines) {
-          if (sseLine.startsWith("data: ")) {
-            try {
-              const eventData = JSON.parse(sseLine.slice(6)) as FuriganaSSEEvent;
-              
-              if (eventData.type === "chunk") {
-                // Update the collected map with this chunk's data
-                eventData.annotatedLines.forEach((segments, index) => {
-                  const globalIndex = eventData.startIndex + index;
-                  if (globalIndex < linesForFurigana.length) {
-                    const lineKey = linesForFurigana[globalIndex].startTimeMs;
-                    collectedFurigana.set(lineKey, segments);
-                  }
-                });
-
-                // Immediately update state with new data - create new Map to trigger re-render
-                if (!controller.signal.aborted) {
-                  const newMap = new Map(collectedFurigana);
-                  setFuriganaMap(newMap);
-                }
-              } else if (eventData.type === "complete") {
-                // Ensure final state is set
-                if (!controller.signal.aborted) {
-                  const finalMap = new Map(collectedFurigana);
-                  setFuriganaMap(finalMap);
-                  furiganaCacheKeyRef.current = cacheKey;
-                  // Update nonce ref only on successful completion
-                  lastCacheForceNonceRef.current = lyricsCacheForceNonce;
-                  setIsFetchingFurigana(false);
-                }
-              } else if (eventData.type === "error") {
-                throw new Error(eventData.message);
-              }
-            } catch (parseError) {
-              console.warn("Failed to parse furigana SSE event:", parseError);
-            }
-          }
-        }
-      }
-      
-      // If we exited the loop without a complete event, finalize anyway
-      if (!controller.signal.aborted && collectedFurigana.size > 0) {
-        setFuriganaMap(new Map(collectedFurigana));
-        furiganaCacheKeyRef.current = cacheKey;
-        // Update nonce ref only on successful completion
-        lastCacheForceNonceRef.current = lyricsCacheForceNonce;
-        setIsFetchingFurigana(false);
-      }
-    };
-
-    const handleNonStreamingResponse = async (res: Response): Promise<void> => {
-      const data: { annotatedLines: FuriganaSegment[][] } = await res.json();
-      const newMap = new Map<string, FuriganaSegment[]>();
-      linesForFurigana.forEach((line, index) => {
-        if (data.annotatedLines[index]) {
-          newMap.set(line.startTimeMs, data.annotatedLines[index]);
-        }
-      });
-      setFuriganaMap(newMap);
-      furiganaCacheKeyRef.current = cacheKey;
-      // Update nonce ref only on successful completion
-      lastCacheForceNonceRef.current = lyricsCacheForceNonce;
-      setIsFetchingFurigana(false);
-    };
-
-    const fetchWithRetry = async (attempt: number): Promise<void> => {
-      try {
-        const res = await fetch(getApiUrl("/api/furigana"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lines: linesForFurigana, force: isForceRequest }),
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch furigana (status ${res.status})`);
-        }
-
-        // Check if this is a streaming response (text/event-stream)
-        const contentType = res.headers.get("content-type") || "";
-        
-        if (contentType.includes("text/event-stream")) {
-          // Handle streaming response
-          await handleStreamingResponse(res);
-        } else {
-          // Handle non-streaming response (small requests or cached)
-          await handleNonStreamingResponse(res);
-        }
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") {
-          // Request was aborted, don't retry
-          setIsFetchingFurigana(false);
-          return;
-        }
-
-        if (attempt < MAX_RETRIES) {
-          // Exponential backoff: 1s, 2s, 4s
-          const delay = INITIAL_DELAY * Math.pow(2, attempt - 1);
-          console.warn(`Furigana fetch attempt ${attempt} failed, retrying in ${delay}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          
-          // Check if aborted during delay
-          if (controller.signal.aborted) {
-            setIsFetchingFurigana(false);
-            return;
-          }
-          
-          return fetchWithRetry(attempt + 1);
-        }
-
-        console.error("Failed to fetch furigana after all retries:", err);
-        setIsFetchingFurigana(false);
-      }
-    };
-
-    fetchWithRetry(1);
-
-    return () => {
-      controller.abort();
-      setIsFetchingFurigana(false);
-    };
-  }, [linesForFurigana, japaneseFurigana, isJapaneseText, lyricsCacheForceNonce]);
-
-  // Render text with furigana using ruby elements
-  // Only applies furigana when showing original lyrics (not translations)
-  const renderWithFurigana = useCallback(
-    (line: LyricLine, processedText: string): React.ReactNode => {
-      // Don't apply furigana if disabled or if we're showing translations
-      if (japaneseFurigana !== JapaneseFurigana.On || !isShowingOriginal) {
-        return processedText;
-      }
-
-      const segments = furiganaMap.get(line.startTimeMs);
-      if (!segments || segments.length === 0) {
-        return processedText;
-      }
-
-      return (
-        <>
-          {segments.map((segment, index) => {
-            if (segment.reading) {
-              return (
-                <ruby key={index} className="lyrics-furigana">
-                  {segment.text}
-                  <rp>(</rp>
-                  <rt className="lyrics-furigana-rt">{segment.reading}</rt>
-                  <rp>)</rp>
-                </ruby>
-              );
-            }
-            return <span key={index}>{segment.text}</span>;
-          })}
-        </>
-      );
-    },
-    [japaneseFurigana, furiganaMap, isShowingOriginal]
-  );
+  // Fetch and manage furigana using the extracted hook
+  const { renderWithFurigana } = useFurigana({
+    lines: linesForFurigana,
+    enabled: japaneseFurigana === JapaneseFurigana.On,
+    isShowingOriginal,
+    onLoadingChange: onFuriganaLoadingChange,
+  });
 
   const isChineseText = (text: string) => {
     const chineseRegex = /[\u4E00-\u9FFF]/;
@@ -637,6 +396,7 @@ export function LyricsDisplay({
   if (error)
     return (
       <ErrorState
+        error={error}
         bottomPaddingClass={bottomPaddingClass}
         textSizeClass={textSizeClass}
         fontClassName={fontClassName}
@@ -645,6 +405,7 @@ export function LyricsDisplay({
   if (!lines.length && !isLoading && !isTranslating)
     return (
       <ErrorState
+        error="No lyrics available"
         bottomPaddingClass={bottomPaddingClass}
         textSizeClass={textSizeClass}
         fontClassName={fontClassName}

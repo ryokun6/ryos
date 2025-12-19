@@ -4,6 +4,8 @@ import { parseLRC } from "@/utils/lrcParser";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { isOffline } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
+import { processSSEStream, isSSEResponse, SSEChunkEvent } from "@/utils/sse";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Types for SSE streaming events from translation API
 interface TranslationChunkEvent {
@@ -57,7 +59,15 @@ interface LyricsState {
   isLoading: boolean; // True when fetching original LRC
   isTranslating: boolean; // True when translating lyrics
   error?: string;
-  updateCurrentTimeManually: (newTimeInSeconds: number) => void; // Added function to manually update time
+  updateCurrentTimeManually: (newTimeInSeconds: number) => void;
+}
+
+/**
+ * Extract text from an LRC line (removes timestamp)
+ */
+function extractLrcText(lrcLine: string): string {
+  const match = lrcLine.match(/^\[[\d:.]+\](.*)$/);
+  return match ? match[1] : lrcLine;
 }
 
 /**
@@ -75,23 +85,20 @@ export function useLyrics({
   selectedMatch,
 }: UseLyricsParams): LyricsState {
   const [originalLines, setOriginalLines] = useState<LyricLine[]>([]);
-  const [translatedLines, setTranslatedLines] = useState<LyricLine[] | null>(
-    null
-  );
+  const [translatedLines, setTranslatedLines] = useState<LyricLine[] | null>(null);
   const [currentLine, setCurrentLine] = useState(-1);
   const [isFetchingOriginal, setIsFetchingOriginal] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
   const cachedKeyRef = useRef<string | null>(null);
-  // Add a ref to store the last computed time for manual updates
   const lastTimeRef = useRef<number>(currentTime);
-  // Track refresh nonce from the iPod store to force re-fetching
-  const refreshNonce = useIpodStore((s) => s.lyricsRefreshNonce);
-  const lastRefreshNonceRef = useRef<number>(0);
-  // Track cache force nonce for forcing cache bypass (including translation)
-  const lyricsCacheForceNonce = useIpodStore((s) => s.lyricsCacheForceNonce);
-  const lastCacheForceNonceRef = useRef<number>(0);
+  // Track refresh trigger from the iPod store to force re-fetching
+  const refetchTrigger = useIpodStore((s) => s.lyricsRefetchTrigger);
+  const lastRefetchTriggerRef = useRef<number>(0);
+  // Track cache bust trigger for forcing cache bypass (including translation)
+  const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
+  const lastCacheBustTriggerRef = useRef<number>(0);
 
   // Effect for fetching original lyrics
   useEffect(() => {
@@ -103,7 +110,6 @@ export function useLyrics({
       setCurrentLine(-1);
       setIsFetchingOriginal(false);
       setError(undefined);
-      // Clear cache key so next valid track will fetch lyrics even if it has the same metadata
       cachedKeyRef.current = null;
       return;
     }
@@ -111,7 +117,6 @@ export function useLyrics({
     // Check if offline before fetching
     if (isOffline()) {
       setError("iPod requires an internet connection");
-      // Don't show toast here - let the component handle it to avoid duplicates
       return;
     }
 
@@ -119,15 +124,14 @@ export function useLyrics({
     const selectedMatchKey = selectedMatch?.hash || "";
     const cacheKey = `${title}__${artist}__${album}__${selectedMatchKey}`;
     
-    // Force refresh only when user explicitly triggers via refreshLyrics() (e.g., selecting from search dialog)
-    const isForced = lastRefreshNonceRef.current !== refreshNonce;
+    // Force refresh only when user explicitly triggers via refreshLyrics()
+    const isForced = lastRefetchTriggerRef.current !== refetchTrigger;
     
     // Skip fetch if we have cached data and no force refresh requested
-    // Cache is keyed by hash, so same hash = same cached lyrics
     if (!isForced && cacheKey === cachedKeyRef.current) {
       // If original lyrics are cached, we might still need to translate if translateTo changed.
       // The translation effect will handle this.
-      lastRefreshNonceRef.current = refreshNonce;
+      lastRefetchTriggerRef.current = refetchTrigger;
       return;
     }
 
@@ -136,15 +140,10 @@ export function useLyrics({
     setTranslatedLines(null);
     setCurrentLine(-1);
     setIsFetchingOriginal(true);
-    setIsTranslating(false); // Reset translation state
+    setIsTranslating(false);
     setError(undefined);
 
-    let cancelled = false;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-      console.warn("Lyrics fetch timed out");
-    }, 15000);
 
     // Build request body
     const requestBody: {
@@ -167,36 +166,33 @@ export function useLyrics({
     };
 
     if (selectedMatch) {
-      // Use fetch action with selected match
-      // force flag is already set based on isForced (nonce change from refreshLyrics())
       requestBody.action = "fetch";
       requestBody.selectedHash = selectedMatch.hash;
       requestBody.selectedAlbumId = selectedMatch.albumId;
       if (selectedMatch.title) requestBody.selectedTitle = selectedMatch.title;
-      if (selectedMatch.artist)
-        requestBody.selectedArtist = selectedMatch.artist;
+      if (selectedMatch.artist) requestBody.selectedArtist = selectedMatch.artist;
       if (selectedMatch.album) requestBody.selectedAlbum = selectedMatch.album;
     } else if (searchQueryOverride) {
-      // Use query override but still auto-fetch (action defaults to "auto")
       requestBody.query = searchQueryOverride;
     }
 
-    fetch(getApiUrl("/api/lyrics"), {
+    abortableFetch(getApiUrl("/api/lyrics"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),
       signal: controller.signal,
+      timeout: 15000,
     })
       .then(async (res) => {
-        clearTimeout(timeoutId);
+        if (controller.signal.aborted) return null;
         if (!res.ok) {
-          if (res.status === 404 || controller.signal.aborted) return null;
+          if (res.status === 404) return null;
           throw new Error(`Failed to fetch lyrics (status ${res.status})`);
         }
         return res.json();
       })
       .then((json) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         if (!json) throw new Error("No lyrics found or fetch timed out");
 
         const lrc: string | undefined = json?.lyrics;
@@ -215,7 +211,7 @@ export function useLyrics({
         useIpodStore.setState({ currentLyrics: { lines: parsed } });
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         console.error("useLyrics original fetch error", err);
         if (err instanceof DOMException && err.name === "AbortError") {
           setError("Lyrics search timed out.");
@@ -230,35 +226,28 @@ export function useLyrics({
         useIpodStore.setState({ currentLyrics: null });
       })
       .finally(() => {
-        clearTimeout(timeoutId);
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setIsFetchingOriginal(false);
-          lastRefreshNonceRef.current = refreshNonce;
+          lastRefetchTriggerRef.current = refetchTrigger;
         }
       });
 
     return () => {
-      cancelled = true;
       controller.abort();
-      clearTimeout(timeoutId);
     };
-  }, [title, artist, album, refreshNonce, searchQueryOverride, selectedMatch]);
+  }, [title, artist, album, refetchTrigger, searchQueryOverride, selectedMatch]);
 
   // Effect for translating lyrics - now handles both streaming and non-streaming responses
   useEffect(() => {
     if (!translateTo || originalLines.length === 0) {
       setTranslatedLines(null);
       setIsTranslating(false);
-      if (translateTo && originalLines.length > 0) {
-        // This case should be handled by originalLines fetch completing first.
-        // If originalLines is empty and translateTo is set, it means we are waiting for original fetch or original fetch failed.
-      }
       return;
     }
 
     // If original fetch is still in progress, wait for it.
     if (isFetchingOriginal) {
-      setIsTranslating(false); // Not yet translating
+      setIsTranslating(false);
       return;
     }
 
@@ -266,120 +255,18 @@ export function useLyrics({
     if (isOffline()) {
       setIsTranslating(false);
       setError("iPod requires an internet connection");
-      // Don't show toast here - let the component handle it to avoid duplicates
       return;
     }
 
     // Check if this is a force cache clear request
-    const isForceRequest = lastCacheForceNonceRef.current !== lyricsCacheForceNonce;
+    const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
 
-    let cancelled = false;
     setIsTranslating(true);
-    setError(undefined); // Clear previous errors
+    setError(undefined);
 
     const controller = new AbortController();
-    const translationTimeoutId = setTimeout(() => {
-      controller.abort();
-      console.warn("Lyrics translation timed out");
-    }, 180000); // Increased timeout for streaming
 
-    const handleStreamingResponse = async (res: Response) => {
-      const reader = res.body?.getReader();
-      if (!reader) {
-        throw new Error("No response body");
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-      // Collect LRC lines as they arrive - use array to maintain order
-      const lrcLinesCollected: string[] = new Array(originalLines.length).fill("");
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (cancelled) {
-          reader.cancel();
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const sseLines = buffer.split("\n\n");
-        buffer = sseLines.pop() || "";
-
-        for (const sseLine of sseLines) {
-          if (sseLine.startsWith("data: ")) {
-            try {
-              const eventData = JSON.parse(sseLine.slice(6)) as TranslationSSEEvent;
-              
-              if (eventData.type === "chunk") {
-                // Update the collected LRC lines with this chunk's data
-                eventData.lines.forEach((lrcLine, index) => {
-                  const globalIndex = eventData.startIndex + index;
-                  if (globalIndex < lrcLinesCollected.length) {
-                    lrcLinesCollected[globalIndex] = lrcLine;
-                  }
-                });
-
-                // Build progressive lines: use translated where available, original elsewhere
-                if (!cancelled) {
-                  const progressiveLines: LyricLine[] = originalLines.map((origLine, idx) => {
-                    if (lrcLinesCollected[idx]) {
-                      // Parse the single LRC line to extract the translated text
-                      const lrcLine = lrcLinesCollected[idx];
-                      const match = lrcLine.match(/^\[[\d:.]+\](.*)$/);
-                      const translatedText = match ? match[1] : origLine.words;
-                      return {
-                        ...origLine,
-                        words: translatedText,
-                      };
-                    }
-                    return origLine;
-                  });
-                  setTranslatedLines([...progressiveLines]);
-                }
-              } else if (eventData.type === "complete") {
-                // Final state - all lines should be translated
-                if (!cancelled) {
-                  const finalLines: LyricLine[] = originalLines.map((origLine, idx) => {
-                    if (lrcLinesCollected[idx]) {
-                      const lrcLine = lrcLinesCollected[idx];
-                      const match = lrcLine.match(/^\[[\d:.]+\](.*)$/);
-                      const translatedText = match ? match[1] : origLine.words;
-                      return {
-                        ...origLine,
-                        words: translatedText,
-                      };
-                    }
-                    return origLine;
-                  });
-                  setTranslatedLines(finalLines);
-                }
-              } else if (eventData.type === "error") {
-                throw new Error(eventData.message);
-              }
-            } catch (parseError) {
-              console.warn("Failed to parse SSE event:", parseError);
-            }
-          }
-        }
-      }
-    };
-
-    const handleNonStreamingResponse = async (res: Response) => {
-      const responseText = await res.text();
-      if (!res.ok) {
-        const errorMessage = responseText.startsWith("Error: ")
-          ? responseText.substring(7)
-          : responseText;
-        throw new Error(
-          errorMessage ||
-            `Translation request failed with status ${res.status}`
-        );
-      }
-      return responseText;
-    };
-
-    fetch(getApiUrl("/api/translate-lyrics"), {
+    abortableFetch(getApiUrl("/api/translate-lyrics"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -388,30 +275,97 @@ export function useLyrics({
         force: isForceRequest,
       }),
       signal: controller.signal,
+      timeout: 180000, // Increased timeout for streaming
     })
       .then(async (res) => {
-        clearTimeout(translationTimeoutId);
-        
-        // Check if this is a streaming response (text/event-stream)
-        const contentType = res.headers.get("content-type") || "";
-        
-        if (contentType.includes("text/event-stream")) {
+        if (controller.signal.aborted) return;
+
+        // Check if this is a streaming response
+        if (isSSEResponse(res)) {
           // Handle streaming response
-          await handleStreamingResponse(res);
+          const lrcLinesCollected: string[] = new Array(originalLines.length).fill("");
+
+          await processSSEStream<TranslationSSEEvent>({
+            response: res,
+            signal: controller.signal,
+            onChunk: (event: SSEChunkEvent<TranslationSSEEvent>) => {
+              if (controller.signal.aborted) return;
+
+              // Server sends chunk data at top level, not nested in 'data'
+              const chunkEvent = event as unknown as TranslationChunkEvent;
+
+              // Update the collected LRC lines with this chunk's data
+              chunkEvent.lines.forEach((lrcLine, index) => {
+                const globalIndex = chunkEvent.startIndex + index;
+                if (globalIndex < lrcLinesCollected.length) {
+                  lrcLinesCollected[globalIndex] = lrcLine;
+                }
+              });
+
+              // Build progressive lines: use translated where available, original elsewhere
+              if (!controller.signal.aborted) {
+                const progressiveLines: LyricLine[] = originalLines.map((origLine, idx) => {
+                  if (lrcLinesCollected[idx]) {
+                    const translatedText = extractLrcText(lrcLinesCollected[idx]);
+                    return {
+                      ...origLine,
+                      words: translatedText,
+                    };
+                  }
+                  return origLine;
+                });
+                setTranslatedLines([...progressiveLines]);
+              }
+            },
+            onComplete: () => {
+              // Final state - all lines should be translated
+              if (!controller.signal.aborted) {
+                const finalLines: LyricLine[] = originalLines.map((origLine, idx) => {
+                  if (lrcLinesCollected[idx]) {
+                    const translatedText = extractLrcText(lrcLinesCollected[idx]);
+                    return {
+                      ...origLine,
+                      words: translatedText,
+                    };
+                  }
+                  return origLine;
+                });
+                setTranslatedLines(finalLines);
+                lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+              }
+            },
+            onError: (err) => {
+              if (!controller.signal.aborted) {
+                setError(err.message);
+                setIsTranslating(false);
+              }
+            },
+          });
         } else {
           // Handle non-streaming response (small requests or cached)
-          const lrcText = await handleNonStreamingResponse(res);
-          if (cancelled) return;
-          if (lrcText) {
-            const parsedTranslatedLines = parseLRC(lrcText, title, artist);
+          const responseText = await res.text();
+          if (controller.signal.aborted) return;
+          
+          if (!res.ok) {
+            const errorMessage = responseText.startsWith("Error: ")
+              ? responseText.substring(7)
+              : responseText;
+            throw new Error(
+              errorMessage || `Translation request failed with status ${res.status}`
+            );
+          }
+          
+          if (responseText) {
+            const parsedTranslatedLines = parseLRC(responseText, title, artist);
             setTranslatedLines(parsedTranslatedLines);
+            lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
           } else {
             setTranslatedLines([]);
           }
         }
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         console.error("useLyrics translation error", err);
         if (err instanceof DOMException && err.name === "AbortError") {
           setError("Lyrics translation timed out.");
@@ -426,19 +380,16 @@ export function useLyrics({
         // Keep original lyrics in iPod store on translation error
       })
       .finally(() => {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setIsTranslating(false);
-          lastCacheForceNonceRef.current = lyricsCacheForceNonce;
+          lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
         }
-        clearTimeout(translationTimeoutId);
       });
 
     return () => {
-      cancelled = true;
       controller.abort();
-      clearTimeout(translationTimeoutId);
     };
-  }, [originalLines, translateTo, isFetchingOriginal, title, artist, lyricsCacheForceNonce]);
+  }, [originalLines, translateTo, isFetchingOriginal, title, artist, lyricsCacheBustTrigger]);
 
   const displayLines = translatedLines || originalLines;
 

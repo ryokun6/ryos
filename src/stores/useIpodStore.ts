@@ -44,14 +44,13 @@ interface IpodData {
   chineseVariant: ChineseVariant;
   koreanDisplay: KoreanDisplay;
   japaneseFurigana: JapaneseFurigana;
-  lyricsTranslationRequest: { language: string; songId: string } | null;
   /** Persistent translation language preference that persists across tracks */
   lyricsTranslationLanguage: string | null;
   currentLyrics: { lines: LyricLine[] } | null;
-  /** Incrementing nonce to force-refresh lyrics fetching */
-  lyricsRefreshNonce: number;
-  /** Incrementing nonce to force-clear all lyrics caches (lyrics, translation, furigana) */
-  lyricsCacheForceNonce: number;
+  /** Incrementing trigger to force-refresh lyrics fetching (client-side refetch) */
+  lyricsRefetchTrigger: number;
+  /** Incrementing trigger to force-clear all lyrics caches (bypasses server cache) */
+  lyricsCacheBustTrigger: number;
   isFullScreen: boolean;
   libraryState: LibraryState;
   lastKnownVersion: number;
@@ -150,11 +149,10 @@ const initialIpodData: IpodData = {
   chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
-  lyricsTranslationRequest: null,
   lyricsTranslationLanguage: null,
   currentLyrics: null,
-  lyricsRefreshNonce: 0,
-  lyricsCacheForceNonce: 0,
+  lyricsRefetchTrigger: 0,
+  lyricsCacheBustTrigger: 0,
   isFullScreen: false,
   libraryState: "uninitialized",
   lastKnownVersion: 0,
@@ -195,11 +193,6 @@ export interface IpodState extends IpodData {
   setKoreanDisplay: (display: KoreanDisplay) => void;
   /** Set Japanese furigana display mode */
   setJapaneseFurigana: (mode: JapaneseFurigana) => void;
-  /** Set the target language for lyrics translation. Pass null to disable translation. */
-  setLyricsTranslationRequest: (
-    language: string | null,
-    songId: string | null
-  ) => void;
   /** Set the persistent translation language preference that persists across tracks */
   setLyricsTranslationLanguage: (language: string | null) => void;
   /** Import library from JSON string */
@@ -235,7 +228,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSearch: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 20; // Incremented version for Japanese furigana setting
+const CURRENT_IPOD_STORE_VERSION = 21; // Removed lyricsTranslationRequest, renamed nonces
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -339,27 +332,15 @@ export const useIpodStore = create<IpodState>()(
               ? updatePlaybackHistory(state.playbackHistory, currentTrackId)
               : state.playbackHistory;
 
-            // Preserve translation language preference but update song ID
-            const newTranslationRequest = state.lyricsTranslationLanguage && state.tracks[index]?.id
-              ? { language: state.lyricsTranslationLanguage, songId: state.tracks[index].id }
-              : null;
-
             return {
               currentIndex: index,
-              lyricsTranslationRequest: newTranslationRequest,
               playbackHistory: newPlaybackHistory,
               historyPosition: -1,
             };
           }
 
-          // If not changing tracks, still update translation request if language preference exists
-          const newTranslationRequest = state.lyricsTranslationLanguage && state.tracks[index]?.id
-            ? { language: state.lyricsTranslationLanguage, songId: state.tracks[index].id }
-            : null;
-
           return {
             currentIndex: index,
-            lyricsTranslationRequest: newTranslationRequest,
           };
         }),
       toggleLoopCurrent: () =>
@@ -408,7 +389,6 @@ export const useIpodStore = create<IpodState>()(
           tracks: [track, ...state.tracks],
           currentIndex: 0,
           isPlaying: true,
-          lyricsTranslationRequest: null,
           libraryState: "loaded",
           playbackHistory: [], // Clear playback history when adding new tracks
           historyPosition: -1,
@@ -418,7 +398,6 @@ export const useIpodStore = create<IpodState>()(
           tracks: [],
           currentIndex: -1,
           isPlaying: false,
-          lyricsTranslationRequest: null,
           libraryState: "cleared",
           playbackHistory: [], // Clear playback history when clearing library
           historyPosition: -1,
@@ -429,7 +408,6 @@ export const useIpodStore = create<IpodState>()(
           tracks,
           currentIndex: tracks.length > 0 ? 0 : -1,
           isPlaying: false,
-          lyricsTranslationRequest: null,
           libraryState: "loaded",
           lastKnownVersion: version,
           playbackHistory: [], // Clear playback history when resetting library
@@ -439,7 +417,7 @@ export const useIpodStore = create<IpodState>()(
       nextTrack: () =>
         set((state) => {
           if (state.tracks.length === 0)
-            return { currentIndex: -1, lyricsTranslationRequest: null };
+            return { currentIndex: -1 };
 
           // Add current track to history before moving to next
           const currentTrackId = state.tracks[state.currentIndex]?.id;
@@ -469,28 +447,16 @@ export const useIpodStore = create<IpodState>()(
 
             // If we've reached the end and loop all is off, stop
             if (!state.loopAll && next === 0) {
-              // Preserve translation language preference but update song ID
-              const newTranslationRequest = state.lyricsTranslationLanguage && state.tracks[state.tracks.length - 1]?.id
-                ? { language: state.lyricsTranslationLanguage, songId: state.tracks[state.tracks.length - 1].id }
-                : null;
-
               return {
                 currentIndex: state.tracks.length - 1,
                 isPlaying: false,
-                lyricsTranslationRequest: newTranslationRequest,
               };
             }
           }
 
-          // Preserve translation language preference but update song ID
-          const newTranslationRequest = state.lyricsTranslationLanguage && state.tracks[next]?.id
-            ? { language: state.lyricsTranslationLanguage, songId: state.tracks[next].id }
-            : null;
-
           return {
             currentIndex: next,
             isPlaying: true,
-            lyricsTranslationRequest: newTranslationRequest,
             playbackHistory: newPlaybackHistory,
             historyPosition: -1, // Always reset to end when moving forward
           };
@@ -498,7 +464,7 @@ export const useIpodStore = create<IpodState>()(
       previousTrack: () =>
         set((state) => {
           if (state.tracks.length === 0)
-            return { currentIndex: -1, lyricsTranslationRequest: null };
+            return { currentIndex: -1 };
 
           let prev: number;
           let newPlaybackHistory = state.playbackHistory;
@@ -534,15 +500,9 @@ export const useIpodStore = create<IpodState>()(
               state.tracks.length;
           }
 
-          // Preserve translation language preference but update song ID
-          const newTranslationRequest = state.lyricsTranslationLanguage && state.tracks[prev]?.id
-            ? { language: state.lyricsTranslationLanguage, songId: state.tracks[prev].id }
-            : null;
-
           return {
             currentIndex: prev,
             isPlaying: true,
-            lyricsTranslationRequest: newTranslationRequest,
             playbackHistory: newPlaybackHistory,
             historyPosition: -1,
           };
@@ -551,13 +511,13 @@ export const useIpodStore = create<IpodState>()(
       toggleLyrics: () => set((state) => ({ showLyrics: !state.showLyrics })),
       refreshLyrics: () =>
         set((state) => ({
-          lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
+          lyricsRefetchTrigger: state.lyricsRefetchTrigger + 1,
           currentLyrics: null,
         })),
       clearLyricsCache: () =>
         set((state) => ({
-          lyricsRefreshNonce: state.lyricsRefreshNonce + 1,
-          lyricsCacheForceNonce: state.lyricsCacheForceNonce + 1,
+          lyricsRefetchTrigger: state.lyricsRefetchTrigger + 1,
+          lyricsCacheBustTrigger: state.lyricsCacheBustTrigger + 1,
           currentLyrics: null,
         })),
       adjustLyricOffset: (trackIndex, deltaMs) =>
@@ -585,28 +545,9 @@ export const useIpodStore = create<IpodState>()(
       setChineseVariant: (variant) => set({ chineseVariant: variant }),
       setKoreanDisplay: (display) => set({ koreanDisplay: display }),
       setJapaneseFurigana: (mode) => set({ japaneseFurigana: mode }),
-      setLyricsTranslationRequest: (language, songId) =>
-        set(
-          language && songId
-            ? { 
-                lyricsTranslationRequest: { language, songId },
-                lyricsTranslationLanguage: language
-              }
-            : { 
-                lyricsTranslationRequest: null,
-                lyricsTranslationLanguage: null
-              }
-        ),
       setLyricsTranslationLanguage: (language) =>
-        set((state) => {
-          const newTranslationRequest = language && state.tracks[state.currentIndex]?.id
-            ? { language, songId: state.tracks[state.currentIndex].id }
-            : null;
-
-          return {
-            lyricsTranslationLanguage: language,
-            lyricsTranslationRequest: newTranslationRequest,
-          };
+        set({
+          lyricsTranslationLanguage: language,
         }),
       importLibrary: (json: string) => {
         try {
@@ -624,7 +565,6 @@ export const useIpodStore = create<IpodState>()(
             tracks: importedTracks,
             currentIndex: importedTracks.length > 0 ? 0 : -1,
             isPlaying: false,
-            lyricsTranslationRequest: null,
             libraryState: "loaded",
             playbackHistory: [], // Clear playback history when importing library
             historyPosition: -1,
@@ -934,7 +874,6 @@ export const useIpodStore = create<IpodState>()(
         chineseVariant: state.chineseVariant,
         koreanDisplay: state.koreanDisplay,
         japaneseFurigana: state.japaneseFurigana,
-        lyricsTranslationRequest: state.lyricsTranslationRequest, // Persist translation state
         lyricsTranslationLanguage: state.lyricsTranslationLanguage, // Persist translation language preference
         isFullScreen: state.isFullScreen,
         libraryState: state.libraryState,
@@ -960,7 +899,6 @@ export const useIpodStore = create<IpodState>()(
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
-            lyricsTranslationRequest: state.lyricsTranslationRequest ?? null, // Preserve existing translation state
             lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? null, // Preserve existing translation language preference
             libraryState: "uninitialized" as LibraryState, // Reset to uninitialized on migration
             lastKnownVersion: state.lastKnownVersion ?? 0,
@@ -984,7 +922,6 @@ export const useIpodStore = create<IpodState>()(
           chineseVariant: state.chineseVariant,
           koreanDisplay: state.koreanDisplay,
           japaneseFurigana: state.japaneseFurigana,
-          lyricsTranslationRequest: state.lyricsTranslationRequest, // Persist translation state
           lyricsTranslationLanguage: state.lyricsTranslationLanguage, // Persist translation language preference
           isFullScreen: state.isFullScreen,
           libraryState: state.libraryState,
