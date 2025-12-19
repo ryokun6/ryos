@@ -278,6 +278,67 @@ function AnimatedWord({
 }
 
 /**
+ * Static word rendering without animation (for inactive lines with word timings)
+ * Uses the same DOM structure as animated words for consistent line breaking
+ */
+function StaticWordRendering({
+  wordTimings,
+  processText,
+  furiganaSegments,
+}: {
+  wordTimings: LyricWord[];
+  processText: (text: string) => string;
+  furiganaSegments?: FuriganaSegment[];
+}): ReactNode {
+  // Base shadow for text legibility (same as inactive lines)
+  const baseShadow = "0 0 2px black, 0 0 2px black, 0 0 2px black";
+
+  // When furigana is present, render with ruby elements
+  if (furiganaSegments && furiganaSegments.length > 0) {
+    const wordFuriganaList = mapWordsToFurigana(wordTimings, furiganaSegments);
+
+    return (
+      <>
+        {wordTimings.map((word, idx) => {
+          const wordFurigana = wordFuriganaList[idx];
+
+          // Skip words whose characters were already rendered by a previous word's furigana
+          if (wordFurigana === null) {
+            return null;
+          }
+
+          const content =
+            wordFurigana.length > 0
+              ? renderFuriganaSegments(wordFurigana)
+              : processText(word.text);
+
+          return (
+            <span key={`${idx}-${word.text}`} className="lyrics-word-highlight">
+              <span className="lyrics-word-layer" style={{ textShadow: baseShadow }}>
+                {content}
+              </span>
+            </span>
+          );
+        })}
+      </>
+    );
+  }
+
+  // No furigana - render each word in the same structure
+  return (
+    <>
+      {wordTimings.map((word, idx) => (
+        <span key={`${idx}-${word.text}`} className="lyrics-word-highlight">
+          <span className="lyrics-word-layer" style={{ textShadow: baseShadow }}>
+            {processText(word.text)}
+          </span>
+        </span>
+      ))}
+    </>
+  );
+}
+
+/**
  * Renders a line with word-level timing highlights
  * Uses requestAnimationFrame for smooth updates
  */
@@ -748,27 +809,28 @@ export function LyricsDisplay({
             position = lineActualIdx - currentActualIdx;
           }
 
-          // Determine if we should use word-level highlighting
-          // Only for original lyrics with word timings and valid current time
-          const shouldUseWordTiming =
+          // Determine if line has word timings available
+          const hasWordTimings =
             isShowingOriginal &&
-            isCurrent &&
             line.wordTimings &&
-            line.wordTimings.length > 0 &&
-            currentTimeMs !== undefined;
+            line.wordTimings.length > 0;
+
+          // Determine if we should use animated word-level highlighting (only for current line)
+          const shouldUseAnimatedWordTiming =
+            hasWordTimings && isCurrent && currentTimeMs !== undefined;
 
           const variants = getVariants(
             position,
             alignment === LyricsAlignment.Alternating,
             isCurrent,
-            shouldUseWordTiming
+            shouldUseAnimatedWordTiming
           );
           // Ensure transitions are extra smooth during offset adjustments
           // For word-timing lines, make opacity/textShadow instant to prevent flash during transition
           const dynamicTransition = {
             ...ANIMATION_CONFIG.spring,
-            opacity: shouldUseWordTiming ? { duration: 0 } : ANIMATION_CONFIG.fade,
-            textShadow: shouldUseWordTiming ? { duration: 0 } : ANIMATION_CONFIG.fade,
+            opacity: shouldUseAnimatedWordTiming ? { duration: 0 } : ANIMATION_CONFIG.fade,
+            textShadow: shouldUseAnimatedWordTiming ? { duration: 0 } : ANIMATION_CONFIG.fade,
             filter: ANIMATION_CONFIG.fade,
             duration: 0.15, // Faster transitions for smoother adjustment feedback
           };
@@ -805,11 +867,21 @@ export function LyricsDisplay({
                     : undefined,
               }}
             >
-              {shouldUseWordTiming ? (
+              {shouldUseAnimatedWordTiming ? (
                 <WordTimingHighlight
                   wordTimings={line.wordTimings!}
                   lineStartTimeMs={parseInt(line.startTimeMs, 10)}
                   currentTimeMs={currentTimeMs!}
+                  processText={processText}
+                  furiganaSegments={
+                    japaneseFurigana === JapaneseFurigana.On
+                      ? furiganaMap.get(line.startTimeMs)
+                      : undefined
+                  }
+                />
+              ) : hasWordTimings ? (
+                <StaticWordRendering
+                  wordTimings={line.wordTimings!}
                   processText={processText}
                   furiganaSegments={
                     japaneseFurigana === JapaneseFurigana.On
