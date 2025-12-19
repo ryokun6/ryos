@@ -5,8 +5,8 @@ import { useTranslation } from "react-i18next";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
-// Temporarily disable auto-updates
-const AUTO_UPDATE_DISABLED = true;
+// Set to true to temporarily disable auto-updates
+const AUTO_UPDATE_DISABLED = false;
 
 export function useLibraryUpdateChecker(isActive: boolean) {
   const { t } = useTranslation();
