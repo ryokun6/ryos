@@ -1,4 +1,6 @@
 {
   "snapshot": "snapshot-20251219-743bee25-a601-49aa-aeab-606f9fe11dd1",
-  "terminals": []
+  "terminals": [],
+  "install": "source ~/.bashrc && bun install",
+  "start": "source ~/.bashrc && bun run dev:vercel"
 }
