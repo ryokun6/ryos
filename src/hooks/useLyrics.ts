@@ -203,19 +203,40 @@ export function useLyrics({
         const songTitle = json?.title ?? title;
         const songArtist = json?.artist ?? artist;
 
+        console.log("[useLyrics] Received lyrics response:", {
+          hasLrc: !!lrc,
+          hasKrc: !!krc,
+          lrcLength: lrc?.length,
+          krcLength: krc?.length,
+          songTitle,
+          songArtist,
+        });
+
         let parsed: LyricLine[];
 
         // Prefer KRC format if available (has word-level timing)
         if (krc && isKRCFormat(krc)) {
+          console.log("[useLyrics] KRC format detected, parsing with parseKRC");
           const cleanedKrc = krc.replace(/\u200b/g, "");
           parsed = parseKRC(cleanedKrc, songTitle, songArtist);
-          console.log("[useLyrics] Parsed KRC lyrics with word-level timing");
+          console.log("[useLyrics] Parsed KRC lyrics:", parsed.length, "lines");
+          if (parsed.length === 0 && lrc) {
+            console.log("[useLyrics] KRC parsing returned 0 lines, falling back to LRC");
+            const cleanedLrc = lrc.replace(/\u200b/g, "");
+            parsed = parseLRC(cleanedLrc, songTitle, songArtist);
+            console.log("[useLyrics] Fallback LRC parsing:", parsed.length, "lines");
+          }
         } else if (lrc) {
+          console.log("[useLyrics] Using LRC format (no KRC or not KRC format)");
           const cleanedLrc = lrc.replace(/\u200b/g, "");
           parsed = parseLRC(cleanedLrc, songTitle, songArtist);
-          console.log("[useLyrics] Parsed LRC lyrics (line-level timing)");
+          console.log("[useLyrics] Parsed LRC lyrics:", parsed.length, "lines");
         } else {
           throw new Error("No valid lyrics format found");
+        }
+        
+        if (parsed.length === 0) {
+          console.warn("[useLyrics] Parsing resulted in 0 lines! This will show 'No lyrics available'");
         }
 
         setOriginalLines(parsed);
@@ -226,13 +247,13 @@ export function useLyrics({
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        console.error("useLyrics original fetch error", err);
+        console.error("[useLyrics] Error during lyrics fetch/parse:", err);
         if (err instanceof DOMException && err.name === "AbortError") {
           setError("Lyrics search timed out.");
         } else {
-          setError(
-            err instanceof Error ? err.message : "Unknown error fetching lyrics"
-          );
+          const errorMessage = err instanceof Error ? err.message : "Unknown error fetching lyrics";
+          console.error("[useLyrics] Setting error state:", errorMessage);
+          setError(errorMessage);
         }
         setOriginalLines([]);
         setCurrentLine(-1);

@@ -97,7 +97,10 @@ export function parseKRC(
   // The flag (third number) is typically 0 and can be ignored
   const wordTimingRegex = /<(\d+),(\d+),\d+>([^<]*)/g;
 
-  return krcText
+  // Normalize line endings: convert \r\n to \n and standalone \r to \n
+  const normalizedText = krcText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+  const result = normalizedText
     .split("\n")
     .map((line) => {
       const lineMatch = line.match(lineHeaderRegex);
@@ -149,16 +152,24 @@ export function parseKRC(
         return null;
       }
 
-      const result: LyricLine = {
+      const lyricLine: LyricLine = {
         startTimeMs: startMs,
         words: trimmedText,
       };
       if (wordTimings.length > 0) {
-        result.wordTimings = wordTimings;
+        lyricLine.wordTimings = wordTimings;
       }
-      return result;
+      return lyricLine;
     })
     .filter((line): line is LyricLine => line !== null);
+
+  if (result.length === 0) {
+    console.warn("[parseKRC] No lyrics parsed from KRC text. First 500 chars:", krcText.slice(0, 500));
+  } else {
+    console.log("[parseKRC] Parsed", result.length, "lyric lines");
+  }
+
+  return result;
 }
 
 /**

@@ -76,7 +76,10 @@ export const parseLRC = (
     `${artist} - ${title}`,
   ];
 
-  return lrcText
+  // Normalize line endings: convert \r\n to \n and standalone \r to \n
+  const normalizedText = lrcText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+  const result = normalizedText
     .split("\n")
     .map((line) => {
       const match = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.+)/);
@@ -101,4 +104,12 @@ export const parseLRC = (
       };
     })
     .filter((line): line is LyricLine => line !== null);
+
+  if (result.length === 0) {
+    console.warn("[parseLRC] No lyrics parsed from LRC text. First 500 chars:", lrcText.slice(0, 500));
+  } else {
+    console.log("[parseLRC] Parsed", result.length, "lyric lines");
+  }
+
+  return result;
 };
