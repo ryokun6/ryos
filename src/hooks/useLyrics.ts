@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { LyricLine } from "@/types/lyrics";
 import { parseLRC } from "@/utils/lrcParser";
+import { parseKRC, isKRCFormat } from "@/utils/krcParser";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { isOffline } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
@@ -196,14 +197,27 @@ export function useLyrics({
         if (!json) throw new Error("No lyrics found or fetch timed out");
 
         const lrc: string | undefined = json?.lyrics;
-        if (!lrc) throw new Error("No lyrics found");
+        const krc: string | undefined = json?.krcLyrics;
+        if (!lrc && !krc) throw new Error("No lyrics found");
 
-        const cleanedLrc = lrc.replace(/\u200b/g, "");
-        const parsed = parseLRC(
-          cleanedLrc,
-          json?.title ?? title,
-          json?.artist ?? artist
-        );
+        const songTitle = json?.title ?? title;
+        const songArtist = json?.artist ?? artist;
+
+        let parsed: LyricLine[];
+
+        // Prefer KRC format if available (has word-level timing)
+        if (krc && isKRCFormat(krc)) {
+          const cleanedKrc = krc.replace(/\u200b/g, "");
+          parsed = parseKRC(cleanedKrc, songTitle, songArtist);
+          console.log("[useLyrics] Parsed KRC lyrics with word-level timing");
+        } else if (lrc) {
+          const cleanedLrc = lrc.replace(/\u200b/g, "");
+          parsed = parseLRC(cleanedLrc, songTitle, songArtist);
+          console.log("[useLyrics] Parsed LRC lyrics (line-level timing)");
+        } else {
+          throw new Error("No valid lyrics format found");
+        }
+
         setOriginalLines(parsed);
         cachedKeyRef.current = cacheKey;
 

@@ -250,6 +250,7 @@ export function IpodScreen({
               loop={loopCurrent}
               volume={finalIpodVolume}
               playsinline={true}
+              progressInterval={100}
               config={{
                 youtube: {
                   playerVars: {
@@ -345,6 +346,7 @@ export function IpodScreen({
                 lyricsControls.updateCurrentTimeManually(updatedTime);
               }}
               onFuriganaLoadingChange={setIsFetchingFurigana}
+              currentTimeMs={(elapsedTime + lyricOffset / 1000) * 1000}
             />
           </div>
         </div>

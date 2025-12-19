@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Redis } from "@upstash/redis";
+import pako from "pako";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -88,6 +89,37 @@ function base64ToUtf8(base64: string): string {
   const binaryString = atob(base64);
   const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
   return new TextDecoder().decode(bytes);
+}
+
+/**
+ * KRC decryption key (16 bytes, used for XOR decryption)
+ */
+const KRC_DECRYPTION_KEY = [64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49, 45, 206, 210, 110, 105];
+
+/**
+ * Decode KRC format lyrics (encrypted + compressed)
+ * KRC files are: 4-byte header + XOR encrypted + zlib compressed
+ */
+function decodeKRC(krcBase64: string): string {
+  // Decode base64 to bytes
+  const binaryString = atob(krcBase64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  
+  // Skip 4-byte header
+  const encrypted = bytes.slice(4);
+  
+  // XOR decrypt with the key
+  for (let i = 0; i < encrypted.length; i++) {
+    encrypted[i] ^= KRC_DECRYPTION_KEY[i % 16];
+  }
+  
+  // Decompress using pako (zlib)
+  const decompressed = pako.inflate(encrypted);
+  
+  return new TextDecoder('utf-8').decode(decompressed);
 }
 
 /**
@@ -264,6 +296,83 @@ type CandidateResponse = {
 type LyricsDownloadResponse = {
   content?: string;
 };
+
+/**
+ * Result from fetching lyrics with KRC/LRC support
+ */
+type LyricsFetchResult = {
+  /** LRC format lyrics (always provided for backward compatibility) */
+  lyrics: string;
+  /** Raw KRC format lyrics (if KRC was successfully fetched) */
+  krcLyrics?: string;
+};
+
+/**
+ * Fetch lyrics for a given candidate, trying KRC first then falling back to LRC.
+ * Returns both LRC (for backward compat) and KRC (for word-level timing) if available.
+ */
+async function fetchLyricsWithKrcFallback(
+  lyricsId: number | string,
+  lyricsKey: string,
+  requestId: string
+): Promise<LyricsFetchResult | null> {
+  // Try KRC format first (word-level timing)
+  const krcUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=krc&charset=utf8`;
+  
+  try {
+    const krcRes = await fetch(krcUrl, { headers: kugouHeaders });
+    if (krcRes.ok) {
+      const krcJson = (await krcRes.json()) as unknown as LyricsDownloadResponse;
+      const krcEncoded = krcJson?.content;
+      
+      if (krcEncoded) {
+        try {
+          const krcText = decodeKRC(krcEncoded);
+          logInfo(requestId, "Successfully decoded KRC lyrics");
+          
+          // Also fetch LRC for backward compatibility
+          const lrcUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=lrc&charset=utf8`;
+          const lrcRes = await fetch(lrcUrl, { headers: kugouHeaders });
+          
+          if (lrcRes.ok) {
+            const lrcJson = (await lrcRes.json()) as unknown as LyricsDownloadResponse;
+            const lrcEncoded = lrcJson?.content;
+            if (lrcEncoded) {
+              const lrcText = base64ToUtf8(lrcEncoded);
+              return { lyrics: lrcText, krcLyrics: krcText };
+            }
+          }
+          
+          // If LRC fetch fails, we can convert KRC to basic LRC format
+          // For now, return KRC in both fields - the parser will handle it
+          return { lyrics: krcText, krcLyrics: krcText };
+        } catch (krcErr) {
+          logInfo(requestId, "KRC decryption failed, falling back to LRC", krcErr);
+        }
+      }
+    }
+  } catch (err) {
+    logInfo(requestId, "KRC fetch failed, falling back to LRC", err);
+  }
+  
+  // Fallback to LRC format
+  const lrcUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=lrc&charset=utf8`;
+  const lrcRes = await fetch(lrcUrl, { headers: kugouHeaders });
+  
+  if (!lrcRes.ok) {
+    return null;
+  }
+  
+  const lrcJson = (await lrcRes.json()) as unknown as LyricsDownloadResponse;
+  const lrcEncoded = lrcJson?.content;
+  
+  if (!lrcEncoded) {
+    return null;
+  }
+  
+  const lrcText = base64ToUtf8(lrcEncoded);
+  return { lyrics: lrcText };
+}
 
 /**
  * Main handler
@@ -505,35 +614,38 @@ export default async function handler(req: Request) {
         throw new Error("No lyrics candidate found");
       }
 
-      // Download LRC content
+      // Download lyrics content (try KRC first, fallback to LRC)
       const lyricsId = candidate.id;
       const lyricsKey = candidate.accesskey;
-      const lyricsUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=lrc&charset=utf8`;
-      const lyricsRes = await fetch(lyricsUrl, { headers: kugouHeaders });
-      if (!lyricsRes.ok) {
-        throw new Error(`Failed to download lyrics (status ${lyricsRes.status})`);
-      }
-
-      const lyricsJson =
-        (await lyricsRes.json()) as unknown as LyricsDownloadResponse;
-      const encoded = lyricsJson?.content;
-      if (!encoded) {
+      
+      const lyricsResult = await fetchLyricsWithKrcFallback(lyricsId, lyricsKey, requestId);
+      if (!lyricsResult) {
         throw new Error("No lyrics content in response");
       }
-
-      const lyricsText = base64ToUtf8(encoded);
 
       // Fetch cover image
       const cover = await getCover(songHash, albumId);
 
       // Build response object
-      const result = {
+      const result: {
+        title: string;
+        artist: string;
+        album?: string;
+        lyrics: string;
+        krcLyrics?: string;
+        cover: string;
+      } = {
         title: selectedTitle || title,
         artist: selectedArtist || artist,
         album: selectedAlbum || album || undefined,
-        lyrics: lyricsText,
+        lyrics: lyricsResult.lyrics,
         cover,
       };
+      
+      // Include KRC lyrics if available
+      if (lyricsResult.krcLyrics) {
+        result.krcLyrics = lyricsResult.krcLyrics;
+      }
 
       // Store in cache
       try {
@@ -663,31 +775,36 @@ export default async function handler(req: Request) {
       const candidate = candidateJson?.candidates?.[0];
       if (!candidate) continue;
 
-      // 3. Download LRC content
+      // 3. Download lyrics content (try KRC first, fallback to LRC)
       const lyricsId = candidate.id;
       const lyricsKey = candidate.accesskey;
-      const lyricsUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=lrc&charset=utf8`;
-      const lyricsRes = await fetch(lyricsUrl, { headers: kugouHeaders });
-      if (!lyricsRes.ok) continue;
-
-      const lyricsJson =
-        (await lyricsRes.json()) as unknown as LyricsDownloadResponse;
-      const encoded = lyricsJson?.content;
-      if (!encoded) continue;
-
-      const lyricsText = base64ToUtf8(encoded);
+      
+      const lyricsResult = await fetchLyricsWithKrcFallback(lyricsId, lyricsKey, requestId);
+      if (!lyricsResult) continue;
 
       // 4. Fetch cover image
       const cover = await getCover(songHash, albumId);
 
       // 5. Build response object
-      const result = {
+      const result: {
+        title: string;
+        artist: string;
+        album?: string;
+        lyrics: string;
+        krcLyrics?: string;
+        cover: string;
+      } = {
         title: song.songname,
         artist: song.singername,
         album: song.album_name ?? undefined,
-        lyrics: lyricsText,
+        lyrics: lyricsResult.lyrics,
         cover,
       };
+      
+      // Include KRC lyrics if available
+      if (lyricsResult.krcLyrics) {
+        result.krcLyrics = lyricsResult.krcLyrics;
+      }
 
       // 6. Store in cache (TTL 30 days)
       try {

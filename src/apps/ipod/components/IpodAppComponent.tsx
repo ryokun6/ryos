@@ -702,7 +702,7 @@ export function IpodAppComponent({
   }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    setElapsedTime(Math.floor(state.playedSeconds));
+    setElapsedTime(state.playedSeconds);
   }, []);
 
   const handleDuration = useCallback((duration: number) => {
@@ -1293,6 +1293,7 @@ export function IpodAppComponent({
                             loop={loopCurrent}
                             onEnded={handleTrackEnd}
                             onProgress={handleProgress}
+                            progressInterval={100}
                             onDuration={handleDuration}
                             onPlay={handlePlay}
                             onPause={handlePause}
@@ -1363,6 +1364,7 @@ export function IpodAppComponent({
                               interactive={isIOSSafari ? false : isPlaying}
                               bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
                               onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
+                              currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                             />
                           </div>
                         )}

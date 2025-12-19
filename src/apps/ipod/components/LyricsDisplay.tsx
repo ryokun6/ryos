@@ -1,5 +1,6 @@
 import {
   LyricLine,
+  LyricWord,
   LyricsAlignment,
   ChineseVariant,
   KoreanDisplay,
@@ -7,12 +8,12 @@ import {
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useRef, useState, useEffect } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
 import { useTranslation } from "react-i18next";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { useFurigana } from "@/hooks/useFurigana";
+import { useFurigana, FuriganaSegment } from "@/hooks/useFurigana";
 import { useShallow } from "zustand/react/shallow";
 
 interface LyricsDisplayProps {
@@ -54,6 +55,8 @@ interface LyricsDisplayProps {
   containerStyle?: CSSProperties;
   /** Callback when furigana loading state changes */
   onFuriganaLoadingChange?: (isLoading: boolean) => void;
+  /** Current playback time in milliseconds (for word-level highlighting) */
+  currentTimeMs?: number;
 }
 
 const ANIMATION_CONFIG = {
@@ -110,6 +113,268 @@ const ErrorState = ({
   </div>
 );
 
+
+/**
+ * Render furigana segments as React nodes
+ */
+function renderFuriganaSegments(segments: FuriganaSegment[]): React.ReactNode {
+  return (
+    <>
+      {segments.map((segment, index) => {
+        if (segment.reading) {
+          return (
+            <ruby key={index} className="lyrics-furigana">
+              {segment.text}
+              <rp>(</rp>
+              <rt className="lyrics-furigana-rt">{segment.reading}</rt>
+              <rp>)</rp>
+            </ruby>
+          );
+        }
+        return <span key={index}>{segment.text}</span>;
+      })}
+    </>
+  );
+}
+
+/**
+ * Map furigana segments to individual words based on character positions
+ * When a segment with reading spans multiple words, keeps it intact with the first word
+ * Returns an array where each index corresponds to a word's furigana segments
+ */
+function mapWordsToFurigana(
+  wordTimings: LyricWord[],
+  furiganaSegments: FuriganaSegment[]
+): FuriganaSegment[][] {
+  const result: FuriganaSegment[][] = [];
+  
+  let segmentIndex = 0;
+  let charInSegment = 0;
+  
+  for (const word of wordTimings) {
+    const wordFurigana: FuriganaSegment[] = [];
+    let wordCharsRemaining = word.text.length;
+    
+    while (wordCharsRemaining > 0 && segmentIndex < furiganaSegments.length) {
+      const segment = furiganaSegments[segmentIndex];
+      const charsAvailableInSegment = segment.text.length - charInSegment;
+      const isStartOfSegment = charInSegment === 0;
+      
+      if (charsAvailableInSegment <= wordCharsRemaining) {
+        // Take the rest of this segment
+        wordFurigana.push({
+          text: segment.text.slice(charInSegment),
+          reading: isStartOfSegment ? segment.reading : undefined,
+        });
+        wordCharsRemaining -= charsAvailableInSegment;
+        segmentIndex++;
+        charInSegment = 0;
+      } else {
+        // Segment is larger than remaining word chars
+        // If this segment has a reading and we're at the start, keep the WHOLE segment
+        // with this word to preserve furigana (don't split kanji compounds)
+        if (isStartOfSegment && segment.reading) {
+          wordFurigana.push({
+            text: segment.text,
+            reading: segment.reading,
+          });
+          // Skip past this entire segment for future words
+          segmentIndex++;
+          charInSegment = 0;
+          // Consume the chars this word should have taken
+          // (the extra chars will effectively be "borrowed" from future words)
+          wordCharsRemaining = 0;
+        } else {
+          // No reading or we're mid-segment, safe to split
+          wordFurigana.push({
+            text: segment.text.slice(charInSegment, charInSegment + wordCharsRemaining),
+            reading: undefined,
+          });
+          charInSegment += wordCharsRemaining;
+          wordCharsRemaining = 0;
+        }
+      }
+    }
+    
+    result.push(wordFurigana);
+  }
+  
+  return result;
+}
+
+/**
+ * Single word with karaoke-style clip animation
+ * Uses relative/absolute positioning without grid
+ */
+function AnimatedWord({
+  word,
+  timeIntoLine,
+  content,
+}: {
+  word: LyricWord;
+  timeIntoLine: number;
+  content: React.ReactNode;
+}) {
+  const wordStartMs = word.startTimeMs;
+  const wordDurationMs = word.durationMs;
+
+  // Calculate progress through this word (0 to 1)
+  let progress = 0;
+  if (timeIntoLine >= wordStartMs) {
+    if (wordDurationMs > 0) {
+      progress = Math.min(1, (timeIntoLine - wordStartMs) / wordDurationMs);
+    } else {
+      progress = 1;
+    }
+  }
+
+  // Gradient mask for soft feathered edge
+  // Offset so that 0% progress shows nothing (gradient starts in negative space)
+  const feather = 15; // Width of the soft edge in percentage
+  const progressPercent = progress * (100 + feather) - feather;
+  const gradientStart = progressPercent;
+  const gradientEnd = progressPercent + feather;
+
+  return (
+    <span style={{ display: 'inline-grid' }}>
+      {/* Base layer - dimmed to match inactive line opacity */}
+      <span className="opacity-50" style={{ gridArea: '1 / 1' }}>{content}</span>
+      {/* Overlay layer - gradient mask for soft edge */}
+      <span
+        aria-hidden="true"
+        style={{
+          gridArea: '1 / 1',
+          maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
+          WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
+        }}
+      >
+        {content}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * Renders a line with word-level timing highlights
+ * Uses requestAnimationFrame for smooth updates
+ */
+function WordTimingHighlight({
+  wordTimings,
+  lineStartTimeMs,
+  currentTimeMs,
+  processText,
+  furiganaSegments,
+}: {
+  wordTimings: LyricWord[];
+  lineStartTimeMs: number;
+  currentTimeMs: number;
+  processText: (text: string) => string;
+  furiganaSegments?: FuriganaSegment[];
+}): ReactNode {
+  // Track time for interpolation between prop updates
+  const timeRef = useRef({
+    propTime: currentTimeMs,
+    propTimestamp: performance.now(),
+    lastRenderTime: currentTimeMs,
+  });
+  
+  // Force re-render on each animation frame
+  const [, forceUpdate] = useState(0);
+
+  // Sync when currentTimeMs prop changes
+  useEffect(() => {
+    timeRef.current.propTime = currentTimeMs;
+    timeRef.current.propTimestamp = performance.now();
+  }, [currentTimeMs]);
+
+  // High-frequency timer for smooth animation
+  useEffect(() => {
+    let animationFrameId: number;
+    
+    const tick = () => {
+      forceUpdate(n => n + 1);
+      animationFrameId = requestAnimationFrame(tick);
+    };
+    
+    animationFrameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
+
+  // Interpolate time, but clamp to not go more than 500ms ahead of last prop
+  const elapsed = performance.now() - timeRef.current.propTimestamp;
+  const maxInterpolation = 500; // Don't interpolate more than 500ms ahead
+  const clampedElapsed = Math.min(elapsed, maxInterpolation);
+  const interpolatedTime = timeRef.current.propTime + clampedElapsed;
+  
+  // Calculate time elapsed since the start of this line
+  const timeIntoLine = interpolatedTime - lineStartTimeMs;
+
+  // When furigana is present, render per-word with clip effect
+  if (furiganaSegments && furiganaSegments.length > 0) {
+    const wordFuriganaList = mapWordsToFurigana(wordTimings, furiganaSegments);
+    
+    return (
+      <>
+        {wordTimings.map((word, idx) => {
+          const wordStartMs = word.startTimeMs;
+          const wordDurationMs = word.durationMs;
+          
+          // Calculate progress through this word (0 to 1)
+          let progress = 0;
+          if (timeIntoLine >= wordStartMs) {
+            if (wordDurationMs > 0) {
+              progress = Math.min(1, (timeIntoLine - wordStartMs) / wordDurationMs);
+            } else {
+              progress = 1;
+            }
+          }
+          
+          // Gradient mask for soft feathered edge
+          // Offset so that 0% progress shows nothing (gradient starts in negative space)
+          const feather = 15;
+          const progressPercent = progress * (100 + feather) - feather;
+          const gradientStart = progressPercent;
+          const gradientEnd = progressPercent + feather;
+          
+          const wordFurigana = wordFuriganaList[idx];
+          const content = wordFurigana && wordFurigana.length > 0
+            ? renderFuriganaSegments(wordFurigana)
+            : processText(word.text);
+          
+          return (
+            <span key={`${idx}-${word.text}`} style={{ display: 'inline-grid' }}>
+              <span className="opacity-50" style={{ gridArea: '1 / 1' }}>{content}</span>
+              <span
+                aria-hidden="true"
+                style={{
+                  gridArea: '1 / 1',
+                  maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
+                  WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
+                }}
+              >
+                {content}
+              </span>
+            </span>
+          );
+        })}
+      </>
+    );
+  }
+
+  // No furigana - render each word with individual karaoke effect
+  return (
+    <>
+      {wordTimings.map((word, idx) => (
+        <AnimatedWord
+          key={`${idx}-${word.text}`}
+          word={word}
+          timeIntoLine={timeIntoLine}
+          content={processText(word.text)}
+        />
+      ))}
+    </>
+  );
+}
 
 const getVariants = (
   position: number,
@@ -177,6 +442,7 @@ export function LyricsDisplay({
   fontClassName = "font-geneva-12",
   containerStyle,
   onFuriganaLoadingChange,
+  currentTimeMs,
 }: LyricsDisplayProps) {
   // Read display settings from store (can be overridden by props)
   const {
@@ -212,7 +478,7 @@ export function LyricsDisplay({
   const linesForFurigana = originalLines || lines;
 
   // Fetch and manage furigana using the extracted hook
-  const { renderWithFurigana } = useFurigana({
+  const { renderWithFurigana, furiganaMap } = useFurigana({
     lines: linesForFurigana,
     enabled: japaneseFurigana === JapaneseFurigana.On,
     isShowingOriginal,
@@ -456,6 +722,15 @@ export function LyricsDisplay({
             visibleLines.length
           );
 
+          // Determine if we should use word-level highlighting
+          // Only for original lyrics with word timings and valid current time
+          const shouldUseWordTiming =
+            isShowingOriginal &&
+            isCurrent &&
+            line.wordTimings &&
+            line.wordTimings.length > 0 &&
+            currentTimeMs !== undefined;
+
           return (
             <motion.div
               key={line.startTimeMs}
@@ -483,7 +758,21 @@ export function LyricsDisplay({
                     : undefined,
               }}
             >
-              {renderWithFurigana(line, processText(line.words))}
+              {shouldUseWordTiming ? (
+                <WordTimingHighlight
+                  wordTimings={line.wordTimings!}
+                  lineStartTimeMs={parseInt(line.startTimeMs, 10)}
+                  currentTimeMs={currentTimeMs!}
+                  processText={processText}
+                  furiganaSegments={
+                    japaneseFurigana === JapaneseFurigana.On
+                      ? furiganaMap.get(line.startTimeMs)
+                      : undefined
+                  }
+                />
+              ) : (
+                renderWithFurigana(line, processText(line.words))
+              )}
             </motion.div>
           );
         })}
