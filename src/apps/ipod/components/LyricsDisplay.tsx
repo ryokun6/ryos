@@ -413,9 +413,7 @@ export function LyricsDisplay({
     );
 
   return (
-    <motion.div
-      layout={alignment === LyricsAlignment.Alternating}
-      transition={ANIMATION_CONFIG.spring}
+    <div
       className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none no-select-gesture px-0 ${bottomPaddingClass}`}
       style={{
         ...(containerStyle || {}),
@@ -461,7 +459,7 @@ export function LyricsDisplay({
           return (
             <motion.div
               key={line.startTimeMs}
-              layoutId={`${line.startTimeMs}-${line.words.substring(0, 10)}`}
+              layout="position"
               initial="initial"
               animate="animate"
               exit="exit"
@@ -490,6 +488,6 @@ export function LyricsDisplay({
           );
         })}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
