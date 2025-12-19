@@ -1,5 +1,4 @@
 {
-  "install": "curl -fsSL https://bun.sh/install | bash && source ~/.bashrc && bun install",
-  "terminals": [],
-  "start": "bun run dev"
+  "snapshot": "snapshot-20251219-743bee25-a601-49aa-aeab-606f9fe11dd1",
+  "terminals": []
 }
