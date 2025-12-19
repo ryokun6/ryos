@@ -250,17 +250,25 @@ function AnimatedWord({
   const gradientStart = progressPercent;
   const gradientEnd = progressPercent + feather;
 
+  // Base shadow for text legibility (same as inactive lines)
+  const baseShadow = "0 0 2px black, 0 0 2px black, 0 0 2px black";
+  // Only apply glow when there's visible progress (prevents flash from shadow bleeding through mask)
+  const overlayTextShadow = progress > 0
+    ? `0 0 8px rgba(255,255,255,0.9), ${baseShadow}`
+    : baseShadow;
+
   return (
     <span className="lyrics-word-highlight">
       {/* Base layer - dimmed to match inactive line opacity */}
-      <span className="opacity-50 lyrics-word-layer">{content}</span>
-      {/* Overlay layer - gradient mask for soft edge */}
+      <span className="opacity-50 lyrics-word-layer" style={{ textShadow: baseShadow }}>{content}</span>
+      {/* Overlay layer - gradient mask for soft edge with glow */}
       <span
         aria-hidden="true"
         className="lyrics-word-layer"
         style={{
           maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
           WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
+          textShadow: overlayTextShadow,
         }}
       >
         {content}
@@ -362,15 +370,23 @@ function WordTimingHighlight({
             ? renderFuriganaSegments(wordFurigana)
             : processText(word.text);
           
+          // Base shadow for text legibility (same as inactive lines)
+          const baseShadow = "0 0 2px black, 0 0 2px black, 0 0 2px black";
+          // Only apply glow when there's visible progress (prevents flash from shadow bleeding through mask)
+          const overlayTextShadow = progress > 0
+            ? `0 0 8px rgba(255,255,255,0.9), ${baseShadow}`
+            : baseShadow;
+          
           return (
             <span key={`${idx}-${word.text}`} className="lyrics-word-highlight">
-              <span className="opacity-50 lyrics-word-layer">{content}</span>
+              <span className="opacity-50 lyrics-word-layer" style={{ textShadow: baseShadow }}>{content}</span>
               <span
                 aria-hidden="true"
                 className="lyrics-word-layer"
                 style={{
                   maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
                   WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
+                  textShadow: overlayTextShadow,
                 }}
               >
                 {content}
@@ -400,46 +416,53 @@ function WordTimingHighlight({
 const getVariants = (
   position: number,
   isAlternating: boolean,
-  isCurrent: boolean
-) => ({
-  initial: {
-    opacity: 0,
-    scale: 0.93,
-    filter: "none",
-    y: 10,
-    textShadow:
-      "0 0 2px black, 0 0 2px black, 0 0 2px black, 0 0 0px rgba(255,255,255,0)",
-  },
-  animate: {
-    opacity: isAlternating
-      ? isCurrent
+  isCurrent: boolean,
+  hasWordTiming: boolean = false
+) => {
+  // For lines with word-level timing, don't apply white glow to the parent
+  // The glow is handled by the highlighted overlay layer instead
+  const currentTextShadow = isCurrent && !hasWordTiming
+    ? "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black"
+    : "0 0 2px black, 0 0 2px black, 0 0 2px black";
+  
+  return {
+    initial: {
+      opacity: 0,
+      scale: 0.93,
+      filter: "none",
+      y: 10,
+      textShadow:
+        "0 0 2px black, 0 0 2px black, 0 0 2px black, 0 0 0px rgba(255,255,255,0)",
+    },
+    animate: {
+      opacity: isAlternating
+        ? isCurrent
+          ? 1
+          : 0.5
+        : isCurrent
         ? 1
-        : 0.5
-      : isCurrent
-      ? 1
-      : position === 1 || position === -1
-      ? 0.5
-      : 0.1,
-    scale: isAlternating
-      ? 1
-      : isCurrent || position === 1 || position === -1
-      ? 1
-      : 0.9,
-    filter: "none",
-    y: 0,
-    textShadow: isCurrent
-      ? "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black"
-      : "0 0 2px black, 0 0 2px black, 0 0 2px black",
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.9,
-    filter: "none",
-    y: -10,
-    textShadow:
-      "0 0 2px black, 0 0 2px black, 0 0 2px black, 0 0 0px rgba(255,255,255,0)",
-  },
-});
+        : position === 1 || position === -1
+        ? 0.5
+        : 0.1,
+      scale: isAlternating
+        ? 1
+        : isCurrent || position === 1 || position === -1
+        ? 1
+        : 0.9,
+      filter: "none",
+      y: 0,
+      textShadow: currentTextShadow,
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.9,
+      filter: "none",
+      y: -10,
+      textShadow:
+        "0 0 2px black, 0 0 2px black, 0 0 2px black, 0 0 0px rgba(255,255,255,0)",
+    },
+  };
+};
 
 export function LyricsDisplay({
   lines,
@@ -725,24 +748,6 @@ export function LyricsDisplay({
             position = lineActualIdx - currentActualIdx;
           }
 
-          const variants = getVariants(
-            position,
-            alignment === LyricsAlignment.Alternating,
-            isCurrent
-          );
-          // Ensure transitions are extra smooth during offset adjustments
-          const dynamicTransition = {
-            ...ANIMATION_CONFIG.spring,
-            opacity: ANIMATION_CONFIG.fade,
-            filter: ANIMATION_CONFIG.fade,
-            duration: 0.15, // Faster transitions for smoother adjustment feedback
-          };
-          const lineTextAlign = getTextAlign(
-            alignment,
-            index,
-            visibleLines.length
-          );
-
           // Determine if we should use word-level highlighting
           // Only for original lyrics with word timings and valid current time
           const shouldUseWordTiming =
@@ -751,6 +756,27 @@ export function LyricsDisplay({
             line.wordTimings &&
             line.wordTimings.length > 0 &&
             currentTimeMs !== undefined;
+
+          const variants = getVariants(
+            position,
+            alignment === LyricsAlignment.Alternating,
+            isCurrent,
+            shouldUseWordTiming
+          );
+          // Ensure transitions are extra smooth during offset adjustments
+          // For word-timing lines, make opacity/textShadow instant to prevent flash during transition
+          const dynamicTransition = {
+            ...ANIMATION_CONFIG.spring,
+            opacity: shouldUseWordTiming ? { duration: 0 } : ANIMATION_CONFIG.fade,
+            textShadow: shouldUseWordTiming ? { duration: 0 } : ANIMATION_CONFIG.fade,
+            filter: ANIMATION_CONFIG.fade,
+            duration: 0.15, // Faster transitions for smoother adjustment feedback
+          };
+          const lineTextAlign = getTextAlign(
+            alignment,
+            index,
+            visibleLines.length
+          );
 
           return (
             <motion.div
