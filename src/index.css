@@ -937,9 +937,11 @@ ruby.lyrics-furigana {
 
 /* Word-level highlight container for karaoke-style lyrics animation */
 /* Uses inline-grid to stack dimmed/highlighted layers */
+/* white-space: pre ensures trailing spaces in word texts are preserved for consistent line breaking */
 .lyrics-word-highlight {
   display: inline-grid;
   vertical-align: baseline;
+  white-space: pre;
 }
 
 /* Layer positioning - both layers share the same grid cell (1/1) */
