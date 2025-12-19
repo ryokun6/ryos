@@ -681,10 +681,24 @@ export function LyricsDisplay({
     computeAltVisibleLines(lines, currentLine)
   );
 
-  // Update alternating lines using a percentage of the new line's duration
+  // Track previous lines array to detect song/translation changes
+  const prevLinesRef = useRef<LyricLine[]>(lines);
+
+  // Update alternating lines - instantly on song/translation change, delayed for line transitions
   useEffect(() => {
     if (alignment !== LyricsAlignment.Alternating) return;
 
+    // Check if lines array changed (new song or translation switch)
+    const linesChanged = prevLinesRef.current !== lines;
+    prevLinesRef.current = lines;
+
+    // Instantly update on song load, translation switch, or initial state
+    if (linesChanged || currentLine < 0) {
+      setAltLines(computeAltVisibleLines(lines, currentLine));
+      return;
+    }
+
+    // For normal line transitions within the same song, apply delay
     // Determine the duration of the new current line
     const clampedIdx = Math.min(Math.max(0, currentLine), lines.length - 1);
     const currentStart =

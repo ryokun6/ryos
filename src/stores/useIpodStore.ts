@@ -145,7 +145,7 @@ const initialIpodData: IpodData = {
   theme: "classic",
   lcdFilterOn: true,
   showLyrics: true,
-  lyricsAlignment: LyricsAlignment.FocusThree,
+  lyricsAlignment: LyricsAlignment.Alternating,
   chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
@@ -895,7 +895,7 @@ export const useIpodStore = create<IpodState>()(
             isShuffled: state.isShuffled, // Keep shuffle preference maybe? Or reset? Let's keep it for now.
             showLyrics: state.showLyrics ?? true, // Add default for migration
             lyricsAlignment:
-              state.lyricsAlignment ?? LyricsAlignment.FocusThree,
+              state.lyricsAlignment ?? LyricsAlignment.Alternating,
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
