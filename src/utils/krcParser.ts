@@ -149,11 +149,14 @@ export function parseKRC(
         return null;
       }
 
-      return {
+      const result: LyricLine = {
         startTimeMs: startMs,
         words: trimmedText,
-        wordTimings: wordTimings.length > 0 ? wordTimings : undefined,
       };
+      if (wordTimings.length > 0) {
+        result.wordTimings = wordTimings;
+      }
+      return result;
     })
     .filter((line): line is LyricLine => line !== null);
 }
