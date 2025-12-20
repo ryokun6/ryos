@@ -29,6 +29,8 @@ interface KaraokeMenuBarProps {
   onToggleLoopCurrent: () => void;
   showLyrics: boolean;
   onToggleLyrics: () => void;
+  isFullScreen: boolean;
+  onToggleFullScreen: () => void;
 }
 
 export function KaraokeMenuBar({
@@ -46,6 +48,8 @@ export function KaraokeMenuBar({
   onToggleLoopCurrent,
   showLyrics,
   onToggleLyrics,
+  isFullScreen,
+  onToggleFullScreen,
 }: KaraokeMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -133,6 +137,14 @@ export function KaraokeMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.karaoke.menu.showLyrics")}
+          </MenubarCheckboxItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarCheckboxItem
+            checked={isFullScreen}
+            onCheckedChange={onToggleFullScreen}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.ipod.menu.fullScreen")}
           </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
