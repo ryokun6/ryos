@@ -1200,6 +1200,48 @@
         "spanish": "西班牙文"
       }
     },
+    "karaoke": {
+      "description": "附同步歌詞的卡拉OK播放器",
+      "help": {
+        "instantTranslations": {
+          "description": "即時將歌詞翻譯成多種語言。",
+          "title": "即時翻譯"
+        },
+        "karaokeMode": {
+          "description": "附同步歌詞疊加的全螢幕視訊播放器",
+          "title": "卡拉OK模式"
+        },
+        "keyboardControls": {
+          "description": "空白鍵播放/暫停，方向鍵跳轉及切換曲目。",
+          "title": "鍵盤控制"
+        },
+        "layoutOptions": {
+          "description": "選擇焦點、置中或交替歌詞版面配置。",
+          "title": "版面配置選項"
+        },
+        "sharedLibrary": {
+          "description": "使用與iPod相同的音樂資料庫。",
+          "title": "共享資料庫"
+        }
+      },
+      "menu": {
+        "aboutKaraoke": "關於卡拉OK",
+        "controls": "控制",
+        "file": "檔案",
+        "karaokeHelp": "卡拉OK說明",
+        "next": "下一首",
+        "playPause": "播放/暫停",
+        "previous": "上一首",
+        "repeatAll": "全部重複",
+        "repeatOne": "單曲重複",
+        "shareApp": "分享 App...",
+        "showLyrics": "顯示歌詞",
+        "shuffle": "隨機播放",
+        "view": "檢視"
+      },
+      "name": "卡拉 OK",
+      "noTrack": "未載入任何曲目。開啟 iPod 以選取歌曲。"
+    },
     "minesweeper": {
       "description": "經典益智遊戲",
       "help": {

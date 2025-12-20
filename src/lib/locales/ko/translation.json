@@ -1200,6 +1200,48 @@
         "spanish": "스페인어"
       }
     },
+    "karaoke": {
+      "description": "가사 동기화 노래방 플레이어",
+      "help": {
+        "instantTranslations": {
+          "description": "가사를 여러 언어로 실시간 번역.",
+          "title": "즉시 번역"
+        },
+        "karaokeMode": {
+          "description": "가사 오버레이 동기화 전체 화면 비디오 플레이어",
+          "title": "노래방 모드"
+        },
+        "keyboardControls": {
+          "description": "스페이스바로 재생/일시 정지, 화살표로 탐색 및 트랙 변경.",
+          "title": "키보드 제어"
+        },
+        "layoutOptions": {
+          "description": "집중, 중앙, 교차 가사 레이아웃 선택.",
+          "title": "레이아웃 옵션"
+        },
+        "sharedLibrary": {
+          "description": "iPod과 동일한 음악 라이브러리를 사용합니다.",
+          "title": "공유 라이브러리"
+        }
+      },
+      "menu": {
+        "aboutKaraoke": "노래방 정보",
+        "controls": "제어",
+        "file": "파일",
+        "karaokeHelp": "노래방 도움말",
+        "next": "다음",
+        "playPause": "재생/일시 정지",
+        "previous": "이전",
+        "repeatAll": "모두 반복",
+        "repeatOne": "한 곡 반복",
+        "shareApp": "앱 공유...",
+        "showLyrics": "가사 보기",
+        "shuffle": "셔플",
+        "view": "보기"
+      },
+      "name": "노래방",
+      "noTrack": "로드된 트랙이 없습니다. iPod을 열어 곡을 선택하세요."
+    },
     "minesweeper": {
       "description": "클래식 퍼즐 게임",
       "help": {

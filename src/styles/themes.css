@@ -976,13 +976,38 @@
   font-smooth: auto !important;
 }
 
-/* Outside iPod and Videos LCD, font-geneva-12 uses macOS system fonts */
+/* Preserve rounded lyrics font inside Karaoke app on macOS theme */
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded {
+  font-family: "SF Pro Rounded", "Arial Rounded MT Bold",
+    "Hiragino Maru Gothic ProN", "Yuanti SC", "Nanum Gothic", sans-serif !important;
+  font-weight: 400 !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+/* Preserve karaoke lyrics font size on macOS theme (uses container query units) */
+:root[data-os-theme="macosx"] .karaoke-force-font .karaoke-lyrics-text {
+  font-size: clamp(24px, 6cqw, 128px) !important;
+}
+
+/* Preserve karaoke status text size on macOS theme */
+:root[data-os-theme="macosx"] .karaoke-status-text {
+  font-size: clamp(18px, 5cqmin, 48px) !important;
+}
+
+/* Preserve karaoke activity indicator size on macOS theme */
+:root[data-os-theme="macosx"] .karaoke-activity-indicator {
+  width: clamp(24px, 6cqmin, 64px) !important;
+  height: clamp(24px, 6cqmin, 64px) !important;
+}
+
+/* Outside iPod, Karaoke, and Videos LCD, font-geneva-12 uses macOS system fonts */
 :root[data-os-theme="macosx"]
   .font-geneva-12:not(.ipod-force-font .font-geneva-12):not(
-    .videos-lcd .font-geneva-12
-  ):not(.videos-player-controls .font-geneva-12):not(
-    .synth-force-font .font-geneva-12
-  ):not(.videos-status .font-geneva-12) {
+    .karaoke-force-font .font-geneva-12
+  ):not(.videos-lcd .font-geneva-12):not(
+    .videos-player-controls .font-geneva-12
+  ):not(.synth-force-font .font-geneva-12):not(.videos-status .font-geneva-12) {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;

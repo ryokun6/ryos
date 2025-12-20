@@ -1200,6 +1200,48 @@
         "spanish": "Spanisch"
       }
     },
+    "karaoke": {
+      "description": "Karaoke-Player mit synchronisierten Liedtexten",
+      "help": {
+        "instantTranslations": {
+          "description": "Liedtexte in Echtzeit in mehrere Sprachen übersetzen.",
+          "title": "Sofortübersetzungen"
+        },
+        "karaokeMode": {
+          "description": "Vollbild-Videoplayer mit synchronisierter Liedtext-Einblendung.",
+          "title": "Karaoke-Modus"
+        },
+        "keyboardControls": {
+          "description": "Leertaste für Wiedergabe/Pause, Pfeiltasten zum Spulen und Titelwechsel.",
+          "title": "Tastatursteuerung"
+        },
+        "layoutOptions": {
+          "description": "Wählen Sie zwischen Fokus-, Zentrier- und wechselnden Liedtext-Layouts.",
+          "title": "Layout-Optionen"
+        },
+        "sharedLibrary": {
+          "description": "Nutzt dieselbe Musikbibliothek wie der iPod.",
+          "title": "Geteilte Bibliothek"
+        }
+      },
+      "menu": {
+        "aboutKaraoke": "Über Karaoke",
+        "controls": "Steuerung",
+        "file": "Datei",
+        "karaokeHelp": "Karaoke-Hilfe",
+        "next": "Nächster",
+        "playPause": "Wiedergabe/Pause",
+        "previous": "Vorheriger",
+        "repeatAll": "Alle wiederholen",
+        "repeatOne": "Einen wiederholen",
+        "shareApp": "App teilen...",
+        "showLyrics": "Liedtext anzeigen",
+        "shuffle": "Zufällig",
+        "view": "Ansicht"
+      },
+      "name": "Karaoke",
+      "noTrack": "Kein Titel geladen. Öffne den iPod, um einen Titel auszuwählen."
+    },
     "minesweeper": {
       "description": "Klassisches Puzzlespiel",
       "help": {

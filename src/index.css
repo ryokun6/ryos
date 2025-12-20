@@ -395,6 +395,22 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Karaoke lyrics text - uses container query units for window-relative sizing */
+  .karaoke-lyrics-text {
+    font-size: clamp(24px, 6cqw, 128px);
+  }
+
+  /* Karaoke status text - scales with container */
+  .karaoke-status-text {
+    font-size: clamp(18px, 5cqmin, 48px);
+  }
+
+  /* Karaoke activity indicator - scales with container */
+  .karaoke-activity-indicator {
+    width: clamp(24px, 6cqmin, 64px) !important;
+    height: clamp(24px, 6cqmin, 64px) !important;
+  }
+
   .font-monaco,
   .font-monaco-9 {
     font-family: "Monaco", "ArkPixel", "SerenityOS-Emoji", monospace;

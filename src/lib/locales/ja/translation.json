@@ -1200,6 +1200,48 @@
         "spanish": "スペイン語"
       }
     },
+    "karaoke": {
+      "description": "歌詞同期カラオケプレイヤー",
+      "help": {
+        "instantTranslations": {
+          "description": "歌詞を多言語に即時翻訳。",
+          "title": "即時翻訳"
+        },
+        "karaokeMode": {
+          "description": "歌詞同期オーバーレイ付き全画面ビデオプレイヤー",
+          "title": "カラオケモード"
+        },
+        "keyboardControls": {
+          "description": "スペースキーで再生/一時停止、矢印キーでシークとトラック変更。",
+          "title": "キーボード操作"
+        },
+        "layoutOptions": {
+          "description": "フォーカス、中央、交互表示の歌詞レイアウトから選択。",
+          "title": "レイアウトオプション"
+        },
+        "sharedLibrary": {
+          "description": "iPod と同じミュージックライブラリを使用。",
+          "title": "共有ライブラリ"
+        }
+      },
+      "menu": {
+        "aboutKaraoke": "カラオケについて",
+        "controls": "操作",
+        "file": "ファイル",
+        "karaokeHelp": "カラオケヘルプ",
+        "next": "次へ",
+        "playPause": "再生/一時停止",
+        "previous": "前へ",
+        "repeatAll": "全曲リピート",
+        "repeatOne": "1曲リピート",
+        "shareApp": "アプリを共有...",
+        "showLyrics": "歌詞を表示",
+        "shuffle": "シャッフル",
+        "view": "表示"
+      },
+      "name": "カラオケ",
+      "noTrack": "トラックが読み込まれていません。曲を選択するにはiPodを開いてください。"
+    },
     "minesweeper": {
       "description": "クラシックなパズルゲーム",
       "help": {

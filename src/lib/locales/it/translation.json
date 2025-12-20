@@ -1200,6 +1200,48 @@
         "spanish": "Spagnolo"
       }
     },
+    "karaoke": {
+      "description": "Lettore karaoke con testi sincronizzati",
+      "help": {
+        "instantTranslations": {
+          "description": "Traduci i testi in più lingue al volo.",
+          "title": "Traduzioni istantanee"
+        },
+        "karaokeMode": {
+          "description": "Lettore video a schermo intero con sovrapposizione di testi sincronizzati.",
+          "title": "Modalità Karaoke"
+        },
+        "keyboardControls": {
+          "description": "Spazio per riprodurre/mettere in pausa, frecce per cercare e cambiare brano.",
+          "title": "Controlli da tastiera"
+        },
+        "layoutOptions": {
+          "description": "Scegli tra layout dei testi a fuoco, centrato e alternato.",
+          "title": "Opzioni layout"
+        },
+        "sharedLibrary": {
+          "description": "Utilizza la stessa libreria musicale dell'iPod.",
+          "title": "Libreria condivisa"
+        }
+      },
+      "menu": {
+        "aboutKaraoke": "Informazioni su Karaoke",
+        "controls": "Controlli",
+        "file": "File",
+        "karaokeHelp": "Aiuto Karaoke",
+        "next": "Successivo",
+        "playPause": "Riproduci/Pausa",
+        "previous": "Precedente",
+        "repeatAll": "Ripeti tutto",
+        "repeatOne": "Ripeti uno",
+        "shareApp": "Condividi App...",
+        "showLyrics": "Mostra Testo",
+        "shuffle": "Casuale",
+        "view": "Visualizza"
+      },
+      "name": "Karaoke",
+      "noTrack": "Nessun brano caricato. Apri iPod per selezionare un brano."
+    },
     "minesweeper": {
       "description": "Classico rompicapo",
       "help": {

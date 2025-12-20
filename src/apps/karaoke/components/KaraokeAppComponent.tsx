@@ -40,12 +40,9 @@ export function KaraokeAppComponent({
   const isOffline = useOffline();
   const translatedHelpItems = useTranslatedHelpItems("karaoke", helpItems);
 
-  // Store state - reuse iPod store
+  // Shared state from iPod store (library and display preferences only)
   const {
     tracks,
-    currentIndex,
-    loopCurrent,
-    isPlaying,
     showLyrics,
     lyricsAlignment,
     chineseVariant,
@@ -55,9 +52,6 @@ export function KaraokeAppComponent({
   } = useIpodStore(
     useShallow((s) => ({
       tracks: s.tracks,
-      currentIndex: s.currentIndex,
-      loopCurrent: s.loopCurrent,
-      isPlaying: s.isPlaying,
       showLyrics: s.showLyrics,
       lyricsAlignment: s.lyricsAlignment,
       chineseVariant: s.chineseVariant,
@@ -68,26 +62,94 @@ export function KaraokeAppComponent({
   );
 
   const {
-    setCurrentIndex,
-    togglePlay,
-    setIsPlaying,
-    nextTrack,
-    previousTrack,
     setLyricsAlignment,
     setKoreanDisplay,
     setJapaneseFurigana,
     setLyricsTranslationLanguage,
+    toggleLyrics,
   } = useIpodStoreShallow((s) => ({
-    setCurrentIndex: s.setCurrentIndex,
-    togglePlay: s.togglePlay,
-    setIsPlaying: s.setIsPlaying,
-    nextTrack: s.nextTrack,
-    previousTrack: s.previousTrack,
     setLyricsAlignment: s.setLyricsAlignment,
     setKoreanDisplay: s.setKoreanDisplay,
     setJapaneseFurigana: s.setJapaneseFurigana,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
+    toggleLyrics: s.toggleLyrics,
   }));
+
+  // Independent playback state (not shared with iPod)
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [loopCurrent, setLoopCurrent] = useState(false);
+  const [loopAll, setLoopAll] = useState(true);
+  const [isShuffled, setIsShuffled] = useState(false);
+  const [shuffleOrder, setShuffleOrder] = useState<number[]>([]);
+
+  // Generate shuffle order when tracks change or shuffle is enabled
+  useEffect(() => {
+    if (isShuffled && tracks.length > 0) {
+      const order = [...Array(tracks.length).keys()];
+      // Fisher-Yates shuffle
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      setShuffleOrder(order);
+    }
+  }, [isShuffled, tracks.length]);
+
+  // Playback control callbacks
+  const togglePlay = useCallback(() => {
+    setIsPlaying((prev) => !prev);
+  }, []);
+
+  const nextTrack = useCallback(() => {
+    if (tracks.length === 0) return;
+    
+    if (isShuffled && shuffleOrder.length > 0) {
+      const currentShuffleIndex = shuffleOrder.indexOf(currentIndex);
+      const nextShuffleIndex = (currentShuffleIndex + 1) % shuffleOrder.length;
+      setCurrentIndex(shuffleOrder[nextShuffleIndex]);
+    } else {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= tracks.length) {
+        if (loopAll) {
+          setCurrentIndex(0);
+        }
+      } else {
+        setCurrentIndex(nextIndex);
+      }
+    }
+  }, [tracks.length, currentIndex, isShuffled, shuffleOrder, loopAll]);
+
+  const previousTrack = useCallback(() => {
+    if (tracks.length === 0) return;
+    
+    if (isShuffled && shuffleOrder.length > 0) {
+      const currentShuffleIndex = shuffleOrder.indexOf(currentIndex);
+      const prevShuffleIndex = currentShuffleIndex === 0 ? shuffleOrder.length - 1 : currentShuffleIndex - 1;
+      setCurrentIndex(shuffleOrder[prevShuffleIndex]);
+    } else {
+      const prevIndex = currentIndex - 1;
+      if (prevIndex < 0) {
+        if (loopAll) {
+          setCurrentIndex(tracks.length - 1);
+        }
+      } else {
+        setCurrentIndex(prevIndex);
+      }
+    }
+  }, [tracks.length, currentIndex, isShuffled, shuffleOrder, loopAll]);
+
+  const toggleLoopCurrent = useCallback(() => {
+    setLoopCurrent((prev) => !prev);
+  }, []);
+
+  const toggleLoopAll = useCallback(() => {
+    setLoopAll((prev) => !prev);
+  }, []);
+
+  const toggleShuffle = useCallback(() => {
+    setIsShuffled((prev) => !prev);
+  }, []);
 
 
   // Dialog state
@@ -217,7 +279,7 @@ export function KaraokeAppComponent({
     } else {
       nextTrack();
     }
-  }, [loopCurrent, nextTrack, setIsPlaying]);
+  }, [loopCurrent, nextTrack]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
@@ -225,11 +287,11 @@ export function KaraokeAppComponent({
 
   const handlePlay = useCallback(() => {
     setIsPlaying(true);
-  }, [setIsPlaying]);
+  }, []);
 
   const handlePause = useCallback(() => {
     setIsPlaying(false);
-  }, [setIsPlaying]);
+  }, []);
 
   // Seek time
   const seekTime = useCallback(
@@ -314,17 +376,22 @@ export function KaraokeAppComponent({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isForeground, isPlaying, isOffline, togglePlay, nextTrack, previousTrack, seekTime, showStatus, showOfflineStatus]);
 
-  // Handle initial data (shared track)
+  // Handle initial data (shared track) or default to first track
   useEffect(() => {
-    if (isWindowOpen && initialData?.videoId) {
-      const videoId = initialData.videoId;
-      const existingIndex = tracks.findIndex((track) => track.id === videoId);
-      if (existingIndex !== -1) {
-        setCurrentIndex(existingIndex);
-        setIsPlaying(true);
+    if (isWindowOpen) {
+      if (initialData?.videoId) {
+        const videoId = initialData.videoId;
+        const existingIndex = tracks.findIndex((track) => track.id === videoId);
+        if (existingIndex !== -1) {
+          setCurrentIndex(existingIndex);
+          setIsPlaying(true);
+        }
+      } else if (tracks.length > 0 && currentIndex >= tracks.length) {
+        // Reset to first track if current index is out of bounds
+        setCurrentIndex(0);
       }
     }
-  }, [isWindowOpen, initialData, tracks, setCurrentIndex, setIsPlaying]);
+  }, [isWindowOpen, initialData, tracks, currentIndex]);
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -334,6 +401,17 @@ export function KaraokeAppComponent({
       onClose={onClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
+      onTogglePlay={togglePlay}
+      onPreviousTrack={previousTrack}
+      onNextTrack={nextTrack}
+      isShuffled={isShuffled}
+      onToggleShuffle={toggleShuffle}
+      loopAll={loopAll}
+      onToggleLoopAll={toggleLoopAll}
+      loopCurrent={loopCurrent}
+      onToggleLoopCurrent={toggleLoopCurrent}
+      showLyrics={showLyrics}
+      onToggleLyrics={toggleLyrics}
     />
   );
 
@@ -354,7 +432,7 @@ export function KaraokeAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
       >
         <div
-          className="relative w-full h-full bg-black select-none overflow-hidden"
+          className="relative w-full h-full bg-black select-none overflow-hidden @container"
           onMouseMove={restartAutoHideTimer}
           onClick={() => {
             if (!isPlaying) {
@@ -367,43 +445,45 @@ export function KaraokeAppComponent({
             }
           }}
         >
-          {/* Video Player */}
+          {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
           {currentTrack ? (
-            <div className="absolute inset-0">
-              <ReactPlayer
-                ref={playerRef}
-                url={currentTrack.url}
-                playing={isPlaying}
-                width="100%"
-                height="100%"
-                volume={ipodVolume * useAppStore.getState().masterVolume}
-                loop={loopCurrent}
-                onEnded={handleTrackEnd}
-                onProgress={handleProgress}
-                progressInterval={100}
-                onPlay={handlePlay}
-                onPause={handlePause}
-                style={{ pointerEvents: "none" }}
-                config={{
-                  youtube: {
-                    playerVars: {
-                      modestbranding: 1,
-                      rel: 0,
-                      showinfo: 0,
-                      iv_load_policy: 3,
-                      cc_load_policy: 0,
-                      fs: 0,
-                      playsinline: 1,
-                      enablejsapi: 1,
-                      origin: window.location.origin,
-                      controls: 0,
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="w-full h-[calc(100%+120px)] mt-[-60px]">
+                <ReactPlayer
+                  ref={playerRef}
+                  url={currentTrack.url}
+                  playing={isPlaying}
+                  width="100%"
+                  height="100%"
+                  volume={ipodVolume * useAppStore.getState().masterVolume}
+                  loop={loopCurrent}
+                  onEnded={handleTrackEnd}
+                  onProgress={handleProgress}
+                  progressInterval={100}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  style={{ pointerEvents: "none" }}
+                  config={{
+                    youtube: {
+                      playerVars: {
+                        modestbranding: 1,
+                        rel: 0,
+                        showinfo: 0,
+                        iv_load_policy: 3,
+                        cc_load_policy: 0,
+                        fs: 0,
+                        playsinline: 1,
+                        enablejsapi: 1,
+                        origin: window.location.origin,
+                        controls: 0,
+                      },
+                      embedOptions: {
+                        referrerPolicy: "strict-origin-when-cross-origin",
+                      },
                     },
-                    embedOptions: {
-                      referrerPolicy: "strict-origin-when-cross-origin",
-                    },
-                  },
-                }}
-              />
+                  }}
+                />
+              </div>
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-white/50 font-geneva-12">
@@ -415,7 +495,7 @@ export function KaraokeAppComponent({
           {showLyrics && currentTrack && (
             <>
               <div className="absolute inset-0 bg-black/50 pointer-events-none" />
-              <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-0 pointer-events-none karaoke-force-font">
                 <LyricsDisplay
                   lines={lyricsControls.lines}
                   originalLines={lyricsControls.originalLines}
@@ -437,10 +517,10 @@ export function KaraokeAppComponent({
                     lyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
                   }}
                   isTranslating={lyricsControls.isTranslating}
-                  textSizeClass="text-[clamp(16px,4vw,32px)]"
+                  textSizeClass="karaoke-lyrics-text"
                   gapClass="gap-1"
                   containerStyle={{
-                    gap: "clamp(0.25rem, 2vw, 1rem)",
+                    gap: "clamp(0.25rem, 2cqw, 1rem)",
                   }}
                   interactive={true}
                   bottomPaddingClass="pb-16"
@@ -451,7 +531,7 @@ export function KaraokeAppComponent({
             </>
           )}
 
-          {/* Status message */}
+          {/* Status message - scales with container size */}
           <AnimatePresence>
             {statusMessage && (
               <motion.div
@@ -462,12 +542,14 @@ export function KaraokeAppComponent({
                 transition={{ duration: 0.2 }}
               >
                 <div className="relative">
-                  <div className="font-chicago text-white text-lg relative z-10">
+                  <div
+                    className="font-chicago text-white relative z-10 karaoke-status-text"
+                  >
                     {statusMessage}
                   </div>
                   <div
-                    className="font-chicago text-black text-lg absolute inset-0"
-                    style={{ WebkitTextStroke: "4px black", textShadow: "none" }}
+                    className="font-chicago text-black absolute inset-0 karaoke-status-text"
+                    style={{ WebkitTextStroke: "5px black", textShadow: "none" }}
                   >
                     {statusMessage}
                   </div>
@@ -476,7 +558,7 @@ export function KaraokeAppComponent({
             )}
           </AnimatePresence>
 
-          {/* Activity indicator */}
+          {/* Activity indicator - scales with container size */}
           <AnimatePresence>
             {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana) && (
               <motion.div
@@ -487,8 +569,8 @@ export function KaraokeAppComponent({
                 transition={{ duration: 0.2 }}
               >
                 <ActivityIndicator
-                  size="md"
-                  className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                  size="lg"
+                  className="karaoke-activity-indicator text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                 />
               </motion.div>
             )}

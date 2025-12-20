@@ -1433,6 +1433,21 @@
       "name": "Karaoke",
       "description": "Karaoke player with synced lyrics",
       "noTrack": "No track loaded. Open iPod to select a song.",
+      "menu": {
+        "file": "File",
+        "controls": "Controls",
+        "view": "View",
+        "playPause": "Play/Pause",
+        "previous": "Previous",
+        "next": "Next",
+        "shuffle": "Shuffle",
+        "repeatAll": "Repeat All",
+        "repeatOne": "Repeat One",
+        "showLyrics": "Show Lyrics",
+        "karaokeHelp": "Karaoke Help",
+        "shareApp": "Share App...",
+        "aboutKaraoke": "About Karaoke"
+      },
       "help": {
         "karaokeMode": {
           "title": "Karaoke Mode",

@@ -1200,6 +1200,48 @@
         "spanish": "Espanhol"
       }
     },
+    "karaoke": {
+      "description": "Reprodutor de karaokê com letras sincronizadas",
+      "help": {
+        "instantTranslations": {
+          "description": "Traduzir letras para vários idiomas em tempo real.",
+          "title": "Traduções Instantâneas"
+        },
+        "karaokeMode": {
+          "description": "Reprodutor de vídeo em tela cheia com sobreposição de letras sincronizadas.",
+          "title": "Modo Karaokê"
+        },
+        "keyboardControls": {
+          "description": "Espaço para reproduzir/pausar, setas para buscar e mudar de faixa.",
+          "title": "Controles de Teclado"
+        },
+        "layoutOptions": {
+          "description": "Escolha entre layouts de letras com foco, centralizado e alternado.",
+          "title": "Opções de Layout"
+        },
+        "sharedLibrary": {
+          "description": "Usa a mesma biblioteca de música que o iPod.",
+          "title": "Biblioteca Compartilhada"
+        }
+      },
+      "menu": {
+        "aboutKaraoke": "Sobre o Karaokê",
+        "controls": "Controles",
+        "file": "Arquivo",
+        "karaokeHelp": "Ajuda do Karaokê",
+        "next": "Próximo",
+        "playPause": "Reproduzir/Pausar",
+        "previous": "Anterior",
+        "repeatAll": "Repetir Tudo",
+        "repeatOne": "Repetir Um",
+        "shareApp": "Compartilhar App...",
+        "showLyrics": "Mostrar Letras",
+        "shuffle": "Aleatório",
+        "view": "Ver"
+      },
+      "name": "Karaoke",
+      "noTrack": "Nenhuma faixa carregada. Abra o iPod para selecionar uma música."
+    },
     "minesweeper": {
       "description": "Jogo clássico de quebra-cabeça",
       "help": {

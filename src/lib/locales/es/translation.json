@@ -1200,6 +1200,48 @@
         "spanish": "Español"
       }
     },
+    "karaoke": {
+      "description": "Reproductor de karaoke con letras sincronizadas",
+      "help": {
+        "instantTranslations": {
+          "description": "Traduce letras a varios idiomas al instante.",
+          "title": "Traducciones instantáneas"
+        },
+        "karaokeMode": {
+          "description": "Reproductor de video en pantalla completa con superposición de letras sincronizadas.",
+          "title": "Modo Karaoke"
+        },
+        "keyboardControls": {
+          "description": "Espacio para reproducir/pausar, flechas para buscar y cambiar pistas.",
+          "title": "Controles de teclado"
+        },
+        "layoutOptions": {
+          "description": "Elige entre diseños de letras con enfoque, centrados y alternados.",
+          "title": "Opciones de diseño"
+        },
+        "sharedLibrary": {
+          "description": "Usa la misma biblioteca de música que el iPod.",
+          "title": "Biblioteca compartida"
+        }
+      },
+      "menu": {
+        "aboutKaraoke": "Acerca de Karaoke",
+        "controls": "Controles",
+        "file": "Archivo",
+        "karaokeHelp": "Ayuda de Karaoke",
+        "next": "Siguiente",
+        "playPause": "Reproducir/Pausar",
+        "previous": "Anterior",
+        "repeatAll": "Repetir todo",
+        "repeatOne": "Repetir uno",
+        "shareApp": "Compartir App...",
+        "showLyrics": "Mostrar letras",
+        "shuffle": "Aleatorio",
+        "view": "Ver"
+      },
+      "name": "Karaoke",
+      "noTrack": "No hay pista cargada. Abre el iPod para seleccionar una canción."
+    },
     "minesweeper": {
       "description": "Juego de puzle clásico",
       "help": {
