@@ -9,6 +9,7 @@ export const appIds = [
   "minesweeper",
   "videos",
   "ipod",
+  "karaoke",
   "synth",
   "pc",
   "terminal",

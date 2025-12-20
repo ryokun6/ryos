@@ -34,6 +34,7 @@ export interface BaseApp<TInitialData = unknown> {
     | "photo-booth"
     | "synth"
     | "ipod"
+    | "karaoke"
     | "terminal"
     | "applet-viewer"
     | "admin";

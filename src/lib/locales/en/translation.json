@@ -1429,6 +1429,33 @@
         }
       }
     },
+    "karaoke": {
+      "name": "Karaoke",
+      "description": "Karaoke player with synced lyrics",
+      "noTrack": "No track loaded. Open iPod to select a song.",
+      "help": {
+        "karaokeMode": {
+          "title": "Karaoke Mode",
+          "description": "Full-screen video player with synced lyrics overlay."
+        },
+        "sharedLibrary": {
+          "title": "Shared Library",
+          "description": "Uses the same music library as iPod."
+        },
+        "instantTranslations": {
+          "title": "Instant Translations",
+          "description": "Translate lyrics to multiple languages on the fly."
+        },
+        "keyboardControls": {
+          "title": "Keyboard Controls",
+          "description": "Space to play/pause, arrows to seek and change tracks."
+        },
+        "layoutOptions": {
+          "title": "Layout Options",
+          "description": "Choose between focus, center, and alternating lyrics layouts."
+        }
+      }
+    },
     "synth": {
       "name": "Synth",
       "description": "Virtual synthesizer",

@@ -11,6 +11,7 @@ export type AppId =
   | "minesweeper"
   | "videos"
   | "ipod"
+  | "karaoke"
   | "synth"
   | "pc"
   | "terminal"
@@ -115,6 +116,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     minesweeper: ["desktopControls", "mobileControls", "gameRules", "timerCounter", "restart"],
     videos: ["addVideo", "playback", "loop", "shuffle", "playlist", "retroUi"],
     ipod: ["addSongs", "wheelNavigation", "playbackControls", "syncedLyrics", "playbackModes", "displayFullscreen"],
+    karaoke: ["karaokeMode", "sharedLibrary", "instantTranslations", "keyboardControls", "layoutOptions"],
     synth: ["virtualKeyboard", "controlsPanel", "presets", "waveform3d", "effects", "midiInput"],
     pc: ["pcEmulator", "keyboardControls", "mouseCapture", "fullscreenMode", "saveStates", "aspectRatio"],
     terminal: ["basicCommands", "navigation", "commandHistory", "aiAssistant", "fileEditing", "terminalSounds"],
