@@ -201,6 +201,8 @@ export function IpodAppComponent({
     }[]
   >([]);
   const [cameFromNowPlayingMenuItem, setCameFromNowPlayingMenuItem] = useState(false);
+  // Save menu history before entering Now Playing from a song selection
+  const menuHistoryBeforeNowPlayingRef = useRef<typeof menuHistory | null>(null);
 
   // Library update checker
   const { manualSync } = useLibraryUpdateChecker(
@@ -407,6 +409,18 @@ export function IpodAppComponent({
                 showOfflineStatus();
                 return;
               }
+              // Save current menu history with the selected index before entering Now Playing
+              setMenuHistory((prev) => {
+                const updatedHistory = [...prev];
+                if (updatedHistory.length > 0) {
+                  updatedHistory[updatedHistory.length - 1] = {
+                    ...updatedHistory[updatedHistory.length - 1],
+                    selectedIndex: index,
+                  };
+                }
+                menuHistoryBeforeNowPlayingRef.current = updatedHistory;
+                return updatedHistory;
+              });
               setCurrentIndex(index);
               setIsPlaying(true);
               setMenuDirection("forward");
@@ -431,10 +445,22 @@ export function IpodAppComponent({
         action: () => {
           registerActivity();
           setMenuDirection("forward");
-          const artistTracks = tracksByArtist[artist].map(({ track, index }) => ({
+          const artistTracks = tracksByArtist[artist].map(({ track, index }, trackListIndex) => ({
             label: track.title,
             action: () => {
               registerActivity();
+              // Save current menu history with the selected index before entering Now Playing
+              setMenuHistory((prev) => {
+                const updatedHistory = [...prev];
+                if (updatedHistory.length > 0) {
+                  updatedHistory[updatedHistory.length - 1] = {
+                    ...updatedHistory[updatedHistory.length - 1],
+                    selectedIndex: trackListIndex,
+                  };
+                }
+                menuHistoryBeforeNowPlayingRef.current = updatedHistory;
+                return updatedHistory;
+              });
               setCurrentIndex(index);
               setIsPlaying(true);
               setMenuDirection("forward");
@@ -781,7 +807,14 @@ export function IpodAppComponent({
         setMenuHistory([mainMenu]);
         setSelectedMenuItem(mainMenu?.selectedIndex || 0);
         setCameFromNowPlayingMenuItem(false);
+      } else if (menuHistoryBeforeNowPlayingRef.current && menuHistoryBeforeNowPlayingRef.current.length > 0) {
+        // Restore the menu history that was saved when entering Now Playing
+        const savedHistory = menuHistoryBeforeNowPlayingRef.current;
+        setMenuHistory(savedHistory);
+        const lastMenu = savedHistory[savedHistory.length - 1];
+        setSelectedMenuItem(lastMenu?.selectedIndex || 0);
       } else {
+        // Fallback: go to music menu
         setMenuHistory([
           mainMenu,
           { title: t("apps.ipod.menuItems.music"), items: musicMenuItems, selectedIndex: 0 },
