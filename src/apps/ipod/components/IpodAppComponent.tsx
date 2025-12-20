@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import { LyricsAlignment, KoreanDisplay, JapaneseFurigana, LyricsFont } from "@/types/lyrics";
 import { track } from "@vercel/analytics";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
@@ -82,6 +82,7 @@ export function IpodAppComponent({
     lcdFilterOn,
     showLyrics,
     lyricsAlignment,
+    lyricsFont,
     chineseVariant,
     koreanDisplay,
     japaneseFurigana,
@@ -108,6 +109,7 @@ export function IpodAppComponent({
     lcdFilterOn: s.lcdFilterOn,
     showLyrics: s.showLyrics,
     lyricsAlignment: s.lyricsAlignment,
+    lyricsFont: s.lyricsFont,
     chineseVariant: s.chineseVariant,
     koreanDisplay: s.koreanDisplay,
     japaneseFurigana: s.japaneseFurigana,
@@ -1136,6 +1138,23 @@ export function IpodAppComponent({
     showStatus(next === JapaneseFurigana.On ? t("apps.ipod.status.furiganaOn") : t("apps.ipod.status.furiganaOff"));
   }, [showStatus, t]);
 
+  const cycleLyricsFont = useCallback(() => {
+    const store = useIpodStore.getState();
+    const curr = store.lyricsFont;
+    let next: LyricsFont;
+    if (curr === LyricsFont.Rounded) next = LyricsFont.SansSerif;
+    else if (curr === LyricsFont.SansSerif) next = LyricsFont.Serif;
+    else next = LyricsFont.Rounded;
+    store.setLyricsFont(next);
+    showStatus(
+      next === LyricsFont.Rounded
+        ? t("apps.ipod.status.fontRounded")
+        : next === LyricsFont.SansSerif
+        ? t("apps.ipod.status.fontSansSerif")
+        : t("apps.ipod.status.fontSerif")
+    );
+  }, [showStatus, t]);
+
   // Fullscreen change handler
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -1293,6 +1312,8 @@ export function IpodAppComponent({
             onSelectTranslation={handleSelectTranslation}
             currentAlignment={lyricsAlignment}
             onCycleAlignment={cycleAlignment}
+            currentLyricsFont={lyricsFont}
+            onCycleLyricsFont={cycleLyricsFont}
             currentKoreanDisplay={koreanDisplay}
             onToggleKoreanDisplay={toggleKorean}
             currentJapaneseFurigana={japaneseFurigana}
