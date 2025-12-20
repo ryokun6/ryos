@@ -11,7 +11,6 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Converter } from "opencc-js";
 import { convert as romanize } from "hangul-romanization";
-import { useTranslation } from "react-i18next";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useFurigana, FuriganaSegment } from "@/hooks/useFurigana";
 import { useShallow } from "zustand/react/shallow";
@@ -73,23 +72,13 @@ const ANIMATION_CONFIG = {
 
 const LoadingState = ({
   bottomPaddingClass = "pb-5",
-  textSizeClass = "text-[12px]",
-  fontClassName = "font-geneva-12",
 }: {
   bottomPaddingClass?: string;
-  textSizeClass?: string;
-  fontClassName?: string;
 }) => {
-  const { t } = useTranslation();
-
   return (
     <div
       className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
-    >
-      <div className={`${textSizeClass} ${fontClassName} shimmer opacity-60`}>
-        {t("apps.ipod.status.loadingLyrics")}
-      </div>
-    </div>
+    />
   );
 };
 
@@ -784,8 +773,6 @@ export function LyricsDisplay({
     return (
       <LoadingState
         bottomPaddingClass={bottomPaddingClass}
-        textSizeClass={textSizeClass}
-        fontClassName={fontClassName}
       />
     );
   if (error)

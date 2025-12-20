@@ -1402,21 +1402,6 @@ export function IpodAppComponent({
                           </div>
                         )}
 
-                        {fullScreenLyricsControls.isTranslating && !showLyrics && (
-                          <div
-                            className="absolute inset-0 pointer-events-none z-20 flex items-end justify-center pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
-                            style={{
-                              transform: controlsVisible
-                                ? "translateY(0)"
-                                : "translateY(clamp(2rem, 8dvh, 10rem))",
-                              transition: "transform 200ms ease",
-                            }}
-                          >
-                            <div className={cn("shimmer opacity-60 text-[min(10vw,10vh)]", "font-lyrics-rounded")}>
-                              {t("apps.ipod.status.translatingLyrics")}
-                            </div>
-                          </div>
-                        )}
                       </>
                     )}
                   </div>
