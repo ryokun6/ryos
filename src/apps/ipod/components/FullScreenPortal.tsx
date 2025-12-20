@@ -7,7 +7,7 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isMobileSafari } from "@/utils/device";
-import { JapaneseFurigana } from "@/types/lyrics";
+import { JapaneseFurigana, LyricsFont } from "@/types/lyrics";
 import {
   TRANSLATION_LANGUAGES,
   SWIPE_THRESHOLD,
@@ -33,6 +33,8 @@ export function FullScreenPortal({
   onSelectTranslation,
   currentAlignment,
   onCycleAlignment,
+  currentLyricsFont,
+  onCycleLyricsFont,
   currentKoreanDisplay,
   onToggleKoreanDisplay,
   currentJapaneseFurigana,
@@ -102,6 +104,7 @@ export function FullScreenPortal({
     registerActivity: () => void;
     onSelectTranslation: (code: string | null) => void;
     onCycleAlignment: () => void;
+    onCycleLyricsFont: () => void;
     onToggleKoreanDisplay: () => void;
     onToggleJapaneseFurigana: () => void;
     setIsLangMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -115,6 +118,7 @@ export function FullScreenPortal({
     registerActivity,
     onSelectTranslation,
     onCycleAlignment,
+    onCycleLyricsFont,
     onToggleKoreanDisplay,
     onToggleJapaneseFurigana,
     setIsLangMenuOpen,
@@ -132,6 +136,7 @@ export function FullScreenPortal({
       registerActivity,
       onSelectTranslation,
       onCycleAlignment,
+      onCycleLyricsFont,
       onToggleKoreanDisplay,
       onToggleJapaneseFurigana,
       setIsLangMenuOpen,
@@ -146,6 +151,7 @@ export function FullScreenPortal({
     registerActivity,
     onSelectTranslation,
     onCycleAlignment,
+    onCycleLyricsFont,
     onToggleKoreanDisplay,
     onToggleJapaneseFurigana,
   ]);
@@ -684,6 +690,26 @@ export function FullScreenPortal({
               )}
             </button>
 
+            {/* Font style toggle */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                registerActivity();
+                onCycleLyricsFont();
+              }}
+              aria-label={t("apps.ipod.ariaLabels.cycleLyricFont")}
+              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+              title={currentLyricsFont}
+            >
+              <span className="text-[16px] md:text-[18px]">
+                {currentLyricsFont === LyricsFont.Rounded
+                  ? "丸"
+                  : currentLyricsFont === LyricsFont.Serif
+                  ? "明"
+                  : "ゴ"}
+              </span>
+            </button>
+
             {/* Hangul toggle */}
             <button
               onClick={(e) => {
@@ -696,22 +722,6 @@ export function FullScreenPortal({
             >
               <span className="text-[16px] md:text-[18px]">
                 {currentKoreanDisplay === "romanized" ? "Ko" : "한"}
-              </span>
-            </button>
-
-            {/* Furigana toggle */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                registerActivity();
-                onToggleJapaneseFurigana();
-              }}
-              aria-label={t("apps.ipod.ariaLabels.toggleFurigana")}
-              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              title={t("apps.ipod.menu.furigana")}
-            >
-              <span className="text-[16px] md:text-[18px]">
-                {currentJapaneseFurigana === JapaneseFurigana.On ? "ふ" : "漢"}
               </span>
             </button>
 

@@ -20,7 +20,7 @@ import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useIpodStoreShallow } from "@/stores/helpers";
 import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
-import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { Track } from "@/stores/useIpodStore";
 
 interface KaraokeMenuBarProps {
@@ -95,11 +95,13 @@ export function KaraokeMenuBar({
   // Lyrics settings from iPod store
   const {
     lyricsAlignment,
+    lyricsFont,
     chineseVariant,
     koreanDisplay,
     japaneseFurigana,
     lyricsTranslationLanguage,
     setLyricsAlignment,
+    setLyricsFont,
     setChineseVariant,
     setKoreanDisplay,
     setJapaneseFurigana,
@@ -110,11 +112,13 @@ export function KaraokeMenuBar({
     exportLibrary,
   } = useIpodStoreShallow((s) => ({
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
+    lyricsFont: s.lyricsFont ?? LyricsFont.Rounded,
     chineseVariant: s.chineseVariant ?? ChineseVariant.Traditional,
     koreanDisplay: s.koreanDisplay ?? KoreanDisplay.Original,
     japaneseFurigana: s.japaneseFurigana ?? JapaneseFurigana.On,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     setLyricsAlignment: s.setLyricsAlignment,
+    setLyricsFont: s.setLyricsFont,
     setChineseVariant: s.setChineseVariant,
     setKoreanDisplay: s.setKoreanDisplay,
     setJapaneseFurigana: s.setJapaneseFurigana,
@@ -392,6 +396,37 @@ export function KaraokeMenuBar({
                 className="text-md h-6 pr-3"
               >
                 {t("apps.ipod.menu.alternating")}
+              </MenubarCheckboxItem>
+
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+              {/* Font style modes */}
+              <MenubarCheckboxItem
+                checked={lyricsFont === LyricsFont.Rounded}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsFont(LyricsFont.Rounded);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.fontRounded")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={lyricsFont === LyricsFont.Serif}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsFont(LyricsFont.Serif);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.fontSerif")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={lyricsFont === LyricsFont.SansSerif}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsFont(LyricsFont.SansSerif);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.fontSansSerif")}
               </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>

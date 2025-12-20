@@ -1012,6 +1012,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "フルスクリーンを閉じる",
+        "cycleLyricFont": "歌詞フォントを切り替える",
         "cycleLyricLayout": "歌詞レイアウトを切り替える",
         "nextTrack": "次の曲",
         "playPause": "再生/一時停止",
@@ -1115,6 +1116,9 @@
         "exportLibrary": "ライブラリを書き出す...",
         "file": "ファイル",
         "fullScreen": "全画面表示",
+        "fontRounded": "丸ゴシック",
+        "fontSansSerif": "ゴシック",
+        "fontSerif": "明朝",
         "furigana": "振り仮名",
         "importLibrary": "ライブラリを読み込む...",
         "ipodHelp": "iPod ヘルプ",
@@ -1164,6 +1168,9 @@
       "status": {
         "added": "♬ 追加しました",
         "furiganaOff": "フリガナ オフ",
+        "fontRounded": "フォント: 丸ゴシック",
+        "fontSansSerif": "フォント: ゴシック",
+        "fontSerif": "フォント: 明朝",
         "furiganaOn": "フリガナ オン",
         "hangulOn": "ハングルオン",
         "layoutAlternating": "レイアウト: 交互",

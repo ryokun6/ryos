@@ -395,6 +395,25 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Serif lyrics font utility (Hiragino Mincho) */
+  .font-lyrics-serif {
+    font-family: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
+      "Songti SC", "SimSun", "Batang", "Times New Roman", serif;
+    font-weight: 700;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
+  /* Sans-serif lyrics font utility (default OS typeface) */
+  .font-lyrics-sans {
+    font-family: "Geneva-12", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+      "PingFang SC", "Microsoft YaHei", "Malgun Gothic", "Nanum Gothic",
+      system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
   /* Karaoke lyrics text - uses container query units for window-relative sizing */
   .karaoke-lyrics-text {
     font-size: clamp(32px, 8cqw, 160px);
@@ -984,5 +1003,11 @@ rt.lyrics-furigana-rt,
 
 ruby.lyrics-furigana rp {
   display: none;
+}
+
+/* Bold furigana for serif and sans-serif lyrics fonts */
+.font-lyrics-serif rt.lyrics-furigana-rt,
+.font-lyrics-sans rt.lyrics-furigana-rt {
+  font-weight: 700 !important;
 }
 

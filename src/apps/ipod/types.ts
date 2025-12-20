@@ -1,7 +1,7 @@
 // Shared types for the iPod app
 
 import type { Track } from "@/stores/useIpodStore";
-import type { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import type { LyricsAlignment, LyricsFont, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import type ReactPlayer from "react-player";
 import type { useLyrics } from "@/hooks/useLyrics";
 
@@ -57,6 +57,8 @@ export interface FullScreenPortalProps {
   onSelectTranslation: (code: string | null) => void;
   currentAlignment: LyricsAlignment;
   onCycleAlignment: () => void;
+  currentLyricsFont: LyricsFont;
+  onCycleLyricsFont: () => void;
   currentKoreanDisplay: KoreanDisplay;
   onToggleKoreanDisplay: () => void;
   currentJapaneseFurigana: JapaneseFurigana;

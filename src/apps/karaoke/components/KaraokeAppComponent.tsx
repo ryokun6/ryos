@@ -21,7 +21,7 @@ import { useIpodStoreShallow, useAppStoreShallow } from "@/stores/helpers";
 import { useAppStore } from "@/stores/useAppStore";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
@@ -51,6 +51,7 @@ export function KaraokeAppComponent({
     tracks,
     showLyrics,
     lyricsAlignment,
+    lyricsFont,
     chineseVariant,
     koreanDisplay,
     japaneseFurigana,
@@ -60,6 +61,7 @@ export function KaraokeAppComponent({
       tracks: s.tracks,
       showLyrics: s.showLyrics,
       lyricsAlignment: s.lyricsAlignment,
+      lyricsFont: s.lyricsFont,
       chineseVariant: s.chineseVariant,
       koreanDisplay: s.koreanDisplay,
       japaneseFurigana: s.japaneseFurigana,
@@ -69,6 +71,7 @@ export function KaraokeAppComponent({
 
   const {
     setLyricsAlignment,
+    setLyricsFont,
     setKoreanDisplay,
     setJapaneseFurigana,
     setLyricsTranslationLanguage,
@@ -79,6 +82,7 @@ export function KaraokeAppComponent({
     clearTrackLyricsSearch,
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
+    setLyricsFont: s.setLyricsFont,
     setKoreanDisplay: s.setKoreanDisplay,
     setJapaneseFurigana: s.setJapaneseFurigana,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
@@ -257,6 +261,19 @@ export function KaraokeAppComponent({
     [lyricsTranslationLanguage]
   );
 
+  // Get CSS class name for current lyrics font
+  const lyricsFontClassName = useMemo(() => {
+    switch (lyricsFont) {
+      case LyricsFont.Serif:
+        return "font-lyrics-serif";
+      case LyricsFont.SansSerif:
+        return "font-lyrics-sans";
+      case LyricsFont.Rounded:
+      default:
+        return "font-lyrics-rounded";
+    }
+  }, [lyricsFont]);
+
   // Status helper functions
   const showStatus = useCallback((message: string) => {
     setStatusMessage(message);
@@ -388,6 +405,23 @@ export function KaraokeAppComponent({
         : t("apps.ipod.status.layoutAlternating")
     );
   }, [lyricsAlignment, setLyricsAlignment, showStatus, t]);
+
+  // Font style cycle
+  const cycleLyricsFont = useCallback(() => {
+    const curr = lyricsFont;
+    let next: LyricsFont;
+    if (curr === LyricsFont.Rounded) next = LyricsFont.Serif;
+    else if (curr === LyricsFont.Serif) next = LyricsFont.SansSerif;
+    else next = LyricsFont.Rounded;
+    setLyricsFont(next);
+    showStatus(
+      next === LyricsFont.Rounded
+        ? t("apps.ipod.status.fontRounded")
+        : next === LyricsFont.Serif
+        ? t("apps.ipod.status.fontSerif")
+        : t("apps.ipod.status.fontSansSerif")
+    );
+  }, [lyricsFont, setLyricsFont, showStatus, t]);
 
   // Korean toggle
   const toggleKorean = useCallback(() => {
@@ -646,7 +680,7 @@ export function KaraokeAppComponent({
                   chineseVariant={chineseVariant}
                   koreanDisplay={koreanDisplay}
                   japaneseFurigana={japaneseFurigana}
-                  fontClassName="font-lyrics-rounded"
+                  fontClassName={lyricsFontClassName}
                   onAdjustOffset={(delta) => {
                     useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
                     const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
@@ -808,6 +842,24 @@ export function KaraokeAppComponent({
                   )}
                 </button>
 
+                {/* Font style */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cycleLyricsFont();
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                  title={lyricsFont}
+                >
+                  <span className="text-sm">
+                    {lyricsFont === LyricsFont.Rounded
+                      ? "丸"
+                      : lyricsFont === LyricsFont.Serif
+                      ? "明"
+                      : "ゴ"}
+                  </span>
+                </button>
+
                 {/* Hangul toggle */}
                 <button
                   onClick={(e) => {
@@ -818,18 +870,6 @@ export function KaraokeAppComponent({
                   title={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
                 >
                   <span className="text-sm">{koreanDisplay === "romanized" ? "Ko" : "한"}</span>
-                </button>
-
-                {/* Furigana toggle */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFurigana();
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title={t("apps.ipod.menu.furigana")}
-                >
-                  <span className="text-sm">{japaneseFurigana === JapaneseFurigana.On ? "ふ" : "漢"}</span>
                 </button>
 
                 {/* Translate */}
@@ -991,6 +1031,8 @@ export function KaraokeAppComponent({
           onSelectTranslation={setLyricsTranslationLanguage}
           currentAlignment={lyricsAlignment}
           onCycleAlignment={cycleAlignment}
+          currentLyricsFont={lyricsFont}
+          onCycleLyricsFont={cycleLyricsFont}
           currentKoreanDisplay={koreanDisplay}
           onToggleKoreanDisplay={toggleKorean}
           currentJapaneseFurigana={japaneseFurigana}
@@ -1074,7 +1116,7 @@ export function KaraokeAppComponent({
                             chineseVariant={chineseVariant}
                             koreanDisplay={koreanDisplay}
                             japaneseFurigana={japaneseFurigana}
-                            fontClassName="font-lyrics-rounded"
+                            fontClassName={lyricsFontClassName}
                             onAdjustOffset={(delta) => {
                               useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
                               const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;

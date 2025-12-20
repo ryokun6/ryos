@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, LyricsFont } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import { getApiUrl } from "@/utils/platform";
 
@@ -41,6 +41,7 @@ interface IpodData {
   lcdFilterOn: boolean;
   showLyrics: boolean;
   lyricsAlignment: LyricsAlignment;
+  lyricsFont: LyricsFont;
   chineseVariant: ChineseVariant;
   koreanDisplay: KoreanDisplay;
   japaneseFurigana: JapaneseFurigana;
@@ -146,6 +147,7 @@ const initialIpodData: IpodData = {
   lcdFilterOn: true,
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
+  lyricsFont: LyricsFont.Rounded,
   chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
@@ -187,6 +189,8 @@ export interface IpodState extends IpodData {
   adjustLyricOffset: (trackIndex: number, deltaMs: number) => void;
   /** Set lyrics alignment mode */
   setLyricsAlignment: (alignment: LyricsAlignment) => void;
+  /** Set lyrics font style */
+  setLyricsFont: (font: LyricsFont) => void;
   /** Set Chinese character variant */
   setChineseVariant: (variant: ChineseVariant) => void;
   /** Set Korean text display mode */
@@ -228,7 +232,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSearch: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 21; // Removed lyricsTranslationRequest, renamed nonces
+const CURRENT_IPOD_STORE_VERSION = 22; // Added lyricsFont for font style preference
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -542,6 +546,7 @@ export const useIpodStore = create<IpodState>()(
           return { tracks } as Partial<IpodState>;
         }),
       setLyricsAlignment: (alignment) => set({ lyricsAlignment: alignment }),
+      setLyricsFont: (font) => set({ lyricsFont: font }),
       setChineseVariant: (variant) => set({ chineseVariant: variant }),
       setKoreanDisplay: (display) => set({ koreanDisplay: display }),
       setJapaneseFurigana: (mode) => set({ japaneseFurigana: mode }),
@@ -871,6 +876,7 @@ export const useIpodStore = create<IpodState>()(
         lcdFilterOn: state.lcdFilterOn,
         showLyrics: state.showLyrics, // Persist lyrics visibility
         lyricsAlignment: state.lyricsAlignment,
+        lyricsFont: state.lyricsFont, // Persist lyrics font style
         chineseVariant: state.chineseVariant,
         koreanDisplay: state.koreanDisplay,
         japaneseFurigana: state.japaneseFurigana,
@@ -896,6 +902,7 @@ export const useIpodStore = create<IpodState>()(
             showLyrics: state.showLyrics ?? true, // Add default for migration
             lyricsAlignment:
               state.lyricsAlignment ?? LyricsAlignment.Alternating,
+            lyricsFont: state.lyricsFont ?? LyricsFont.Rounded,
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
@@ -919,6 +926,7 @@ export const useIpodStore = create<IpodState>()(
           lcdFilterOn: state.lcdFilterOn,
           showLyrics: state.showLyrics, // Persist lyrics visibility
           lyricsAlignment: state.lyricsAlignment,
+          lyricsFont: state.lyricsFont, // Persist lyrics font style
           chineseVariant: state.chineseVariant,
           koreanDisplay: state.koreanDisplay,
           japaneseFurigana: state.japaneseFurigana,
