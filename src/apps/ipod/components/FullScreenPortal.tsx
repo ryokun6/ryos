@@ -7,7 +7,7 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isMobileSafari } from "@/utils/device";
-import { JapaneseFurigana, LyricsFont } from "@/types/lyrics";
+import { LyricsFont } from "@/types/lyrics";
 import {
   TRANSLATION_LANGUAGES,
   SWIPE_THRESHOLD,
@@ -37,7 +37,7 @@ export function FullScreenPortal({
   onCycleLyricsFont,
   currentKoreanDisplay,
   onToggleKoreanDisplay,
-  currentJapaneseFurigana,
+  currentJapaneseFurigana: _currentJapaneseFurigana,
   onToggleJapaneseFurigana,
   fullScreenPlayerRef,
   isLoadingLyrics,
