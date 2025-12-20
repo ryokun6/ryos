@@ -7,6 +7,10 @@ import { WindowFrame } from "@/components/layout/WindowFrame";
 import { KaraokeMenuBar } from "./KaraokeMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { InputDialog } from "@/components/dialogs/InputDialog";
+import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
@@ -26,6 +30,7 @@ import {
   TRANSLATION_LANGUAGES,
   getTranslationBadge,
 } from "@/apps/ipod/constants";
+import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -68,13 +73,26 @@ export function KaraokeAppComponent({
     setJapaneseFurigana,
     setLyricsTranslationLanguage,
     toggleLyrics,
+    clearLibrary,
+    refreshLyrics,
+    setTrackLyricsSearch,
+    clearTrackLyricsSearch,
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
     setKoreanDisplay: s.setKoreanDisplay,
     setJapaneseFurigana: s.setJapaneseFurigana,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
     toggleLyrics: s.toggleLyrics,
+    clearLibrary: s.clearLibrary,
+    refreshLyrics: s.refreshLyrics,
+    setTrackLyricsSearch: s.setTrackLyricsSearch,
+    clearTrackLyricsSearch: s.clearTrackLyricsSearch,
   }));
+
+  // Library update checker
+  const { manualSync } = useLibraryUpdateChecker(
+    isWindowOpen && (isForeground ?? false)
+  );
 
   // Independent playback state (not shared with iPod)
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -158,6 +176,14 @@ export function KaraokeAppComponent({
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
+  
+  // New dialogs for iPod menu features
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [isAddingTrack, setIsAddingTrack] = useState(false);
 
   // Full screen state
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -379,6 +405,69 @@ export function KaraokeAppComponent({
     showStatus(next === JapaneseFurigana.On ? t("apps.ipod.status.furiganaOn") : t("apps.ipod.status.furiganaOff"));
   }, [japaneseFurigana, setJapaneseFurigana, showStatus, t]);
 
+  // Track handling for add dialog
+  const handleAddTrack = useCallback(
+    async (url: string) => {
+      setIsAddingTrack(true);
+      try {
+        const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
+        if (addedTrack) {
+          showStatus(t("apps.ipod.status.added"));
+          setUrlInput("");
+          setIsAddDialogOpen(false);
+        } else {
+          throw new Error("Failed to add track");
+        }
+      } catch (error) {
+        console.error("Failed to add track:", error);
+        showStatus(`❌ Error adding: ${error instanceof Error ? error.message : "Unknown error"}`);
+      } finally {
+        setIsAddingTrack(false);
+      }
+    },
+    [showStatus, t]
+  );
+
+  // Share song handler
+  const handleShareSong = useCallback(() => {
+    if (tracks.length > 0 && currentIndex >= 0) setIsShareDialogOpen(true);
+  }, [tracks, currentIndex]);
+
+  // Generate share URL for song
+  const karaokeGenerateShareUrl = (videoId: string): string => {
+    return `${window.location.origin}/ipod/${videoId}`;
+  };
+
+  // Lyrics search handlers
+  const handleRefreshLyrics = useCallback(() => {
+    if (tracks.length > 0 && currentIndex >= 0) setIsLyricsSearchDialogOpen(true);
+  }, [tracks, currentIndex]);
+
+  const handleLyricsSearchSelect = useCallback(
+    (result: { hash: string; albumId: string | number; title: string; artist: string; album?: string }) => {
+      const track = tracks[currentIndex];
+      if (track) {
+        setTrackLyricsSearch(track.id, { query: undefined, selection: result });
+        refreshLyrics();
+      }
+    },
+    [tracks, currentIndex, setTrackLyricsSearch, refreshLyrics]
+  );
+
+  const handleLyricsSearchReset = useCallback(() => {
+    const track = tracks[currentIndex];
+    if (track) {
+      clearTrackLyricsSearch(track.id);
+      refreshLyrics();
+    }
+  }, [tracks, currentIndex, clearTrackLyricsSearch, refreshLyrics]);
+
+  // Play track handler for Library menu
+  const handlePlayTrack = useCallback((index: number) => {
+    setCurrentIndex(index);
+    setIsPlaying(true);
+  }, []);
+
   // Keyboard controls
   useEffect(() => {
     if (!isForeground) return;
@@ -439,9 +528,15 @@ export function KaraokeAppComponent({
       onClose={onClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
+      onAddTrack={() => setIsAddDialogOpen(true)}
+      onShareSong={handleShareSong}
+      onClearLibrary={() => setIsConfirmClearOpen(true)}
+      onSyncLibrary={manualSync}
+      onPlayTrack={handlePlayTrack}
       onTogglePlay={togglePlay}
       onPreviousTrack={previousTrack}
       onNextTrack={nextTrack}
+      isPlaying={isPlaying}
       isShuffled={isShuffled}
       onToggleShuffle={toggleShuffle}
       loopAll={loopAll}
@@ -452,6 +547,9 @@ export function KaraokeAppComponent({
       onToggleLyrics={toggleLyrics}
       isFullScreen={isFullScreen}
       onToggleFullScreen={toggleFullScreen}
+      onRefreshLyrics={handleRefreshLyrics}
+      tracks={tracks}
+      currentIndex={currentIndex}
     />
   );
 
@@ -806,6 +904,52 @@ export function KaraokeAppComponent({
           metadata={appMetadata}
           appId="karaoke"
         />
+        <ConfirmDialog
+          isOpen={isConfirmClearOpen}
+          onOpenChange={setIsConfirmClearOpen}
+          onConfirm={() => {
+            clearLibrary();
+            setIsConfirmClearOpen(false);
+            showStatus(t("apps.ipod.status.libraryCleared"));
+          }}
+          title={t("apps.ipod.dialogs.clearLibraryTitle")}
+          description={t("apps.ipod.dialogs.clearLibraryDescription")}
+        />
+        <InputDialog
+          isOpen={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onSubmit={handleAddTrack}
+          title={t("apps.ipod.dialogs.addSongTitle")}
+          description={t("apps.ipod.dialogs.addSongDescription")}
+          value={urlInput}
+          onChange={setUrlInput}
+          isLoading={isAddingTrack}
+        />
+        <ShareItemDialog
+          isOpen={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
+          itemType="Song"
+          itemIdentifier={tracks[currentIndex]?.id || ""}
+          title={tracks[currentIndex]?.title}
+          details={tracks[currentIndex]?.artist}
+          generateShareUrl={karaokeGenerateShareUrl}
+        />
+        {currentTrack && (
+          <LyricsSearchDialog
+            isOpen={isLyricsSearchDialogOpen}
+            onOpenChange={setIsLyricsSearchDialogOpen}
+            trackTitle={currentTrack.title}
+            trackArtist={currentTrack.artist}
+            initialQuery={
+              lyricsSearchOverride?.query ||
+              `${currentTrack.title} ${currentTrack.artist || ""}`.trim()
+            }
+            onSelect={handleLyricsSearchSelect}
+            onReset={handleLyricsSearchReset}
+            hasOverride={!!lyricsSearchOverride}
+            currentSelection={lyricsSearchOverride?.selection}
+          />
+        )}
       </WindowFrame>
 
       {/* Full screen portal */}

@@ -7,39 +7,68 @@ import {
   MenubarItem,
   MenubarSeparator,
   MenubarCheckboxItem,
+  MenubarSub,
+  MenubarSubTrigger,
+  MenubarSubContent,
+  MenubarRadioGroup,
+  MenubarRadioItem,
 } from "@/components/ui/menubar";
 import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
+import { useIpodStoreShallow } from "@/stores/helpers";
+import { useAppStore } from "@/stores/useAppStore";
+import { toast } from "sonner";
+import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import { Track } from "@/stores/useIpodStore";
 
 interface KaraokeMenuBarProps {
   onClose: () => void;
   onShowHelp: () => void;
   onShowAbout: () => void;
-  // Playback controls (independent from iPod)
+  // File menu actions
+  onAddTrack: () => void;
+  onShareSong: () => void;
+  // Library actions
+  onClearLibrary: () => void;
+  onSyncLibrary: () => void;
+  onPlayTrack: (index: number) => void;
+  // Playback controls
   onTogglePlay: () => void;
   onPreviousTrack: () => void;
   onNextTrack: () => void;
+  isPlaying: boolean;
   isShuffled: boolean;
   onToggleShuffle: () => void;
   loopAll: boolean;
   onToggleLoopAll: () => void;
   loopCurrent: boolean;
   onToggleLoopCurrent: () => void;
+  // View options
   showLyrics: boolean;
   onToggleLyrics: () => void;
   isFullScreen: boolean;
   onToggleFullScreen: () => void;
+  onRefreshLyrics?: () => void;
+  // Tracks
+  tracks: Track[];
+  currentIndex: number;
 }
 
 export function KaraokeMenuBar({
   onClose,
   onShowHelp,
   onShowAbout,
+  onAddTrack,
+  onShareSong,
+  onClearLibrary,
+  onSyncLibrary,
+  onPlayTrack,
   onTogglePlay,
   onPreviousTrack,
   onNextTrack,
+  isPlaying,
   isShuffled,
   onToggleShuffle,
   loopAll,
@@ -50,6 +79,9 @@ export function KaraokeMenuBar({
   onToggleLyrics,
   isFullScreen,
   onToggleFullScreen,
+  onRefreshLyrics,
+  tracks,
+  currentIndex,
 }: KaraokeMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -58,6 +90,114 @@ export function KaraokeMenuBar({
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const debugMode = useAppStore((state) => state.debugMode);
+
+  // Lyrics settings from iPod store
+  const {
+    lyricsAlignment,
+    chineseVariant,
+    koreanDisplay,
+    japaneseFurigana,
+    lyricsTranslationLanguage,
+    setLyricsAlignment,
+    setChineseVariant,
+    setKoreanDisplay,
+    setJapaneseFurigana,
+    setLyricsTranslationLanguage,
+    refreshLyrics,
+    clearLyricsCache,
+    importLibrary,
+    exportLibrary,
+  } = useIpodStoreShallow((s) => ({
+    lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
+    chineseVariant: s.chineseVariant ?? ChineseVariant.Traditional,
+    koreanDisplay: s.koreanDisplay ?? KoreanDisplay.Original,
+    japaneseFurigana: s.japaneseFurigana ?? JapaneseFurigana.On,
+    lyricsTranslationLanguage: s.lyricsTranslationLanguage,
+    setLyricsAlignment: s.setLyricsAlignment,
+    setChineseVariant: s.setChineseVariant,
+    setKoreanDisplay: s.setKoreanDisplay,
+    setJapaneseFurigana: s.setJapaneseFurigana,
+    setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
+    refreshLyrics: s.refreshLyrics,
+    clearLyricsCache: s.clearLyricsCache,
+    importLibrary: s.importLibrary,
+    exportLibrary: s.exportLibrary,
+  }));
+
+  const translationLanguages = [
+    { label: t("apps.ipod.translationLanguages.original"), code: null },
+    { label: "English", code: "en" },
+    { label: "中文", code: "zh-TW" },
+    { label: "日本語", code: "ja" },
+    { label: "한국어", code: "ko" },
+    { label: "Español", code: "es" },
+    { label: "Français", code: "fr" },
+    { label: "Deutsch", code: "de" },
+    { label: "Português", code: "pt" },
+    { label: "Italiano", code: "it" },
+    { label: "Русский", code: "ru" },
+  ];
+
+  // Group tracks by artist
+  const tracksByArtist = tracks.reduce<
+    Record<string, { track: Track; index: number }[]>
+  >((acc, track, index) => {
+    const artist = track.artist || t("apps.ipod.menu.unknownArtist");
+    if (!acc[artist]) {
+      acc[artist] = [];
+    }
+    acc[artist].push({ track, index });
+    return acc;
+  }, {});
+
+  // Get sorted list of artists
+  const artists = Object.keys(tracksByArtist).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
+
+  const handleExportLibrary = () => {
+    try {
+      const json = exportLibrary();
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ipod-library.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t("apps.ipod.dialogs.libraryExportedSuccessfully"));
+    } catch (error) {
+      console.error("Failed to export library:", error);
+      toast.error(t("apps.ipod.dialogs.failedToExportLibrary"));
+    }
+  };
+
+  const handleImportLibrary = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const json = event.target?.result as string;
+          importLibrary(json);
+          toast.success(t("apps.ipod.dialogs.libraryImportedSuccessfully"));
+        } catch (error) {
+          console.error("Failed to import library:", error);
+          toast.error(t("apps.ipod.dialogs.failedToImportLibrary"));
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -67,6 +207,34 @@ export function KaraokeMenuBar({
           {t("apps.karaoke.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
+            onClick={onAddTrack}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.ipod.menu.addSong")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={onShareSong}
+            className="text-md h-6 px-3"
+            disabled={tracks.length === 0 || currentIndex === -1}
+          >
+            {t("apps.ipod.menu.shareSong")}
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
+            onClick={handleExportLibrary}
+            className="text-md h-6 px-3"
+            disabled={tracks.length === 0}
+          >
+            {t("apps.ipod.menu.exportLibrary")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={handleImportLibrary}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.ipod.menu.importLibrary")}
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
             className="text-md h-6 px-3"
@@ -85,18 +253,21 @@ export function KaraokeMenuBar({
           <MenubarItem
             onClick={onTogglePlay}
             className="text-md h-6 px-3"
+            disabled={tracks.length === 0}
           >
-            {t("apps.karaoke.menu.playPause")}
+            {isPlaying ? t("apps.ipod.menu.pause") : t("apps.ipod.menu.play")}
           </MenubarItem>
           <MenubarItem
             onClick={onPreviousTrack}
             className="text-md h-6 px-3"
+            disabled={tracks.length === 0}
           >
             {t("apps.karaoke.menu.previous")}
           </MenubarItem>
           <MenubarItem
             onClick={onNextTrack}
             className="text-md h-6 px-3"
+            disabled={tracks.length === 0}
           >
             {t("apps.karaoke.menu.next")}
           </MenubarItem>
@@ -131,14 +302,151 @@ export function KaraokeMenuBar({
           {t("apps.karaoke.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarCheckboxItem
-            checked={showLyrics}
-            onCheckedChange={onToggleLyrics}
+          {/* Lyrics Submenu */}
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
+              {t("apps.ipod.menu.lyrics")}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
+              <MenubarCheckboxItem
+                checked={showLyrics}
+                onCheckedChange={onToggleLyrics}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.karaoke.menu.showLyrics")}
+              </MenubarCheckboxItem>
+
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+              {/* Chinese toggle */}
+              <MenubarCheckboxItem
+                checked={chineseVariant === ChineseVariant.Traditional}
+                onCheckedChange={(checked) =>
+                  setChineseVariant(
+                    checked
+                      ? ChineseVariant.Traditional
+                      : ChineseVariant.Original
+                  )
+                }
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.traditionalChinese")}
+              </MenubarCheckboxItem>
+
+              {/* Korean toggle */}
+              <MenubarCheckboxItem
+                checked={koreanDisplay === KoreanDisplay.Original}
+                onCheckedChange={(checked) =>
+                  setKoreanDisplay(
+                    checked
+                      ? KoreanDisplay.Original
+                      : KoreanDisplay.Romanized
+                  )
+                }
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.korean")}
+              </MenubarCheckboxItem>
+
+              {/* Japanese furigana toggle */}
+              <MenubarCheckboxItem
+                checked={japaneseFurigana === JapaneseFurigana.On}
+                onCheckedChange={(checked) =>
+                  setJapaneseFurigana(
+                    checked
+                      ? JapaneseFurigana.On
+                      : JapaneseFurigana.Off
+                  )
+                }
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.furigana")}
+              </MenubarCheckboxItem>
+
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+              {/* Alignment modes */}
+              <MenubarCheckboxItem
+                checked={lyricsAlignment === LyricsAlignment.FocusThree}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsAlignment(LyricsAlignment.FocusThree);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.multi")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={lyricsAlignment === LyricsAlignment.Center}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsAlignment(LyricsAlignment.Center);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.single")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={lyricsAlignment === LyricsAlignment.Alternating}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsAlignment(LyricsAlignment.Alternating);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.alternating")}
+              </MenubarCheckboxItem>
+            </MenubarSubContent>
+          </MenubarSub>
+
+          {/* Translate Lyrics Submenu */}
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
+              {t("apps.ipod.menu.translate")}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0 max-h-[400px] overflow-y-auto">
+              <MenubarRadioGroup
+                value={lyricsTranslationLanguage || "off"}
+                onValueChange={(value) => {
+                  setLyricsTranslationLanguage(value === "off" ? null : value);
+                }}
+              >
+                {translationLanguages.map((lang) => {
+                  const value = lang.code || "off";
+                  return (
+                    <MenubarRadioItem
+                      key={value}
+                      value={value}
+                      className="text-md h-6 pr-3"
+                    >
+                      {lang.label}
+                    </MenubarRadioItem>
+                  );
+                })}
+              </MenubarRadioGroup>
+            </MenubarSubContent>
+          </MenubarSub>
+
+          <MenubarItem
+            onClick={onRefreshLyrics || refreshLyrics}
             className="text-md h-6 px-3"
+            disabled={tracks.length === 0 || currentIndex === -1}
           >
-            {t("apps.karaoke.menu.showLyrics")}
-          </MenubarCheckboxItem>
+            {t("apps.ipod.menu.refreshLyrics")}
+          </MenubarItem>
+
+          {debugMode && (
+            <MenubarItem
+              onClick={() => {
+                clearLyricsCache();
+                toast.success(t("apps.ipod.menu.cacheCleared"));
+              }}
+              className="text-md h-6 px-3"
+              disabled={tracks.length === 0 || currentIndex === -1}
+            >
+              {t("apps.ipod.menu.clearCache")}
+            </MenubarItem>
+          )}
+
           <MenubarSeparator className="h-[2px] bg-black my-1" />
+
           <MenubarCheckboxItem
             checked={isFullScreen}
             onCheckedChange={onToggleFullScreen}
@@ -146,6 +454,94 @@ export function KaraokeMenuBar({
           >
             {t("apps.ipod.menu.fullScreen")}
           </MenubarCheckboxItem>
+        </MenubarContent>
+      </MenubarMenu>
+
+      {/* Library Menu */}
+      <MenubarMenu>
+        <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
+          {t("apps.ipod.menu.library")}
+        </MenubarTrigger>
+        <MenubarContent
+          align="start"
+          sideOffset={1}
+          className="px-0 max-w-[180px] sm:max-w-[220px]"
+        >
+          <MenubarItem
+            onClick={onAddTrack}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.ipod.menu.addToLibrary")}
+          </MenubarItem>
+
+          {tracks.length > 0 && (
+            <>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+              {/* All Tracks section */}
+              <MenubarSub>
+                <MenubarSubTrigger className="text-md h-6 px-3">
+                  <div className="flex justify-between w-full items-center overflow-hidden">
+                    <span className="truncate min-w-0">{t("apps.ipod.menu.allSongs")}</span>
+                  </div>
+                </MenubarSubTrigger>
+                <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[400px] overflow-y-auto">
+                  {tracks.map((track, index) => (
+                    <MenubarCheckboxItem
+                      key={`all-${track.id}`}
+                      checked={index === currentIndex}
+                      onCheckedChange={() => onPlayTrack(index)}
+                      className="text-md h-6 pr-3 max-w-[220px] truncate"
+                    >
+                      <span className="truncate min-w-0">{track.title}</span>
+                    </MenubarCheckboxItem>
+                  ))}
+                </MenubarSubContent>
+              </MenubarSub>
+
+              {/* Individual Artist submenus */}
+              <div className="max-h-[300px] overflow-y-auto">
+                {artists.map((artist) => (
+                  <MenubarSub key={artist}>
+                    <MenubarSubTrigger className="text-md h-6 px-3">
+                      <div className="flex justify-between w-full items-center overflow-hidden">
+                        <span className="truncate min-w-0">{artist}</span>
+                      </div>
+                    </MenubarSubTrigger>
+                    <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[200px] overflow-y-auto">
+                      {tracksByArtist[artist].map(({ track, index }) => (
+                        <MenubarCheckboxItem
+                          key={`${artist}-${track.id}`}
+                          checked={index === currentIndex}
+                          onCheckedChange={() => onPlayTrack(index)}
+                          className="text-md h-6 pr-3 max-w-[160px] sm:max-w-[200px] truncate"
+                        >
+                          <span className="truncate min-w-0">
+                            {track.title}
+                          </span>
+                        </MenubarCheckboxItem>
+                      ))}
+                    </MenubarSubContent>
+                  </MenubarSub>
+                ))}
+              </div>
+
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+            </>
+          )}
+
+          <MenubarItem
+            onClick={onClearLibrary}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.ipod.menu.clearLibrary")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={onSyncLibrary}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.ipod.menu.syncLibrary")}
+          </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
 
