@@ -10,6 +10,7 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
+import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { useIpodStore, Track } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow, useAppStoreShallow } from "@/stores/helpers";
@@ -158,6 +159,15 @@ export function KaraokeAppComponent({
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
 
+  // Full screen state
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isFullScreenFetchingFurigana, setIsFullScreenFetchingFurigana] = useState(false);
+  const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
+
+  const toggleFullScreen = useCallback(() => {
+    setIsFullScreen((prev) => !prev);
+  }, []);
+
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
   const playerRef = useRef<ReactPlayer | null>(null);
@@ -186,6 +196,17 @@ export function KaraokeAppComponent({
   }, [lyricsSearchOverride?.selection]);
 
   const lyricsControls = useLyrics({
+    title: currentTrack?.title ?? "",
+    artist: currentTrack?.artist ?? "",
+    album: currentTrack?.album ?? "",
+    currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
+    translateTo: lyricsTranslationLanguage,
+    searchQueryOverride: lyricsSearchOverride?.query,
+    selectedMatch: selectedMatchForLyrics,
+  });
+
+  // Full screen lyrics hook (separate instance for independent time tracking)
+  const fullScreenLyricsControls = useLyrics({
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
     album: currentTrack?.album ?? "",
@@ -237,6 +258,11 @@ export function KaraokeAppComponent({
       }, 3000);
     }
   }, [isPlaying, isLangMenuOpen]);
+
+  // Register activity (for full screen portal)
+  const registerActivity = useCallback(() => {
+    restartAutoHideTimer();
+  }, [restartAutoHideTimer]);
 
   useEffect(() => {
     if (!isPlaying || isLangMenuOpen) {
@@ -412,6 +438,8 @@ export function KaraokeAppComponent({
       onToggleLoopCurrent={toggleLoopCurrent}
       showLyrics={showLyrics}
       onToggleLyrics={toggleLyrics}
+      isFullScreen={isFullScreen}
+      onToggleFullScreen={toggleFullScreen}
     />
   );
 
@@ -767,6 +795,154 @@ export function KaraokeAppComponent({
           appId="karaoke"
         />
       </WindowFrame>
+
+      {/* Full screen portal */}
+      {isFullScreen && (
+        <FullScreenPortal
+          onClose={toggleFullScreen}
+          togglePlay={togglePlay}
+          nextTrack={nextTrack}
+          previousTrack={previousTrack}
+          seekTime={seekTime}
+          showStatus={showStatus}
+          showOfflineStatus={showOfflineStatus}
+          registerActivity={registerActivity}
+          isPlaying={isPlaying}
+          statusMessage={statusMessage}
+          currentTranslationCode={lyricsTranslationLanguage}
+          onSelectTranslation={setLyricsTranslationLanguage}
+          currentAlignment={lyricsAlignment}
+          onCycleAlignment={cycleAlignment}
+          currentKoreanDisplay={koreanDisplay}
+          onToggleKoreanDisplay={toggleKorean}
+          currentJapaneseFurigana={japaneseFurigana}
+          onToggleJapaneseFurigana={toggleFurigana}
+          fullScreenPlayerRef={fullScreenPlayerRef}
+          isLoadingLyrics={fullScreenLyricsControls.isLoading}
+          isProcessingLyrics={fullScreenLyricsControls.isTranslating}
+          isFetchingFurigana={isFullScreenFetchingFurigana}
+        >
+          {({ controlsVisible }) => (
+            <div className="flex flex-col w-full h-full">
+              <div className="relative w-full h-full overflow-visible">
+                <div
+                  className="w-full relative"
+                  style={{
+                    height: "calc(100% + clamp(200px, 30dvh, 360px))",
+                    transform: "translateY(-100px)",
+                  }}
+                >
+                  {currentTrack && (
+                    <>
+                      <div className="w-full h-full pointer-events-none">
+                        <ReactPlayer
+                          ref={fullScreenPlayerRef}
+                          url={currentTrack.url}
+                          playing={isPlaying && isFullScreen}
+                          controls
+                          width="100%"
+                          height="100%"
+                          volume={ipodVolume * useAppStore.getState().masterVolume}
+                          loop={loopCurrent}
+                          onEnded={handleTrackEnd}
+                          onProgress={handleProgress}
+                          progressInterval={100}
+                          onPlay={handlePlay}
+                          onPause={handlePause}
+                          config={{
+                            youtube: {
+                              playerVars: {
+                                modestbranding: 1,
+                                rel: 0,
+                                showinfo: 0,
+                                iv_load_policy: 3,
+                                cc_load_policy: 0,
+                                fs: 1,
+                                playsinline: 1,
+                                enablejsapi: 1,
+                                origin: window.location.origin,
+                              },
+                              embedOptions: {
+                                referrerPolicy: "strict-origin-when-cross-origin",
+                              },
+                            },
+                          }}
+                        />
+                      </div>
+
+                      {showLyrics && currentTrack && (
+                        <div className="absolute inset-0 bg-black/50 z-10 pointer-events-none" />
+                      )}
+
+                      {showLyrics && (
+                        <div
+                          className="absolute bottom-0 inset-0 pointer-events-none z-20"
+                          style={{
+                            transform: controlsVisible
+                              ? "translateY(-3rem)"
+                              : "translateY(clamp(1rem, 4dvh, 5rem))",
+                            transition: "transform 200ms ease",
+                          }}
+                        >
+                          <LyricsDisplay
+                            lines={fullScreenLyricsControls.lines}
+                            originalLines={fullScreenLyricsControls.originalLines}
+                            currentLine={fullScreenLyricsControls.currentLine}
+                            isLoading={fullScreenLyricsControls.isLoading}
+                            error={fullScreenLyricsControls.error}
+                            visible={true}
+                            videoVisible={true}
+                            alignment={lyricsAlignment}
+                            chineseVariant={chineseVariant}
+                            koreanDisplay={koreanDisplay}
+                            japaneseFurigana={japaneseFurigana}
+                            fontClassName="font-lyrics-rounded"
+                            onAdjustOffset={(delta) => {
+                              useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
+                              const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
+                              const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
+                              showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
+                              fullScreenLyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+                            }}
+                            isTranslating={fullScreenLyricsControls.isTranslating}
+                            textSizeClass="text-[min(10vw,10vh)]"
+                            gapClass="gap-0"
+                            containerStyle={{
+                              gap: "clamp(0.25rem, calc(min(10vw,10vh) * 0.12), 2.5rem)",
+                              paddingLeft: "env(safe-area-inset-left, 0px)",
+                              paddingRight: "env(safe-area-inset-right, 0px)",
+                            }}
+                            interactive={isPlaying}
+                            bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
+                            onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
+                            currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                          />
+                        </div>
+                      )}
+
+                      {fullScreenLyricsControls.isTranslating && !showLyrics && (
+                        <div
+                          className="absolute inset-0 pointer-events-none z-20 flex items-end justify-center pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
+                          style={{
+                            transform: controlsVisible
+                              ? "translateY(0)"
+                              : "translateY(clamp(2rem, 8dvh, 10rem))",
+                            transition: "transform 200ms ease",
+                          }}
+                        >
+                          <div className={cn("shimmer opacity-60 text-[min(10vw,10vh)]", "font-lyrics-rounded")}>
+                            {t("apps.ipod.status.translatingLyrics")}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </FullScreenPortal>
+      )}
     </>
   );
 }
