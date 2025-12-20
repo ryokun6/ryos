@@ -297,32 +297,6 @@ export function KaraokeAppComponent({
     };
   }, []);
 
-  // Fullscreen sync - sync player position when entering/exiting fullscreen
-  const prevFullScreenRef = useRef(isFullScreen);
-
-  useEffect(() => {
-    if (isFullScreen !== prevFullScreenRef.current) {
-      if (isFullScreen) {
-        // Entering fullscreen - sync fullscreen player to main player position
-        const currentTime = playerRef.current?.getCurrentTime() || elapsedTime;
-        setTimeout(() => {
-          if (fullScreenPlayerRef.current) {
-            fullScreenPlayerRef.current.seekTo(currentTime);
-          }
-        }, 100);
-      } else {
-        // Exiting fullscreen - sync main player to fullscreen player position
-        const currentTime = fullScreenPlayerRef.current?.getCurrentTime() || elapsedTime;
-        setTimeout(() => {
-          if (playerRef.current) {
-            playerRef.current.seekTo(currentTime);
-          }
-        }, 200);
-      }
-      prevFullScreenRef.current = isFullScreen;
-    }
-  }, [isFullScreen, elapsedTime]);
-
   // Exit fullscreen when browser exits fullscreen mode
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -338,13 +312,12 @@ export function KaraokeAppComponent({
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
     if (loopCurrent) {
-      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-      activePlayer?.seekTo(0);
+      playerRef.current?.seekTo(0);
       setIsPlaying(true);
     } else {
       nextTrack();
     }
-  }, [loopCurrent, nextTrack, isFullScreen]);
+  }, [loopCurrent, nextTrack]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
@@ -524,11 +497,11 @@ export function KaraokeAppComponent({
                   height="100%"
                   volume={ipodVolume * useAppStore.getState().masterVolume}
                   loop={loopCurrent}
-                  onEnded={!isFullScreen ? handleTrackEnd : undefined}
-                  onProgress={!isFullScreen ? handleProgress : undefined}
+                  onEnded={handleTrackEnd}
+                  onProgress={handleProgress}
                   progressInterval={100}
-                  onPlay={!isFullScreen ? handlePlay : undefined}
-                  onPause={!isFullScreen ? handlePause : undefined}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
                   style={{ pointerEvents: "none" }}
                   config={{
                     youtube: {
@@ -941,7 +914,7 @@ export function KaraokeAppComponent({
                           style={{
                             transform: controlsVisible
                               ? "translateY(-3rem)"
-                              : "translateY(clamp(1rem, 4dvh, 5rem))",
+                              : "translateY(clamp(3rem, 10dvh, 8rem))",
                             transition: "transform 200ms ease",
                           }}
                         >
