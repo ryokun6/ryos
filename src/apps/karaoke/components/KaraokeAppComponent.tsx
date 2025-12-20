@@ -297,15 +297,54 @@ export function KaraokeAppComponent({
     };
   }, []);
 
+  // Fullscreen sync - sync player position when entering/exiting fullscreen
+  const prevFullScreenRef = useRef(isFullScreen);
+
+  useEffect(() => {
+    if (isFullScreen !== prevFullScreenRef.current) {
+      if (isFullScreen) {
+        // Entering fullscreen - sync fullscreen player to main player position
+        const currentTime = playerRef.current?.getCurrentTime() || elapsedTime;
+        setTimeout(() => {
+          if (fullScreenPlayerRef.current) {
+            fullScreenPlayerRef.current.seekTo(currentTime);
+          }
+        }, 100);
+      } else {
+        // Exiting fullscreen - sync main player to fullscreen player position
+        const currentTime = fullScreenPlayerRef.current?.getCurrentTime() || elapsedTime;
+        setTimeout(() => {
+          if (playerRef.current) {
+            playerRef.current.seekTo(currentTime);
+          }
+        }, 200);
+      }
+      prevFullScreenRef.current = isFullScreen;
+    }
+  }, [isFullScreen, elapsedTime]);
+
+  // Exit fullscreen when browser exits fullscreen mode
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isFullScreen) {
+        toggleFullScreen();
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [isFullScreen, toggleFullScreen]);
+
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
     if (loopCurrent) {
-      playerRef.current?.seekTo(0);
+      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      activePlayer?.seekTo(0);
       setIsPlaying(true);
     } else {
       nextTrack();
     }
-  }, [loopCurrent, nextTrack]);
+  }, [loopCurrent, nextTrack, isFullScreen]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
@@ -480,16 +519,16 @@ export function KaraokeAppComponent({
                 <ReactPlayer
                   ref={playerRef}
                   url={currentTrack.url}
-                  playing={isPlaying}
+                  playing={isPlaying && !isFullScreen}
                   width="100%"
                   height="100%"
                   volume={ipodVolume * useAppStore.getState().masterVolume}
                   loop={loopCurrent}
-                  onEnded={handleTrackEnd}
-                  onProgress={handleProgress}
+                  onEnded={!isFullScreen ? handleTrackEnd : undefined}
+                  onProgress={!isFullScreen ? handleProgress : undefined}
                   progressInterval={100}
-                  onPlay={handlePlay}
-                  onPause={handlePause}
+                  onPlay={!isFullScreen ? handlePlay : undefined}
+                  onPause={!isFullScreen ? handlePause : undefined}
                   style={{ pointerEvents: "none" }}
                   config={{
                     youtube: {
@@ -801,8 +840,30 @@ export function KaraokeAppComponent({
         <FullScreenPortal
           onClose={toggleFullScreen}
           togglePlay={togglePlay}
-          nextTrack={nextTrack}
-          previousTrack={previousTrack}
+          nextTrack={() => {
+            nextTrack();
+            // Show status with correct track info (using setTimeout to get updated state)
+            setTimeout(() => {
+              const newIndex = (currentIndex + 1) % tracks.length;
+              const newTrack = tracks[newIndex];
+              if (newTrack) {
+                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+              }
+            }, 150);
+          }}
+          previousTrack={() => {
+            previousTrack();
+            // Show status with correct track info (using setTimeout to get updated state)
+            setTimeout(() => {
+              const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
+              const newTrack = tracks[newIndex];
+              if (newTrack) {
+                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+              }
+            }, 150);
+          }}
           seekTime={seekTime}
           showStatus={showStatus}
           showOfflineStatus={showOfflineStatus}
