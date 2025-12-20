@@ -397,7 +397,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Karaoke lyrics text - uses container query units for window-relative sizing */
   .karaoke-lyrics-text {
-    font-size: clamp(24px, 6cqw, 128px);
+    font-size: clamp(32px, 8cqw, 160px);
   }
 
   /* Karaoke status text - scales with container */

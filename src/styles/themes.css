@@ -987,7 +987,7 @@
 
 /* Preserve karaoke lyrics font size on macOS theme (uses container query units) */
 :root[data-os-theme="macosx"] .karaoke-force-font .karaoke-lyrics-text {
-  font-size: clamp(24px, 6cqw, 128px) !important;
+  font-size: clamp(32px, 8cqw, 160px) !important;
 }
 
 /* Preserve karaoke status text size on macOS theme */
