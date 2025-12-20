@@ -15,6 +15,11 @@ interface IpodWheelProps {
 // How many degrees of wheel rotation should equal one scroll step
 const rotationStepDeg = 15; // increase this value to reduce sensitivity
 
+// Minimum movement to be considered a drag (not a tap)
+// This is intentionally smaller than rotationStepDeg to catch scrolling intent early
+const dragDetectionDeg = 5; // degrees of rotation to detect drag intent
+const dragDetectionDistance = 8; // pixels of movement to detect drag intent
+
 export function IpodWheel({
   theme,
   onWheelClick,
@@ -43,6 +48,9 @@ export function IpodWheel({
 
   // Track if we're currently in a touch drag to prevent button clicks
   const isInTouchDragRef = useRef(false);
+  
+  // Track if we're currently in a mouse drag to prevent button clicks
+  const isInMouseDragRef = useRef(false);
 
   // Calculate angle (in degrees) from the center of the wheel – used for click areas
   const getAngleFromCenterDeg = (x: number, y: number): number => {
@@ -132,14 +140,19 @@ export function IpodWheel({
     lastAngleRef.current = currentAngleRad;
 
     const threshold = (rotationStepDeg * Math.PI) / 180; // convert step to radians
+    const dragThreshold = (dragDetectionDeg * Math.PI) / 180; // smaller threshold for drag detection
 
-    // Once movement exceeds threshold, treat interaction as a drag (not a simple tap)
-    if (
-      !isTouchDraggingRef.current &&
-      Math.abs(rotationAccumulatorRef.current) > threshold
-    ) {
-      isTouchDraggingRef.current = true;
-      isInTouchDragRef.current = true;
+    // Check for drag intent using either rotation or distance
+    if (!isTouchDraggingRef.current && touchStartPosRef.current) {
+      const dx = touch.clientX - touchStartPosRef.current.x;
+      const dy = touch.clientY - touchStartPosRef.current.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // Detect drag if rotation exceeds threshold OR distance exceeds threshold
+      if (Math.abs(rotationAccumulatorRef.current) > dragThreshold || distance > dragDetectionDistance) {
+        isTouchDraggingRef.current = true;
+        isInTouchDragRef.current = true;
+      }
     }
 
     // Trigger rotation events when threshold exceeded
@@ -220,11 +233,14 @@ export function IpodWheel({
 
     // Initialise rotation tracking
     const startAngleRad = getAngleFromCenterRad(e.clientX, e.clientY);
+    const startX = e.clientX;
+    const startY = e.clientY;
     lastAngleRef.current = startAngleRad;
     rotationAccumulatorRef.current = 0;
     isDraggingRef.current = false;
 
     const threshold = (rotationStepDeg * Math.PI) / 180; // rad
+    const dragThreshold = (dragDetectionDeg * Math.PI) / 180; // smaller threshold for drag detection
 
     // Mouse move handler (attached to window so it continues even if we leave the wheel)
     const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -243,12 +259,17 @@ export function IpodWheel({
       rotationAccumulatorRef.current += delta;
       lastAngleRef.current = currentAngleRad;
 
-      // Once movement exceeds threshold, treat interaction as a drag (not a simple click)
-      if (
-        !isDraggingRef.current &&
-        Math.abs(rotationAccumulatorRef.current) > threshold
-      ) {
-        isDraggingRef.current = true;
+      // Check for drag intent using either rotation or distance
+      if (!isDraggingRef.current) {
+        const dx = moveEvent.clientX - startX;
+        const dy = moveEvent.clientY - startY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Detect drag if rotation exceeds threshold OR distance exceeds threshold
+        if (Math.abs(rotationAccumulatorRef.current) > dragThreshold || distance > dragDetectionDistance) {
+          isDraggingRef.current = true;
+          isInMouseDragRef.current = true;
+        }
       }
 
       // Emit rotation events whenever accumulated rotation crosses threshold
@@ -286,6 +307,13 @@ export function IpodWheel({
       rotationAccumulatorRef.current = 0;
       isDraggingRef.current = false;
       fromMenuLabelRef.current = false;
+      
+      // Clear the mouse drag flag with a small delay to prevent clicks
+      if (isInMouseDragRef.current) {
+        setTimeout(() => {
+          isInMouseDragRef.current = false;
+        }, 100);
+      }
     };
 
     // Attach listeners to the window so the interaction continues smoothly outside the wheel bounds
@@ -310,11 +338,11 @@ export function IpodWheel({
         tabIndex={0}
         aria-label={t("apps.ipod.ariaLabels.select")}
         onClick={() => {
-          if (recentTouchRef.current || isInTouchDragRef.current) return;
+          if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
           onWheelClick("center");
         }}
         onKeyDown={(e) => {
-          if (recentTouchRef.current || isInTouchDragRef.current) return;
+          if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             onWheelClick("center");
@@ -344,7 +372,7 @@ export function IpodWheel({
         <div
           className="absolute top-1.5 text-center left-1/2 transform -translate-x-1/2 font-chicago text-xs text-white menu-button cursor-default select-none no-select-gesture"
           onClick={(e) => {
-            if (recentTouchRef.current || isInTouchDragRef.current) return;
+            if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
             e.stopPropagation(); // Prevent triggering wheel mousedown
             onMenuButton();
           }}
