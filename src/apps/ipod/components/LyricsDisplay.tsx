@@ -809,7 +809,7 @@ export function LyricsDisplay({
 
   return (
     <div
-      className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none no-select-gesture px-0 ${bottomPaddingClass}`}
+      className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none no-select-gesture px-2 ${bottomPaddingClass}`}
       style={{
         ...(containerStyle || {}),
         pointerEvents: interactive ? "auto" : "none",
