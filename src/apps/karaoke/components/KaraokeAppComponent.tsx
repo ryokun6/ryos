@@ -590,7 +590,7 @@ export function KaraokeAppComponent({
               restartAutoHideTimer();
             }}
           >
-            <div className="relative">
+            <div className="relative ipod-force-font">
               <div className="bg-neutral-800/60 border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 px-2 py-1 font-geneva-12">
                 {/* Previous */}
                 <button
