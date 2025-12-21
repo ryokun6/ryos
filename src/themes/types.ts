@@ -1,8 +1,35 @@
 export type OsThemeId = "system7" | "macosx" | "xp" | "win98";
 
+/**
+ * Theme metadata for conditional rendering and layout decisions.
+ * Centralizes theme-based checks that were previously scattered throughout the codebase.
+ */
+export interface ThemeMetadata {
+  /** Whether this is a Windows-style theme (XP, 98) */
+  isWindows: boolean;
+  /** Whether this is a macOS-style theme (macOS X, System 7) */
+  isMac: boolean;
+  /** Whether the theme has a dock (bottom app launcher) */
+  hasDock: boolean;
+  /** Whether the theme has a taskbar (Windows-style bottom bar) */
+  hasTaskbar: boolean;
+  /** Whether the theme has a top menu bar */
+  hasMenuBar: boolean;
+  /** Whether title bar controls are on the left (macOS) or right (Windows) */
+  titleBarControlsPosition: "left" | "right";
+  /** Default menu bar height in pixels */
+  menuBarHeight: number;
+  /** Taskbar height in pixels (0 if no taskbar) */
+  taskbarHeight: number;
+  /** Base dock height before scaling (0 if no dock) */
+  baseDockHeight: number;
+}
+
 export interface OsTheme {
   id: OsThemeId;
   name: string;
+  /** Theme metadata for layout and conditional rendering */
+  metadata: ThemeMetadata;
   fonts: {
     ui: string;
     mono?: string;

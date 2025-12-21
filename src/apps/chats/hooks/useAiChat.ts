@@ -41,11 +41,18 @@ import type { OsThemeId } from "@/themes/types";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 
-// TODO: Move relevant state and logic from ChatsAppComponent here
-// - AI chat state (useChat hook)
-// - Message processing (app control markup)
-// - System state generation
-// - Dialog states (clear, save)
+/**
+ * NOTE: Future refactoring opportunity (tracked in codebase analysis)
+ * 
+ * Consider consolidating more state from ChatsAppComponent into this hook:
+ * - AI chat state (currently using useChat hook here)
+ * - Message processing (app control markup)
+ * - System state generation
+ * - Dialog states (clear, save)
+ * 
+ * This would make the component lighter and improve testability.
+ * Priority: Low - current architecture works well for the use case.
+ */
 
 // Track newly created TextEdit instances for fallback mechanism
 const recentlyCreatedTextEditInstances = new Map<

@@ -9,8 +9,7 @@ import { appIds, AppId } from "@/config/appIds";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSound, Sounds } from "./useSound";
 import { getWindowConfig } from "@/config/appRegistry";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { useDockStore } from "@/stores/useDockStore";
+import { useWindowInsets } from "./useWindowInsets";
 
 interface UseWindowManagerProps {
   appId: AppId;
@@ -28,13 +27,8 @@ export const useWindowManager = ({
   );
   const config = getWindowConfig(appId);
 
-  // Theme-dependent constraints
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  
-  // Get dock scale and hiding state for accurate dock height calculations
-  const dockScale = useDockStore((state) => state.scale);
-  const dockHiding = useDockStore((state) => state.hiding);
+  // Use shared window insets hook for theme-dependent constraints
+  const { computeInsets, getSafeAreaBottomInset, isXpTheme } = useWindowInsets();
 
   // Helper to compute default window state (mirrors previous logic)
   const computeDefaultWindowState = (): {
@@ -100,42 +94,6 @@ export const useWindowManager = ({
   const preSnapStateRef = useRef<{ position: WindowPosition; size: WindowSize } | null>(null);
 
   const isMobile = window.innerWidth < 768;
-
-  // Function to get the safe area bottom inset for iOS devices
-  const getSafeAreaBottomInset = useCallback(() => {
-    // Get the env(safe-area-inset-bottom) value or fallback to 0
-    const safeAreaInset = parseInt(
-      getComputedStyle(document.documentElement).getPropertyValue(
-        "--sat-safe-area-bottom"
-      )
-    );
-    // On iPadOS, the home indicator height is typically 20px
-    return !isNaN(safeAreaInset) ? safeAreaInset : isMobile ? 20 : 0;
-  }, [isMobile]);
-  // Centralized insets per theme for this hook
-  const computeInsets = useCallback(() => {
-    const safe = getSafeAreaBottomInset();
-    const isTauriApp = typeof window !== "undefined" && "__TAURI__" in window;
-    // In Tauri, menubar is 32px for mac themes; otherwise use theme defaults
-    const needsTauriMenubar = isTauriApp && (currentTheme === "macosx" || currentTheme === "system7");
-    const menuBarHeight = needsTauriMenubar
-      ? 32
-      : currentTheme === "system7" ? 30 : currentTheme === "macosx" ? 25 : 0;
-    const taskbarHeight = isXpTheme ? 30 : 0;
-    // Use scaled dock height for accurate constraints (0 if dock hiding is enabled)
-    const dockHeight = currentTheme === "macosx" && !dockHiding ? Math.round(56 * dockScale) : 0;
-    const topInset = menuBarHeight;
-    // bottomInset includes dock for resize/maximize constraints
-    const bottomInset = taskbarHeight + dockHeight + safe;
-    return {
-      menuBarHeight,
-      taskbarHeight,
-      safeAreaBottom: safe,
-      topInset,
-      bottomInset,
-      dockHeight,
-    };
-  }, [currentTheme, isXpTheme, getSafeAreaBottomInset, dockScale, dockHiding]);
 
   const { play: playMoveSound, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
   const { play: playMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);

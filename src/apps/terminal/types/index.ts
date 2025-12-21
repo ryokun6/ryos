@@ -26,16 +26,29 @@ export interface ParsedCommand {
   args: string[];
 }
 
+/** File system item for terminal commands */
+export interface TerminalFileItem {
+  path: string;
+  name: string;
+  isDirectory: boolean;
+  type?: string;
+  status: "active" | "trashed";
+  uuid?: string;
+  size?: number;
+  createdAt?: number;
+  modifiedAt?: number;
+}
+
 export interface CommandContext {
   currentPath: string;
-  files: any[]; // TODO: Add proper file type
+  files: TerminalFileItem[];
   navigateToPath: (path: string) => void;
-  saveFile: (file: any) => Promise<void>;
-  moveToTrash: (file: any) => void;
+  saveFile: (file: TerminalFileItem) => Promise<void>;
+  moveToTrash: (file: TerminalFileItem) => void;
   playCommandSound: () => void;
   playErrorSound: () => void;
   playMooSound: () => void;
-  launchApp: (appId: any, options?: any) => string; // Use any for AppId to avoid import issues
+  launchApp: (appId: string, options?: { initialData?: unknown }) => string;
   setIsAboutDialogOpen: (isOpen: boolean) => void;
   username?: string | null;
 }

@@ -3,6 +3,7 @@ import { ResizeType } from "@/types/types";
 import { useAppContext } from "@/contexts/AppContext";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
+import { useWindowInsets } from "@/hooks/useWindowInsets";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
@@ -12,10 +13,10 @@ import { AppId } from "@/config/appIds";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useAppStoreShallow } from "@/stores/helpers";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { getTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { calculateExposeGrid, getExposeTransform } from "./exposeUtils";
 
@@ -133,9 +134,13 @@ export function WindowFrame({
   // Keep track of window size before maximizing to restore it later
   const previousSizeRef = useRef({ width: 0, height: 0 });
 
-  // Get current theme
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  // Use shared window insets hook for theme-dependent constraints
+  const {
+    computeInsets,
+    getSafeAreaBottomInset,
+    isXpTheme,
+    currentTheme,
+  } = useWindowInsets();
   const theme = getTheme(currentTheme);
   
   // Get dock scale and hiding state for accurate dock height calculations
@@ -384,29 +389,6 @@ export function WindowFrame({
     return { ...transform, index: myIndex };
   }, [exposeMode, instanceId, instances, windowPosition, windowSize, isMobile]);
 
-  // Centralized insets per theme
-  const computeInsets = useCallback(() => {
-    const safe = getSafeAreaBottomInset();
-    const isTauriApp = typeof window !== "undefined" && "__TAURI__" in window;
-    // In Tauri, menubar is 32px for mac themes; otherwise use theme defaults
-    const needsTauriMenubar = isTauriApp && (currentTheme === "macosx" || currentTheme === "system7");
-    const menuBarHeight = needsTauriMenubar
-      ? 32
-      : currentTheme === "system7" ? 30 : currentTheme === "macosx" ? 25 : 0;
-    const taskbarHeight = isXpTheme ? 30 : 0;
-    // Use scaled dock height for accurate constraints (0 if dock hiding is enabled)
-    const dockHeight = currentTheme === "macosx" && !dockHiding ? Math.round(56 * dockScale) : 0;
-    const topInset = menuBarHeight;
-    const bottomInset = taskbarHeight + dockHeight + safe;
-    return {
-      menuBarHeight,
-      taskbarHeight,
-      safeAreaBottom: safe,
-      topInset,
-      bottomInset,
-      dockHeight,
-    };
-  }, [currentTheme, isXpTheme, getSafeAreaBottomInset, dockScale, dockHiding]);
 
   // No longer track maximized state based on window dimensions
   useEffect(() => {
@@ -1257,191 +1239,27 @@ export function WindowFrame({
                 className="flex items-center gap-2 ml-1.5 relative"
                 data-titlebar-controls
               >
-                {/* Close Button (Red) */}
-                <div
-                  className="relative"
-                  style={{ width: "13px", height: "13px" }}
-                >
-                  <div
-                    aria-hidden="true"
-                    className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
-                    style={{
-                      width: "13px",
-                      height: "13px",
-                      background: isForeground
-                        ? "linear-gradient(rgb(193, 58, 45), rgb(205, 73, 52))"
-                        : "linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625))",
-                      boxShadow: isForeground
-                        ? "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(225, 70, 64, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgba(150, 40, 30, 0.8) 0px 1px 3px inset, rgba(225, 70, 64, 0.75) 0px 2px 3px 1px inset"
-                        : "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb",
-                    }}
-                  >
-                    {/* Top shine */}
-                    <div
-                      className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-                      style={{
-                        height: "28%",
-                        background:
-                          "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
-                        width: "calc(100% - 6px)",
-                        borderRadius: "6px 6px 0 0",
-                        top: "1px",
-                        filter: "blur(0.2px)",
-                        zIndex: 2,
-                      }}
-                    />
-                    {/* Bottom glow */}
-                    <div
-                      className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-                      style={{
-                        height: "33%",
-                        background:
-                          "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
-                        width: "calc(100% - 3px)",
-                        borderRadius: "0 0 6px 6px",
-                        bottom: "1px",
-                        filter: "blur(0.3px)",
-                      }}
-                    />
-                  </div>
-                  <button
-                    aria-label="Close"
-                    className={cn(
-                      "absolute -inset-2 z-10 rounded-none outline-none cursor-default",
-                      debugMode ? "bg-red-500/50" : "opacity-0"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleClose();
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                  />
-                </div>
-
-                {/* Minimize Button (Yellow) */}
-                <div
-                  className="relative"
-                  style={{ width: "13px", height: "13px" }}
-                >
-                  <div
-                    aria-hidden="true"
-                    className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
-                    style={{
-                      width: "13px",
-                      height: "13px",
-                      background: isForeground
-                        ? "linear-gradient(rgb(202, 130, 13), rgb(253, 253, 149))"
-                        : "linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625))",
-                      boxShadow: isForeground
-                        ? "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(223, 161, 35, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgb(155, 78, 21) 0px 1px 3px inset, rgb(241, 157, 20) 0px 2px 3px 1px inset"
-                        : "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb",
-                    }}
-                  >
-                    {/* Top shine */}
-                    <div
-                      className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-                      style={{
-                        height: "28%",
-                        background:
-                          "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
-                        width: "calc(100% - 6px)",
-                        borderRadius: "6px 6px 0 0",
-                        top: "1px",
-                        filter: "blur(0.2px)",
-                        zIndex: 2,
-                      }}
-                    />
-                    {/* Bottom glow */}
-                    <div
-                      className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-                      style={{
-                        height: "33%",
-                        background:
-                          "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
-                        width: "calc(100% - 3px)",
-                        borderRadius: "0 0 6px 6px",
-                        bottom: "1px",
-                        filter: "blur(0.3px)",
-                      }}
-                    />
-                  </div>
-                  <button
-                    aria-label="Minimize"
-                    className={cn(
-                      "absolute -inset-2 z-10 rounded-none outline-none cursor-default",
-                      debugMode ? "bg-red-500/50" : "opacity-0"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMinimize();
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                  />
-                </div>
-
-                {/* Maximize Button (Green) */}
-                <div
-                  className="relative"
-                  style={{ width: "13px", height: "13px" }}
-                >
-                  <div
-                    aria-hidden="true"
-                    className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
-                    style={{
-                      width: "13px",
-                      height: "13px",
-                      background: isForeground
-                        ? "linear-gradient(rgb(111, 174, 58), rgb(138, 192, 50))"
-                        : "linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625))",
-                      boxShadow: isForeground
-                        ? "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgb(59, 173, 29, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgb(53, 91, 17) 0px 1px 3px inset, rgb(98, 187, 19) 0px 2px 3px 1px inset"
-                        : "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb",
-                    }}
-                  >
-                    {/* Top shine */}
-                    <div
-                      className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-                      style={{
-                        height: "28%",
-                        background:
-                          "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
-                        width: "calc(100% - 6px)",
-                        borderRadius: "6px 6px 0 0",
-                        top: "1px",
-                        filter: "blur(0.2px)",
-                        zIndex: 2,
-                      }}
-                    />
-                    {/* Bottom glow */}
-                    <div
-                      className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-                      style={{
-                        height: "33%",
-                        background:
-                          "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
-                        width: "calc(100% - 3px)",
-                        borderRadius: "0 0 6px 6px",
-                        bottom: "1px",
-                        filter: "blur(0.3px)",
-                      }}
-                    />
-                  </div>
-                  <button
-                    aria-label="Maximize"
-                    className={cn(
-                      "absolute -inset-2 z-10 rounded-none outline-none cursor-default",
-                      debugMode ? "bg-red-500/50" : "opacity-0"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFullMaximize(e);
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                  />
-                </div>
+                <TrafficLightButton
+                  color="red"
+                  onClick={handleClose}
+                  isForeground={isForeground}
+                  debugMode={debugMode}
+                  ariaLabel="Close"
+                />
+                <TrafficLightButton
+                  color="yellow"
+                  onClick={handleMinimize}
+                  isForeground={isForeground}
+                  debugMode={debugMode}
+                  ariaLabel="Minimize"
+                />
+                <TrafficLightButton
+                  color="green"
+                  onClick={handleFullMaximize}
+                  isForeground={isForeground}
+                  debugMode={debugMode}
+                  ariaLabel="Maximize"
+                />
               </div>
 
               {/* Title - removed white background */}

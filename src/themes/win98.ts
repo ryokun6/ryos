@@ -3,6 +3,17 @@ import { OsTheme } from "./types";
 export const win98: OsTheme = {
   id: "win98",
   name: "98",
+  metadata: {
+    isWindows: true,
+    isMac: false,
+    hasDock: false,
+    hasTaskbar: true,
+    hasMenuBar: false,
+    titleBarControlsPosition: "right",
+    menuBarHeight: 0,
+    taskbarHeight: 30,
+    baseDockHeight: 0,
+  },
   fonts: {
     ui: "Tahoma, MS Sans Serif, sans-serif",
     mono: "Consolas, Courier New, monospace",
