@@ -24,7 +24,7 @@
     "i18n:translate:dry-run": "bun run scripts/machine-translate.ts --dry-run",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "tauri:build:mac": "tauri build --target universal-apple-darwin",
+    "tauri:build:mac": "bash -c 'set -a && [ -f .env.local ] && source .env.local; set +a && tauri build --target universal-apple-darwin'",
     "tauri:build:windows": "tauri build --target x86_64-pc-windows-msvc",
     "seed:dev": "bun run scripts/seed-dev-users.ts",
     "test": "bun run tests/run-all-tests.ts",

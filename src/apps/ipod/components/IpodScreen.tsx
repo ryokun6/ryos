@@ -216,7 +216,7 @@ export function IpodScreen({
           )}
         >
           <div
-            className="w-full h-[calc(100%+120px)] mt-[-60px]"
+            className="w-full h-[calc(100%+300px)] mt-[-150px]"
             onClick={(e) => {
               e.stopPropagation();
               registerActivity();

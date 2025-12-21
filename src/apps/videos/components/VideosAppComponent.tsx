@@ -1055,7 +1055,7 @@ export function VideosAppComponent({
                 onMouseEnter={() => setIsVideoHovered(true)}
                 onMouseLeave={() => setIsVideoHovered(false)}
               >
-                <div className="w-full h-[calc(100%+120px)] mt-[-60px] relative">
+                <div className="w-full h-[calc(100%+300px)] mt-[-150px] relative">
                   <ReactPlayer
                     ref={playerRef}
                     url={getCurrentVideo()?.url || ""}

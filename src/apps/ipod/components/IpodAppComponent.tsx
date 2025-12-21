@@ -1491,8 +1491,8 @@ export function IpodAppComponent({
                   <div
                     className="w-full relative"
                     style={{
-                      height: "calc(100% + clamp(200px, 30dvh, 360px))",
-                      transform: "translateY(-100px)",
+                      height: "calc(100% + clamp(360px, 50dvh, 600px))",
+                      transform: "translateY(-180px)",
                     }}
                   >
                     {tracks[currentIndex] && (
