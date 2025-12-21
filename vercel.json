@@ -182,6 +182,7 @@
     { "source": "/minesweeper", "destination": "/" },
     { "source": "/videos", "destination": "/" },
     { "source": "/ipod", "destination": "/" },
+    { "source": "/karaoke", "destination": "/" },
     { "source": "/applet-viewer", "destination": "/" },
     { "source": "/synth", "destination": "/" },
     { "source": "/pc", "destination": "/" },
