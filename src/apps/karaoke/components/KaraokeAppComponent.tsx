@@ -7,10 +7,10 @@ import { WindowFrame } from "@/components/layout/WindowFrame";
 import { KaraokeMenuBar } from "./KaraokeMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
-import { InputDialog } from "@/components/dialogs/InputDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
+import { SongSearchDialog, SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
@@ -182,12 +182,10 @@ export function KaraokeAppComponent({
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
   
   // New dialogs for iPod menu features
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
-  const [urlInput, setUrlInput] = useState("");
-  const [isAddingTrack, setIsAddingTrack] = useState(false);
+  const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
 
   // Full screen state
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -442,21 +440,14 @@ export function KaraokeAppComponent({
   // Track handling for add dialog
   const handleAddTrack = useCallback(
     async (url: string) => {
-      setIsAddingTrack(true);
-      try {
-        const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
-        if (addedTrack) {
-          showStatus(t("apps.ipod.status.added"));
-          setUrlInput("");
-          setIsAddDialogOpen(false);
-        } else {
-          throw new Error("Failed to add track");
-        }
-      } catch (error) {
-        console.error("Failed to add track:", error);
-        showStatus(`❌ Error adding: ${error instanceof Error ? error.message : "Unknown error"}`);
-      } finally {
-        setIsAddingTrack(false);
+      const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
+      if (addedTrack) {
+        showStatus(t("apps.ipod.status.added"));
+        // New tracks are added at the beginning of the array, so set index to 0 and play
+        setCurrentIndex(0);
+        setIsPlaying(true);
+      } else {
+        throw new Error("Failed to add track");
       }
     },
     [showStatus, t]
@@ -495,6 +486,31 @@ export function KaraokeAppComponent({
       refreshLyrics();
     }
   }, [tracks, currentIndex, clearTrackLyricsSearch, refreshLyrics]);
+
+  // Song search/add handlers
+  const handleAddSong = useCallback(() => {
+    setIsSongSearchDialogOpen(true);
+  }, []);
+
+  const handleSongSearchSelect = useCallback(
+    async (result: SongSearchResult) => {
+      try {
+        const url = `https://www.youtube.com/watch?v=${result.videoId}`;
+        await handleAddTrack(url);
+      } catch (error) {
+        console.error("Error adding track from search:", error);
+        showStatus(`❌ ${t("apps.ipod.dialogs.errorAdding")} ${error instanceof Error ? error.message : "Unknown error"}`);
+      }
+    },
+    [handleAddTrack, showStatus, t]
+  );
+
+  const handleAddUrl = useCallback(
+    async (url: string) => {
+      await handleAddTrack(url);
+    },
+    [handleAddTrack]
+  );
 
   // Play track handler for Library menu
   const handlePlayTrack = useCallback((index: number) => {
@@ -562,7 +578,7 @@ export function KaraokeAppComponent({
       onClose={onClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
-      onAddTrack={() => setIsAddDialogOpen(true)}
+      onAddSong={handleAddSong}
       onShareSong={handleShareSong}
       onClearLibrary={() => setIsConfirmClearOpen(true)}
       onSyncLibrary={manualSync}
@@ -953,16 +969,6 @@ export function KaraokeAppComponent({
           title={t("apps.ipod.dialogs.clearLibraryTitle")}
           description={t("apps.ipod.dialogs.clearLibraryDescription")}
         />
-        <InputDialog
-          isOpen={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
-          onSubmit={handleAddTrack}
-          title={t("apps.ipod.dialogs.addSongTitle")}
-          description={t("apps.ipod.dialogs.addSongDescription")}
-          value={urlInput}
-          onChange={setUrlInput}
-          isLoading={isAddingTrack}
-        />
         <ShareItemDialog
           isOpen={isShareDialogOpen}
           onClose={() => setIsShareDialogOpen(false)}
@@ -988,6 +994,12 @@ export function KaraokeAppComponent({
             currentSelection={lyricsSearchOverride?.selection}
           />
         )}
+        <SongSearchDialog
+          isOpen={isSongSearchDialogOpen}
+          onOpenChange={setIsSongSearchDialogOpen}
+          onSelect={handleSongSearchSelect}
+          onAddUrl={handleAddUrl}
+        />
       </WindowFrame>
 
       {/* Full screen portal */}

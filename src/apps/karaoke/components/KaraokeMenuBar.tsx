@@ -28,7 +28,7 @@ interface KaraokeMenuBarProps {
   onShowHelp: () => void;
   onShowAbout: () => void;
   // File menu actions
-  onAddTrack: () => void;
+  onAddSong: () => void;
   onShareSong: () => void;
   // Library actions
   onClearLibrary: () => void;
@@ -60,7 +60,7 @@ export function KaraokeMenuBar({
   onClose,
   onShowHelp,
   onShowAbout,
-  onAddTrack,
+  onAddSong,
   onShareSong,
   onClearLibrary,
   onSyncLibrary,
@@ -212,7 +212,7 @@ export function KaraokeMenuBar({
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
-            onClick={onAddTrack}
+            onClick={onAddSong}
             className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.addSong")}
@@ -503,7 +503,7 @@ export function KaraokeMenuBar({
           className="px-0 max-w-[180px] sm:max-w-[220px]"
         >
           <MenubarItem
-            onClick={onAddTrack}
+            onClick={onAddSong}
             className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.addToLibrary")}

@@ -7,7 +7,6 @@ import { WindowFrame } from "@/components/layout/WindowFrame";
 import { IpodMenuBar } from "./IpodMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
-import { InputDialog } from "@/components/dialogs/InputDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -24,6 +23,7 @@ import { useIpodStoreShallow, useAppStoreShallow } from "@/stores/helpers";
 import { useAppStore } from "@/stores/useAppStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
+import { SongSearchDialog, SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { toast } from "sonner";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
@@ -159,14 +159,12 @@ export function IpodAppComponent({
   const userHasInteractedRef = useRef(false);
 
   // Dialog state
-  const [urlInput, setUrlInput] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
-  const [isAddingTrack, setIsAddingTrack] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
+  const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isFullScreenFetchingFurigana, setIsFullScreenFetchingFurigana] = useState(false);
 
   // Playback state
@@ -546,7 +544,7 @@ export function IpodAppComponent({
         action: () => {
           registerActivity();
           if (useIpodStore.getState().showVideo) toggleVideo();
-          setIsAddDialogOpen(true);
+          setIsSongSearchDialogOpen(true);
         },
         showChevron: true,
       },
@@ -629,21 +627,11 @@ export function IpodAppComponent({
   // Track handling
   const handleAddTrack = useCallback(
     async (url: string) => {
-      setIsAddingTrack(true);
-      try {
-        const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
-        if (addedTrack) {
-          showStatus(t("apps.ipod.status.added"));
-          setUrlInput("");
-          setIsAddDialogOpen(false);
-        } else {
-          throw new Error("Failed to add track");
-        }
-      } catch (error) {
-        console.error("Failed to add track:", error);
-        showStatus(`❌ Error adding: ${error instanceof Error ? error.message : "Unknown error"}`);
-      } finally {
-        setIsAddingTrack(false);
+      const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
+      if (addedTrack) {
+        showStatus(t("apps.ipod.status.added"));
+      } else {
+        throw new Error("Failed to add track");
       }
     },
     [showStatus, t]
@@ -991,6 +979,31 @@ export function IpodAppComponent({
     if (tracks.length > 0 && currentIndex >= 0) setIsShareDialogOpen(true);
   }, [tracks, currentIndex]);
 
+  // Song search/add handlers
+  const handleAddSong = useCallback(() => {
+    setIsSongSearchDialogOpen(true);
+  }, []);
+
+  const handleSongSearchSelect = useCallback(
+    async (result: SongSearchResult) => {
+      try {
+        const url = `https://www.youtube.com/watch?v=${result.videoId}`;
+        await handleAddTrack(url);
+      } catch (error) {
+        console.error("Error adding track from search:", error);
+        showStatus(`❌ ${t("apps.ipod.dialogs.errorAdding")} ${error instanceof Error ? error.message : "Unknown error"}`);
+      }
+    },
+    [handleAddTrack, showStatus, t]
+  );
+
+  const handleAddUrl = useCallback(
+    async (url: string) => {
+      await handleAddTrack(url);
+    },
+    [handleAddTrack]
+  );
+
   const currentTrack = tracks[currentIndex];
   const lyricsSearchOverride = currentTrack?.lyricsSearch;
 
@@ -1177,7 +1190,7 @@ export function IpodAppComponent({
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onClearLibrary={() => setIsConfirmClearOpen(true)}
       onSyncLibrary={manualSync}
-      onAddTrack={() => setIsAddDialogOpen(true)}
+      onAddSong={handleAddSong}
       onShareSong={handleShareSong}
       onRefreshLyrics={handleRefreshLyrics}
     />
@@ -1455,16 +1468,6 @@ export function IpodAppComponent({
           title={t("apps.ipod.dialogs.clearLibraryTitle")}
           description={t("apps.ipod.dialogs.clearLibraryDescription")}
         />
-        <InputDialog
-          isOpen={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
-          onSubmit={handleAddTrack}
-          title={t("apps.ipod.dialogs.addSongTitle")}
-          description={t("apps.ipod.dialogs.addSongDescription")}
-          value={urlInput}
-          onChange={setUrlInput}
-          isLoading={isAddingTrack}
-        />
         <ShareItemDialog
           isOpen={isShareDialogOpen}
           onClose={() => setIsShareDialogOpen(false)}
@@ -1490,6 +1493,12 @@ export function IpodAppComponent({
             currentSelection={lyricsSearchOverride?.selection}
           />
         )}
+        <SongSearchDialog
+          isOpen={isSongSearchDialogOpen}
+          onOpenChange={setIsSongSearchDialogOpen}
+          onSelect={handleSongSearchSelect}
+          onAddUrl={handleAddUrl}
+        />
       </WindowFrame>
 
       {/* PIP Player */}

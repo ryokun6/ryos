@@ -3,8 +3,9 @@
 type VercelEnv = "production" | "preview" | "development";
 
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
+const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";
 const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
-const LOCALHOST_PORTS = new Set(["80", "443", "3000", "5173"]);
+const LOCALHOST_PORTS = new Set(["80", "443", "3000", "3001", "3002", "4000", "5173", "8080", "8000"]);
 
 function getRuntimeEnv(): VercelEnv {
   const env = process.env.VERCEL_ENV;
@@ -36,6 +37,12 @@ function isVercelPreviewOrigin(origin: string): boolean {
   return parsed.hostname.endsWith(".vercel.app");
 }
 
+function isTailscaleOrigin(origin: string): boolean {
+  const parsed = parseOrigin(origin);
+  if (!parsed) return false;
+  return parsed.hostname.endsWith(TAILSCALE_ALLOWED_SUFFIX);
+}
+
 export function getEffectiveOrigin(req: Request): string | null {
   try {
     const origin = req.headers.get("origin");
@@ -50,6 +57,10 @@ export function getEffectiveOrigin(req: Request): string | null {
 
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
+  
+  // Always allow tailscale origins (for local network access)
+  if (isTailscaleOrigin(origin)) return true;
+  
   const env = getRuntimeEnv();
 
   if (env === "production") {

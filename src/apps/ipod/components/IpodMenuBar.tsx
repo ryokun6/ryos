@@ -29,7 +29,7 @@ interface IpodMenuBarProps {
   onShowAbout: () => void;
   onClearLibrary: () => void;
   onSyncLibrary: () => void;
-  onAddTrack: () => void;
+  onAddSong: () => void;
   onShareSong: () => void;
   onRefreshLyrics?: () => void;
 }
@@ -40,7 +40,7 @@ export function IpodMenuBar({
   onShowAbout,
   onClearLibrary,
   onSyncLibrary,
-  onAddTrack,
+  onAddSong,
   onShareSong,
   onRefreshLyrics,
 }: IpodMenuBarProps) {
@@ -227,7 +227,7 @@ export function IpodMenuBar({
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
-            onClick={onAddTrack}
+            onClick={onAddSong}
             className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.addSong")}
@@ -543,7 +543,7 @@ export function IpodMenuBar({
           className="px-0 max-w-[180px] sm:max-w-[220px]"
         >
           <MenubarItem
-            onClick={onAddTrack}
+            onClick={onAddSong}
             className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.addToLibrary")}

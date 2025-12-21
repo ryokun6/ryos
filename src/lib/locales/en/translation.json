@@ -1243,6 +1243,7 @@
       "description": "Music player",
       "menu": {
         "addSong": "Add Song...",
+        "searchSongs": "Search Songs...",
         "shareSong": "Share Song...",
         "exportLibrary": "Export Library...",
         "importLibrary": "Import Library...",
@@ -1360,7 +1361,20 @@
         "lyricsSearchEmptyQuery": "Please enter a search query",
         "lyricsSearchNoResults": "No results found",
         "lyricsSearchError": "Error searching for lyrics",
-        "lyricsSearchInvalidResponse": "Invalid response from server"
+        "lyricsSearchInvalidResponse": "Invalid response from server",
+        "songSearchTitle": "Search Songs",
+        "songSearchDescription": "Search song, artist, or paste YouTube URL",
+        "songSearchPlaceholder": "Search or paste URL...",
+        "songSearchSearch": "Search",
+        "songSearchSearching": "Searching...",
+        "songSearchAdd": "Add",
+        "songSearchSelectResult": "Select a song to add:",
+        "songSearchAddSelected": "Add Song",
+        "songSearchEmptyQuery": "Please enter a search query",
+        "songSearchNoResults": "No results found",
+        "songSearchError": "Error searching for songs",
+        "songSearchInvalidResponse": "Invalid response from server",
+        "songSearchAdding": "Adding song..."
       },
       "menuItems": {
         "music": "Music",
