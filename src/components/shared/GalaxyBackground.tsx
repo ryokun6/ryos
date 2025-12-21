@@ -1,13 +1,10 @@
 import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { useAppStoreShallow } from "@/stores/helpers"; // Import helper
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { ShaderType } from "@/types/shader";
 
-// Define shader types
-export enum ShaderType {
-  GALAXY = "galaxy",
-  AURORA = "aurora",
-  NEBULA = "nebula",
-}
+// Re-export for backwards compatibility
+export { ShaderType };
 
 interface GalaxyBackgroundProps {
   shaderType?: ShaderType;
@@ -18,9 +15,7 @@ const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const clockRef = useRef(new THREE.Clock()); // Use Clock for time uniform
-  const { shaderEffectEnabled } = useAppStoreShallow((state) => ({
-    shaderEffectEnabled: state.shaderEffectEnabled,
-  })); // Get state from store
+  const shaderEffectEnabled = useDisplaySettingsStore((state) => state.shaderEffectEnabled);
 
   // Combined state for rendering condition - removed screen size check
   const shouldRender = shaderEffectEnabled;

@@ -4,11 +4,7 @@ import { AppId, getWindowConfig } from "@/config/appRegistry";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { appIds } from "@/config/appIds";
 import { AppManagerState, AppState } from "@/apps/base/types";
-import { checkShaderPerformance } from "@/utils/performanceCheck";
-import { ShaderType } from "@/components/shared/GalaxyBackground";
-import { DisplayMode } from "@/utils/displayMode";
 import { AIModel } from "@/types/aiModels";
-import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 export type { AIModel } from "@/types/aiModels";
@@ -85,74 +81,24 @@ interface AppStoreState extends AppManagerState {
   clearInitialData: (appId: AppId) => void;
   clearInstanceInitialData: (instanceId: string) => void;
   updateInstanceInitialData: (instanceId: string, initialData: unknown) => void;
-  debugMode: boolean;
-  setDebugMode: (v: boolean) => void;
-  shaderEffectEnabled: boolean;
-  setShaderEffectEnabled: (v: boolean) => void;
-  selectedShaderType: ShaderType;
-  setSelectedShaderType: (t: ShaderType) => void;
   aiModel: AIModel;
   setAiModel: (m: AIModel) => void;
-  terminalSoundsEnabled: boolean;
-  setTerminalSoundsEnabled: (v: boolean) => void;
-  uiSoundsEnabled: boolean;
-  setUiSoundsEnabled: (v: boolean) => void;
-  typingSynthEnabled: boolean;
-  setTypingSynthEnabled: (v: boolean) => void;
-  speechEnabled: boolean;
-  setSpeechEnabled: (v: boolean) => void;
-  keepTalkingEnabled: boolean;
-  setKeepTalkingEnabled: (v: boolean) => void;
-  speechVolume: number;
-  setSpeechVolume: (v: number) => void;
-  ttsModel: "openai" | "elevenlabs" | null;
-  setTtsModel: (m: "openai" | "elevenlabs" | null) => void;
-  ttsVoice: string | null;
-  setTtsVoice: (v: string | null) => void;
-  synthPreset: string;
-  setSynthPreset: (v: string) => void;
-  displayMode: DisplayMode;
-  setDisplayMode: (m: DisplayMode) => void;
   updateWindowState: (
     appId: AppId,
     position: { x: number; y: number },
     size: { width: number; height: number }
   ) => void;
-  currentWallpaper: string;
-  setCurrentWallpaper: (p: string) => void;
-  wallpaperSource: string;
-  setWallpaper: (p: string | File) => Promise<void>;
-  loadCustomWallpapers: () => Promise<string[]>;
-  getWallpaperData: (reference: string) => Promise<string | null>;
   isFirstBoot: boolean;
   setHasBooted: () => void;
   macAppToastShown: boolean;
   setMacAppToastShown: () => void;
   lastSeenDesktopVersion: string | null;
   setLastSeenDesktopVersion: (version: string) => void;
-  htmlPreviewSplit: boolean;
-  setHtmlPreviewSplit: (v: boolean) => void;
-  uiVolume: number;
-  setUiVolume: (v: number) => void;
-  chatSynthVolume: number;
-  setChatSynthVolume: (v: number) => void;
-  ipodVolume: number;
-  setIpodVolume: (v: number) => void;
-  masterVolume: number;
-  setMasterVolume: (v: number) => void;
   _debugCheckInstanceIntegrity: () => void;
 
   // Expose/Mission Control mode
   exposeMode: boolean;
   setExposeMode: (v: boolean) => void;
-  
-  // Screen saver settings
-  screenSaverEnabled: boolean;
-  setScreenSaverEnabled: (v: boolean) => void;
-  screenSaverType: string;
-  setScreenSaverType: (v: string) => void;
-  screenSaverIdleTime: number; // minutes
-  setScreenSaverIdleTime: (v: number) => void;
   
   // ryOS version (fetched from version.json)
   ryOSVersion: string | null;
@@ -162,7 +108,6 @@ interface AppStoreState extends AppManagerState {
 }
 
 const CURRENT_APP_STORE_VERSION = 3; // bump for instanceOrder unification
-const initialShaderState = checkShaderPerformance();
 
 // ---------------- Store ---------------------------------------------------------
 export const useAppStore = create<AppStoreState>()(
@@ -171,56 +116,21 @@ export const useAppStore = create<AppStoreState>()(
       ...getInitialState(),
       version: CURRENT_APP_STORE_VERSION,
 
-      // Misc toggles / settings
-      debugMode: false,
-      setDebugMode: (enabled) => set({ debugMode: enabled }),
-      shaderEffectEnabled: initialShaderState,
-      setShaderEffectEnabled: (enabled) =>
-        set({ shaderEffectEnabled: enabled }),
-      selectedShaderType: ShaderType.AURORA,
-      setSelectedShaderType: (t) => set({ selectedShaderType: t }),
+      // AI model (kept here as it's core app functionality)
       aiModel: null,
       setAiModel: (m) => set({ aiModel: m }),
-      terminalSoundsEnabled: true,
-      setTerminalSoundsEnabled: (v) => set({ terminalSoundsEnabled: v }),
-      uiSoundsEnabled: true,
-      setUiSoundsEnabled: (v) => set({ uiSoundsEnabled: v }),
-      typingSynthEnabled: false,
-      setTypingSynthEnabled: (v) => set({ typingSynthEnabled: v }),
-      speechEnabled: false,
-      setSpeechEnabled: (v) => set({ speechEnabled: v }),
-      keepTalkingEnabled: true,
-      setKeepTalkingEnabled: (v) => set({ keepTalkingEnabled: v }),
-      speechVolume: 2,
-      setSpeechVolume: (v) => set({ speechVolume: v }),
-      ttsModel: null,
-      setTtsModel: (m) => set({ ttsModel: m }),
-      ttsVoice: null,
-      setTtsVoice: (v) => set({ ttsVoice: v }),
-      synthPreset: "classic",
-      setSynthPreset: (v) => set({ synthPreset: v }),
-      displayMode: "color",
-      setDisplayMode: (m) => set({ displayMode: m }),
+
+      // Boot state
       isFirstBoot: true,
       setHasBooted: () => set({ isFirstBoot: false }),
       macAppToastShown: false,
       setMacAppToastShown: () => set({ macAppToastShown: true }),
       lastSeenDesktopVersion: null,
       setLastSeenDesktopVersion: (version) => set({ lastSeenDesktopVersion: version }),
-      masterVolume: 1,
-      setMasterVolume: (vol) => set({ masterVolume: vol }),
 
       // Expose/Mission Control mode
       exposeMode: false,
       setExposeMode: (v) => set({ exposeMode: v }),
-
-      // Screen saver settings
-      screenSaverEnabled: false,
-      setScreenSaverEnabled: (v) => set({ screenSaverEnabled: v }),
-      screenSaverType: "starfield",
-      setScreenSaverType: (v) => set({ screenSaverType: v }),
-      screenSaverIdleTime: 5, // 5 minutes default
-      setScreenSaverIdleTime: (v) => set({ screenSaverIdleTime: v }),
 
       // ryOS version (fetched from version.json)
       ryOSVersion: null,
@@ -240,85 +150,6 @@ export const useAppStore = create<AppStoreState>()(
             [appId]: { ...state.apps[appId], position, size },
           },
         })),
-
-      currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-      wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
-      setCurrentWallpaper: (p) =>
-        set({ currentWallpaper: p, wallpaperSource: p }),
-
-      setWallpaper: async (path) => {
-        let wall: string;
-        if (path instanceof File) {
-          try {
-            wall = await saveCustomWallpaper(path);
-          } catch (e) {
-            console.error("setWallpaper failed", e);
-            return;
-          }
-        } else {
-          wall = path;
-        }
-        set({ currentWallpaper: wall, wallpaperSource: wall });
-        if (wall.startsWith(INDEXEDDB_PREFIX)) {
-          const data = await get().getWallpaperData(wall);
-          if (data) set({ wallpaperSource: data });
-        }
-        window.dispatchEvent(
-          new CustomEvent("wallpaperChange", { detail: wall })
-        );
-      },
-
-      loadCustomWallpapers: async () => {
-        try {
-          const db = await ensureIndexedDBInitialized();
-          const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readonly");
-          const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-          const keysReq = store.getAllKeys();
-          const keys: string[] = await new Promise((res, rej) => {
-            keysReq.onsuccess = () => res(keysReq.result as string[]);
-            keysReq.onerror = () => rej(keysReq.error);
-          });
-          db.close();
-          return keys.map((k) => `${INDEXEDDB_PREFIX}${k}`);
-        } catch (e) {
-          console.error("loadCustomWallpapers", e);
-          return [];
-        }
-      },
-
-      getWallpaperData: async (reference) => {
-        if (!reference.startsWith(INDEXEDDB_PREFIX)) return reference;
-        const id = reference.substring(INDEXEDDB_PREFIX.length);
-        if (objectURLs[id]) return objectURLs[id];
-        try {
-          const db = await ensureIndexedDBInitialized();
-          const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readonly");
-          const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-          const req = store.get(id);
-          const result = await new Promise<StoredWallpaper | null>(
-            (res, rej) => {
-              req.onsuccess = () => res(req.result as StoredWallpaper);
-              req.onerror = () => rej(req.error);
-            }
-          );
-          db.close();
-          if (!result) return null;
-          let objectURL: string | null = null;
-          if (result.blob) objectURL = URL.createObjectURL(result.blob);
-          else if (result.content) {
-            const blob = dataURLToBlob(result.content);
-            objectURL = blob ? URL.createObjectURL(blob) : result.content;
-          }
-          if (objectURL) {
-            objectURLs[id] = objectURL;
-            return objectURL;
-          }
-          return null;
-        } catch (e) {
-          console.error("getWallpaperData", e);
-          return null;
-        }
-      },
 
       // Legacy app-level wrappers (kept)
       bringToForeground: (appId) => {
@@ -501,15 +332,6 @@ export const useAppStore = create<AppStoreState>()(
             },
           };
         }),
-
-      htmlPreviewSplit: true,
-      setHtmlPreviewSplit: (v) => set({ htmlPreviewSplit: v }),
-      uiVolume: 1,
-      setUiVolume: (v) => set({ uiVolume: v }),
-      chatSynthVolume: 2,
-      setChatSynthVolume: (v) => set({ chatSynthVolume: v }),
-      ipodVolume: 1,
-      setIpodVolume: (v) => set({ ipodVolume: v }),
 
       // Instance store
       instances: {},
@@ -935,39 +757,23 @@ export const useAppStore = create<AppStoreState>()(
       name: "ryos:app-store",
       version: CURRENT_APP_STORE_VERSION,
       partialize: (state): Partial<AppStoreState> => ({
+        // Core app/window state
         windowOrder: state.windowOrder,
         apps: state.apps,
         version: state.version,
-        debugMode: state.debugMode,
-        shaderEffectEnabled: state.shaderEffectEnabled,
-        selectedShaderType: state.selectedShaderType,
+        
+        // AI model
         aiModel: state.aiModel,
-        terminalSoundsEnabled: state.terminalSoundsEnabled,
-        uiSoundsEnabled: state.uiSoundsEnabled,
-        typingSynthEnabled: state.typingSynthEnabled,
-        speechEnabled: state.speechEnabled,
-        keepTalkingEnabled: state.keepTalkingEnabled,
-        synthPreset: state.synthPreset,
-        htmlPreviewSplit: state.htmlPreviewSplit,
-        currentWallpaper: state.currentWallpaper,
-        displayMode: state.displayMode,
+        
+        // Boot/version state
         isFirstBoot: state.isFirstBoot,
         macAppToastShown: state.macAppToastShown,
         lastSeenDesktopVersion: state.lastSeenDesktopVersion,
-        wallpaperSource: state.wallpaperSource,
-        uiVolume: state.uiVolume,
-        chatSynthVolume: state.chatSynthVolume,
-        speechVolume: state.speechVolume,
-        ttsModel: state.ttsModel,
-        ttsVoice: state.ttsVoice,
-        ipodVolume: state.ipodVolume,
-        masterVolume: state.masterVolume,
         ryOSVersion: state.ryOSVersion,
         ryOSBuildNumber: state.ryOSBuildNumber,
         ryOSBuildTime: state.ryOSBuildTime,
-        screenSaverEnabled: state.screenSaverEnabled,
-        screenSaverType: state.screenSaverType,
-        screenSaverIdleTime: state.screenSaverIdleTime,
+        
+        // Instance management
         instances: Object.fromEntries(
           Object.entries(state.instances)
             .filter(([, inst]) => inst.isOpen)
@@ -1004,11 +810,6 @@ export const useAppStore = create<AppStoreState>()(
           "to",
           CURRENT_APP_STORE_VERSION
         );
-        // v1->2 handled TTS; keep prior logic if present
-        if (version < 2) {
-          prev.ttsModel = null;
-          prev.ttsVoice = null;
-        }
         // v<3 unify ordering arrays
         if (version < 3) {
           const legacyStack: string[] | undefined = prev.instanceStackOrder;
@@ -1099,60 +900,6 @@ export const useAppStore = create<AppStoreState>()(
   )
 );
 
-// ---------------- IndexedDB wallpaper helpers ----------------------------------
-export const INDEXEDDB_PREFIX = "indexeddb://";
-const CUSTOM_WALLPAPERS_STORE = "custom_wallpapers";
-const objectURLs: Record<string, string> = {};
-
-type StoredWallpaper = { blob?: Blob; content?: string; [k: string]: unknown };
-
-const dataURLToBlob = (dataURL: string): Blob | null => {
-  try {
-    if (!dataURL.startsWith("data:")) return null;
-    const arr = dataURL.split(",");
-    const mime = arr[0].match(/:(.*?);/)?.[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8 = new Uint8Array(n);
-    while (n--) u8[n] = bstr.charCodeAt(n);
-    return new Blob([u8], { type: mime });
-  } catch (e) {
-    console.error("dataURLToBlob", e);
-    return null;
-  }
-};
-
-const saveCustomWallpaper = async (file: File): Promise<string> => {
-  if (!file.type.startsWith("image/"))
-    throw new Error("Only image files allowed");
-  try {
-    const db = await ensureIndexedDBInitialized();
-    const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readwrite");
-    const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-    const name = `custom_${Date.now()}_${file.name.replace(
-      /[^a-zA-Z0-9._-]/g,
-      "_"
-    )}`;
-    const rec = {
-      name,
-      blob: file,
-      content: "",
-      type: file.type,
-      dateAdded: new Date().toISOString(),
-    };
-    await new Promise<void>((res, rej) => {
-      const r = store.put(rec, name);
-      r.onsuccess = () => res();
-      r.onerror = () => rej(r.error);
-    });
-    db.close();
-    return `${INDEXEDDB_PREFIX}${name}`;
-  } catch (e) {
-    console.error("saveCustomWallpaper", e);
-    throw e;
-  }
-};
-
 // Global helpers ---------------------------------------------------------------
 export const clearAllAppStates = (): void => {
   try {
@@ -1161,7 +908,3 @@ export const clearAllAppStates = (): void => {
     console.error("clearAllAppStates", e);
   }
 };
-export const loadHtmlPreviewSplit = () =>
-  useAppStore.getState().htmlPreviewSplit;
-export const saveHtmlPreviewSplit = (v: boolean) =>
-  useAppStore.getState().setHtmlPreviewSplit(v);

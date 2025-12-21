@@ -2139,7 +2139,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             };
 
             const changes: string[] = [];
-            const appStore = useAppStore.getState();
+            const audioSettingsStore = useAudioSettingsStore.getState();
             const langStore = useLanguageStore.getState();
             const themeStore = useThemeStore.getState();
 
@@ -2192,7 +2192,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             // Master volume
             if (masterVolume !== undefined) {
-              appStore.setMasterVolume(masterVolume);
+              audioSettingsStore.setMasterVolume(masterVolume);
               const volumePercent = Math.round(masterVolume * 100);
               changes.push(
                 i18n.t("apps.chats.toolCalls.settingsMasterVolumeSet", {
@@ -2204,7 +2204,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             // Speech enabled
             if (speechEnabled !== undefined) {
-              appStore.setSpeechEnabled(speechEnabled);
+              audioSettingsStore.setSpeechEnabled(speechEnabled);
               changes.push(
                 speechEnabled
                   ? i18n.t("apps.chats.toolCalls.settingsSpeechEnabled")
