@@ -1374,22 +1374,12 @@
         "songSearchNoResults": "No results found",
         "songSearchError": "Error searching for songs",
         "songSearchInvalidResponse": "Invalid response from server",
-        "songSearchAdding": "Adding song...",
-        "videoSearchTitle": "Search Video",
-        "videoSearchDescription": "Search for a video to add. The top result will be added automatically.",
-        "videoSearchPlaceholder": "Enter song name or artist...",
-        "videoSearchAdd": "Search & Add",
-        "videoSearchSearching": "Searching...",
-        "videoSearchEmptyQuery": "Please enter a search query",
-        "videoSearchError": "Error searching for video",
-        "videoSearchNoResults": "No videos found"
+        "songSearchAdding": "Adding song..."
       },
       "menuItems": {
         "music": "Music",
         "settings": "Settings",
         "extras": "Extras",
-        "addSong": "Add Song",
-        "searchVideo": "Search Video",
         "shuffleSongs": "Shuffle Songs",
         "nowPlaying": "Now Playing",
         "ipod": "iPod",

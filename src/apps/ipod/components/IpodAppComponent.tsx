@@ -24,7 +24,6 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
 import { SongSearchDialog, SongSearchResult } from "@/components/dialogs/SongSearchDialog";
-import { VideoSearchDialog } from "@/components/dialogs/VideoSearchDialog";
 import { toast } from "sonner";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
@@ -166,7 +165,6 @@ export function IpodAppComponent({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
-  const [isVideoSearchDialogOpen, setIsVideoSearchDialogOpen] = useState(false);
   const [isFullScreenFetchingFurigana, setIsFullScreenFetchingFurigana] = useState(false);
 
   // Playback state
@@ -523,31 +521,9 @@ export function IpodAppComponent({
     ];
   }, [loopCurrent, loopAll, isShuffled, backlightOn, theme, memoizedToggleRepeat, memoizedToggleShuffle, memoizedToggleBacklight, memoizedHandleThemeChange, t]);
 
-  const extrasMenuItems = useMemo(() => {
-    return [
-      {
-        label: t("apps.ipod.menuItems.addSong"),
-        action: () => {
-          registerActivity();
-          setIsSongSearchDialogOpen(true);
-        },
-        showChevron: false,
-      },
-      {
-        label: t("apps.ipod.menuItems.searchVideo"),
-        action: () => {
-          registerActivity();
-          setIsVideoSearchDialogOpen(true);
-        },
-        showChevron: false,
-      },
-    ];
-  }, [registerActivity, t]);
-
   const mainMenuItems = useMemo(() => {
     const musicLabel = t("apps.ipod.menuItems.music");
     const settingsLabel = t("apps.ipod.menuItems.settings");
-    const extrasLabel = t("apps.ipod.menuItems.extras");
     return [
       {
         label: musicLabel,
@@ -564,16 +540,11 @@ export function IpodAppComponent({
         showChevron: true,
       },
       {
-        label: extrasLabel,
+        label: t("apps.ipod.menuItems.extras"),
         action: () => {
           registerActivity();
           if (useIpodStore.getState().showVideo) toggleVideo();
-          setMenuDirection("forward");
-          setMenuHistory((prev) => [
-            ...prev,
-            { title: extrasLabel, items: extrasMenuItems, selectedIndex: 0 },
-          ]);
-          setSelectedMenuItem(0);
+          setIsSongSearchDialogOpen(true);
         },
         showChevron: true,
       },
@@ -617,7 +588,7 @@ export function IpodAppComponent({
         showChevron: true,
       },
     ];
-  }, [registerActivity, toggleVideo, musicMenuItems, settingsMenuItems, extrasMenuItems, memoizedToggleShuffle, memoizedToggleBacklight, t]);
+  }, [registerActivity, toggleVideo, musicMenuItems, settingsMenuItems, memoizedToggleShuffle, memoizedToggleBacklight, t]);
 
   // Initialize menu history
   useEffect(() => {
@@ -642,8 +613,6 @@ export function IpodAppComponent({
         latestItems = musicMenuItems;
       } else if (currentMenu.title === t("apps.ipod.menuItems.settings")) {
         latestItems = settingsMenuItems;
-      } else if (currentMenu.title === t("apps.ipod.menuItems.extras")) {
-        latestItems = extrasMenuItems;
       }
 
       if (latestItems && currentMenu.items !== latestItems) {
@@ -653,7 +622,7 @@ export function IpodAppComponent({
       }
       return prevHistory;
     });
-  }, [mainMenuItems, musicMenuItems, settingsMenuItems, extrasMenuItems, t]);
+  }, [mainMenuItems, musicMenuItems, settingsMenuItems, t]);
 
   // Track handling
   const handleAddTrack = useCallback(
@@ -1014,20 +983,6 @@ export function IpodAppComponent({
   const handleAddSong = useCallback(() => {
     setIsSongSearchDialogOpen(true);
   }, []);
-
-  // Video search handler (searches and adds top result)
-  const handleVideoSearch = useCallback(
-    async (query: string) => {
-      const addedTrack = await useIpodStore.getState().searchAndAddTopVideo(query);
-      if (addedTrack) {
-        showStatus(t("apps.ipod.status.added"));
-        setMenuMode(false);
-      } else {
-        throw new Error(t("apps.ipod.dialogs.videoSearchNoResults"));
-      }
-    },
-    [showStatus, t]
-  );
 
   const handleSongSearchSelect = useCallback(
     async (result: SongSearchResult) => {
@@ -1543,11 +1498,6 @@ export function IpodAppComponent({
           onOpenChange={setIsSongSearchDialogOpen}
           onSelect={handleSongSearchSelect}
           onAddUrl={handleAddUrl}
-        />
-        <VideoSearchDialog
-          isOpen={isVideoSearchDialogOpen}
-          onOpenChange={setIsVideoSearchDialogOpen}
-          onSearch={handleVideoSearch}
         />
       </WindowFrame>
 
