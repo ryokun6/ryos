@@ -86,7 +86,7 @@ export default async function handler(req: Request) {
       if (!global.allowed) {
         return new Response(
           JSON.stringify({ error: "rate_limit_exceeded", scope: "global" }),
-          { status: 429, headers: { "Retry-After": String(global.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json", "Access-Control-Allow-Origin": effectiveOrigin } }
+          { status: 429, headers: { "Retry-After": String(global.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json", ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }) } }
         );
       }
 
@@ -102,7 +102,7 @@ export default async function handler(req: Request) {
           if (!host.allowed) {
             return new Response(
               JSON.stringify({ error: "rate_limit_exceeded", scope: "host", host: hostname }),
-              { status: 429, headers: { "Retry-After": String(host.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json", "Access-Control-Allow-Origin": effectiveOrigin } }
+              { status: 429, headers: { "Retry-After": String(host.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json", ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }) } }
             );
           }
         } catch (e) {
@@ -117,11 +117,18 @@ export default async function handler(req: Request) {
     const { searchParams } = new URL(req.url);
     const url = searchParams.get("url");
 
-    if (!url || typeof url !== "string") {
-      return new Response(JSON.stringify({ error: "No URL provided" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
+    // Helper for consistent error responses with CORS
+    const errorResponseWithCors = (message: string, status: number = 400) =>
+      new Response(JSON.stringify({ error: message }), {
+        status,
+        headers: {
+          "Content-Type": "application/json",
+          ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
+        },
       });
+
+    if (!url || typeof url !== "string") {
+      return errorResponseWithCors("No URL provided");
     }
 
     // Validate URL format
@@ -129,18 +136,12 @@ export default async function handler(req: Request) {
     try {
       parsedUrl = new URL(url);
     } catch {
-      return new Response(JSON.stringify({ error: "Invalid URL format" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return errorResponseWithCors("Invalid URL format");
     }
 
     // Only allow HTTP and HTTPS URLs
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return new Response(JSON.stringify({ error: "Only HTTP and HTTPS URLs are allowed" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return errorResponseWithCors("Only HTTP and HTTPS URLs are allowed");
     }
 
     // Handle YouTube URLs using oEmbed API
@@ -174,10 +175,7 @@ export default async function handler(req: Request) {
     });
 
     if (!response.ok) {
-      return new Response(JSON.stringify({ error: `HTTP error! status: ${response.status}` }), {
-        status: response.status,
-        headers: { "Content-Type": "application/json" },
-      });
+      return errorResponseWithCors(`HTTP error! status: ${response.status}`, response.status);
     }
 
     const html = await response.text();
@@ -288,7 +286,7 @@ export default async function handler(req: Request) {
       headers: { 
         "Content-Type": "application/json",
         "Cache-Control": "public, max-age=3600", // Cache for 1 hour
-        "Access-Control-Allow-Origin": effectiveOrigin,
+        ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
       },
     });
 

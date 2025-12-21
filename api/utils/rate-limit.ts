@@ -32,8 +32,6 @@ export async function checkAndIncrementAIMessageCount(
   authToken: string | null = null
 ): Promise<AIRateLimitResult> {
   const key = getAIRateLimitKey(identifier);
-  const currentCount = await redis.get<string>(key);
-  const count = currentCount ? parseInt(currentCount) : 0;
 
   // Determine if user is anonymous (identifier starts with "anon:")
   const isAnonymous = identifier.startsWith("anon:");
@@ -61,6 +59,8 @@ export async function checkAndIncrementAIMessageCount(
 
     // If the request is from ryo **and** the token is valid, bypass rate limits entirely
     if (isRyo) {
+      const currentCount = await redis.get<string>(key);
+      const count = currentCount ? parseInt(currentCount, 10) : 0;
       return { allowed: true, count, limit };
     }
   }
@@ -74,20 +74,24 @@ export async function checkAndIncrementAIMessageCount(
     };
   }
 
-  if (count >= limit) {
-    return { allowed: false, count, limit };
-  }
+  // ATOMIC rate limit check: increment first, then check
+  // This prevents race conditions where two requests read the same count
+  const ttlSeconds = 5 * 60 * 60; // 5 hours in seconds
+  const newCount = await redis.incr(key);
 
-  // Increment count
-  await redis.incr(key);
-
-  // Set TTL to 5 hours if this is the first message
-  if (count === 0) {
-    const ttlSeconds = 5 * 60 * 60; // 5 hours in seconds
+  // Set TTL only if this is the first increment (count became 1)
+  if (newCount === 1) {
     await redis.expire(key, ttlSeconds);
   }
 
-  return { allowed: true, count: count + 1, limit };
+  // Check if the NEW count exceeds the limit
+  if (newCount > limit) {
+    // Already incremented, but over limit - request is denied
+    // The count stays incremented (slightly conservative) but prevents the race condition
+    return { allowed: false, count: newCount, limit };
+  }
+
+  return { allowed: true, count: newCount, limit };
 }
 
 // ------------------------------
@@ -112,49 +116,47 @@ interface CounterLimitResult {
 /**
  * Increment a counter under a key with a TTL window and enforce a limit.
  * Returns details including remaining and reset seconds.
+ * 
+ * Uses atomic increment-first approach to prevent race conditions (TOCTOU).
  */
 export async function checkCounterLimit({
   key,
   windowSeconds,
   limit,
 }: CounterLimitArgs): Promise<CounterLimitResult> {
-  const current = await redis.get<string>(key);
+  // ATOMIC approach: increment first, then check
+  // This prevents race conditions where two concurrent requests both read
+  // the same count and both pass the limit check
+  const newCount = await redis.incr(key);
 
-  if (!current) {
-    await redis.set(key, 1, { ex: windowSeconds });
-    const ttl = await redis.ttl(key);
-    return {
-      allowed: true,
-      count: 1,
-      limit,
-      remaining: Math.max(0, limit - 1),
-      windowSeconds,
-      resetSeconds: typeof ttl === "number" && ttl > 0 ? ttl : windowSeconds,
-    };
+  // Set TTL only if this is the first increment (count became 1)
+  // This is safe because INCR is atomic - only one request will see newCount === 1
+  if (newCount === 1) {
+    await redis.expire(key, windowSeconds);
   }
 
-  const count = parseInt(current);
-  if (count >= limit) {
-    const ttl = await redis.ttl(key);
+  const ttl = await redis.ttl(key);
+  const resetSeconds = typeof ttl === "number" && ttl > 0 ? ttl : windowSeconds;
+
+  // Check if the NEW count exceeds the limit
+  if (newCount > limit) {
     return {
       allowed: false,
-      count,
+      count: newCount,
       limit,
       remaining: 0,
       windowSeconds,
-      resetSeconds: typeof ttl === "number" && ttl > 0 ? ttl : windowSeconds,
+      resetSeconds,
     };
   }
 
-  const newCount = await redis.incr(key);
-  const ttl = await redis.ttl(key);
   return {
     allowed: true,
     count: newCount,
     limit,
     remaining: Math.max(0, limit - newCount),
     windowSeconds,
-    resetSeconds: typeof ttl === "number" && ttl > 0 ? ttl : windowSeconds,
+    resetSeconds,
   };
 }
 

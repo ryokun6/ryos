@@ -394,8 +394,9 @@ export default async function handler(req: Request) {
 
   // Parse and validate request body
   let body: LyricsRequest;
+  const effectiveOrigin = getEffectiveOrigin(req);
+  
   try {
-    const effectiveOrigin = getEffectiveOrigin(req);
     if (!isAllowedOrigin(effectiveOrigin)) {
       return new Response("Unauthorized", { status: 403 });
     }
@@ -407,7 +408,10 @@ export default async function handler(req: Request) {
     logError(requestId, "Invalid request body", null);
     return new Response(JSON.stringify({ error: "Invalid request body" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
+      },
     });
   }
 
@@ -425,34 +429,29 @@ export default async function handler(req: Request) {
     selectedAlbum,
   } = body;
 
+  // Helper for consistent error responses with CORS
+  const errorResponse = (message: string, status: number = 400) =>
+    new Response(JSON.stringify({ error: message }), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
+      },
+    });
+
   // For search action, query is required if title/artist not provided
   if (action === "search" && !query && !title && !artist) {
-    return new Response(
-      JSON.stringify({
-        error: "Query or title/artist is required for search",
-      }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return errorResponse("Query or title/artist is required for search");
   }
 
   // For fetch action, selectedHash is required
   if (action === "fetch" && !selectedHash) {
-    return new Response(
-      JSON.stringify({
-        error: "selectedHash is required for fetch action",
-      }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return errorResponse("selectedHash is required for fetch action");
   }
 
   // For auto action (default), require title or artist
   if (action === "auto" && !title && !artist) {
-    return new Response(
-      JSON.stringify({
-        error: "At least one of title or artist is required",
-      }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return errorResponse("At least one of title or artist is required");
   }
 
   logInfo(requestId, "Received lyrics request", {
@@ -482,10 +481,7 @@ export default async function handler(req: Request) {
           .join(" ");
 
       if (!searchQuery) {
-        return new Response(
-          JSON.stringify({ error: "Search query is required" }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
-        );
+        return errorResponse("Search query is required");
       }
 
       const keyword = encodeURIComponent(searchQuery);

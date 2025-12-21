@@ -1150,14 +1150,26 @@ export default async function handler(req: Request) {
   } catch (error) {
     console.error("Chat API error:", error);
 
+    // Ensure CORS headers are included on error responses so clients can read them
+    const corsHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (validOrigin) {
+      corsHeaders["Access-Control-Allow-Origin"] = validOrigin;
+    }
+
     // Check if error is a SyntaxError (likely from parsing JSON)
     if (error instanceof SyntaxError) {
       console.error(`400 Error: Invalid JSON - ${error.message}`);
-      return new Response(`Bad Request: Invalid JSON - ${error.message}`, {
-        status: 400,
-      });
+      return new Response(
+        JSON.stringify({ error: "Bad Request", message: `Invalid JSON - ${error.message}` }),
+        { status: 400, headers: corsHeaders }
+      );
     }
 
-    return new Response("Internal Server Error", { status: 500 });
+    return new Response(
+      JSON.stringify({ error: "Internal Server Error" }),
+      { status: 500, headers: corsHeaders }
+    );
   }
 }
