@@ -1,4 +1,5 @@
 import { z } from "zod";
+import * as RateLimit from "./utils/rate-limit.js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -124,6 +125,61 @@ export default async function handler(req: Request) {
         },
       }
     );
+  }
+
+  // Rate limiting: 20 searches/min/IP, 200/day/IP
+  try {
+    const ip = RateLimit.getClientIp(req);
+    const BURST_WINDOW = 60;
+    const BURST_LIMIT = 20;
+    const DAILY_WINDOW = 60 * 60 * 24;
+    const DAILY_LIMIT = 200;
+
+    const burstKey = RateLimit.makeKey(["rl", "youtube-search", "burst", "ip", ip]);
+    const dailyKey = RateLimit.makeKey(["rl", "youtube-search", "daily", "ip", ip]);
+
+    const burst = await RateLimit.checkCounterLimit({
+      key: burstKey,
+      windowSeconds: BURST_WINDOW,
+      limit: BURST_LIMIT,
+    });
+    if (!burst.allowed) {
+      logInfo(requestId, "Rate limit exceeded (burst)", { ip });
+      return new Response(
+        JSON.stringify({ error: "rate_limit_exceeded", scope: "burst" }),
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": effectiveOrigin || "*",
+          },
+        }
+      );
+    }
+
+    const daily = await RateLimit.checkCounterLimit({
+      key: dailyKey,
+      windowSeconds: DAILY_WINDOW,
+      limit: DAILY_LIMIT,
+    });
+    if (!daily.allowed) {
+      logInfo(requestId, "Rate limit exceeded (daily)", { ip });
+      return new Response(
+        JSON.stringify({ error: "rate_limit_exceeded", scope: "daily" }),
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW),
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": effectiveOrigin || "*",
+          },
+        }
+      );
+    }
+  } catch (err) {
+    // Log but don't block if rate limit check fails
+    logError(requestId, "Rate limit check failed", err);
   }
 
   // Check for API key
