@@ -1,22 +1,21 @@
 import { useEffect, useRef } from "react";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
-// Set to true to temporarily disable auto-updates
-const AUTO_UPDATE_DISABLED = false;
-
 export function useLibraryUpdateChecker(isActive: boolean) {
   const { t } = useTranslation();
   const syncLibrary = useIpodStore((state) => state.syncLibrary);
+  const debugMode = useAppStore((state) => state.debugMode);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastCheckedRef = useRef<number>(0);
 
   useEffect(() => {
-    // Skip all auto-update logic when disabled
-    if (AUTO_UPDATE_DISABLED) {
+    // Skip all auto-update logic when debug mode is enabled
+    if (debugMode) {
       return;
     }
 
@@ -156,7 +155,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
         intervalRef.current = null;
       }
     };
-  }, [isActive, syncLibrary]);
+  }, [isActive, syncLibrary, debugMode]);
 
   // Manual check function that can be called externally
   const manualCheck = async () => {
