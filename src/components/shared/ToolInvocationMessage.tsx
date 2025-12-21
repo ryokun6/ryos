@@ -345,7 +345,6 @@ export function ToolInvocationMessage({
         displayResultMessage = t("apps.chats.toolCalls.settingsUpdated");
       }
     } else if (toolName === "searchSongs") {
-      const query = typeof input?.query === "string" ? input.query : "";
       // Try to get count from output
       let count = 0;
       if (typeof output === "object" && output !== null && "results" in output) {
@@ -354,11 +353,7 @@ export function ToolInvocationMessage({
           count = results.length;
         }
       }
-      if (count > 0) {
-        displayResultMessage = t("apps.chats.toolCalls.searchedSongsWithResults", { count, query });
-      } else {
-        displayResultMessage = t("apps.chats.toolCalls.searchedSongs", { query });
-      }
+      displayResultMessage = t("apps.chats.toolCalls.foundVideos", { count });
     }
   }
 
