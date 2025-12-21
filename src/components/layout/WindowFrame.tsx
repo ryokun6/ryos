@@ -13,6 +13,7 @@ import { AppId } from "@/config/appIds";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useAppStoreShallow } from "@/stores/helpers";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { getTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
@@ -87,7 +88,6 @@ export function WindowFrame({
   const { bringToForeground } = useAppContext();
   const {
     bringInstanceToForeground,
-    debugMode,
     updateWindowState,
     updateInstanceWindowState,
     minimizeInstance,
@@ -97,7 +97,6 @@ export function WindowFrame({
     exposeMode,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
-    debugMode: state.debugMode,
     updateWindowState: state.updateWindowState,
     updateInstanceWindowState: state.updateInstanceWindowState,
     minimizeInstance: state.minimizeInstance,
@@ -106,6 +105,9 @@ export function WindowFrame({
     updateInstanceTitle: state.updateInstanceTitle,
     exposeMode: state.exposeMode,
   }));
+  
+  // Debug mode from display settings store
+  const debugMode = useDisplaySettingsStore((s) => s.debugMode);
   
   // Check if this instance is minimized
   const isMinimized = instanceId ? instances[instanceId]?.isMinimized ?? false : false;
