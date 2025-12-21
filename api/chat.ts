@@ -989,6 +989,88 @@ export default async function handler(req: Request) {
               ),
           }),
         },
+        // --- YouTube/Song Search Tool ---
+        searchSongs: {
+          description:
+            "Search for songs/videos on YouTube. Returns a list of results with video IDs, titles, and channel names. Use this to help users find music to add to their iPod. After getting results, you can use ipodControl with action 'addAndPlay' to add a song using its videoId.",
+          inputSchema: z.object({
+            query: z
+              .string()
+              .min(1)
+              .max(200)
+              .describe(
+                "The search query (song name, artist, or combination). Example: 'Never Gonna Give You Up Rick Astley'"
+              ),
+            maxResults: z
+              .number()
+              .int()
+              .min(1)
+              .max(10)
+              .optional()
+              .default(5)
+              .describe(
+                "Maximum number of results to return (1-10, default 5)"
+              ),
+          }),
+          execute: async ({ query, maxResults = 5 }) => {
+            log(`[searchSongs] Searching for: "${query}" (max ${maxResults} results)`);
+            
+            try {
+              // Call the YouTube search API endpoint
+              const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+              searchUrl.searchParams.set("part", "snippet");
+              searchUrl.searchParams.set("type", "video");
+              searchUrl.searchParams.set("videoCategoryId", "10"); // Music category
+              searchUrl.searchParams.set("q", query);
+              searchUrl.searchParams.set("maxResults", String(maxResults));
+              searchUrl.searchParams.set("key", process.env.YOUTUBE_API_KEY || "");
+
+              const response = await fetch(searchUrl.toString());
+              
+              if (!response.ok) {
+                const errorText = await response.text();
+                log(`[searchSongs] YouTube API error: ${response.status} - ${errorText}`);
+                throw new Error(`YouTube search failed: ${response.status}`);
+              }
+
+              const data = await response.json();
+              
+              if (!data.items || data.items.length === 0) {
+                return { 
+                  results: [], 
+                  message: `No songs found for "${query}"` 
+                };
+              }
+
+              // Transform results to a simpler format
+              const results = data.items.map((item: {
+                id: { videoId: string };
+                snippet: {
+                  title: string;
+                  channelTitle: string;
+                  publishedAt: string;
+                  thumbnails?: { medium?: { url: string } };
+                };
+              }) => ({
+                videoId: item.id.videoId,
+                title: item.snippet.title,
+                channelTitle: item.snippet.channelTitle,
+                publishedAt: item.snippet.publishedAt,
+              }));
+
+              log(`[searchSongs] Found ${results.length} results for "${query}"`);
+              
+              return {
+                results,
+                message: `Found ${results.length} song(s) for "${query}"`,
+                hint: "Use ipodControl with action 'addAndPlay' and the videoId to add a song to the iPod"
+              };
+            } catch (error) {
+              logError(`[searchSongs] Error:`, error);
+              throw new Error(`Failed to search for songs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+          },
+        },
         // --- System Settings Tool ---
         settings: {
           description:

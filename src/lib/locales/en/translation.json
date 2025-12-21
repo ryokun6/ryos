@@ -788,6 +788,8 @@
         "error": "Error: {{errorText}}",
         "changingSettings": "Changing settings…",
         "settingsUpdated": "Settings updated",
+        "searchingSongs": "Searching \"{{query}}\"…",
+        "foundVideos": "Found {{count}} videos",
         "settingsNoChanges": "No changes made",
         "settingsLanguageChanged": "Language changed to {{language}}",
         "settingsThemeChanged": "Theme changed to {{theme}}",
