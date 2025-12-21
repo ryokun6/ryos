@@ -1,0 +1,9 @@
+AI Notes:
+
+src/components/shared/GalaxyBackground.tsx: +4[0],+6-7[0] -5-10[0]
+src/stores/useDisplaySettingsStore.ts: +3[0] -3[0]
+src/types/shader.ts: +1-6[0]
+
+Conversations:
+
+[0]: 27bf2138-d314-4b01-aec1-57e0aa282a56; Browser error; claude-4.5-opus-high-thinking;
