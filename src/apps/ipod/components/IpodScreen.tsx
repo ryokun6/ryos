@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useTranslation } from "react-i18next";
@@ -84,7 +84,7 @@ export function IpodScreen({
   // State for furigana loading
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
 
-  const masterVolume = useAppStore((s) => s.masterVolume);
+  const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
 
   // Reset refs when menu items change

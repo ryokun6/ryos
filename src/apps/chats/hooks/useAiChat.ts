@@ -7,6 +7,7 @@ import {
 import { useChatsStore } from "../../../stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { getApiUrl } from "@/utils/platform";
 import { useVideoStore } from "@/stores/useVideoStore";
@@ -473,7 +474,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const launchApp = useLaunchApp();
   const closeApp = useAppStore((state) => state.closeApp);
   const aiModel = useAppStore((state) => state.aiModel);
-  const speechEnabled = useAppStore((state) => state.speechEnabled);
+  const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
 
   // Local input state (SDK v5 no longer provides this)

@@ -14,8 +14,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// Import useAppStore for shader selection
-import { useAppStore } from "@/stores/useAppStore";
+// Import display settings store for shader selection
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
@@ -72,9 +72,9 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   // Get main app state for comparison
   const storeUrl = useInternetExplorerStore((state) => state.url);
   const storeYear = useInternetExplorerStore((state) => state.year);
-  // Get shader support status
-  const shaderEffectEnabled = useAppStore((state) => state.shaderEffectEnabled);
-  const setShaderEffectEnabled = useAppStore(
+  // Get shader support status from display settings store
+  const shaderEffectEnabled = useDisplaySettingsStore((state) => state.shaderEffectEnabled);
+  const setShaderEffectEnabled = useDisplaySettingsStore(
     (state) => state.setShaderEffectEnabled
   );
 
@@ -95,9 +95,9 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   const isGoButtonDisabled =
     !activeYear || (storeUrl === currentUrl && storeYear === activeYear);
 
-  // Add shader selection state from app store
-  const selectedShaderType = useAppStore((state) => state.selectedShaderType);
-  const setSelectedShaderType = useAppStore(
+  // Shader selection state from display settings store
+  const selectedShaderType = useDisplaySettingsStore((state) => state.selectedShaderType);
+  const setSelectedShaderType = useDisplaySettingsStore(
     (state) => state.setSelectedShaderType
   );
 

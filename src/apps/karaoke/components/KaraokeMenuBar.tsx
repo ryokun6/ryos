@@ -18,7 +18,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useIpodStoreShallow } from "@/stores/helpers";
-import { useAppStore } from "@/stores/useAppStore";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { toast } from "sonner";
 import { LyricsAlignment, LyricsFont, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { Track } from "@/stores/useIpodStore";
@@ -90,7 +90,7 @@ export function KaraokeMenuBar({
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const debugMode = useAppStore((state) => state.debugMode);
+  const debugMode = useDisplaySettingsStore((state) => state.debugMode);
 
   // Lyrics settings from iPod store
   const {

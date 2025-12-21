@@ -15,9 +15,9 @@ import { createPortal } from "react-dom";
 import {
   loadHtmlPreviewSplit,
   saveHtmlPreviewSplit,
-} from "@/stores/useAppStore";
+} from "@/stores/useDisplaySettingsStore";
 import { useSound, Sounds } from "../../hooks/useSound";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { InputDialog } from "@/components/dialogs/InputDialog";
@@ -232,7 +232,7 @@ export default function HtmlPreview({
   const finalProcessedHtmlRef = useRef<string | null>(null);
   const [streamPreviewHtml, setStreamPreviewHtml] = useState<string>(""); // NEW state to hold live HTML preview during streaming
   const lastStreamRenderRef = useRef<number>(0); // To throttle updates
-  const terminalSoundsEnabled = useAppStore(
+  const terminalSoundsEnabled = useAudioSettingsStore(
     (state) => state.terminalSoundsEnabled
   );
   const currentTheme = useThemeStore((state) => state.current);

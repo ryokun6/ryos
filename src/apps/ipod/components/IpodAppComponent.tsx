@@ -19,8 +19,8 @@ import { FullScreenPortal } from "./FullScreenPortal";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { useIpodStore, Track } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
-import { useIpodStoreShallow, useAppStoreShallow } from "@/stores/helpers";
-import { useAppStore } from "@/stores/useAppStore";
+import { useIpodStoreShallow, useAppStoreShallow, useAudioSettingsStoreShallow } from "@/stores/helpers";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
 import { SongSearchDialog, SongSearchResult } from "@/components/dialogs/SongSearchDialog";
@@ -1034,8 +1034,8 @@ export function IpodAppComponent({
     return `${window.location.origin}/ipod/${videoId}`;
   };
 
-  // Volume
-  const { ipodVolume } = useAppStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
+  // Volume from audio settings store
+  const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
 
   // Lyrics hook
   const selectedMatchForLyrics = useMemo(() => {
@@ -1356,7 +1356,7 @@ export function IpodAppComponent({
                             controls
                             width="100%"
                             height="100%"
-                            volume={ipodVolume * useAppStore.getState().masterVolume}
+                            volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
                             loop={loopCurrent}
                             onEnded={handleTrackEnd}
                             onProgress={handleProgress}

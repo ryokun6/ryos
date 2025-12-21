@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { applyDisplayMode } from "./utils/displayMode";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { BootScreen } from "./components/dialogs/BootScreen";
 import { getNextBootMessage, clearNextBootMessage } from "./utils/bootMessage";
 import { AnyApp } from "./apps/base/types";
@@ -22,14 +22,14 @@ const apps: AnyApp[] = Object.values(appRegistry);
 
 export function App() {
   const { t } = useTranslation();
-  const { displayMode, isFirstBoot, setHasBooted, setLastSeenDesktopVersion } = useAppStoreShallow(
+  const { isFirstBoot, setHasBooted, setLastSeenDesktopVersion } = useAppStoreShallow(
     (state) => ({
-      displayMode: state.displayMode,
       isFirstBoot: state.isFirstBoot,
       setHasBooted: state.setHasBooted,
       setLastSeenDesktopVersion: state.setLastSeenDesktopVersion,
     })
   );
+  const displayMode = useDisplaySettingsStoreShallow((state) => state.displayMode);
   const currentTheme = useThemeStore((state) => state.current);
   const isMobile = useIsMobile();
   // Initialize offline detection

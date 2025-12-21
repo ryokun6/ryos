@@ -11,7 +11,7 @@ import { useWallpaper } from "@/hooks/useWallpaper";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { DisplayMode } from "@/utils/displayMode";
 import { Plus } from "lucide-react";
-import { useAppStore } from "@/stores/useAppStore";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import type { WallpaperManifest as WallpaperManifestType } from "@/utils/wallpapers";
 import { useTranslation } from "react-i18next";
@@ -157,7 +157,8 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   } = useWallpaper();
 
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const { displayMode, setDisplayMode } = useAppStore();
+  const displayMode = useDisplaySettingsStore((s) => s.displayMode);
+  const setDisplayMode = useDisplaySettingsStore((s) => s.setDisplayMode);
   const { t } = useTranslation();
   const [customWallpaperRefs, setCustomWallpaperRefs] = useState<string[]>([]);
   const [customWallpaperPreviews, setCustomWallpaperPreviews] = useState<

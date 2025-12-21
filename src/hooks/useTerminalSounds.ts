@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 
 type SoundType = "command" | "error" | "aiResponse";
 type TimeMode = "past" | "future" | "now";
@@ -104,8 +104,8 @@ const DING_PRESET = {
 
 export function useTerminalSounds() {
   const [isInitialized, setIsInitialized] = useState(false);
-  const terminalSoundsEnabled = useAppStore((s) => s.terminalSoundsEnabled);
-  const setTerminalSoundsEnabled = useAppStore((s) => s.setTerminalSoundsEnabled);
+  const terminalSoundsEnabled = useAudioSettingsStore((s) => s.terminalSoundsEnabled);
+  const setTerminalSoundsEnabled = useAudioSettingsStore((s) => s.setTerminalSoundsEnabled);
   const isMuted = !terminalSoundsEnabled;
   const lastSoundTimeRef = useRef(0);
   const synthsRef = useRef<Record<SoundType, Tone.Synth | null>>({
@@ -1006,7 +1006,7 @@ export function useTerminalSounds() {
   }, [isMuted, isInitialized]);
 
   const toggleMute = useCallback(() => {
-    setTerminalSoundsEnabled(!useAppStore.getState().terminalSoundsEnabled);
+    setTerminalSoundsEnabled(!useAudioSettingsStore.getState().terminalSoundsEnabled);
   }, [setTerminalSoundsEnabled]);
 
   // Cleanup on unmount (synths are created lazily now)

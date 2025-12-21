@@ -5,7 +5,7 @@ import { ArrowUp, Square, Hand, AtSign, Mic } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { useChatSynth } from "@/hooks/useChatSynth";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { track } from "@vercel/analytics";
 import {
@@ -114,14 +114,17 @@ export function ChatInput({
   const audioButtonRef = useRef<HTMLButtonElement>(null);
   const { playNote } = useChatSynth();
   const { play: playNudgeSound } = useSound(Sounds.MSN_NUDGE);
-  const { typingSynthEnabled, debugMode, aiModel, keepTalkingEnabled } = useAppStoreShallow(
+  // Audio settings
+  const { typingSynthEnabled, keepTalkingEnabled } = useAudioSettingsStoreShallow(
     (s) => ({
       typingSynthEnabled: s.typingSynthEnabled,
-      debugMode: s.debugMode,
-      aiModel: s.aiModel,
       keepTalkingEnabled: s.keepTalkingEnabled,
     })
   );
+  // Display settings
+  const debugMode = useDisplaySettingsStoreShallow((s) => s.debugMode);
+  // AI model from app store
+  const aiModel = useAppStoreShallow((s) => s.aiModel);
   const currentTheme = useThemeStore((s) => s.current);
   const isMacTheme = currentTheme === "macosx";
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";

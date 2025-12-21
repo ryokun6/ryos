@@ -21,7 +21,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { StartMenu } from "./StartMenu";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { Slider } from "@/components/ui/slider";
 import { Volume1, Volume2, VolumeX, Settings, ChevronUp, MoreHorizontal } from "lucide-react";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -718,7 +718,7 @@ function DefaultMenuItems() {
 }
 
 function VolumeControl() {
-  const { masterVolume, setMasterVolume } = useAppStoreShallow((s) => ({
+  const { masterVolume, setMasterVolume } = useAudioSettingsStoreShallow((s) => ({
     masterVolume: s.masterVolume,
     setMasterVolume: s.setMasterVolume,
   }));
@@ -800,7 +800,6 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     bringInstanceToForeground,
     restoreInstance,
     foregroundInstanceId, // Add this to get the foreground instance ID
-    debugMode,
     exposeMode,
   } = useAppStoreShallow((s) => ({
     getForegroundInstance: s.getForegroundInstance,
@@ -809,9 +808,11 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     bringInstanceToForeground: s.bringInstanceToForeground,
     restoreInstance: s.restoreInstance,
     foregroundInstanceId: s.foregroundInstanceId, // Add this
-    debugMode: s.debugMode,
     exposeMode: s.exposeMode,
   }));
+
+  // Debug mode from display settings store
+  const debugMode = useDisplaySettingsStoreShallow((s) => s.debugMode);
 
   const foregroundInstance = getForegroundInstance();
   const hasActiveApp = !!foregroundInstance;

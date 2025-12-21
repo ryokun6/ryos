@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from "react";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ScreenSaverType } from "./index";
 import { useTranslation } from "react-i18next";
@@ -27,7 +27,7 @@ export function ScreenSaverOverlay() {
     screenSaverEnabled,
     screenSaverType,
     screenSaverIdleTime,
-  } = useAppStoreShallow((s) => ({
+  } = useDisplaySettingsStoreShallow((s) => ({
     screenSaverEnabled: s.screenSaverEnabled,
     screenSaverType: s.screenSaverType,
     screenSaverIdleTime: s.screenSaverIdleTime,
