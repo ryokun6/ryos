@@ -131,6 +131,11 @@ export function ToolInvocationMessage({
       case "settings":
         displayCallMessage = t("apps.chats.toolCalls.changingSettings");
         break;
+      case "searchSongs": {
+        const query = typeof input?.query === "string" ? input.query : "";
+        displayCallMessage = t("apps.chats.toolCalls.searchingSongs", { query });
+        break;
+      }
       default:
         displayCallMessage = t("apps.chats.toolCalls.running", { toolName: formatToolName(toolName) });
     }
@@ -338,6 +343,21 @@ export function ToolInvocationMessage({
         displayResultMessage = output;
       } else {
         displayResultMessage = t("apps.chats.toolCalls.settingsUpdated");
+      }
+    } else if (toolName === "searchSongs") {
+      const query = typeof input?.query === "string" ? input.query : "";
+      // Try to get count from output
+      let count = 0;
+      if (typeof output === "object" && output !== null && "results" in output) {
+        const results = (output as { results?: unknown[] }).results;
+        if (Array.isArray(results)) {
+          count = results.length;
+        }
+      }
+      if (count > 0) {
+        displayResultMessage = t("apps.chats.toolCalls.searchedSongsWithResults", { count, query });
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.searchedSongs", { query });
       }
     }
   }
