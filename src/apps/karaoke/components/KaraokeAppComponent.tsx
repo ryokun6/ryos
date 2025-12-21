@@ -607,13 +607,11 @@ export function KaraokeAppComponent({
           className="relative w-full h-full bg-black select-none overflow-hidden @container"
           onMouseMove={restartAutoHideTimer}
           onClick={() => {
-            if (!isPlaying) {
-              if (isOffline) {
-                showOfflineStatus();
-              } else if (currentTrack) {
-                togglePlay();
-                showStatus("▶");
-              }
+            if (isOffline) {
+              showOfflineStatus();
+            } else if (currentTrack) {
+              togglePlay();
+              showStatus(isPlaying ? "⏸" : "▶");
             }
           }}
         >
