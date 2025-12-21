@@ -429,14 +429,14 @@ export function FullScreenPortal({
         const shouldDisableClick =
           isMobileSafariDevice && !actuallyPlaying && hasUserInteracted;
 
-        if (!shouldDisableClick && !actuallyPlaying) {
+        if (!shouldDisableClick) {
           const handlers = handlersRef.current;
           handlers.registerActivity();
           if (isOffline) {
             showOfflineStatus();
           } else {
             handlers.togglePlay();
-            handlers.showStatus("▶");
+            handlers.showStatus(actuallyPlaying ? "⏸" : "▶");
           }
         }
 
