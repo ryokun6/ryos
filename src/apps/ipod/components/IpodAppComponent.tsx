@@ -1304,6 +1304,19 @@ export function IpodAppComponent({
     );
   }, [showStatus, t]);
 
+  // Get CSS class name for current lyrics font
+  const lyricsFontClassName = useMemo(() => {
+    switch (lyricsFont) {
+      case LyricsFont.Serif:
+        return "font-lyrics-serif";
+      case LyricsFont.SansSerif:
+        return "font-lyrics-sans";
+      case LyricsFont.Rounded:
+      default:
+        return "font-lyrics-rounded";
+    }
+  }, [lyricsFont]);
+
   // Fullscreen change handler
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -1548,7 +1561,7 @@ export function IpodAppComponent({
                               chineseVariant={chineseVariant}
                               koreanDisplay={koreanDisplay}
                               japaneseFurigana={japaneseFurigana}
-                              fontClassName="font-lyrics-rounded"
+                              fontClassName={lyricsFontClassName}
                               onAdjustOffset={(delta) => {
                                 useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
                                 const newOffset = (tracks[currentIndex]?.lyricOffset ?? 0) + delta;
