@@ -1012,6 +1012,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Закрыть полноэкранный режим",
+        "cycleLyricFont": "[TODO] Cycle lyric font",
         "cycleLyricLayout": "Переключить макет текста песни",
         "nextTrack": "Следующий трек",
         "playPause": "Воспроизвести/Пауза",
@@ -1114,6 +1115,9 @@
         "controls": "Управление",
         "exportLibrary": "Экспорт медиатеки...",
         "file": "Файл",
+        "fontRounded": "[TODO] Rounded",
+        "fontSansSerif": "[TODO] Sans Serif",
+        "fontSerif": "[TODO] Serif",
         "fullScreen": "На весь экран",
         "furigana": "振り仮名",
         "importLibrary": "Импорт медиатеки...",
@@ -1163,6 +1167,9 @@
       "name": "iPod",
       "status": {
         "added": "♬ Добавлено",
+        "fontRounded": "[TODO] Font: Rounded",
+        "fontSansSerif": "[TODO] Font: Sans Serif",
+        "fontSerif": "[TODO] Font: Serif",
         "furiganaOff": "Фуригана выкл.",
         "furiganaOn": "Фуригана вкл.",
         "hangulOn": "Хангыль вкл.",

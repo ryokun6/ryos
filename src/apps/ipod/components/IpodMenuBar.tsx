@@ -51,16 +51,16 @@ export function IpodMenuBar({
 
   const translationLanguages = [
     { label: t("apps.ipod.translationLanguages.original"), code: null },
-    { label: "English", code: "en" },
-    { label: "中文", code: "zh-TW" },
-    { label: "日本語", code: "ja" },
-    { label: "한국어", code: "ko" },
-    { label: "Español", code: "es" },
-    { label: "Français", code: "fr" },
-    { label: "Deutsch", code: "de" },
-    { label: "Português", code: "pt" },
-    { label: "Italiano", code: "it" },
-    { label: "Русский", code: "ru" },
+    { label: t("apps.ipod.translationLanguages.english"), code: "en" },
+    { label: t("apps.ipod.translationLanguages.chinese"), code: "zh-TW" },
+    { label: t("apps.ipod.translationLanguages.japanese"), code: "ja" },
+    { label: t("apps.ipod.translationLanguages.korean"), code: "ko" },
+    { label: t("apps.ipod.translationLanguages.spanish"), code: "es" },
+    { label: t("apps.ipod.translationLanguages.french"), code: "fr" },
+    { label: t("apps.ipod.translationLanguages.german"), code: "de" },
+    { label: t("apps.ipod.translationLanguages.portuguese"), code: "pt" },
+    { label: t("apps.ipod.translationLanguages.italian"), code: "it" },
+    { label: t("apps.ipod.translationLanguages.russian"), code: "ru" },
   ];
   const {
     tracks,

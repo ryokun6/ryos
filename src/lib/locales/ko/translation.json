@@ -1012,6 +1012,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "전체 화면 닫기",
+        "cycleLyricFont": "[TODO] Cycle lyric font",
         "cycleLyricLayout": "가사 레이아웃 전환",
         "nextTrack": "다음 곡",
         "playPause": "재생/일시 정지",
@@ -1114,6 +1115,9 @@
         "controls": "컨트롤",
         "exportLibrary": "보관함 내보내기...",
         "file": "파일",
+        "fontRounded": "[TODO] Rounded",
+        "fontSansSerif": "[TODO] Sans Serif",
+        "fontSerif": "[TODO] Serif",
         "fullScreen": "전체 화면",
         "furigana": "振り仮名",
         "importLibrary": "보관함 가져오기...",
@@ -1163,6 +1167,9 @@
       "name": "iPod",
       "status": {
         "added": "♬ 추가됨",
+        "fontRounded": "[TODO] Font: Rounded",
+        "fontSansSerif": "[TODO] Font: Sans Serif",
+        "fontSerif": "[TODO] Font: Serif",
         "furiganaOff": "후리가나 끄기",
         "furiganaOn": "후리가나 켜기",
         "hangulOn": "한글 켜짐",

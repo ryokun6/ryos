@@ -1012,6 +1012,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "關閉全螢幕",
+        "cycleLyricFont": "[TODO] Cycle lyric font",
         "cycleLyricLayout": "切換歌詞佈局",
         "nextTrack": "下一首",
         "playPause": "播放/暫停",
@@ -1114,6 +1115,9 @@
         "controls": "控制",
         "exportLibrary": "輸出資料庫...",
         "file": "檔案",
+        "fontRounded": "[TODO] Rounded",
+        "fontSansSerif": "[TODO] Sans Serif",
+        "fontSerif": "[TODO] Serif",
         "fullScreen": "全螢幕",
         "furigana": "振り仮名",
         "importLibrary": "匯入資料庫...",
@@ -1163,6 +1167,9 @@
       "name": "iPod",
       "status": {
         "added": "♬ 已新增",
+        "fontRounded": "[TODO] Font: Rounded",
+        "fontSansSerif": "[TODO] Font: Sans Serif",
+        "fontSerif": "[TODO] Font: Serif",
         "furiganaOff": "振假名：關",
         "furiganaOn": "振假名：開",
         "hangulOn": "韓文開啟",

@@ -1012,6 +1012,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Chiudi schermo intero",
+        "cycleLyricFont": "[TODO] Cycle lyric font",
         "cycleLyricLayout": "Scorri layout testi",
         "nextTrack": "Traccia successiva",
         "playPause": "Riproduci/Pausa",
@@ -1114,6 +1115,9 @@
         "controls": "Controlli",
         "exportLibrary": "Esporta libreria...",
         "file": "File",
+        "fontRounded": "[TODO] Rounded",
+        "fontSansSerif": "[TODO] Sans Serif",
+        "fontSerif": "[TODO] Serif",
         "fullScreen": "Schermo intero",
         "furigana": "振り仮名",
         "importLibrary": "Importa libreria...",
@@ -1163,6 +1167,9 @@
       "name": "iPod",
       "status": {
         "added": "♬ Aggiunta",
+        "fontRounded": "[TODO] Font: Rounded",
+        "fontSansSerif": "[TODO] Font: Sans Serif",
+        "fontSerif": "[TODO] Font: Serif",
         "furiganaOff": "Furigana disattivato",
         "furiganaOn": "Furigana attivato",
         "hangulOn": "Hangul Attivo",
