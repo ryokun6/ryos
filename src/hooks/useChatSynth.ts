@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useVibration } from "./useVibration";
 
 // Global synth instance and state
@@ -211,8 +211,8 @@ function createSynthInstance(presetKey: string) {
   }).connect(tremolo);
 
   // Apply global chat synth volume (linear 0-1) as decibel offset
-  const masterVol = useAppStore.getState().chatSynthVolume ?? 1;
-  const globalMasterVolume = useAppStore.getState().masterVolume ?? 1; // Get global masterVolume
+  const masterVol = useAudioSettingsStore.getState().chatSynthVolume ?? 1;
+  const globalMasterVolume = useAudioSettingsStore.getState().masterVolume ?? 1;
   const combinedVolume = masterVol * globalMasterVolume; // Combine volumes
   const volumeDb =
     presetKey === "off"
@@ -235,8 +235,9 @@ function createSynthInstance(presetKey: string) {
 
 export function useChatSynth() {
   const [isAudioReady, setIsAudioReady] = useState(false);
-  // Global preset from store
-  const { synthPreset, setSynthPreset } = useAppStore();
+  // Global preset from audio settings store
+  const synthPreset = useAudioSettingsStore((s) => s.synthPreset);
+  const setSynthPreset = useAudioSettingsStore((s) => s.setSynthPreset);
 
   const [currentPresetKey, setCurrentPresetKey] = useState<string>(
     () => synthPreset || "classic" // Default to classic if store is null
@@ -583,8 +584,8 @@ export function useChatSynth() {
   // Reactively update synth volume when the global chatSynthVolume
   // slider changes, without requiring a re-creation of the synth.
   // ---------------------------------------------------------------
-  const chatSynthVolume = useAppStore((s) => s.chatSynthVolume);
-  const masterVolume = useAppStore((s) => s.masterVolume); // Get masterVolume
+  const chatSynthVolume = useAudioSettingsStore((s) => s.chatSynthVolume);
+  const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
 
   useEffect(() => {
     if (synthRef.current) {

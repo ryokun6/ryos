@@ -9,7 +9,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { Maze, Pipes, SCREEN_SAVER_OPTIONS, Starfield, type ScreenSaverType } from "@/components/screensavers";
 import { useTranslation } from "react-i18next";
 
@@ -215,7 +215,7 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
     setScreenSaverType,
     screenSaverIdleTime,
     setScreenSaverIdleTime,
-  } = useAppStoreShallow((s) => ({
+  } = useDisplaySettingsStoreShallow((s) => ({
     screenSaverEnabled: s.screenSaverEnabled,
     setScreenSaverEnabled: s.setScreenSaverEnabled,
     screenSaverType: s.screenSaverType,

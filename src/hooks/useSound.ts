@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 
 // Global audio context and cache
@@ -46,9 +46,9 @@ export function useSound(soundPath: string, volume: number = 0.3) {
   const gainNodeRef = useRef<GainNode | null>(null);
   // Track active sources for this specific hook instance so we can stop them
   const instanceSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
-  // Reactively track global UI volume
-  const uiVolume = useAppStore((s) => s.uiVolume);
-  const masterVolume = useAppStore((s) => s.masterVolume); // Get masterVolume
+  // Reactively track global UI volume from audio settings store
+  const uiVolume = useAudioSettingsStore((s) => s.uiVolume);
+  const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
 
   useEffect(() => {
     // Create gain node for volume control
@@ -76,8 +76,8 @@ export function useSound(soundPath: string, volume: number = 0.3) {
 
   // Internal function to create and play a source
   const createAndPlaySource = useCallback(async (loop: boolean = false) => {
-    // Check if UI sounds are enabled via global store
-    if (!useAppStore.getState().uiSoundsEnabled) {
+    // Check if UI sounds are enabled via audio settings store
+    if (!useAudioSettingsStore.getState().uiSoundsEnabled) {
       return null;
     }
 

@@ -3,6 +3,17 @@ import { OsTheme } from "./types";
 export const macosx: OsTheme = {
   id: "macosx",
   name: "Aqua",
+  metadata: {
+    isWindows: false,
+    isMac: true,
+    hasDock: true,
+    hasTaskbar: false,
+    hasMenuBar: true,
+    titleBarControlsPosition: "left",
+    menuBarHeight: 25,
+    taskbarHeight: 0,
+    baseDockHeight: 56,
+  },
   fonts: {
     ui: "LucidaGrande, 'Lucida Grande', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
     mono: "Monaco, Menlo, monospace",

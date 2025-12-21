@@ -7,6 +7,7 @@ import {
 import { useChatsStore } from "../../../stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { getApiUrl } from "@/utils/platform";
 import { useVideoStore } from "@/stores/useVideoStore";
@@ -41,11 +42,18 @@ import type { OsThemeId } from "@/themes/types";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 
-// TODO: Move relevant state and logic from ChatsAppComponent here
-// - AI chat state (useChat hook)
-// - Message processing (app control markup)
-// - System state generation
-// - Dialog states (clear, save)
+/**
+ * NOTE: Future refactoring opportunity (tracked in codebase analysis)
+ * 
+ * Consider consolidating more state from ChatsAppComponent into this hook:
+ * - AI chat state (currently using useChat hook here)
+ * - Message processing (app control markup)
+ * - System state generation
+ * - Dialog states (clear, save)
+ * 
+ * This would make the component lighter and improve testability.
+ * Priority: Low - current architecture works well for the use case.
+ */
 
 // Track newly created TextEdit instances for fallback mechanism
 const recentlyCreatedTextEditInstances = new Map<
@@ -466,7 +474,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const launchApp = useLaunchApp();
   const closeApp = useAppStore((state) => state.closeApp);
   const aiModel = useAppStore((state) => state.aiModel);
-  const speechEnabled = useAppStore((state) => state.speechEnabled);
+  const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
 
   // Local input state (SDK v5 no longer provides this)
@@ -2131,7 +2139,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             };
 
             const changes: string[] = [];
-            const appStore = useAppStore.getState();
+            const audioSettingsStore = useAudioSettingsStore.getState();
             const langStore = useLanguageStore.getState();
             const themeStore = useThemeStore.getState();
 
@@ -2184,7 +2192,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             // Master volume
             if (masterVolume !== undefined) {
-              appStore.setMasterVolume(masterVolume);
+              audioSettingsStore.setMasterVolume(masterVolume);
               const volumePercent = Math.round(masterVolume * 100);
               changes.push(
                 i18n.t("apps.chats.toolCalls.settingsMasterVolumeSet", {
@@ -2196,7 +2204,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             // Speech enabled
             if (speechEnabled !== undefined) {
-              appStore.setSpeechEnabled(speechEnabled);
+              audioSettingsStore.setSpeechEnabled(speechEnabled);
               changes.push(
                 speechEnabled
                   ? i18n.t("apps.chats.toolCalls.settingsSpeechEnabled")

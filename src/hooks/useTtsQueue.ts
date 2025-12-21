@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
@@ -42,14 +42,14 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
   // Gain node for global speech volume
   const gainNodeRef = useRef<GainNode | null>(null);
-  const speechVolume = useAppStore((s) => s.speechVolume);
-  const masterVolume = useAppStore((s) => s.masterVolume);
-  const setIpodVolumeGlobal = useAppStore((s) => s.setIpodVolume);
-  const setChatSynthVolumeGlobal = useAppStore((s) => s.setChatSynthVolume);
+  const speechVolume = useAudioSettingsStore((s) => s.speechVolume);
+  const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
+  const setIpodVolumeGlobal = useAudioSettingsStore((s) => s.setIpodVolume);
+  const setChatSynthVolumeGlobal = useAudioSettingsStore((s) => s.setChatSynthVolume);
 
-  // Get TTS settings from app store
-  const ttsModel = useAppStore((s) => s.ttsModel);
-  const ttsVoice = useAppStore((s) => s.ttsVoice);
+  // Get TTS settings from audio settings store
+  const ttsModel = useAudioSettingsStore((s) => s.ttsModel);
+  const ttsVoice = useAudioSettingsStore((s) => s.ttsVoice);
 
   // Keep track of iPod and chat synth volumes for duck/restore
   const originalIpodVolumeRef = useRef<number | null>(null);
@@ -317,7 +317,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     if (isSpeaking) {
       // Activate ducking only once at the start of speech
       if (originalIpodVolumeRef.current === null && ipodIsPlaying && !isIOS) {
-        originalIpodVolumeRef.current = useAppStore.getState().ipodVolume;
+        originalIpodVolumeRef.current = useAudioSettingsStore.getState().ipodVolume;
         const duckedIpod = Math.max(0, originalIpodVolumeRef.current * 0.35);
         setIpodVolumeGlobal(duckedIpod);
       }
@@ -325,7 +325,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       // Duck chat synth volume
       if (originalChatSynthVolumeRef.current === null) {
         originalChatSynthVolumeRef.current =
-          useAppStore.getState().chatSynthVolume;
+          useAudioSettingsStore.getState().chatSynthVolume;
         const duckedChatSynth = Math.max(
           0,
           originalChatSynthVolumeRef.current * 0.6

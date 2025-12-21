@@ -15,6 +15,7 @@ import {
   TextEditInitialData,
 } from "../utils/textEditUtils";
 import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { markdownToHtml } from "@/utils/markdown";
@@ -42,7 +43,7 @@ function TextEditContent({
   );
   const launchAppInstance = useAppStore((state) => state.launchApp);
   const currentTheme = useThemeStore((state) => state.current);
-  const speechEnabled = useAppStore((state) => state.speechEnabled);
+  const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   // Local UI-only state for Save dialog filename
   const [saveFileName, setSaveFileName] = useState("");

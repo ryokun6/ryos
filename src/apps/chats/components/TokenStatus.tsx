@@ -4,14 +4,14 @@ import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { useTokenAge } from "../hooks/useTokenRefresh";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { useAppStore } from "@/stores/useAppStore";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 
 export function TokenStatus() {
   const { t } = useTranslation();
   const { ageInDays } = useTokenAge();
-  const debugMode = useAppStore((state) => state.debugMode);
+  const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const refreshAuthToken = useChatsStore((state) => state.refreshAuthToken);
   const checkAndRefreshTokenIfNeeded = useChatsStore(
     (state) => state.checkAndRefreshTokenIfNeeded

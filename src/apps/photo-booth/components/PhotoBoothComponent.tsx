@@ -201,9 +201,34 @@ export function PhotoBoothComponent({
     setCurrentPhotoBatch([]);
   };
 
-  const handleExportPhotos = () => {
-    // TODO: Implement photo export functionality
-    console.log("Export photos");
+  const handleExportPhotos = async () => {
+    if (photos.length === 0) {
+      console.log("No photos to export");
+      return;
+    }
+
+    // If there's only one photo, download it directly
+    if (photos.length === 1) {
+      const link = document.createElement("a");
+      link.href = photos[0].path;
+      link.download = photos[0].filename || `photo-booth-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    // For multiple photos, download each one
+    for (let i = 0; i < photos.length; i++) {
+      const link = document.createElement("a");
+      link.href = photos[i].path;
+      link.download = photos[i].filename || `photo-booth-${Date.now()}-${i + 1}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      // Small delay between downloads to prevent browser issues
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   };
 
   // Add a small delay before showing photo strip to prevent flickering

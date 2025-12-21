@@ -14,7 +14,7 @@ import {
   MenubarRadioItem,
 } from "@/components/ui/menubar";
 import { useIpodStoreShallow } from "@/stores/helpers";
-import { useAppStore } from "@/stores/useAppStore";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
@@ -151,7 +151,7 @@ export function IpodMenuBar({
 
   const appTheme = useThemeStore((state) => state.current);
   const isXpTheme = appTheme === "xp" || appTheme === "win98";
-  const debugMode = useAppStore((state) => state.debugMode);
+  const debugMode = useDisplaySettingsStore((state) => state.debugMode);
 
   const handlePlayTrack = (index: number) => {
     setCurrentIndex(index);

@@ -26,16 +26,47 @@ export interface ParsedCommand {
   args: string[];
 }
 
+/** File system item for terminal commands - uses generic types to match useFileSystem */
+export interface TerminalFileItem {
+  path: string;
+  name: string;
+  isDirectory: boolean;
+  type?: string;
+  status?: "active" | "trashed";
+  uuid?: string;
+  size?: number;
+  createdAt?: number | Date;
+  modifiedAt?: number | Date;
+  content?: string | Blob;
+  icon?: string;
+  shareId?: string;
+  createdBy?: string;
+}
+
+/** Save file data structure matching useFileSystem.saveFile signature */
+export interface SaveFileData {
+  path: string;
+  name: string;
+  content: string | Blob;
+  type?: string;
+  icon?: string;
+  shareId?: string;
+  createdBy?: string;
+}
+
 export interface CommandContext {
   currentPath: string;
-  files: any[]; // TODO: Add proper file type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  files: any[]; // File items from useFileSystem - has varying shapes
   navigateToPath: (path: string) => void;
-  saveFile: (file: any) => Promise<void>;
+  saveFile: (file: SaveFileData) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   moveToTrash: (file: any) => void;
   playCommandSound: () => void;
   playErrorSound: () => void;
   playMooSound: () => void;
-  launchApp: (appId: any, options?: any) => string; // Use any for AppId to avoid import issues
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  launchApp: (appId: any, options?: { initialData?: unknown }) => string;
   setIsAboutDialogOpen: (isOpen: boolean) => void;
   username?: string | null;
 }

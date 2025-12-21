@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/menubar";
 import { type ChatRoom } from "../../../../src/types/chat";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAudioSettingsStoreShallow } from "@/stores/helpers";
 import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
@@ -99,7 +99,7 @@ export function ChatsMenuBar({
     setSynthPreset,
     keepTalkingEnabled,
     setKeepTalkingEnabled,
-  } = useAppStoreShallow((s) => ({
+  } = useAudioSettingsStoreShallow((s) => ({
     speechEnabled: s.speechEnabled,
     setSpeechEnabled: s.setSpeechEnabled,
     typingSynthEnabled: s.typingSynthEnabled,
@@ -108,7 +108,6 @@ export function ChatsMenuBar({
     setSynthPreset: s.setSynthPreset,
     keepTalkingEnabled: s.keepTalkingEnabled,
     setKeepTalkingEnabled: s.setKeepTalkingEnabled,
-    debugMode: s.debugMode,
   }));
 
   return (

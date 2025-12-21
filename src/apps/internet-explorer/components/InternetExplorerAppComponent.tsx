@@ -48,6 +48,8 @@ import FutureSettingsDialog from "@/components/dialogs/FutureSettingsDialog";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 import { track } from "@vercel/analytics";
 import { useAppStore } from "@/stores/useAppStore";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import TimeMachineView from "./TimeMachineView";
 import {
   Tooltip,
@@ -309,8 +311,8 @@ export function InternetExplorerAppComponent({
   onNavigatePrevious,
 }: AppProps<InternetExplorerInitialData>) {
   const translatedHelpItems = useTranslatedHelpItems("internet-explorer", helpItems || []);
-  const debugMode = useAppStore((state) => state.debugMode);
-  const terminalSoundsEnabled = useAppStore(
+  const debugMode = useDisplaySettingsStore((state) => state.debugMode);
+  const terminalSoundsEnabled = useAudioSettingsStore(
     (state) => state.terminalSoundsEnabled
   );
   const bringToForeground = useAppStore((state) => state.bringToForeground);

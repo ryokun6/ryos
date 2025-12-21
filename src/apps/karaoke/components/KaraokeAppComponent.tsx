@@ -17,8 +17,8 @@ import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { useIpodStore, Track } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
-import { useIpodStoreShallow, useAppStoreShallow } from "@/stores/helpers";
-import { useAppStore } from "@/stores/useAppStore";
+import { useIpodStoreShallow, useAudioSettingsStoreShallow } from "@/stores/helpers";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, LyricsFont, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
@@ -204,8 +204,8 @@ export function KaraokeAppComponent({
   const [showControls, setShowControls] = useState(true);
   const hideControlsTimeoutRef = useRef<number | null>(null);
 
-  // Volume
-  const { ipodVolume } = useAppStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
+  // Volume from audio settings store
+  const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
 
   // Current track
   const currentTrack: Track | null = tracks[currentIndex] || null;
@@ -641,7 +641,7 @@ export function KaraokeAppComponent({
                   playing={isPlaying && !isFullScreen}
                   width="100%"
                   height="100%"
-                  volume={ipodVolume * useAppStore.getState().masterVolume}
+                  volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
                   loop={loopCurrent}
                   onEnded={handleTrackEnd}
                   onProgress={handleProgress}
@@ -1072,7 +1072,7 @@ export function KaraokeAppComponent({
                           controls
                           width="100%"
                           height="100%"
-                          volume={ipodVolume * useAppStore.getState().masterVolume}
+                          volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
                           loop={loopCurrent}
                           onEnded={handleTrackEnd}
                           onProgress={handleProgress}

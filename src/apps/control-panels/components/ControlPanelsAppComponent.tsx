@@ -28,7 +28,7 @@ import { clearAllAppStates } from "@/stores/useAppStore";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
-import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
 import { AIModel, AI_MODEL_METADATA } from "@/types/aiModels";
@@ -251,13 +251,29 @@ export function ControlPanelsAppComponent({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileToRestoreRef = useRef<File | null>(null);
   const { formatFileSystem } = useFileSystem();
+  // AI model settings from app store
+  const { aiModel, setAiModel } = useAppStoreShallow((s) => ({
+    aiModel: s.aiModel,
+    setAiModel: s.setAiModel,
+  }));
+
+  // Display settings from display settings store
   const {
     debugMode,
     setDebugMode,
     shaderEffectEnabled,
     setShaderEffectEnabled,
-    aiModel,
-    setAiModel,
+    setCurrentWallpaper,
+  } = useDisplaySettingsStoreShallow((s) => ({
+    debugMode: s.debugMode,
+    setDebugMode: s.setDebugMode,
+    shaderEffectEnabled: s.shaderEffectEnabled,
+    setShaderEffectEnabled: s.setShaderEffectEnabled,
+    setCurrentWallpaper: s.setCurrentWallpaper,
+  }));
+
+  // Audio settings from audio settings store
+  const {
     terminalSoundsEnabled,
     setTerminalSoundsEnabled,
     uiSoundsEnabled,
@@ -280,14 +296,7 @@ export function ControlPanelsAppComponent({
     setIpodVolume,
     masterVolume,
     setMasterVolume,
-    setCurrentWallpaper,
-  } = useAppStoreShallow((s) => ({
-    debugMode: s.debugMode,
-    setDebugMode: s.setDebugMode,
-    shaderEffectEnabled: s.shaderEffectEnabled,
-    setShaderEffectEnabled: s.setShaderEffectEnabled,
-    aiModel: s.aiModel,
-    setAiModel: s.setAiModel,
+  } = useAudioSettingsStoreShallow((s) => ({
     terminalSoundsEnabled: s.terminalSoundsEnabled,
     setTerminalSoundsEnabled: s.setTerminalSoundsEnabled,
     uiSoundsEnabled: s.uiSoundsEnabled,
@@ -310,7 +319,6 @@ export function ControlPanelsAppComponent({
     setIpodVolume: s.setIpodVolume,
     masterVolume: s.masterVolume,
     setMasterVolume: s.setMasterVolume,
-    setCurrentWallpaper: s.setCurrentWallpaper,
   }));
 
   // Theme state

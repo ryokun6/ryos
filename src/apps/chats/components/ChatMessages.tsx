@@ -19,7 +19,7 @@ import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { appRegistry } from "@/config/appRegistry";
 import {
   ToolInvocationMessage,
@@ -382,7 +382,7 @@ function ChatMessagesContent({
     useTerminalSounds();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const { speak, stop, isSpeaking: localTtsSpeaking } = useTtsQueue();
-  const speechEnabled = useAppStore((state) => state.speechEnabled);
+  const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const currentTheme = useThemeStore((s) => s.current);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [speechLoadingId, setSpeechLoadingId] = useState<string | null>(null);
