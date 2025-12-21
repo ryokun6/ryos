@@ -7,6 +7,17 @@ const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";
 const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
 const LOCALHOST_PORTS = new Set(["80", "443", "3000", "5173"]);
 
+// Allowed Vercel preview URL prefixes for this project
+// Vercel preview URLs follow patterns like:
+// - {project}-{random}.vercel.app
+// - {project}-git-{branch}-{username}.vercel.app
+// Only allow previews from this specific project to prevent other Vercel apps from accessing the API
+const ALLOWED_VERCEL_PREVIEW_PREFIXES = [
+  "ryos-",      // Main project name
+  "ryo-lu-",    // Username-based prefix
+  "os-ryo-",    // Alternative naming
+];
+
 function getRuntimeEnv(): VercelEnv {
   const env = process.env.VERCEL_ENV;
   if (env === "production" || env === "preview" || env === "development") {
@@ -34,7 +45,17 @@ function isLocalhostOrigin(origin: string): boolean {
 function isVercelPreviewOrigin(origin: string): boolean {
   const parsed = parseOrigin(origin);
   if (!parsed) return false;
-  return parsed.hostname.endsWith(".vercel.app");
+  
+  const hostname = parsed.hostname.toLowerCase();
+  
+  // Must end with .vercel.app
+  if (!hostname.endsWith(".vercel.app")) return false;
+  
+  // Must start with one of the allowed project prefixes
+  // This prevents other Vercel-deployed apps from accessing the API
+  return ALLOWED_VERCEL_PREVIEW_PREFIXES.some(prefix => 
+    hostname.startsWith(prefix)
+  );
 }
 
 function isTailscaleOrigin(origin: string): boolean {

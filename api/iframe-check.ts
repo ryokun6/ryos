@@ -174,15 +174,19 @@ export default async function handler(req: Request) {
   // Log incoming request
   logRequest(req.method, req.url, mode, requestId);
 
+  // Helper for consistent error responses with CORS
+  const errorResponseWithCors = (message: string, status: number = 400) =>
+    new Response(JSON.stringify({ error: message }), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
+      },
+    });
+
   if (!urlParam) {
     logError(requestId, "Missing 'url' query parameter", null);
-    return new Response(
-      JSON.stringify({ error: "Missing 'url' query parameter" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return errorResponseWithCors("Missing 'url' query parameter");
   }
 
   // Ensure the URL starts with a protocol for fetch()
@@ -221,7 +225,7 @@ export default async function handler(req: Request) {
             headers: {
               "Retry-After": String(global.resetSeconds ?? BURST_WINDOW),
               "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin,
+              ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
             },
           }
         );
@@ -259,7 +263,7 @@ export default async function handler(req: Request) {
               headers: {
                 "Retry-After": String(host.resetSeconds ?? BURST_WINDOW),
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": effectiveOrigin,
+                ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
               },
             }
           );
@@ -283,7 +287,7 @@ export default async function handler(req: Request) {
             headers: {
               "Retry-After": String(res.resetSeconds ?? BURST_WINDOW),
               "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin,
+              ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
             },
           }
         );
@@ -298,10 +302,7 @@ export default async function handler(req: Request) {
     const aiUrl = normalizedUrl;
     if (!year) {
       logError(requestId, "Missing year for AI cache mode", { year });
-      return new Response(JSON.stringify({ error: "Missing year parameter" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return errorResponseWithCors("Missing year parameter");
     }
 
     // Validate year format
@@ -312,10 +313,7 @@ export default async function handler(req: Request) {
 
     if (!isValidYear) {
       logError(requestId, "Invalid year format for AI cache mode", { year });
-      return new Response(JSON.stringify({ error: "Invalid year format" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return errorResponseWithCors("Invalid year format");
     }
 
     // Normalize the URL for the cache key
@@ -328,10 +326,7 @@ export default async function handler(req: Request) {
     if (!normalizedUrlForKey) {
       // Handle case where normalization failed
       logError(requestId, "URL normalization failed for AI cache key", null);
-      return new Response(
-        JSON.stringify({ error: "URL normalization failed" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return errorResponseWithCors("URL normalization failed", 500);
     }
 
     try {
@@ -383,10 +378,7 @@ export default async function handler(req: Request) {
     );
     if (!normalizedUrlForKey) {
       logError(requestId, "URL normalization failed for list-cache key", null);
-      return new Response(
-        JSON.stringify({ error: "URL normalization failed" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return errorResponseWithCors("URL normalization failed", 500);
     }
 
     try {
@@ -556,12 +548,7 @@ export default async function handler(req: Request) {
         month,
       });
       // Potentially return an error or fall back to non-Wayback? Let's return error.
-      return new Response(
-        JSON.stringify({
-          error: "Invalid year/month format for Wayback proxy",
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return errorResponseWithCors("Invalid year/month format for Wayback proxy");
     }
   }
 
@@ -1003,16 +990,13 @@ export default async function handler(req: Request) {
           status: 503,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin,
+            ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
           },
         }
       );
     }
   } catch (error) {
     logError(requestId, "General handler error", error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return errorResponseWithCors((error as Error).message, 500);
   }
 }
