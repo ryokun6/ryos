@@ -5,7 +5,7 @@ type VercelEnv = "production" | "preview" | "development";
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
 const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";
 const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
-const LOCALHOST_PORTS = new Set(["80", "443", "3000", "3001", "3002", "4000", "5173", "8080", "8000"]);
+const LOCALHOST_PORTS = new Set(["80", "443", "3000", "5173"]);
 
 function getRuntimeEnv(): VercelEnv {
   const env = process.env.VERCEL_ENV;
