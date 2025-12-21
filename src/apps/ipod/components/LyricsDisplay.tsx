@@ -127,33 +127,62 @@ function renderFuriganaSegments(segments: FuriganaSegment[]): React.ReactNode {
 }
 
 /**
+ * Result of mapping furigana to a word, including timing adjustments
+ * When a furigana segment spans multiple words, the first word gets extended timing
+ */
+interface WordFuriganaMapping {
+  /** The furigana segments for this word, or null if word was borrowed by a previous word */
+  segments: FuriganaSegment[] | null;
+  /** Extra duration (in ms) to add to this word's animation because it covers borrowed characters */
+  extraDurationMs: number;
+}
+
+/**
  * Map furigana segments to individual words based on character positions
  * When a segment with reading spans multiple words, keeps it intact with the first word
- * Returns an array where each index corresponds to a word's furigana segments
- * Words whose characters were "borrowed" by a previous segment get null to indicate skip
+ * Returns an array where each index corresponds to a word's furigana mapping
+ * Words whose characters were "borrowed" by a previous segment get null segments to indicate skip
+ * Words that borrow from future words get extraDurationMs to extend their animation
  */
 function mapWordsToFurigana(
   wordTimings: LyricWord[],
   furiganaSegments: FuriganaSegment[]
-): (FuriganaSegment[] | null)[] {
-  const result: (FuriganaSegment[] | null)[] = [];
+): WordFuriganaMapping[] {
+  const result: WordFuriganaMapping[] = [];
   
   let segmentIndex = 0;
   let charInSegment = 0;
   // Track how many chars were "borrowed" from future words by a previous segment
   let charsBorrowedFromFuture = 0;
+  // Track which word index borrowed the chars so we can add extra duration to it
+  let borrowingWordIndex = -1;
   
-  for (const word of wordTimings) {
+  for (let wordIndex = 0; wordIndex < wordTimings.length; wordIndex++) {
+    const word = wordTimings[wordIndex];
+    
     // If this word's characters were already rendered by a previous word's furigana
     if (charsBorrowedFromFuture >= word.text.length) {
       charsBorrowedFromFuture -= word.text.length;
-      result.push(null); // Signal to skip this word entirely
+      result.push({ segments: null, extraDurationMs: 0 }); // Signal to skip this word entirely
+      
+      // Add this word's duration to the borrowing word's extra duration
+      if (borrowingWordIndex >= 0 && result[borrowingWordIndex]) {
+        result[borrowingWordIndex].extraDurationMs += word.durationMs;
+      }
       continue;
     }
     
-    // Partial borrow - skip some chars
+    // Partial borrow - skip some chars but this word still gets some content
+    if (charsBorrowedFromFuture > 0) {
+      // Add proportional duration for the borrowed portion
+      if (borrowingWordIndex >= 0 && result[borrowingWordIndex]) {
+        const borrowedPortion = charsBorrowedFromFuture / word.text.length;
+        result[borrowingWordIndex].extraDurationMs += word.durationMs * borrowedPortion;
+      }
+    }
     const effectiveWordLength = word.text.length - charsBorrowedFromFuture;
     charsBorrowedFromFuture = 0;
+    borrowingWordIndex = -1;
     
     const wordFurigana: FuriganaSegment[] = [];
     let wordCharsRemaining = effectiveWordLength;
@@ -184,6 +213,7 @@ function mapWordsToFurigana(
           // Track how many extra chars we borrowed from future words
           const extraChars = segment.text.length - wordCharsRemaining;
           charsBorrowedFromFuture = extraChars;
+          borrowingWordIndex = wordIndex; // This word is the one borrowing
           // Skip past this entire segment for future words
           segmentIndex++;
           charInSegment = 0;
@@ -200,7 +230,7 @@ function mapWordsToFurigana(
       }
     }
     
-    result.push(wordFurigana);
+    result.push({ segments: wordFurigana, extraDurationMs: 0 });
   }
   
   return result;
@@ -287,16 +317,16 @@ function StaticWordRendering({
     return (
       <>
         {wordTimings.map((word, idx) => {
-          const wordFurigana = wordFuriganaList[idx];
+          const mapping = wordFuriganaList[idx];
 
           // Skip words whose characters were already rendered by a previous word's furigana
-          if (wordFurigana === null) {
+          if (!mapping || mapping.segments === null) {
             return null;
           }
 
           const content =
-            wordFurigana.length > 0
-              ? renderFuriganaSegments(wordFurigana)
+            mapping.segments.length > 0
+              ? renderFuriganaSegments(mapping.segments)
               : processText(word.text);
 
           return (
@@ -400,15 +430,16 @@ function WordTimingHighlight({
     return (
       <>
         {wordTimings.map((word, idx) => {
-          const wordFurigana = wordFuriganaList[idx];
+          const mapping = wordFuriganaList[idx];
           
           // Skip words whose characters were already rendered by a previous word's furigana
-          if (wordFurigana === null) {
+          if (!mapping || mapping.segments === null) {
             return null;
           }
           
           const wordStartMs = word.startTimeMs;
-          const wordDurationMs = word.durationMs;
+          // When furigana spans multiple words, extend the duration to cover borrowed characters
+          const wordDurationMs = word.durationMs + mapping.extraDurationMs;
           
           // Calculate progress through this word (0 to 1)
           let progress = 0;
@@ -427,8 +458,8 @@ function WordTimingHighlight({
           const gradientStart = progressPercent;
           const gradientEnd = progressPercent + feather;
           
-          const content = wordFurigana.length > 0
-            ? renderFuriganaSegments(wordFurigana)
+          const content = mapping.segments.length > 0
+            ? renderFuriganaSegments(mapping.segments)
             : processText(word.text);
           
           // Base shadow for text legibility (same as inactive lines)
