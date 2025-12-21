@@ -4,6 +4,15 @@ import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, Lyric
 import { LyricLine } from "@/types/lyrics";
 import { getApiUrl } from "@/utils/platform";
 
+// YouTube search result type
+interface YouTubeSearchResult {
+  videoId: string;
+  title: string;
+  channelTitle: string;
+  thumbnail: string;
+  publishedAt: string;
+}
+
 // Define the Track type (can be shared or defined here)
 export interface Track {
   id: string;
@@ -205,6 +214,8 @@ export interface IpodState extends IpodData {
   exportLibrary: () => string;
   /** Adds a track from a YouTube video ID or URL, fetching metadata automatically */
   addTrackFromVideoId: (urlOrId: string, autoPlay?: boolean) => Promise<Track | null>;
+  /** Search YouTube and add the top result */
+  searchAndAddTopVideo: (query: string, autoPlay?: boolean) => Promise<Track | null>;
   /** Load the default library if no tracks exist */
   initializeLibrary: () => Promise<void>;
 
@@ -738,6 +749,42 @@ export const useIpodStore = create<IpodState>()(
         } catch (error) {
           console.error("Error adding track to store:", error);
           return null;
+        }
+      },
+
+      searchAndAddTopVideo: async (query: string, autoPlay: boolean = true): Promise<Track | null> => {
+        if (!query.trim()) {
+          throw new Error("Search query is required");
+        }
+
+        try {
+          // Search YouTube for videos
+          const response = await fetch(getApiUrl("/api/youtube-search"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: query.trim(), maxResults: 1 }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Search failed (status ${response.status})`);
+          }
+
+          const data = await response.json();
+          const results: YouTubeSearchResult[] = data.results;
+
+          if (!results || results.length === 0) {
+            throw new Error("No videos found");
+          }
+
+          // Get the top result and add it
+          const topResult = results[0];
+          console.log(`[iPod Store] Adding top result: ${topResult.title} (${topResult.videoId})`);
+          
+          return await get().addTrackFromVideoId(topResult.videoId, autoPlay);
+        } catch (error) {
+          console.error("Error searching and adding video:", error);
+          throw error;
         }
       },
 
