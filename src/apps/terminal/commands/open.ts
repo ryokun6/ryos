@@ -107,7 +107,7 @@ export const openCommand: Command = {
     if (fileInCurrentDir) {
       // Handle directories - navigate to them via Finder
       if (fileInCurrentDir.isDirectory) {
-        context.launchApp("finder", { initialPath: fileInCurrentDir.path });
+        context.launchApp("finder", { initialData: { path: fileInCurrentDir.path } });
         context.playCommandSound();
         return {
           output: i18n.t("apps.terminal.output.openedFolder", { folder: fileInCurrentDir.name }),
@@ -126,7 +126,7 @@ export const openCommand: Command = {
       
       if (fileMetadata) {
         if (fileMetadata.isDirectory) {
-          context.launchApp("finder", { initialPath: target });
+          context.launchApp("finder", { initialData: { path: target } });
           context.playCommandSound();
           return {
             output: i18n.t("apps.terminal.output.openedFolder", { folder: fileMetadata.name }),
@@ -144,7 +144,7 @@ export const openCommand: Command = {
     
     if (partialMatch) {
       if (partialMatch.isDirectory) {
-        context.launchApp("finder", { initialPath: partialMatch.path });
+        context.launchApp("finder", { initialData: { path: partialMatch.path } });
         context.playCommandSound();
         return {
           output: i18n.t("apps.terminal.output.openedFolder", { folder: partialMatch.name }),
@@ -274,7 +274,7 @@ async function openFile(
   }
 
   // Default: try to open with Finder for unknown types
-  context.launchApp("finder", { initialPath: path.substring(0, path.lastIndexOf("/")) || "/" });
+  context.launchApp("finder", { initialData: { path: path.substring(0, path.lastIndexOf("/")) || "/" } });
   context.playCommandSound();
   return {
     output: i18n.t("apps.terminal.output.openedFile", { file: name }),

@@ -210,8 +210,8 @@ export function PhotoBoothComponent({
     // If there's only one photo, download it directly
     if (photos.length === 1) {
       const link = document.createElement("a");
-      link.href = photos[0];
-      link.download = `photo-booth-${Date.now()}.png`;
+      link.href = photos[0].path;
+      link.download = photos[0].filename || `photo-booth-${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -221,8 +221,8 @@ export function PhotoBoothComponent({
     // For multiple photos, download each one
     for (let i = 0; i < photos.length; i++) {
       const link = document.createElement("a");
-      link.href = photos[i];
-      link.download = `photo-booth-${Date.now()}-${i + 1}.png`;
+      link.href = photos[i].path;
+      link.download = photos[i].filename || `photo-booth-${Date.now()}-${i + 1}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

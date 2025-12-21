@@ -251,37 +251,8 @@ export function ControlPanelsAppComponent({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileToRestoreRef = useRef<File | null>(null);
   const { formatFileSystem } = useFileSystem();
-  const {
-    debugMode,
-    setDebugMode,
-    shaderEffectEnabled,
-    setShaderEffectEnabled,
-    aiModel,
-    setAiModel,
-    terminalSoundsEnabled,
-    setTerminalSoundsEnabled,
-    uiSoundsEnabled,
-    setUiSoundsEnabled,
-    uiVolume,
-    setUiVolume,
-    speechEnabled,
-    setSpeechEnabled,
-    chatSynthVolume,
-    setChatSynthVolume,
-    speechVolume,
-    setSpeechVolume,
-    ttsModel,
-    setTtsModel,
-    ttsVoice,
-    setTtsVoice,
-    synthPreset,
-    setSynthPreset,
-    ipodVolume,
-    setIpodVolume,
-    masterVolume,
-    setMasterVolume,
-    setCurrentWallpaper,
-  } = useAppStoreShallow((s) => ({
+  // AI model settings from app store
+  const { aiModel, setAiModel } = useAppStoreShallow((s) => ({
     aiModel: s.aiModel,
     setAiModel: s.setAiModel,
   }));

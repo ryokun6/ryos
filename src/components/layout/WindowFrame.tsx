@@ -13,7 +13,6 @@ import { AppId } from "@/config/appIds";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useAppStoreShallow } from "@/stores/helpers";
-import { useDockStore } from "@/stores/useDockStore";
 import { getTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
@@ -136,16 +135,10 @@ export function WindowFrame({
 
   // Use shared window insets hook for theme-dependent constraints
   const {
-    computeInsets,
-    getSafeAreaBottomInset,
     isXpTheme,
     currentTheme,
   } = useWindowInsets();
   const theme = getTheme(currentTheme);
-  
-  // Get dock scale and hiding state for accurate dock height calculations
-  const dockScale = useDockStore((state) => state.scale);
-  const dockHiding = useDockStore((state) => state.hiding);
   // Treat all macOS windows as using a transparent outer background so titlebar/content can be styled separately
   const effectiveTransparentBackground =
     currentTheme === "macosx" ? true : transparentBackground;
@@ -392,11 +385,11 @@ export function WindowFrame({
 
   // No longer track maximized state based on window dimensions
   useEffect(() => {
-    const { topInset, bottomInset } = computeInsets();
+    const { topInset, bottomInset } = computeWindowInsets();
     const maxPossibleHeight = window.innerHeight - topInset - bottomInset;
     // Consider window at full height if it's within 5px of max height (to account for rounding)
     setIsFullHeight(Math.abs(windowSize.height - maxPossibleHeight) < 5);
-  }, [windowSize.height, computeInsets]);
+  }, [windowSize.height, computeWindowInsets]);
 
   const handleMouseDownWithForeground = (
     e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>
@@ -467,7 +460,7 @@ export function WindowFrame({
 
       // Set to full height
       setIsFullHeight(true);
-      const { topInset, bottomInset } = computeInsets();
+      const { topInset, bottomInset } = computeWindowInsets();
       const maxPossibleHeight = window.innerHeight - topInset - bottomInset;
       const maxHeight = mergedConstraints.maxHeight
         ? typeof mergedConstraints.maxHeight === "string"
@@ -560,7 +553,7 @@ export function WindowFrame({
         };
 
         // Set to full width and height
-        const { topInset, bottomInset } = computeInsets();
+        const { topInset, bottomInset } = computeWindowInsets();
         const maxPossibleHeight = window.innerHeight - topInset - bottomInset;
         const maxHeight = mergedConstraints.maxHeight
           ? typeof mergedConstraints.maxHeight === "string"

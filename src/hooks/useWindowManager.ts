@@ -28,7 +28,7 @@ export const useWindowManager = ({
   const config = getWindowConfig(appId);
 
   // Use shared window insets hook for theme-dependent constraints
-  const { computeInsets, getSafeAreaBottomInset, isXpTheme } = useWindowInsets();
+  const { computeInsets, getSafeAreaBottomInset } = useWindowInsets();
 
   // Helper to compute default window state (mirrors previous logic)
   const computeDefaultWindowState = (): {
