@@ -599,30 +599,133 @@ export function IpodAppComponent({
     }
   }, [t, mainMenuItems, menuHistory.length]);
 
-  // Update menu when items change
+  // Helper function to rebuild menu items based on current tracks
+  const rebuildMenuItems = useCallback((menu: typeof menuHistory[0]): typeof menuHistory[0]["items"] | null => {
+    if (menu.title === t("apps.ipod.menuItems.ipod")) {
+      return mainMenuItems;
+    } else if (menu.title === t("apps.ipod.menuItems.music")) {
+      return musicMenuItems;
+    } else if (menu.title === t("apps.ipod.menuItems.settings")) {
+      return settingsMenuItems;
+    } else if (menu.title === t("apps.ipod.menuItems.allSongs")) {
+      // Rebuild "All Songs" submenu from current tracks
+      return tracks.map((track, trackIndex) => ({
+        label: track.title,
+        action: () => {
+          registerActivity();
+          if (isOffline) {
+            showOfflineStatus();
+            return;
+          }
+          setMenuHistory((prev) => {
+            const updatedHist = [...prev];
+            if (updatedHist.length > 0) {
+              updatedHist[updatedHist.length - 1] = {
+                ...updatedHist[updatedHist.length - 1],
+                selectedIndex: trackIndex,
+              };
+            }
+            menuHistoryBeforeNowPlayingRef.current = updatedHist;
+            return updatedHist;
+          });
+          setCurrentIndex(trackIndex);
+          setIsPlaying(true);
+          setMenuDirection("forward");
+          setMenuMode(false);
+          setCameFromNowPlayingMenuItem(false);
+          if (useIpodStore.getState().showVideo) {
+            toggleVideo();
+          }
+        },
+        showChevron: false,
+      }));
+    } else {
+      // Check if this is an artist submenu by looking for matching artist in tracks
+      const artistTracks = tracks.filter(
+        (track) => (track.artist || t("apps.ipod.menu.unknownArtist")) === menu.title
+      );
+      if (artistTracks.length > 0) {
+        // This is an artist submenu, rebuild it
+        return artistTracks.map((track, trackListIndex) => {
+          const originalIndex = tracks.findIndex((tr) => tr.id === track.id);
+          return {
+            label: track.title,
+            action: () => {
+              registerActivity();
+              setMenuHistory((prev) => {
+                const updatedHist = [...prev];
+                if (updatedHist.length > 0) {
+                  updatedHist[updatedHist.length - 1] = {
+                    ...updatedHist[updatedHist.length - 1],
+                    selectedIndex: trackListIndex,
+                  };
+                }
+                menuHistoryBeforeNowPlayingRef.current = updatedHist;
+                return updatedHist;
+              });
+              setCurrentIndex(originalIndex);
+              setIsPlaying(true);
+              setMenuDirection("forward");
+              setMenuMode(false);
+              setCameFromNowPlayingMenuItem(false);
+              if (useIpodStore.getState().showVideo) {
+                toggleVideo();
+              }
+            },
+            showChevron: false,
+          };
+        });
+      }
+    }
+    return null;
+  }, [mainMenuItems, musicMenuItems, settingsMenuItems, tracks, t, registerActivity, isOffline, showOfflineStatus, setCurrentIndex, setIsPlaying, toggleVideo]);
+
+  // Update menu when items change - update ALL menus in history, not just the current one
+  // Also update the saved menu history ref that's used when returning from Now Playing
   useEffect(() => {
+    // Helper to update a menu history array with fresh items
+    const updateHistory = (history: typeof menuHistory): { updated: typeof menuHistory; hasChanges: boolean } => {
+      let hasChanges = false;
+      const updatedHistory = history.map((menu) => {
+        const latestItems = rebuildMenuItems(menu);
+
+        if (latestItems && menu.items !== latestItems) {
+          hasChanges = true;
+          // Preserve selected index but clamp it to valid range
+          const clampedSelectedIndex = Math.min(menu.selectedIndex, latestItems.length - 1);
+          return { ...menu, items: latestItems, selectedIndex: Math.max(0, clampedSelectedIndex) };
+        }
+        return menu;
+      });
+      return { updated: updatedHistory, hasChanges };
+    };
+
+    // Update the main menu history
     setMenuHistory((prevHistory) => {
       if (prevHistory.length === 0) return prevHistory;
-      const currentMenuIndex = prevHistory.length - 1;
-      const currentMenu = prevHistory[currentMenuIndex];
-      let latestItems: typeof currentMenu.items | null = null;
+      
+      const { updated, hasChanges } = updateHistory(prevHistory);
 
-      if (currentMenu.title === t("apps.ipod.menuItems.ipod")) {
-        latestItems = mainMenuItems;
-      } else if (currentMenu.title === t("apps.ipod.menuItems.music")) {
-        latestItems = musicMenuItems;
-      } else if (currentMenu.title === t("apps.ipod.menuItems.settings")) {
-        latestItems = settingsMenuItems;
+      // Also clamp the selectedMenuItem state if we're on the current menu
+      if (hasChanges) {
+        const currentMenu = updated[updated.length - 1];
+        if (currentMenu && selectedMenuItem >= currentMenu.items.length) {
+          setSelectedMenuItem(Math.max(0, currentMenu.items.length - 1));
+        }
       }
 
-      if (latestItems && currentMenu.items !== latestItems) {
-        const updatedHistory = [...prevHistory];
-        updatedHistory[currentMenuIndex] = { ...currentMenu, items: latestItems };
-        return updatedHistory;
-      }
-      return prevHistory;
+      return hasChanges ? updated : prevHistory;
     });
-  }, [mainMenuItems, musicMenuItems, settingsMenuItems, t]);
+
+    // Also update the saved menu history ref (used when returning from Now Playing)
+    // This ensures that if a track was added while in Now Playing, the menu will be updated when going back
+    if (menuHistoryBeforeNowPlayingRef.current && menuHistoryBeforeNowPlayingRef.current.length > 0) {
+      const { updated, hasChanges } = updateHistory(menuHistoryBeforeNowPlayingRef.current);
+      if (hasChanges) {
+        menuHistoryBeforeNowPlayingRef.current = updated;
+      }
+    }
+  }, [rebuildMenuItems, selectedMenuItem]);
 
   // Track handling
   const handleAddTrack = useCallback(
@@ -804,16 +907,49 @@ export function IpodAppComponent({
         const lastMenu = savedHistory[savedHistory.length - 1];
         setSelectedMenuItem(lastMenu?.selectedIndex || 0);
       } else {
-        // Fallback: go to music menu
+        // Fallback: go to All Songs menu with current track selected
+        // This happens when restored from persisted state in Now Playing mode
+        const allSongsLabel = t("apps.ipod.menuItems.allSongs");
+        const allSongsMenu = tracks.map((track, trackIndex) => ({
+          label: track.title,
+          action: () => {
+            registerActivity();
+            if (isOffline) {
+              showOfflineStatus();
+              return;
+            }
+            setMenuHistory((prev) => {
+              const updatedHist = [...prev];
+              if (updatedHist.length > 0) {
+                updatedHist[updatedHist.length - 1] = {
+                  ...updatedHist[updatedHist.length - 1],
+                  selectedIndex: trackIndex,
+                };
+              }
+              menuHistoryBeforeNowPlayingRef.current = updatedHist;
+              return updatedHist;
+            });
+            setCurrentIndex(trackIndex);
+            setIsPlaying(true);
+            setMenuDirection("forward");
+            setMenuMode(false);
+            setCameFromNowPlayingMenuItem(false);
+            if (useIpodStore.getState().showVideo) {
+              toggleVideo();
+            }
+          },
+          showChevron: false,
+        }));
         setMenuHistory([
           mainMenu,
           { title: t("apps.ipod.menuItems.music"), items: musicMenuItems, selectedIndex: 0 },
+          { title: allSongsLabel, items: allSongsMenu, selectedIndex: currentIndex },
         ]);
         setSelectedMenuItem(currentIndex);
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, currentIndex, cameFromNowPlayingMenuItem, t]);
+  }, [playClickSound, vibrate, registerActivity, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentIndex, setIsPlaying, t]);
 
   // Wheel click handler
   const handleWheelClick = useCallback(
