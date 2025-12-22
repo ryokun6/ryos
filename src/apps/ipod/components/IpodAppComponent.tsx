@@ -1545,7 +1545,7 @@ export function IpodAppComponent({
                             style={{
                               transform: controlsVisible
                                 ? "translateY(-3rem)"
-                                : "translateY(clamp(1rem, 4dvh, 5rem))",
+                                : "translateY(clamp(3rem, 10dvh, 8rem))",
                               transition: "transform 200ms ease",
                             }}
                           >
