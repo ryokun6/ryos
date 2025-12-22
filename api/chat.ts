@@ -1015,60 +1015,106 @@ export default async function handler(req: Request) {
           execute: async ({ query, maxResults = 5 }) => {
             log(`[searchSongs] Searching for: "${query}" (max ${maxResults} results)`);
             
-            try {
-              // Call the YouTube search API endpoint
-              const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-              searchUrl.searchParams.set("part", "snippet");
-              searchUrl.searchParams.set("type", "video");
-              searchUrl.searchParams.set("videoCategoryId", "10"); // Music category
-              searchUrl.searchParams.set("q", query);
-              searchUrl.searchParams.set("maxResults", String(maxResults));
-              searchUrl.searchParams.set("key", process.env.YOUTUBE_API_KEY || "");
+            // Collect all available API keys for rotation
+            const apiKeys = [
+              process.env.YOUTUBE_API_KEY,
+              process.env.YOUTUBE_API_KEY_2,
+            ].filter((key): key is string => !!key);
 
-              const response = await fetch(searchUrl.toString());
-              
-              if (!response.ok) {
-                const errorText = await response.text();
-                log(`[searchSongs] YouTube API error: ${response.status} - ${errorText}`);
-                throw new Error(`YouTube search failed: ${response.status}`);
-              }
-
-              const data = await response.json();
-              
-              if (!data.items || data.items.length === 0) {
-                return { 
-                  results: [], 
-                  message: `No songs found for "${query}"` 
-                };
-              }
-
-              // Transform results to a simpler format
-              const results = data.items.map((item: {
-                id: { videoId: string };
-                snippet: {
-                  title: string;
-                  channelTitle: string;
-                  publishedAt: string;
-                  thumbnails?: { medium?: { url: string } };
-                };
-              }) => ({
-                videoId: item.id.videoId,
-                title: item.snippet.title,
-                channelTitle: item.snippet.channelTitle,
-                publishedAt: item.snippet.publishedAt,
-              }));
-
-              log(`[searchSongs] Found ${results.length} results for "${query}"`);
-              
-              return {
-                results,
-                message: `Found ${results.length} song(s) for "${query}"`,
-                hint: "Use ipodControl with action 'addAndPlay' and the videoId to add a song to the iPod"
-              };
-            } catch (error) {
-              logError(`[searchSongs] Error:`, error);
-              throw new Error(`Failed to search for songs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            if (apiKeys.length === 0) {
+              throw new Error("No YouTube API keys configured");
             }
+
+            log(`[searchSongs] Available API keys: ${apiKeys.length}`);
+
+            // Helper to check if error is a quota exceeded error
+            const isQuotaError = (status: number, errorText: string): boolean => {
+              if (status === 403) {
+                const lowerText = errorText.toLowerCase();
+                return lowerText.includes("quota") || lowerText.includes("exceeded") || lowerText.includes("limit");
+              }
+              return false;
+            };
+
+            let lastError: string | null = null;
+
+            // Try each API key until one works
+            for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
+              const apiKey = apiKeys[keyIndex];
+              const keyLabel = keyIndex === 0 ? "primary" : `backup-${keyIndex}`;
+
+              try {
+                log(`[searchSongs] Trying ${keyLabel} API key (${keyIndex + 1}/${apiKeys.length})`);
+
+                const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+                searchUrl.searchParams.set("part", "snippet");
+                searchUrl.searchParams.set("type", "video");
+                searchUrl.searchParams.set("videoCategoryId", "10"); // Music category
+                searchUrl.searchParams.set("q", query);
+                searchUrl.searchParams.set("maxResults", String(maxResults));
+                searchUrl.searchParams.set("key", apiKey);
+
+                const response = await fetch(searchUrl.toString());
+                
+                if (!response.ok) {
+                  const errorText = await response.text();
+                  log(`[searchSongs] YouTube API error with ${keyLabel} key: ${response.status} - ${errorText}`);
+                  
+                  // Check if quota exceeded and we have more keys to try
+                  if (isQuotaError(response.status, errorText) && keyIndex < apiKeys.length - 1) {
+                    log(`[searchSongs] Quota exceeded for ${keyLabel} key, rotating to next key`);
+                    lastError = errorText;
+                    continue; // Try next key
+                  }
+                  
+                  throw new Error(`YouTube search failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.items || data.items.length === 0) {
+                  return { 
+                    results: [], 
+                    message: `No songs found for "${query}"` 
+                  };
+                }
+
+                // Transform results to a simpler format
+                const results = data.items.map((item: {
+                  id: { videoId: string };
+                  snippet: {
+                    title: string;
+                    channelTitle: string;
+                    publishedAt: string;
+                    thumbnails?: { medium?: { url: string } };
+                  };
+                }) => ({
+                  videoId: item.id.videoId,
+                  title: item.snippet.title,
+                  channelTitle: item.snippet.channelTitle,
+                  publishedAt: item.snippet.publishedAt,
+                }));
+
+                log(`[searchSongs] Found ${results.length} results for "${query}" using ${keyLabel} key`);
+                
+                return {
+                  results,
+                  message: `Found ${results.length} song(s) for "${query}"`,
+                  hint: "Use ipodControl with action 'addAndPlay' and the videoId to add a song to the iPod"
+                };
+              } catch (error) {
+                logError(`[searchSongs] Error with ${keyLabel} key:`, error);
+                // If we have more keys, try the next one
+                if (keyIndex < apiKeys.length - 1) {
+                  log(`[searchSongs] Retrying with next API key`);
+                  continue;
+                }
+                throw new Error(`Failed to search for songs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              }
+            }
+
+            // All keys exhausted
+            throw new Error(`All YouTube API keys exhausted. Last error: ${lastError || 'Unknown'}`);
           },
         },
         // --- System Settings Tool ---

@@ -94,7 +94,7 @@ export default async function handler(req: Request) {
   logInfo(requestId, "Request details", { 
     method: req.method, 
     effectiveOrigin,
-    hasYouTubeKey: !!process.env.YOUTUBE_API_KEY,
+    youtubeKeyCount: [process.env.YOUTUBE_API_KEY, process.env.YOUTUBE_API_KEY_2].filter(Boolean).length,
     vercelEnv: process.env.VERCEL_ENV || "not set"
   });
 
@@ -182,10 +182,14 @@ export default async function handler(req: Request) {
     logError(requestId, "Rate limit check failed", err);
   }
 
-  // Check for API key
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) {
-    logError(requestId, "YOUTUBE_API_KEY not configured", { 
+  // Collect all available API keys for rotation
+  const apiKeys = [
+    process.env.YOUTUBE_API_KEY,
+    process.env.YOUTUBE_API_KEY_2,
+  ].filter((key): key is string => !!key);
+
+  if (apiKeys.length === 0) {
+    logError(requestId, "No YOUTUBE_API_KEY configured", { 
       envKeys: Object.keys(process.env).filter(k => k.includes("YOUTUBE") || k.includes("API")).join(", ") || "none found"
     });
     return new Response(
@@ -202,6 +206,8 @@ export default async function handler(req: Request) {
       }
     );
   }
+
+  logInfo(requestId, "Available API keys", { count: apiKeys.length });
 
   // Parse and validate request body
   let body: YouTubeSearchRequest;
@@ -224,83 +230,137 @@ export default async function handler(req: Request) {
   const { query, maxResults } = body;
   logInfo(requestId, "Searching YouTube", { query, maxResults });
 
-  try {
-    // Build YouTube Data API v3 search URL
-    const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-    searchUrl.searchParams.set("part", "snippet");
-    searchUrl.searchParams.set("type", "video");
-    searchUrl.searchParams.set("videoCategoryId", "10"); // Music category
-    searchUrl.searchParams.set("q", query);
-    searchUrl.searchParams.set("maxResults", String(maxResults));
-    searchUrl.searchParams.set("key", apiKey);
+  // Helper to check if error is a quota exceeded error
+  const isQuotaError = (status: number, data: YouTubeSearchResponse): boolean => {
+    if (status === 403) {
+      const message = data.error?.message?.toLowerCase() || "";
+      return message.includes("quota") || message.includes("exceeded") || message.includes("limit");
+    }
+    return false;
+  };
 
-    const response = await fetch(searchUrl.toString());
-    const data = (await response.json()) as YouTubeSearchResponse;
+  // Try each API key until one works
+  let lastError: { status: number; message: string; code: number } | null = null;
 
-    if (!response.ok || data.error) {
-      const errorCode = data.error?.code || response.status;
-      const errorMessage = data.error?.message || `YouTube API error (${response.status})`;
-      logError(requestId, "YouTube API error", { 
-        status: response.status, 
-        error: data.error,
-        hint: errorCode === 403 
-          ? "Check if YouTube Data API v3 is enabled in Google Cloud Console and API key has no restrictive referrer settings" 
-          : undefined
-      });
-      return new Response(
-        JSON.stringify({ 
-          error: errorMessage,
-          code: errorCode,
+  for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
+    const apiKey = apiKeys[keyIndex];
+    const keyLabel = keyIndex === 0 ? "primary" : `backup-${keyIndex}`;
+
+    try {
+      logInfo(requestId, `Trying API key`, { keyLabel, keyIndex: keyIndex + 1, totalKeys: apiKeys.length });
+
+      // Build YouTube Data API v3 search URL
+      const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+      searchUrl.searchParams.set("part", "snippet");
+      searchUrl.searchParams.set("type", "video");
+      searchUrl.searchParams.set("videoCategoryId", "10"); // Music category
+      searchUrl.searchParams.set("q", query);
+      searchUrl.searchParams.set("maxResults", String(maxResults));
+      searchUrl.searchParams.set("key", apiKey);
+
+      const response = await fetch(searchUrl.toString());
+      const data = (await response.json()) as YouTubeSearchResponse;
+
+      if (!response.ok || data.error) {
+        const errorCode = data.error?.code || response.status;
+        const errorMessage = data.error?.message || `YouTube API error (${response.status})`;
+        
+        // Check if this is a quota error and we have more keys to try
+        if (isQuotaError(response.status, data) && keyIndex < apiKeys.length - 1) {
+          logInfo(requestId, `Quota exceeded for ${keyLabel} key, rotating to next key`, { 
+            errorMessage,
+            nextKeyIndex: keyIndex + 2 
+          });
+          lastError = { status: response.status, message: errorMessage, code: errorCode };
+          continue; // Try next key
+        }
+
+        logError(requestId, "YouTube API error", { 
+          status: response.status, 
+          error: data.error,
+          keyLabel,
           hint: errorCode === 403 
-            ? "YouTube API access denied. Ensure the API key is valid and YouTube Data API v3 is enabled in Google Cloud Console."
+            ? "Check if YouTube Data API v3 is enabled in Google Cloud Console and API key has no restrictive referrer settings" 
             : undefined
-        }),
+        });
+        return new Response(
+          JSON.stringify({ 
+            error: errorMessage,
+            code: errorCode,
+            hint: errorCode === 403 
+              ? "YouTube API access denied. Ensure the API key is valid and YouTube Data API v3 is enabled in Google Cloud Console."
+              : undefined
+          }),
+          {
+            status: response.status,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin || "*",
+            },
+          }
+        );
+      }
+
+      // Transform results
+      const results: SearchResultItem[] = (data.items || [])
+        .filter((item) => item.id.videoId) // Only include items with videoId
+        .map((item) => ({
+          videoId: item.id.videoId,
+          title: item.snippet.title,
+          channelTitle: item.snippet.channelTitle,
+          thumbnail:
+            item.snippet.thumbnails.medium?.url ||
+            item.snippet.thumbnails.default?.url ||
+            "",
+          publishedAt: item.snippet.publishedAt,
+        }));
+
+      logInfo(requestId, "Search completed", { resultsCount: results.length, keyLabel });
+
+      return new Response(
+        JSON.stringify({ results }),
         {
-          status: response.status,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin || "*",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
+          },
+        }
+      );
+    } catch (error) {
+      logError(requestId, `Error with ${keyLabel} key`, error);
+      // If we have more keys, try the next one
+      if (keyIndex < apiKeys.length - 1) {
+        logInfo(requestId, `Retrying with next API key`);
+        continue;
+      }
+      // No more keys to try
+      return new Response(
+        JSON.stringify({ error: "Failed to search YouTube" }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
           },
         }
       );
     }
-
-    // Transform results
-    const results: SearchResultItem[] = (data.items || [])
-      .filter((item) => item.id.videoId) // Only include items with videoId
-      .map((item) => ({
-        videoId: item.id.videoId,
-        title: item.snippet.title,
-        channelTitle: item.snippet.channelTitle,
-        thumbnail:
-          item.snippet.thumbnails.medium?.url ||
-          item.snippet.thumbnails.default?.url ||
-          "",
-        publishedAt: item.snippet.publishedAt,
-      }));
-
-    logInfo(requestId, "Search completed", { resultsCount: results.length });
-
-    return new Response(
-      JSON.stringify({ results }),
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin!,
-        },
-      }
-    );
-  } catch (error) {
-    logError(requestId, "Error searching YouTube", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to search YouTube" }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin!,
-        },
-      }
-    );
   }
+
+  // All keys exhausted (quota exceeded on all)
+  logError(requestId, "All API keys exhausted", { lastError });
+  return new Response(
+    JSON.stringify({ 
+      error: lastError?.message || "All YouTube API keys have exceeded their quota",
+      code: lastError?.code || 403,
+      hint: "All configured API keys have exceeded their quota. Please try again later."
+    }),
+    {
+      status: lastError?.status || 403,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": effectiveOrigin || "*",
+      },
+    }
+  );
 }
