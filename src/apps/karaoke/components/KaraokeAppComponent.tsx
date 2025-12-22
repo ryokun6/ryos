@@ -676,7 +676,7 @@ export function KaraokeAppComponent({
                     gap: "clamp(0.25rem, 2cqw, 1rem)",
                   }}
                   interactive={true}
-                  bottomPaddingClass="pb-24"
+                  bottomPaddingClass="pb-20"
                   onFuriganaLoadingChange={setIsFetchingFurigana}
                   currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                 />
