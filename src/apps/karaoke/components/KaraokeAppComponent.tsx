@@ -650,37 +650,53 @@ export function KaraokeAppComponent({
             <>
               <div className="absolute inset-0 bg-black/50 pointer-events-none" />
               <div className="absolute inset-0 pointer-events-none karaoke-force-font">
-                <LyricsDisplay
-                  lines={lyricsControls.lines}
-                  originalLines={lyricsControls.originalLines}
-                  currentLine={lyricsControls.currentLine}
-                  isLoading={lyricsControls.isLoading}
-                  error={lyricsControls.error}
-                  visible={true}
-                  videoVisible={true}
-                  alignment={lyricsAlignment}
-                  chineseVariant={chineseVariant}
-                  koreanDisplay={koreanDisplay}
-                  japaneseFurigana={japaneseFurigana}
-                  fontClassName={lyricsFontClassName}
-                  onAdjustOffset={(delta) => {
-                    useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
-                    const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
-                    const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
-                    showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-                    lyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
-                  }}
-                  isTranslating={lyricsControls.isTranslating}
-                  textSizeClass="karaoke-lyrics-text"
-                  gapClass="gap-1"
-                  containerStyle={{
-                    gap: "clamp(0.25rem, 2cqw, 1rem)",
-                  }}
-                  interactive={true}
-                  bottomPaddingClass="pb-20"
-                  onFuriganaLoadingChange={setIsFetchingFurigana}
-                  currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
-                />
+              <LyricsDisplay
+                        lines={lyricsControls.lines}
+                        originalLines={lyricsControls.originalLines}
+                        currentLine={lyricsControls.currentLine}
+                        isLoading={lyricsControls.isLoading}
+                        error={lyricsControls.error}
+                        visible={true}
+                        videoVisible={true}
+                        alignment={lyricsAlignment}
+                        chineseVariant={chineseVariant}
+                        koreanDisplay={koreanDisplay}
+                        japaneseFurigana={japaneseFurigana}
+                        fontClassName={lyricsFontClassName}
+                        onAdjustOffset={(delta) => {
+                          useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
+                          const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
+                          const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
+                          showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
+                          lyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+                        }}
+                        onSwipeUp={() => {
+                          if (isOffline) {
+                            showOfflineStatus();
+                          } else {
+                            nextTrack();
+                            showStatus("⏭");
+                          }
+                        }}
+                        onSwipeDown={() => {
+                          if (isOffline) {
+                            showOfflineStatus();
+                          } else {
+                            previousTrack();
+                            showStatus("⏮");
+                          }
+                        }}
+                        isTranslating={lyricsControls.isTranslating}
+                        textSizeClass="karaoke-lyrics-text"
+                        gapClass="gap-1"
+                        containerStyle={{
+                          gap: "clamp(0.25rem, 2cqw, 1rem)",
+                        }}
+                        interactive={true}
+                        bottomPaddingClass="pb-20"
+                        onFuriganaLoadingChange={setIsFetchingFurigana}
+                        currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                      />
               </div>
             </>
           )}
@@ -1095,6 +1111,36 @@ export function KaraokeAppComponent({
                           const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
                           showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
                           fullScreenLyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+                        }}
+                        onSwipeUp={() => {
+                          if (isOffline) {
+                            showOfflineStatus();
+                          } else {
+                            nextTrack();
+                            setTimeout(() => {
+                              const newIndex = (currentIndex + 1) % tracks.length;
+                              const newTrack = tracks[newIndex];
+                              if (newTrack) {
+                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+                              }
+                            }, 150);
+                          }
+                        }}
+                        onSwipeDown={() => {
+                          if (isOffline) {
+                            showOfflineStatus();
+                          } else {
+                            previousTrack();
+                            setTimeout(() => {
+                              const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
+                              const newTrack = tracks[newIndex];
+                              if (newTrack) {
+                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+                              }
+                            }, 150);
+                          }
                         }}
                         isTranslating={fullScreenLyricsControls.isTranslating}
                         textSizeClass="text-[min(10vw,10vh)]"

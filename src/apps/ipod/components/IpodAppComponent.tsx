@@ -1426,6 +1426,24 @@ export function IpodAppComponent({
               registerActivity={registerActivity}
               isFullScreen={isFullScreen}
               lyricsControls={fullScreenLyricsControls}
+              onNextTrack={() => {
+                if (isOffline) {
+                  showOfflineStatus();
+                } else {
+                  skipOperationRef.current = true;
+                  nextTrack();
+                  showStatus("⏭");
+                }
+              }}
+              onPreviousTrack={() => {
+                if (isOffline) {
+                  showOfflineStatus();
+                } else {
+                  skipOperationRef.current = true;
+                  previousTrack();
+                  showStatus("⏮");
+                }
+              }}
             />
 
             <IpodWheel
@@ -1562,6 +1580,36 @@ export function IpodAppComponent({
                           const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
                           showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
                           fullScreenLyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+                        }}
+                        onSwipeUp={() => {
+                          if (isOffline) {
+                            showOfflineStatus();
+                          } else {
+                            skipOperationRef.current = true;
+                            nextTrack();
+                            setTimeout(() => {
+                              const newTrack = tracks[useIpodStore.getState().currentIndex];
+                              if (newTrack) {
+                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+                              }
+                            }, 100);
+                          }
+                        }}
+                        onSwipeDown={() => {
+                          if (isOffline) {
+                            showOfflineStatus();
+                          } else {
+                            skipOperationRef.current = true;
+                            previousTrack();
+                            setTimeout(() => {
+                              const newTrack = tracks[useIpodStore.getState().currentIndex];
+                              if (newTrack) {
+                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+                              }
+                            }, 100);
+                          }
                         }}
                         isTranslating={fullScreenLyricsControls.isTranslating}
                         textSizeClass="text-[min(10vw,10vh)]"

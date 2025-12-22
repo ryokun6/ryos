@@ -66,6 +66,8 @@ export function IpodScreen({
   registerActivity,
   isFullScreen,
   lyricsControls,
+  onNextTrack,
+  onPreviousTrack,
 }: IpodScreenProps) {
   const { t } = useTranslation();
 
@@ -345,6 +347,8 @@ export function IpodScreen({
                 const updatedTime = elapsedTime + newOffset / 1000;
                 lyricsControls.updateCurrentTimeManually(updatedTime);
               }}
+              onSwipeUp={onNextTrack}
+              onSwipeDown={onPreviousTrack}
               onFuriganaLoadingChange={setIsFetchingFurigana}
               currentTimeMs={(elapsedTime + lyricOffset / 1000) * 1000}
             />

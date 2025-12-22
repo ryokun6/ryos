@@ -211,39 +211,19 @@ export function FullScreenPortal({
       const deltaY = touch.clientY - touchStartRef.current.y;
       const deltaTime = Date.now() - touchStartRef.current.time;
 
-      // Check if this qualifies as a horizontal swipe
-      const isHorizontalSwipe =
-        Math.abs(deltaX) > SWIPE_THRESHOLD &&
-        Math.abs(deltaY) < MAX_VERTICAL_DRIFT &&
-        deltaTime < MAX_SWIPE_TIME;
-
-      // Check if this qualifies as a downward swipe to close fullscreen
-      const isDownwardSwipe =
-        deltaY > SWIPE_THRESHOLD &&
+      // Check if this qualifies as a vertical swipe (song navigation)
+      const isVerticalSwipe =
+        Math.abs(deltaY) > SWIPE_THRESHOLD &&
         Math.abs(deltaX) < MAX_VERTICAL_DRIFT &&
         deltaTime < MAX_SWIPE_TIME;
 
-      if (isHorizontalSwipe) {
+      if (isVerticalSwipe) {
         e.preventDefault();
         const handlers = handlersRef.current;
         handlers.registerActivity();
 
-        if (deltaX > 0) {
-          // Swipe right - previous track
-          handlers.previousTrack();
-          setTimeout(() => {
-            const currentTrackIndex = useIpodStore.getState().currentIndex;
-            const currentTrack =
-              useIpodStore.getState().tracks[currentTrackIndex];
-            if (currentTrack) {
-              const artistInfo = currentTrack.artist
-                ? ` - ${currentTrack.artist}`
-                : "";
-              handlers.showStatus(`⏮ ${currentTrack.title}${artistInfo}`);
-            }
-          }, 100);
-        } else {
-          // Swipe left - next track
+        if (deltaY < 0) {
+          // Swipe up - next track
           handlers.nextTrack();
           setTimeout(() => {
             const currentTrackIndex = useIpodStore.getState().currentIndex;
@@ -256,10 +236,21 @@ export function FullScreenPortal({
               handlers.showStatus(`⏭ ${currentTrack.title}${artistInfo}`);
             }
           }, 100);
+        } else {
+          // Swipe down - previous track
+          handlers.previousTrack();
+          setTimeout(() => {
+            const currentTrackIndex = useIpodStore.getState().currentIndex;
+            const currentTrack =
+              useIpodStore.getState().tracks[currentTrackIndex];
+            if (currentTrack) {
+              const artistInfo = currentTrack.artist
+                ? ` - ${currentTrack.artist}`
+                : "";
+              handlers.showStatus(`⏮ ${currentTrack.title}${artistInfo}`);
+            }
+          }, 100);
         }
-      } else if (isDownwardSwipe) {
-        e.preventDefault();
-        handlersRef.current.onClose();
       }
 
       touchStartRef.current = null;

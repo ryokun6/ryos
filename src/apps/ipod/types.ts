@@ -110,6 +110,8 @@ export interface IpodScreenProps {
   registerActivity: () => void;
   isFullScreen: boolean;
   lyricsControls: ReturnType<typeof useLyrics>;
+  onNextTrack?: () => void;
+  onPreviousTrack?: () => void;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery
