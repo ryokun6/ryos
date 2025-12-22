@@ -1112,15 +1112,14 @@ export function WindowFrame({
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
           }}
-          onMouseEnter={isNoTitlebar ? showTitlebarWithAutoHide : undefined}
-          onMouseMove={isNoTitlebar ? showTitlebarWithAutoHide : undefined}
-          onMouseLeave={isNoTitlebar ? () => {
+          onMouseEnter={isNoTitlebar && !isMobile ? showTitlebarWithAutoHide : undefined}
+          onMouseMove={isNoTitlebar && !isMobile ? showTitlebarWithAutoHide : undefined}
+          onMouseLeave={isNoTitlebar && !isMobile ? () => {
             setIsTitlebarHovered(false);
             if (titlebarHideTimeoutRef.current) {
               clearTimeout(titlebarHideTimeoutRef.current);
             }
           } : undefined}
-          onTouchStart={isNoTitlebar ? showTitlebarWithAutoHide : undefined}
         >
           {/* Title bar */}
           {isXpTheme ? (
@@ -1271,6 +1270,10 @@ export function WindowFrame({
                 handleFullMaximize(e);
               }}
               onTouchStart={(e: React.TouchEvent<HTMLElement>) => {
+                // For notitlebar: show title bar when tapping the top area
+                if (isNoTitlebar) {
+                  showTitlebarWithAutoHide();
+                }
                 if (isFromTitlebarControls(e.target)) {
                   e.stopPropagation();
                   return;
