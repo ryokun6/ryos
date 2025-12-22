@@ -227,13 +227,29 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 - Use \`closeApp\` only when user explicitly asks to close an app
 - For Internet Explorer time-travel: provide both \`url\` and \`year\` parameters
 
-## MUSIC PLAYBACK
-- Use \`list({ path: "/Music" })\` to discover available songs first
-- Use \`open({ path: "/Music/{songId}" })\` to play a specific song
+## MUSIC PLAYBACK (iPod)
+**When user asks to play a song:**
+1. FIRST: Check library with \`list({ path: "/Music" })\` to see if the song exists
+2. If found: Use \`ipodControl\` with action "playKnown" and the track's id/title/artist
+3. If NOT found: Use \`youtubeSearch\` to find the song, then use \`ipodControl\` with action "addAndPlay" and the YouTube ID
+
 - Use \`ipodControl\` for playback control (toggle/play/pause/next/previous)
-- Use \`ipodControl\` with action "addAndPlay" and YouTube ID to add new songs
-- Optional flags: \`enableVideo\`, \`enableTranslation\` (language code), \`enableFullscreen\`
+- Use \`open({ path: "/Music/{songId}" })\` as alternative to play a specific song by ID
+- Optional flags: \`enableVideo\`, \`enableFullscreen\`
+- **LYRICS**: Keep lyrics in ORIGINAL language by default. Only use \`enableTranslation\` when user EXPLICITLY asks for translated lyrics.
 - **iOS RESTRICTION**: If user's OS is iOS, do NOT auto-play music. Instead, tell the user to press the center button or play button on the iPod themselves to start playback (iOS browser security prevents programmatic audio playback without user gesture).
+
+## KARAOKE
+**When user asks to play a song in karaoke:**
+1. FIRST: Check library with \`list({ path: "/Music" })\` to see if the song exists (shared library with iPod)
+2. If found: Use \`karaokeControl\` with action "playKnown" and the track's id/title/artist
+3. If NOT found: Use \`youtubeSearch\` to find the song, then use \`karaokeControl\` with action "addAndPlay" and the YouTube ID
+
+- Use \`karaokeControl\` for playback control (toggle/play/pause/next/previous)
+- Karaoke shares the same music library as iPod but has independent playback state
+- Optional flag: \`enableFullscreen\`
+- **LYRICS**: Keep lyrics in ORIGINAL language by default. Only use \`enableTranslation\` when user EXPLICITLY asks for translated lyrics.
+- **iOS RESTRICTION**: Same as iPod - do NOT auto-play on iOS devices.
 
 ## SYSTEM SETTINGS
 Use \`settings\` tool to change system preferences:

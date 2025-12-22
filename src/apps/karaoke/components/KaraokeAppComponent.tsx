@@ -16,6 +16,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { useIpodStore, Track } from "@/stores/useIpodStore";
+import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow, useAudioSettingsStoreShallow } from "@/stores/helpers";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
@@ -98,81 +99,44 @@ export function KaraokeAppComponent({
     isWindowOpen && (isForeground ?? false)
   );
 
-  // Independent playback state (not shared with iPod)
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [loopCurrent, setLoopCurrent] = useState(false);
-  const [loopAll, setLoopAll] = useState(true);
-  const [isShuffled, setIsShuffled] = useState(false);
-  const [shuffleOrder, setShuffleOrder] = useState<number[]>([]);
-
-  // Generate shuffle order when tracks change or shuffle is enabled
-  useEffect(() => {
-    if (isShuffled && tracks.length > 0) {
-      const order = [...Array(tracks.length).keys()];
-      // Fisher-Yates shuffle
-      for (let i = order.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [order[i], order[j]] = [order[j], order[i]];
-      }
-      setShuffleOrder(order);
-    }
-  }, [isShuffled, tracks.length]);
-
-  // Playback control callbacks
-  const togglePlay = useCallback(() => {
-    setIsPlaying((prev) => !prev);
-  }, []);
-
-  const nextTrack = useCallback(() => {
-    if (tracks.length === 0) return;
-    
-    if (isShuffled && shuffleOrder.length > 0) {
-      const currentShuffleIndex = shuffleOrder.indexOf(currentIndex);
-      const nextShuffleIndex = (currentShuffleIndex + 1) % shuffleOrder.length;
-      setCurrentIndex(shuffleOrder[nextShuffleIndex]);
-    } else {
-      const nextIndex = currentIndex + 1;
-      if (nextIndex >= tracks.length) {
-        if (loopAll) {
-          setCurrentIndex(0);
-        }
-      } else {
-        setCurrentIndex(nextIndex);
-      }
-    }
-  }, [tracks.length, currentIndex, isShuffled, shuffleOrder, loopAll]);
-
-  const previousTrack = useCallback(() => {
-    if (tracks.length === 0) return;
-    
-    if (isShuffled && shuffleOrder.length > 0) {
-      const currentShuffleIndex = shuffleOrder.indexOf(currentIndex);
-      const prevShuffleIndex = currentShuffleIndex === 0 ? shuffleOrder.length - 1 : currentShuffleIndex - 1;
-      setCurrentIndex(shuffleOrder[prevShuffleIndex]);
-    } else {
-      const prevIndex = currentIndex - 1;
-      if (prevIndex < 0) {
-        if (loopAll) {
-          setCurrentIndex(tracks.length - 1);
-        }
-      } else {
-        setCurrentIndex(prevIndex);
-      }
-    }
-  }, [tracks.length, currentIndex, isShuffled, shuffleOrder, loopAll]);
-
-  const toggleLoopCurrent = useCallback(() => {
-    setLoopCurrent((prev) => !prev);
-  }, []);
-
-  const toggleLoopAll = useCallback(() => {
-    setLoopAll((prev) => !prev);
-  }, []);
-
-  const toggleShuffle = useCallback(() => {
-    setIsShuffled((prev) => !prev);
-  }, []);
+  // Independent playback state from Karaoke store (not shared with iPod)
+  const {
+    currentIndex,
+    isPlaying,
+    loopCurrent,
+    loopAll,
+    isShuffled,
+    isFullScreen,
+    setCurrentIndex,
+    togglePlay,
+    setIsPlaying,
+    toggleLoopCurrent,
+    toggleLoopAll,
+    toggleShuffle,
+    nextTrack,
+    previousTrack,
+    toggleFullScreen,
+    setFullScreen,
+  } = useKaraokeStore(
+    useShallow((s) => ({
+      currentIndex: s.currentIndex,
+      isPlaying: s.isPlaying,
+      loopCurrent: s.loopCurrent,
+      loopAll: s.loopAll,
+      isShuffled: s.isShuffled,
+      isFullScreen: s.isFullScreen,
+      setCurrentIndex: s.setCurrentIndex,
+      togglePlay: s.togglePlay,
+      setIsPlaying: s.setIsPlaying,
+      toggleLoopCurrent: s.toggleLoopCurrent,
+      toggleLoopAll: s.toggleLoopAll,
+      toggleShuffle: s.toggleShuffle,
+      nextTrack: s.nextTrack,
+      previousTrack: s.previousTrack,
+      toggleFullScreen: s.toggleFullScreen,
+      setFullScreen: s.setFullScreen,
+    }))
+  );
 
 
   // Dialog state
@@ -187,14 +151,9 @@ export function KaraokeAppComponent({
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
 
-  // Full screen state
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  // Full screen additional state
   const [isFullScreenFetchingFurigana, setIsFullScreenFetchingFurigana] = useState(false);
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
-
-  const toggleFullScreen = useCallback(() => {
-    setIsFullScreen((prev) => !prev);
-  }, []);
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -342,13 +301,13 @@ export function KaraokeAppComponent({
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && isFullScreen) {
-        toggleFullScreen();
+        setFullScreen(false);
       }
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [isFullScreen, toggleFullScreen]);
+  }, [isFullScreen, setFullScreen]);
 
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
@@ -1060,7 +1019,7 @@ export function KaraokeAppComponent({
           isProcessingLyrics={fullScreenLyricsControls.isTranslating}
           isFetchingFurigana={isFullScreenFetchingFurigana}
         >
-          {({ controlsVisible }) => (
+          {({ controlsVisible: _controlsVisible }) => (
             <div className="flex flex-col w-full h-full">
               <div className="relative w-full h-full overflow-visible">
                 <div

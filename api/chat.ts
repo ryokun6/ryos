@@ -80,6 +80,19 @@ interface SystemState {
       }>;
     } | null;
   };
+  karaoke?: {
+    currentTrack: {
+      id: string;
+      url: string;
+      title: string;
+      artist?: string;
+    } | null;
+    isPlaying: boolean;
+    loopAll: boolean;
+    loopCurrent: boolean;
+    isShuffled: boolean;
+    isFullScreen: boolean;
+  };
   textEdit?: {
     instances: Array<{
       instanceId: string;
@@ -286,6 +299,24 @@ iPod: ${systemState.ipod.currentTrack.title}${trackArtist} (${playingStatus})`;
 Current Lyrics:
 ${systemState.ipod.currentLyrics.lines.map((line) => line.words).join("\n")}`;
     }
+  }
+
+  // Check if Karaoke app is open
+  const hasOpenKaraoke =
+    systemState.runningApps?.foreground?.appId === "karaoke" ||
+    systemState.runningApps?.background?.some((app) => app.appId === "karaoke");
+
+  if (hasOpenKaraoke && systemState.karaoke?.currentTrack) {
+    if (!hasMedia) {
+      prompt += `\n\n## MEDIA PLAYBACK`;
+      hasMedia = true;
+    }
+    const karaokePlayingStatus = systemState.karaoke.isPlaying ? "Playing" : "Paused";
+    const karaokeTrackArtist = systemState.karaoke.currentTrack.artist
+      ? ` by ${systemState.karaoke.currentTrack.artist}`
+      : "";
+    prompt += `
+Karaoke: ${systemState.karaoke.currentTrack.title}${karaokeTrackArtist} (${karaokePlayingStatus})`;
   }
 
   // Browser Section
@@ -700,7 +731,7 @@ export default async function handler(req: Request) {
         // Add iPod control tools
         ipodControl: {
           description:
-            "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video, lyric translations, or fullscreen mode with enableVideo, enableTranslation, or enableFullscreen. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to press the center button or play button on the iPod themselves to start playing.",
+            "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video or fullscreen mode with enableVideo or enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to press the center button or play button on the iPod themselves to start playing.",
           inputSchema: z
             .object({
               action: z
@@ -745,13 +776,132 @@ export default async function handler(req: Request) {
                 .string()
                 .optional()
                 .describe(
-                  "Enable lyric translations in the specified language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru'). Can be combined with any action. To disable/turn off translations and show original lyrics, set to 'off' or 'original'."
+                  "ONLY use when user explicitly requests translated lyrics. Set to language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru') to translate, or 'off'/'original' to show original lyrics. By default, do NOT set this - lyrics should remain in original language."
                 ),
               enableFullscreen: z
                 .boolean()
                 .optional()
                 .describe(
                   "Enable fullscreen mode for the iPod player. Can be combined with any action."
+                ),
+            })
+            .superRefine((data, ctx) => {
+              const { action, id, title, artist } = data;
+
+              if (action === "addAndPlay") {
+                if (!id) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                      "The 'addAndPlay' action requires the 'id' parameter (YouTube ID or URL).",
+                    path: ["id"],
+                  });
+                }
+                if (title !== undefined) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                      "Do not provide 'title' when using 'addAndPlay' (information is fetched automatically).",
+                    path: ["title"],
+                  });
+                }
+                if (artist !== undefined) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                      "Do not provide 'artist' when using 'addAndPlay' (information is fetched automatically).",
+                    path: ["artist"],
+                  });
+                }
+                return;
+              }
+
+              if (action === "playKnown") {
+                if (!id && !title && !artist) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                      "The 'playKnown' action requires at least one of 'id', 'title', or 'artist'.",
+                    path: ["id"],
+                  });
+                }
+                return;
+              }
+
+              if (
+                (action === "toggle" || action === "play" || action === "pause") &&
+                (id !== undefined || title !== undefined || artist !== undefined)
+              ) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message:
+                    "Do not provide 'id', 'title', or 'artist' when using playback state actions ('toggle', 'play', 'pause').",
+                  path: ["action"],
+                });
+              }
+
+              if (
+                (action === "next" || action === "previous") &&
+                (id !== undefined || title !== undefined || artist !== undefined)
+              ) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  message:
+                    "Do not provide 'id', 'title', or 'artist' when using track navigation actions ('next', 'previous').",
+                  path: ["action"],
+                });
+              }
+            }),
+        },
+        // Add Karaoke control tools
+        karaokeControl: {
+          description:
+            "Control playback in the Karaoke app. Launches the Karaoke app automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable fullscreen mode with enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to tap the play button themselves to start playing. NOTE: Karaoke shares the same music library as iPod but has independent playback state.",
+          inputSchema: z
+            .object({
+              action: z
+                .enum([
+                  "toggle",
+                  "play",
+                  "pause",
+                  "playKnown",
+                  "addAndPlay",
+                  "next",
+                  "previous",
+                ])
+                .default("toggle")
+                .describe(
+                  "Playback operation to perform. Defaults to 'toggle' when omitted."
+                ),
+              id: z
+                .string()
+                .optional()
+                .describe(
+                  "For 'playKnown' (optional) or 'addAndPlay' (required): YouTube video ID or supported URL."
+                ),
+              title: z
+                .string()
+                .optional()
+                .describe(
+                  "For 'playKnown': The title (or part of it) of the song to play."
+                ),
+              artist: z
+                .string()
+                .optional()
+                .describe(
+                  "For 'playKnown': The artist name (or part of it) of the song to play."
+                ),
+              enableTranslation: z
+                .string()
+                .optional()
+                .describe(
+                  "ONLY use when user explicitly requests translated lyrics. Set to language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru') to translate, or 'off'/'original' to show original lyrics. By default, do NOT set this - lyrics should remain in original language."
+                ),
+              enableFullscreen: z
+                .boolean()
+                .optional()
+                .describe(
+                  "Enable fullscreen mode for the Karaoke player. Can be combined with any action."
                 ),
             })
             .superRefine((data, ctx) => {
