@@ -1491,8 +1491,8 @@ export function IpodAppComponent({
                   <div
                     className="w-full relative"
                     style={{
-                      height: "calc(100% + clamp(360px, 50dvh, 600px))",
-                      transform: "translateY(-180px)",
+                      height: "calc(100% + clamp(480px, 60dvh, 800px))",
+                      transform: "translateY(-240px)",
                     }}
                   >
                     {tracks[currentIndex] && (
@@ -1544,8 +1544,8 @@ export function IpodAppComponent({
                             className="absolute bottom-0 inset-0 pointer-events-none z-20"
                             style={{
                               transform: controlsVisible
-                                ? "translateY(-3rem)"
-                                : "translateY(clamp(3rem, 10dvh, 8rem))",
+                                ? "translateY(-8rem)"
+                                : "translateY(-6rem)",
                               transition: "transform 200ms ease",
                             }}
                           >

@@ -1058,8 +1058,8 @@ export function KaraokeAppComponent({
                 <div
                   className="w-full relative"
                   style={{
-                    height: "calc(100% + clamp(200px, 30dvh, 360px))",
-                    transform: "translateY(-100px)",
+                    height: "calc(100% + clamp(480px, 60dvh, 800px))",
+                    transform: "translateY(-240px)",
                   }}
                 >
                   {currentTrack && (
@@ -1109,8 +1109,8 @@ export function KaraokeAppComponent({
                           className="absolute bottom-0 inset-0 pointer-events-none z-20"
                           style={{
                             transform: controlsVisible
-                              ? "translateY(-3rem)"
-                              : "translateY(clamp(3rem, 10dvh, 8rem))",
+                              ? "translateY(-8rem)"
+                              : "translateY(-6rem)",
                             transition: "transform 200ms ease",
                           }}
                         >
