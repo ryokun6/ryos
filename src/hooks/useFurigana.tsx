@@ -193,34 +193,28 @@ export function useFurigana({
                 }
               });
 
-              // Immediately update state with new data
+              // Immediately update state with new data for progressive loading
               if (!controller.signal.aborted) {
                 setFuriganaMap(new Map(collectedFurigana));
               }
             },
             onComplete: () => {
+              // Final state - all furigana should be loaded
               if (!controller.signal.aborted) {
-                const finalMap = new Map(collectedFurigana);
-                setFuriganaMap(finalMap);
+                setFuriganaMap(new Map(collectedFurigana));
                 furiganaCacheKeyRef.current = cacheKey;
                 lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
-                setIsFetching(false);
               }
             },
             onError: (err) => {
               if (!controller.signal.aborted) {
                 setError(err.message);
-                setIsFetching(false);
               }
             },
           });
 
-          // If we exited without a complete event, finalize anyway
-          if (!controller.signal.aborted && collectedFurigana.size > 0) {
-            const finalMap = new Map(collectedFurigana);
-            setFuriganaMap(finalMap);
-            furiganaCacheKeyRef.current = cacheKey;
-            lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+          // Set fetching to false after stream completes (similar to translate pattern)
+          if (!controller.signal.aborted) {
             setIsFetching(false);
           }
         } else {

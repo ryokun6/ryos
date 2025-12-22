@@ -40,6 +40,7 @@ type TranslateLyricsRequest = z.infer<typeof TranslateLyricsRequestSchema>;
 // ------------------------------------------------------------------
 const CHUNK_SIZE = 15; // Number of lines per chunk - smaller chunks for faster progressive loading
 const MAX_PARALLEL_CHUNKS = 3; // Limit parallel AI calls to avoid rate limits
+const STREAMING_THRESHOLD = 10; // Use streaming for requests with more than this many lines
 
 // ------------------------------------------------------------------
 // Redis cache helpers
@@ -266,8 +267,8 @@ export default async function handler(req: Request) {
       }
     }
 
-    // For small requests (less than 2 chunks worth), process without streaming
-    if (lines.length <= CHUNK_SIZE * 2) {
+    // For small requests, process without streaming
+    if (lines.length <= STREAMING_THRESHOLD) {
       logInfo(requestId, "Processing small request without streaming", {
         linesCount: lines.length,
       });
