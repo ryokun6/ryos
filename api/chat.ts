@@ -997,14 +997,14 @@ export default async function handler(req: Request) {
         // --- YouTube/Song Search Tool ---
         searchSongs: {
           description:
-            "Search for songs/videos on YouTube. Returns a list of results with video IDs, titles, and channel names. Use this to help users find music to add to their iPod. After getting results, you can use ipodControl with action 'addAndPlay' to add a song using its videoId.",
+            "Search for songs/videos on YouTube. Returns a list of results with video IDs, titles, and channel names. Use this to help users find music to add to their iPod. PREFER official music videos from verified artist channels (look for 'VEVO' or the artist's official channel). AVOID playlists, compilations, 'best of' collections, lyric videos, and covers unless specifically requested. After getting results, you can use ipodControl with action 'addAndPlay' to add a song using its videoId.",
           inputSchema: z.object({
             query: z
               .string()
               .min(1)
               .max(200)
               .describe(
-                "The search query (song name, artist, or combination). Example: 'Never Gonna Give You Up Rick Astley'"
+                "The search query. Include 'music video' or 'MV' for better results. Example: 'Never Gonna Give You Up Rick Astley music video'"
               ),
             maxResults: z
               .number()
