@@ -580,6 +580,7 @@ export function KaraokeAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="karaoke"
+        material="notitlebar"
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}

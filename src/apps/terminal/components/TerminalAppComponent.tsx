@@ -2799,7 +2799,7 @@ export function TerminalAppComponent({
         title={getTranslatedAppName("terminal")}
         onClose={onClose}
         isForeground={isForeground}
-        transparentBackground={true}
+        material="transparent"
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}

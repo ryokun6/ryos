@@ -27,7 +27,8 @@ interface WindowFrameProps {
   isForeground?: boolean;
   appId: AppId;
   isShaking?: boolean;
-  transparentBackground?: boolean;
+  /** Window material style: "default" (opaque), "transparent" (translucent bg), "notitlebar" (immersive, titlebar on hover) */
+  material?: "default" | "transparent" | "notitlebar";
   skipInitialSound?: boolean;
   windowConstraints?: {
     minWidth?: number;
@@ -53,7 +54,7 @@ export function WindowFrame({
   isForeground = true,
   isShaking = false,
   appId,
-  transparentBackground = false,
+  material = "default",
   skipInitialSound = false,
   windowConstraints = {},
   instanceId,
@@ -141,9 +142,17 @@ export function WindowFrame({
     currentTheme,
   } = useWindowInsets();
   const theme = getTheme(currentTheme);
+  
+  // Derive material booleans for internal use
+  const isTransparent = material === "transparent" || material === "notitlebar";
+  const isNoTitlebar = material === "notitlebar";
+  
   // Treat all macOS windows as using a transparent outer background so titlebar/content can be styled separately
   const effectiveTransparentBackground =
-    currentTheme === "macosx" ? true : transparentBackground;
+    currentTheme === "macosx" ? true : isTransparent;
+  
+  // Hover state for notitlebar material (shows titlebar on hover)
+  const [isTitlebarHovered, setIsTitlebarHovered] = useState(false);
 
   // Theme-aware z-index for resizer layer:
   // - macOSX: above titlebar (no controls in top-right)
@@ -1063,6 +1072,8 @@ export function WindowFrame({
           className={cn(
             isXpTheme
               ? "window flex flex-col h-full" // Use xp.css window class with flex layout
+              : isNoTitlebar && currentTheme === "macosx"
+              ? "window w-full h-full flex flex-col rounded-os overflow-hidden relative" // No border for notitlebar
               : "window w-full h-full flex flex-col border-[length:var(--os-metrics-border-width)] border-os-window rounded-os overflow-hidden",
             !effectiveTransparentBackground && !isXpTheme && "bg-os-window-bg",
             !isXpTheme && (currentTheme !== "system7" || isForeground)
@@ -1073,6 +1084,8 @@ export function WindowFrame({
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
           }}
+          onMouseEnter={isNoTitlebar ? () => setIsTitlebarHovered(true) : undefined}
+          onMouseLeave={isNoTitlebar ? () => setIsTitlebarHovered(false) : undefined}
         >
           {/* Title bar */}
           {isXpTheme ? (
@@ -1177,12 +1190,24 @@ export function WindowFrame({
             // Mac OS X theme title bar with traffic light buttons
             <div
               className={cn(
-                "title-bar flex items-center shrink-0 h-6 min-h-[1.25rem] mx-0 mb-0 px-[0.1rem] py-[0.1rem] select-none cursor-move user-select-none z-50 draggable-area",
-                effectiveTransparentBackground && "mt-0"
+                "title-bar flex items-center h-6 min-h-[1.25rem] mx-0 mb-0 px-[0.1rem] py-[0.1rem] select-none cursor-move user-select-none z-50 draggable-area",
+                // For notitlebar: absolute positioning, no shrink, transition opacity
+                isNoTitlebar 
+                  ? "absolute top-0 left-0 right-0 transition-opacity duration-200" 
+                  : "shrink-0",
+                effectiveTransparentBackground && !isNoTitlebar && "mt-0"
               )}
               style={{
-                borderRadius: "8px 8px 0px 0px",
-                ...(isForeground
+                borderRadius: isNoTitlebar ? "8px 8px 0px 0px" : "8px 8px 0px 0px",
+                // For notitlebar: gradient background for visibility, opacity based on hover
+                ...(isNoTitlebar
+                  ? {
+                      background: "linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 100%)",
+                      borderBottom: "none",
+                      opacity: isTitlebarHovered ? 1 : 0,
+                      pointerEvents: isTitlebarHovered ? "auto" : "none",
+                    }
+                  : isForeground
                   ? {
                       backgroundColor: "var(--os-color-window-bg)",
                       backgroundImage:
@@ -1193,14 +1218,17 @@ export function WindowFrame({
                       backgroundImage: "var(--os-pinstripe-window)",
                       opacity: "0.85",
                     }),
-                borderBottom: `1px solid ${
-                  isForeground
-                    ? theme.colors.titleBar.borderBottom ||
-                      theme.colors.titleBar.border ||
-                      "rgba(0, 0, 0, 0.1)"
-                    : theme.colors.titleBar.borderInactive ||
-                      "rgba(0, 0, 0, 0.05)"
-                }`,
+                // No border for notitlebar
+                ...(!isNoTitlebar && {
+                  borderBottom: `1px solid ${
+                    isForeground
+                      ? theme.colors.titleBar.borderBottom ||
+                        theme.colors.titleBar.border ||
+                        "rgba(0, 0, 0, 0.1)"
+                      : theme.colors.titleBar.borderInactive ||
+                        "rgba(0, 0, 0, 0.05)"
+                  }`,
+                }),
               }}
               onMouseDown={handleMouseDownWithForeground}
               onDoubleClick={(e) => {
@@ -1257,16 +1285,20 @@ export function WindowFrame({
                 />
               </div>
 
-              {/* Title - removed white background */}
+              {/* Title - white for notitlebar, themed otherwise */}
               <span
                 className={cn(
                   "select-none mx-auto px-2 py-0 h-full flex items-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%] text-[13px]",
-                  isForeground
+                  isNoTitlebar
+                    ? "text-white"
+                    : isForeground
                     ? "text-os-titlebar-active-text"
                     : "text-os-titlebar-inactive-text"
                 )}
                 style={{
-                  textShadow: isForeground
+                  textShadow: isNoTitlebar
+                    ? "0 1px 3px rgba(0, 0, 0, 0.8)"
+                    : isForeground
                     ? "0 2px 3px rgba(0, 0, 0, 0.25)"
                     : "none",
                   fontWeight: 500,
@@ -1284,12 +1316,12 @@ export function WindowFrame({
             <div
               className={cn(
                 "flex items-center shrink-0 h-os-titlebar min-h-[1.5rem] mx-0 my-[0.1rem] mb-0 px-[0.1rem] py-[0.2rem] select-none cursor-move border-b-[1.5px] user-select-none z-50 draggable-area",
-                transparentBackground && "mt-0",
+                isTransparent && "mt-0",
                 isForeground
-                  ? transparentBackground
+                  ? isTransparent
                     ? "bg-white/70 backdrop-blur-sm border-b-os-window"
                     : "bg-os-titlebar-active-bg bg-os-titlebar-pattern bg-clip-content bg-[length:6.6666666667%_13.3333333333%] border-b-os-window"
-                  : transparentBackground
+                  : isTransparent
                   ? "bg-white/20 backdrop-blur-sm border-b-os-window"
                   : "bg-os-titlebar-inactive-bg border-b-gray-400"
               )}
@@ -1331,7 +1363,7 @@ export function WindowFrame({
                 {/* Larger click area */}
                 <div
                   className={`w-4 h-4 ${
-                    !transparentBackground &&
+                    !isTransparent &&
                     "bg-os-button-face shadow-[0_0_0_1px_var(--os-color-button-face)]"
                   } border-2 border-os-window hover:bg-gray-200 active:bg-gray-300 flex items-center justify-center ${
                     !isForeground && "invisible"
@@ -1341,7 +1373,7 @@ export function WindowFrame({
               <span
                 className={cn(
                   "select-none mx-auto px-2 py-0 h-full flex items-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%]",
-                  !transparentBackground && "bg-os-button-face",
+                  !isTransparent && "bg-os-button-face",
                   isForeground
                     ? "text-os-titlebar-active-text"
                     : "text-os-titlebar-inactive-text"
@@ -1377,7 +1409,7 @@ export function WindowFrame({
               isXpTheme
                 ? { margin: currentTheme === "xp" ? "0px 3px" : "0" }
                 : currentTheme === "macosx"
-                ? transparentBackground
+                ? isTransparent
                   ? undefined
                   : isForeground
                   ? {

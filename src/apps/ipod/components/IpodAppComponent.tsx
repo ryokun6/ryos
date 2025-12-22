@@ -1355,7 +1355,7 @@ export function IpodAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="ipod"
-        transparentBackground
+        material="transparent"
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}

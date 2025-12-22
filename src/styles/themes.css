@@ -878,15 +878,20 @@
 /* Yosemite-style traffic lights - clean and simple */
 
 /* macOS Titlebar Border Styling */
-:root[data-os-theme="macosx"] .window.is-foreground .title-bar {
+:root[data-os-theme="macosx"] .window.is-foreground .title-bar:not(.absolute) {
   border-bottom: var(--os-metrics-titlebar-border-width) solid
     var(--os-color-titlebar-border) !important;
 }
 
 /* Inactive window styling for macOS */
-:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar {
+:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar:not(.absolute) {
   border-bottom: var(--os-metrics-titlebar-border-width) solid
     var(--os-color-titlebar-border-inactive) !important;
+}
+
+/* No border for notitlebar windows (absolute positioned title bars) */
+:root[data-os-theme="macosx"] .window .title-bar.absolute {
+  border-bottom: none !important;
 }
 
 :root[data-os-theme="macosx"] .window {
