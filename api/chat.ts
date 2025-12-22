@@ -17,16 +17,11 @@ import {
   CODE_GENERATION_INSTRUCTIONS,
   CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
-  DELIVERABLE_REQUIREMENTS,
 } from "./_utils/aiPrompts.js";
 import { z } from "zod";
 import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
 import { appIds } from "../src/config/appIds.js";
-import type { OsThemeId } from "../src/themes/types.js";
-import {
-  checkAndIncrementAIMessageCount,
-  AI_LIMIT_PER_5_HOURS,
-  } from "./_utils/rate-limit.js";
+import { checkAndIncrementAIMessageCount } from "./_utils/rate-limit.js";
 import { Redis } from "@upstash/redis";
 import { validateAuthToken } from "./_utils/auth-validate.js";
 import { getEffectiveOrigin, isAllowedOrigin } from "./_utils/cors.js";
@@ -34,7 +29,113 @@ import { getEffectiveOrigin, isAllowedOrigin } from "./_utils/cors.js";
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
 
-// Update SystemState type to match new store structure
+// Shared media control schema validation refinement
+const mediaControlRefinement = (data: { action: string; id?: string; title?: string; artist?: string }, ctx: z.RefinementCtx) => {
+  const { action, id, title, artist } = data;
+
+  if (action === "addAndPlay") {
+    if (!id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The 'addAndPlay' action requires the 'id' parameter (YouTube ID or URL).",
+        path: ["id"],
+      });
+    }
+    if (title !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Do not provide 'title' when using 'addAndPlay' (information is fetched automatically).",
+        path: ["title"],
+      });
+    }
+    if (artist !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Do not provide 'artist' when using 'addAndPlay' (information is fetched automatically).",
+        path: ["artist"],
+      });
+    }
+    return;
+  }
+
+  if (action === "playKnown") {
+    if (!id && !title && !artist) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The 'playKnown' action requires at least one of 'id', 'title', or 'artist'.",
+        path: ["id"],
+      });
+    }
+    return;
+  }
+
+  if (
+    (action === "toggle" || action === "play" || action === "pause") &&
+    (id !== undefined || title !== undefined || artist !== undefined)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Do not provide 'id', 'title', or 'artist' when using playback state actions ('toggle', 'play', 'pause').",
+      path: ["action"],
+    });
+  }
+
+  if (
+    (action === "next" || action === "previous") &&
+    (id !== undefined || title !== undefined || artist !== undefined)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Do not provide 'id', 'title', or 'artist' when using track navigation actions ('next', 'previous').",
+      path: ["action"],
+    });
+  }
+};
+
+// Factory for creating media control schemas (iPod, Karaoke)
+const createMediaControlSchema = (options: { hasEnableVideo?: boolean } = {}) => {
+  const baseSchema = z.object({
+    action: z
+      .enum(["toggle", "play", "pause", "playKnown", "addAndPlay", "next", "previous"])
+      .default("toggle")
+      .describe("Playback operation to perform. Defaults to 'toggle' when omitted."),
+    id: z
+      .string()
+      .optional()
+      .describe("For 'playKnown' (optional) or 'addAndPlay' (required): YouTube video ID or supported URL."),
+    title: z
+      .string()
+      .optional()
+      .describe("For 'playKnown': The title (or part of it) of the song to play."),
+    artist: z
+      .string()
+      .optional()
+      .describe("For 'playKnown': The artist name (or part of it) of the song to play."),
+    enableTranslation: z
+      .string()
+      .optional()
+      .describe(
+        "ONLY use when user explicitly requests translated lyrics. Set to language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru') to translate, or 'off'/'original' to show original lyrics. By default, do NOT set this - lyrics should remain in original language."
+      ),
+    enableFullscreen: z
+      .boolean()
+      .optional()
+      .describe("Enable fullscreen mode. Can be combined with any action."),
+  });
+
+  if (options.hasEnableVideo) {
+    return baseSchema.extend({
+      enableVideo: z
+        .boolean()
+        .optional()
+        .describe("Enable video playback. Can be combined with any action."),
+    }).superRefine(mediaControlRefinement);
+  }
+
+  return baseSchema.superRefine(mediaControlRefinement);
+};
+
+// Update SystemState type to match new store structure (optimized for token efficiency)
 interface SystemState {
   username?: string | null;
   /** User's operating system (e.g., "iOS", "Android", "macOS", "Windows", "Linux") */
@@ -44,35 +145,25 @@ interface SystemState {
   internetExplorer: {
     url: string;
     year: string;
-    status: string;
     currentPageTitle: string | null;
-    aiGeneratedHtml: string | null;
-    /** Optional markdown form of the AI generated HTML to keep context compact */
+    /** Markdown form of the AI generated HTML (more token-efficient than raw HTML) */
     aiGeneratedMarkdown?: string | null;
   };
   video: {
     currentVideo: {
       id: string;
-      url: string;
       title: string;
       artist?: string;
     } | null;
     isPlaying: boolean;
-    loopAll: boolean;
-    loopCurrent: boolean;
-    isShuffled: boolean;
   };
   ipod?: {
     currentTrack: {
       id: string;
-      url: string;
       title: string;
       artist?: string;
     } | null;
     isPlaying: boolean;
-    loopAll: boolean;
-    loopCurrent: boolean;
-    isShuffled: boolean;
     currentLyrics?: {
       lines: Array<{
         startTimeMs: string;
@@ -83,15 +174,10 @@ interface SystemState {
   karaoke?: {
     currentTrack: {
       id: string;
-      url: string;
       title: string;
       artist?: string;
     } | null;
     isPlaying: boolean;
-    loopAll: boolean;
-    loopCurrent: boolean;
-    isShuffled: boolean;
-    isFullScreen: boolean;
   };
   textEdit?: {
     instances: Array<{
@@ -131,16 +217,11 @@ interface SystemState {
       appletPath?: string;
       appletId?: string;
     }>;
-    instanceWindowOrder: string[];
   };
   chatRoomContext?: {
     roomId: string;
     recentMessages: string;
     mentionedMessage: string;
-  };
-  /** Current OS theme */
-  theme?: {
-    current: OsThemeId;
   };
 }
 
@@ -162,8 +243,6 @@ const STATIC_SYSTEM_PROMPT = [
   CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
   CODE_GENERATION_INSTRUCTIONS,
-  // Include delivery requirements after code generation instructions
-  DELIVERABLE_REQUIREMENTS,
 ].join("\n");
 
 const CACHE_CONTROL_OPTIONS = {
@@ -295,9 +374,17 @@ Video: ${systemState.video.currentVideo.title}${videoArtist} (Playing)`;
 iPod: ${systemState.ipod.currentTrack.title}${trackArtist} (${playingStatus})`;
 
     if (systemState.ipod.currentLyrics?.lines) {
+      // Truncate lyrics to ~10 lines to save tokens (full lyrics can be 100+ lines)
+      const allLines = systemState.ipod.currentLyrics.lines;
+      const maxLines = 10;
+      const truncatedLines = allLines.length > maxLines 
+        ? allLines.slice(0, maxLines)
+        : allLines;
+      const lyricsText = truncatedLines.map((line) => line.words).join("\n");
+      const truncationNote = allLines.length > maxLines ? `\n(${allLines.length - maxLines} more lines...)` : "";
       prompt += `
-Current Lyrics:
-${systemState.ipod.currentLyrics.lines.map((line) => line.words).join("\n")}`;
+Lyrics Preview:
+${lyricsText}${truncationNote}`;
     }
   }
 
@@ -494,10 +581,10 @@ export default async function handler(req: Request) {
     // Rate-limit & auth checks
     // ---------------------------
     // Validate authentication (all users, including "ryo", must present a valid token)
-    // Enable grace period with auto-refresh for expired tokens
+    // Enable grace period for expired tokens (client is responsible for token refresh)
     const validationResult = await validateAuthToken(redis, username, authToken, {
       allowExpired: true,
-      refreshOnGrace: true,
+      refreshOnGrace: false,
     });
 
     // If a username was provided but the token is missing/invalid, reject the request early
@@ -546,7 +633,7 @@ export default async function handler(req: Request) {
           isAuthenticated,
           count: rateLimitResult.count,
           limit: rateLimitResult.limit,
-          message: `You've hit your limit of ${AI_LIMIT_PER_5_HOURS} messages in this 5-hour window. Please wait a few hours and try again.`,
+          message: `You've hit your limit of ${rateLimitResult.limit} messages in this 5-hour window. Please wait a few hours and try again.`,
         };
 
         return new Response(JSON.stringify(errorResponse), {
@@ -728,249 +815,17 @@ export default async function handler(req: Request) {
             id: z.enum(appIds).describe("The app id to close"),
           }),
         },
-        // Add iPod control tools
+        // iPod control tools (uses shared media control schema with video support)
         ipodControl: {
           description:
             "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video or fullscreen mode with enableVideo or enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to press the center button or play button on the iPod themselves to start playing.",
-          inputSchema: z
-            .object({
-              action: z
-                .enum([
-                  "toggle",
-                  "play",
-                  "pause",
-                  "playKnown",
-                  "addAndPlay",
-                  "next",
-                  "previous",
-                ])
-                .default("toggle")
-                .describe(
-                  "Playback operation to perform. Defaults to 'toggle' when omitted."
-                ),
-              id: z
-                .string()
-                .optional()
-                .describe(
-                  "For 'playKnown' (optional) or 'addAndPlay' (required): YouTube video ID or supported URL."
-                ),
-              title: z
-                .string()
-                .optional()
-                .describe(
-                  "For 'playKnown': The title (or part of it) of the song to play."
-                ),
-              artist: z
-                .string()
-                .optional()
-                .describe(
-                  "For 'playKnown': The artist name (or part of it) of the song to play."
-                ),
-              enableVideo: z
-                .boolean()
-                .optional()
-                .describe(
-                  "Enable video playback in the iPod. Can be combined with any action."
-                ),
-              enableTranslation: z
-                .string()
-                .optional()
-                .describe(
-                  "ONLY use when user explicitly requests translated lyrics. Set to language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru') to translate, or 'off'/'original' to show original lyrics. By default, do NOT set this - lyrics should remain in original language."
-                ),
-              enableFullscreen: z
-                .boolean()
-                .optional()
-                .describe(
-                  "Enable fullscreen mode for the iPod player. Can be combined with any action."
-                ),
-            })
-            .superRefine((data, ctx) => {
-              const { action, id, title, artist } = data;
-
-              if (action === "addAndPlay") {
-                if (!id) {
-                  ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message:
-                      "The 'addAndPlay' action requires the 'id' parameter (YouTube ID or URL).",
-                    path: ["id"],
-                  });
-                }
-                if (title !== undefined) {
-                  ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message:
-                      "Do not provide 'title' when using 'addAndPlay' (information is fetched automatically).",
-                    path: ["title"],
-                  });
-                }
-                if (artist !== undefined) {
-                  ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message:
-                      "Do not provide 'artist' when using 'addAndPlay' (information is fetched automatically).",
-                    path: ["artist"],
-                  });
-                }
-                return;
-              }
-
-              if (action === "playKnown") {
-                if (!id && !title && !artist) {
-                  ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message:
-                      "The 'playKnown' action requires at least one of 'id', 'title', or 'artist'.",
-                    path: ["id"],
-                  });
-                }
-                return;
-              }
-
-              if (
-                (action === "toggle" || action === "play" || action === "pause") &&
-                (id !== undefined || title !== undefined || artist !== undefined)
-              ) {
-                ctx.addIssue({
-                  code: z.ZodIssueCode.custom,
-                  message:
-                    "Do not provide 'id', 'title', or 'artist' when using playback state actions ('toggle', 'play', 'pause').",
-                  path: ["action"],
-                });
-              }
-
-              if (
-                (action === "next" || action === "previous") &&
-                (id !== undefined || title !== undefined || artist !== undefined)
-              ) {
-                ctx.addIssue({
-                  code: z.ZodIssueCode.custom,
-                  message:
-                    "Do not provide 'id', 'title', or 'artist' when using track navigation actions ('next', 'previous').",
-                  path: ["action"],
-                });
-              }
-            }),
+          inputSchema: createMediaControlSchema({ hasEnableVideo: true }),
         },
-        // Add Karaoke control tools
+        // Karaoke control tools (uses shared media control schema without video)
         karaokeControl: {
           description:
             "Control playback in the Karaoke app. Launches the Karaoke app automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable fullscreen mode with enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to tap the play button themselves to start playing. NOTE: Karaoke shares the same music library as iPod but has independent playback state.",
-          inputSchema: z
-            .object({
-              action: z
-                .enum([
-                  "toggle",
-                  "play",
-                  "pause",
-                  "playKnown",
-                  "addAndPlay",
-                  "next",
-                  "previous",
-                ])
-                .default("toggle")
-                .describe(
-                  "Playback operation to perform. Defaults to 'toggle' when omitted."
-                ),
-              id: z
-                .string()
-                .optional()
-                .describe(
-                  "For 'playKnown' (optional) or 'addAndPlay' (required): YouTube video ID or supported URL."
-                ),
-              title: z
-                .string()
-                .optional()
-                .describe(
-                  "For 'playKnown': The title (or part of it) of the song to play."
-                ),
-              artist: z
-                .string()
-                .optional()
-                .describe(
-                  "For 'playKnown': The artist name (or part of it) of the song to play."
-                ),
-              enableTranslation: z
-                .string()
-                .optional()
-                .describe(
-                  "ONLY use when user explicitly requests translated lyrics. Set to language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru') to translate, or 'off'/'original' to show original lyrics. By default, do NOT set this - lyrics should remain in original language."
-                ),
-              enableFullscreen: z
-                .boolean()
-                .optional()
-                .describe(
-                  "Enable fullscreen mode for the Karaoke player. Can be combined with any action."
-                ),
-            })
-            .superRefine((data, ctx) => {
-              const { action, id, title, artist } = data;
-
-              if (action === "addAndPlay") {
-                if (!id) {
-                  ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message:
-                      "The 'addAndPlay' action requires the 'id' parameter (YouTube ID or URL).",
-                    path: ["id"],
-                  });
-                }
-                if (title !== undefined) {
-                  ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message:
-                      "Do not provide 'title' when using 'addAndPlay' (information is fetched automatically).",
-                    path: ["title"],
-                  });
-                }
-                if (artist !== undefined) {
-                  ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message:
-                      "Do not provide 'artist' when using 'addAndPlay' (information is fetched automatically).",
-                    path: ["artist"],
-                  });
-                }
-                return;
-              }
-
-              if (action === "playKnown") {
-                if (!id && !title && !artist) {
-                  ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message:
-                      "The 'playKnown' action requires at least one of 'id', 'title', or 'artist'.",
-                    path: ["id"],
-                  });
-                }
-                return;
-              }
-
-              if (
-                (action === "toggle" || action === "play" || action === "pause") &&
-                (id !== undefined || title !== undefined || artist !== undefined)
-              ) {
-                ctx.addIssue({
-                  code: z.ZodIssueCode.custom,
-                  message:
-                    "Do not provide 'id', 'title', or 'artist' when using playback state actions ('toggle', 'play', 'pause').",
-                  path: ["action"],
-                });
-              }
-
-              if (
-                (action === "next" || action === "previous") &&
-                (id !== undefined || title !== undefined || artist !== undefined)
-              ) {
-                ctx.addIssue({
-                  code: z.ZodIssueCode.custom,
-                  message:
-                    "Do not provide 'id', 'title', or 'artist' when using track navigation actions ('next', 'previous').",
-                  path: ["action"],
-                });
-              }
-            }),
+          inputSchema: createMediaControlSchema(),
         },
         // --- HTML generation & preview ---
         generateHtml: {
@@ -1331,13 +1186,6 @@ export default async function handler(req: Request) {
     // Add CORS headers to the response
     const headers = new Headers(response.headers);
     headers.set("Access-Control-Allow-Origin", validOrigin);
-
-    // If token was refreshed, add it to response headers
-    if (validationResult.newToken) {
-      headers.set("X-New-Auth-Token", validationResult.newToken);
-      headers.set("Access-Control-Expose-Headers", "X-New-Auth-Token");
-      log(`Token refreshed for user ${username}, new token sent in headers`);
-    }
 
     return new Response(response.body, {
       status: response.status,

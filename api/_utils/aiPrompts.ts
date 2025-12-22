@@ -132,6 +132,7 @@ body: font-geneva | headings: font-neuebit font-bold | serif: font-mondwest | mo
 ## Images
 - Use provided image URLs when available
 - DO NOT use imgur, placeholders, or base64 data URIs
+- Real or plausible link destinations: <a href="/..."> or <a href="https://...">
 
 ## AI Integration
 POST to "/api/applet-ai" with "Content-Type: application/json":
@@ -144,6 +145,11 @@ POST to "/api/applet-ai" with "Content-Type: application/json":
 - Keep simple, concise, prioritize direct functionality
 - Use concise variable names: i, j for indices, e for event, el for element
 - Each output should run immediately with no external dependencies
+
+## Internet Explorer Time-Travel Output
+When generating HTML for Internet Explorer time-travel:
+1. Begin with title comment: <!-- TITLE: Your Generated Page Title -->
+2. No chat/comments before or after the HTML output
 
 ## Three.js Example
 <script type="module">
@@ -270,22 +276,3 @@ Use \`settings\` tool to change system preferences:
 </tool_usage_instructions>
 `;
 
-export const DELIVERABLE_REQUIREMENTS = `
-<deliverable_requirements>
-## Internet Explorer Time-Travel Output
-1. Body content only – no doctype, html, head, body tags, no chat before or after
-2. Begin with title comment: <!-- TITLE: Your Generated Page Title -->
-3. Prefer Tailwind CSS classes; use <style> tag only for complex animations
-4. Three.js available via CDN import (see CODE_GENERATION_INSTRUCTIONS)
-5. Responsive layout, mobile-first
-6. Use provided image URLs – no imgur, placeholders, or base64
-7. Real or plausible link destinations: <a href="/..."> or <a href="https://...">
-8. Simple colors, no gradients, use backdrop-blur, simple animations
-
-## Fonts
-body: font-geneva | headings: font-neuebit font-bold | serif: font-mondwest | mono: font-monaco | blackletter: font-jacquard (no all-caps)
-
-## 中文內容
-中文必須使用繁體中文並保持完整標點符號
-</deliverable_requirements>
-`;

@@ -232,6 +232,12 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           setIsSpeaking(true);
 
           src.onended = () => {
+            // Disconnect the source node to prevent memory leaks
+            try {
+              src.disconnect();
+            } catch {
+              // Ignore errors if already disconnected
+            }
             playingSourcesRef.current.delete(src);
             if (playingSourcesRef.current.size === 0) {
               setIsSpeaking(false);
@@ -265,12 +271,17 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     pendingRequestsRef.current = [];
     activeRequestsCountRef.current = 0;
 
-    // Stop any sources that are currently playing
+    // Stop and disconnect any sources that are currently playing
     playingSourcesRef.current.forEach((src) => {
       try {
         src.stop();
       } catch {
         /* ignore */
+      }
+      try {
+        src.disconnect();
+      } catch {
+        /* ignore if already disconnected */
       }
     });
     playingSourcesRef.current.clear();

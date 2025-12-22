@@ -13,13 +13,11 @@ import { getApiUrl } from "@/utils/platform";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { toast } from "@/hooks/useToast";
-import { useLaunchApp, type LaunchAppOptions } from "@/hooks/useLaunchApp";
+import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
 import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
-import { requestCloseWindow } from "@/utils/windowUtils";
 import {
   useFileSystem,
   dbOperations,
@@ -38,10 +36,21 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
 import { AnyExtension } from "@tiptap/core";
-import { themes } from "@/themes";
-import type { OsThemeId } from "@/themes/types";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
+import {
+  handleLaunchApp,
+  handleCloseApp,
+  handleSettings,
+  handleIpodControl,
+  handleKaraokeControl,
+  type ToolContext,
+  type LaunchAppInput,
+  type CloseAppInput,
+  type SettingsInput,
+  type IpodControlInput,
+  type KaraokeControlInput,
+} from "../tools";
 
 /**
  * NOTE: Future refactoring opportunity (tracked in codebase analysis)
@@ -277,7 +286,6 @@ const getSystemState = () => {
   const karaokeStore = useKaraokeStore.getState();
   const textEditStore = useTextEditStore.getState();
   const chatsStore = useChatsStore.getState();
-  const themeStore = useThemeStore.getState();
   const languageStore = useLanguageStore.getState();
 
   const currentVideo = videoStore.getCurrentVideo();
@@ -406,65 +414,46 @@ const getSystemState = () => {
     runningApps: {
       foreground: foregroundInstance,
       background: backgroundInstances,
-      instanceWindowOrder: appStore.instanceOrder,
     },
     internetExplorer: {
       url: ieStore.url,
       year: ieStore.year,
-      status: ieStore.status,
       currentPageTitle: ieStore.currentPageTitle,
-      aiGeneratedHtml: ieStore.aiGeneratedHtml,
       aiGeneratedMarkdown: ieHtmlMarkdown,
     },
     video: {
       currentVideo: currentVideo
         ? {
             id: currentVideo.id,
-            url: currentVideo.url,
             title: currentVideo.title,
             artist: currentVideo.artist,
           }
         : null,
       isPlaying: videoStore.isPlaying,
-      loopAll: videoStore.loopAll,
-      loopCurrent: videoStore.loopCurrent,
-      isShuffled: videoStore.isShuffled,
     },
     ipod: {
       currentTrack: currentTrack
         ? {
             id: currentTrack.id,
-            url: currentTrack.url,
             title: currentTrack.title,
             artist: currentTrack.artist,
           }
         : null,
       isPlaying: ipodStore.isPlaying,
-      loopAll: ipodStore.loopAll,
-      loopCurrent: ipodStore.loopCurrent,
-      isShuffled: ipodStore.isShuffled,
       currentLyrics: ipodStore.currentLyrics,
     },
     karaoke: {
       currentTrack: karaokeCurrentTrack
         ? {
             id: karaokeCurrentTrack.id,
-            url: karaokeCurrentTrack.url,
             title: karaokeCurrentTrack.title,
             artist: karaokeCurrentTrack.artist,
           }
         : null,
       isPlaying: karaokeStore.isPlaying,
-      loopAll: karaokeStore.loopAll,
-      loopCurrent: karaokeStore.loopCurrent,
-      isShuffled: karaokeStore.isShuffled,
-      isFullScreen: karaokeStore.isFullScreen,
     },
     textEdit: {
       instances: textEditInstancesData,
-    },
-    theme: {
-      current: themeStore.current,
     },
   };
 };
@@ -642,6 +631,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         toolCall,
       );
 
+      // Create tool context for extracted handlers
+      const toolContext: ToolContext = {
+        launchApp: (appId, options) => launchApp(appId as AppId, options),
+        addToolResult,
+        detectUserOS,
+      };
+
       try {
         // Default result message
         let result: string = "Tool executed successfully";
@@ -653,1089 +649,38 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             break;
           }
           case "launchApp": {
-            const { id, url, year } = toolCall.input as {
-              id: string;
-              url?: string;
-              year?: string;
-            };
-
-            // Validate required parameter
-            if (!id) {
-              console.error(
-                "[ToolCall] launchApp: Missing required 'id' parameter",
-              );
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
-              });
-              break;
-            }
-
-            const appName = appRegistry[id as AppId]?.name || id;
-            console.log("[ToolCall] launchApp:", { id, url, year });
-
-            const launchOptions: LaunchAppOptions = {};
-            if (id === "internet-explorer" && (url || year)) {
-              launchOptions.initialData = { url, year: year || "current" };
-            }
-
-            launchApp(id as AppId, launchOptions);
-
-            result = `Launched ${appName}`;
-            if (id === "internet-explorer") {
-              const urlPart = url ? ` to ${url}` : "";
-              const yearPart = year && year !== "current" ? ` in ${year}` : "";
-              result += `${urlPart}${yearPart}`;
-            }
-            console.log(`[ToolCall] ${result}`);
+            result = handleLaunchApp(
+              toolCall.input as LaunchAppInput,
+              toolCall.toolCallId,
+              toolContext
+            );
             break;
           }
           case "closeApp": {
-            const { id } = toolCall.input as { id: string };
-
-            // Validate required parameter
-            if (!id) {
-              console.error(
-                "[ToolCall] closeApp: Missing required 'id' parameter",
-              );
-              break;
-            }
-
-            const appName = appRegistry[id as AppId]?.name || id;
-            console.log("[ToolCall] closeApp:", id);
-
-            // Close all instances of the specified app
-            const appStore = useAppStore.getState();
-            const appInstances = appStore.getInstancesByAppId(id as AppId);
-            const openInstances = appInstances.filter((inst) => inst.isOpen);
-
-            if (openInstances.length === 0) {
-              console.log(`[ToolCall] ${appName} is not currently running.`);
-              break;
-            }
-
-            // Close all open instances of this app (with animation and sound)
-            openInstances.forEach((instance) => {
-              requestCloseWindow(instance.instanceId);
-            });
-
-            // Also close the legacy app state for backward compatibility
-            closeApp(id as AppId);
-
-            console.log(
-              `[ToolCall] Closed ${appName} (${openInstances.length} window${
-                openInstances.length === 1 ? "" : "s"
-              }).`,
+            result = handleCloseApp(
+              toolCall.input as CloseAppInput,
+              toolCall.toolCallId,
+              toolContext,
+              closeApp
             );
             break;
           }
           case "ipodControl": {
-            const {
-              action = "toggle",
-              id,
-              title,
-              artist,
-              enableVideo,
-              enableTranslation,
-              enableFullscreen,
-            } = toolCall.input as {
-              action?:
-                | "toggle"
-                | "play"
-                | "pause"
-                | "playKnown"
-                | "addAndPlay"
-                | "next"
-                | "previous";
-              id?: string;
-              title?: string;
-              artist?: string;
-              enableVideo?: boolean;
-              enableTranslation?: string | null;
-              enableFullscreen?: boolean;
-            };
-
-            console.log("[ToolCall] ipodControl:", {
-              action,
-              id,
-              title,
-              artist,
-              enableVideo,
-              enableTranslation,
-              enableFullscreen,
-            });
-
-            // Check if user is on iOS (cannot auto-play due to browser restrictions)
-            const isIOS = detectUserOS() === "iOS";
-
-            const ensureIpodIsOpen = () => {
-              const appState = useAppStore.getState();
-              const ipodInstances = appState.getInstancesByAppId("ipod");
-              const hasOpenIpodInstance = ipodInstances.some(
-                (inst) => inst.isOpen,
-              );
-
-              if (!hasOpenIpodInstance) {
-                launchApp("ipod");
-              }
-            };
-
-            ensureIpodIsOpen();
-
-            // Helper function to apply video, translation, and fullscreen settings
-            // Returns an array of state change messages
-            const applyIpodSettings = (): string[] => {
-              const ipod = useIpodStore.getState();
-              const stateChanges: string[] = [];
-              
-              if (enableVideo !== undefined) {
-                if (enableVideo && !ipod.showVideo) {
-                  ipod.setShowVideo(true);
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnVideo"));
-                  console.log("[ToolCall] Video enabled.");
-                } else if (!enableVideo && ipod.showVideo) {
-                  ipod.setShowVideo(false);
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffVideo"));
-                  console.log("[ToolCall] Video disabled.");
-                }
-              }
-
-              if (enableTranslation !== undefined) {
-                // Check for values that should disable translation
-                const disableValues = ['original', 'off', 'none', 'disable', 'disabled', 'null'];
-                const shouldDisable = enableTranslation === null || 
-                  enableTranslation === "" || 
-                  (typeof enableTranslation === 'string' && disableValues.includes(enableTranslation.toLowerCase()));
-                
-                if (shouldDisable) {
-                  ipod.setLyricsTranslationLanguage(null);
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffLyricsTranslation"));
-                  console.log("[ToolCall] Lyrics translation disabled.");
-                } else {
-                  ipod.setLyricsTranslationLanguage(enableTranslation);
-                  const currentTrack = ipod.tracks[ipod.currentIndex];
-                  if (currentTrack?.id) {
-                    ipod.setLyricsTranslationLanguage(enableTranslation);
-                  }
-                  // Map language codes to readable names
-                  const languageNames: Record<string, string> = {
-                    'en': 'English',
-                    'zh-TW': 'Traditional Chinese',
-                    'zh-CN': 'Simplified Chinese',
-                    'ja': 'Japanese',
-                    'ko': 'Korean',
-                    'es': 'Spanish',
-                    'fr': 'French',
-                    'de': 'German',
-                    'pt': 'Portuguese',
-                    'it': 'Italian',
-                    'ru': 'Russian',
-                  };
-                  const langName = languageNames[enableTranslation] || enableTranslation;
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTranslatedLyricsTo", { langName }));
-                  console.log(`[ToolCall] Lyrics translation enabled for language: ${enableTranslation}.`);
-                }
-              }
-
-              if (enableFullscreen !== undefined) {
-                if (enableFullscreen && !ipod.isFullScreen) {
-                  ipod.toggleFullScreen();
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnFullScreen"));
-                  console.log("[ToolCall] Fullscreen enabled.");
-                } else if (!enableFullscreen && ipod.isFullScreen) {
-                  ipod.toggleFullScreen();
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffFullScreen"));
-                  console.log("[ToolCall] Fullscreen disabled.");
-                }
-              }
-
-              return stateChanges;
-            };
-
-            const normalizedAction = action ?? "toggle";
-
-            if (
-              normalizedAction === "toggle" ||
-              normalizedAction === "play" ||
-              normalizedAction === "pause"
-            ) {
-              const ipod = useIpodStore.getState();
-
-              // On iOS, don't auto-play - inform user to press play manually
-              if (isIOS && (normalizedAction === "play" || normalizedAction === "toggle")) {
-                const stateChanges = applyIpodSettings();
-                const resultParts = [i18n.t("apps.chats.toolCalls.ipodReady")];
-                if (stateChanges.length > 0) {
-                  resultParts.push(...stateChanges);
-                }
-                
-                // Only add periods when joining multiple sentences
-                const resultMessage = resultParts.length > 1 
-                  ? resultParts.join(". ") + "."
-                  : resultParts[0];
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: resultMessage,
-                });
-                result = "";
-                console.log("[ToolCall] iOS detected - user must manually start playback.");
-                break;
-              }
-
-              switch (normalizedAction) {
-                case "play":
-                  if (!ipod.isPlaying) ipod.setIsPlaying(true);
-                  break;
-                case "pause":
-                  if (ipod.isPlaying) ipod.setIsPlaying(false);
-                  break;
-                default:
-                  ipod.togglePlay();
-                  break;
-              }
-
-              const stateChanges = applyIpodSettings();
-              const updatedIpod = useIpodStore.getState();
-              const nowPlaying = updatedIpod.isPlaying;
-              const track = updatedIpod.tracks[updatedIpod.currentIndex];
-              
-              let playbackState: string;
-              if (track) {
-                const trackDesc = `${track.title}${track.artist ? ` by ${track.artist}` : ""}`;
-                playbackState = nowPlaying 
-                  ? i18n.t("apps.chats.toolCalls.ipodPlayingTrack", { trackDesc })
-                  : i18n.t("apps.chats.toolCalls.ipodPausedTrack", { trackDesc });
-              } else {
-                playbackState = nowPlaying 
-                  ? i18n.t("apps.chats.toolCalls.ipodPlaying")
-                  : i18n.t("apps.chats.toolCalls.ipodPaused");
-              }
-              const resultParts = [playbackState];
-              if (stateChanges.length > 0) {
-                resultParts.push(...stateChanges);
-              }
-              
-              // Only add periods when joining multiple sentences
-              const resultMessage = resultParts.length > 1 
-                ? resultParts.join(". ") + "."
-                : resultParts[0];
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: resultMessage,
-              });
-              result = ""; // Clear result to prevent duplicate
-              
-              console.log(
-                `[ToolCall] iPod is now ${nowPlaying ? "playing" : "paused"}.`,
-              );
-              break;
-            }
-
-            if (normalizedAction === "playKnown") {
-              const ipodState = useIpodStore.getState();
-              const { tracks } = ipodState;
-
-              const ciIncludes = (
-                source: string | undefined,
-                query: string | undefined,
-              ): boolean => {
-                if (!source || !query) return false;
-                return source.toLowerCase().includes(query.toLowerCase());
-              };
-
-              let finalCandidateIndices: number[] = [];
-              const allTracksWithIndices = tracks.map((t, idx) => ({
-                track: t,
-                index: idx,
-              }));
-
-              const idFilteredTracks = id
-                ? allTracksWithIndices.filter(({ track }) => track.id === id)
-                : allTracksWithIndices;
-
-              const primaryCandidates = idFilteredTracks.filter(({ track }) => {
-                const titleMatches = title
-                  ? ciIncludes(track.title, title)
-                  : true;
-                const artistMatches = artist
-                  ? ciIncludes(track.artist, artist)
-                  : true;
-                return titleMatches && artistMatches;
-              });
-
-              if (primaryCandidates.length > 0) {
-                finalCandidateIndices = primaryCandidates.map(
-                  ({ index }) => index,
-                );
-              } else if (title || artist) {
-                const secondaryCandidates = idFilteredTracks.filter(
-                  ({ track }) => {
-                    const titleInArtistMatches = title
-                      ? ciIncludes(track.artist, title)
-                      : false;
-                    const artistInTitleMatches = artist
-                      ? ciIncludes(track.title, artist)
-                      : false;
-
-                    if (title && artist) {
-                      return titleInArtistMatches || artistInTitleMatches;
-                    }
-                    if (title) {
-                      return titleInArtistMatches;
-                    }
-                    if (artist) {
-                      return artistInTitleMatches;
-                    }
-                    return false;
-                  },
-                );
-                finalCandidateIndices = secondaryCandidates.map(
-                  ({ index }) => index,
-                );
-              }
-
-              if (finalCandidateIndices.length === 0) {
-                const errorMsg = i18n.t("apps.chats.toolCalls.ipodSongNotFound");
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: errorMsg,
-                });
-                result = ""; // Clear result to prevent duplicate
-                console.log(`[ToolCall] ${errorMsg}`);
-                break;
-              }
-
-              const randomIndexFromArray =
-                finalCandidateIndices[
-                  Math.floor(Math.random() * finalCandidateIndices.length)
-                ];
-
-              const { setCurrentIndex, setIsPlaying } = useIpodStore.getState();
-              setCurrentIndex(randomIndexFromArray);
-              
-              const track = tracks[randomIndexFromArray];
-              const trackDescForLog = `${track.title}${
-                track.artist ? ` by ${track.artist}` : ""
-              }`;
-
-              // On iOS, don't auto-play - just select the track
-              if (isIOS) {
-                const stateChanges = applyIpodSettings();
-                // Build track description for translation
-                const trackDescForMsg = track.artist 
-                  ? `${track.title} by ${track.artist}`
-                  : track.title;
-                const resultParts = [i18n.t("apps.chats.toolCalls.ipodSelected", { trackDesc: trackDescForMsg })];
-                if (stateChanges.length > 0) {
-                  resultParts.push(...stateChanges);
-                }
-                
-                // Only add periods when joining multiple sentences
-                const resultMessage = resultParts.length > 1 
-                  ? resultParts.join(". ") + "."
-                  : resultParts[0];
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: resultMessage,
-                });
-                result = "";
-                console.log(`[ToolCall] iOS detected - selected ${trackDescForLog}, user must manually start playback.`);
-                break;
-              }
-
-              setIsPlaying(true);
-
-              const stateChanges = applyIpodSettings();
-              
-              // Build track description for translation
-              const trackDescForMsg = track.artist 
-                ? i18n.t("apps.chats.toolCalls.playingByArtist", { title: track.title, artist: track.artist })
-                : i18n.t("apps.chats.toolCalls.playing", { title: track.title });
-              
-              const resultParts = [trackDescForMsg];
-              if (stateChanges.length > 0) {
-                resultParts.push(...stateChanges);
-              }
-              
-              // Only add periods when joining multiple sentences
-              const resultMessage = resultParts.length > 1 
-                ? resultParts.join(". ") + "."
-                : resultParts[0];
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: resultMessage,
-              });
-              result = ""; // Clear result to prevent duplicate
-              
-              console.log(`[ToolCall] Playing ${trackDescForLog}.`);
-              break;
-            }
-
-            if (normalizedAction === "addAndPlay") {
-              if (!id) {
-                const errorMsg = "The 'addAndPlay' action requires the 'id' parameter (YouTube ID or URL).";
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: errorMsg,
-                });
-                result = ""; // Clear result to prevent duplicate
-                console.error(`[ToolCall] ${errorMsg}`);
-                break;
-              }
-
-              try {
-                // On iOS, use addTrackFromVideoId with autoPlay=false
-                const addedTrack = await useIpodStore
-                  .getState()
-                  .addTrackFromVideoId(id, !isIOS); // autoPlay = true for non-iOS, false for iOS
-
-                if (addedTrack) {
-                  const stateChanges = applyIpodSettings();
-                  
-                  // Different message for iOS vs other platforms
-                  const resultParts = isIOS
-                    ? [i18n.t("apps.chats.toolCalls.ipodAdded", { title: addedTrack.title })]
-                    : [i18n.t("apps.chats.toolCalls.ipodAddedAndPlaying", { title: addedTrack.title })];
-                  
-                  if (stateChanges.length > 0) {
-                    resultParts.push(...stateChanges);
-                  }
-                  
-                  // Only add periods when joining multiple sentences
-                  const resultMessage = resultParts.length > 1 
-                    ? resultParts.join(". ") + "."
-                    : resultParts[0];
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    output: resultMessage,
-                  });
-                  result = ""; // Clear result to prevent duplicate
-                  
-                  console.log(
-                    isIOS
-                      ? `[ToolCall] iOS detected - added '${addedTrack.title}' to iPod, user must manually start playback.`
-                      : `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`,
-                  );
-                  break;
-                } else {
-                  const errorMsg = i18n.t("apps.chats.toolCalls.ipodFailedToAdd", { id });
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    output: errorMsg,
-                  });
-                  result = ""; // Clear result to prevent duplicate
-                  console.error(`[ToolCall] ${errorMsg}`);
-                  break;
-                }
-              } catch (error) {
-                const errorMessage =
-                  error instanceof Error ? error.message : "Unknown error";
-                console.error(`[iPod] Error adding ${id}:`, error);
-
-                let errorMsg: string;
-                if (errorMessage.includes("Failed to fetch video info")) {
-                  errorMsg = i18n.t("apps.chats.toolCalls.ipodCannotAdd", { id });
-                } else {
-                  errorMsg = i18n.t("apps.chats.toolCalls.ipodFailedToAddWithError", { id, error: errorMessage });
-                }
-                
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: errorMsg,
-                });
-                result = ""; // Clear result to prevent duplicate
-                
-                console.error(`[ToolCall] ${errorMsg}`);
-                break;
-              }
-            }
-
-            if (normalizedAction === "next" || normalizedAction === "previous") {
-              const ipodState = useIpodStore.getState();
-              const navigate =
-                normalizedAction === "next"
-                  ? ipodState.nextTrack
-                  : ipodState.previousTrack;
-
-              if (typeof navigate === "function") {
-                navigate();
-              }
-
-              const stateChanges = applyIpodSettings();
-
-              const updatedIpod = useIpodStore.getState();
-              const track = updatedIpod.tracks[updatedIpod.currentIndex];
-              if (track) {
-                const desc = `${track.title}${
-                  track.artist ? ` by ${track.artist}` : ""
-                }`;
-                const resultParts = [
-                  normalizedAction === "next"
-                    ? i18n.t("apps.chats.toolCalls.ipodSkippedTo", { trackDesc: desc })
-                    : i18n.t("apps.chats.toolCalls.ipodWentBackTo", { trackDesc: desc })
-                ];
-                if (stateChanges.length > 0) {
-                  resultParts.push(...stateChanges);
-                }
-                
-                // Only add periods when joining multiple sentences
-                const resultMessage = resultParts.length > 1 
-                  ? resultParts.join(". ") + "."
-                  : resultParts[0];
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: resultMessage,
-                });
-                result = ""; // Clear result to prevent duplicate
-                
-                console.log(`[ToolCall] ${normalizedAction === "next" ? "Skipped to" : "Went back to"} ${desc}.`);
-                break;
-              }
-
-              const resultParts = [
-                normalizedAction === "next"
-                  ? i18n.t("apps.chats.toolCalls.ipodSkippedToNext")
-                  : i18n.t("apps.chats.toolCalls.ipodWentBackToPrevious")
-              ];
-              if (stateChanges.length > 0) {
-                resultParts.push(...stateChanges);
-              }
-              
-              // Only add periods when joining multiple sentences
-              const resultMessage = resultParts.length > 1 
-                ? resultParts.join(". ") + "."
-                : resultParts[0];
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: resultMessage,
-              });
-              result = ""; // Clear result to prevent duplicate
-              
-              console.log(
-                `[ToolCall] ${
-                  normalizedAction === "next"
-                    ? "Skipped to next track."
-                    : "Went back to previous track."
-                }`,
-              );
-              break;
-            }
-
-            // Apply settings even if action is unhandled
-            const stateChanges = applyIpodSettings();
-            
-            if (stateChanges.length > 0) {
-              // Only add periods when joining multiple sentences
-              const resultMessage = stateChanges.length > 1 
-                ? stateChanges.join(". ") + "."
-                : stateChanges[0];
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: resultMessage,
-              });
-              result = ""; // Clear result to prevent duplicate
-            }
-            
-            console.warn(
-              `[ToolCall] ipodControl: Unhandled action "${normalizedAction}".`,
+            await handleIpodControl(
+              toolCall.input as IpodControlInput,
+              toolCall.toolCallId,
+              toolContext
             );
+            result = ""; // Handler manages its own result
             break;
           }
           case "karaokeControl": {
-            const {
-              action = "toggle",
-              id,
-              title,
-              artist,
-              enableTranslation,
-              enableFullscreen,
-            } = toolCall.input as {
-              action?:
-                | "toggle"
-                | "play"
-                | "pause"
-                | "playKnown"
-                | "next"
-                | "previous";
-              id?: string;
-              title?: string;
-              artist?: string;
-              enableTranslation?: string | null;
-              enableFullscreen?: boolean;
-            };
-
-            console.log("[ToolCall] karaokeControl:", {
-              action,
-              id,
-              title,
-              artist,
-              enableTranslation,
-              enableFullscreen,
-            });
-
-            // Check if user is on iOS (cannot auto-play due to browser restrictions)
-            const isIOSKaraoke = detectUserOS() === "iOS";
-
-            const ensureKaraokeIsOpen = () => {
-              const appState = useAppStore.getState();
-              const karaokeInstances = appState.getInstancesByAppId("karaoke");
-              const hasOpenKaraokeInstance = karaokeInstances.some(
-                (inst) => inst.isOpen,
-              );
-
-              if (!hasOpenKaraokeInstance) {
-                launchApp("karaoke");
-              }
-            };
-
-            ensureKaraokeIsOpen();
-
-            // Helper function to apply translation and fullscreen settings
-            const applyKaraokeSettings = (): string[] => {
-              const ipod = useIpodStore.getState();
-              const karaoke = useKaraokeStore.getState();
-              const stateChanges: string[] = [];
-
-              if (enableTranslation !== undefined) {
-                // Check for explicit disable values
-                const disableValues = ['off', 'none', 'disable', 'disabled', 'false'];
-                const shouldDisable = enableTranslation === null ||
-                  enableTranslation === "" ||
-                  (typeof enableTranslation === 'string' && disableValues.includes(enableTranslation.toLowerCase()));
-
-                if (shouldDisable) {
-                  ipod.setLyricsTranslationLanguage(null);
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffLyricsTranslation"));
-                  console.log("[ToolCall] Karaoke lyrics translation disabled.");
-                } else {
-                  ipod.setLyricsTranslationLanguage(enableTranslation);
-                  const languageNames: Record<string, string> = {
-                    'en': 'English',
-                    'zh-TW': 'Traditional Chinese',
-                    'ja': 'Japanese',
-                    'ko': 'Korean',
-                    'es': 'Spanish',
-                    'fr': 'French',
-                    'de': 'German',
-                    'pt': 'Portuguese',
-                    'it': 'Italian',
-                    'ru': 'Russian',
-                  };
-                  const langName = languageNames[enableTranslation] || enableTranslation;
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTranslatedLyricsTo", { langName }));
-                  console.log(`[ToolCall] Karaoke lyrics translation enabled for language: ${enableTranslation}.`);
-                }
-              }
-
-              if (enableFullscreen !== undefined) {
-                if (enableFullscreen && !karaoke.isFullScreen) {
-                  karaoke.toggleFullScreen();
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnFullScreen"));
-                  console.log("[ToolCall] Karaoke fullscreen enabled.");
-                } else if (!enableFullscreen && karaoke.isFullScreen) {
-                  karaoke.toggleFullScreen();
-                  stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffFullScreen"));
-                  console.log("[ToolCall] Karaoke fullscreen disabled.");
-                }
-              }
-
-              return stateChanges;
-            };
-
-            const normalizedKaraokeAction = action.toLowerCase().trim();
-
-            // Handle play/pause/toggle
-            if (
-              normalizedKaraokeAction === "toggle" ||
-              normalizedKaraokeAction === "play" ||
-              normalizedKaraokeAction === "pause"
-            ) {
-              const karaoke = useKaraokeStore.getState();
-
-              // On iOS, don't auto-play
-              if (isIOSKaraoke && (normalizedKaraokeAction === "play" || normalizedKaraokeAction === "toggle")) {
-                const stateChanges = applyKaraokeSettings();
-                const resultParts = [i18n.t("apps.chats.toolCalls.karaokeReady", { defaultValue: "Karaoke is ready. Tap play to start" })];
-                if (stateChanges.length > 0) {
-                  resultParts.push(...stateChanges);
-                }
-                const resultMessage = resultParts.length > 1 
-                  ? resultParts.join(". ") + "."
-                  : resultParts[0];
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: resultMessage,
-                });
-                result = "";
-                console.log("[ToolCall] iOS detected - user must manually start karaoke playback.");
-                break;
-              }
-
-              switch (normalizedKaraokeAction) {
-                case "play":
-                  if (!karaoke.isPlaying) karaoke.setIsPlaying(true);
-                  break;
-                case "pause":
-                  if (karaoke.isPlaying) karaoke.setIsPlaying(false);
-                  break;
-                default:
-                  karaoke.togglePlay();
-                  break;
-              }
-
-              const stateChanges = applyKaraokeSettings();
-              const updatedKaraoke = useKaraokeStore.getState();
-              const nowPlayingKaraoke = updatedKaraoke.isPlaying;
-              const ipodTracks = useIpodStore.getState().tracks;
-              const karaokeTrack = ipodTracks[updatedKaraoke.currentIndex];
-
-              let karaokePlaybackState: string;
-              if (karaokeTrack) {
-                const trackDesc = `${karaokeTrack.title}${karaokeTrack.artist ? ` by ${karaokeTrack.artist}` : ""}`;
-                karaokePlaybackState = nowPlayingKaraoke
-                  ? i18n.t("apps.chats.toolCalls.karaokePlayingTrack", { trackDesc, defaultValue: `Karaoke is now playing ${trackDesc}` })
-                  : i18n.t("apps.chats.toolCalls.karaokePausedTrack", { trackDesc, defaultValue: `Karaoke paused ${trackDesc}` });
-              } else {
-                karaokePlaybackState = nowPlayingKaraoke
-                  ? i18n.t("apps.chats.toolCalls.karaokePlaying", { defaultValue: "Karaoke is now playing" })
-                  : i18n.t("apps.chats.toolCalls.karaokePaused", { defaultValue: "Karaoke is now paused" });
-              }
-              const resultParts = [karaokePlaybackState];
-              if (stateChanges.length > 0) {
-                resultParts.push(...stateChanges);
-              }
-              const resultMessage = resultParts.length > 1 
-                ? resultParts.join(". ") + "."
-                : resultParts[0];
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: resultMessage,
-              });
-              result = "";
-
-              console.log(
-                `[ToolCall] Karaoke is now ${nowPlayingKaraoke ? "playing" : "paused"}.`,
-              );
-              break;
-            }
-
-            // Handle playKnown action
-            if (normalizedKaraokeAction === "playknown") {
-              const ipodState = useIpodStore.getState();
-              const { tracks } = ipodState;
-
-              const ciIncludes = (
-                source: string | undefined,
-                query: string | undefined,
-              ): boolean => {
-                if (!source || !query) return false;
-                return source.toLowerCase().includes(query.toLowerCase());
-              };
-
-              // Find matching tracks
-              let candidateIndices: number[] = [];
-              if (id) {
-                candidateIndices = tracks
-                  .map((track, index) => (track.id === id ? index : -1))
-                  .filter((index) => index !== -1);
-              }
-
-              if (candidateIndices.length === 0 && title) {
-                const normalizedQuery = normalizeSearchText(title);
-                const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
-                const threshold = deriveScoreThreshold(normalizedQuery.length);
-
-                const scoredTracks = tracks.map((track, index) => {
-                  const normalizedTitle = normalizeSearchText(track.title ?? "");
-                  const normalizedArtist = normalizeSearchText(track.artist ?? "");
-                  const combined = `${normalizedTitle} ${normalizedArtist}`.trim();
-
-                  const score = computeMatchScore(combined, normalizedQuery, tokens);
-                  return { index, score };
-                });
-
-                const validMatches = scoredTracks.filter((t) => t.score >= threshold);
-                const maxScore = Math.max(...validMatches.map((m) => m.score), 0);
-                candidateIndices = validMatches
-                  .filter((m) => m.score === maxScore)
-                  .map(({ index }) => index);
-              }
-
-              if (candidateIndices.length === 0 && artist) {
-                candidateIndices = tracks
-                  .map((track, index) =>
-                    ciIncludes(track.artist, artist) ? index : -1,
-                  )
-                  .filter((index) => index !== -1);
-              }
-
-              if (candidateIndices.length === 0) {
-                const errorMsg = i18n.t("apps.chats.toolCalls.karaokeSongNotFound", { defaultValue: "Could not find the requested song in the library" });
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: errorMsg,
-                });
-                result = "";
-                console.warn("[ToolCall] karaokeControl playKnown: No matching track found.");
-                break;
-              }
-
-              const randomIndexFromArray =
-                candidateIndices[
-                  Math.floor(Math.random() * candidateIndices.length)
-                ];
-
-              const { setCurrentIndex, setIsPlaying } = useKaraokeStore.getState();
-              setCurrentIndex(randomIndexFromArray);
-
-              const track = tracks[randomIndexFromArray];
-              const trackDescForLog = `${track.title}${
-                track.artist ? ` by ${track.artist}` : ""
-              }`;
-
-              // On iOS, don't auto-play
-              if (isIOSKaraoke) {
-                const stateChanges = applyKaraokeSettings();
-                const trackDescForMsg = track.artist
-                  ? `${track.title} by ${track.artist}`
-                  : track.title;
-                const resultParts = [i18n.t("apps.chats.toolCalls.karaokeSelected", { trackDesc: trackDescForMsg, defaultValue: `Selected ${trackDescForMsg} in Karaoke` })];
-                if (stateChanges.length > 0) {
-                  resultParts.push(...stateChanges);
-                }
-                const resultMessage = resultParts.length > 1 
-                  ? resultParts.join(". ") + "."
-                  : resultParts[0];
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: resultMessage,
-                });
-                result = "";
-                console.log(`[ToolCall] iOS detected - selected ${trackDescForLog} in Karaoke, user must manually start playback.`);
-                break;
-              }
-
-              setIsPlaying(true);
-
-              const stateChanges = applyKaraokeSettings();
-              const trackDescForMsg = track.artist
-                ? i18n.t("apps.chats.toolCalls.playingByArtist", { title: track.title, artist: track.artist })
-                : i18n.t("apps.chats.toolCalls.playing", { title: track.title });
-              const resultParts = [trackDescForMsg];
-              if (stateChanges.length > 0) {
-                resultParts.push(...stateChanges);
-              }
-              const resultMessage = resultParts.length > 1 
-                ? resultParts.join(". ") + "."
-                : resultParts[0];
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: resultMessage,
-              });
-              result = "";
-              console.log(`[ToolCall] Karaoke started playing ${trackDescForLog}.`);
-              break;
-            }
-
-            // Handle addAndPlay action (add YouTube video to library and play in Karaoke)
-            if (normalizedKaraokeAction === "addandplay") {
-              if (!id) {
-                const errorMsg = i18n.t("apps.chats.toolCalls.karaokeNoIdProvided", { defaultValue: "No YouTube ID or URL provided for addAndPlay" });
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: errorMsg,
-                });
-                result = "";
-                console.error(`[ToolCall] karaokeControl addAndPlay: ${errorMsg}`);
-                break;
-              }
-
-              try {
-                // Add track to the shared iPod library, then play it in Karaoke
-                const addedTrack = await useIpodStore
-                  .getState()
-                  .addTrackFromVideoId(id, false); // Don't auto-play in iPod
-
-                if (addedTrack) {
-                  // Set karaoke to play the newly added track (added at index 0)
-                  const { setCurrentIndex, setIsPlaying } = useKaraokeStore.getState();
-                  setCurrentIndex(0);
-
-                  // On iOS, don't auto-play
-                  if (!isIOSKaraoke) {
-                    setIsPlaying(true);
-                  }
-
-                  const stateChanges = applyKaraokeSettings();
-
-                  const resultParts = isIOSKaraoke
-                    ? [i18n.t("apps.chats.toolCalls.karaokeAdded", { title: addedTrack.title, defaultValue: `Added '${addedTrack.title}' to library. Tap play to start in Karaoke` })]
-                    : [i18n.t("apps.chats.toolCalls.karaokeAddedAndPlaying", { title: addedTrack.title, defaultValue: `Added '${addedTrack.title}' and started playing in Karaoke` })];
-
-                  if (stateChanges.length > 0) {
-                    resultParts.push(...stateChanges);
-                  }
-
-                  const resultMessage = resultParts.length > 1 
-                    ? resultParts.join(". ") + "."
-                    : resultParts[0];
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    output: resultMessage,
-                  });
-                  result = "";
-
-                  console.log(
-                    isIOSKaraoke
-                      ? `[ToolCall] iOS detected - added '${addedTrack.title}' to library for Karaoke, user must manually start playback.`
-                      : `[ToolCall] Added '${addedTrack.title}' and started playing in Karaoke.`,
-                  );
-                  break;
-                } else {
-                  const errorMsg = i18n.t("apps.chats.toolCalls.karaokeFailedToAdd", { id, defaultValue: `Failed to add ${id} to library` });
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    output: errorMsg,
-                  });
-                  result = "";
-                  console.error(`[ToolCall] ${errorMsg}`);
-                  break;
-                }
-              } catch (error) {
-                const errorMessage =
-                  error instanceof Error ? error.message : "Unknown error";
-                console.error(`[Karaoke] Error adding ${id}:`, error);
-
-                let errorMsg: string;
-                if (errorMessage.includes("Failed to fetch video info")) {
-                  errorMsg = i18n.t("apps.chats.toolCalls.karaokeCannotAdd", { id, defaultValue: `Cannot add ${id}: Video unavailable or invalid` });
-                } else {
-                  errorMsg = i18n.t("apps.chats.toolCalls.karaokeFailedToAddWithError", { id, error: errorMessage, defaultValue: `Failed to add ${id}: ${errorMessage}` });
-                }
-                
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: errorMsg,
-                });
-                result = "";
-                
-                console.error(`[ToolCall] ${errorMsg}`);
-                break;
-              }
-            }
-
-            // Handle next/previous
-            if (normalizedKaraokeAction === "next" || normalizedKaraokeAction === "previous") {
-              const karaokeState = useKaraokeStore.getState();
-              const navigate =
-                normalizedKaraokeAction === "next"
-                  ? karaokeState.nextTrack
-                  : karaokeState.previousTrack;
-
-              if (typeof navigate === "function") {
-                navigate();
-              }
-
-              const stateChanges = applyKaraokeSettings();
-
-              const updatedKaraoke = useKaraokeStore.getState();
-              const ipodTracks = useIpodStore.getState().tracks;
-              const track = ipodTracks[updatedKaraoke.currentIndex];
-              if (track) {
-                const desc = `${track.title}${
-                  track.artist ? ` by ${track.artist}` : ""
-                }`;
-                const resultParts = [
-                  normalizedKaraokeAction === "next"
-                    ? i18n.t("apps.chats.toolCalls.karaokeSkippedTo", { trackDesc: desc, defaultValue: `Skipped to ${desc}` })
-                    : i18n.t("apps.chats.toolCalls.karaokeWentBackTo", { trackDesc: desc, defaultValue: `Went back to ${desc}` })
-                ];
-                if (stateChanges.length > 0) {
-                  resultParts.push(...stateChanges);
-                }
-                const resultMessage = resultParts.length > 1 
-                  ? resultParts.join(". ") + "."
-                  : resultParts[0];
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: resultMessage,
-                });
-                result = "";
-
-                console.log(`[ToolCall] Karaoke ${normalizedKaraokeAction === "next" ? "skipped to" : "went back to"} ${desc}.`);
-                break;
-              }
-
-              const resultParts = [
-                normalizedKaraokeAction === "next"
-                  ? i18n.t("apps.chats.toolCalls.karaokeSkippedToNext", { defaultValue: "Skipped to next track" })
-                  : i18n.t("apps.chats.toolCalls.karaokeWentBackToPrevious", { defaultValue: "Went back to previous track" })
-              ];
-              if (stateChanges.length > 0) {
-                resultParts.push(...stateChanges);
-              }
-              const resultMessage = resultParts.length > 1 
-                ? resultParts.join(". ") + "."
-                : resultParts[0];
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: resultMessage,
-              });
-              result = "";
-
-              console.log(
-                `[ToolCall] Karaoke ${
-                  normalizedKaraokeAction === "next"
-                    ? "skipped to next track."
-                    : "went back to previous track."
-                }`,
-              );
-              break;
-            }
-
-            // Apply settings even if action is unhandled
-            const karaokeStateChanges = applyKaraokeSettings();
-            
-            if (karaokeStateChanges.length > 0) {
-              const resultMessage = karaokeStateChanges.length > 1 
-                ? karaokeStateChanges.join(". ") + "."
-                : karaokeStateChanges[0];
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: resultMessage,
-              });
-              result = "";
-            }
-            
-            console.warn(
-              `[ToolCall] karaokeControl: Unhandled action "${normalizedKaraokeAction}".`,
+            await handleKaraokeControl(
+              toolCall.input as KaraokeControlInput,
+              toolCall.toolCallId,
+              toolContext
             );
+            result = ""; // Handler manages its own result
             break;
           }
           case "generateHtml": {
@@ -2632,124 +1577,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             break;
           }
           case "settings": {
-            const {
-              language,
-              theme,
-              masterVolume,
-              speechEnabled,
-              checkForUpdates,
-            } = toolCall.input as {
-              language?: string;
-              theme?: OsThemeId;
-              masterVolume?: number;
-              speechEnabled?: boolean;
-              checkForUpdates?: boolean;
-            };
-
-            const changes: string[] = [];
-            const audioSettingsStore = useAudioSettingsStore.getState();
-            const langStore = useLanguageStore.getState();
-            const themeStore = useThemeStore.getState();
-
-            // Language change
-            if (language !== undefined) {
-              // Use translation keys for language names (reuse iPod translation keys)
-              const getLanguageDisplayName = (langCode: string): string => {
-                const langMap: Record<string, string> = {
-                  en: "apps.ipod.translationLanguages.english",
-                  "zh-TW": "apps.ipod.translationLanguages.chinese",
-                  ja: "apps.ipod.translationLanguages.japanese",
-                  ko: "apps.ipod.translationLanguages.korean",
-                  fr: "apps.ipod.translationLanguages.french",
-                  de: "apps.ipod.translationLanguages.german",
-                  es: "apps.ipod.translationLanguages.spanish",
-                  pt: "apps.ipod.translationLanguages.portuguese",
-                  it: "apps.ipod.translationLanguages.italian",
-                  ru: "apps.ipod.translationLanguages.russian",
-                };
-                const key = langMap[langCode];
-                if (key) {
-                  const translated = i18n.t(key);
-                  // If translation doesn't exist, fall back to code
-                  return translated !== key ? translated : langCode;
-                }
-                return langCode;
-              };
-              langStore.setLanguage(language as "en" | "zh-TW" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru");
-              changes.push(
-                i18n.t("apps.chats.toolCalls.settingsLanguageChanged", {
-                  language: getLanguageDisplayName(language),
-                })
-              );
-              console.log(`[ToolCall] Language changed to: ${language}`);
-            }
-
-            // Theme change
-            if (theme !== undefined) {
-              if (themeStore.current !== theme) {
-                themeStore.setTheme(theme);
-                const themeName = themes[theme]?.name || theme;
-                changes.push(
-                  i18n.t("apps.chats.toolCalls.settingsThemeChanged", {
-                    theme: themeName,
-                  })
-                );
-                console.log(`[ToolCall] Theme changed to: ${theme}`);
-              }
-            }
-
-            // Master volume
-            if (masterVolume !== undefined) {
-              audioSettingsStore.setMasterVolume(masterVolume);
-              const volumePercent = Math.round(masterVolume * 100);
-              changes.push(
-                i18n.t("apps.chats.toolCalls.settingsMasterVolumeSet", {
-                  volume: volumePercent,
-                })
-              );
-              console.log(`[ToolCall] Master volume set to: ${masterVolume}`);
-            }
-
-            // Speech enabled
-            if (speechEnabled !== undefined) {
-              audioSettingsStore.setSpeechEnabled(speechEnabled);
-              changes.push(
-                speechEnabled
-                  ? i18n.t("apps.chats.toolCalls.settingsSpeechEnabled")
-                  : i18n.t("apps.chats.toolCalls.settingsSpeechDisabled")
-              );
-              console.log(`[ToolCall] Speech ${speechEnabled ? "enabled" : "disabled"}`);
-            }
-
-            // Check for updates
-            if (checkForUpdates) {
-              import("@/utils/prefetch").then(({ forceRefreshCache }) => {
-                forceRefreshCache();
-              });
-              changes.push(i18n.t("apps.chats.toolCalls.settingsCheckingForUpdates"));
-              console.log("[ToolCall] Checking for updates...");
-            }
-
-            // Build result message
-            if (changes.length > 0) {
-              const resultMessage =
-                changes.length === 1
-                  ? changes[0]
-                  : changes.join(". ") + ".";
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: resultMessage,
-              });
-              result = "";
-            } else {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: i18n.t("apps.chats.toolCalls.settingsNoChanges"),
-              });
-              result = "";
-            }
+            handleSettings(
+              toolCall.input as SettingsInput,
+              toolCall.toolCallId,
+              toolContext
+            );
+            result = ""; // Handler manages its own result
             break;
           }
           default:

@@ -457,7 +457,7 @@ export function ToolInvocationMessage({
           key={partKey}
           className="mb-0 px-1 py-0.5 text-xs italic text-gray-500"
         >
-          Preparing HTML preview...
+          {t("apps.chats.toolCalls.preparingHtmlPreview")}
         </div>
       );
     }
