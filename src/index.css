@@ -972,12 +972,12 @@ ruby.lyrics-furigana {
 
 /* Word-level highlight container for karaoke-style lyrics animation */
 /* Uses inline-grid to stack dimmed/highlighted layers */
-/* white-space: pre ensures trailing spaces in word texts are preserved for consistent line breaking */
+/* white-space: pre-wrap preserves trailing spaces while allowing text to wrap at container boundaries */
 /* Padding accommodates the glow (8px blur) so it doesn't clip at edges; negative margin compensates for spacing */
 .lyrics-word-highlight {
   display: inline-grid;
   vertical-align: baseline;
-  white-space: pre;
+  white-space: pre-wrap;
   padding: 4px 10px;
   margin: -4px -10px;
 }
