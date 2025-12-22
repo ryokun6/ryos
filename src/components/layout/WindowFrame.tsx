@@ -153,6 +153,29 @@ export function WindowFrame({
   
   // Hover state for notitlebar material (shows titlebar on hover)
   const [isTitlebarHovered, setIsTitlebarHovered] = useState(false);
+  const titlebarHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-hide titlebar on mobile after inactivity
+  const showTitlebarWithAutoHide = useCallback(() => {
+    setIsTitlebarHovered(true);
+    if (titlebarHideTimeoutRef.current) {
+      clearTimeout(titlebarHideTimeoutRef.current);
+    }
+    if (isMobile && isNoTitlebar) {
+      titlebarHideTimeoutRef.current = setTimeout(() => {
+        setIsTitlebarHovered(false);
+      }, 3000);
+    }
+  }, [isMobile, isNoTitlebar]);
+
+  // Cleanup titlebar hide timeout
+  useEffect(() => {
+    return () => {
+      if (titlebarHideTimeoutRef.current) {
+        clearTimeout(titlebarHideTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Theme-aware z-index for resizer layer:
   // - macOSX: above titlebar (no controls in top-right)
@@ -1084,8 +1107,14 @@ export function WindowFrame({
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
           }}
-          onMouseEnter={isNoTitlebar ? () => setIsTitlebarHovered(true) : undefined}
+          onMouseEnter={isNoTitlebar ? () => {
+            setIsTitlebarHovered(true);
+            if (titlebarHideTimeoutRef.current) {
+              clearTimeout(titlebarHideTimeoutRef.current);
+            }
+          } : undefined}
           onMouseLeave={isNoTitlebar ? () => setIsTitlebarHovered(false) : undefined}
+          onTouchStart={isNoTitlebar && isMobile ? showTitlebarWithAutoHide : undefined}
         >
           {/* Title bar */}
           {isXpTheme ? (
