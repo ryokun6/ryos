@@ -154,8 +154,8 @@ export function WindowFrame({
   // Hover state for notitlebar material (shows titlebar on hover/interaction)
   const [isTitlebarHovered, setIsTitlebarHovered] = useState(false);
   const titlebarHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Track if titlebar was recently auto-hidden to prevent immediate re-show on mobile
-  const titlebarCooldownRef = useRef(false);
+  // Track touch start for tap detection (to distinguish taps from swipes/gestures)
+  const titlebarTouchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   // Start auto-hide timer for notitlebar windows
   const startTitlebarAutoHideTimer = useCallback(() => {
@@ -165,27 +165,47 @@ export function WindowFrame({
     if (isNoTitlebar) {
       titlebarHideTimeoutRef.current = setTimeout(() => {
         setIsTitlebarHovered(false);
-        // On mobile, set cooldown to prevent immediate re-show from lingering events
-        if (isMobile) {
-          titlebarCooldownRef.current = true;
-          // Clear cooldown after a short delay to allow new genuine touches
-          setTimeout(() => {
-            titlebarCooldownRef.current = false;
-          }, 300);
-        }
       }, 3000);
     }
-  }, [isNoTitlebar, isMobile]);
+  }, [isNoTitlebar]);
 
   // Show titlebar and start auto-hide timer
   const showTitlebarWithAutoHide = useCallback(() => {
-    // On mobile, respect cooldown period after auto-hide
-    if (isMobile && titlebarCooldownRef.current) {
-      return;
-    }
     setIsTitlebarHovered(true);
     startTitlebarAutoHideTimer();
-  }, [startTitlebarAutoHideTimer, isMobile]);
+  }, [startTitlebarAutoHideTimer]);
+
+  // Handle touch start for notitlebar tap detection
+  const handleNoTitlebarTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isNoTitlebar) return;
+    const touch = e.touches[0];
+    titlebarTouchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    };
+  }, [isNoTitlebar]);
+
+  // Handle touch end for notitlebar tap detection - only show titlebar on actual taps
+  const handleNoTitlebarTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isNoTitlebar || !titlebarTouchStartRef.current) return;
+    
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - titlebarTouchStartRef.current.x;
+    const dy = touch.clientY - titlebarTouchStartRef.current.y;
+    const deltaTime = Date.now() - titlebarTouchStartRef.current.time;
+    
+    // Only show titlebar if it was a tap (minimal movement, quick touch)
+    const TAP_THRESHOLD = 15; // pixels
+    const TAP_MAX_TIME = 300; // ms
+    const isTap = Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD && deltaTime < TAP_MAX_TIME;
+    
+    if (isTap) {
+      showTitlebarWithAutoHide();
+    }
+    
+    titlebarTouchStartRef.current = null;
+  }, [isNoTitlebar, showTitlebarWithAutoHide]);
 
   // Cleanup titlebar hide timeout
   useEffect(() => {
@@ -1134,7 +1154,8 @@ export function WindowFrame({
               clearTimeout(titlebarHideTimeoutRef.current);
             }
           } : undefined}
-          onTouchStart={isNoTitlebar ? showTitlebarWithAutoHide : undefined}
+          onTouchStart={isNoTitlebar ? handleNoTitlebarTouchStart : undefined}
+          onTouchEnd={isNoTitlebar ? handleNoTitlebarTouchEnd : undefined}
         >
           {/* Title bar */}
           {isXpTheme ? (
