@@ -36,6 +36,10 @@ interface LyricsDisplayProps {
   japaneseFurigana?: JapaneseFurigana;
   /** Callback to adjust lyric offset in ms (positive = lyrics earlier) */
   onAdjustOffset?: (deltaMs: number) => void;
+  /** Callback when swiping up (next song) */
+  onSwipeUp?: () => void;
+  /** Callback when swiping down (previous song) */
+  onSwipeDown?: () => void;
   /** Whether lyrics are currently being translated */
   isTranslating?: boolean;
   /** Optional tailwind class for text size */
@@ -568,6 +572,8 @@ export function LyricsDisplay({
   koreanDisplay: koreanDisplayOverride,
   japaneseFurigana: japaneseFuriganaOverride,
   onAdjustOffset,
+  onSwipeUp,
+  onSwipeDown,
   isTranslating = false,
   textSizeClass = "text-[12px]",
   lineHeightClass = "leading-[1.1]",
@@ -768,12 +774,16 @@ export function LyricsDisplay({
   const visibleLines =
     alignment === LyricsAlignment.Alternating ? altLines : nonAltVisibleLines;
 
-  const lastTouchY = useRef<number | null>(null);
+  // Track touch start position and accumulated movement
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const accumulatedDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasTriggeredSwipeRef = useRef(false);
 
+  // Vertical scroll (wheel) adjusts offset
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (!interactive || !onAdjustOffset || !videoVisible) return;
+    if (!interactive || !videoVisible || !onAdjustOffset) return;
     const delta = e.deltaY;
-    const step = 50; // 50 ms per scroll step (was 200)
+    const step = 50; // 50 ms per scroll step
     const change = delta > 0 ? step : -step;
     onAdjustOffset(change);
   };
@@ -781,22 +791,77 @@ export function LyricsDisplay({
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!interactive) return;
     if (e.touches.length === 1) {
-      lastTouchY.current = e.touches[0].clientY;
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now(),
+      };
+      accumulatedDeltaRef.current = { x: 0, y: 0 };
+      hasTriggeredSwipeRef.current = false;
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!interactive) return;
-    if (lastTouchY.current === null || !onAdjustOffset || !videoVisible) return;
+    if (!interactive || !touchStartRef.current) return;
+    
+    const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
-    const dy = currentY - lastTouchY.current;
-    if (Math.abs(dy) > 10) {
-      // Threshold to start adjustment
-      const step = 50; // 50 ms per swipe (was 200)
-      const change = dy > 0 ? step : -step; // Inverted: swipe down = lyrics later (positive offset), swipe up = lyrics earlier (negative offset)
-      onAdjustOffset(change);
-      lastTouchY.current = currentY;
+    const dx = currentX - touchStartRef.current.x;
+    const dy = currentY - touchStartRef.current.y;
+    
+    // Determine if this is primarily a horizontal or vertical gesture
+    const isHorizontal = Math.abs(dx) > Math.abs(dy);
+    
+    if (isHorizontal && videoVisible && onAdjustOffset) {
+      // Horizontal drag: adjust offset
+      // Calculate incremental delta from last position
+      const lastX = touchStartRef.current.x + accumulatedDeltaRef.current.x;
+      const incrementalDx = currentX - lastX;
+      
+      if (Math.abs(incrementalDx) > 10) {
+        const step = 50; // 50 ms per swipe unit
+        const change = incrementalDx > 0 ? step : -step; // Swipe right = lyrics later (positive offset), swipe left = lyrics earlier (negative offset)
+        onAdjustOffset(change);
+        accumulatedDeltaRef.current.x = dx;
+      }
     }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!interactive || !touchStartRef.current || hasTriggeredSwipeRef.current) {
+      touchStartRef.current = null;
+      return;
+    }
+    
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    const deltaTime = Date.now() - touchStartRef.current.time;
+    
+    // Swipe thresholds
+    const SWIPE_THRESHOLD = 80;
+    const MAX_SWIPE_TIME = 500;
+    const MAX_CROSS_DRIFT = 100;
+    
+    // Check for vertical swipe (song navigation)
+    const isVerticalSwipe = 
+      Math.abs(dy) > SWIPE_THRESHOLD &&
+      Math.abs(dx) < MAX_CROSS_DRIFT &&
+      deltaTime < MAX_SWIPE_TIME;
+    
+    if (isVerticalSwipe) {
+      if (dy < 0 && onSwipeUp) {
+        // Swipe up = next song
+        onSwipeUp();
+        hasTriggeredSwipeRef.current = true;
+      } else if (dy > 0 && onSwipeDown) {
+        // Swipe down = previous song
+        onSwipeDown();
+        hasTriggeredSwipeRef.current = true;
+      }
+    }
+    
+    touchStartRef.current = null;
   };
 
   if (!visible) return null;
@@ -837,6 +902,7 @@ export function LyricsDisplay({
       onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
