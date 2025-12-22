@@ -1496,98 +1496,88 @@ export function IpodAppComponent({
                     }}
                   >
                     {tracks[currentIndex] && (
-                      <>
-                        <div className="w-full h-full pointer-events-none">
-                          <ReactPlayer
-                            ref={fullScreenPlayerRef}
-                            url={tracks[currentIndex].url}
-                            playing={isPlaying && isFullScreen}
-                            controls
-                            width="100%"
-                            height="100%"
-                            volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
-                            loop={loopCurrent}
-                            onEnded={handleTrackEnd}
-                            onProgress={handleProgress}
-                            progressInterval={100}
-                            onDuration={handleDuration}
-                            onPlay={handlePlay}
-                            onPause={handlePause}
-                            onReady={handleReady}
-                            config={{
-                              youtube: {
-                                playerVars: {
-                                  modestbranding: 1,
-                                  rel: 0,
-                                  showinfo: 0,
-                                  iv_load_policy: 3,
-                                  cc_load_policy: 0,
-                                  fs: 1,
-                                  playsinline: 1,
-                                  enablejsapi: 1,
-                                  origin: window.location.origin,
-                                },
-                                embedOptions: {
-                                  referrerPolicy: "strict-origin-when-cross-origin",
-                                },
+                      <div className="w-full h-full pointer-events-none">
+                        <ReactPlayer
+                          ref={fullScreenPlayerRef}
+                          url={tracks[currentIndex].url}
+                          playing={isPlaying && isFullScreen}
+                          controls
+                          width="100%"
+                          height="100%"
+                          volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+                          loop={loopCurrent}
+                          onEnded={handleTrackEnd}
+                          onProgress={handleProgress}
+                          progressInterval={100}
+                          onDuration={handleDuration}
+                          onPlay={handlePlay}
+                          onPause={handlePause}
+                          onReady={handleReady}
+                          config={{
+                            youtube: {
+                              playerVars: {
+                                modestbranding: 1,
+                                rel: 0,
+                                showinfo: 0,
+                                iv_load_policy: 3,
+                                cc_load_policy: 0,
+                                fs: 1,
+                                playsinline: 1,
+                                enablejsapi: 1,
+                                origin: window.location.origin,
                               },
-                            }}
-                          />
-                        </div>
-
-                        {showLyrics && tracks[currentIndex] && (
-                          <div className="absolute inset-0 bg-black/50 z-10 pointer-events-none" />
-                        )}
-
-                        {showLyrics && (
-                          <div
-                            className="absolute bottom-0 inset-0 pointer-events-none z-20"
-                            style={{
-                              transform: controlsVisible
-                                ? "translateY(-8rem)"
-                                : "translateY(-6rem)",
-                              transition: "transform 200ms ease",
-                            }}
-                          >
-                            <LyricsDisplay
-                              lines={fullScreenLyricsControls.lines}
-                              originalLines={fullScreenLyricsControls.originalLines}
-                              currentLine={fullScreenLyricsControls.currentLine}
-                              isLoading={fullScreenLyricsControls.isLoading}
-                              error={fullScreenLyricsControls.error}
-                              visible={true}
-                              videoVisible={true}
-                              alignment={lyricsAlignment}
-                              chineseVariant={chineseVariant}
-                              koreanDisplay={koreanDisplay}
-                              japaneseFurigana={japaneseFurigana}
-                              fontClassName={lyricsFontClassName}
-                              onAdjustOffset={(delta) => {
-                                useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
-                                const newOffset = (tracks[currentIndex]?.lyricOffset ?? 0) + delta;
-                                const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
-                                showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-                                fullScreenLyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
-                              }}
-                              isTranslating={fullScreenLyricsControls.isTranslating}
-                              textSizeClass="text-[min(10vw,10vh)]"
-                              gapClass="gap-0"
-                              containerStyle={{
-                                gap: "clamp(0.25rem, calc(min(10vw,10vh) * 0.12), 2.5rem)",
-                                paddingLeft: "env(safe-area-inset-left, 0px)",
-                                paddingRight: "env(safe-area-inset-right, 0px)",
-                              }}
-                              interactive={isIOSSafari ? false : isPlaying}
-                              bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),1.5rem)+clamp(5rem,16dvh,12rem))]"
-                              onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
-                              currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
-                            />
-                          </div>
-                        )}
-
-                      </>
+                              embedOptions: {
+                                referrerPolicy: "strict-origin-when-cross-origin",
+                              },
+                            },
+                          }}
+                        />
+                      </div>
                     )}
                   </div>
+
+                  {/* Lyrics overlays - positioned relative to viewport, not video container */}
+                  {showLyrics && tracks[currentIndex] && (
+                    <div className="fixed inset-0 bg-black/50 z-10 pointer-events-none" />
+                  )}
+
+                  {showLyrics && tracks[currentIndex] && (
+                    <div className="absolute inset-0 pointer-events-none z-20">
+                      <LyricsDisplay
+                        lines={fullScreenLyricsControls.lines}
+                        originalLines={fullScreenLyricsControls.originalLines}
+                        currentLine={fullScreenLyricsControls.currentLine}
+                        isLoading={fullScreenLyricsControls.isLoading}
+                        error={fullScreenLyricsControls.error}
+                        visible={true}
+                        videoVisible={true}
+                        alignment={lyricsAlignment}
+                        chineseVariant={chineseVariant}
+                        koreanDisplay={koreanDisplay}
+                        japaneseFurigana={japaneseFurigana}
+                        fontClassName={lyricsFontClassName}
+                        onAdjustOffset={(delta) => {
+                          useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
+                          const newOffset = (tracks[currentIndex]?.lyricOffset ?? 0) + delta;
+                          const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
+                          showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
+                          fullScreenLyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+                        }}
+                        isTranslating={fullScreenLyricsControls.isTranslating}
+                        textSizeClass="text-[min(10vw,10vh)]"
+                        gapClass="gap-0"
+                        containerStyle={{
+                          gap: "clamp(0.25rem, calc(min(10vw,10vh) * 0.12), 2.5rem)",
+                          paddingLeft: "env(safe-area-inset-left, 0px)",
+                          paddingRight: "env(safe-area-inset-right, 0px)",
+                        }}
+                        interactive={isIOSSafari ? false : isPlaying}
+                        bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),0.5rem)+4rem)]"
+                        onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
+                        currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
