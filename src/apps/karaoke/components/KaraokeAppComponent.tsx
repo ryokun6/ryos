@@ -689,7 +689,7 @@ export function KaraokeAppComponent({
           <AnimatePresence>
             {statusMessage && (
               <motion.div
-                className="absolute top-4 left-4 z-40 pointer-events-none"
+                className="absolute top-8 left-8 z-40 pointer-events-none"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -716,14 +716,14 @@ export function KaraokeAppComponent({
           <AnimatePresence>
             {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana) && (
               <motion.div
-                className="absolute top-4 right-4 z-40 pointer-events-none"
+                className="absolute top-8 right-8 z-40 pointer-events-none"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.2 }}
               >
                 <ActivityIndicator
-                  size="lg"
+                  size={32}
                   className="karaoke-activity-indicator text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
                 />
               </motion.div>
