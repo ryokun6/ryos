@@ -103,7 +103,7 @@ async function testKoreanTitle(): Promise<void> {
   const data = await res.json();
   assert(data.title, "Expected parsed title");
   if (data.artist) {
-    assert(!data.artist.includes("뉴진스"), "Should prefer English artist name");
+    assert(data.artist.includes("뉴진스"), "Should prefer original language artist name");
   }
 }
 
