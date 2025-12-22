@@ -240,62 +240,17 @@ function mapWordsToFurigana(
   return result;
 }
 
+// Shared shadow constants for word highlighting
+const BASE_SHADOW = "0 0 2px black, 0 0 2px black, 0 0 2px black";
+const GLOW_SHADOW = "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black";
+const FEATHER = 15; // Width of the soft edge in percentage
+
 /**
- * Single word with karaoke-style clip animation
- * Uses inline-grid with CSS classes for consistent text flow
+ * Calculate gradient mask values for a word based on progress
  */
-function AnimatedWord({
-  word,
-  timeIntoLine,
-  content,
-}: {
-  word: LyricWord;
-  timeIntoLine: number;
-  content: React.ReactNode;
-}) {
-  const wordStartMs = word.startTimeMs;
-  const wordDurationMs = word.durationMs;
-
-  // Calculate progress through this word (0 to 1)
-  let progress = 0;
-  if (timeIntoLine >= wordStartMs) {
-    if (wordDurationMs > 0) {
-      progress = Math.min(1, (timeIntoLine - wordStartMs) / wordDurationMs);
-    } else {
-      progress = 1;
-    }
-  }
-
-  // Gradient mask for soft feathered edge
-  // Offset so that 0% progress shows nothing (gradient starts in negative space)
-  const feather = 15; // Width of the soft edge in percentage
-  const progressPercent = progress * (100 + feather) - feather;
-  const gradientStart = progressPercent;
-  const gradientEnd = progressPercent + feather;
-
-  // Base shadow for text legibility (same as inactive lines)
-  const baseShadow = "0 0 2px black, 0 0 2px black, 0 0 2px black";
-  // Glow shadow for highlighted text - includes base shadow for legibility
-  const glowShadow = "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black";
-
-  return (
-    <span className="lyrics-word-highlight">
-      {/* Base layer - dimmed to match inactive line opacity */}
-      <span className="opacity-50 lyrics-word-layer" style={{ textShadow: baseShadow }}>{content}</span>
-      {/* Overlay layer - gradient mask for soft feathered edge with glow */}
-      <span
-        aria-hidden="true"
-        className="lyrics-word-layer"
-        style={{
-          maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
-          WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
-          textShadow: glowShadow,
-        }}
-      >
-        {content}
-      </span>
-    </span>
-  );
+function calculateMask(progress: number): string {
+  const progressPercent = progress * (100 + FEATHER) - FEATHER;
+  return `linear-gradient(to right, black ${progressPercent}%, transparent ${progressPercent + FEATHER}%)`;
 }
 
 /**
@@ -311,47 +266,39 @@ function StaticWordRendering({
   processText: (text: string) => string;
   furiganaSegments?: FuriganaSegment[];
 }): ReactNode {
-  // Base shadow for text legibility (same as inactive lines)
-  const baseShadow = "0 0 2px black, 0 0 2px black, 0 0 2px black";
+  // Pre-compute render items for consistency with animated version
+  const renderItems = useMemo(() => {
+    if (furiganaSegments && furiganaSegments.length > 0) {
+      const wordFuriganaList = mapWordsToFurigana(wordTimings, furiganaSegments);
+      const items: { key: string; content: ReactNode }[] = [];
+      
+      wordTimings.forEach((word, idx) => {
+        const mapping = wordFuriganaList[idx];
+        if (!mapping || mapping.segments === null) return;
+        
+        items.push({
+          key: `${idx}-${word.text}`,
+          content: mapping.segments.length > 0
+            ? renderFuriganaSegments(mapping.segments)
+            : processText(word.text),
+        });
+      });
+      
+      return items;
+    }
+    
+    return wordTimings.map((word, idx) => ({
+      key: `${idx}-${word.text}`,
+      content: processText(word.text),
+    }));
+  }, [wordTimings, furiganaSegments, processText]);
 
-  // When furigana is present, render with ruby elements
-  if (furiganaSegments && furiganaSegments.length > 0) {
-    const wordFuriganaList = mapWordsToFurigana(wordTimings, furiganaSegments);
-
-    return (
-      <>
-        {wordTimings.map((word, idx) => {
-          const mapping = wordFuriganaList[idx];
-
-          // Skip words whose characters were already rendered by a previous word's furigana
-          if (!mapping || mapping.segments === null) {
-            return null;
-          }
-
-          const content =
-            mapping.segments.length > 0
-              ? renderFuriganaSegments(mapping.segments)
-              : processText(word.text);
-
-          return (
-            <span key={`${idx}-${word.text}`} className="lyrics-word-highlight">
-              <span className="lyrics-word-layer" style={{ textShadow: baseShadow }}>
-                {content}
-              </span>
-            </span>
-          );
-        })}
-      </>
-    );
-  }
-
-  // No furigana - render each word in the same structure
   return (
     <>
-      {wordTimings.map((word, idx) => (
-        <span key={`${idx}-${word.text}`} className="lyrics-word-highlight">
-          <span className="lyrics-word-layer" style={{ textShadow: baseShadow }}>
-            {processText(word.text)}
+      {renderItems.map((item) => (
+        <span key={item.key} className="lyrics-word-highlight">
+          <span className="lyrics-word-layer" style={{ textShadow: BASE_SHADOW }}>
+            {item.content}
           </span>
         </span>
       ))}
@@ -360,8 +307,22 @@ function StaticWordRendering({
 }
 
 /**
- * Renders a line with word-level timing highlights
- * Uses requestAnimationFrame for smooth updates
+ * Word timing data with pre-computed content for rendering
+ */
+interface WordRenderItem {
+  word: LyricWord;
+  /** Extra duration from furigana spanning multiple words */
+  extraDurationMs: number;
+  /** Pre-rendered content (text or furigana) */
+  content: ReactNode;
+  /** Unique key for React */
+  key: string;
+}
+
+/**
+ * Renders a line with word-level timing highlights.
+ * Uses direct DOM manipulation via refs for smooth 60fps animation
+ * without causing React re-renders on every frame.
  */
 function WordTimingHighlight({
   wordTimings,
@@ -376,133 +337,126 @@ function WordTimingHighlight({
   processText: (text: string) => string;
   furiganaSegments?: FuriganaSegment[];
 }): ReactNode {
-  // Track time for interpolation between prop updates
+  // Refs for direct DOM manipulation (bypasses React reconciliation)
+  const overlayRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  
+  // Time tracking for smooth interpolation
   const timeRef = useRef({
     propTime: currentTimeMs,
     propTimestamp: performance.now(),
-    lastDisplayedTime: currentTimeMs, // Track last displayed time for monotonic guarantee
+    lastDisplayedTime: currentTimeMs,
   });
-  
-  // Force re-render on each animation frame
-  const [, forceUpdate] = useState(0);
 
-  // Sync when currentTimeMs prop changes
+  // Pre-compute render items (only recalculates when inputs change)
+  const renderItems = useMemo((): WordRenderItem[] => {
+    if (furiganaSegments && furiganaSegments.length > 0) {
+      const wordFuriganaList = mapWordsToFurigana(wordTimings, furiganaSegments);
+      const items: WordRenderItem[] = [];
+      
+      wordTimings.forEach((word, idx) => {
+        const mapping = wordFuriganaList[idx];
+        // Skip words whose characters were borrowed by a previous word's furigana
+        if (!mapping || mapping.segments === null) return;
+        
+        const content = mapping.segments.length > 0
+          ? renderFuriganaSegments(mapping.segments)
+          : processText(word.text);
+        
+        items.push({
+          word,
+          extraDurationMs: mapping.extraDurationMs,
+          content,
+          key: `${idx}-${word.text}`,
+        });
+      });
+      
+      return items;
+    }
+    
+    // No furigana - simple word list
+    return wordTimings.map((word, idx) => ({
+      word,
+      extraDurationMs: 0,
+      content: processText(word.text),
+      key: `${idx}-${word.text}`,
+    }));
+  }, [wordTimings, furiganaSegments, processText]);
+
+  // Sync time ref when prop changes
   useEffect(() => {
     timeRef.current.propTime = currentTimeMs;
     timeRef.current.propTimestamp = performance.now();
   }, [currentTimeMs]);
 
-  // High-frequency timer for smooth animation
+  // Animation loop - updates DOM directly without React re-renders
   useEffect(() => {
     let animationFrameId: number;
     
-    const tick = () => {
-      forceUpdate(n => n + 1);
-      animationFrameId = requestAnimationFrame(tick);
+    const updateMasks = () => {
+      // Interpolate time for smooth animation between prop updates
+      const elapsed = performance.now() - timeRef.current.propTimestamp;
+      const clampedElapsed = Math.min(elapsed, 500); // Max 500ms interpolation
+      const rawTime = timeRef.current.propTime + clampedElapsed;
+      
+      // Monotonic time: prevent backward jitter unless it's a significant seek
+      const lastDisplayed = timeRef.current.lastDisplayedTime;
+      const isSeek = lastDisplayed - rawTime >= 500;
+      const interpolatedTime = isSeek || rawTime >= lastDisplayed ? rawTime : lastDisplayed;
+      timeRef.current.lastDisplayedTime = interpolatedTime;
+      
+      const timeIntoLine = interpolatedTime - lineStartTimeMs;
+      
+      // Update each word's mask directly via DOM
+      renderItems.forEach((item, idx) => {
+        const overlayEl = overlayRefs.current[idx];
+        if (!overlayEl) return;
+        
+        const { word, extraDurationMs } = item;
+        const durationMs = word.durationMs + extraDurationMs;
+        
+        // Calculate progress (0 to 1)
+        let progress = 0;
+        if (timeIntoLine >= word.startTimeMs) {
+          progress = durationMs > 0
+            ? Math.min(1, (timeIntoLine - word.startTimeMs) / durationMs)
+            : 1;
+        }
+        
+        // Apply gradient mask directly to DOM
+        const mask = calculateMask(progress);
+        overlayEl.style.maskImage = mask;
+        overlayEl.style.webkitMaskImage = mask;
+      });
+      
+      animationFrameId = requestAnimationFrame(updateMasks);
     };
     
-    animationFrameId = requestAnimationFrame(tick);
+    animationFrameId = requestAnimationFrame(updateMasks);
     return () => cancelAnimationFrame(animationFrameId);
-  }, []);
+  }, [lineStartTimeMs, renderItems]);
 
-  // Interpolate time, but clamp to not go more than 500ms ahead of last prop
-  const elapsed = performance.now() - timeRef.current.propTimestamp;
-  const maxInterpolation = 500; // Don't interpolate more than 500ms ahead
-  const clampedElapsed = Math.min(elapsed, maxInterpolation);
-  const rawInterpolatedTime = timeRef.current.propTime + clampedElapsed;
-  
-  // MONOTONIC TIME FIX: Never allow time to decrease unless it's a significant jump (seek)
-  // Small backward jumps (<500ms) are likely audio player jitter - hold current time
-  // Large backward jumps (>=500ms) are likely intentional seeks - allow them
-  const lastDisplayed = timeRef.current.lastDisplayedTime;
-  const backwardAmount = lastDisplayed - rawInterpolatedTime;
-  const isSignificantSeek = backwardAmount >= 500;
-  const interpolatedTime = isSignificantSeek || rawInterpolatedTime >= lastDisplayed
-    ? rawInterpolatedTime
-    : lastDisplayed; // Hold at last displayed time to prevent jitter
-  
-  // Update last displayed time
-  timeRef.current.lastDisplayedTime = interpolatedTime;
-  
-  // Calculate time elapsed since the start of this line
-  const timeIntoLine = interpolatedTime - lineStartTimeMs;
+  // Initialize refs array length
+  useEffect(() => {
+    overlayRefs.current = overlayRefs.current.slice(0, renderItems.length);
+  }, [renderItems.length]);
 
-  // When furigana is present, render per-word with clip effect
-  if (furiganaSegments && furiganaSegments.length > 0) {
-    const wordFuriganaList = mapWordsToFurigana(wordTimings, furiganaSegments);
-    
-    return (
-      <>
-        {wordTimings.map((word, idx) => {
-          const mapping = wordFuriganaList[idx];
-          
-          // Skip words whose characters were already rendered by a previous word's furigana
-          if (!mapping || mapping.segments === null) {
-            return null;
-          }
-          
-          const wordStartMs = word.startTimeMs;
-          // When furigana spans multiple words, extend the duration to cover borrowed characters
-          const wordDurationMs = word.durationMs + mapping.extraDurationMs;
-          
-          // Calculate progress through this word (0 to 1)
-          let progress = 0;
-          if (timeIntoLine >= wordStartMs) {
-            if (wordDurationMs > 0) {
-              progress = Math.min(1, (timeIntoLine - wordStartMs) / wordDurationMs);
-            } else {
-              progress = 1;
-            }
-          }
-          
-          // Gradient mask for soft feathered edge
-          // Offset so that 0% progress shows nothing (gradient starts in negative space)
-          const feather = 15;
-          const progressPercent = progress * (100 + feather) - feather;
-          const gradientStart = progressPercent;
-          const gradientEnd = progressPercent + feather;
-          
-          const content = mapping.segments.length > 0
-            ? renderFuriganaSegments(mapping.segments)
-            : processText(word.text);
-          
-          // Base shadow for text legibility (same as inactive lines)
-          const baseShadow = "0 0 2px black, 0 0 2px black, 0 0 2px black";
-          // Glow shadow for highlighted text - includes base shadow for legibility
-          const glowShadow = "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black";
-          
-          return (
-            <span key={`${idx}-${word.text}`} className="lyrics-word-highlight">
-              <span className="opacity-50 lyrics-word-layer" style={{ textShadow: baseShadow }}>{content}</span>
-              {/* Overlay layer - gradient mask for soft feathered edge with glow */}
-              <span
-                aria-hidden="true"
-                className="lyrics-word-layer"
-                style={{
-                  maskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
-                  WebkitMaskImage: `linear-gradient(to right, black ${gradientStart}%, transparent ${gradientEnd}%)`,
-                  textShadow: glowShadow,
-                }}
-              >
-                {content}
-              </span>
-            </span>
-          );
-        })}
-      </>
-    );
-  }
-
-  // No furigana - render each word with individual karaoke effect
+  // Render once - DOM updates happen via refs, not re-renders
   return (
     <>
-      {wordTimings.map((word, idx) => (
-        <AnimatedWord
-          key={`${idx}-${word.text}`}
-          word={word}
-          timeIntoLine={timeIntoLine}
-          content={processText(word.text)}
-        />
+      {renderItems.map((item, idx) => (
+        <span key={item.key} className="lyrics-word-highlight">
+          <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW }}>
+            {item.content}
+          </span>
+          <span
+            ref={(el) => { overlayRefs.current[idx] = el; }}
+            aria-hidden="true"
+            className="lyrics-word-layer"
+            style={{ textShadow: GLOW_SHADOW }}
+          >
+            {item.content}
+          </span>
+        </span>
       ))}
     </>
   );
@@ -516,9 +470,7 @@ const getVariants = (
 ) => {
   // For lines with word-level timing, glow is handled by the overlay layer
   // For other lines, apply glow at the parent level
-  const currentTextShadow = isCurrent && !hasWordTiming
-    ? "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black"
-    : "0 0 2px black, 0 0 2px black, 0 0 2px black";
+  const currentTextShadow = isCurrent && !hasWordTiming ? GLOW_SHADOW : BASE_SHADOW;
   
   return {
     initial: {
@@ -526,8 +478,7 @@ const getVariants = (
       scale: 0.93,
       filter: "none",
       y: 10,
-      textShadow:
-        "0 0 2px black, 0 0 2px black, 0 0 2px black, 0 0 0px rgba(255,255,255,0)",
+      textShadow: BASE_SHADOW,
     },
     animate: {
       opacity: isAlternating
@@ -553,8 +504,7 @@ const getVariants = (
       scale: 0.9,
       filter: "none",
       y: -10,
-      textShadow:
-        "0 0 2px black, 0 0 2px black, 0 0 2px black, 0 0 0px rgba(255,255,255,0)",
+      textShadow: BASE_SHADOW,
     },
   };
 };
