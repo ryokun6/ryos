@@ -28,7 +28,7 @@ import {
   getRoomsWithCountsFast,
   deleteRoomPresence,
   getDetailedRooms,
-} from "./presence.js";
+} from "./_presence.js";
 import {
   broadcastRoomUpdated,
   broadcastRoomCreated,
@@ -43,7 +43,7 @@ import {
 } from "../utils/validation.js";
 import { validateAuth } from "../utils/auth.js";
 import { createErrorResponse } from "./_helpers.js";
-import { ensureUserExists } from "./users.js";
+import { ensureUserExists } from "./_users.js";
 import type { Room, CreateRoomData, JoinLeaveRoomData, SwitchRoomData } from "./_types.js";
 
 // ============================================================================

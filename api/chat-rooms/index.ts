@@ -35,7 +35,7 @@ import {
   handleLeaveRoom,
   handleSwitchRoom,
   handleGetRoomUsers,
-} from "./rooms.js";
+} from "./_rooms.js";
 
 // Message handlers
 import {
@@ -45,10 +45,10 @@ import {
   handleGenerateRyoReply,
   handleDeleteMessage,
   handleClearAllMessages,
-} from "./messages.js";
+} from "./_messages.js";
 
 // User handlers
-import { handleCreateUser, handleGetUsers } from "./users.js";
+import { handleCreateUser, handleGetUsers } from "./_users.js";
 
 // Token handlers
 import {
@@ -61,14 +61,14 @@ import {
   handleListTokens,
   handleLogoutAllDevices,
   handleLogoutCurrent,
-} from "./tokens.js";
+} from "./_tokens.js";
 
 // Presence handlers
 import {
   cleanupExpiredPresence,
   getDetailedRooms,
   refreshRoomUserCount,
-} from "./presence.js";
+} from "./_presence.js";
 
 // ============================================================================
 // Initialize Module Connections
