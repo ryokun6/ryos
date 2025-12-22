@@ -546,12 +546,20 @@ export function KaraokeAppComponent({
         e.preventDefault();
         nextTrack();
         showStatus("⏭");
+      } else if (e.key === "[" || e.key === "]") {
+        // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
+        const delta = e.key === "[" ? -50 : 50;
+        useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
+        const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
+        const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
+        showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
+        lyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isForeground, isPlaying, isOffline, togglePlay, nextTrack, previousTrack, seekTime, showStatus, showOfflineStatus]);
+  }, [isForeground, isPlaying, isOffline, togglePlay, nextTrack, previousTrack, seekTime, showStatus, showOfflineStatus, currentIndex, currentTrack, elapsedTime, lyricsControls, t]);
 
   // Handle initial data (shared track) or default to first track
   useEffect(() => {

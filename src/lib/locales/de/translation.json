@@ -1242,6 +1242,10 @@
           "description": "Wählen Sie zwischen Fokus-, Zentrier- und wechselnden Liedtext-Layouts.",
           "title": "Layout-Optionen"
         },
+        "offsetAdjustment": {
+          "description": "Verwenden Sie die Tasten [ ], das Mausrad oder ziehen Sie nach oben/unten, um die Liedtext-Synchronisation anzupassen.",
+          "title": "Offset-Anpassung"
+        },
         "sharedLibrary": {
           "description": "Nutzt dieselbe Musikbibliothek wie der iPod.",
           "title": "Geteilte Bibliothek"

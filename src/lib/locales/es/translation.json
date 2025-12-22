@@ -1242,6 +1242,10 @@
           "description": "Elige entre diseños de letras con enfoque, centrados y alternados.",
           "title": "Opciones de diseño"
         },
+        "offsetAdjustment": {
+          "description": "Usa las teclas [ ], la rueda del ratón o arrastra arriba/abajo para ajustar la sincronización de la letra.",
+          "title": "Ajuste de desfase"
+        },
         "sharedLibrary": {
           "description": "Usa la misma biblioteca de música que el iPod.",
           "title": "Biblioteca compartida"

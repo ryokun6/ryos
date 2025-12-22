@@ -1242,6 +1242,10 @@
           "description": "Scegli tra layout dei testi a fuoco, centrato e alternato.",
           "title": "Opzioni layout"
         },
+        "offsetAdjustment": {
+          "description": "Usa i tasti [ ], la rotellina del mouse o trascina su/giù per regolare la sincronizzazione dei testi.",
+          "title": "Regolazione Offset"
+        },
         "sharedLibrary": {
           "description": "Utilizza la stessa libreria musicale dell'iPod.",
           "title": "Libreria condivisa"

@@ -27,6 +27,11 @@ export const helpItems = [
     title: "Layout Options",
     description: "Choose between focus, center, and alternating lyrics layouts.",
   },
+  {
+    icon: "⏱️",
+    title: "Offset Adjustment",
+    description: "Use [ ] keys, mouse wheel, or drag up/down to adjust lyrics timing.",
+  },
 ];
 
 export const appMetadata = {

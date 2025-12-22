@@ -1242,6 +1242,10 @@
           "description": "집중, 중앙, 교차 가사 레이아웃 선택.",
           "title": "레이아웃 옵션"
         },
+        "offsetAdjustment": {
+          "description": "[ ] 키, 마우스 휠을 사용하거나 위/아래로 드래그하여 가사 타이밍을 조절하세요.",
+          "title": "오프셋 조정"
+        },
         "sharedLibrary": {
           "description": "iPod과 동일한 음악 라이브러리를 사용합니다.",
           "title": "공유 라이브러리"

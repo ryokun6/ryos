@@ -404,12 +404,22 @@ export function FullScreenPortal({
             handlers.showStatus(`⏭ ${currentTrack.title}${artistInfo}`);
           }
         }, 800);
+      } else if (e.key === "[" || e.key === "]") {
+        // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
+        const delta = e.key === "[" ? -50 : 50;
+        const store = useIpodStore.getState();
+        const currentTrackIndex = store.currentIndex;
+        const currentTrack = store.tracks[currentTrackIndex];
+        store.adjustLyricOffset(currentTrackIndex, delta);
+        const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
+        const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
+        handlers.showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isPlaying, isOffline, showOfflineStatus]);
+  }, [isPlaying, isOffline, showOfflineStatus, t]);
 
   return createPortal(
     <div

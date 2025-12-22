@@ -1242,6 +1242,10 @@
           "description": "フォーカス、中央、交互表示の歌詞レイアウトから選択。",
           "title": "レイアウトオプション"
         },
+        "offsetAdjustment": {
+          "description": "[ ]キー、マウスホイール、または上下にドラッグして歌詞のタイミングを調整します。",
+          "title": "オフセット調整"
+        },
         "sharedLibrary": {
           "description": "iPod と同じミュージックライブラリを使用。",
           "title": "共有ライブラリ"

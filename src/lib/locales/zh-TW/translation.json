@@ -1242,6 +1242,10 @@
           "description": "選擇焦點、置中或交替歌詞版面配置。",
           "title": "版面配置選項"
         },
+        "offsetAdjustment": {
+          "description": "使用 [ ] 鍵、滑鼠滾輪，或向上/向下拖曳來調整歌詞時間。",
+          "title": "偏移調整"
+        },
         "sharedLibrary": {
           "description": "使用與iPod相同的音樂資料庫。",
           "title": "共享資料庫"

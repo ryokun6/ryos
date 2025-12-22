@@ -1491,6 +1491,10 @@
         "layoutOptions": {
           "title": "Layout Options",
           "description": "Choose between focus, center, and alternating lyrics layouts."
+        },
+        "offsetAdjustment": {
+          "title": "Offset Adjustment",
+          "description": "Use [ ] keys, mouse wheel, or drag up/down to adjust lyrics timing."
         }
       }
     },

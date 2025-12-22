@@ -1242,6 +1242,10 @@
           "description": "Choisissez entre les dispositions de paroles : focus, centré et alterné.",
           "title": "Options de disposition"
         },
+        "offsetAdjustment": {
+          "description": "Utilisez les touches [ ], la molette de la souris, ou faites glisser vers le haut/bas pour ajuster le minutage des paroles.",
+          "title": "Réglage du décalage"
+        },
         "sharedLibrary": {
           "description": "Utilise la même bibliothèque musicale que l'iPod.",
           "title": "Bibliothèque partagée"
