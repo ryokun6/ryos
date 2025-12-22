@@ -1240,7 +1240,7 @@ export function WindowFrame({
                       background: "linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 100%)",
                       borderBottom: "none",
                       opacity: isTitlebarHovered ? 1 : 0,
-                      pointerEvents: isTitlebarHovered ? "auto" : "none",
+                      // Always interactive so titlebar can be dragged even when visually hidden
                     }
                   : isForeground
                   ? {
