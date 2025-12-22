@@ -154,6 +154,8 @@ export function WindowFrame({
   // Hover state for notitlebar material (shows titlebar on hover/interaction)
   const [isTitlebarHovered, setIsTitlebarHovered] = useState(false);
   const titlebarHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track if titlebar was recently auto-hidden to prevent immediate re-show on mobile
+  const titlebarCooldownRef = useRef(false);
 
   // Start auto-hide timer for notitlebar windows
   const startTitlebarAutoHideTimer = useCallback(() => {
@@ -163,15 +165,27 @@ export function WindowFrame({
     if (isNoTitlebar) {
       titlebarHideTimeoutRef.current = setTimeout(() => {
         setIsTitlebarHovered(false);
+        // On mobile, set cooldown to prevent immediate re-show from lingering events
+        if (isMobile) {
+          titlebarCooldownRef.current = true;
+          // Clear cooldown after a short delay to allow new genuine touches
+          setTimeout(() => {
+            titlebarCooldownRef.current = false;
+          }, 300);
+        }
       }, 3000);
     }
-  }, [isNoTitlebar]);
+  }, [isNoTitlebar, isMobile]);
 
   // Show titlebar and start auto-hide timer
   const showTitlebarWithAutoHide = useCallback(() => {
+    // On mobile, respect cooldown period after auto-hide
+    if (isMobile && titlebarCooldownRef.current) {
+      return;
+    }
     setIsTitlebarHovered(true);
     startTitlebarAutoHideTimer();
-  }, [startTitlebarAutoHideTimer]);
+  }, [startTitlebarAutoHideTimer, isMobile]);
 
   // Cleanup titlebar hide timeout
   useEffect(() => {
@@ -1271,6 +1285,10 @@ export function WindowFrame({
                 handleFullMaximize(e);
               }}
               onTouchStart={(e: React.TouchEvent<HTMLElement>) => {
+                // For notitlebar: show title bar when tapping the top area
+                if (isNoTitlebar) {
+                  showTitlebarWithAutoHide();
+                }
                 if (isFromTitlebarControls(e.target)) {
                   e.stopPropagation();
                   return;
