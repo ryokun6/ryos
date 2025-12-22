@@ -151,22 +151,27 @@ export function WindowFrame({
   const effectiveTransparentBackground =
     currentTheme === "macosx" ? true : isTransparent;
   
-  // Hover state for notitlebar material (shows titlebar on hover)
+  // Hover state for notitlebar material (shows titlebar on hover/interaction)
   const [isTitlebarHovered, setIsTitlebarHovered] = useState(false);
   const titlebarHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-hide titlebar on mobile after inactivity
-  const showTitlebarWithAutoHide = useCallback(() => {
-    setIsTitlebarHovered(true);
+  // Start auto-hide timer for notitlebar windows
+  const startTitlebarAutoHideTimer = useCallback(() => {
     if (titlebarHideTimeoutRef.current) {
       clearTimeout(titlebarHideTimeoutRef.current);
     }
-    if (isMobile && isNoTitlebar) {
+    if (isNoTitlebar) {
       titlebarHideTimeoutRef.current = setTimeout(() => {
         setIsTitlebarHovered(false);
       }, 3000);
     }
-  }, [isMobile, isNoTitlebar]);
+  }, [isNoTitlebar]);
+
+  // Show titlebar and start auto-hide timer
+  const showTitlebarWithAutoHide = useCallback(() => {
+    setIsTitlebarHovered(true);
+    startTitlebarAutoHideTimer();
+  }, [startTitlebarAutoHideTimer]);
 
   // Cleanup titlebar hide timeout
   useEffect(() => {
@@ -1107,14 +1112,15 @@ export function WindowFrame({
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
           }}
-          onMouseEnter={isNoTitlebar ? () => {
-            setIsTitlebarHovered(true);
+          onMouseEnter={isNoTitlebar ? showTitlebarWithAutoHide : undefined}
+          onMouseMove={isNoTitlebar ? showTitlebarWithAutoHide : undefined}
+          onMouseLeave={isNoTitlebar ? () => {
+            setIsTitlebarHovered(false);
             if (titlebarHideTimeoutRef.current) {
               clearTimeout(titlebarHideTimeoutRef.current);
             }
           } : undefined}
-          onMouseLeave={isNoTitlebar ? () => setIsTitlebarHovered(false) : undefined}
-          onTouchStart={isNoTitlebar && isMobile ? showTitlebarWithAutoHide : undefined}
+          onTouchStart={isNoTitlebar ? showTitlebarWithAutoHide : undefined}
         >
           {/* Title bar */}
           {isXpTheme ? (
