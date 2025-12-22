@@ -725,7 +725,7 @@ export const useIpodStore = create<IpodState>()(
           title: trackInfo.title,
           artist: trackInfo.artist,
           album: trackInfo.album,
-          lyricOffset: 1000, // Default 1 second offset for new tracks
+          lyricOffset: 500, // Default 500ms offset for new tracks
         };
 
         try {
