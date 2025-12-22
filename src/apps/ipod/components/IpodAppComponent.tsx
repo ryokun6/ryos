@@ -1195,6 +1195,27 @@ export function IpodAppComponent({
     selectedMatch: selectedMatchForLyrics,
   });
 
+  // Show toast with Search action when lyrics loading fails with HTTP error
+  const prevLyricsErrorRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const error = fullScreenLyricsControls.error;
+    // Only show toast when error changes (not on initial mount or repeated errors)
+    if (error && error !== prevLyricsErrorRef.current) {
+      // Check if error is HTTP-related (status codes like 404, 500, etc.)
+      const isHttpError = /status\s+\d{3}/i.test(error);
+      if (isHttpError && currentTrack) {
+        toast.error(t("apps.ipod.dialogs.lyricsLoadError"), {
+          description: error,
+          action: {
+            label: t("apps.ipod.dialogs.lyricsLoadErrorAction"),
+            onClick: () => setIsLyricsSearchDialogOpen(true),
+          },
+        });
+      }
+    }
+    prevLyricsErrorRef.current = error;
+  }, [fullScreenLyricsControls.error, currentTrack, t]);
+
   // Fullscreen sync
   const prevFullScreenRef = useRef(isFullScreen);
 
