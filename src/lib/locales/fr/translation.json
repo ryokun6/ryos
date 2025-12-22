@@ -1031,6 +1031,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Quitter le mode plein écran",
+        "enterFullscreen": "Activer le mode plein écran",
         "cycleLyricFont": "Changer la police des paroles",
         "cycleLyricLayout": "Alterner la disposition des paroles",
         "nextTrack": "Piste suivante",

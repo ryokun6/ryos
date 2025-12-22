@@ -1031,6 +1031,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "전체 화면 닫기",
+        "enterFullscreen": "전체 화면 열기",
         "cycleLyricFont": "가사 글꼴 순환",
         "cycleLyricLayout": "가사 레이아웃 전환",
         "nextTrack": "다음 곡",

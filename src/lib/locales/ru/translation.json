@@ -1031,6 +1031,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Закрыть полноэкранный режим",
+        "enterFullscreen": "Открыть полноэкранный режим",
         "cycleLyricFont": "Переключить шрифт текста песни",
         "cycleLyricLayout": "Переключить макет текста песни",
         "nextTrack": "Следующий трек",

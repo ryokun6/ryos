@@ -1031,6 +1031,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Cerrar pantalla completa",
+        "enterFullscreen": "Entrar en pantalla completa",
         "cycleLyricFont": "Alternar fuente de la letra",
         "cycleLyricLayout": "Alternar diseño de letra",
         "nextTrack": "Siguiente pista",

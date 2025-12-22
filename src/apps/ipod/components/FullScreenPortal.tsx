@@ -7,14 +7,14 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isMobileSafari } from "@/utils/device";
-import { LyricsFont } from "@/types/lyrics";
+import type { LyricsFont } from "@/types/lyrics";
 import {
   TRANSLATION_LANGUAGES,
   SWIPE_THRESHOLD,
   MAX_SWIPE_TIME,
   MAX_VERTICAL_DRIFT,
-  getTranslationBadge,
 } from "../constants";
+import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import type { FullScreenPortalProps } from "../types";
 
 export function FullScreenPortal({
@@ -271,10 +271,51 @@ export function FullScreenPortal({
     return () => clearTimeout(timeoutId);
   }, []);
 
-  const translationBadge = useMemo(
-    () => getTranslationBadge(currentTranslationCode),
-    [currentTranslationCode]
-  );
+  // Wrapped handlers for fullscreen controls
+  const handlePrevious = useCallback(() => {
+    registerActivity();
+    previousTrack();
+    setTimeout(() => {
+      const currentTrackIndex = useIpodStore.getState().currentIndex;
+      const currentTrack = useIpodStore.getState().tracks[currentTrackIndex];
+      if (currentTrack) {
+        const artistInfo = currentTrack.artist
+          ? ` - ${currentTrack.artist}`
+          : "";
+        showStatus(`⏮ ${currentTrack.title}${artistInfo}`);
+      }
+    }, 100);
+  }, [registerActivity, previousTrack, showStatus]);
+
+  const handlePlayPause = useCallback(() => {
+    registerActivity();
+    const wasPlaying = getActualPlayerState();
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      togglePlay();
+      const actuallyPlaying = getActualPlayerState();
+      showStatus(actuallyPlaying ? "⏸" : "▶");
+      if (!wasPlaying) {
+        setTimeout(() => restartAutoHideTimer(), 100);
+      }
+    }
+  }, [registerActivity, getActualPlayerState, isOffline, showOfflineStatus, togglePlay, showStatus, restartAutoHideTimer]);
+
+  const handleNext = useCallback(() => {
+    registerActivity();
+    nextTrack();
+    setTimeout(() => {
+      const currentTrackIndex = useIpodStore.getState().currentIndex;
+      const currentTrack = useIpodStore.getState().tracks[currentTrackIndex];
+      if (currentTrack) {
+        const artistInfo = currentTrack.artist
+          ? ` - ${currentTrack.artist}`
+          : "";
+        showStatus(`⏭ ${currentTrack.title}${artistInfo}`);
+      }
+    }, 100);
+  }, [registerActivity, nextTrack, showStatus]);
 
   // Set up touch event listeners
   useEffect(() => {
@@ -551,270 +592,27 @@ export function FullScreenPortal({
           restartAutoHideTimer();
         }}
       >
-        <div className="relative">
-          <div className="bg-neutral-800/35 border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 md:gap-2 px-2 py-1 font-geneva-12">
-            {/* Transport controls */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                registerActivity();
-                previousTrack();
-                setTimeout(() => {
-                  const currentTrackIndex =
-                    useIpodStore.getState().currentIndex;
-                  const currentTrack =
-                    useIpodStore.getState().tracks[currentTrackIndex];
-                  if (currentTrack) {
-                    const artistInfo = currentTrack.artist
-                      ? ` - ${currentTrack.artist}`
-                      : "";
-                    showStatus(`⏮ ${currentTrack.title}${artistInfo}`);
-                  }
-                }, 100);
-              }}
-              aria-label={t("apps.ipod.ariaLabels.previousTrack")}
-              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              title={t("apps.ipod.menu.previous")}
-            >
-              <span className="text-[18px] md:text-[22px]">⏮</span>
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                registerActivity();
-                const wasPlaying = getActualPlayerState();
-                if (isOffline) {
-                  showOfflineStatus();
-                } else {
-                  togglePlay();
-                  const actuallyPlaying = getActualPlayerState();
-                  showStatus(actuallyPlaying ? "⏸" : "▶");
-                  if (!wasPlaying) {
-                    setTimeout(() => restartAutoHideTimer(), 100);
-                  }
-                }
-              }}
-              aria-label={t("apps.ipod.ariaLabels.playPause")}
-              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              title={t("apps.ipod.ariaLabels.playPause")}
-            >
-              <span className="text-[18px] md:text-[22px]">
-                {getActualPlayerState() ? "⏸" : "▶"}
-              </span>
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                registerActivity();
-                nextTrack();
-                setTimeout(() => {
-                  const currentTrackIndex =
-                    useIpodStore.getState().currentIndex;
-                  const currentTrack =
-                    useIpodStore.getState().tracks[currentTrackIndex];
-                  if (currentTrack) {
-                    const artistInfo = currentTrack.artist
-                      ? ` - ${currentTrack.artist}`
-                      : "";
-                    showStatus(`⏭ ${currentTrack.title}${artistInfo}`);
-                  }
-                }, 100);
-              }}
-              aria-label={t("apps.ipod.ariaLabels.nextTrack")}
-              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              title={t("apps.ipod.menu.next")}
-            >
-              <span className="text-[18px] md:text-[22px]">⏭</span>
-            </button>
-
-            {/* Layout button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                registerActivity();
-                onCycleAlignment();
-              }}
-              aria-label={t("apps.ipod.ariaLabels.cycleLyricLayout")}
-              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              title={currentAlignment}
-            >
-              {currentAlignment === "focusThree" ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="md:w-[26px] md:h-[26px]"
-                >
-                  <line x1="6" y1="6" x2="18" y2="6" />
-                  <line x1="4" y1="12" x2="20" y2="12" />
-                  <line x1="6" y1="18" x2="18" y2="18" />
-                </svg>
-              ) : currentAlignment === "center" ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="md:w-[26px] md:h-[26px]"
-                >
-                  <line x1="6" y1="12" x2="18" y2="12" />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="md:w-[26px] md:h-[26px]"
-                >
-                  <line x1="4" y1="8" x2="13" y2="8" />
-                  <line x1="11" y1="16" x2="20" y2="16" />
-                </svg>
-              )}
-            </button>
-
-            {/* Font style toggle */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                registerActivity();
-                onCycleLyricsFont();
-              }}
-              aria-label={t("apps.ipod.ariaLabels.cycleLyricFont")}
-              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              title={currentLyricsFont}
-            >
-              <span className="text-[16px] md:text-[18px]">
-                {currentLyricsFont === LyricsFont.Rounded
-                  ? "丸"
-                  : currentLyricsFont === LyricsFont.Serif
-                  ? "明"
-                  : "ゴ"}
-              </span>
-            </button>
-
-            {/* Hangul toggle */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                registerActivity();
-                onToggleKoreanDisplay();
-              }}
-              aria-label={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
-              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-            >
-              <span className="text-[16px] md:text-[18px]">
-                {currentKoreanDisplay === "romanized" ? "Ko" : "한"}
-              </span>
-            </button>
-
-            {/* Translate button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsLangMenuOpen((v) => !v);
-                registerActivity();
-              }}
-              aria-label={t("apps.ipod.ariaLabels.translateLyrics")}
-              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-            >
-              {translationBadge ? (
-                <span className="inline-flex items-center justify-center w-[24px] h-[24px] md:w-[28px] md:h-[28px] leading-none text-[16px] md:text-[18px]">
-                  {translationBadge}
-                </span>
-              ) : (
-                <span className="inline-flex items-center justify-center w-[24px] h-[24px] md:w-[28px] md:h-[28px] leading-none text-[16px] md:text-[18px]">
-                  Aa
-                </span>
-              )}
-            </button>
-
-            {/* Close */}
-            <button
-              onClick={onClose}
-              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              aria-label={t("apps.ipod.ariaLabels.closeFullscreen")}
-              title={t("common.dialog.close")}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="22"
-                height="22"
-                className="md:w-[26px] md:h-[26px]"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-
-          {/* Translation menu */}
-          <AnimatePresence>
-            {isLangMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15 }}
-                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 max-h-[50vh] overflow-y-auto rounded-lg border border-white/10 bg-neutral-900/80 backdrop-blur-md shadow-xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="py-2">
-                  {translationLanguages.map((lang) => {
-                    const selected =
-                      currentTranslationCode === lang.code ||
-                      (!lang.code && !currentTranslationCode);
-                    return (
-                      <button
-                        key={lang.code || "off"}
-                        onClick={() => {
-                          handlersRef.current.onSelectTranslation(lang.code);
-                          handlersRef.current.setIsLangMenuOpen(false);
-                          handlersRef.current.registerActivity();
-                        }}
-                        className={cn(
-                          "w-full text-left px-4 py-2 text-[16px] font-geneva-12 transition-colors",
-                          selected
-                            ? "text-white bg-white/10"
-                            : "text-white/80 hover:text-white hover:bg-white/10"
-                        )}
-                      >
-                        <span className="inline-block w-4">
-                          {selected ? "✓" : ""}
-                        </span>
-                        <span>{lang.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <FullscreenPlayerControls
+          isPlaying={getActualPlayerState()}
+          onPrevious={handlePrevious}
+          onPlayPause={handlePlayPause}
+          onNext={handleNext}
+          currentAlignment={currentAlignment}
+          onAlignmentCycle={onCycleAlignment}
+          currentFont={currentLyricsFont}
+          onFontCycle={onCycleLyricsFont}
+          koreanDisplay={currentKoreanDisplay}
+          onKoreanToggle={onToggleKoreanDisplay}
+          currentTranslationCode={currentTranslationCode}
+          onTranslationSelect={onSelectTranslation}
+          translationLanguages={translationLanguages}
+          isLangMenuOpen={isLangMenuOpen}
+          setIsLangMenuOpen={setIsLangMenuOpen}
+          onClose={onClose}
+          variant="responsive"
+          bgOpacity="35"
+          onInteraction={registerActivity}
+        />
       </div>
     </div>,
     document.body

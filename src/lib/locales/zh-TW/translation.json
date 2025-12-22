@@ -1031,6 +1031,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "關閉全螢幕",
+        "enterFullscreen": "開啟全螢幕",
         "cycleLyricFont": "循環歌詞字體",
         "cycleLyricLayout": "切換歌詞佈局",
         "nextTrack": "下一首",

@@ -1430,6 +1430,7 @@
         "nextTrack": "Next track",
         "playPause": "Play/Pause",
         "closeFullscreen": "Close fullscreen",
+        "enterFullscreen": "Enter fullscreen",
         "cycleLyricLayout": "Cycle lyric layout",
         "cycleLyricFont": "Cycle lyric font",
         "toggleHangulRomanization": "Toggle Hangul / Romanization",

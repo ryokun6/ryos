@@ -138,5 +138,5 @@
     "vite-plugin-pwa": "^1.2.0",
     "vite-plugin-vercel": "^9.0.7"
   },
-  "packageManager": "bun@1.2.19"
+  "packageManager": "bun@1.3.4"
 }

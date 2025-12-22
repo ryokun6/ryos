@@ -27,10 +27,8 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
-import {
-  TRANSLATION_LANGUAGES,
-  getTranslationBadge,
-} from "@/apps/ipod/constants";
+import { TRANSLATION_LANGUAGES } from "@/apps/ipod/constants";
+import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 
 export function KaraokeAppComponent({
@@ -213,10 +211,6 @@ export function KaraokeAppComponent({
     [t]
   );
 
-  const translationBadge = useMemo(
-    () => getTranslationBadge(lyricsTranslationLanguage),
-    [lyricsTranslationLanguage]
-  );
 
   // Get CSS class name for current lyrics font
   const lyricsFontClassName = useMemo(() => {
@@ -263,6 +257,34 @@ export function KaraokeAppComponent({
   const registerActivity = useCallback(() => {
     restartAutoHideTimer();
   }, [restartAutoHideTimer]);
+
+  // Wrapped handlers for fullscreen controls (with offline check)
+  const handlePrevious = useCallback(() => {
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      previousTrack();
+      showStatus("⏮");
+    }
+  }, [isOffline, showOfflineStatus, previousTrack, showStatus]);
+
+  const handlePlayPause = useCallback(() => {
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      togglePlay();
+      showStatus(isPlaying ? "⏸" : "▶");
+    }
+  }, [isOffline, showOfflineStatus, togglePlay, showStatus, isPlaying]);
+
+  const handleNext = useCallback(() => {
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      nextTrack();
+      showStatus("⏭");
+    }
+  }, [isOffline, showOfflineStatus, nextTrack, showStatus]);
 
   useEffect(() => {
     if (!isPlaying || isLangMenuOpen) {
@@ -760,173 +782,27 @@ export function KaraokeAppComponent({
               restartAutoHideTimer();
             }}
           >
-            <div className="relative ipod-force-font">
-              <div className="bg-neutral-800/60 border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 px-2 py-1 font-geneva-12">
-                {/* Previous */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      previousTrack();
-                      showStatus("⏮");
-                    }
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title={t("apps.ipod.menu.previous")}
-                >
-                  <span className="text-base">⏮</span>
-                </button>
-
-                {/* Play/Pause */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      togglePlay();
-                      showStatus(isPlaying ? "⏸" : "▶");
-                    }
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title={t("apps.ipod.ariaLabels.playPause")}
-                >
-                  <span className="text-base">{isPlaying ? "⏸" : "▶"}</span>
-                </button>
-
-                {/* Next */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      nextTrack();
-                      showStatus("⏭");
-                    }
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title={t("apps.ipod.menu.next")}
-                >
-                  <span className="text-base">⏭</span>
-                </button>
-
-                {/* Layout */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    cycleAlignment();
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title={lyricsAlignment}
-                >
-                  {lyricsAlignment === "focusThree" ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="6" y1="6" x2="18" y2="6" />
-                      <line x1="4" y1="12" x2="20" y2="12" />
-                      <line x1="6" y1="18" x2="18" y2="18" />
-                    </svg>
-                  ) : lyricsAlignment === "center" ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="6" y1="12" x2="18" y2="12" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="4" y1="8" x2="13" y2="8" />
-                      <line x1="11" y1="16" x2="20" y2="16" />
-                    </svg>
-                  )}
-                </button>
-
-                {/* Font style */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    cycleLyricsFont();
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title={lyricsFont}
-                >
-                  <span className="text-sm">
-                    {lyricsFont === LyricsFont.Rounded
-                      ? "丸"
-                      : lyricsFont === LyricsFont.Serif
-                      ? "明"
-                      : "ゴ"}
-                  </span>
-                </button>
-
-                {/* Hangul toggle */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleKorean();
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
-                >
-                  <span className="text-sm">{koreanDisplay === "romanized" ? "Ko" : "한"}</span>
-                </button>
-
-                {/* Translate */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsLangMenuOpen((v) => !v);
-                  }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title={t("apps.ipod.ariaLabels.translateLyrics")}
-                >
-                  {translationBadge ? (
-                    <span className="text-sm">{translationBadge}</span>
-                  ) : (
-                    <span className="text-sm">Aa</span>
-                  )}
-                </button>
-              </div>
-
-              {/* Translation menu */}
-              <AnimatePresence>
-                {isLangMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 max-h-[50vh] overflow-y-auto rounded-lg border border-white/10 bg-neutral-900/90 backdrop-blur-md shadow-xl"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="py-2">
-                      {translationLanguages.map((lang) => {
-                        const selected =
-                          lyricsTranslationLanguage === lang.code ||
-                          (!lang.code && !lyricsTranslationLanguage);
-                        return (
-                          <button
-                            key={lang.code || "off"}
-                            onClick={() => {
-                              setLyricsTranslationLanguage(lang.code);
-                              setIsLangMenuOpen(false);
-                            }}
-                            className={cn(
-                              "w-full text-left px-4 py-2 text-sm font-geneva-12 transition-colors",
-                              selected
-                                ? "text-white bg-white/10"
-                                : "text-white/80 hover:text-white hover:bg-white/10"
-                            )}
-                          >
-                            <span className="inline-block w-4">{selected ? "✓" : ""}</span>
-                            <span>{lang.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <FullscreenPlayerControls
+              isPlaying={isPlaying}
+              onPrevious={handlePrevious}
+              onPlayPause={handlePlayPause}
+              onNext={handleNext}
+              currentAlignment={lyricsAlignment}
+              onAlignmentCycle={cycleAlignment}
+              currentFont={lyricsFont}
+              onFontCycle={cycleLyricsFont}
+              koreanDisplay={koreanDisplay}
+              onKoreanToggle={toggleKorean}
+              currentTranslationCode={lyricsTranslationLanguage}
+              onTranslationSelect={setLyricsTranslationLanguage}
+              translationLanguages={translationLanguages}
+              isLangMenuOpen={isLangMenuOpen}
+              setIsLangMenuOpen={setIsLangMenuOpen}
+              onFullscreen={toggleFullScreen}
+              variant="compact"
+              bgOpacity="60"
+              onInteraction={restartAutoHideTimer}
+            />
           </div>
         </div>
 

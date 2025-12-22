@@ -1031,6 +1031,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "フルスクリーンを閉じる",
+        "enterFullscreen": "フルスクリーンを開く",
         "cycleLyricFont": "歌詞フォントを切り替える",
         "cycleLyricLayout": "歌詞レイアウトを切り替える",
         "nextTrack": "次の曲",

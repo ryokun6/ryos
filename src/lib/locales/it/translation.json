@@ -1031,6 +1031,7 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Chiudi schermo intero",
+        "enterFullscreen": "Apri schermo intero",
         "cycleLyricFont": "Scorri carattere testi",
         "cycleLyricLayout": "Scorri layout testi",
         "nextTrack": "Traccia successiva",
