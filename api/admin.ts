@@ -11,8 +11,8 @@ import {
   extractAuth,
   deleteAllUserTokens,
   PASSWORD_HASH_PREFIX,
-} from "./utils/auth.js";
-import { logInfo, logError, generateRequestId } from "./utils/logging.js";
+} from "./_utils/auth.js";
+import { logInfo, logError, generateRequestId } from "./_utils/logging.js";
 
 // ============================================================================
 // Configuration

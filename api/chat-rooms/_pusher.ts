@@ -9,7 +9,7 @@
 
 import Pusher from "pusher";
 import { redis, parseRoomData } from "./_redis.js";
-import { refreshRoomUserCount } from "./presence.js";
+import { refreshRoomUserCount } from "./_presence.js";
 import { CHAT_ROOM_PREFIX } from "./_constants.js";
 import type { Room, Message } from "./_types.js";
 

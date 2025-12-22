@@ -11,10 +11,10 @@ import {
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "./utils/cors.js";
-import * as RateLimit from "./utils/rate-limit.js";
+} from "./_utils/cors.js";
+import * as RateLimit from "./_utils/rate-limit.js";
 import { Redis } from "@upstash/redis";
-import { validateAuthToken } from "./utils/auth-validate.js";
+import { validateAuthToken } from "./_utils/auth-validate.js";
 
 export const runtime = "edge";
 export const edge = true;
