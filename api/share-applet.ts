@@ -3,9 +3,9 @@ import {
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "./utils/cors.js";
+} from "./_utils/cors.js";
 import { z } from "zod";
-import { validateAuthToken, generateToken } from "./utils/auth-validate.js";
+import { validateAuthToken, generateToken } from "./_utils/auth-validate.js";
 
 // Vercel Edge Function configuration
 export const config = {

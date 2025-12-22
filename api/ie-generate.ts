@@ -5,24 +5,24 @@ import {
   type ModelMessage,
   type UIMessage,
 } from "ai";
-import * as RateLimit from "./utils/rate-limit.js";
+import * as RateLimit from "./_utils/rate-limit.js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "./utils/cors.js";
+} from "./_utils/cors.js";
 import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
-  } from "./utils/aiModels.js";
+  } from "./_utils/aiModels.js";
 import { Redis } from "@upstash/redis";
-import { normalizeUrlForCacheKey } from "./utils/url.js";
+import { normalizeUrlForCacheKey } from "./_utils/url.js";
 import {
   CORE_PRIORITY_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
   DELIVERABLE_REQUIREMENTS,
-  } from "./utils/aiPrompts.js";
+  } from "./_utils/aiPrompts.js";
 import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
 
 // CORS handled via shared utils

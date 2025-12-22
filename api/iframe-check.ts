@@ -1,14 +1,14 @@
 // No Next.js types needed – omit unused import to keep file framework‑agnostic.
 
 import { Redis } from "@upstash/redis"; // Use direct import
-import * as RateLimit from "./utils/rate-limit.js";
-import { getEffectiveOrigin, isAllowedOrigin } from "./utils/cors.js";
+import * as RateLimit from "./_utils/rate-limit.js";
+import { getEffectiveOrigin, isAllowedOrigin } from "./_utils/cors.js";
 
 export const config = {
   runtime: "edge",
 };
 
-import { normalizeUrlForCacheKey } from "./utils/url.js"; // Import the function
+import { normalizeUrlForCacheKey } from "./_utils/url.js"; // Import the function
 
 // --- Logging Utilities ---------------------------------------------------
 

@@ -31,7 +31,7 @@ import {
 } from "./_constants.js";
 import { refreshRoomPresence } from "./_presence.js";
 import { broadcastNewMessage, broadcastMessageDeleted } from "./_pusher.js";
-import { logInfo, logError } from "../utils/logging.js";
+import { logInfo, logError } from "../_utils/logging.js";
 import {
   isProfaneUsername,
   assertValidUsername,
@@ -39,12 +39,12 @@ import {
   escapeHTML,
   filterProfanityPreservingUrls,
   MAX_MESSAGE_LENGTH,
-} from "../utils/validation.js";
-import { validateAuth } from "../utils/auth.js";
+} from "../_utils/validation.js";
+import { validateAuth } from "../_utils/auth.js";
 import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./_users.js";
 import type { Message, SendMessageData, GenerateRyoReplyData, BulkMessagesResult } from "./_types.js";
-import { ROOM_ID_REGEX } from "../utils/validation.js";
+import { ROOM_ID_REGEX } from "../_utils/validation.js";
 
 // ============================================================================
 // Helper Functions

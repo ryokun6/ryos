@@ -18,11 +18,11 @@ import {
 import {
   getEffectiveOrigin,
   preflightIfNeeded,
-} from "../utils/cors.js";
-import { logRequest, logInfo, logError, generateRequestId } from "../utils/logging.js";
-import { extractAuth, validateAuth, checkRateLimit } from "../utils/auth.js";
-import { setAuthLoggers, setIsProfaneUsername } from "../utils/auth.js";
-import { setValidationLogger, isProfaneUsername } from "../utils/validation.js";
+} from "../_utils/cors.js";
+import { logRequest, logInfo, logError, generateRequestId } from "../_utils/logging.js";
+import { extractAuth, validateAuth, checkRateLimit } from "../_utils/auth.js";
+import { setAuthLoggers, setIsProfaneUsername } from "../_utils/auth.js";
+import { setValidationLogger, isProfaneUsername } from "../_utils/validation.js";
 import { createErrorResponse, addCorsHeaders, getClientIp } from "./_helpers.js";
 
 // Room handlers

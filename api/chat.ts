@@ -9,7 +9,7 @@ import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
-} from "./utils/aiModels.js";
+} from "./_utils/aiModels.js";
 import {
   CORE_PRIORITY_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
@@ -18,7 +18,7 @@ import {
   CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
   DELIVERABLE_REQUIREMENTS,
-} from "./utils/aiPrompts.js";
+} from "./_utils/aiPrompts.js";
 import { z } from "zod";
 import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
 import { appIds } from "../src/config/appIds.js";
@@ -26,10 +26,10 @@ import type { OsThemeId } from "../src/themes/types.js";
 import {
   checkAndIncrementAIMessageCount,
   AI_LIMIT_PER_5_HOURS,
-  } from "./utils/rate-limit.js";
+  } from "./_utils/rate-limit.js";
 import { Redis } from "@upstash/redis";
-import { validateAuthToken } from "./utils/auth-validate.js";
-import { getEffectiveOrigin, isAllowedOrigin } from "./utils/cors.js";
+import { validateAuthToken } from "./_utils/auth-validate.js";
+import { getEffectiveOrigin, isAllowedOrigin } from "./_utils/cors.js";
 
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
