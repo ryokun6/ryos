@@ -755,7 +755,7 @@ export function KaraokeAppComponent({
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
           {currentTrack ? (
             <div className="absolute inset-0 overflow-hidden">
-              <div className="w-full h-[calc(100%+300px)] mt-[-150px]">
+              <div className="w-full h-[calc(100%+400px)] mt-[-200px]">
                 <ReactPlayer
                   ref={playerRef}
                   url={currentTrack.url}
