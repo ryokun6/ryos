@@ -36,6 +36,7 @@ export function FullScreenPortal({
   onCycleLyricsFont,
   currentKoreanDisplay,
   onToggleKoreanDisplay,
+  showKoreanToggle = true,
   currentJapaneseFurigana: _currentJapaneseFurigana,
   onToggleJapaneseFurigana,
   fullScreenPlayerRef,
@@ -603,6 +604,7 @@ export function FullScreenPortal({
           onFontCycle={onCycleLyricsFont}
           koreanDisplay={currentKoreanDisplay}
           onKoreanToggle={onToggleKoreanDisplay}
+          showKoreanToggle={showKoreanToggle}
           currentTranslationCode={currentTranslationCode}
           onTranslationSelect={onSelectTranslation}
           translationLanguages={translationLanguages}

@@ -61,6 +61,7 @@ export interface FullScreenPortalProps {
   onCycleLyricsFont: () => void;
   currentKoreanDisplay: KoreanDisplay;
   onToggleKoreanDisplay: () => void;
+  showKoreanToggle?: boolean;
   currentJapaneseFurigana: JapaneseFurigana;
   onToggleJapaneseFurigana: () => void;
   // Player ref for mobile Safari handling

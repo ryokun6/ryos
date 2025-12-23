@@ -39,6 +39,7 @@ export interface FullscreenPlayerControlsProps {
   // Korean display
   koreanDisplay: KoreanDisplay;
   onKoreanToggle: () => void;
+  showKoreanToggle?: boolean;
 
   // Translation
   currentTranslationCode: string | null;
@@ -72,6 +73,7 @@ export function FullscreenPlayerControls({
   onFontCycle,
   koreanDisplay,
   onKoreanToggle,
+  showKoreanToggle = true,
   currentTranslationCode,
   onTranslationSelect,
   translationLanguages,
@@ -261,27 +263,29 @@ export function FullscreenPlayerControls({
         </button>
 
         {/* Hangul toggle */}
-        <button
-          type="button"
-          onClick={handleClick(onKoreanToggle)}
-          aria-label={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
-          className={cn(
-            buttonSize,
-            "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-          )}
-          title={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
-        >
-          {koreanDisplay === "romanized" ? (
-            <ruby className={cn(smallIconSize, "ruby-align-center")} style={{ rubyPosition: "over" }}>
-              한
-              <rt style={{ fontSize: variant === "compact" ? "8px" : "9px", opacity: 0.7, paddingBottom: "1px" }}>
-                han
-              </rt>
-            </ruby>
-          ) : (
-            <span className={smallIconSize}>한</span>
-          )}
-        </button>
+        {showKoreanToggle && (
+          <button
+            type="button"
+            onClick={handleClick(onKoreanToggle)}
+            aria-label={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
+            className={cn(
+              buttonSize,
+              "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+            )}
+            title={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
+          >
+            {koreanDisplay === "romanized" ? (
+              <ruby className={cn(smallIconSize, "ruby-align-center")} style={{ rubyPosition: "over" }}>
+                한
+                <rt style={{ fontSize: variant === "compact" ? "8px" : "9px", opacity: 0.7, paddingBottom: "1px" }}>
+                  han
+                </rt>
+              </ruby>
+            ) : (
+              <span className={smallIconSize}>한</span>
+            )}
+          </button>
+        )}
 
         {/* Translation */}
         <DropdownMenu open={isLangMenuOpen} onOpenChange={setIsLangMenuOpen}>

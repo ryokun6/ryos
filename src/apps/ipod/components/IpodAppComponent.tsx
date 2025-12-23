@@ -1201,6 +1201,12 @@ export function IpodAppComponent({
     selectedMatch: selectedMatchForLyrics,
   });
 
+  // Detect if lyrics contain Korean text (Hangul syllables and Jamo)
+  const hasKoreanText = useMemo(() => {
+    const koreanRegex = /[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3]/;
+    return fullScreenLyricsControls.lines?.some(line => koreanRegex.test(line.words)) ?? false;
+  }, [fullScreenLyricsControls.lines]);
+
   // Fullscreen sync
   const prevFullScreenRef = useRef(isFullScreen);
 
@@ -1502,6 +1508,7 @@ export function IpodAppComponent({
             onCycleLyricsFont={cycleLyricsFont}
             currentKoreanDisplay={koreanDisplay}
             onToggleKoreanDisplay={toggleKorean}
+            showKoreanToggle={hasKoreanText}
             currentJapaneseFurigana={japaneseFurigana}
             onToggleJapaneseFurigana={toggleFurigana}
             fullScreenPlayerRef={fullScreenPlayerRef}

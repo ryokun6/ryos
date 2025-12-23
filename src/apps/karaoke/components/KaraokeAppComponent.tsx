@@ -233,6 +233,11 @@ export function KaraokeAppComponent({
     [t]
   );
 
+  // Detect if lyrics contain Korean text (Hangul syllables and Jamo)
+  const hasKoreanText = useMemo(() => {
+    const koreanRegex = /[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3]/;
+    return lyricsControls.lines?.some(line => koreanRegex.test(line.words)) ?? false;
+  }, [lyricsControls.lines]);
 
   // Get CSS class name for current lyrics font
   const lyricsFontClassName = useMemo(() => {
@@ -917,6 +922,7 @@ export function KaraokeAppComponent({
               onFontCycle={cycleLyricsFont}
               koreanDisplay={koreanDisplay}
               onKoreanToggle={toggleKorean}
+              showKoreanToggle={hasKoreanText}
               currentTranslationCode={lyricsTranslationLanguage}
               onTranslationSelect={setLyricsTranslationLanguage}
               translationLanguages={translationLanguages}
