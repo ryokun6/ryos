@@ -1248,25 +1248,29 @@
           "description": "歌詞を多言語に即時翻訳。",
           "title": "即時翻訳"
         },
-        "karaokeMode": {
-          "description": "歌詞同期オーバーレイ付き全画面ビデオプレイヤー",
-          "title": "カラオケモード"
+        "addSearchSongs": {
+          "title": "曲を追加・検索",
+          "description": "YouTubeで曲を検索するか、URLを貼り付けてライブラリに追加。"
         },
-        "keyboardControls": {
-          "description": "スペースキーで再生/一時停止、矢印キーでシークとトラック変更。",
-          "title": "キーボード操作"
+        "syncLyricsTiming": {
+          "title": "歌詞タイミング同期",
+          "description": "[ ]キー、マウスホイール、または上下ドラッグで歌詞オフセットを調整。"
         },
-        "layoutOptions": {
-          "description": "フォーカス、中央、交互表示の歌詞レイアウトから選択。",
-          "title": "レイアウトオプション"
+        "styleLayout": {
+          "title": "スタイル＆レイアウト",
+          "description": "フォント、レイアウト（フォーカス/中央/交互）の変更、歌詞の翻訳。"
         },
-        "offsetAdjustment": {
-          "description": "[ ]キー、マウスホイール、または上下にドラッグして歌詞のタイミングを調整します。",
-          "title": "オフセット調整"
+        "syncedWithIpod": {
+          "title": "iPodと同期",
+          "description": "iPodと同じ音楽ライブラリを共有。どちらのアプリでも曲を追加可能。"
         },
-        "sharedLibrary": {
-          "description": "iPod と同じミュージックライブラリを使用。",
-          "title": "共有ライブラリ"
+        "worksWithChats": {
+          "title": "チャットと連携",
+          "description": "Ryoに曲の再生、操作、設定変更をチャットで依頼できます。"
+        },
+        "keyboardShortcuts": {
+          "title": "キーボードショートカット",
+          "description": "スペースで再生/一時停止、矢印キーでシーク・トラック変更。"
         }
       },
       "menu": {

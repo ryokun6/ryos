@@ -114,6 +114,7 @@ export const config = {
     "/ipod",
     "/ipod/:path*",
     "/karaoke",
+    "/karaoke/:path*",
     "/synth",
     "/pc",
     "/terminal",
@@ -243,6 +244,29 @@ export default async function middleware(request: Request) {
     } else {
       title = "Shared Song - ryOS";
       description = "Listen on ryOS iPod";
+    }
+    matched = true;
+  }
+
+  // Karaoke URLs: /karaoke/{videoId} - use YouTube thumbnail and fetch title
+  const karaokeMatch = pathname.match(/^\/karaoke\/([a-zA-Z0-9_-]+)$/);
+  if (karaokeMatch) {
+    const videoId = karaokeMatch[1];
+    imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    
+    // Fetch YouTube info for title/artist
+    const ytInfo = await getYouTubeInfo(videoId);
+    if (ytInfo) {
+      if (ytInfo.artist) {
+        title = `${ytInfo.title} - ${ytInfo.artist}`;
+        description = `Sing along on ryOS Karaoke`;
+      } else {
+        title = ytInfo.title;
+        description = "Sing along on ryOS Karaoke";
+      }
+    } else {
+      title = "Shared Song - ryOS";
+      description = "Sing along on ryOS Karaoke";
     }
     matched = true;
   }

@@ -1248,25 +1248,29 @@
           "description": "Traduci i testi in più lingue al volo.",
           "title": "Traduzioni istantanee"
         },
-        "karaokeMode": {
-          "description": "Lettore video a schermo intero con sovrapposizione di testi sincronizzati.",
-          "title": "Modalità Karaoke"
+        "addSearchSongs": {
+          "title": "Aggiungi e cerca brani",
+          "description": "Cerca brani su YouTube o incolla un URL per aggiungerli alla tua libreria."
         },
-        "keyboardControls": {
-          "description": "Spazio per riprodurre/mettere in pausa, frecce per cercare e cambiare brano.",
-          "title": "Controlli da tastiera"
+        "syncLyricsTiming": {
+          "title": "Sincronizza timing testi",
+          "description": "Usa i tasti [ ], la rotellina del mouse o trascina su/giù per regolare l'offset dei testi."
         },
-        "layoutOptions": {
-          "description": "Scegli tra layout dei testi a fuoco, centrato e alternato.",
-          "title": "Opzioni layout"
+        "styleLayout": {
+          "title": "Stile e layout",
+          "description": "Cambia font, layout (focus/centrato/alternato) e traduci i testi."
         },
-        "offsetAdjustment": {
-          "description": "Usa i tasti [ ], la rotellina del mouse o trascina su/giù per regolare la sincronizzazione dei testi.",
-          "title": "Regolazione Offset"
+        "syncedWithIpod": {
+          "title": "Sincronizzato con iPod",
+          "description": "Condivide la stessa libreria musicale con iPod. Aggiungi brani in entrambe le app."
         },
-        "sharedLibrary": {
-          "description": "Utilizza la stessa libreria musicale dell'iPod.",
-          "title": "Libreria condivisa"
+        "worksWithChats": {
+          "title": "Funziona con Chat",
+          "description": "Chiedi a Ryo di riprodurre brani, controllare la riproduzione o regolare le impostazioni via chat."
+        },
+        "keyboardShortcuts": {
+          "title": "Scorciatoie da tastiera",
+          "description": "Spazio per riprodurre/mettere in pausa, tasti freccia per cercare e cambiare brano."
         }
       },
       "menu": {

@@ -1248,25 +1248,29 @@
           "description": "가사를 여러 언어로 실시간 번역.",
           "title": "즉시 번역"
         },
-        "karaokeMode": {
-          "description": "가사 오버레이 동기화 전체 화면 비디오 플레이어",
-          "title": "노래방 모드"
+        "addSearchSongs": {
+          "title": "노래 추가 및 검색",
+          "description": "YouTube에서 노래를 검색하거나 URL을 붙여넣어 라이브러리에 추가하세요."
         },
-        "keyboardControls": {
-          "description": "스페이스바로 재생/일시 정지, 화살표로 탐색 및 트랙 변경.",
-          "title": "키보드 제어"
+        "syncLyricsTiming": {
+          "title": "가사 타이밍 동기화",
+          "description": "[ ] 키, 마우스 휠 또는 위/아래 드래그로 가사 오프셋을 조정하세요."
         },
-        "layoutOptions": {
-          "description": "집중, 중앙, 교차 가사 레이아웃 선택.",
-          "title": "레이아웃 옵션"
+        "styleLayout": {
+          "title": "스타일 및 레이아웃",
+          "description": "글꼴, 레이아웃(포커스/중앙/교차) 변경 및 가사 번역."
         },
-        "offsetAdjustment": {
-          "description": "[ ] 키, 마우스 휠을 사용하거나 위/아래로 드래그하여 가사 타이밍을 조절하세요.",
-          "title": "오프셋 조정"
+        "syncedWithIpod": {
+          "title": "iPod과 동기화",
+          "description": "iPod과 동일한 음악 라이브러리를 공유합니다. 어느 앱에서든 노래 추가 가능."
         },
-        "sharedLibrary": {
-          "description": "iPod과 동일한 음악 라이브러리를 사용합니다.",
-          "title": "공유 라이브러리"
+        "worksWithChats": {
+          "title": "채팅과 연동",
+          "description": "Ryo에게 채팅으로 노래 재생, 제어, 설정 조정을 요청하세요."
+        },
+        "keyboardShortcuts": {
+          "title": "키보드 단축키",
+          "description": "스페이스바로 재생/일시 정지, 화살표 키로 탐색 및 트랙 변경."
         }
       },
       "menu": {

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -18,7 +19,7 @@ import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { useIpodStore, Track } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
-import { useIpodStoreShallow, useAudioSettingsStoreShallow } from "@/stores/helpers";
+import { useIpodStoreShallow, useAudioSettingsStoreShallow, useAppStoreShallow } from "@/stores/helpers";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -96,6 +97,15 @@ export function KaraokeAppComponent({
   const { manualSync } = useLibraryUpdateChecker(
     isWindowOpen && (isForeground ?? false)
   );
+
+  // App store for clearing initial data
+  const { clearInstanceInitialData, bringToForeground } = useAppStoreShallow((state) => ({
+    clearInstanceInitialData: state.clearInstanceInitialData,
+    bringToForeground: state.bringToForeground,
+  }));
+
+  // Ref to track processed initial data
+  const lastProcessedInitialDataRef = useRef<typeof initialData | null>(null);
 
   // Independent playback state from Karaoke store (not shared with iPod)
   const {
@@ -434,6 +444,29 @@ export function KaraokeAppComponent({
     [showStatus, t]
   );
 
+  // Process video ID from shared link (add if not in library, then play)
+  const processVideoId = useCallback(
+    async (videoId: string) => {
+      const currentTracks = useIpodStore.getState().tracks;
+      const existingTrackIndex = currentTracks.findIndex((track) => track.id === videoId);
+
+      if (existingTrackIndex !== -1) {
+        toast.info(t("apps.ipod.dialogs.openedSharedTrack"));
+        setCurrentIndex(existingTrackIndex);
+        setIsPlaying(true);
+      } else {
+        toast.info(t("apps.ipod.dialogs.addingNewTrack"));
+        await handleAddTrack(`https://www.youtube.com/watch?v=${videoId}`);
+        if (!isOffline) {
+          setIsPlaying(true);
+        } else {
+          showOfflineStatus();
+        }
+      }
+    },
+    [setCurrentIndex, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t]
+  );
+
   // Share song handler
   const handleShareSong = useCallback(() => {
     if (tracks.length > 0 && currentIndex >= 0) setIsShareDialogOpen(true);
@@ -441,7 +474,7 @@ export function KaraokeAppComponent({
 
   // Generate share URL for song
   const karaokeGenerateShareUrl = (videoId: string): string => {
-    return `${window.location.origin}/ipod/${videoId}`;
+    return `${window.location.origin}/karaoke/${videoId}`;
   };
 
   // Lyrics search handlers
@@ -542,22 +575,49 @@ export function KaraokeAppComponent({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isForeground, isPlaying, isOffline, togglePlay, nextTrack, previousTrack, seekTime, showStatus, showOfflineStatus, currentIndex, currentTrack, elapsedTime, lyricsControls, t]);
 
-  // Handle initial data (shared track) or default to first track
+  // Handle initial data (shared track) - process video ID to add/play
   useEffect(() => {
-    if (isWindowOpen) {
-      if (initialData?.videoId) {
-        const videoId = initialData.videoId;
-        const existingIndex = tracks.findIndex((track) => track.id === videoId);
-        if (existingIndex !== -1) {
-          setCurrentIndex(existingIndex);
-          setIsPlaying(true);
-        }
-      } else if (tracks.length > 0 && currentIndex >= tracks.length) {
-        // Reset to first track if current index is out of bounds
-        setCurrentIndex(0);
-      }
+    if (isWindowOpen && initialData?.videoId && typeof initialData.videoId === "string") {
+      if (lastProcessedInitialDataRef.current === initialData) return;
+
+      const videoIdToProcess = initialData.videoId;
+      setTimeout(() => {
+        processVideoId(videoIdToProcess)
+          .then(() => {
+            if (instanceId) clearInstanceInitialData(instanceId);
+          })
+          .catch((error) => {
+            console.error(`[Karaoke] Error processing initial videoId ${videoIdToProcess}:`, error);
+          });
+      }, 100);
+      lastProcessedInitialDataRef.current = initialData;
+    } else if (isWindowOpen && tracks.length > 0 && currentIndex >= tracks.length) {
+      // Reset to first track if current index is out of bounds
+      setCurrentIndex(0);
     }
-  }, [isWindowOpen, initialData, tracks, currentIndex]);
+  }, [isWindowOpen, initialData, processVideoId, clearInstanceInitialData, instanceId, tracks.length, currentIndex]);
+
+  // Handle updateApp event for when app is already open and receives new video
+  useEffect(() => {
+    const handleUpdateApp = (
+      event: CustomEvent<{ appId: string; initialData?: { videoId?: string } }>
+    ) => {
+      if (event.detail.appId === "karaoke" && event.detail.initialData?.videoId) {
+        if (lastProcessedInitialDataRef.current === event.detail.initialData) return;
+
+        const videoId = event.detail.initialData.videoId;
+        bringToForeground("karaoke");
+        processVideoId(videoId).catch((error) => {
+          console.error(`[Karaoke] Error processing videoId ${videoId}:`, error);
+          toast.error("Failed to load shared track", { description: `Video ID: ${videoId}` });
+        });
+        lastProcessedInitialDataRef.current = event.detail.initialData;
+      }
+    };
+
+    window.addEventListener("updateApp", handleUpdateApp as EventListener);
+    return () => window.removeEventListener("updateApp", handleUpdateApp as EventListener);
+  }, [processVideoId, bringToForeground]);
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, Music, ExternalLink, Videotape } from "lucide-react";
+import { AlertCircle, Music, ExternalLink, Mic } from "lucide-react";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -20,9 +20,9 @@ interface LinkPreviewProps {
 }
 
 export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
-  // Helper function to check if URL is YouTube or iPod link
+  // Helper function to check if URL is YouTube, iPod, or Karaoke link
   const isYouTubeUrl = (url: string): boolean => {
-    return /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|os\.ryo\.lu\/ipod\/)/.test(
+    return /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|\/ipod\/|\/karaoke\/)/.test(
       url
     );
   };
@@ -46,9 +46,15 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
       const validateId = (id: string | null) =>
         id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
 
-      // Handle os.ryo.lu/ipod/ links
-      if (url.includes("os.ryo.lu/ipod/")) {
-        const match = url.match(/os\.ryo\.lu\/ipod\/([^&\n?#]+)/);
+      // Handle /ipod/ links (any origin)
+      if (url.includes("/ipod/")) {
+        const match = url.match(/\/ipod\/([^&\n?#/]+)/);
+        return validateId(match ? match[1] : null);
+      }
+
+      // Handle /karaoke/ links (any origin)
+      if (url.includes("/karaoke/")) {
+        const match = url.match(/\/karaoke\/([^&\n?#/]+)/);
         return validateId(match ? match[1] : null);
       }
 
@@ -85,9 +91,13 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
   // Helper function to get favicon URL
   const getFaviconUrl = (url: string): string => {
     try {
-      // For os.ryo.lu/ipod/ links, use YouTube favicon
-      if (url.includes("os.ryo.lu/ipod/")) {
-        return `https://www.google.com/s2/favicons?domain=youtube.com&sz=16`;
+      // For /ipod/ links, use iPod app icon
+      if (url.includes("/ipod/")) {
+        return `/icons/macosx/ipod.png`;
+      }
+      // For /karaoke/ links, use Karaoke app icon
+      if (url.includes("/karaoke/")) {
+        return `/icons/macosx/karaoke.png`;
       }
 
       const domain = new URL(url).hostname;
@@ -114,35 +124,28 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
     }
   };
 
-  // Handle opening in Videos app
-  const handleOpenInVideos = (e: React.MouseEvent | React.TouchEvent) => {
+  // Handle opening in Karaoke app
+  const handleOpenInKaraoke = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
-    // For iPod links, we need to construct a YouTube URL and use the same logic
     try {
       const videoId = extractYouTubeVideoId(url);
       if (videoId) {
-        console.log(
-          `[LinkPreview] Launching Videos app with videoId: ${videoId}`
-        );
-        launchApp("videos", { initialData: { videoId } });
+        launchApp("karaoke", { initialData: { videoId } });
       } else {
-        console.warn(
-          "Could not extract video ID from URL, opening in browser:",
-          url
-        );
-        window.open(url, "_blank", "noopener,noreferrer");
+        toast.error("Could not extract video ID from this URL");
+        console.warn("Could not extract video ID from URL:", url);
       }
     } catch (error) {
-      console.error("Error launching Videos app, opening in browser:", error);
-      window.open(url, "_blank", "noopener,noreferrer");
+      toast.error("Failed to open video in Karaoke app");
+      console.error("Error launching Karaoke app:", error);
     }
   };
 
   // Handle opening YouTube externally
   const handleOpenYouTube = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
-    // For iPod links, construct YouTube URL from video ID
-    if (url.includes("os.ryo.lu/ipod/")) {
+    // For iPod/Karaoke links, construct YouTube URL from video ID
+    if (url.includes("/ipod/") || url.includes("/karaoke/")) {
       const videoId = extractYouTubeVideoId(url);
       if (videoId) {
         const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
@@ -166,8 +169,8 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
         setLoading(true);
         setError(null);
 
-        // Handle os.ryo.lu/ipod/ links specially - use YouTube metadata
-        if (url.includes("os.ryo.lu/ipod/")) {
+        // Handle /ipod/ or /karaoke/ links specially - use YouTube metadata
+        if (url.includes("/ipod/") || url.includes("/karaoke/")) {
           const videoId = extractYouTubeVideoId(url);
           if (videoId) {
             // Fetch actual YouTube metadata for the video
@@ -304,7 +307,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
 
     if (isYouTubeUrl(url)) {
       // For iPod links, main action is add to iPod
-      if (url.includes("os.ryo.lu/ipod/")) {
+      if (url.includes("/ipod/")) {
         try {
           const videoId = extractYouTubeVideoId(url);
           if (videoId) {
@@ -319,6 +322,23 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
         } catch (error) {
           toast.error("Failed to open video in iPod app");
           console.error("Error launching iPod app:", error);
+        }
+      } else if (url.includes("/karaoke/")) {
+        // For Karaoke links, main action is open in Karaoke
+        try {
+          const videoId = extractYouTubeVideoId(url);
+          if (videoId) {
+            console.log(
+              `[LinkPreview] Adding Karaoke link to Karaoke with videoId: ${videoId}`
+            );
+            launchApp("karaoke", { initialData: { videoId } });
+          } else {
+            toast.error("Could not extract video ID from this Karaoke URL");
+            console.warn("Could not extract video ID from Karaoke URL:", url);
+          }
+        } catch (error) {
+          toast.error("Failed to open video in Karaoke app");
+          console.error("Error launching Karaoke app:", error);
         }
       } else {
         // For regular YouTube links, launch Videos app
@@ -423,21 +443,52 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           {/* Action buttons */}
           <div className="px-2 pb-2">
             {isYouTubeUrl(url) ? (
-              url.includes("os.ryo.lu/ipod/") ? (
+              url.includes("/ipod/") ? (
                 <div className="flex gap-2 pt-2 border-t border-gray-100">
                   <button
-                    onClick={handleOpenInVideos}
+                    onClick={handleAddToIpod}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
                       theme === "macosx"
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
-                    title="Open in Videos"
+                    title="Open in iPod"
                     data-link-preview
                   >
-                    {theme !== "macosx" && <Videotape className="h-3 w-3" />}
-                    <span>Open in Videos</span>
+                    {theme !== "macosx" && <Music className="h-3 w-3" />}
+                    <span>Open in iPod</span>
+                  </button>
+                  <button
+                    onClick={handleOpenYouTube}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    className={cn(
+                      theme === "macosx"
+                        ? "aqua-button secondary flex-1"
+                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                    )}
+                    title="Open YouTube"
+                    data-link-preview
+                  >
+                    {theme !== "macosx" && <ExternalLink className="h-3 w-3" />}
+                    <span>Open YouTube</span>
+                  </button>
+                </div>
+              ) : url.includes("/karaoke/") ? (
+                <div className="flex gap-2 pt-2 border-t border-gray-100">
+                  <button
+                    onClick={handleOpenInKaraoke}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    className={cn(
+                      theme === "macosx"
+                        ? "aqua-button secondary flex-1"
+                        : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                    )}
+                    title="Open in Karaoke"
+                    data-link-preview
+                  >
+                    {theme !== "macosx" && <Mic className="h-3 w-3" />}
+                    <span>Open in Karaoke</span>
                   </button>
                   <button
                     onClick={handleOpenYouTube}
@@ -607,21 +658,54 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           )}>
             <div className="px-2 pt-2">
               {isYouTubeUrl(url) ? (
-                url.includes("os.ryo.lu/ipod/") ? (
+                url.includes("/ipod/") ? (
                   <div className="flex gap-2">
                     <button
-                      onClick={handleOpenInVideos}
+                      onClick={handleAddToIpod}
                       onTouchStart={(e) => e.stopPropagation()}
                       className={cn(
                         theme === "macosx"
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
-                      title="Open in Videos"
+                      title="Open in iPod"
                       data-link-preview
                     >
-                      {theme !== "macosx" && <Videotape className="h-3 w-3" />}
-                      <span>Open in Videos</span>
+                      {theme !== "macosx" && <Music className="h-3 w-3" />}
+                      <span>Open in iPod</span>
+                    </button>
+                    <button
+                      onClick={handleOpenYouTube}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      className={cn(
+                        theme === "macosx"
+                          ? "aqua-button secondary flex-1"
+                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                      )}
+                      title="Open YouTube"
+                      data-link-preview
+                    >
+                      {theme !== "macosx" && (
+                        <ExternalLink className="h-3 w-3" />
+                      )}
+                      <span>Open YouTube</span>
+                    </button>
+                  </div>
+                ) : url.includes("/karaoke/") ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleOpenInKaraoke}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      className={cn(
+                        theme === "macosx"
+                          ? "aqua-button secondary flex-1"
+                          : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
+                      )}
+                      title="Open in Karaoke"
+                      data-link-preview
+                    >
+                      {theme !== "macosx" && <Mic className="h-3 w-3" />}
+                      <span>Open in Karaoke</span>
                     </button>
                     <button
                       onClick={handleOpenYouTube}

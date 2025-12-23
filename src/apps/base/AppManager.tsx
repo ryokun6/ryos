@@ -220,6 +220,25 @@ export function AppManager({ apps }: AppManagerProps) {
           }, 0);
           window.history.replaceState({}, "", "/"); // Clean URL
         }
+      } else if (path.startsWith("/karaoke/")) {
+        const videoId = path.substring("/karaoke/".length);
+        if (videoId) {
+          console.log("[AppManager] Detected Karaoke videoId:", videoId);
+          toast.info("Opening shared Karaoke track...");
+          setTimeout(() => {
+            const event = new CustomEvent("launchApp", {
+              detail: {
+                appId: "karaoke",
+                initialData: { videoId },
+              },
+            });
+            window.dispatchEvent(event);
+            console.log(
+              "[AppManager] Dispatched launchApp event for Karaoke videoId.",
+            );
+          }, 0);
+          window.history.replaceState({}, "", "/"); // Clean URL
+        }
       } else if (path.startsWith("/videos/")) {
         const videoId = path.substring("/videos/".length);
         if (videoId) {
@@ -267,6 +286,7 @@ export function AppManager({ apps }: AppManagerProps) {
             !path.startsWith("/internet-explorer/") &&
             !path.startsWith("/applet-viewer/") &&
             !path.startsWith("/ipod/") &&
+            !path.startsWith("/karaoke/") &&
             !path.startsWith("/videos/")
           ) {
             window.history.replaceState({}, "", "/");

@@ -23,7 +23,7 @@ export function useTranslatedHelpItems(
     minesweeper: ["desktopControls", "mobileControls", "gameRules", "timerCounter", "restart"],
     videos: ["addVideo", "playback", "loop", "shuffle", "playlist", "retroUi"],
     ipod: ["addSongs", "wheelNavigation", "playbackControls", "syncedLyrics", "playbackModes", "displayFullscreen"],
-    karaoke: ["karaokeMode", "sharedLibrary", "instantTranslations", "keyboardControls", "layoutOptions", "offsetAdjustment"],
+    karaoke: ["addSearchSongs", "syncLyricsTiming", "styleLayout", "syncedWithIpod", "worksWithChats", "keyboardShortcuts"],
     synth: ["virtualKeyboard", "controlsPanel", "presets", "waveform3d", "effects", "midiInput"],
     pc: ["pcEmulator", "keyboardControls", "mouseCapture", "fullscreenMode", "saveStates", "aspectRatio"],
     terminal: ["basicCommands", "navigation", "commandHistory", "aiAssistant", "fileEditing", "terminalSounds"],

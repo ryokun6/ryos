@@ -1248,25 +1248,29 @@
           "description": "Traduire les paroles en plusieurs langues à la volée.",
           "title": "Traductions instantanées"
         },
-        "karaokeMode": {
-          "description": "Lecteur vidéo plein écran avec superposition de paroles synchronisées.",
-          "title": "Mode Karaoké"
+        "addSearchSongs": {
+          "title": "Ajouter et rechercher des chansons",
+          "description": "Recherchez des chansons sur YouTube ou collez une URL pour ajouter à votre bibliothèque."
         },
-        "keyboardControls": {
-          "description": "Espace pour lecture/pause, flèches pour avancer/reculer et changer de piste.",
-          "title": "Commandes clavier"
+        "syncLyricsTiming": {
+          "title": "Synchroniser le timing des paroles",
+          "description": "Utilisez les touches [ ], la molette ou glissez vers le haut/bas pour ajuster le décalage des paroles."
         },
-        "layoutOptions": {
-          "description": "Choisissez entre les dispositions de paroles : focus, centré et alterné.",
-          "title": "Options de disposition"
+        "styleLayout": {
+          "title": "Style et disposition",
+          "description": "Changez les polices, les dispositions (focus/centré/alterné) et traduisez les paroles."
         },
-        "offsetAdjustment": {
-          "description": "Utilisez les touches [ ], la molette de la souris, ou faites glisser vers le haut/bas pour ajuster le minutage des paroles.",
-          "title": "Réglage du décalage"
+        "syncedWithIpod": {
+          "title": "Synchronisé avec iPod",
+          "description": "Partage la même bibliothèque musicale qu'iPod. Ajoutez des chansons dans l'une ou l'autre app."
         },
-        "sharedLibrary": {
-          "description": "Utilise la même bibliothèque musicale que l'iPod.",
-          "title": "Bibliothèque partagée"
+        "worksWithChats": {
+          "title": "Fonctionne avec Chats",
+          "description": "Demandez à Ryo de jouer des chansons, contrôler la lecture ou ajuster les paramètres par chat."
+        },
+        "keyboardShortcuts": {
+          "title": "Raccourcis clavier",
+          "description": "Espace pour lecture/pause, touches fléchées pour naviguer et changer de piste."
         }
       },
       "menu": {

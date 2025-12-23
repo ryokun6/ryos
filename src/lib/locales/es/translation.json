@@ -1248,25 +1248,29 @@
           "description": "Traduce letras a varios idiomas al instante.",
           "title": "Traducciones instantáneas"
         },
-        "karaokeMode": {
-          "description": "Reproductor de video en pantalla completa con superposición de letras sincronizadas.",
-          "title": "Modo Karaoke"
+        "addSearchSongs": {
+          "title": "Agregar y buscar canciones",
+          "description": "Busca canciones en YouTube o pega una URL para agregar a tu biblioteca."
         },
-        "keyboardControls": {
-          "description": "Espacio para reproducir/pausar, flechas para buscar y cambiar pistas.",
-          "title": "Controles de teclado"
+        "syncLyricsTiming": {
+          "title": "Sincronizar tiempo de letras",
+          "description": "Usa las teclas [ ], la rueda del ratón o arrastra arriba/abajo para ajustar el desfase de la letra."
         },
-        "layoutOptions": {
-          "description": "Elige entre diseños de letras con enfoque, centrados y alternados.",
-          "title": "Opciones de diseño"
+        "styleLayout": {
+          "title": "Estilo y diseño",
+          "description": "Cambia fuentes, diseños (enfoque/centro/alternado) y traduce letras."
         },
-        "offsetAdjustment": {
-          "description": "Usa las teclas [ ], la rueda del ratón o arrastra arriba/abajo para ajustar la sincronización de la letra.",
-          "title": "Ajuste de desfase"
+        "syncedWithIpod": {
+          "title": "Sincronizado con iPod",
+          "description": "Comparte la misma biblioteca de música con iPod. Agrega canciones en cualquier app."
         },
-        "sharedLibrary": {
-          "description": "Usa la misma biblioteca de música que el iPod.",
-          "title": "Biblioteca compartida"
+        "worksWithChats": {
+          "title": "Funciona con Chats",
+          "description": "Pide a Ryo que reproduzca canciones, controle la reproducción o ajuste configuraciones por chat."
+        },
+        "keyboardShortcuts": {
+          "title": "Atajos de teclado",
+          "description": "Espacio para reproducir/pausar, teclas de flecha para buscar y cambiar pistas."
         }
       },
       "menu": {

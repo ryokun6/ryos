@@ -1248,25 +1248,29 @@
           "description": "Liedtexte in Echtzeit in mehrere Sprachen übersetzen.",
           "title": "Sofortübersetzungen"
         },
-        "karaokeMode": {
-          "description": "Vollbild-Videoplayer mit synchronisierter Liedtext-Einblendung.",
-          "title": "Karaoke-Modus"
+        "addSearchSongs": {
+          "title": "Songs hinzufügen & suchen",
+          "description": "Suchen Sie auf YouTube nach Songs oder fügen Sie eine URL ein, um sie zur Bibliothek hinzuzufügen."
         },
-        "keyboardControls": {
-          "description": "Leertaste für Wiedergabe/Pause, Pfeiltasten zum Spulen und Titelwechsel.",
-          "title": "Tastatursteuerung"
+        "syncLyricsTiming": {
+          "title": "Liedtext-Timing synchronisieren",
+          "description": "Verwenden Sie [ ]-Tasten, Mausrad oder ziehen Sie nach oben/unten, um den Liedtext-Offset anzupassen."
         },
-        "layoutOptions": {
-          "description": "Wählen Sie zwischen Fokus-, Zentrier- und wechselnden Liedtext-Layouts.",
-          "title": "Layout-Optionen"
+        "styleLayout": {
+          "title": "Stil & Layout",
+          "description": "Ändern Sie Schriftarten, Layouts (Fokus/Zentriert/Wechselnd) und übersetzen Sie Liedtexte."
         },
-        "offsetAdjustment": {
-          "description": "Verwenden Sie die Tasten [ ], das Mausrad oder ziehen Sie nach oben/unten, um die Liedtext-Synchronisation anzupassen.",
-          "title": "Offset-Anpassung"
+        "syncedWithIpod": {
+          "title": "Mit iPod synchronisiert",
+          "description": "Teilt dieselbe Musikbibliothek mit iPod. Fügen Sie Songs in beiden Apps hinzu."
         },
-        "sharedLibrary": {
-          "description": "Nutzt dieselbe Musikbibliothek wie der iPod.",
-          "title": "Geteilte Bibliothek"
+        "worksWithChats": {
+          "title": "Funktioniert mit Chats",
+          "description": "Bitten Sie Ryo per Chat, Songs abzuspielen, die Wiedergabe zu steuern oder Einstellungen anzupassen."
+        },
+        "keyboardShortcuts": {
+          "title": "Tastaturkürzel",
+          "description": "Leertaste für Wiedergabe/Pause, Pfeiltasten zum Spulen und Titelwechsel."
         }
       },
       "menu": {

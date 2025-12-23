@@ -1248,25 +1248,29 @@
           "description": "Traduzir letras para vários idiomas em tempo real.",
           "title": "Traduções Instantâneas"
         },
-        "karaokeMode": {
-          "description": "Reprodutor de vídeo em tela cheia com sobreposição de letras sincronizadas.",
-          "title": "Modo Karaokê"
+        "addSearchSongs": {
+          "title": "Adicionar e Buscar Músicas",
+          "description": "Busque músicas no YouTube ou cole uma URL para adicionar à sua biblioteca."
         },
-        "keyboardControls": {
-          "description": "Espaço para reproduzir/pausar, setas para buscar e mudar de faixa.",
-          "title": "Controles de Teclado"
+        "syncLyricsTiming": {
+          "title": "Sincronizar Tempo das Letras",
+          "description": "Use as teclas [ ], a roda do mouse ou arraste para cima/baixo para ajustar o deslocamento da letra."
         },
-        "layoutOptions": {
-          "description": "Escolha entre layouts de letras com foco, centralizado e alternado.",
-          "title": "Opções de Layout"
+        "styleLayout": {
+          "title": "Estilo e Layout",
+          "description": "Altere fontes, layouts (foco/central/alternado) e traduza letras."
         },
-        "offsetAdjustment": {
-          "description": "Use as teclas [ ], a roda do mouse, ou arraste para cima/baixo para ajustar a sincronização da letra.",
-          "title": "Ajuste de Deslocamento"
+        "syncedWithIpod": {
+          "title": "Sincronizado com iPod",
+          "description": "Compartilha a mesma biblioteca de músicas com o iPod. Adicione músicas em qualquer app."
         },
-        "sharedLibrary": {
-          "description": "Usa a mesma biblioteca de música que o iPod.",
-          "title": "Biblioteca Compartilhada"
+        "worksWithChats": {
+          "title": "Funciona com Chats",
+          "description": "Peça ao Ryo para tocar músicas, controlar a reprodução ou ajustar configurações via chat."
+        },
+        "keyboardShortcuts": {
+          "title": "Atalhos de Teclado",
+          "description": "Espaço para reproduzir/pausar, teclas de seta para buscar e mudar de faixa."
         }
       },
       "menu": {
