@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { LyricsAlignment, KoreanDisplay } from "@/types/lyrics";
 import { LyricsFont } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Maximize2, X } from "lucide-react";
+import { Globe, Maximize2, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,9 +83,18 @@ export function FullscreenPlayerControls({
   bgOpacity = "35",
   onInteraction,
 }: FullscreenPlayerControlsProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const translationBadge = getTranslationBadge(currentTranslationCode);
+
+  // Get font label based on current locale
+  const getFontLabel = () => {
+    const lang = i18n.language;
+    if (lang === "ja") return "あ";
+    if (lang === "ko") return "가";
+    if (lang === "zh-TW") return "字";
+    return "Aa";
+  };
 
   // Button size classes based on variant
   const buttonSize =
@@ -239,12 +248,15 @@ export function FullscreenPlayerControls({
           )}
           title={t("apps.ipod.ariaLabels.cycleLyricFont")}
         >
-          <span className={smallIconSize}>
-            {currentFont === LyricsFont.Rounded
-              ? "丸"
+          <span className={cn(
+            smallIconSize,
+            currentFont === LyricsFont.Rounded
+              ? "font-lyrics-rounded"
               : currentFont === LyricsFont.Serif
-              ? "明"
-              : "ゴ"}
+              ? "font-lyrics-serif"
+              : "font-lyrics-sans"
+          )}>
+            {getFontLabel()}
           </span>
         </button>
 
@@ -292,16 +304,10 @@ export function FullscreenPlayerControls({
                   {translationBadge}
                 </span>
               ) : (
-                <span
-                  className={cn(
-                    "inline-flex items-center justify-center leading-none",
-                    variant === "compact"
-                      ? "w-[20px] h-[20px] text-sm"
-                      : "w-[24px] h-[24px] md:w-[28px] md:h-[28px] text-[16px] md:text-[18px]"
-                  )}
-                >
-                  Aa
-                </span>
+                <Globe
+                  size={svgSize}
+                  className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+                />
               )}
             </button>
           </DropdownMenuTrigger>
