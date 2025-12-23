@@ -151,7 +151,7 @@ const initialIpodData: IpodData = {
   lcdFilterOn: true,
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
-  lyricsFont: LyricsFont.SansSerif,
+  lyricsFont: LyricsFont.Serif,
   chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
