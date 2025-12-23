@@ -588,14 +588,14 @@ const getVariants = (
   // For non-word-timed lines, use normal opacity animation
   const getAnimateOpacity = () => {
     if (hasWordTiming) {
-      // Word-timed lines: current at full, inactive slightly faded
+      // Word-timed lines: current at full, inactive more faded for focus effect
       if (isCurrent) return 1;
-      return 0.85;
+      return 0.6;
     }
     // Non-word-timed lines: normal opacity animation
     if (isAlternating) return isCurrent ? 1 : 0.5;
     if (isCurrent) return 1;
-    return position === 1 || position === -1 ? 0.5 : 0.1;
+    return position === 1 || position === -1 ? 0.35 : 0.1;
   };
 
   // For word-timed lines, start at target opacity to avoid flash on entry
