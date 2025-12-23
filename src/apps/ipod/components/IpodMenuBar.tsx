@@ -50,8 +50,8 @@ export function IpodMenuBar({
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
 
   const translationLanguages = [
-    { label: t("apps.ipod.translationLanguages.auto"), code: "auto" },
     { label: t("apps.ipod.translationLanguages.original"), code: null },
+    { label: t("apps.ipod.translationLanguages.auto"), code: "auto" },
     { separator: true },
     { label: "English", code: "en" },
     { label: "中文", code: "zh-TW" },

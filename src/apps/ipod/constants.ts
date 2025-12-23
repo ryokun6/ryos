@@ -12,8 +12,8 @@ export interface TranslationLanguage {
 }
 
 export const TRANSLATION_LANGUAGES: TranslationLanguage[] = [
-  { labelKey: "apps.ipod.translationLanguages.auto", code: "auto" },
   { labelKey: "apps.ipod.translationLanguages.original", code: null },
+  { labelKey: "apps.ipod.translationLanguages.auto", code: "auto" },
   { separator: true, code: null, label: "" }, // Separator
   { label: "English", code: "en" },
   { label: "中文", code: "zh-TW" },
