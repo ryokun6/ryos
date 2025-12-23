@@ -1154,7 +1154,7 @@ export function KaraokeAppComponent({
                         textSizeClass="fullscreen-lyrics-text"
                         gapClass="gap-0"
                         containerStyle={{
-                          gap: "clamp(0.25rem, calc(min(10vw,10vh) * 0.12), 2.5rem)",
+                          gap: "clamp(0.15rem, calc(min(10vw,10vh) * 0.06), 1rem)",
                           paddingLeft: "env(safe-area-inset-left, 0px)",
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
