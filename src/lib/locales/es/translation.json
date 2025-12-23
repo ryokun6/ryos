@@ -1031,9 +1031,9 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Cerrar pantalla completa",
-        "enterFullscreen": "Entrar en pantalla completa",
         "cycleLyricFont": "Alternar fuente de la letra",
         "cycleLyricLayout": "Alternar diseño de letra",
+        "enterFullscreen": "Entrar en pantalla completa",
         "nextTrack": "Siguiente pista",
         "playPause": "Reproducir/Pausar",
         "previousTrack": "Pista anterior",
@@ -1244,33 +1244,33 @@
     "karaoke": {
       "description": "Reproductor de karaoke con letras sincronizadas",
       "help": {
+        "addSearchSongs": {
+          "description": "Busca canciones en YouTube o pega una URL para agregar a tu biblioteca.",
+          "title": "Agregar y buscar canciones"
+        },
         "instantTranslations": {
           "description": "Traduce letras a varios idiomas al instante.",
           "title": "Traducciones instantáneas"
         },
-        "addSearchSongs": {
-          "title": "Agregar y buscar canciones",
-          "description": "Busca canciones en YouTube o pega una URL para agregar a tu biblioteca."
-        },
-        "syncLyricsTiming": {
-          "title": "Sincronizar tiempo de letras",
-          "description": "Usa las teclas [ ], la rueda del ratón o arrastra arriba/abajo para ajustar el desfase de la letra."
+        "keyboardShortcuts": {
+          "description": "Espacio para reproducir/pausar, teclas de flecha para buscar y cambiar pistas.",
+          "title": "Atajos de teclado"
         },
         "styleLayout": {
-          "title": "Estilo y diseño",
-          "description": "Cambia fuentes, diseños (enfoque/centro/alternado) y traduce letras."
+          "description": "Cambia fuentes, diseños (enfoque/centro/alternado) y traduce letras.",
+          "title": "Estilo y diseño"
+        },
+        "syncLyricsTiming": {
+          "description": "Usa las teclas [ ], la rueda del ratón o arrastra arriba/abajo para ajustar el desfase de la letra.",
+          "title": "Sincronizar tiempo de letras"
         },
         "syncedWithIpod": {
-          "title": "Sincronizado con iPod",
-          "description": "Comparte la misma biblioteca de música con iPod. Agrega canciones en cualquier app."
+          "description": "Comparte la misma biblioteca de música con iPod. Agrega canciones en cualquier app.",
+          "title": "Sincronizado con iPod"
         },
         "worksWithChats": {
-          "title": "Funciona con Chats",
-          "description": "Pide a Ryo que reproduzca canciones, controle la reproducción o ajuste configuraciones por chat."
-        },
-        "keyboardShortcuts": {
-          "title": "Atajos de teclado",
-          "description": "Espacio para reproducir/pausar, teclas de flecha para buscar y cambiar pistas."
+          "description": "Pide a Ryo que reproduzca canciones, controle la reproducción o ajuste configuraciones por chat.",
+          "title": "Funciona con Chats"
         }
       },
       "menu": {
@@ -2160,6 +2160,14 @@
       "updatingIcons": "Actualizando iconos",
       "updatingSounds": "Actualizando sonidos",
       "updatingSystemFiles": "Actualizando archivos del sistema"
+    }
+  },
+  "components": {
+    "linkPreview": {
+      "addToIpod": "Añadir a iPod",
+      "openIpod": "Abrir iPod",
+      "openKaraoke": "Abrir Karaoke",
+      "openYouTube": "Abrir YouTube"
     }
   },
   "settings": {

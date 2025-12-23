@@ -1031,9 +1031,9 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "關閉全螢幕",
-        "enterFullscreen": "開啟全螢幕",
         "cycleLyricFont": "循環歌詞字體",
         "cycleLyricLayout": "切換歌詞佈局",
+        "enterFullscreen": "開啟全螢幕",
         "nextTrack": "下一首",
         "playPause": "播放/暫停",
         "previousTrack": "上一首",
@@ -1244,33 +1244,33 @@
     "karaoke": {
       "description": "附同步歌詞的卡拉OK播放器",
       "help": {
+        "addSearchSongs": {
+          "description": "在 YouTube 搜尋歌曲，或貼上網址加入資料庫。",
+          "title": "新增與搜尋歌曲"
+        },
         "instantTranslations": {
           "description": "即時將歌詞翻譯成多種語言。",
           "title": "即時翻譯"
         },
-        "addSearchSongs": {
-          "title": "新增與搜尋歌曲",
-          "description": "在 YouTube 搜尋歌曲，或貼上網址加入資料庫。"
-        },
-        "syncLyricsTiming": {
-          "title": "同步歌詞時間",
-          "description": "使用 [ ] 鍵、滑鼠滾輪或上下拖曳來調整歌詞偏移。"
+        "keyboardShortcuts": {
+          "description": "空白鍵播放/暫停，方向鍵跳轉及切換曲目。",
+          "title": "鍵盤快捷鍵"
         },
         "styleLayout": {
-          "title": "樣式與版面",
-          "description": "更改字體、版面配置（焦點/置中/交替），以及翻譯歌詞。"
+          "description": "更改字體、版面配置（焦點/置中/交替），以及翻譯歌詞。",
+          "title": "樣式與版面"
+        },
+        "syncLyricsTiming": {
+          "description": "使用 [ ] 鍵、滑鼠滾輪或上下拖曳來調整歌詞偏移。",
+          "title": "同步歌詞時間"
         },
         "syncedWithIpod": {
-          "title": "與 iPod 同步",
-          "description": "與 iPod 共用音樂資料庫。可在任一應用程式中新增歌曲。"
+          "description": "與 iPod 共用音樂資料庫。可在任一應用程式中新增歌曲。",
+          "title": "與 iPod 同步"
         },
         "worksWithChats": {
-          "title": "與聊天整合",
-          "description": "透過聊天請 Ryo 播放歌曲、控制播放或調整設定。"
-        },
-        "keyboardShortcuts": {
-          "title": "鍵盤快捷鍵",
-          "description": "空白鍵播放/暫停，方向鍵跳轉及切換曲目。"
+          "description": "透過聊天請 Ryo 播放歌曲、控制播放或調整設定。",
+          "title": "與聊天整合"
         }
       },
       "menu": {
@@ -2175,6 +2175,14 @@
       "updatingIcons": "正在更新圖示",
       "updatingSounds": "正在更新音效",
       "updatingSystemFiles": "正在更新系統檔案"
+    }
+  },
+  "components": {
+    "linkPreview": {
+      "addToIpod": "加入iPod",
+      "openIpod": "開啟iPod",
+      "openKaraoke": "開啟卡拉OK",
+      "openYouTube": "開啟YouTube"
     }
   },
   "settings": {

@@ -1031,9 +1031,9 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Sair do modo tela cheia",
-        "enterFullscreen": "Entrar no modo tela cheia",
         "cycleLyricFont": "Alternar fonte da letra",
         "cycleLyricLayout": "Alternar layout da letra",
+        "enterFullscreen": "Entrar no modo tela cheia",
         "nextTrack": "Próxima faixa",
         "playPause": "Reproduzir/Pausar",
         "previousTrack": "Faixa anterior",
@@ -1244,33 +1244,33 @@
     "karaoke": {
       "description": "Reprodutor de karaokê com letras sincronizadas",
       "help": {
+        "addSearchSongs": {
+          "description": "Busque músicas no YouTube ou cole uma URL para adicionar à sua biblioteca.",
+          "title": "Adicionar e Buscar Músicas"
+        },
         "instantTranslations": {
           "description": "Traduzir letras para vários idiomas em tempo real.",
           "title": "Traduções Instantâneas"
         },
-        "addSearchSongs": {
-          "title": "Adicionar e Buscar Músicas",
-          "description": "Busque músicas no YouTube ou cole uma URL para adicionar à sua biblioteca."
-        },
-        "syncLyricsTiming": {
-          "title": "Sincronizar Tempo das Letras",
-          "description": "Use as teclas [ ], a roda do mouse ou arraste para cima/baixo para ajustar o deslocamento da letra."
+        "keyboardShortcuts": {
+          "description": "Espaço para reproduzir/pausar, teclas de seta para buscar e mudar de faixa.",
+          "title": "Atalhos de Teclado"
         },
         "styleLayout": {
-          "title": "Estilo e Layout",
-          "description": "Altere fontes, layouts (foco/central/alternado) e traduza letras."
+          "description": "Altere fontes, layouts (foco/central/alternado) e traduza letras.",
+          "title": "Estilo e Layout"
+        },
+        "syncLyricsTiming": {
+          "description": "Use as teclas [ ], a roda do mouse ou arraste para cima/baixo para ajustar o deslocamento da letra.",
+          "title": "Sincronizar Tempo das Letras"
         },
         "syncedWithIpod": {
-          "title": "Sincronizado com iPod",
-          "description": "Compartilha a mesma biblioteca de músicas com o iPod. Adicione músicas em qualquer app."
+          "description": "Compartilha a mesma biblioteca de músicas com o iPod. Adicione músicas em qualquer app.",
+          "title": "Sincronizado com iPod"
         },
         "worksWithChats": {
-          "title": "Funciona com Chats",
-          "description": "Peça ao Ryo para tocar músicas, controlar a reprodução ou ajustar configurações via chat."
-        },
-        "keyboardShortcuts": {
-          "title": "Atalhos de Teclado",
-          "description": "Espaço para reproduzir/pausar, teclas de seta para buscar e mudar de faixa."
+          "description": "Peça ao Ryo para tocar músicas, controlar a reprodução ou ajustar configurações via chat.",
+          "title": "Funciona com Chats"
         }
       },
       "menu": {
@@ -2160,6 +2160,14 @@
       "updatingIcons": "Atualizando ícones",
       "updatingSounds": "Atualizando sons",
       "updatingSystemFiles": "Atualizando arquivos do sistema"
+    }
+  },
+  "components": {
+    "linkPreview": {
+      "addToIpod": "Adicionar ao iPod",
+      "openIpod": "Abrir iPod",
+      "openKaraoke": "Abrir Karaoke",
+      "openYouTube": "Abrir YouTube"
     }
   },
   "settings": {

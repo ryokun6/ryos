@@ -5,6 +5,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useTranslation } from "react-i18next";
 
 interface LinkMetadata {
   title?: string;
@@ -20,6 +21,8 @@ interface LinkPreviewProps {
 }
 
 export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
+  const { t } = useTranslation();
+
   // Helper function to check if URL is YouTube, iPod, or Karaoke link
   const isYouTubeUrl = (url: string): boolean => {
     return /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|\/ipod\/|\/karaoke\/)/.test(
@@ -453,11 +456,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
-                    title="Open iPod"
+                    title={t("components.linkPreview.openIpod")}
                     data-link-preview
                   >
                     {theme !== "macosx" && <Music className="h-3 w-3" />}
-                    <span>Open iPod</span>
+                    <span>{t("components.linkPreview.openIpod")}</span>
                   </button>
                   <button
                     onClick={handleOpenYouTube}
@@ -467,11 +470,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
-                    title="Open YouTube"
+                    title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
                     {theme !== "macosx" && <ExternalLink className="h-3 w-3" />}
-                    <span>Open YouTube</span>
+                    <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
               ) : url.includes("/karaoke/") ? (
@@ -484,11 +487,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
-                    title="Open Karaoke"
+                    title={t("components.linkPreview.openKaraoke")}
                     data-link-preview
                   >
                     {theme !== "macosx" && <Mic className="h-3 w-3" />}
-                    <span>Open Karaoke</span>
+                    <span>{t("components.linkPreview.openKaraoke")}</span>
                   </button>
                   <button
                     onClick={handleOpenYouTube}
@@ -498,11 +501,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
-                    title="Open YouTube"
+                    title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
                     {theme !== "macosx" && <ExternalLink className="h-3 w-3" />}
-                    <span>Open YouTube</span>
+                    <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
               ) : (
@@ -515,11 +518,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
-                    title="Add to iPod"
+                    title={t("components.linkPreview.addToIpod")}
                     data-link-preview
                   >
                     {theme !== "macosx" && <Music className="h-3 w-3" />}
-                    <span>Add to iPod</span>
+                    <span>{t("components.linkPreview.addToIpod")}</span>
                   </button>
                   <button
                     onClick={handleOpenYouTube}
@@ -529,11 +532,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
-                    title="Open YouTube"
+                    title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
                     {theme !== "macosx" && <ExternalLink className="h-3 w-3" />}
-                    <span>Open YouTube</span>
+                    <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
               )
@@ -668,11 +671,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
-                      title="Open iPod"
+                      title={t("components.linkPreview.openIpod")}
                       data-link-preview
                     >
                       {theme !== "macosx" && <Music className="h-3 w-3" />}
-                      <span>Open iPod</span>
+                      <span>{t("components.linkPreview.openIpod")}</span>
                     </button>
                     <button
                       onClick={handleOpenYouTube}
@@ -682,13 +685,13 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
-                      title="Open YouTube"
+                      title={t("components.linkPreview.openYouTube")}
                       data-link-preview
                     >
                       {theme !== "macosx" && (
                         <ExternalLink className="h-3 w-3" />
                       )}
-                      <span>Open YouTube</span>
+                      <span>{t("components.linkPreview.openYouTube")}</span>
                     </button>
                   </div>
                 ) : url.includes("/karaoke/") ? (
@@ -701,11 +704,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
-                      title="Open Karaoke"
+                      title={t("components.linkPreview.openKaraoke")}
                       data-link-preview
                     >
                       {theme !== "macosx" && <Mic className="h-3 w-3" />}
-                      <span>Open Karaoke</span>
+                      <span>{t("components.linkPreview.openKaraoke")}</span>
                     </button>
                     <button
                       onClick={handleOpenYouTube}
@@ -715,13 +718,13 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
-                      title="Open YouTube"
+                      title={t("components.linkPreview.openYouTube")}
                       data-link-preview
                     >
                       {theme !== "macosx" && (
                         <ExternalLink className="h-3 w-3" />
                       )}
-                      <span>Open YouTube</span>
+                      <span>{t("components.linkPreview.openYouTube")}</span>
                     </button>
                   </div>
                 ) : (
@@ -734,11 +737,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
-                      title="Add to iPod"
+                      title={t("components.linkPreview.addToIpod")}
                       data-link-preview
                     >
                       {theme !== "macosx" && <Music className="h-3 w-3" />}
-                      <span>Add to iPod</span>
+                      <span>{t("components.linkPreview.addToIpod")}</span>
                     </button>
                     <button
                       onClick={handleOpenYouTube}
@@ -748,13 +751,13 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
-                      title="Open YouTube"
+                      title={t("components.linkPreview.openYouTube")}
                       data-link-preview
                     >
                       {theme !== "macosx" && (
                         <ExternalLink className="h-3 w-3" />
                       )}
-                      <span>Open YouTube</span>
+                      <span>{t("components.linkPreview.openYouTube")}</span>
                     </button>
                   </div>
                 )

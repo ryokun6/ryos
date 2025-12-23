@@ -2158,6 +2158,14 @@
       }
     }
   },
+  "components": {
+    "linkPreview": {
+      "openIpod": "Open iPod",
+      "openKaraoke": "Open Karaoke",
+      "openYouTube": "Open YouTube",
+      "addToIpod": "Add to iPod"
+    }
+  },
   "settings": {
     "language": {
       "title": "Language",

@@ -1031,9 +1031,9 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Vollbild schließen",
-        "enterFullscreen": "Vollbild öffnen",
         "cycleLyricFont": "Liedtext-Schriftart wechseln",
         "cycleLyricLayout": "Liedtext-Layout wechseln",
+        "enterFullscreen": "Vollbild öffnen",
         "nextTrack": "Nächster Titel",
         "playPause": "Wiedergabe/Pause",
         "previousTrack": "Vorheriger Titel",
@@ -1244,33 +1244,33 @@
     "karaoke": {
       "description": "Karaoke-Player mit synchronisierten Liedtexten",
       "help": {
+        "addSearchSongs": {
+          "description": "Suchen Sie auf YouTube nach Songs oder fügen Sie eine URL ein, um sie zur Bibliothek hinzuzufügen.",
+          "title": "Songs hinzufügen & suchen"
+        },
         "instantTranslations": {
           "description": "Liedtexte in Echtzeit in mehrere Sprachen übersetzen.",
           "title": "Sofortübersetzungen"
         },
-        "addSearchSongs": {
-          "title": "Songs hinzufügen & suchen",
-          "description": "Suchen Sie auf YouTube nach Songs oder fügen Sie eine URL ein, um sie zur Bibliothek hinzuzufügen."
-        },
-        "syncLyricsTiming": {
-          "title": "Liedtext-Timing synchronisieren",
-          "description": "Verwenden Sie [ ]-Tasten, Mausrad oder ziehen Sie nach oben/unten, um den Liedtext-Offset anzupassen."
+        "keyboardShortcuts": {
+          "description": "Leertaste für Wiedergabe/Pause, Pfeiltasten zum Spulen und Titelwechsel.",
+          "title": "Tastaturkürzel"
         },
         "styleLayout": {
-          "title": "Stil & Layout",
-          "description": "Ändern Sie Schriftarten, Layouts (Fokus/Zentriert/Wechselnd) und übersetzen Sie Liedtexte."
+          "description": "Ändern Sie Schriftarten, Layouts (Fokus/Zentriert/Wechselnd) und übersetzen Sie Liedtexte.",
+          "title": "Stil & Layout"
+        },
+        "syncLyricsTiming": {
+          "description": "Verwenden Sie [ ]-Tasten, Mausrad oder ziehen Sie nach oben/unten, um den Liedtext-Offset anzupassen.",
+          "title": "Liedtext-Timing synchronisieren"
         },
         "syncedWithIpod": {
-          "title": "Mit iPod synchronisiert",
-          "description": "Teilt dieselbe Musikbibliothek mit iPod. Fügen Sie Songs in beiden Apps hinzu."
+          "description": "Teilt dieselbe Musikbibliothek mit iPod. Fügen Sie Songs in beiden Apps hinzu.",
+          "title": "Mit iPod synchronisiert"
         },
         "worksWithChats": {
-          "title": "Funktioniert mit Chats",
-          "description": "Bitten Sie Ryo per Chat, Songs abzuspielen, die Wiedergabe zu steuern oder Einstellungen anzupassen."
-        },
-        "keyboardShortcuts": {
-          "title": "Tastaturkürzel",
-          "description": "Leertaste für Wiedergabe/Pause, Pfeiltasten zum Spulen und Titelwechsel."
+          "description": "Bitten Sie Ryo per Chat, Songs abzuspielen, die Wiedergabe zu steuern oder Einstellungen anzupassen.",
+          "title": "Funktioniert mit Chats"
         }
       },
       "menu": {
@@ -2175,6 +2175,14 @@
       "updatingIcons": "Symbole werden aktualisiert",
       "updatingSounds": "Töne werden aktualisiert",
       "updatingSystemFiles": "Systemdateien werden aktualisiert"
+    }
+  },
+  "components": {
+    "linkPreview": {
+      "addToIpod": "Zu iPod hinzufügen",
+      "openIpod": "iPod öffnen",
+      "openKaraoke": "Karaoke öffnen",
+      "openYouTube": "YouTube öffnen"
     }
   },
   "settings": {

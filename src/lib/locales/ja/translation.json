@@ -1031,9 +1031,9 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "フルスクリーンを閉じる",
-        "enterFullscreen": "フルスクリーンを開く",
         "cycleLyricFont": "歌詞フォントを切り替える",
         "cycleLyricLayout": "歌詞レイアウトを切り替える",
+        "enterFullscreen": "フルスクリーンを開く",
         "nextTrack": "次の曲",
         "playPause": "再生/一時停止",
         "previousTrack": "前の曲",
@@ -1244,33 +1244,33 @@
     "karaoke": {
       "description": "歌詞同期カラオケプレイヤー",
       "help": {
+        "addSearchSongs": {
+          "description": "YouTubeで曲を検索するか、URLを貼り付けてライブラリに追加。",
+          "title": "曲を追加・検索"
+        },
         "instantTranslations": {
           "description": "歌詞を多言語に即時翻訳。",
           "title": "即時翻訳"
         },
-        "addSearchSongs": {
-          "title": "曲を追加・検索",
-          "description": "YouTubeで曲を検索するか、URLを貼り付けてライブラリに追加。"
-        },
-        "syncLyricsTiming": {
-          "title": "歌詞タイミング同期",
-          "description": "[ ]キー、マウスホイール、または上下ドラッグで歌詞オフセットを調整。"
+        "keyboardShortcuts": {
+          "description": "スペースで再生/一時停止、矢印キーでシーク・トラック変更。",
+          "title": "キーボードショートカット"
         },
         "styleLayout": {
-          "title": "スタイル＆レイアウト",
-          "description": "フォント、レイアウト（フォーカス/中央/交互）の変更、歌詞の翻訳。"
+          "description": "フォント、レイアウト（フォーカス/中央/交互）の変更、歌詞の翻訳。",
+          "title": "スタイル＆レイアウト"
+        },
+        "syncLyricsTiming": {
+          "description": "[ ]キー、マウスホイール、または上下ドラッグで歌詞オフセットを調整。",
+          "title": "歌詞タイミング同期"
         },
         "syncedWithIpod": {
-          "title": "iPodと同期",
-          "description": "iPodと同じ音楽ライブラリを共有。どちらのアプリでも曲を追加可能。"
+          "description": "iPodと同じ音楽ライブラリを共有。どちらのアプリでも曲を追加可能。",
+          "title": "iPodと同期"
         },
         "worksWithChats": {
-          "title": "チャットと連携",
-          "description": "Ryoに曲の再生、操作、設定変更をチャットで依頼できます。"
-        },
-        "keyboardShortcuts": {
-          "title": "キーボードショートカット",
-          "description": "スペースで再生/一時停止、矢印キーでシーク・トラック変更。"
+          "description": "Ryoに曲の再生、操作、設定変更をチャットで依頼できます。",
+          "title": "チャットと連携"
         }
       },
       "menu": {
@@ -2175,6 +2175,14 @@
       "updatingIcons": "アイコン更新中",
       "updatingSounds": "サウンド更新中",
       "updatingSystemFiles": "システムファイル更新中"
+    }
+  },
+  "components": {
+    "linkPreview": {
+      "addToIpod": "iPodに追加",
+      "openIpod": "iPodを開く",
+      "openKaraoke": "カラオケを開く",
+      "openYouTube": "YouTubeを開く"
     }
   },
   "settings": {

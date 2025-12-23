@@ -1031,9 +1031,9 @@
     "ipod": {
       "ariaLabels": {
         "closeFullscreen": "Quitter le mode plein écran",
-        "enterFullscreen": "Activer le mode plein écran",
         "cycleLyricFont": "Changer la police des paroles",
         "cycleLyricLayout": "Alterner la disposition des paroles",
+        "enterFullscreen": "Activer le mode plein écran",
         "nextTrack": "Piste suivante",
         "playPause": "Lecture/Pause",
         "previousTrack": "Piste précédente",
@@ -1244,33 +1244,33 @@
     "karaoke": {
       "description": "Lecteur karaoké avec paroles synchronisées",
       "help": {
+        "addSearchSongs": {
+          "description": "Recherchez des chansons sur YouTube ou collez une URL pour ajouter à votre bibliothèque.",
+          "title": "Ajouter et rechercher des chansons"
+        },
         "instantTranslations": {
           "description": "Traduire les paroles en plusieurs langues à la volée.",
           "title": "Traductions instantanées"
         },
-        "addSearchSongs": {
-          "title": "Ajouter et rechercher des chansons",
-          "description": "Recherchez des chansons sur YouTube ou collez une URL pour ajouter à votre bibliothèque."
-        },
-        "syncLyricsTiming": {
-          "title": "Synchroniser le timing des paroles",
-          "description": "Utilisez les touches [ ], la molette ou glissez vers le haut/bas pour ajuster le décalage des paroles."
+        "keyboardShortcuts": {
+          "description": "Espace pour lecture/pause, touches fléchées pour naviguer et changer de piste.",
+          "title": "Raccourcis clavier"
         },
         "styleLayout": {
-          "title": "Style et disposition",
-          "description": "Changez les polices, les dispositions (focus/centré/alterné) et traduisez les paroles."
+          "description": "Changez les polices, les dispositions (focus/centré/alterné) et traduisez les paroles.",
+          "title": "Style et disposition"
+        },
+        "syncLyricsTiming": {
+          "description": "Utilisez les touches [ ], la molette ou glissez vers le haut/bas pour ajuster le décalage des paroles.",
+          "title": "Synchroniser le timing des paroles"
         },
         "syncedWithIpod": {
-          "title": "Synchronisé avec iPod",
-          "description": "Partage la même bibliothèque musicale qu'iPod. Ajoutez des chansons dans l'une ou l'autre app."
+          "description": "Partage la même bibliothèque musicale qu'iPod. Ajoutez des chansons dans l'une ou l'autre app.",
+          "title": "Synchronisé avec iPod"
         },
         "worksWithChats": {
-          "title": "Fonctionne avec Chats",
-          "description": "Demandez à Ryo de jouer des chansons, contrôler la lecture ou ajuster les paramètres par chat."
-        },
-        "keyboardShortcuts": {
-          "title": "Raccourcis clavier",
-          "description": "Espace pour lecture/pause, touches fléchées pour naviguer et changer de piste."
+          "description": "Demandez à Ryo de jouer des chansons, contrôler la lecture ou ajuster les paramètres par chat.",
+          "title": "Fonctionne avec Chats"
         }
       },
       "menu": {
@@ -2175,6 +2175,14 @@
       "updatingIcons": "Mise à jour des icônes",
       "updatingSounds": "Mise à jour des sons",
       "updatingSystemFiles": "Mise à jour des fichiers système"
+    }
+  },
+  "components": {
+    "linkPreview": {
+      "addToIpod": "Ajouter à l'iPod",
+      "openIpod": "Ouvrir l'iPod",
+      "openKaraoke": "Ouvrir le Karaoké",
+      "openYouTube": "Ouvrir YouTube"
     }
   },
   "settings": {
