@@ -993,10 +993,10 @@
 
 /* Preserve rounded lyrics font inside iPod fullscreen on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded {
-  font-family: "SF Pro Rounded", "Arial Rounded MT Bold", "Nanum Gothic",
+  font-family: ui-rounded, "Arial Rounded MT Bold", "Nanum Gothic",
     "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif !important;
   font-weight: 700 !important;
-  line-height: 1 !important;
+  line-height: 1.1 !important;
   font-synthesis: none !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
@@ -1004,10 +1004,10 @@
 
 /* Preserve rounded lyrics font inside Karaoke app on macOS theme */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded {
-  font-family: "SF Pro Rounded", "Arial Rounded MT Bold", "Nanum Gothic",
+  font-family: ui-rounded, "Arial Rounded MT Bold", "Nanum Gothic",
     "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif !important;
   font-weight: 700 !important;
-  line-height: 1 !important;
+  line-height: 1.1 !important;
   font-synthesis: none !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
@@ -1018,7 +1018,7 @@
   font-family: "Noto Serif JP", "Noto Serif KR", "Times New Roman", Charter, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
     "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
   font-weight: 700 !important;
-  line-height: 1 !important;
+  line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
@@ -1028,7 +1028,7 @@
   font-family: "Noto Serif JP", "Noto Serif KR", "Times New Roman", Charter, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
     "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
   font-weight: 700 !important;
-  line-height: 1 !important;
+  line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
@@ -1040,7 +1040,7 @@
     "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
     -apple-system, sans-serif !important;
   font-weight: 700 !important;
-  line-height: 1 !important;
+  line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
@@ -1052,7 +1052,7 @@
     "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
     -apple-system, sans-serif !important;
   font-weight: 700 !important;
-  line-height: 1 !important;
+  line-height: 1.1 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
@@ -1062,6 +1062,13 @@
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-sans rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-sans rt.lyrics-furigana-rt {
+  font-weight: 700 !important;
+}
+
+/* Korean ruby for rounded font inherits font with matching weight on macOS theme */
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded rt.lyrics-korean-rt,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded rt.lyrics-korean-rt {
+  font-family: inherit !important;
   font-weight: 700 !important;
 }
 

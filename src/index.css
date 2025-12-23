@@ -388,10 +388,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Rounded lyrics font utility */
   .font-lyrics-rounded {
-    font-family: "SF Pro Rounded", "Arial Rounded MT Bold", "Nanum Gothic",
+    font-family: ui-rounded, "Arial Rounded MT Bold", "Nanum Gothic",
       "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif;
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.1;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
@@ -402,7 +402,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-family: "Noto Serif JP", "Noto Serif KR", "Times New Roman", Charter, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
       "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.1;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
@@ -413,7 +413,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
       "PingFang SC", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic",
       "Nanum Gothic", system-ui, -apple-system, sans-serif;
     font-weight: 400;
-    line-height: 1;
+    line-height: 1.1;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
@@ -1044,6 +1044,12 @@ ruby.lyrics-furigana rp {
 /* Bold furigana for serif and sans-serif lyrics fonts */
 .font-lyrics-serif rt.lyrics-furigana-rt,
 .font-lyrics-sans rt.lyrics-furigana-rt {
+  font-weight: 700 !important;
+}
+
+/* Korean ruby for rounded font inherits font with matching weight */
+.font-lyrics-rounded rt.lyrics-korean-rt {
+  font-family: inherit !important;
   font-weight: 700 !important;
 }
 
