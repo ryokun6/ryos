@@ -389,7 +389,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   /* Rounded lyrics font utility */
   .font-lyrics-rounded {
     font-family: "SF Pro Rounded", "Arial Rounded MT Bold", "Nanum Gothic",
-      "Hiragino Maru Gothic ProN", "Kosugi Maru", "Yuanti SC", sans-serif;
+      "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif;
     font-weight: 700;
     line-height: 1;
     font-synthesis: none;

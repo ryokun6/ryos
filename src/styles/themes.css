@@ -994,7 +994,7 @@
 /* Preserve rounded lyrics font inside iPod fullscreen on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded {
   font-family: "SF Pro Rounded", "Arial Rounded MT Bold", "Nanum Gothic",
-    "Hiragino Maru Gothic ProN", "Kosugi Maru", "Yuanti SC", sans-serif !important;
+    "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif !important;
   font-weight: 700 !important;
   line-height: 1 !important;
   font-synthesis: none !important;
@@ -1005,7 +1005,7 @@
 /* Preserve rounded lyrics font inside Karaoke app on macOS theme */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded {
   font-family: "SF Pro Rounded", "Arial Rounded MT Bold", "Nanum Gothic",
-    "Hiragino Maru Gothic ProN", "Kosugi Maru", "Yuanti SC", sans-serif !important;
+    "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif !important;
   font-weight: 700 !important;
   line-height: 1 !important;
   font-synthesis: none !important;
