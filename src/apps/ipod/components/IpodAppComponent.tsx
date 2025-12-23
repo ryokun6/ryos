@@ -1260,23 +1260,6 @@ export function IpodAppComponent({
     useIpodStore.getState().setLyricsTranslationLanguage(code);
   }, []);
 
-  const cycleAlignment = useCallback(() => {
-    const store = useIpodStore.getState();
-    const curr = store.lyricsAlignment;
-    let next: LyricsAlignment;
-    if (curr === LyricsAlignment.FocusThree) next = LyricsAlignment.Center;
-    else if (curr === LyricsAlignment.Center) next = LyricsAlignment.Alternating;
-    else next = LyricsAlignment.FocusThree;
-    store.setLyricsAlignment(next);
-    showStatus(
-      next === LyricsAlignment.FocusThree
-        ? t("apps.ipod.status.layoutFocus")
-        : next === LyricsAlignment.Center
-        ? t("apps.ipod.status.layoutCenter")
-        : t("apps.ipod.status.layoutAlternating")
-    );
-  }, [showStatus, t]);
-
   const toggleKorean = useCallback(() => {
     const store = useIpodStore.getState();
     const curr = store.koreanDisplay;
@@ -1293,18 +1276,25 @@ export function IpodAppComponent({
     showStatus(next === JapaneseFurigana.On ? t("apps.ipod.status.furiganaOn") : t("apps.ipod.status.furiganaOff"));
   }, [showStatus, t]);
 
-  const cycleLyricsFont = useCallback(() => {
-    const store = useIpodStore.getState();
-    const curr = store.lyricsFont;
-    let next: LyricsFont;
-    if (curr === LyricsFont.Rounded) next = LyricsFont.SansSerif;
-    else if (curr === LyricsFont.SansSerif) next = LyricsFont.Serif;
-    else next = LyricsFont.Rounded;
-    store.setLyricsFont(next);
+  // Direct alignment change handler for fullscreen toolbar
+  const handleAlignmentChange = useCallback((alignment: LyricsAlignment) => {
+    useIpodStore.getState().setLyricsAlignment(alignment);
     showStatus(
-      next === LyricsFont.Rounded
+      alignment === LyricsAlignment.FocusThree
+        ? t("apps.ipod.status.layoutFocus")
+        : alignment === LyricsAlignment.Center
+        ? t("apps.ipod.status.layoutCenter")
+        : t("apps.ipod.status.layoutAlternating")
+    );
+  }, [showStatus, t]);
+
+  // Direct font change handler for fullscreen toolbar
+  const handleFontChange = useCallback((font: LyricsFont) => {
+    useIpodStore.getState().setLyricsFont(font);
+    showStatus(
+      font === LyricsFont.Rounded
         ? t("apps.ipod.status.fontRounded")
-        : next === LyricsFont.SansSerif
+        : font === LyricsFont.SansSerif
         ? t("apps.ipod.status.fontSansSerif")
         : t("apps.ipod.status.fontSerif")
     );
@@ -1497,13 +1487,18 @@ export function IpodAppComponent({
             currentTranslationCode={lyricsTranslationLanguage}
             onSelectTranslation={handleSelectTranslation}
             currentAlignment={lyricsAlignment}
-            onCycleAlignment={cycleAlignment}
+            onAlignmentChange={handleAlignmentChange}
             currentLyricsFont={lyricsFont}
-            onCycleLyricsFont={cycleLyricsFont}
+            onFontChange={handleFontChange}
             currentKoreanDisplay={koreanDisplay}
             onToggleKoreanDisplay={toggleKorean}
             currentJapaneseFurigana={japaneseFurigana}
             onToggleJapaneseFurigana={toggleFurigana}
+            isShuffled={isShuffled}
+            isLoopAll={loopAll}
+            isLoopCurrent={loopCurrent}
+            onToggleShuffle={toggleShuffle}
+            onToggleLoop={memoizedToggleRepeat}
             fullScreenPlayerRef={fullScreenPlayerRef}
             isLoadingLyrics={fullScreenLyricsControls.isLoading}
             isProcessingLyrics={fullScreenLyricsControls.isTranslating}

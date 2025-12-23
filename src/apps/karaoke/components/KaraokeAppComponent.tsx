@@ -151,6 +151,7 @@ export function KaraokeAppComponent({
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
   
   // New dialogs for iPod menu features
@@ -173,6 +174,11 @@ export function KaraokeAppComponent({
 
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
+
+  // iOS/Safari detection for autoplay restrictions
+  const ua = navigator.userAgent;
+  const isIOS = /iP(hone|od|ad)/.test(ua);
+  const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
 
   // Current track
   const currentTrack: Track | null = tracks[currentIndex] || null;
@@ -303,6 +309,20 @@ export function KaraokeAppComponent({
     }
   }, [isOffline, showOfflineStatus, nextTrack, showStatus]);
 
+  const handleToggleRepeat = useCallback(() => {
+    if (loopCurrent) {
+      toggleLoopCurrent();
+      showStatus(t("apps.ipod.status.repeatOff"));
+    } else if (loopAll) {
+      toggleLoopAll();
+      toggleLoopCurrent();
+      showStatus(t("apps.ipod.status.repeatOne"));
+    } else {
+      toggleLoopAll();
+      showStatus(t("apps.ipod.status.repeatAll"));
+    }
+  }, [loopCurrent, loopAll, toggleLoopCurrent, toggleLoopAll, showStatus, t]);
+
   useEffect(() => {
     if (!isPlaying || isLangMenuOpen) {
       setShowControls(true);
@@ -428,39 +448,29 @@ export function KaraokeAppComponent({
     [showStatus, isFullScreen]
   );
 
-  // Alignment cycle
-  const cycleAlignment = useCallback(() => {
-    const curr = lyricsAlignment;
-    let next: LyricsAlignment;
-    if (curr === LyricsAlignment.FocusThree) next = LyricsAlignment.Center;
-    else if (curr === LyricsAlignment.Center) next = LyricsAlignment.Alternating;
-    else next = LyricsAlignment.FocusThree;
-    setLyricsAlignment(next);
+  // Direct alignment change handler for toolbar
+  const handleAlignmentChange = useCallback((alignment: LyricsAlignment) => {
+    setLyricsAlignment(alignment);
     showStatus(
-      next === LyricsAlignment.FocusThree
+      alignment === LyricsAlignment.FocusThree
         ? t("apps.ipod.status.layoutFocus")
-        : next === LyricsAlignment.Center
+        : alignment === LyricsAlignment.Center
         ? t("apps.ipod.status.layoutCenter")
         : t("apps.ipod.status.layoutAlternating")
     );
-  }, [lyricsAlignment, setLyricsAlignment, showStatus, t]);
+  }, [setLyricsAlignment, showStatus, t]);
 
-  // Font style cycle
-  const cycleLyricsFont = useCallback(() => {
-    const curr = lyricsFont;
-    let next: LyricsFont;
-    if (curr === LyricsFont.Rounded) next = LyricsFont.Serif;
-    else if (curr === LyricsFont.Serif) next = LyricsFont.SansSerif;
-    else next = LyricsFont.Rounded;
-    setLyricsFont(next);
+  // Direct font change handler for toolbar
+  const handleFontChange = useCallback((font: LyricsFont) => {
+    setLyricsFont(font);
     showStatus(
-      next === LyricsFont.Rounded
+      font === LyricsFont.Rounded
         ? t("apps.ipod.status.fontRounded")
-        : next === LyricsFont.Serif
-        ? t("apps.ipod.status.fontSerif")
-        : t("apps.ipod.status.fontSansSerif")
+        : font === LyricsFont.SansSerif
+        ? t("apps.ipod.status.fontSansSerif")
+        : t("apps.ipod.status.fontSerif")
     );
-  }, [lyricsFont, setLyricsFont, showStatus, t]);
+  }, [setLyricsFont, showStatus, t]);
 
   // Korean toggle
   const toggleKorean = useCallback(() => {
@@ -480,18 +490,18 @@ export function KaraokeAppComponent({
 
   // Track handling for add dialog
   const handleAddTrack = useCallback(
-    async (url: string) => {
+    async (url: string, autoplay = true) => {
       const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
       if (addedTrack) {
         showStatus(t("apps.ipod.status.added"));
-        // New tracks are added at the beginning of the array, so set index to 0 and play
+        // New tracks are added at the beginning of the array, so set index to 0
         setCurrentIndex(0);
-        setIsPlaying(true);
+        if (autoplay) setIsPlaying(true);
       } else {
         throw new Error("Failed to add track");
       }
     },
-    [showStatus, t]
+    [showStatus, t, setCurrentIndex, setIsPlaying]
   );
 
   // Process video ID from shared link (add if not in library, then play)
@@ -499,22 +509,22 @@ export function KaraokeAppComponent({
     async (videoId: string) => {
       const currentTracks = useIpodStore.getState().tracks;
       const existingTrackIndex = currentTracks.findIndex((track) => track.id === videoId);
+      // Don't autoplay on iOS/Safari due to autoplay restrictions
+      const shouldAutoplay = !(isIOS || isSafari);
 
       if (existingTrackIndex !== -1) {
         toast.info(t("apps.ipod.dialogs.openedSharedTrack"));
         setCurrentIndex(existingTrackIndex);
-        setIsPlaying(true);
+        if (shouldAutoplay) setIsPlaying(true);
       } else {
         toast.info(t("apps.ipod.dialogs.addingNewTrack"));
-        await handleAddTrack(`https://www.youtube.com/watch?v=${videoId}`);
-        if (!isOffline) {
-          setIsPlaying(true);
-        } else {
+        await handleAddTrack(`https://www.youtube.com/watch?v=${videoId}`, shouldAutoplay);
+        if (isOffline) {
           showOfflineStatus();
         }
       }
     },
-    [setCurrentIndex, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t]
+    [setCurrentIndex, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari]
   );
 
   // Share song handler
@@ -883,7 +893,7 @@ export function KaraokeAppComponent({
             data-toolbar
             className={cn(
               "absolute bottom-0 left-0 right-0 flex justify-center z-50 pb-6 transition-opacity duration-200",
-              showControls || isLangMenuOpen || !isPlaying
+              showControls || isLangMenuOpen || isViewMenuOpen || !isPlaying
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none"
             )}
@@ -894,13 +904,18 @@ export function KaraokeAppComponent({
           >
             <FullscreenPlayerControls
               isPlaying={isPlaying}
+              isShuffled={isShuffled}
+              isLoopAll={loopAll}
+              isLoopCurrent={loopCurrent}
               onPrevious={handlePrevious}
               onPlayPause={handlePlayPause}
               onNext={handleNext}
+              onToggleShuffle={toggleShuffle}
+              onToggleLoop={handleToggleRepeat}
               currentAlignment={lyricsAlignment}
-              onAlignmentCycle={cycleAlignment}
+              onAlignmentChange={handleAlignmentChange}
               currentFont={lyricsFont}
-              onFontCycle={cycleLyricsFont}
+              onFontChange={handleFontChange}
               koreanDisplay={koreanDisplay}
               onKoreanToggle={toggleKorean}
               currentTranslationCode={lyricsTranslationLanguage}
@@ -908,6 +923,8 @@ export function KaraokeAppComponent({
               translationLanguages={translationLanguages}
               isLangMenuOpen={isLangMenuOpen}
               setIsLangMenuOpen={setIsLangMenuOpen}
+              isViewMenuOpen={isViewMenuOpen}
+              setIsViewMenuOpen={setIsViewMenuOpen}
               onFullscreen={toggleFullScreen}
               variant="compact"
               bgOpacity="60"
@@ -1010,13 +1027,18 @@ export function KaraokeAppComponent({
           currentTranslationCode={lyricsTranslationLanguage}
           onSelectTranslation={setLyricsTranslationLanguage}
           currentAlignment={lyricsAlignment}
-          onCycleAlignment={cycleAlignment}
+          onAlignmentChange={handleAlignmentChange}
           currentLyricsFont={lyricsFont}
-          onCycleLyricsFont={cycleLyricsFont}
+          onFontChange={handleFontChange}
           currentKoreanDisplay={koreanDisplay}
           onToggleKoreanDisplay={toggleKorean}
           currentJapaneseFurigana={japaneseFurigana}
           onToggleJapaneseFurigana={toggleFurigana}
+          isShuffled={isShuffled}
+          isLoopAll={loopAll}
+          isLoopCurrent={loopCurrent}
+          onToggleShuffle={toggleShuffle}
+          onToggleLoop={handleToggleRepeat}
           fullScreenPlayerRef={fullScreenPlayerRef}
           isLoadingLyrics={fullScreenLyricsControls.isLoading}
           isProcessingLyrics={fullScreenLyricsControls.isTranslating}

@@ -56,13 +56,19 @@ export interface FullScreenPortalProps {
   currentTranslationCode: string | null;
   onSelectTranslation: (code: string | null) => void;
   currentAlignment: LyricsAlignment;
-  onCycleAlignment: () => void;
+  onAlignmentChange: (alignment: LyricsAlignment) => void;
   currentLyricsFont: LyricsFont;
-  onCycleLyricsFont: () => void;
+  onFontChange: (font: LyricsFont) => void;
   currentKoreanDisplay: KoreanDisplay;
   onToggleKoreanDisplay: () => void;
   currentJapaneseFurigana: JapaneseFurigana;
   onToggleJapaneseFurigana: () => void;
+  // Shuffle and repeat
+  isShuffled: boolean;
+  isLoopAll: boolean;
+  isLoopCurrent: boolean;
+  onToggleShuffle: () => void;
+  onToggleLoop: () => void;
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
   // Lyrics loading state
