@@ -1073,15 +1073,18 @@
 /* Preserve lyrics translation sizes on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-ipod {
   font-size: 10px !important;
+  margin-top: 0.3em !important;
 }
 
 :root[data-os-theme="macosx"] .karaoke-force-font .lyrics-translation-karaoke {
   font-size: clamp(14px, 4cqw, 60px) !important;
+  margin-top: 0.3em !important;
 }
 
 :root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-fullscreen,
 :root[data-os-theme="macosx"] .karaoke-force-font .lyrics-translation-fullscreen {
   font-size: clamp(14px, min(5vw, 5vh), 60px) !important;
+  margin-top: 0.3em !important;
 }
 
 /* Preserve fullscreen lyrics text clamped sizing on macOS theme */
