@@ -1010,8 +1010,8 @@ ruby.lyrics-furigana {
   display: inline-grid;
   vertical-align: baseline;
   white-space: pre-wrap;
-  padding: 0.15em 10px 0.25em 10px;
-  margin: -0.15em -10px -0.25em -10px;
+  padding: 0.15em 10px 0.35em 10px;
+  margin: -0.15em -10px -0.35em -10px;
   overflow: visible;
 }
 

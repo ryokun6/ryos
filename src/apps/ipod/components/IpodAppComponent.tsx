@@ -1635,7 +1635,7 @@ export function IpodAppComponent({
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
                         interactive={isIOSSafari ? false : isPlaying}
-                        bottomPaddingClass="pb-2"
+                        bottomPaddingClass="pb-8"
                         onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                       />

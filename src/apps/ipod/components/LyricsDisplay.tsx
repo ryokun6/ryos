@@ -382,11 +382,11 @@ function StaticWordRendering({
   return (
     <>
       {renderItems.map((item) => (
-        <span key={item.key} className="lyrics-word-highlight">
-          <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.15em", marginBottom: "-0.15em" }}>
-            {item.content}
+          <span key={item.key} className="lyrics-word-highlight">
+            <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
+              {item.content}
+            </span>
           </span>
-        </span>
       ))}
     </>
   );
@@ -546,7 +546,7 @@ function WordTimingHighlight({
     <>
       {renderItems.map((item, idx) => (
         <span key={item.key} className="lyrics-word-highlight">
-          <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.15em", marginBottom: "-0.15em" }}>
+          <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
             {item.content}
           </span>
           {/* Glow wrapper - filter applied here creates glow around masked content */}
@@ -565,8 +565,8 @@ function WordTimingHighlight({
                 maskImage: initialMask,
                 WebkitMaskImage: initialMask,
                 overflow: "visible",
-                paddingBottom: "0.15em",
-                marginBottom: "-0.15em",
+                paddingBottom: "0.35em",
+                marginBottom: "-0.35em",
               }}
             >
               {item.content}

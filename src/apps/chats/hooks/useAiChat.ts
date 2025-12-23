@@ -482,6 +482,43 @@ const getAssistantVisibleText = (message: UIMessage): string => {
   return "";
 };
 
+// Helper to check if chats app is currently in the foreground
+const isChatsInForeground = (): boolean => {
+  const appStore = useAppStore.getState();
+  const foregroundId = appStore.foregroundInstanceId;
+  if (!foregroundId) return false;
+  const foregroundInstance = appStore.instances[foregroundId];
+  return foregroundInstance?.appId === "chats";
+};
+
+// Helper to show notification with assistant's message when chat is backgrounded
+const showBackgroundedMessageNotification = (message: UIMessage) => {
+  // Extract text content (without tool calls)
+  const textContent = getAssistantVisibleText(message);
+  if (!textContent.trim()) return;
+
+  // Truncate and clean up message preview
+  const preview = textContent.replace(/\s+/g, " ").trim().slice(0, 100);
+
+  // Show notification similar to room chat toasts
+  toast(`@Ryo`, {
+    description: preview + (textContent.length > 100 ? "…" : ""),
+    duration: 6000,
+    action: {
+      label: "Open",
+      onClick: () => {
+        // Bring chats app to foreground
+        const appStore = useAppStore.getState();
+        const chatsInstances = appStore.getInstancesByAppId("chats");
+        const openChatsInstance = chatsInstances.find((inst) => inst.isOpen);
+        if (openChatsInstance) {
+          appStore.bringInstanceToForeground(openChatsInstance.instanceId);
+        }
+      },
+    },
+  });
+};
+
 export function useAiChat(onPromptSetUsername?: () => void) {
   const { aiMessages, setAiMessages, username, authToken, ensureAuthToken } =
     useChatsStore();
@@ -1632,10 +1669,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       );
       setAiMessages(finalMessages);
 
-      // Ensure any final content that wasn't processed is spoken
-      if (!speechEnabled) return;
       const lastMsg = finalMessages.at(-1);
       if (!lastMsg || lastMsg.role !== "assistant") return;
+
+      // Show notification if chat app is backgrounded
+      if (!isChatsInForeground()) {
+        showBackgroundedMessageNotification(lastMsg);
+      }
+
+      // Ensure any final content that wasn't processed is spoken
+      if (!speechEnabled) return;
 
       const progress = speechProgressRef.current[lastMsg.id] ?? 0;
       const content = getAssistantVisibleText(lastMsg);
