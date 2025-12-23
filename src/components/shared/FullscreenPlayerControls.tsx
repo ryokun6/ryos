@@ -1,10 +1,16 @@
 import { useTranslation } from "react-i18next";
-import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { LyricsAlignment, KoreanDisplay } from "@/types/lyrics";
 import { LyricsFont } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
 import { Maximize2, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface TranslationLanguageOption {
   label: string;
@@ -257,40 +263,74 @@ export function FullscreenPlayerControls({
         </button>
 
         {/* Translation */}
-        <button
-          type="button"
-          onClick={handleClick(() => setIsLangMenuOpen(!isLangMenuOpen))}
-          aria-label={t("apps.ipod.ariaLabels.translateLyrics")}
-          className={cn(
-            buttonSize,
-            "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-          )}
-          title={t("apps.ipod.ariaLabels.translateLyrics")}
-        >
-          {translationBadge ? (
-            <span
+        <DropdownMenu open={isLangMenuOpen} onOpenChange={setIsLangMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onInteraction?.();
+              }}
+              aria-label={t("apps.ipod.ariaLabels.translateLyrics")}
               className={cn(
-                "inline-flex items-center justify-center leading-none",
-                variant === "compact"
-                  ? "w-[20px] h-[20px] text-sm"
-                  : "w-[24px] h-[24px] md:w-[28px] md:h-[28px] text-[16px] md:text-[18px]"
+                buttonSize,
+                "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
               )}
+              title={t("apps.ipod.ariaLabels.translateLyrics")}
             >
-              {translationBadge}
-            </span>
-          ) : (
-            <span
-              className={cn(
-                "inline-flex items-center justify-center leading-none",
-                variant === "compact"
-                  ? "w-[20px] h-[20px] text-sm"
-                  : "w-[24px] h-[24px] md:w-[28px] md:h-[28px] text-[16px] md:text-[18px]"
+              {translationBadge ? (
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center leading-none",
+                    variant === "compact"
+                      ? "w-[20px] h-[20px] text-sm"
+                      : "w-[24px] h-[24px] md:w-[28px] md:h-[28px] text-[16px] md:text-[18px]"
+                  )}
+                >
+                  {translationBadge}
+                </span>
+              ) : (
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center leading-none",
+                    variant === "compact"
+                      ? "w-[20px] h-[20px] text-sm"
+                      : "w-[24px] h-[24px] md:w-[28px] md:h-[28px] text-[16px] md:text-[18px]"
+                  )}
+                >
+                  Aa
+                </span>
               )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            align="center"
+            sideOffset={8}
+            className={cn(
+              "max-h-[50vh] overflow-y-auto",
+              variant === "compact" ? "w-40" : "w-44"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenuRadioGroup
+              value={currentTranslationCode || "off"}
+              onValueChange={(value) => {
+                onTranslationSelect(value === "off" ? null : value);
+                onInteraction?.();
+              }}
             >
-              Aa
-            </span>
-          )}
-        </button>
+              {translationLanguages.map((lang) => (
+                <DropdownMenuRadioItem
+                  key={lang.code || "off"}
+                  value={lang.code || "off"}
+                >
+                  {lang.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Fullscreen button (for non-fullscreen mode) */}
         {onFullscreen && (
@@ -330,53 +370,6 @@ export function FullscreenPlayerControls({
           </button>
         )}
       </div>
-
-      {/* Translation menu */}
-      <AnimatePresence>
-        {isLangMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.15 }}
-            className={cn(
-              "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 max-h-[50vh] overflow-y-auto rounded-lg border border-white/10 bg-neutral-900/90 backdrop-blur-md shadow-xl",
-              variant === "compact" ? "w-56" : "w-64"
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="py-2">
-              {translationLanguages.map((lang) => {
-                const selected =
-                  currentTranslationCode === lang.code ||
-                  (!lang.code && !currentTranslationCode);
-                return (
-                  <button
-                    type="button"
-                    key={lang.code || "off"}
-                    onClick={() => {
-                      onTranslationSelect(lang.code);
-                      setIsLangMenuOpen(false);
-                      onInteraction?.();
-                    }}
-                    className={cn(
-                      "w-full text-left px-4 py-2 text-[16px] font-geneva-12 transition-colors",
-                      selected
-                        ? "text-white bg-white/10"
-                        : "text-white/80 hover:text-white hover:bg-white/10"
-                    )}
-                  >
-                    <span className="inline-block w-4">
-                      {selected ? "✓" : ""}
-                    </span>
-                    <span>{lang.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
