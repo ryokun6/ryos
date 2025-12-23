@@ -1005,18 +1005,20 @@ ruby.lyrics-furigana {
 /* Word-level highlight container for karaoke-style lyrics animation */
 /* Uses inline-grid to stack dimmed/highlighted layers */
 /* white-space: pre-wrap preserves trailing spaces while allowing text to wrap at container boundaries */
-/* Padding accommodates the glow (8px blur) so it doesn't clip at edges; negative margin compensates for spacing */
+/* Padding accommodates the glow and descenders; negative margin compensates for spacing */
 .lyrics-word-highlight {
   display: inline-grid;
   vertical-align: baseline;
   white-space: pre-wrap;
-  padding: 4px 10px;
-  margin: -4px -10px;
+  padding: 0.15em 10px 0.25em 10px;
+  margin: -0.15em -10px -0.25em -10px;
+  overflow: visible;
 }
 
 /* Layer positioning - both layers share the same grid cell (1/1) */
 .lyrics-word-layer {
   grid-area: 1 / 1;
+  overflow: visible;
 }
 
 /* Use !important to override macOS theme's blanket font-size rules */

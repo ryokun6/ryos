@@ -20,7 +20,7 @@ import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useIpodStoreShallow } from "@/stores/helpers";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { toast } from "sonner";
-import { LyricsAlignment, LyricsFont, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { Track } from "@/stores/useIpodStore";
 
 interface KaraokeMenuBarProps {
@@ -96,13 +96,11 @@ export function KaraokeMenuBar({
   const {
     lyricsAlignment,
     lyricsFont,
-    chineseVariant,
     koreanDisplay,
     japaneseFurigana,
     lyricsTranslationLanguage,
     setLyricsAlignment,
     setLyricsFont,
-    setChineseVariant,
     setKoreanDisplay,
     setJapaneseFurigana,
     setLyricsTranslationLanguage,
@@ -113,13 +111,11 @@ export function KaraokeMenuBar({
   } = useIpodStoreShallow((s) => ({
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
     lyricsFont: s.lyricsFont ?? LyricsFont.Rounded,
-    chineseVariant: s.chineseVariant ?? ChineseVariant.Traditional,
     koreanDisplay: s.koreanDisplay ?? KoreanDisplay.Original,
     japaneseFurigana: s.japaneseFurigana ?? JapaneseFurigana.On,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
-    setChineseVariant: s.setChineseVariant,
     setKoreanDisplay: s.setKoreanDisplay,
     setJapaneseFurigana: s.setJapaneseFurigana,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
@@ -324,29 +320,14 @@ export function KaraokeMenuBar({
 
               <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-              {/* Chinese toggle */}
-              <MenubarCheckboxItem
-                checked={chineseVariant === ChineseVariant.Traditional}
-                onCheckedChange={(checked) =>
-                  setChineseVariant(
-                    checked
-                      ? ChineseVariant.Traditional
-                      : ChineseVariant.Original
-                  )
-                }
-                className="text-md h-6 px-3"
-              >
-                {t("apps.ipod.menu.traditionalChinese")}
-              </MenubarCheckboxItem>
-
               {/* Korean toggle */}
               <MenubarCheckboxItem
-                checked={koreanDisplay === KoreanDisplay.Original}
+                checked={koreanDisplay === KoreanDisplay.Romanized}
                 onCheckedChange={(checked) =>
                   setKoreanDisplay(
                     checked
-                      ? KoreanDisplay.Original
-                      : KoreanDisplay.Romanized
+                      ? KoreanDisplay.Romanized
+                      : KoreanDisplay.Original
                   )
                 }
                 className="text-md h-6 px-3"

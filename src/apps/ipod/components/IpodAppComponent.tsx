@@ -1282,7 +1282,7 @@ export function IpodAppComponent({
     const curr = store.koreanDisplay;
     const next = curr === KoreanDisplay.Original ? KoreanDisplay.Romanized : KoreanDisplay.Original;
     store.setKoreanDisplay(next);
-    showStatus(next === KoreanDisplay.Romanized ? t("apps.ipod.status.romanizationOn") : t("apps.ipod.status.hangulOn"));
+    showStatus(next === KoreanDisplay.Romanized ? t("apps.ipod.status.romanizationOn") : t("apps.ipod.status.romanizationOff"));
   }, [showStatus, t]);
 
   const toggleFurigana = useCallback(() => {

@@ -481,7 +481,7 @@ export function KaraokeAppComponent({
     const curr = koreanDisplay;
     const next = curr === KoreanDisplay.Original ? KoreanDisplay.Romanized : KoreanDisplay.Original;
     setKoreanDisplay(next);
-    showStatus(next === KoreanDisplay.Romanized ? t("apps.ipod.status.romanizationOn") : t("apps.ipod.status.hangulOn"));
+    showStatus(next === KoreanDisplay.Romanized ? t("apps.ipod.status.romanizationOn") : t("apps.ipod.status.romanizationOff"));
   }, [koreanDisplay, setKoreanDisplay, showStatus, t]);
 
   // Furigana toggle
@@ -839,7 +839,7 @@ export function KaraokeAppComponent({
                           gap: "clamp(0.25rem, 2cqw, 1rem)",
                         }}
                         interactive={true}
-                        bottomPaddingClass={showControls || isLangMenuOpen || !isPlaying ? "pb-20" : "pb-10"}
+                        bottomPaddingClass={showControls || isLangMenuOpen || !isPlaying ? "pb-20" : "pb-16"}
                         onFuriganaLoadingChange={setIsFetchingFurigana}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                       />

@@ -17,7 +17,7 @@ import { useIpodStoreShallow } from "@/stores/helpers";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import { LyricsAlignment, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
@@ -78,7 +78,6 @@ export function IpodMenuBar({
     showLyrics,
     isFullScreen,
     lyricsAlignment,
-    chineseVariant,
     koreanDisplay,
     japaneseFurigana,
     lyricsTranslationLanguage,
@@ -100,7 +99,6 @@ export function IpodMenuBar({
     setLyricsAlignment,
     refreshLyrics,
     clearLyricsCache,
-    setChineseVariant,
     setKoreanDisplay,
     setJapaneseFurigana,
     setLyricsTranslationLanguage,
@@ -121,7 +119,6 @@ export function IpodMenuBar({
     showLyrics: s.showLyrics,
     isFullScreen: s.isFullScreen,
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
-    chineseVariant: s.chineseVariant ?? ChineseVariant.Traditional,
     koreanDisplay: s.koreanDisplay ?? KoreanDisplay.Original,
     japaneseFurigana: s.japaneseFurigana ?? JapaneseFurigana.On,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
@@ -143,7 +140,6 @@ export function IpodMenuBar({
     setLyricsAlignment: s.setLyricsAlignment,
     refreshLyrics: s.refreshLyrics,
     clearLyricsCache: s.clearLyricsCache,
-    setChineseVariant: s.setChineseVariant,
     setKoreanDisplay: s.setKoreanDisplay,
     setJapaneseFurigana: s.setJapaneseFurigana,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
@@ -339,29 +335,14 @@ export function IpodMenuBar({
 
               <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-              {/* Chinese toggle */}
-              <MenubarCheckboxItem
-                checked={chineseVariant === ChineseVariant.Traditional}
-                onCheckedChange={(checked) =>
-                  setChineseVariant(
-                    checked
-                      ? ChineseVariant.Traditional
-                      : ChineseVariant.Original
-                  )
-                }
-                className="text-md h-6 px-3"
-              >
-                {t("apps.ipod.menu.traditionalChinese")}
-              </MenubarCheckboxItem>
-
               {/* Korean toggle */}
               <MenubarCheckboxItem
-                checked={koreanDisplay === KoreanDisplay.Original}
+                checked={koreanDisplay === KoreanDisplay.Romanized}
                 onCheckedChange={(checked) =>
                   setKoreanDisplay(
                     checked
-                      ? KoreanDisplay.Original
-                      : KoreanDisplay.Romanized
+                      ? KoreanDisplay.Romanized
+                      : KoreanDisplay.Original
                   )
                 }
                 className="text-md h-6 px-3"
