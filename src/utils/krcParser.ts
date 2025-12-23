@@ -26,6 +26,9 @@ const SKIP_PREFIXES = [
   "词",
   "詞：",
   "曲",
+  "男：",
+  "女：",
+  "合：",
   "OP",
   "SP",
   "Produced",
@@ -144,6 +147,15 @@ export function parseKRC(
 
       // Skip lines that match skip prefixes
       if (skipList.some((prefix) => trimmedText.startsWith(prefix))) {
+        return null;
+      }
+
+      // Skip lines entirely wrapped in parentheses (e.g., "(instrumental)")
+      // Handle both regular () and full-width （）parentheses
+      if (
+        (trimmedText.startsWith("(") && trimmedText.endsWith(")")) ||
+        (trimmedText.startsWith("（") && trimmedText.endsWith("）"))
+      ) {
         return null;
       }
 

@@ -139,12 +139,20 @@ async function translateChunk(
     }
   }
 
+  // Determine the actual output language (Chinese always outputs Traditional)
+  const isChineseTarget = targetLanguage.toLowerCase().includes("chinese") || 
+    targetLanguage.toLowerCase().includes("中文") ||
+    targetLanguage === "zh" || 
+    targetLanguage === "zh-CN" || 
+    targetLanguage === "zh-TW";
+  const outputLanguage = isChineseTarget ? "Traditional Chinese (繁體中文)" : targetLanguage;
+
   // Simplified system prompt for the AI
   const systemPrompt = `You are an expert lyrics translator. You will be given a JSON array of lyric line objects, where each object has a "words" field (the text to translate) and a "startTimeMs" field (a timestamp).
-Your task is to translate the "words" for each line into ${targetLanguage}.
+Your task is to translate the "words" for each line into ${outputLanguage}.
 Respond ONLY with a valid JSON object containing a single key "translatedTexts". The value of "translatedTexts" MUST be an array of strings.
 This array should contain only the translated versions of the "words" from the input, in the exact same order as they appeared in the input array.
-If the lyrics are already in ${targetLanguage}, return the original "words" text exactly as-is without any modifications.
+If the lyrics are already in ${outputLanguage}, return the original "words" text exactly as-is without any modifications.
 If a line is purely instrumental or cannot be translated (e.g., "---"), return its original "words" text.
 Do not include timestamps or any other formatting in your output strings; just the raw translated text for each line. Do not use , . ! ? : ; punctuation at the end of lines. Preserve the artistic intent and natural rhythm of the lyrics.`;
 
