@@ -1,888 +1,888 @@
 {
   "videos": [
-    {
-      "id": "D1QVkuEzxNk",
-      "url": "https://www.youtube.com/watch?v=D1QVkuEzxNk",
-      "title": "まどろみ",
-      "artist": "具島直子",
-      "album": "",
-      "lyricOffset": 450,
-      "lyricsSearch": {
-        "selection": {
-          "title": "まどろみ",
-          "artist": "具島直子",
-          "album": "URBAN BLUES Presents BEST OF NAOKO GUSHIMA",
-          "hash": "4a4f40edb0d1ce5dc074b82cac62fcbb",
-          "albumId": "24647375",
-          "score": 0
-        }
-      }
-    },
-    {
-      "id": "h4Q8r60ojSo",
-      "url": "https://www.youtube.com/watch?v=h4Q8r60ojSo",
-      "title": "抱きしめて",
-      "artist": "BENI",
-      "album": "",
-      "lyricOffset": 700,
-      "lyricsSearch": {
-        "selection": {
-          "title": "抱きしめて",
-          "artist": "BENI",
-          "album": "Bitter & Sweet",
-          "hash": "928e0d12e6c7f1c33721596ef1a6195f",
-          "albumId": "574854",
-          "score": 0.45
-        }
-      }
-    },
-    {
-      "id": "QLHMhVonF-s",
-      "url": "https://www.youtube.com/watch?v=QLHMhVonF-s",
-      "title": "黄昏のBAY CITY",
-      "artist": "八神純子",
-      "album": "",
-      "lyricOffset": 150,
-      "lyricsSearch": {
-        "selection": {
-          "title": "黄昏のBAY CITY",
-          "artist": "八神純子",
-          "album": "FULL MOON",
-          "hash": "e27fad9075957ee0645a9023f09ad0fa",
-          "albumId": "674448",
-          "score": 0.55
-        }
-      }
-    },
-    {
-      "id": "eynCfZYPY8Q",
-      "url": "https://www.youtube.com/watch?v=eynCfZYPY8Q",
-      "title": "no. no. no.",
-      "artist": "具島直子",
-      "album": "",
-      "lyricOffset": 600,
-      "lyricsSearch": {
-        "selection": {
-          "title": "no. no. no.",
-          "artist": "具島直子",
-          "album": "Quiet Emotion",
-          "hash": "85848173da963581671e89aa6645de02",
-          "albumId": "715288",
-          "score": 0.55
-        }
-      }
-    },
-    {
-      "id": "8cEdndsuzSE",
-      "url": "https://www.youtube.com/watch?v=8cEdndsuzSE",
-      "title": "GALA",
-      "artist": "XG",
-      "album": "",
-      "lyricOffset": -4000
-    },
-    {
-      "id": "sHExKBfvO08",
-      "url": "https://www.youtube.com/watch?v=sHExKBfvO08",
-      "title": "能不能",
-      "artist": "鐵竹堂 ft. 溫嵐",
-      "album": "",
-      "lyricOffset": 3550,
-      "lyricsSearch": {
-        "selection": {
-          "title": "能不能",
-          "artist": "铁竹堂、温岚",
-          "album": "铁竹堂同名专辑",
-          "hash": "c32f32b72e566fdc2c745b7acc8e1a03",
-          "albumId": "2429201",
-          "score": 0
-        }
-      }
-    },
-    {
-      "id": "eET3YAZp4rI",
-      "url": "https://www.youtube.com/watch?v=eET3YAZp4rI",
-      "title": "Ketchup And Lemonade",
-      "artist": "NINGNING",
-      "album": "",
-      "lyricOffset": -3400
-    },
-    {
-      "id": "dpP_C_LnA1c",
-      "url": "https://www.youtube.com/watch?v=dpP_C_LnA1c",
-      "title": "X",
-      "artist": "Lexie Liu",
-      "album": "",
-      "lyricOffset": -1750
-    },
-    {
-      "id": "fXivMSJm_kA",
-      "url": "https://www.youtube.com/watch?v=fXivMSJm_kA",
-      "title": "YUKON",
-      "artist": "Justin Bieber",
-      "album": "",
-      "lyricOffset": 650
-    },
-    {
-      "id": "KFMYx1TibeQ",
-      "url": "https://www.youtube.com/watch?v=KFMYx1TibeQ",
-      "title": "Folded",
-      "artist": "Kehlani",
-      "album": "",
-      "lyricOffset": -3550
-    },
-    {
-      "id": "KlhuSz0HbcE",
-      "url": "https://www.youtube.com/watch?v=KlhuSz0HbcE",
-      "title": "Tiramisu",
-      "artist": "Don Toliver",
-      "album": "",
-      "lyricOffset": -4350
-    },
-    {
-      "id": "Ur7aK4FvK-U",
-      "url": "https://www.youtube.com/watch?v=Ur7aK4FvK-U",
-      "title": "FOCUS",
-      "artist": "Hearts2Hearts",
-      "album": "",
-      "lyricOffset": -1350
-    },
-    {
-      "id": "8QZeXvOjgGE",
-      "url": "https://www.youtube.com/watch?v=8QZeXvOjgGE",
-      "title": "JoyRide",
-      "artist": "CORTIS",
-      "album": "",
-      "lyricOffset": 600
-    },
-    {
-      "id": "VI2Juh18UbM",
-      "url": "https://www.youtube.com/watch?v=VI2Juh18UbM",
-      "title": "Count On Me",
-      "artist": "aespa",
-      "album": "",
-      "lyricOffset": 450
-    },
-    {
-      "id": "C1_jIYrCAYk",
-      "url": "https://www.youtube.com/watch?v=C1_jIYrCAYk",
-      "title": "Nice Guy",
-      "artist": "Cardi B",
-      "album": "",
-      "lyricOffset": 450
-    },
-    {
-      "id": "WXS-o57VJ5w",
-      "url": "https://www.youtube.com/watch?v=WXS-o57VJ5w",
-      "title": "GO!",
-      "artist": "CORTIS",
-      "album": "",
-      "lyricOffset": -4450
-    },
-    {
-      "id": "Hz_alh9-x_M",
-      "url": "https://www.youtube.com/watch?v=Hz_alh9-x_M",
-      "title": "Asics",
-      "artist": "Fredi Casso",
-      "album": "",
-      "lyricOffset": 450
-    },
-    {
-      "id": "zPau1CbjeQc",
-      "url": "https://www.youtube.com/watch?v=zPau1CbjeQc",
-      "title": "mine",
-      "artist": "Moon Sujin",
-      "album": "",
-      "lyricOffset": 600
-    },
-    {
-      "id": "rdB7ip3zQqg",
-      "url": "https://www.youtube.com/watch?v=rdB7ip3zQqg",
-      "title": "FaSHioN",
-      "artist": "CORTIS",
-      "album": "",
-      "lyricOffset": -3000
-    },
-    {
-      "id": "GYCD2KUB3WQ",
-      "url": "https://www.youtube.com/watch?v=GYCD2KUB3WQ",
-      "title": "FOREVER WITH U",
-      "artist": "BIGBANG",
-      "album": "",
-      "lyricOffset": 750
-    },
-    {
-      "id": "HeqsjDF7Lw0",
-      "url": "https://www.youtube.com/watch?v=HeqsjDF7Lw0",
-      "title": "Toki Yo Tomare",
-      "artist": "ILLIT",
-      "album": "",
-      "lyricOffset": -10750
-    },
-    {
-      "id": "T2ZaUFDOikU",
-      "url": "https://www.youtube.com/watch?v=T2ZaUFDOikU",
-      "title": "2-5-1",
-      "artist": "Crush",
-      "album": "",
-      "lyricOffset": 500
-    },
-    {
-      "id": "xKT92YmzhJw",
-      "url": "https://www.youtube.com/watch?v=xKT92YmzhJw",
-      "title": "UP ALL NITE",
-      "artist": "Crush",
-      "album": "",
-      "lyricOffset": 400
-    },
-    {
-      "id": "VMh8hsUCD3g",
-      "url": "https://www.youtube.com/watch?v=VMh8hsUCD3g",
-      "title": "香車豪宅",
-      "artist": "攬佬",
-      "album": "",
-      "lyricOffset": 300
-    },
-    {
-      "id": "hz4kvS7_iR8",
-      "url": "https://www.youtube.com/watch?v=hz4kvS7_iR8",
-      "title": "Dopamine",
-      "artist": "GISELLE",
-      "album": "",
-      "lyricOffset": 250
-    },
-    {
-      "id": "kKsivrgoyDw",
-      "url": "https://www.youtube.com/watch?v=kKsivrgoyDw",
-      "title": "Cool with You",
-      "artist": "NewJeans",
-      "album": "",
-      "lyricOffset": 500
-    },
-    {
-      "id": "sVTy_wmn5SU",
-      "url": "https://www.youtube.com/watch?v=sVTy_wmn5SU",
-      "title": "OMG",
-      "artist": "NewJeans",
-      "album": "",
-      "lyricOffset": -950
-    },
-    {
-      "id": "yupEwQ6qCd0",
-      "url": "https://www.youtube.com/watch?v=yupEwQ6qCd0",
-      "title": "大展鴻圖",
-      "artist": "攬佬",
-      "album": "",
-      "lyricOffset": 150
-    },
-    {
-      "id": "negtrQu5mTA",
-      "url": "https://www.youtube.com/watch?v=negtrQu5mTA",
-      "title": "빌려온 고양이 (Do the Dance)",
-      "artist": "ILLIT",
-      "album": "",
-      "lyricOffset": -42200
-    },
-    {
-      "id": "YvVDPNOScAw",
-      "url": "https://www.youtube.com/watch?v=YvVDPNOScAw",
-      "title": "Second Emotion",
-      "artist": "Justin Bieber",
-      "album": "",
-      "lyricOffset": 50,
-      "lyricsSearch": {
-        "selection": {
-          "title": "Second Emotion",
-          "artist": "Justin Bieber、Travis Scott",
-          "album": "Changes",
-          "hash": "19b8acbbae05a373189fb4993133015f",
-          "albumId": "36302879",
-          "score": 1.055
-        }
-      }
-    },
-    {
-      "id": "cmlERpyGmYI",
-      "url": "https://www.youtube.com/watch?v=cmlERpyGmYI",
-      "title": "COME DANCE",
-      "artist": "劉柏辛",
-      "album": "",
-      "lyricOffset": 500
-    },
-    {
-      "id": "JFoevPP8hxY",
-      "url": "https://www.youtube.com/watch?v=JFoevPP8hxY",
-      "title": "I'll Be Good",
-      "artist": "JayDon",
-      "album": "I'll Be Good - Single",
-      "lyricOffset": -7000
-    },
-    {
-      "id": "Q_K2UcyXmWk",
-      "url": "https://www.youtube.com/watch?v=Q_K2UcyXmWk",
-      "title": "LOVIN' YOU",
-      "artist": "吉田美奈子",
-      "album": "MONSTERS IN TOWN",
-      "lyricOffset": -14750,
-      "lyricsSearch": {
-        "selection": {
-          "title": "LOVIN' YOU",
-          "artist": "吉田美奈子",
-          "album": "IN MOTION (Live)",
-          "hash": "cfce76453affa14fbc23027ee45eb560",
-          "albumId": "697742",
-          "score": 0.55
-        }
-      }
-    },
-    {
-      "id": "cK3qpJfb7w8",
-      "url": "https://www.youtube.com/watch?v=cK3qpJfb7w8",
-      "title": "LISTEN TO MY HEART",
-      "artist": "BoA",
-      "album": "",
-      "lyricOffset": -2150,
-      "lyricsSearch": {
-        "selection": {
-          "title": "LISTEN TO MY HEART",
-          "artist": "BoA",
-          "album": "REPLAY ～再び想う、きらめきのストーリー～　≪Limited Collection≫",
-          "hash": "22c9060fd24870aaedb05804fdf60cee",
-          "albumId": "38671795",
-          "score": 1.1
-        }
-      }
-    },
-    {
-      "id": "TkmfOyuGSdQ",
-      "url": "https://www.youtube.com/watch?v=TkmfOyuGSdQ",
-      "title": "OH NO, OH YES!",
-      "artist": "中森明菜",
-      "album": "Crimson",
-      "lyricOffset": 500
-    },
-    {
-      "id": "JMpypbtrcCg",
-      "url": "https://www.youtube.com/watch?v=JMpypbtrcCg",
-      "title": "Bad Religion",
-      "artist": "Frank Ocean",
-      "album": "channel ORANGE",
-      "lyricOffset": 850
-    },
-    {
-      "id": "nBoV9ZJeSp8",
-      "url": "https://www.youtube.com/watch?v=nBoV9ZJeSp8",
-      "title": "SLOW FADE",
-      "artist": "Christian Kuria",
-      "album": "SLOW FADE - Single",
-      "lyricOffset": 600
-    },
-    {
-      "id": "XnbsIl2BnWw",
-      "url": "https://www.youtube.com/watch?v=XnbsIl2BnWw",
-      "title": "Chanel",
-      "artist": "Frank Ocean",
-      "album": "Chanel - Single",
-      "lyricOffset": 550
-    },
-    {
-      "id": "SNq4zqTN_DQ",
-      "url": "https://www.youtube.com/watch?v=SNq4zqTN_DQ",
-      "title": "Last Summer Whisper",
-      "artist": "Anri",
-      "album": "Heaven Beach",
-      "lyricOffset": 450,
-      "lyricsSearch": {
-        "selection": {
-          "title": "Last Summer Whisper",
-          "artist": "杏里",
-          "album": "Heaven Beach",
-          "hash": "04c9c80b180cf1d5ae2d4eb054843d6f",
-          "albumId": "638604",
-          "score": 0.55
-        }
-      }
-    },
-    {
-      "id": "txroGbuRt_w",
-      "url": "https://www.youtube.com/watch?v=txroGbuRt_w",
-      "title": "Thirsty (Bad Boy Remix)",
-      "artist": "aespa",
-      "album": "MY WORLD - The 3rd Mini Album - EP",
-      "lyricOffset": 650
-    },
-    {
-      "id": "ablEaBQd3lU",
-      "url": "https://www.youtube.com/watch?v=ablEaBQd3lU",
-      "title": "Honestly",
-      "artist": "RIIZE",
-      "album": "RIIZING - EP",
-      "lyricOffset": 550
-    },
-    {
-      "id": "jKnLSg83Nqc",
-      "url": "https://youtu.be/jKnLSg83Nqc?si=0mX3pYk0q98Ndoui",
-      "title": "ㅠ.ㅠ (You)",
-      "artist": "Crush",
-      "album": "wonderego",
-      "lyricOffset": 500
-    },
-    {
-      "id": "hCg9tezGBWE",
-      "url": "https://youtu.be/hCg9tezGBWE?si=4KFJNVTDm6OA2kK8",
-      "title": "Magnetic",
-      "artist": "ILLIT",
-      "album": "SUPER REAL ME",
-      "lyricOffset": -2350,
-      "lyricsSearch": {
-        "selection": {
-          "title": "Magnetic",
-          "artist": "ILLIT",
-          "album": "SUPER REAL ME",
-          "hash": "20dce540ec786b564172ee43ea2fdbf9",
-          "albumId": "90037666",
-          "score": 1.1
-        }
-      }
-    },
-    {
-      "id": "Dlz_XHeUUis",
-      "url": "https://youtu.be/Dlz_XHeUUis?si=R7MDtk9W8suZcQDW",
-      "title": "White Ferrari",
-      "artist": "Frank Ocean",
-      "album": "Blonde",
-      "lyricOffset": 850
-    },
-    {
-      "id": "Q3K0TOvTOno",
-      "url": "https://youtu.be/Q3K0TOvTOno?si=_VbKas8ZYd9jpXiA",
-      "title": "How Sweet",
-      "artist": "NewJeans",
-      "album": "How Sweet",
-      "lyricOffset": -11350,
-      "lyricsSearch": {
-        "selection": {
-          "title": "How Sweet",
-          "artist": "NewJeans",
-          "album": "How Sweet",
-          "hash": "b579f54acf17b8efda15e188d826f4d2",
-          "albumId": "94493889",
-          "score": 1.1
-        }
-      }
-    },
-    {
-      "id": "ft70sAYrFyY",
-      "url": "https://youtu.be/ft70sAYrFyY?si=SJXlm-KRfgrMIODE",
-      "title": "Bubble Gum",
-      "artist": "NewJeans",
-      "album": "How Sweet",
-      "lyricOffset": -10200,
-      "lyricsSearch": {
-        "selection": {
-          "title": "Bubble Gum",
-          "artist": "NewJeans",
-          "album": "How Sweet",
-          "hash": "05ac2b7c0e6074de59a667df9cda3bbc",
-          "albumId": "94493889",
-          "score": 1.1
-        }
-      }
-    },
-    {
-      "id": "-nEGVrzPaiU",
-      "url": "https://www.youtube.com/watch?v=-nEGVrzPaiU",
-      "title": "Tick-Tack",
-      "artist": "ILLIT",
-      "album": "I'll Like You",
-      "lyricOffset": -17350
-    },
-    {
-      "id": "lXd1GHJPx-A",
-      "url": "https://www.youtube.com/watch?v=lXd1GHJPx-A",
-      "title": "Promise",
-      "artist": "Jagged Edge",
-      "album": "JE Heartbreak (Explicit)",
-      "lyricOffset": -7350,
-      "lyricsSearch": {
-        "selection": {
-          "title": "Promise",
-          "artist": "Jagged Edge",
-          "album": "JE Heartbreak (Explicit)",
-          "hash": "27dc7005e2bf3a07ec93f41063d8a8e5",
-          "albumId": "45322939",
-          "score": 1.1
-        }
-      }
-    },
-    {
-      "id": "Y_AxRCNFT2g",
-      "url": "https://www.youtube.com/watch?v=Y_AxRCNFT2g",
-      "title": "Supernova (House Remix)",
-      "artist": "aespa",
-      "album": "Armageddon",
-      "lyricOffset": -6550
-    },
-    {
-      "id": "yP8nAoFi6JY",
-      "url": "https://www.youtube.com/watch?v=yP8nAoFi6JY",
-      "title": "Supernatural (Miami Bass Remix)",
-      "artist": "NewJeans",
-      "album": "Supernatural",
-      "lyricOffset": 22050
-    },
-    {
-      "id": "1FNI1i7H1Kc",
-      "url": "https://www.youtube.com/watch?v=1FNI1i7H1Kc",
-      "title": "The Chase (R&B Remix)",
-      "artist": "Hearts2Hearts",
-      "album": "The Chase",
-      "lyricOffset": -7350
-    },
-    {
-      "id": "LVLOwwGVVZ0",
-      "url": "https://www.youtube.com/watch?v=LVLOwwGVVZ0",
-      "title": "Right Now (R&B Remix)",
-      "artist": "NewJeans",
-      "album": "Supernatural",
-      "lyricOffset": -3850,
-      "lyricsSearch": {
-        "selection": {
-          "title": "Right Now",
-          "artist": "NewJeans",
-          "album": "Supernatural",
-          "hash": "fe376d579cc5417ecafc9daee52a0be4",
-          "albumId": "96817718",
-          "score": 1.1
-        }
-      }
-    },
-    {
-      "id": "AGaTzDTnYGY",
-      "url": "https://www.youtube.com/watch?v=AGaTzDTnYGY",
-      "title": "How Sweet (UK Garage Remix)",
-      "artist": "NewJeans",
-      "album": "How Sweet",
-      "lyricOffset": 2200
-    },
-    {
-      "id": "XJWqHmY-g9U",
-      "url": "https://www.youtube.com/watch?v=XJWqHmY-g9U",
-      "title": "Telephone Number",
-      "artist": "大橋純子",
-      "album": "MAGICAL",
-      "lyricOffset": 1000
-    },
-    {
-      "id": "f3zVbOMyzgE",
-      "url": "https://www.youtube.com/watch?v=f3zVbOMyzgE",
-      "title": "UP&DOWN",
-      "artist": "임지수",
-      "album": "UP&DOWN",
-      "lyricOffset": 950
-    },
-    {
-      "id": "zt0Me5qyK4g",
-      "url": "https://www.youtube.com/watch?v=zt0Me5qyK4g",
-      "title": "춤 (Dance)",
-      "artist": "OFFONOFF",
-      "album": "boy.",
-      "lyricOffset": 750
-    },
-    {
-      "id": "T6YVgEpRU6Q",
-      "url": "https://www.youtube.com/watch?v=T6YVgEpRU6Q",
-      "title": "LEFT RIGHT",
-      "artist": "XG",
-      "album": "NEW DNA",
-      "lyricOffset": -6050
-    },
-    {
-      "id": "QiYOkmrI1jg",
-      "url": "https://www.youtube.com/watch?v=QiYOkmrI1jg",
-      "title": "IYKYK",
-      "artist": "XG",
-      "album": "IYKYK",
-      "lyricOffset": 500
-    },
-    {
-      "id": "_wgeHqXr4Hc",
-      "url": "https://www.youtube.com/watch?v=_wgeHqXr4Hc",
-      "title": "나를 위해 (For Days to Come)",
-      "artist": "Crush",
-      "album": "wonderego",
-      "lyricOffset": 550
-    },
-    {
-      "id": "zzDpTWCGofU",
-      "url": "https://www.youtube.com/watch?v=zzDpTWCGofU",
-      "title": "Nirvana Blues",
-      "artist": "Colde",
-      "album": "YIN",
-      "lyricOffset": 650
-    },
-    {
-      "id": "6vDi9S2ZDYA",
-      "url": "https://www.youtube.com/watch?v=6vDi9S2ZDYA",
-      "title": "ETA (R&B Remix)",
-      "artist": "NewJeans",
-      "album": "NewJeans 2nd EP 'Get Up'",
-      "lyricOffset": -5200
-    },
-    {
-      "id": "5tcBJCouOmE",
-      "url": "https://youtu.be/5tcBJCouOmE",
-      "title": "Hype Boy",
-      "artist": "DEAN",
-      "album": "New Jeans",
-      "lyricOffset": 17750
-    },
-    {
-      "id": "PO8",
-      "url": "https://www.youtube.com/watch?v=HB4Rp2KKeu4",
-      "title": "野子",
-      "artist": "PO8",
-      "album": "野子",
-      "lyricOffset": 1450
-    },
-    {
-      "id": "z-xfGoabprU",
-      "url": "https://www.youtube.com/watch?v=z-xfGoabprU",
-      "title": "BEBE",
-      "artist": "STAYC",
-      "album": "BEBE",
-      "lyricOffset": 350
-    },
-    {
-      "id": "aFrQIJ5cbRc",
-      "url": "https://www.youtube.com/watch?v=aFrQIJ5cbRc",
-      "title": "Know About Me",
-      "artist": "NMIXX",
-      "album": "Fe3O4: FORWARD - EP",
-      "lyricOffset": -1900
-    },
-    {
-      "id": "hJ9Wp3PO3c8",
-      "url": "https://www.youtube.com/watch?v=hJ9Wp3PO3c8",
-      "title": "Butterflies",
-      "artist": "Hearts2Hearts",
-      "album": "The Chase - Single",
-      "lyricOffset": -7550,
-      "lyricsSearch": {
-        "selection": {
-          "title": "Butterflies",
-          "artist": "Hearts2Hearts",
-          "album": "The Chase",
-          "hash": "a5099f62aa254b20c276ba601a8f17e4",
-          "albumId": "138767563",
-          "score": 1.1
-        }
-      }
-    },
-    {
-      "id": "dKMHchXVS6k",
-      "url": "https://youtu.be/dKMHchXVS6k?si=D9A7ui__4D5k_kAc",
-      "title": "Damn Right",
-      "artist": "JENNIE",
-      "album": "Ruby",
-      "lyricOffset": 450
-    },
-    {
-      "id": "DskqpUrvlmw",
-      "url": "https://www.youtube.com/watch?v=DskqpUrvlmw",
-      "title": "GPT",
-      "artist": "STAYC",
-      "album": "GPT - Single",
-      "lyricOffset": -2700,
-      "lyricsSearch": {
-        "selection": {
-          "title": "GPT",
-          "artist": "STAYC",
-          "album": "...l",
-          "hash": "5b49406032012ef56cc9f5b55f2e94e2",
-          "albumId": "130630754",
-          "score": 1.1
-        }
-      }
-    },
-    {
-      "id": "Rk6aQvlmsWo",
-      "url": "https://www.youtube.com/watch?v=Rk6aQvlmsWo",
-      "title": "Dandelion (feat. Ruel)",
-      "artist": "grentperez",
-      "album": "Backflips in a Restaurant",
-      "lyricOffset": -9250
-    },
-    {
-      "id": "36wVOzmsywo",
-      "url": "https://www.youtube.com/watch?v=36wVOzmsywo",
-      "title": "오래오래 (FRR)",
-      "artist": "george",
-      "album": "FRR",
-      "lyricOffset": -4400,
-      "lyricsSearch": {
-        "selection": {
-          "title": "오래오래 (FRR)",
-          "artist": "George",
-          "album": "FRR",
-          "hash": "71d552668989e4cd5bd023c84a66b275",
-          "albumId": "71268873",
-          "score": 0.45
-        }
-      }
-    },
-    {
-      "id": "FonjL7DQAUQ",
-      "url": "https://www.youtube.com/watch?v=FonjL7DQAUQ",
-      "title": "海浪 (Waves)",
-      "artist": "deca joins",
-      "album": "Go Slow",
-      "lyricOffset": -8050
-    },
-    {
-      "id": "ZncbtRo7RXs",
-      "url": "https://www.youtube.com/watch?v=ZncbtRo7RXs",
-      "title": "Supernatural (Part.1)",
-      "artist": "NewJeans",
-      "album": "Supernatural",
-      "lyricOffset": 400
-    },
-    {
-      "id": "hgNJ_qy6LCw",
-      "url": "https://www.youtube.com/watch?v=hgNJ_qy6LCw",
-      "title": "ASAP",
-      "artist": "NJZ",
-      "album": "NewJeans 2nd EP 'Get Up'",
-      "lyricOffset": 3200
-    },
-    {
-      "id": "YYyskjq1vSc",
-      "url": "https://www.youtube.com/watch?v=YYyskjq1vSc",
-      "title": "New Jeans (2025)",
-      "artist": "NJZ",
-      "album": "NewJeans 2nd EP 'Get Up'",
-      "lyricOffset": -30800
-    },
-    {
-      "id": "WpqXjRrZqa0",
-      "url": "https://www.youtube.com/watch?v=WpqXjRrZqa0",
-      "title": "Cool with You (2025)",
-      "artist": "NJZ",
-      "album": "NewJeans 2nd EP 'Get Up'",
-      "lyricOffset": 14500
-    },
-    {
-      "id": "In7e1knX7rQ",
-      "url": "https://www.youtube.com/watch?v=In7e1knX7rQ",
-      "title": "ETA (feat. E SENS 이센스)",
-      "artist": "NJZ",
-      "album": "NewJeans 2nd EP 'Get Up'",
-      "lyricOffset": -8350
-    },
-    {
-      "id": "tbDGl7jEazA",
-      "url": "https://www.youtube.com/watch?v=tbDGl7jEazA",
-      "title": "Cherish (My Love)",
-      "artist": "ILLIT",
-      "album": "",
-      "lyricOffset": -11500
-    },
-    {
-      "id": "pQg7doFpC5k",
-      "url": "https://www.youtube.com/watch?v=pQg7doFpC5k",
-      "title": "Sweet Life",
-      "artist": "Joo Young",
-      "album": "Sweet Life - Single",
-      "lyricOffset": 850
-    },
-    {
-      "id": "QlkBGDUsANo",
-      "url": "https://www.youtube.com/watch?v=QlkBGDUsANo",
-      "title": "Come",
-      "artist": "安室奈美恵",
-      "album": "犬夜叉 BEST ALBUM 主題歌集",
-      "lyricOffset": 500
-    },
-    {
-      "id": "BME88lS6aVY",
-      "url": "https://www.youtube.com/watch?v=BME88lS6aVY",
-      "title": "Self Control",
-      "artist": "Frank Ocean",
-      "album": "Blonde",
-      "lyricOffset": 650
-    },
-    {
-      "id": "RNBiaZbFGII",
-      "url": "https://www.youtube.com/watch?v=RNBiaZbFGII",
-      "title": "come again",
-      "artist": "m-flo",
-      "album": "",
-      "lyricOffset": -6800
-    },
-    {
-      "id": "D3IDK_R1LTg",
-      "url": "https://www.youtube.com/watch?v=D3IDK_R1LTg",
-      "title": "Every Heart-ミンナノキモチ-",
-      "artist": "BoA",
-      "album": "犬夜叉 BEST ALBUM 主題歌集",
-      "lyricOffset": -5000
-    },
-    {
-      "id": "bjTEMBB-mjY",
-      "url": "https://www.youtube.com/watch?v=bjTEMBB-mjY",
-      "title": "WE BELONG TOGETHER",
-      "artist": "BIGBANG",
-      "album": "BIGBANG - Single",
-      "lyricOffset": -4450
-    },
-    {
-      "id": "4j7Umwfx60Q",
-      "url": "https://www.youtube.com/watch?v=4j7Umwfx60Q",
-      "title": "4 Walls",
-      "artist": "f(x)",
-      "album": "4 Walls",
-      "lyricOffset": 450,
-      "lyricsSearch": {
-        "selection": {
-          "title": "4 Walls (Korean Ver.)",
-          "artist": "f(x)",
-          "album": "4 Walls",
-          "hash": "e86a2d0669b8fd0559ae265b22c94a16",
-          "albumId": "555532",
-          "score": 1.1
-        }
-      }
-    },
-    {
-      "id": "jG6RnLVX07I",
-      "url": "https://www.youtube.com/watch?v=jG6RnLVX07I",
-      "title": "Hold On",
-      "artist": "The Internet",
-      "album": "",
-      "lyricOffset": -850
-    },
-    {
-      "id": "jWQx2f-CErU",
-      "url": "https://www.youtube.com/watch?v=jWQx2f-CErU",
-      "title": "Whiplash",
-      "artist": "aespa",
-      "album": "Whiplash - The 5th Mini Album",
-      "lyricOffset": 500
-    },
-    {
-      "id": "L_OgLK3fmc8",
-      "url": "https://www.youtube.com/watch?v=L_OgLK3fmc8",
-      "title": "Skrr",
-      "artist": "DEAN & HANNI",
-      "album": "",
-      "lyricOffset": 300
-    },
-    {
-      "id": "bX33UI9ZPLk",
-      "url": "https://www.youtube.com/watch?v=bX33UI9ZPLk",
-      "title": "黑色毛衣",
-      "artist": "周杰倫",
-      "album": "十一月的蕭邦",
-      "lyricOffset": 3750
-    }
+	{
+	  "id": "D1QVkuEzxNk",
+	  "url": "https://www.youtube.com/watch?v=D1QVkuEzxNk",
+	  "title": "まどろみ",
+	  "artist": "具島直子",
+	  "album": "",
+	  "lyricOffset": 450,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "まどろみ",
+		  "artist": "具島直子",
+		  "album": "URBAN BLUES Presents BEST OF NAOKO GUSHIMA",
+		  "hash": "4a4f40edb0d1ce5dc074b82cac62fcbb",
+		  "albumId": "24647375",
+		  "score": 0
+		}
+	  }
+	},
+	{
+	  "id": "h4Q8r60ojSo",
+	  "url": "https://www.youtube.com/watch?v=h4Q8r60ojSo",
+	  "title": "抱きしめて",
+	  "artist": "BENI",
+	  "album": "",
+	  "lyricOffset": 700,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "抱きしめて",
+		  "artist": "BENI",
+		  "album": "Bitter & Sweet",
+		  "hash": "928e0d12e6c7f1c33721596ef1a6195f",
+		  "albumId": "574854",
+		  "score": 0.45
+		}
+	  }
+	},
+	{
+	  "id": "QLHMhVonF-s",
+	  "url": "https://www.youtube.com/watch?v=QLHMhVonF-s",
+	  "title": "黄昏のBAY CITY",
+	  "artist": "八神純子",
+	  "album": "",
+	  "lyricOffset": 150,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "黄昏のBAY CITY",
+		  "artist": "八神純子",
+		  "album": "FULL MOON",
+		  "hash": "e27fad9075957ee0645a9023f09ad0fa",
+		  "albumId": "674448",
+		  "score": 0.55
+		}
+	  }
+	},
+	{
+	  "id": "eynCfZYPY8Q",
+	  "url": "https://www.youtube.com/watch?v=eynCfZYPY8Q",
+	  "title": "no. no. no.",
+	  "artist": "具島直子",
+	  "album": "",
+	  "lyricOffset": 600,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "no. no. no.",
+		  "artist": "具島直子",
+		  "album": "Quiet Emotion",
+		  "hash": "85848173da963581671e89aa6645de02",
+		  "albumId": "715288",
+		  "score": 0.55
+		}
+	  }
+	},
+	{
+	  "id": "8cEdndsuzSE",
+	  "url": "https://www.youtube.com/watch?v=8cEdndsuzSE",
+	  "title": "GALA",
+	  "artist": "XG",
+	  "album": "",
+	  "lyricOffset": -4000
+	},
+	{
+	  "id": "sHExKBfvO08",
+	  "url": "https://www.youtube.com/watch?v=sHExKBfvO08",
+	  "title": "能不能",
+	  "artist": "鐵竹堂 ft. 溫嵐",
+	  "album": "",
+	  "lyricOffset": 3550,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "能不能",
+		  "artist": "铁竹堂、温岚",
+		  "album": "铁竹堂同名专辑",
+		  "hash": "c32f32b72e566fdc2c745b7acc8e1a03",
+		  "albumId": "2429201",
+		  "score": 0
+		}
+	  }
+	},
+	{
+	  "id": "eET3YAZp4rI",
+	  "url": "https://www.youtube.com/watch?v=eET3YAZp4rI",
+	  "title": "Ketchup And Lemonade",
+	  "artist": "NINGNING",
+	  "album": "",
+	  "lyricOffset": -3400
+	},
+	{
+	  "id": "dpP_C_LnA1c",
+	  "url": "https://www.youtube.com/watch?v=dpP_C_LnA1c",
+	  "title": "X",
+	  "artist": "Lexie Liu",
+	  "album": "",
+	  "lyricOffset": -1750
+	},
+	{
+	  "id": "fXivMSJm_kA",
+	  "url": "https://www.youtube.com/watch?v=fXivMSJm_kA",
+	  "title": "YUKON",
+	  "artist": "Justin Bieber",
+	  "album": "",
+	  "lyricOffset": 650
+	},
+	{
+	  "id": "KFMYx1TibeQ",
+	  "url": "https://www.youtube.com/watch?v=KFMYx1TibeQ",
+	  "title": "Folded",
+	  "artist": "Kehlani",
+	  "album": "",
+	  "lyricOffset": -3550
+	},
+	{
+	  "id": "KlhuSz0HbcE",
+	  "url": "https://www.youtube.com/watch?v=KlhuSz0HbcE",
+	  "title": "Tiramisu",
+	  "artist": "Don Toliver",
+	  "album": "",
+	  "lyricOffset": -4350
+	},
+	{
+	  "id": "Ur7aK4FvK-U",
+	  "url": "https://www.youtube.com/watch?v=Ur7aK4FvK-U",
+	  "title": "FOCUS",
+	  "artist": "Hearts2Hearts",
+	  "album": "",
+	  "lyricOffset": -1350
+	},
+	{
+	  "id": "8QZeXvOjgGE",
+	  "url": "https://www.youtube.com/watch?v=8QZeXvOjgGE",
+	  "title": "JoyRide",
+	  "artist": "CORTIS",
+	  "album": "",
+	  "lyricOffset": 600
+	},
+	{
+	  "id": "VI2Juh18UbM",
+	  "url": "https://www.youtube.com/watch?v=VI2Juh18UbM",
+	  "title": "Count On Me",
+	  "artist": "aespa",
+	  "album": "",
+	  "lyricOffset": 450
+	},
+	{
+	  "id": "C1_jIYrCAYk",
+	  "url": "https://www.youtube.com/watch?v=C1_jIYrCAYk",
+	  "title": "Nice Guy",
+	  "artist": "Cardi B",
+	  "album": "",
+	  "lyricOffset": 450
+	},
+	{
+	  "id": "WXS-o57VJ5w",
+	  "url": "https://www.youtube.com/watch?v=WXS-o57VJ5w",
+	  "title": "GO!",
+	  "artist": "CORTIS",
+	  "album": "",
+	  "lyricOffset": -4450
+	},
+	{
+	  "id": "Hz_alh9-x_M",
+	  "url": "https://www.youtube.com/watch?v=Hz_alh9-x_M",
+	  "title": "Asics",
+	  "artist": "Fredi Casso",
+	  "album": "",
+	  "lyricOffset": 450
+	},
+	{
+	  "id": "zPau1CbjeQc",
+	  "url": "https://www.youtube.com/watch?v=zPau1CbjeQc",
+	  "title": "mine",
+	  "artist": "Moon Sujin",
+	  "album": "",
+	  "lyricOffset": 600
+	},
+	{
+	  "id": "rdB7ip3zQqg",
+	  "url": "https://www.youtube.com/watch?v=rdB7ip3zQqg",
+	  "title": "FaSHioN",
+	  "artist": "CORTIS",
+	  "album": "",
+	  "lyricOffset": -3000
+	},
+	{
+	  "id": "GYCD2KUB3WQ",
+	  "url": "https://www.youtube.com/watch?v=GYCD2KUB3WQ",
+	  "title": "FOREVER WITH U",
+	  "artist": "BIGBANG",
+	  "album": "",
+	  "lyricOffset": 750
+	},
+	{
+	  "id": "HeqsjDF7Lw0",
+	  "url": "https://www.youtube.com/watch?v=HeqsjDF7Lw0",
+	  "title": "Toki Yo Tomare",
+	  "artist": "ILLIT",
+	  "album": "",
+	  "lyricOffset": -10750
+	},
+	{
+	  "id": "T2ZaUFDOikU",
+	  "url": "https://www.youtube.com/watch?v=T2ZaUFDOikU",
+	  "title": "2-5-1",
+	  "artist": "Crush",
+	  "album": "",
+	  "lyricOffset": 500
+	},
+	{
+	  "id": "xKT92YmzhJw",
+	  "url": "https://www.youtube.com/watch?v=xKT92YmzhJw",
+	  "title": "UP ALL NITE",
+	  "artist": "Crush",
+	  "album": "",
+	  "lyricOffset": 400
+	},
+	{
+	  "id": "VMh8hsUCD3g",
+	  "url": "https://www.youtube.com/watch?v=VMh8hsUCD3g",
+	  "title": "香車豪宅",
+	  "artist": "攬佬",
+	  "album": "",
+	  "lyricOffset": 300
+	},
+	{
+	  "id": "hz4kvS7_iR8",
+	  "url": "https://www.youtube.com/watch?v=hz4kvS7_iR8",
+	  "title": "Dopamine",
+	  "artist": "GISELLE",
+	  "album": "",
+	  "lyricOffset": 250
+	},
+	{
+	  "id": "kKsivrgoyDw",
+	  "url": "https://www.youtube.com/watch?v=kKsivrgoyDw",
+	  "title": "Cool with You",
+	  "artist": "NewJeans",
+	  "album": "",
+	  "lyricOffset": 500
+	},
+	{
+	  "id": "sVTy_wmn5SU",
+	  "url": "https://www.youtube.com/watch?v=sVTy_wmn5SU",
+	  "title": "OMG",
+	  "artist": "NewJeans",
+	  "album": "",
+	  "lyricOffset": -950
+	},
+	{
+	  "id": "yupEwQ6qCd0",
+	  "url": "https://www.youtube.com/watch?v=yupEwQ6qCd0",
+	  "title": "大展鴻圖",
+	  "artist": "攬佬",
+	  "album": "",
+	  "lyricOffset": 150
+	},
+	{
+	  "id": "negtrQu5mTA",
+	  "url": "https://www.youtube.com/watch?v=negtrQu5mTA",
+	  "title": "빌려온 고양이 (Do the Dance)",
+	  "artist": "ILLIT",
+	  "album": "",
+	  "lyricOffset": -42200
+	},
+	{
+	  "id": "YvVDPNOScAw",
+	  "url": "https://www.youtube.com/watch?v=YvVDPNOScAw",
+	  "title": "Second Emotion",
+	  "artist": "Justin Bieber",
+	  "album": "",
+	  "lyricOffset": 50,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "Second Emotion",
+		  "artist": "Justin Bieber、Travis Scott",
+		  "album": "Changes",
+		  "hash": "19b8acbbae05a373189fb4993133015f",
+		  "albumId": "36302879",
+		  "score": 1.055
+		}
+	  }
+	},
+	{
+	  "id": "cmlERpyGmYI",
+	  "url": "https://www.youtube.com/watch?v=cmlERpyGmYI",
+	  "title": "COME DANCE",
+	  "artist": "劉柏辛",
+	  "album": "",
+	  "lyricOffset": 500
+	},
+	{
+	  "id": "JFoevPP8hxY",
+	  "url": "https://www.youtube.com/watch?v=JFoevPP8hxY",
+	  "title": "I'll Be Good",
+	  "artist": "JayDon",
+	  "album": "I'll Be Good - Single",
+	  "lyricOffset": -7000
+	},
+	{
+	  "id": "Q_K2UcyXmWk",
+	  "url": "https://www.youtube.com/watch?v=Q_K2UcyXmWk",
+	  "title": "LOVIN' YOU",
+	  "artist": "吉田美奈子",
+	  "album": "MONSTERS IN TOWN",
+	  "lyricOffset": -14750,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "LOVIN' YOU",
+		  "artist": "吉田美奈子",
+		  "album": "IN MOTION (Live)",
+		  "hash": "cfce76453affa14fbc23027ee45eb560",
+		  "albumId": "697742",
+		  "score": 0.55
+		}
+	  }
+	},
+	{
+	  "id": "cK3qpJfb7w8",
+	  "url": "https://www.youtube.com/watch?v=cK3qpJfb7w8",
+	  "title": "LISTEN TO MY HEART",
+	  "artist": "BoA",
+	  "album": "",
+	  "lyricOffset": -2150,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "LISTEN TO MY HEART",
+		  "artist": "BoA",
+		  "album": "REPLAY ～再び想う、きらめきのストーリー～　≪Limited Collection≫",
+		  "hash": "22c9060fd24870aaedb05804fdf60cee",
+		  "albumId": "38671795",
+		  "score": 1.1
+		}
+	  }
+	},
+	{
+	  "id": "TkmfOyuGSdQ",
+	  "url": "https://www.youtube.com/watch?v=TkmfOyuGSdQ",
+	  "title": "OH NO, OH YES!",
+	  "artist": "中森明菜",
+	  "album": "Crimson",
+	  "lyricOffset": 500
+	},
+	{
+	  "id": "JMpypbtrcCg",
+	  "url": "https://www.youtube.com/watch?v=JMpypbtrcCg",
+	  "title": "Bad Religion",
+	  "artist": "Frank Ocean",
+	  "album": "channel ORANGE",
+	  "lyricOffset": 850
+	},
+	{
+	  "id": "nBoV9ZJeSp8",
+	  "url": "https://www.youtube.com/watch?v=nBoV9ZJeSp8",
+	  "title": "SLOW FADE",
+	  "artist": "Christian Kuria",
+	  "album": "SLOW FADE - Single",
+	  "lyricOffset": 600
+	},
+	{
+	  "id": "XnbsIl2BnWw",
+	  "url": "https://www.youtube.com/watch?v=XnbsIl2BnWw",
+	  "title": "Chanel",
+	  "artist": "Frank Ocean",
+	  "album": "Chanel - Single",
+	  "lyricOffset": 550
+	},
+	{
+	  "id": "SNq4zqTN_DQ",
+	  "url": "https://www.youtube.com/watch?v=SNq4zqTN_DQ",
+	  "title": "Last Summer Whisper",
+	  "artist": "Anri",
+	  "album": "Heaven Beach",
+	  "lyricOffset": 450,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "Last Summer Whisper",
+		  "artist": "杏里",
+		  "album": "Heaven Beach",
+		  "hash": "04c9c80b180cf1d5ae2d4eb054843d6f",
+		  "albumId": "638604",
+		  "score": 0.55
+		}
+	  }
+	},
+	{
+	  "id": "txroGbuRt_w",
+	  "url": "https://www.youtube.com/watch?v=txroGbuRt_w",
+	  "title": "Thirsty (Bad Boy Remix)",
+	  "artist": "aespa",
+	  "album": "MY WORLD - The 3rd Mini Album - EP",
+	  "lyricOffset": 650
+	},
+	{
+	  "id": "ablEaBQd3lU",
+	  "url": "https://www.youtube.com/watch?v=ablEaBQd3lU",
+	  "title": "Honestly",
+	  "artist": "RIIZE",
+	  "album": "RIIZING - EP",
+	  "lyricOffset": 550
+	},
+	{
+	  "id": "jKnLSg83Nqc",
+	  "url": "https://youtu.be/jKnLSg83Nqc?si=0mX3pYk0q98Ndoui",
+	  "title": "ㅠ.ㅠ (You)",
+	  "artist": "Crush",
+	  "album": "wonderego",
+	  "lyricOffset": 500
+	},
+	{
+	  "id": "hCg9tezGBWE",
+	  "url": "https://youtu.be/hCg9tezGBWE?si=4KFJNVTDm6OA2kK8",
+	  "title": "Magnetic",
+	  "artist": "ILLIT",
+	  "album": "SUPER REAL ME",
+	  "lyricOffset": -2350,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "Magnetic",
+		  "artist": "ILLIT",
+		  "album": "SUPER REAL ME",
+		  "hash": "20dce540ec786b564172ee43ea2fdbf9",
+		  "albumId": "90037666",
+		  "score": 1.1
+		}
+	  }
+	},
+	{
+	  "id": "Dlz_XHeUUis",
+	  "url": "https://youtu.be/Dlz_XHeUUis?si=R7MDtk9W8suZcQDW",
+	  "title": "White Ferrari",
+	  "artist": "Frank Ocean",
+	  "album": "Blonde",
+	  "lyricOffset": 850
+	},
+	{
+	  "id": "Q3K0TOvTOno",
+	  "url": "https://youtu.be/Q3K0TOvTOno?si=_VbKas8ZYd9jpXiA",
+	  "title": "How Sweet",
+	  "artist": "NewJeans",
+	  "album": "How Sweet",
+	  "lyricOffset": -11350,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "How Sweet",
+		  "artist": "NewJeans",
+		  "album": "How Sweet",
+		  "hash": "b579f54acf17b8efda15e188d826f4d2",
+		  "albumId": "94493889",
+		  "score": 1.1
+		}
+	  }
+	},
+	{
+	  "id": "ft70sAYrFyY",
+	  "url": "https://youtu.be/ft70sAYrFyY?si=SJXlm-KRfgrMIODE",
+	  "title": "Bubble Gum",
+	  "artist": "NewJeans",
+	  "album": "How Sweet",
+	  "lyricOffset": -10200,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "Bubble Gum",
+		  "artist": "NewJeans",
+		  "album": "How Sweet",
+		  "hash": "05ac2b7c0e6074de59a667df9cda3bbc",
+		  "albumId": "94493889",
+		  "score": 1.1
+		}
+	  }
+	},
+	{
+	  "id": "-nEGVrzPaiU",
+	  "url": "https://www.youtube.com/watch?v=-nEGVrzPaiU",
+	  "title": "Tick-Tack",
+	  "artist": "ILLIT",
+	  "album": "I'll Like You",
+	  "lyricOffset": -17350
+	},
+	{
+	  "id": "lXd1GHJPx-A",
+	  "url": "https://www.youtube.com/watch?v=lXd1GHJPx-A",
+	  "title": "Promise",
+	  "artist": "Jagged Edge",
+	  "album": "JE Heartbreak (Explicit)",
+	  "lyricOffset": -7350,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "Promise",
+		  "artist": "Jagged Edge",
+		  "album": "JE Heartbreak (Explicit)",
+		  "hash": "27dc7005e2bf3a07ec93f41063d8a8e5",
+		  "albumId": "45322939",
+		  "score": 1.1
+		}
+	  }
+	},
+	{
+	  "id": "Y_AxRCNFT2g",
+	  "url": "https://www.youtube.com/watch?v=Y_AxRCNFT2g",
+	  "title": "Supernova (House Remix)",
+	  "artist": "aespa",
+	  "album": "Armageddon",
+	  "lyricOffset": -6550
+	},
+	{
+	  "id": "yP8nAoFi6JY",
+	  "url": "https://www.youtube.com/watch?v=yP8nAoFi6JY",
+	  "title": "Supernatural (Miami Bass Remix)",
+	  "artist": "NewJeans",
+	  "album": "Supernatural",
+	  "lyricOffset": 22050
+	},
+	{
+	  "id": "1FNI1i7H1Kc",
+	  "url": "https://www.youtube.com/watch?v=1FNI1i7H1Kc",
+	  "title": "The Chase (R&B Remix)",
+	  "artist": "Hearts2Hearts",
+	  "album": "The Chase",
+	  "lyricOffset": -7350
+	},
+	{
+	  "id": "LVLOwwGVVZ0",
+	  "url": "https://www.youtube.com/watch?v=LVLOwwGVVZ0",
+	  "title": "Right Now (R&B Remix)",
+	  "artist": "NewJeans",
+	  "album": "Supernatural",
+	  "lyricOffset": -3850,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "Right Now",
+		  "artist": "NewJeans",
+		  "album": "Supernatural",
+		  "hash": "fe376d579cc5417ecafc9daee52a0be4",
+		  "albumId": "96817718",
+		  "score": 1.1
+		}
+	  }
+	},
+	{
+	  "id": "AGaTzDTnYGY",
+	  "url": "https://www.youtube.com/watch?v=AGaTzDTnYGY",
+	  "title": "How Sweet (UK Garage Remix)",
+	  "artist": "NewJeans",
+	  "album": "How Sweet",
+	  "lyricOffset": 2200
+	},
+	{
+	  "id": "XJWqHmY-g9U",
+	  "url": "https://www.youtube.com/watch?v=XJWqHmY-g9U",
+	  "title": "Telephone Number",
+	  "artist": "大橋純子",
+	  "album": "MAGICAL",
+	  "lyricOffset": 1000
+	},
+	{
+	  "id": "f3zVbOMyzgE",
+	  "url": "https://www.youtube.com/watch?v=f3zVbOMyzgE",
+	  "title": "UP&DOWN",
+	  "artist": "임지수",
+	  "album": "UP&DOWN",
+	  "lyricOffset": 950
+	},
+	{
+	  "id": "zt0Me5qyK4g",
+	  "url": "https://www.youtube.com/watch?v=zt0Me5qyK4g",
+	  "title": "춤 (Dance)",
+	  "artist": "OFFONOFF",
+	  "album": "boy.",
+	  "lyricOffset": 750
+	},
+	{
+	  "id": "T6YVgEpRU6Q",
+	  "url": "https://www.youtube.com/watch?v=T6YVgEpRU6Q",
+	  "title": "LEFT RIGHT",
+	  "artist": "XG",
+	  "album": "NEW DNA",
+	  "lyricOffset": -6050
+	},
+	{
+	  "id": "QiYOkmrI1jg",
+	  "url": "https://www.youtube.com/watch?v=QiYOkmrI1jg",
+	  "title": "IYKYK",
+	  "artist": "XG",
+	  "album": "IYKYK",
+	  "lyricOffset": 500
+	},
+	{
+	  "id": "_wgeHqXr4Hc",
+	  "url": "https://www.youtube.com/watch?v=_wgeHqXr4Hc",
+	  "title": "나를 위해 (For Days to Come)",
+	  "artist": "Crush",
+	  "album": "wonderego",
+	  "lyricOffset": 550
+	},
+	{
+	  "id": "zzDpTWCGofU",
+	  "url": "https://www.youtube.com/watch?v=zzDpTWCGofU",
+	  "title": "Nirvana Blues",
+	  "artist": "Colde",
+	  "album": "YIN",
+	  "lyricOffset": 650
+	},
+	{
+	  "id": "6vDi9S2ZDYA",
+	  "url": "https://www.youtube.com/watch?v=6vDi9S2ZDYA",
+	  "title": "ETA (R&B Remix)",
+	  "artist": "NewJeans",
+	  "album": "NewJeans 2nd EP 'Get Up'",
+	  "lyricOffset": -5200
+	},
+	{
+	  "id": "5tcBJCouOmE",
+	  "url": "https://youtu.be/5tcBJCouOmE",
+	  "title": "Hype Boy",
+	  "artist": "DEAN",
+	  "album": "New Jeans",
+	  "lyricOffset": 17750
+	},
+	{
+	  "id": "PO8",
+	  "url": "https://www.youtube.com/watch?v=HB4Rp2KKeu4",
+	  "title": "野子",
+	  "artist": "PO8",
+	  "album": "野子",
+	  "lyricOffset": 1450
+	},
+	{
+	  "id": "z-xfGoabprU",
+	  "url": "https://www.youtube.com/watch?v=z-xfGoabprU",
+	  "title": "BEBE",
+	  "artist": "STAYC",
+	  "album": "BEBE",
+	  "lyricOffset": 350
+	},
+	{
+	  "id": "aFrQIJ5cbRc",
+	  "url": "https://www.youtube.com/watch?v=aFrQIJ5cbRc",
+	  "title": "Know About Me",
+	  "artist": "NMIXX",
+	  "album": "Fe3O4: FORWARD - EP",
+	  "lyricOffset": -1900
+	},
+	{
+	  "id": "hJ9Wp3PO3c8",
+	  "url": "https://www.youtube.com/watch?v=hJ9Wp3PO3c8",
+	  "title": "Butterflies",
+	  "artist": "Hearts2Hearts",
+	  "album": "The Chase - Single",
+	  "lyricOffset": -7550,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "Butterflies",
+		  "artist": "Hearts2Hearts",
+		  "album": "The Chase",
+		  "hash": "a5099f62aa254b20c276ba601a8f17e4",
+		  "albumId": "138767563",
+		  "score": 1.1
+		}
+	  }
+	},
+	{
+	  "id": "dKMHchXVS6k",
+	  "url": "https://youtu.be/dKMHchXVS6k?si=D9A7ui__4D5k_kAc",
+	  "title": "Damn Right",
+	  "artist": "JENNIE",
+	  "album": "Ruby",
+	  "lyricOffset": 450
+	},
+	{
+	  "id": "DskqpUrvlmw",
+	  "url": "https://www.youtube.com/watch?v=DskqpUrvlmw",
+	  "title": "GPT",
+	  "artist": "STAYC",
+	  "album": "GPT - Single",
+	  "lyricOffset": -2700,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "GPT",
+		  "artist": "STAYC",
+		  "album": "...l",
+		  "hash": "5b49406032012ef56cc9f5b55f2e94e2",
+		  "albumId": "130630754",
+		  "score": 1.1
+		}
+	  }
+	},
+	{
+	  "id": "Rk6aQvlmsWo",
+	  "url": "https://www.youtube.com/watch?v=Rk6aQvlmsWo",
+	  "title": "Dandelion (feat. Ruel)",
+	  "artist": "grentperez",
+	  "album": "Backflips in a Restaurant",
+	  "lyricOffset": -9250
+	},
+	{
+	  "id": "36wVOzmsywo",
+	  "url": "https://www.youtube.com/watch?v=36wVOzmsywo",
+	  "title": "오래오래 (FRR)",
+	  "artist": "george",
+	  "album": "FRR",
+	  "lyricOffset": -4400,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "오래오래 (FRR)",
+		  "artist": "George",
+		  "album": "FRR",
+		  "hash": "71d552668989e4cd5bd023c84a66b275",
+		  "albumId": "71268873",
+		  "score": 0.45
+		}
+	  }
+	},
+	{
+	  "id": "FonjL7DQAUQ",
+	  "url": "https://www.youtube.com/watch?v=FonjL7DQAUQ",
+	  "title": "海浪 (Waves)",
+	  "artist": "deca joins",
+	  "album": "Go Slow",
+	  "lyricOffset": -8050
+	},
+	{
+	  "id": "ZncbtRo7RXs",
+	  "url": "https://www.youtube.com/watch?v=ZncbtRo7RXs",
+	  "title": "Supernatural (Part.1)",
+	  "artist": "NewJeans",
+	  "album": "Supernatural",
+	  "lyricOffset": 400
+	},
+	{
+	  "id": "hgNJ_qy6LCw",
+	  "url": "https://www.youtube.com/watch?v=hgNJ_qy6LCw",
+	  "title": "ASAP",
+	  "artist": "NJZ",
+	  "album": "NewJeans 2nd EP 'Get Up'",
+	  "lyricOffset": 3200
+	},
+	{
+	  "id": "YYyskjq1vSc",
+	  "url": "https://www.youtube.com/watch?v=YYyskjq1vSc",
+	  "title": "New Jeans (2025)",
+	  "artist": "NJZ",
+	  "album": "NewJeans 2nd EP 'Get Up'",
+	  "lyricOffset": -30800
+	},
+	{
+	  "id": "WpqXjRrZqa0",
+	  "url": "https://www.youtube.com/watch?v=WpqXjRrZqa0",
+	  "title": "Cool with You (2025)",
+	  "artist": "NJZ",
+	  "album": "NewJeans 2nd EP 'Get Up'",
+	  "lyricOffset": 14500
+	},
+	{
+	  "id": "In7e1knX7rQ",
+	  "url": "https://www.youtube.com/watch?v=In7e1knX7rQ",
+	  "title": "ETA (feat. E SENS 이센스)",
+	  "artist": "NJZ",
+	  "album": "NewJeans 2nd EP 'Get Up'",
+	  "lyricOffset": -8350
+	},
+	{
+	  "id": "tbDGl7jEazA",
+	  "url": "https://www.youtube.com/watch?v=tbDGl7jEazA",
+	  "title": "Cherish (My Love)",
+	  "artist": "ILLIT",
+	  "album": "",
+	  "lyricOffset": -11500
+	},
+	{
+	  "id": "pQg7doFpC5k",
+	  "url": "https://www.youtube.com/watch?v=pQg7doFpC5k",
+	  "title": "Sweet Life",
+	  "artist": "Joo Young",
+	  "album": "Sweet Life - Single",
+	  "lyricOffset": 850
+	},
+	{
+	  "id": "QlkBGDUsANo",
+	  "url": "https://www.youtube.com/watch?v=QlkBGDUsANo",
+	  "title": "Come",
+	  "artist": "安室奈美恵",
+	  "album": "犬夜叉 BEST ALBUM 主題歌集",
+	  "lyricOffset": 500
+	},
+	{
+	  "id": "BME88lS6aVY",
+	  "url": "https://www.youtube.com/watch?v=BME88lS6aVY",
+	  "title": "Self Control",
+	  "artist": "Frank Ocean",
+	  "album": "Blonde",
+	  "lyricOffset": 650
+	},
+	{
+	  "id": "RNBiaZbFGII",
+	  "url": "https://www.youtube.com/watch?v=RNBiaZbFGII",
+	  "title": "come again",
+	  "artist": "m-flo",
+	  "album": "",
+	  "lyricOffset": -6800
+	},
+	{
+	  "id": "D3IDK_R1LTg",
+	  "url": "https://www.youtube.com/watch?v=D3IDK_R1LTg",
+	  "title": "Every Heart-ミンナノキモチ-",
+	  "artist": "BoA",
+	  "album": "犬夜叉 BEST ALBUM 主題歌集",
+	  "lyricOffset": -5000
+	},
+	{
+	  "id": "bjTEMBB-mjY",
+	  "url": "https://www.youtube.com/watch?v=bjTEMBB-mjY",
+	  "title": "WE BELONG TOGETHER",
+	  "artist": "BIGBANG",
+	  "album": "BIGBANG - Single",
+	  "lyricOffset": -4450
+	},
+	{
+	  "id": "4j7Umwfx60Q",
+	  "url": "https://www.youtube.com/watch?v=4j7Umwfx60Q",
+	  "title": "4 Walls",
+	  "artist": "f(x)",
+	  "album": "4 Walls",
+	  "lyricOffset": 450,
+	  "lyricsSearch": {
+		"selection": {
+		  "title": "4 Walls (Korean Ver.)",
+		  "artist": "f(x)",
+		  "album": "4 Walls",
+		  "hash": "e86a2d0669b8fd0559ae265b22c94a16",
+		  "albumId": "555532",
+		  "score": 1.1
+		}
+	  }
+	},
+	{
+	  "id": "jG6RnLVX07I",
+	  "url": "https://www.youtube.com/watch?v=jG6RnLVX07I",
+	  "title": "Hold On",
+	  "artist": "The Internet",
+	  "album": "",
+	  "lyricOffset": -850
+	},
+	{
+	  "id": "jWQx2f-CErU",
+	  "url": "https://www.youtube.com/watch?v=jWQx2f-CErU",
+	  "title": "Whiplash",
+	  "artist": "aespa",
+	  "album": "Whiplash - The 5th Mini Album",
+	  "lyricOffset": 500
+	},
+	{
+	  "id": "L_OgLK3fmc8",
+	  "url": "https://www.youtube.com/watch?v=L_OgLK3fmc8",
+	  "title": "Skrr",
+	  "artist": "DEAN & HANNI",
+	  "album": "",
+	  "lyricOffset": 300
+	},
+	{
+	  "id": "bX33UI9ZPLk",
+	  "url": "https://www.youtube.com/watch?v=bX33UI9ZPLk",
+	  "title": "黑色毛衣",
+	  "artist": "周杰倫",
+	  "album": "十一月的蕭邦",
+	  "lyricOffset": 3750
+	}
   ]
 }
