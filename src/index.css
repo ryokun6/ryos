@@ -397,8 +397,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Serif lyrics font utility (Hiragino Mincho) */
   .font-lyrics-serif {
-    font-family: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-      "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif;
+    font-family: Charter, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
+      "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif;
     font-weight: 700;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;

@@ -1011,8 +1011,8 @@
 
 /* Preserve serif lyrics font inside iPod fullscreen on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif {
-  font-family: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-    "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif !important;
+  font-family: Charter, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
+    "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif !important;
   font-weight: 700 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
@@ -1020,8 +1020,8 @@
 
 /* Preserve serif lyrics font inside Karaoke app on macOS theme */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif {
-  font-family: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-    "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif !important;
+  font-family: Charter, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
+    "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif !important;
   font-weight: 700 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
