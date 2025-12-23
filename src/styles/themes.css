@@ -993,18 +993,20 @@
 
 /* Preserve rounded lyrics font inside iPod fullscreen on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded {
-  font-family: "M PLUS Rounded 1c", "Nanum Gothic", "SF Pro Rounded", "Arial Rounded MT Bold",
+  font-family: "Zen Maru Gothic", "Jua", "SF Pro Rounded", "Arial Rounded MT Bold",
     "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif !important;
   font-weight: 700 !important;
+  font-synthesis: none !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
 
 /* Preserve rounded lyrics font inside Karaoke app on macOS theme */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded {
-  font-family: "M PLUS Rounded 1c", "Nanum Gothic", "SF Pro Rounded", "Arial Rounded MT Bold",
+  font-family: "Zen Maru Gothic", "Jua", "SF Pro Rounded", "Arial Rounded MT Bold",
     "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif !important;
   font-weight: 700 !important;
+  font-synthesis: none !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }

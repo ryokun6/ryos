@@ -388,9 +388,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Rounded lyrics font utility */
   .font-lyrics-rounded {
-    font-family: "M PLUS Rounded 1c", "Nanum Gothic", "SF Pro Rounded", "Arial Rounded MT Bold",
+    font-family: "Zen Maru Gothic", "Jua", "SF Pro Rounded", "Arial Rounded MT Bold",
       "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif;
     font-weight: 700;
+    font-synthesis: none;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
@@ -1024,7 +1025,11 @@ rt.lyrics-furigana-rt,
   font-weight: normal !important;
   opacity: inherit;
   text-shadow: inherit;
+  /* Cap height to prevent Safari from adding extra line spacing */
+  max-height: 1em;
+  overflow: visible;
 }
+
 
 ruby.lyrics-furigana rp {
   display: none;
