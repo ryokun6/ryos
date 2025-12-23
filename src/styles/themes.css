@@ -927,6 +927,11 @@
   font-size: unset !important; /* Reset macOS overrides */
 }
 
+/* Preserve small rt font size in toolbar buttons */
+:root[data-os-theme="macosx"] .ipod-force-font button rt {
+  font-size: 9px !important;
+}
+
 /* Reset div and p font sizes within iPod */
 :root[data-os-theme="macosx"] .ipod-force-font div,
 :root[data-os-theme="macosx"] .ipod-force-font p {

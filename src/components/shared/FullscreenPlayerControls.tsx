@@ -271,9 +271,16 @@ export function FullscreenPlayerControls({
           )}
           title={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
         >
-          <span className={smallIconSize}>
-            {koreanDisplay === "romanized" ? "Ko" : "한"}
-          </span>
+          {koreanDisplay === "romanized" ? (
+            <ruby className={cn(smallIconSize, "ruby-align-center")} style={{ rubyPosition: "over" }}>
+              한
+              <rt style={{ fontSize: variant === "compact" ? "8px" : "9px", opacity: 0.7, paddingBottom: "1px" }}>
+                han
+              </rt>
+            </ruby>
+          ) : (
+            <span className={smallIconSize}>한</span>
+          )}
         </button>
 
         {/* Translation */}
