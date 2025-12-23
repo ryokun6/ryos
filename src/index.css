@@ -1025,15 +1025,6 @@ ruby.lyrics-furigana rp {
   display: none;
 }
 
-/* Korean romanization - positioned higher than Japanese furigana */
-rt.lyrics-korean-rt,
-:root[data-os-theme="macosx"] rt.lyrics-korean-rt,
-:root[data-os-theme="system7"] rt.lyrics-korean-rt,
-:root[data-os-theme="win98"] rt.lyrics-korean-rt,
-:root[data-os-theme="xp"] rt.lyrics-korean-rt {
-  transform: translateY(-4px) !important;
-}
-
 /* Bold furigana for serif and sans-serif lyrics fonts */
 .font-lyrics-serif rt.lyrics-furigana-rt,
 .font-lyrics-sans rt.lyrics-furigana-rt {
