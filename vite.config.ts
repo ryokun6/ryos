@@ -113,6 +113,7 @@ export default defineConfig({
           /^\/minesweeper$/,
           /^\/videos(\/|$)/,
           /^\/ipod(\/|$)/,
+          /^\/karaoke(\/|$)/,
           /^\/synth$/,
           /^\/pc$/,
           /^\/terminal$/,
