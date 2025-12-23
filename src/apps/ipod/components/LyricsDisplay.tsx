@@ -573,11 +573,13 @@ const getVariants = (
   // For other lines, apply glow at the parent level
   const currentTextShadow = isCurrent && !hasWordTiming ? GLOW_SHADOW : BASE_SHADOW;
   
-  // For lines with word timing, use full opacity - word highlights handle visual feedback
+  // For lines with word timing, use subtle opacity fade for inactive lines
   // For non-word-timed lines, use normal opacity animation
   const getAnimateOpacity = () => {
     if (hasWordTiming) {
-      return 1;
+      // Word-timed lines: current at full, inactive slightly faded
+      if (isCurrent) return 1;
+      return 0.85;
     }
     // Non-word-timed lines: normal opacity animation
     if (isAlternating) return isCurrent ? 1 : 0.5;
@@ -585,8 +587,7 @@ const getVariants = (
     return position === 1 || position === -1 ? 0.5 : 0.1;
   };
 
-  // For word-timed lines, start at target opacity to avoid any opacity animation
-  // Word-level highlighting handles the visual feedback instead
+  // For word-timed lines, start at target opacity to avoid flash on entry
   const initialOpacity = hasWordTiming ? getAnimateOpacity() : 0;
   
   return {
@@ -1016,11 +1017,11 @@ export function LyricsDisplay({
             hasWordTimings
           );
           // Ensure transitions are extra smooth during offset adjustments
-          // For word-timing lines, make opacity/textShadow instant since word highlights handle visual feedback
+          // For word-timing lines, use subtle fade; word highlights handle the main visual feedback
           const dynamicTransition = {
             ...ANIMATION_CONFIG.spring,
-            opacity: hasWordTimings ? { duration: 0 } : ANIMATION_CONFIG.fade,
-            textShadow: hasWordTimings ? { duration: 0 } : ANIMATION_CONFIG.fade,
+            opacity: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
+            textShadow: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
             filter: ANIMATION_CONFIG.fade,
             duration: 0.15, // Faster transitions for smoother adjustment feedback
           };
