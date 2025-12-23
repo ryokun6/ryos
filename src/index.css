@@ -398,7 +398,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   /* Serif lyrics font utility (Hiragino Mincho) */
   .font-lyrics-serif {
     font-family: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-      "Songti SC", "SimSun", "Batang", "Times New Roman", serif;
+      "Songti SC", "SimSun", "AppleMyungjo", "Batang", "Times New Roman", serif;
     font-weight: 700;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
@@ -407,8 +407,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   /* Sans-serif lyrics font utility (default OS typeface) */
   .font-lyrics-sans {
     font-family: "Geneva-12", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
-      "PingFang SC", "Microsoft YaHei", "Malgun Gothic", "Nanum Gothic",
-      system-ui, -apple-system, sans-serif;
+      "PingFang SC", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic",
+      "Nanum Gothic", system-ui, -apple-system, sans-serif;
     font-weight: 700;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
