@@ -1509,7 +1509,7 @@ export function IpodAppComponent({
             isProcessingLyrics={fullScreenLyricsControls.isTranslating}
             isFetchingFurigana={isFullScreenFetchingFurigana}
           >
-            {({ controlsVisible }) => (
+            {() => (
               <div className="flex flex-col w-full h-full">
                 <div className="relative w-full h-full overflow-visible">
                   <div
