@@ -581,18 +581,33 @@ export function LyricsDisplay({
     []
   );
 
-  // Determine if we're showing original lyrics (not translations)
-  // Furigana should only be applied to original Japanese lyrics
-  const isShowingOriginal = !originalLines || lines === originalLines;
+  // Determine if translation is active (showing translated lines alongside original)
+  const hasTranslation = originalLines && lines !== originalLines;
+
+  // Always use original lines for display and furigana
+  const displayOriginalLines = originalLines || lines;
+
+  // Create a map of startTimeMs -> translated text for quick lookup
+  // Also create index-based fallback in case timestamps don't match exactly
+  const { translationMap, translationByIndex } = useMemo(() => {
+    if (!hasTranslation) return { translationMap: new Map<string, string>(), translationByIndex: [] as string[] };
+    const map = new Map<string, string>();
+    const byIndex: string[] = [];
+    lines.forEach((line) => {
+      map.set(line.startTimeMs, line.words);
+      byIndex.push(line.words);
+    });
+    return { translationMap: map, translationByIndex: byIndex };
+  }, [hasTranslation, lines]);
 
   // Use original lines for furigana fetching (furigana only applies to original Japanese text)
-  const linesForFurigana = originalLines || lines;
+  const linesForFurigana = displayOriginalLines;
 
-  // Fetch and manage furigana using the extracted hook
+  // Fetch and manage furigana using the extracted hook (always show original, so always enabled)
   const { renderWithFurigana, furiganaMap } = useFurigana({
     lines: linesForFurigana,
     enabled: japaneseFurigana === JapaneseFurigana.On,
-    isShowingOriginal,
+    isShowingOriginal: true, // Always showing original now
     onLoadingChange: onFuriganaLoadingChange,
   });
 
@@ -678,32 +693,32 @@ export function LyricsDisplay({
   );
 
   // Track previous lines array to detect song/translation changes
-  const prevLinesRef = useRef<LyricLine[]>(lines);
+  const prevLinesRef = useRef<LyricLine[]>(displayOriginalLines);
 
   // Update alternating lines - instantly on song/translation change, delayed for line transitions
   useEffect(() => {
     if (alignment !== LyricsAlignment.Alternating) return;
 
     // Check if lines array changed (new song or translation switch)
-    const linesChanged = prevLinesRef.current !== lines;
-    prevLinesRef.current = lines;
+    const linesChanged = prevLinesRef.current !== displayOriginalLines;
+    prevLinesRef.current = displayOriginalLines;
 
     // Instantly update on song load, translation switch, or initial state
     if (linesChanged || currentLine < 0) {
-      setAltLines(computeAltVisibleLines(lines, currentLine));
+      setAltLines(computeAltVisibleLines(displayOriginalLines, currentLine));
       return;
     }
 
     // For normal line transitions within the same song, apply delay
     // Determine the duration of the new current line
-    const clampedIdx = Math.min(Math.max(0, currentLine), lines.length - 1);
+    const clampedIdx = Math.min(Math.max(0, currentLine), displayOriginalLines.length - 1);
     const currentStart =
-      clampedIdx >= 0 && lines[clampedIdx]
-        ? parseInt(lines[clampedIdx].startTimeMs)
+      clampedIdx >= 0 && displayOriginalLines[clampedIdx]
+        ? parseInt(displayOriginalLines[clampedIdx].startTimeMs)
         : null;
     const nextStart =
-      clampedIdx + 1 < lines.length && lines[clampedIdx + 1]
-        ? parseInt(lines[clampedIdx + 1].startTimeMs)
+      clampedIdx + 1 < displayOriginalLines.length && displayOriginalLines[clampedIdx + 1]
+        ? parseInt(displayOriginalLines[clampedIdx + 1].startTimeMs)
         : null;
 
     const rawDuration =
@@ -713,33 +728,33 @@ export function LyricsDisplay({
     const delayMs = Math.max(20, Math.floor(rawDuration * 0.2));
 
     const timer = setTimeout(() => {
-      setAltLines(computeAltVisibleLines(lines, currentLine));
+      setAltLines(computeAltVisibleLines(displayOriginalLines, currentLine));
     }, delayMs);
 
     return () => clearTimeout(timer);
-  }, [alignment, lines, currentLine]);
+  }, [alignment, displayOriginalLines, currentLine]);
 
   const nonAltVisibleLines = useMemo(() => {
-    if (!lines.length) return [] as LyricLine[];
+    if (!displayOriginalLines.length) return [] as LyricLine[];
 
     // Handle initial display before any line is "current" (currentLine < 0)
     if (currentLine < 0) {
       // Show just the first line initially for both Center and FocusThree
-      return lines.slice(0, 1).filter(Boolean) as LyricLine[];
+      return displayOriginalLines.slice(0, 1).filter(Boolean) as LyricLine[];
     }
 
     if (alignment === LyricsAlignment.Center) {
       const clampedCurrentLine = Math.min(
         Math.max(0, currentLine),
-        lines.length - 1
+        displayOriginalLines.length - 1
       );
-      const currentActualLine = lines[clampedCurrentLine];
+      const currentActualLine = displayOriginalLines[clampedCurrentLine];
       return currentActualLine ? [currentActualLine] : [];
     }
 
     // FocusThree (prev, current, next)
-    return lines.slice(Math.max(0, currentLine - 1), currentLine + 2);
-  }, [lines, currentLine, alignment]);
+    return displayOriginalLines.slice(Math.max(0, currentLine - 1), currentLine + 2);
+  }, [displayOriginalLines, currentLine, alignment]);
 
   const visibleLines =
     alignment === LyricsAlignment.Alternating ? altLines : nonAltVisibleLines;
@@ -850,7 +865,7 @@ export function LyricsDisplay({
         fontClassName={fontClassName}
       />
     );
-  if (!lines.length && !isLoading && !isTranslating)
+  if (!displayOriginalLines.length && !isLoading && !isTranslating)
     return (
       <ErrorState
         error="No lyrics available"
@@ -876,20 +891,19 @@ export function LyricsDisplay({
     >
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
-          const isCurrent = line === lines[currentLine];
+          const isCurrent = line === displayOriginalLines[currentLine];
           let position = 0;
 
           if (alignment === LyricsAlignment.Alternating) {
             position = isCurrent ? 0 : 1;
           } else {
-            const currentActualIdx = lines.indexOf(lines[currentLine]);
-            const lineActualIdx = lines.indexOf(line);
+            const currentActualIdx = displayOriginalLines.indexOf(displayOriginalLines[currentLine]);
+            const lineActualIdx = displayOriginalLines.indexOf(line);
             position = lineActualIdx - currentActualIdx;
           }
 
-          // Determine if line has word timings available
+          // Determine if line has word timings available (always check original lines)
           const hasWordTimings =
-            isShowingOriginal &&
             line.wordTimings &&
             line.wordTimings.length > 0;
 
@@ -918,6 +932,26 @@ export function LyricsDisplay({
             visibleLines.length
           );
 
+          // Get translated text if translation is active
+          // Try timestamp lookup first, then fall back to index-based lookup
+          const lineIndex = displayOriginalLines.indexOf(line);
+          const translatedText = hasTranslation 
+            ? (translationMap.get(line.startTimeMs) || translationByIndex[lineIndex] || null)
+            : null;
+
+          // Determine translation size class based on textSizeClass
+          // - Fullscreen (viewport units vw/vh): use viewport-relative sizing
+          // - Karaoke window (karaoke-lyrics-text): use container-relative sizing
+          // - iPod window (text-[12px] default): use small fixed size
+          const isFullscreenSize = textSizeClass.includes("vw") || textSizeClass.includes("vh");
+          const isKaraokeSize = textSizeClass.includes("karaoke-lyrics-text");
+          const translationSizeClass = isFullscreenSize 
+            ? "lyrics-translation-fullscreen"
+            : isKaraokeSize
+            ? "lyrics-translation-karaoke"
+            : "lyrics-translation-ipod";
+
+
           return (
             <motion.div
               key={line.startTimeMs}
@@ -927,7 +961,7 @@ export function LyricsDisplay({
               exit="exit"
               variants={variants}
               transition={dynamicTransition}
-              className={`px-2 md:px-6 ${textSizeClass} ${fontClassName} ${lineHeightClass} whitespace-pre-wrap break-words max-w-full text-white`}
+              className={`px-2 md:px-6 whitespace-pre-wrap break-words max-w-full text-white`}
               style={{
                 textAlign: lineTextAlign as CanvasTextAlign,
                 width: "100%",
@@ -945,30 +979,46 @@ export function LyricsDisplay({
                     : undefined,
               }}
             >
-              {shouldUseAnimatedWordTiming ? (
-                <WordTimingHighlight
-                  wordTimings={line.wordTimings!}
-                  lineStartTimeMs={parseInt(line.startTimeMs, 10)}
-                  currentTimeMs={currentTimeMs!}
-                  processText={processText}
-                  furiganaSegments={
-                    japaneseFurigana === JapaneseFurigana.On
-                      ? furiganaMap.get(line.startTimeMs)
-                      : undefined
-                  }
-                />
-              ) : hasWordTimings ? (
-                <StaticWordRendering
-                  wordTimings={line.wordTimings!}
-                  processText={processText}
-                  furiganaSegments={
-                    japaneseFurigana === JapaneseFurigana.On
-                      ? furiganaMap.get(line.startTimeMs)
-                      : undefined
-                  }
-                />
-              ) : (
-                renderWithFurigana(line, processText(line.words))
+              {/* Original lyrics with karaoke highlighting */}
+              <div className={`${textSizeClass} ${fontClassName} ${lineHeightClass}`}>
+                {shouldUseAnimatedWordTiming ? (
+                  <WordTimingHighlight
+                    wordTimings={line.wordTimings!}
+                    lineStartTimeMs={parseInt(line.startTimeMs, 10)}
+                    currentTimeMs={currentTimeMs!}
+                    processText={processText}
+                    furiganaSegments={
+                      japaneseFurigana === JapaneseFurigana.On
+                        ? furiganaMap.get(line.startTimeMs)
+                        : undefined
+                    }
+                  />
+                ) : hasWordTimings ? (
+                  <StaticWordRendering
+                    wordTimings={line.wordTimings!}
+                    processText={processText}
+                    furiganaSegments={
+                      japaneseFurigana === JapaneseFurigana.On
+                        ? furiganaMap.get(line.startTimeMs)
+                        : undefined
+                    }
+                  />
+                ) : (
+                  renderWithFurigana(line, processText(line.words))
+                )}
+              </div>
+              {/* Translated subtitle (shown below original when translation is active) */}
+              {translatedText && (
+                <div 
+                  className={`text-white ${fontClassName} ${translationSizeClass}`}
+                  style={{
+                    lineHeight: 1.3,
+                    marginTop: "0.1em",
+                    opacity: 0.5,
+                  }}
+                >
+                  {translatedText}
+                </div>
               )}
             </motion.div>
           );

@@ -1012,7 +1012,7 @@
 /* Preserve serif lyrics font inside iPod fullscreen on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif {
   font-family: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-    "Songti SC", "SimSun", "Batang", "Times New Roman", serif !important;
+    "Songti SC", "SimSun", "AppleMyungjo", "Batang", "Times New Roman", serif !important;
   font-weight: 700 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
@@ -1021,7 +1021,7 @@
 /* Preserve serif lyrics font inside Karaoke app on macOS theme */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif {
   font-family: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
-    "Songti SC", "SimSun", "Batang", "Times New Roman", serif !important;
+    "Songti SC", "SimSun", "AppleMyungjo", "Batang", "Times New Roman", serif !important;
   font-weight: 700 !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
@@ -1058,6 +1058,20 @@
 /* Preserve karaoke lyrics font size on macOS theme (uses container query units) */
 :root[data-os-theme="macosx"] .karaoke-force-font .karaoke-lyrics-text {
   font-size: clamp(32px, 8cqw, 160px) !important;
+}
+
+/* Preserve lyrics translation sizes on macOS theme */
+:root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-ipod {
+  font-size: 10px !important;
+}
+
+:root[data-os-theme="macosx"] .karaoke-force-font .lyrics-translation-karaoke {
+  font-size: clamp(14px, 4cqw, 80px) !important;
+}
+
+:root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-fullscreen,
+:root[data-os-theme="macosx"] .karaoke-force-font .lyrics-translation-fullscreen {
+  font-size: clamp(14px, min(5vw, 5vh), 100px) !important;
 }
 
 /* Preserve karaoke status text size on macOS theme */

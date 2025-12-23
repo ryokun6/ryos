@@ -414,9 +414,29 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Karaoke force-font container - enables container queries for responsive sizing */
+  .karaoke-force-font {
+    container-type: inline-size;
+  }
+
   /* Karaoke lyrics text - uses container query units for window-relative sizing */
   .karaoke-lyrics-text {
     font-size: clamp(32px, 8cqw, 160px);
+  }
+
+  /* Lyrics translation sizes - proportional to main lyrics */
+  .lyrics-translation-ipod {
+    font-size: 10px;
+  }
+
+  /* Karaoke in-window: ~50% of main lyrics (4cqw vs 8cqw) */
+  .lyrics-translation-karaoke {
+    font-size: clamp(14px, 4cqw, 80px);
+  }
+
+  /* Fullscreen: ~50% of main lyrics (5vw/5vh vs 10vw/10vh) */
+  .lyrics-translation-fullscreen {
+    font-size: clamp(14px, min(5vw, 5vh), 100px);
   }
 
   /* Karaoke status text - scales with container */
