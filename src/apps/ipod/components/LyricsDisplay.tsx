@@ -1050,10 +1050,10 @@ export function LyricsDisplay({
             : null;
 
           // Determine translation size class based on textSizeClass
-          // - Fullscreen (viewport units vw/vh): use viewport-relative sizing
+          // - Fullscreen (viewport units vw/vh or fullscreen-lyrics-text): use viewport-relative sizing
           // - Karaoke window (karaoke-lyrics-text): use container-relative sizing
           // - iPod window (text-[12px] default): use small fixed size
-          const isFullscreenSize = textSizeClass.includes("vw") || textSizeClass.includes("vh");
+          const isFullscreenSize = textSizeClass.includes("vw") || textSizeClass.includes("vh") || textSizeClass.includes("fullscreen-lyrics-text");
           const isKaraokeSize = textSizeClass.includes("karaoke-lyrics-text");
           const translationSizeClass = isFullscreenSize 
             ? "lyrics-translation-fullscreen"

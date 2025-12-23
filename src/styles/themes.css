@@ -1059,7 +1059,7 @@
 
 /* Preserve karaoke lyrics font size on macOS theme (uses container query units) */
 :root[data-os-theme="macosx"] .karaoke-force-font .karaoke-lyrics-text {
-  font-size: clamp(32px, 8cqw, 160px) !important;
+  font-size: clamp(32px, 8cqw, 96px) !important;
 }
 
 /* Preserve lyrics translation sizes on macOS theme */
@@ -1068,12 +1068,18 @@
 }
 
 :root[data-os-theme="macosx"] .karaoke-force-font .lyrics-translation-karaoke {
-  font-size: clamp(14px, 4cqw, 80px) !important;
+  font-size: clamp(14px, 4cqw, 60px) !important;
 }
 
 :root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-fullscreen,
 :root[data-os-theme="macosx"] .karaoke-force-font .lyrics-translation-fullscreen {
-  font-size: clamp(14px, min(5vw, 5vh), 100px) !important;
+  font-size: clamp(14px, min(5vw, 5vh), 60px) !important;
+}
+
+/* Preserve fullscreen lyrics text clamped sizing on macOS theme */
+:root[data-os-theme="macosx"] .ipod-force-font .fullscreen-lyrics-text,
+:root[data-os-theme="macosx"] .karaoke-force-font .fullscreen-lyrics-text {
+  font-size: clamp(32px, min(10vw, 10vh), 120px) !important;
 }
 
 /* Preserve karaoke status text size on macOS theme */

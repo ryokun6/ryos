@@ -1143,7 +1143,7 @@ export function KaraokeAppComponent({
                           }
                         }}
                         isTranslating={fullScreenLyricsControls.isTranslating}
-                        textSizeClass="text-[min(10vw,10vh)]"
+                        textSizeClass="fullscreen-lyrics-text"
                         gapClass="gap-0"
                         containerStyle={{
                           gap: "clamp(0.25rem, calc(min(10vw,10vh) * 0.12), 2.5rem)",
