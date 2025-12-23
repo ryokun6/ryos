@@ -24,6 +24,8 @@ export interface WindowConstraints {
   maxSize?: WindowSize;
   defaultSize: WindowSize;
   mobileDefaultSize?: WindowSize;
+  /** If true, mobile height will be set to window.innerWidth (square) */
+  mobileSquare?: boolean;
 }
 
 // Default window constraints for any app not specified
@@ -355,6 +357,7 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 480, height: 480 },
       minSize: { width: 400, height: 300 },
+      mobileSquare: true,
     } as WindowConstraints,
   } as BaseApp<IpodInitialData> & { windowConfig: WindowConstraints },
   ["synth"]: {
@@ -494,6 +497,13 @@ export const getMobileWindowSize = (appId: AppId): WindowSize => {
   const config = getWindowConfig(appId);
   if (config.mobileDefaultSize) {
     return config.mobileDefaultSize;
+  }
+  // Square aspect ratio: height = width
+  if (config.mobileSquare) {
+    return {
+      width: window.innerWidth,
+      height: window.innerWidth,
+    };
   }
   return {
     width: window.innerWidth,

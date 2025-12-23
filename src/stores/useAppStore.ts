@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { AppId, getWindowConfig } from "@/config/appRegistry";
+import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { appIds } from "@/config/appIds";
 import { AppManagerState, AppState } from "@/apps/base/types";
@@ -358,7 +358,7 @@ export const useAppStore = create<AppStoreState>()(
           };
           const cfg = getWindowConfig(appId);
           let size = isMobile
-            ? { width: window.innerWidth, height: cfg.defaultSize.height }
+            ? getMobileWindowSize(appId)
             : cfg.defaultSize;
 
           // If creating an Applet Viewer window and we have a path, prefer saved size
@@ -856,7 +856,7 @@ export const useAppStore = create<AppStoreState>()(
               inst.position = { x: isMobile ? 0 : 16, y: isMobile ? 28 : 40 };
             if (!inst.size)
               inst.size = isMobile
-                ? { width: window.innerWidth, height: cfg.defaultSize.height }
+                ? getMobileWindowSize(inst.appId)
                 : cfg.defaultSize;
           }
         });

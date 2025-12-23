@@ -8,7 +8,7 @@ import {
 import { appIds, AppId } from "@/config/appIds";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSound, Sounds } from "./useSound";
-import { getWindowConfig } from "@/config/appRegistry";
+import { getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { useWindowInsets } from "./useWindowInsets";
 
 interface UseWindowManagerProps {
@@ -47,10 +47,7 @@ export const useWindowManager = ({
         y: isMobile ? mobileY : 40 + offsetIndex * 20,
       },
       size: isMobile
-        ? {
-            width: window.innerWidth,
-            height: config.defaultSize.height,
-          }
+        ? getMobileWindowSize(appId)
         : config.defaultSize,
     };
   };
