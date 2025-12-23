@@ -253,7 +253,19 @@ export function useLyrics({
         } else {
           const errorMessage = err instanceof Error ? err.message : "Unknown error fetching lyrics";
           console.error("[useLyrics] Setting error state:", errorMessage);
-          setError(errorMessage);
+          // Show a friendly message for common "not found" errors
+          const isNoLyricsError = 
+            errorMessage.includes("500") || 
+            errorMessage.includes("404") ||
+            errorMessage.includes("Internal Server Error") ||
+            errorMessage.includes("No lyrics") || 
+            errorMessage.includes("not found") ||
+            errorMessage.includes("No valid lyrics");
+          if (isNoLyricsError) {
+            setError("No lyrics available");
+          } else {
+            setError(errorMessage);
+          }
         }
         setOriginalLines([]);
         setCurrentLine(-1);
