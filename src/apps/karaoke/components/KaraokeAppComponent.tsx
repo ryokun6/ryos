@@ -417,6 +417,15 @@ export function KaraokeAppComponent({
     setIsPlaying(false);
   }, []);
 
+  // Main player pause handler - ignore pause when switching to fullscreen
+  const handleMainPlayerPause = useCallback(() => {
+    // Don't set isPlaying to false if we're in fullscreen mode
+    // (the pause was triggered by switching players, not user action)
+    if (!isFullScreen) {
+      setIsPlaying(false);
+    }
+  }, [isFullScreen]);
+
   // Seek time
   const seekTime = useCallback(
     (delta: number) => {
@@ -752,7 +761,7 @@ export function KaraokeAppComponent({
                   onProgress={handleProgress}
                   progressInterval={100}
                   onPlay={handlePlay}
-                  onPause={handlePause}
+                  onPause={handleMainPlayerPause}
                   style={{ pointerEvents: "none" }}
                   config={{
                     youtube: {
