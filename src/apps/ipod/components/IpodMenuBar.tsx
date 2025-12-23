@@ -76,7 +76,6 @@ export function IpodMenuBar({
     isLcdFilterOn,
     currentTheme,
     showLyrics,
-    isFullScreen,
     lyricsAlignment,
     romanization,
     lyricsTranslationLanguage,
@@ -115,7 +114,6 @@ export function IpodMenuBar({
     isLcdFilterOn: s.lcdFilterOn,
     currentTheme: s.theme,
     showLyrics: s.showLyrics,
-    isFullScreen: s.isFullScreen,
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
@@ -534,13 +532,12 @@ export function IpodMenuBar({
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-          <MenubarCheckboxItem
-            checked={isFullScreen}
-            onCheckedChange={() => toggleFullScreen()}
+          <MenubarItem
+            onClick={() => toggleFullScreen()}
             className="text-md h-6 px-3"
           >
             {t("apps.ipod.menu.fullScreen")}
-          </MenubarCheckboxItem>
+          </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
 

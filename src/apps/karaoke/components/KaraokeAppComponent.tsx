@@ -744,7 +744,6 @@ export function KaraokeAppComponent({
       onToggleLoopCurrent={toggleLoopCurrent}
       showLyrics={showLyrics}
       onToggleLyrics={toggleLyrics}
-      isFullScreen={isFullScreen}
       onToggleFullScreen={toggleFullScreen}
       onRefreshLyrics={handleRefreshLyrics}
       tracks={tracks}
