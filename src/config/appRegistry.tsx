@@ -355,7 +355,7 @@ export const appRegistry = {
     helpItems: karaokeHelpItems,
     metadata: karaokeMetadata,
     windowConfig: {
-      defaultSize: { width: 480, height: 480 },
+      defaultSize: { width: 560, height: 560 },
       minSize: { width: 400, height: 300 },
       mobileSquare: true,
     } as WindowConstraints,
