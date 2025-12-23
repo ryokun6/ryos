@@ -313,7 +313,7 @@ function mapWordsToFurigana(
 // Shared shadow constants for word highlighting
 const BASE_SHADOW = "0 0 2px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.8)";
 // Text shadow glow for non-word-timed lines
-const GLOW_SHADOW = "0 0 8px rgba(255,255,255,0.9), 0 0 2px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.8)";
+const GLOW_SHADOW = "0 0 6px rgba(255,255,255,0.9), 0 0 2px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.8)";
 // Drop shadow filter for word-timed glow (applied to container, not clipped by mask)
 const GLOW_FILTER = "drop-shadow(0 0 6px rgba(255,255,255,0.4))";
 const FEATHER = 15; // Width of the soft edge in percentage
@@ -1136,7 +1136,7 @@ export function LyricsDisplay({
                   style={{
                     lineHeight: 1.3,
                     marginTop: "0.1em",
-                    opacity: 0.4,
+                    opacity: 0.5,
                   }}
                 >
                   {translatedText}
