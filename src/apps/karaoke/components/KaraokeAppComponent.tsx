@@ -25,6 +25,7 @@ import { useLyrics } from "@/hooks/useLyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, LyricsFont, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { lyricsHaveKorean } from "@/utils/languageDetection";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
@@ -234,10 +235,11 @@ export function KaraokeAppComponent({
   );
 
   // Detect if lyrics contain Korean text (Hangul syllables and Jamo)
-  const hasKoreanText = useMemo(() => {
-    const koreanRegex = /[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3]/;
-    return lyricsControls.lines?.some(line => koreanRegex.test(line.words)) ?? false;
-  }, [lyricsControls.lines]);
+  // Use originalLines to check ALL lyrics, not just currently displayed ones
+  const hasKoreanText = useMemo(
+    () => lyricsHaveKorean(lyricsControls.originalLines),
+    [lyricsControls.originalLines]
+  );
 
   // Get CSS class name for current lyrics font
   const lyricsFontClassName = useMemo(() => {

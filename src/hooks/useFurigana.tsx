@@ -5,6 +5,7 @@ import { getApiUrl } from "@/utils/platform";
 import { isOffline } from "@/utils/offline";
 import { processSSEStream, isSSEResponse, SSEChunkEvent } from "@/utils/sse";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { isJapaneseText as isJapaneseTextUtil } from "@/utils/languageDetection";
 
 // Type for furigana segments from API
 export interface FuriganaSegment {
@@ -84,11 +85,10 @@ export function useFurigana({
 
   // Check if text is Japanese (contains kanji AND hiragana/katakana)
   // This distinguishes Japanese from Chinese (which only has hanzi, no kana)
-  const isJapaneseText = useCallback((text: string): boolean => {
-    const hasKanji = /[\u4E00-\u9FFF]/.test(text);
-    const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text); // Hiragana or Katakana
-    return hasKanji && hasKana;
-  }, []);
+  const isJapaneseText = useCallback(
+    (text: string): boolean => isJapaneseTextUtil(text),
+    []
+  );
 
   // Effect to immediately clear furigana when cache bust trigger changes
   useEffect(() => {

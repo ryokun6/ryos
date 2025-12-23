@@ -14,6 +14,7 @@ import { convert as romanize } from "hangul-romanization";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useFurigana, FuriganaSegment } from "@/hooks/useFurigana";
 import { useShallow } from "zustand/react/shallow";
+import { hasKoreanText, isChineseText } from "@/utils/languageDetection";
 
 interface LyricsDisplayProps {
   lines: LyricLine[];
@@ -717,12 +718,6 @@ export function LyricsDisplay({
     onLoadingChange: onFuriganaLoadingChange,
   });
 
-  const isChineseText = (text: string) => {
-    const chineseRegex = /[\u4E00-\u9FFF]/;
-    const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF]/;
-    return chineseRegex.test(text) && !japaneseRegex.test(text);
-  };
-
   const processText = (text: string) => {
     let processed = text;
     if (
@@ -733,11 +728,6 @@ export function LyricsDisplay({
     }
     // Note: Korean romanization is now handled via ruby rendering, not text replacement
     return processed;
-  };
-
-  // Check if text contains Korean characters
-  const hasKoreanText = (text: string) => {
-    return /[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3]/.test(text);
   };
 
   // Render text with Korean romanization as ruby if enabled

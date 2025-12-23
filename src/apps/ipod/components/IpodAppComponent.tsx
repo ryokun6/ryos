@@ -32,6 +32,7 @@ import { LyricsAlignment, KoreanDisplay, JapaneseFurigana, LyricsFont } from "@/
 import { track } from "@vercel/analytics";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
+import { lyricsHaveKorean } from "@/utils/languageDetection";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { BACKLIGHT_TIMEOUT_MS, SEEK_AMOUNT_SECONDS } from "../constants";
@@ -1202,10 +1203,11 @@ export function IpodAppComponent({
   });
 
   // Detect if lyrics contain Korean text (Hangul syllables and Jamo)
-  const hasKoreanText = useMemo(() => {
-    const koreanRegex = /[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3]/;
-    return fullScreenLyricsControls.lines?.some(line => koreanRegex.test(line.words)) ?? false;
-  }, [fullScreenLyricsControls.lines]);
+  // Use originalLines to check ALL lyrics, not just currently displayed ones
+  const hasKoreanText = useMemo(
+    () => lyricsHaveKorean(fullScreenLyricsControls.originalLines),
+    [fullScreenLyricsControls.originalLines]
+  );
 
   // Fullscreen sync
   const prevFullScreenRef = useRef(isFullScreen);
