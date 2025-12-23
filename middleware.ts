@@ -257,15 +257,12 @@ export default async function middleware(request: Request) {
     // Fetch YouTube info for title/artist
     const ytInfo = await getYouTubeInfo(videoId);
     if (ytInfo) {
-      if (ytInfo.artist) {
-        title = `${ytInfo.title} - ${ytInfo.artist}`;
-        description = `Sing along on ryOS Karaoke`;
-      } else {
-        title = ytInfo.title;
-        description = "Sing along on ryOS Karaoke";
-      }
+      // Format: "Sing [Title] - [Artist] on ryOS" or "Sing [Title] on ryOS"
+      const songDisplay = ytInfo.artist ? `${ytInfo.title} - ${ytInfo.artist}` : ytInfo.title;
+      title = `Sing ${songDisplay} on ryOS`;
+      description = `Sing along on ryOS Karaoke`;
     } else {
-      title = "Shared Song - ryOS";
+      title = "Sing on ryOS Karaoke";
       description = "Sing along on ryOS Karaoke";
     }
     matched = true;
