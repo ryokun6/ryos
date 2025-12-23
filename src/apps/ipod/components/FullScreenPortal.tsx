@@ -31,18 +31,13 @@ export function FullScreenPortal({
   currentTranslationCode,
   onSelectTranslation,
   currentAlignment,
-  onAlignmentChange,
+  onCycleAlignment,
   currentLyricsFont,
-  onFontChange,
+  onCycleLyricsFont,
   currentKoreanDisplay,
   onToggleKoreanDisplay,
   currentJapaneseFurigana: _currentJapaneseFurigana,
   onToggleJapaneseFurigana,
-  isShuffled,
-  isLoopAll,
-  isLoopCurrent,
-  onToggleShuffle,
-  onToggleLoop,
   fullScreenPlayerRef,
   isLoadingLyrics,
   isProcessingLyrics,
@@ -51,7 +46,6 @@ export function FullScreenPortal({
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-  const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const hideControlsTimeoutRef = useRef<number | null>(null);
   const isOffline = useOffline();
@@ -109,6 +103,8 @@ export function FullScreenPortal({
     showStatus: (message: string) => void;
     registerActivity: () => void;
     onSelectTranslation: (code: string | null) => void;
+    onCycleAlignment: () => void;
+    onCycleLyricsFont: () => void;
     onToggleKoreanDisplay: () => void;
     onToggleJapaneseFurigana: () => void;
     setIsLangMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -121,6 +117,8 @@ export function FullScreenPortal({
     showStatus,
     registerActivity,
     onSelectTranslation,
+    onCycleAlignment,
+    onCycleLyricsFont,
     onToggleKoreanDisplay,
     onToggleJapaneseFurigana,
     setIsLangMenuOpen,
@@ -137,6 +135,8 @@ export function FullScreenPortal({
       showStatus,
       registerActivity,
       onSelectTranslation,
+      onCycleAlignment,
+      onCycleLyricsFont,
       onToggleKoreanDisplay,
       onToggleJapaneseFurigana,
       setIsLangMenuOpen,
@@ -150,6 +150,8 @@ export function FullScreenPortal({
     showStatus,
     registerActivity,
     onSelectTranslation,
+    onCycleAlignment,
+    onCycleLyricsFont,
     onToggleKoreanDisplay,
     onToggleJapaneseFurigana,
   ]);
@@ -566,7 +568,7 @@ export function FullScreenPortal({
               }) => React.ReactNode
             )({
               controlsVisible:
-                showControls || isLangMenuOpen || isViewMenuOpen || !getActualPlayerState(),
+                showControls || isLangMenuOpen || !getActualPlayerState(),
               isLangMenuOpen,
             })
           : children}
@@ -577,7 +579,7 @@ export function FullScreenPortal({
         data-toolbar
         className={cn(
           "w-full flex justify-center z-[10001] transition-opacity duration-200",
-          showControls || isLangMenuOpen || isViewMenuOpen || !getActualPlayerState()
+          showControls || isLangMenuOpen || !getActualPlayerState()
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
         )}
@@ -592,18 +594,13 @@ export function FullScreenPortal({
       >
         <FullscreenPlayerControls
           isPlaying={getActualPlayerState()}
-          isShuffled={isShuffled}
-          isLoopAll={isLoopAll}
-          isLoopCurrent={isLoopCurrent}
           onPrevious={handlePrevious}
           onPlayPause={handlePlayPause}
           onNext={handleNext}
-          onToggleShuffle={onToggleShuffle}
-          onToggleLoop={onToggleLoop}
           currentAlignment={currentAlignment}
-          onAlignmentChange={onAlignmentChange}
+          onAlignmentCycle={onCycleAlignment}
           currentFont={currentLyricsFont}
-          onFontChange={onFontChange}
+          onFontCycle={onCycleLyricsFont}
           koreanDisplay={currentKoreanDisplay}
           onKoreanToggle={onToggleKoreanDisplay}
           currentTranslationCode={currentTranslationCode}
@@ -611,8 +608,6 @@ export function FullScreenPortal({
           translationLanguages={translationLanguages}
           isLangMenuOpen={isLangMenuOpen}
           setIsLangMenuOpen={setIsLangMenuOpen}
-          isViewMenuOpen={isViewMenuOpen}
-          setIsViewMenuOpen={setIsViewMenuOpen}
           onClose={onClose}
           variant="responsive"
           bgOpacity="35"

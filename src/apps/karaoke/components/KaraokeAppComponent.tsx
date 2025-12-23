@@ -151,7 +151,6 @@ export function KaraokeAppComponent({
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-  const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
   
   // New dialogs for iPod menu features
@@ -309,20 +308,6 @@ export function KaraokeAppComponent({
     }
   }, [isOffline, showOfflineStatus, nextTrack, showStatus]);
 
-  const handleToggleRepeat = useCallback(() => {
-    if (loopCurrent) {
-      toggleLoopCurrent();
-      showStatus(t("apps.ipod.status.repeatOff"));
-    } else if (loopAll) {
-      toggleLoopAll();
-      toggleLoopCurrent();
-      showStatus(t("apps.ipod.status.repeatOne"));
-    } else {
-      toggleLoopAll();
-      showStatus(t("apps.ipod.status.repeatAll"));
-    }
-  }, [loopCurrent, loopAll, toggleLoopCurrent, toggleLoopAll, showStatus, t]);
-
   useEffect(() => {
     if (!isPlaying || isLangMenuOpen) {
       setShowControls(true);
@@ -448,29 +433,39 @@ export function KaraokeAppComponent({
     [showStatus, isFullScreen]
   );
 
-  // Direct alignment change handler for toolbar
-  const handleAlignmentChange = useCallback((alignment: LyricsAlignment) => {
-    setLyricsAlignment(alignment);
+  // Alignment cycle
+  const cycleAlignment = useCallback(() => {
+    const curr = lyricsAlignment;
+    let next: LyricsAlignment;
+    if (curr === LyricsAlignment.FocusThree) next = LyricsAlignment.Center;
+    else if (curr === LyricsAlignment.Center) next = LyricsAlignment.Alternating;
+    else next = LyricsAlignment.FocusThree;
+    setLyricsAlignment(next);
     showStatus(
-      alignment === LyricsAlignment.FocusThree
+      next === LyricsAlignment.FocusThree
         ? t("apps.ipod.status.layoutFocus")
-        : alignment === LyricsAlignment.Center
+        : next === LyricsAlignment.Center
         ? t("apps.ipod.status.layoutCenter")
         : t("apps.ipod.status.layoutAlternating")
     );
-  }, [setLyricsAlignment, showStatus, t]);
+  }, [lyricsAlignment, setLyricsAlignment, showStatus, t]);
 
-  // Direct font change handler for toolbar
-  const handleFontChange = useCallback((font: LyricsFont) => {
-    setLyricsFont(font);
+  // Font style cycle
+  const cycleLyricsFont = useCallback(() => {
+    const curr = lyricsFont;
+    let next: LyricsFont;
+    if (curr === LyricsFont.Rounded) next = LyricsFont.Serif;
+    else if (curr === LyricsFont.Serif) next = LyricsFont.SansSerif;
+    else next = LyricsFont.Rounded;
+    setLyricsFont(next);
     showStatus(
-      font === LyricsFont.Rounded
+      next === LyricsFont.Rounded
         ? t("apps.ipod.status.fontRounded")
-        : font === LyricsFont.SansSerif
-        ? t("apps.ipod.status.fontSansSerif")
-        : t("apps.ipod.status.fontSerif")
+        : next === LyricsFont.Serif
+        ? t("apps.ipod.status.fontSerif")
+        : t("apps.ipod.status.fontSansSerif")
     );
-  }, [setLyricsFont, showStatus, t]);
+  }, [lyricsFont, setLyricsFont, showStatus, t]);
 
   // Korean toggle
   const toggleKorean = useCallback(() => {
@@ -893,7 +888,7 @@ export function KaraokeAppComponent({
             data-toolbar
             className={cn(
               "absolute bottom-0 left-0 right-0 flex justify-center z-50 pb-6 transition-opacity duration-200",
-              showControls || isLangMenuOpen || isViewMenuOpen || !isPlaying
+              showControls || isLangMenuOpen || !isPlaying
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none"
             )}
@@ -904,18 +899,13 @@ export function KaraokeAppComponent({
           >
             <FullscreenPlayerControls
               isPlaying={isPlaying}
-              isShuffled={isShuffled}
-              isLoopAll={loopAll}
-              isLoopCurrent={loopCurrent}
               onPrevious={handlePrevious}
               onPlayPause={handlePlayPause}
               onNext={handleNext}
-              onToggleShuffle={toggleShuffle}
-              onToggleLoop={handleToggleRepeat}
               currentAlignment={lyricsAlignment}
-              onAlignmentChange={handleAlignmentChange}
+              onAlignmentCycle={cycleAlignment}
               currentFont={lyricsFont}
-              onFontChange={handleFontChange}
+              onFontCycle={cycleLyricsFont}
               koreanDisplay={koreanDisplay}
               onKoreanToggle={toggleKorean}
               currentTranslationCode={lyricsTranslationLanguage}
@@ -923,8 +913,6 @@ export function KaraokeAppComponent({
               translationLanguages={translationLanguages}
               isLangMenuOpen={isLangMenuOpen}
               setIsLangMenuOpen={setIsLangMenuOpen}
-              isViewMenuOpen={isViewMenuOpen}
-              setIsViewMenuOpen={setIsViewMenuOpen}
               onFullscreen={toggleFullScreen}
               variant="compact"
               bgOpacity="60"
@@ -1027,18 +1015,13 @@ export function KaraokeAppComponent({
           currentTranslationCode={lyricsTranslationLanguage}
           onSelectTranslation={setLyricsTranslationLanguage}
           currentAlignment={lyricsAlignment}
-          onAlignmentChange={handleAlignmentChange}
+          onCycleAlignment={cycleAlignment}
           currentLyricsFont={lyricsFont}
-          onFontChange={handleFontChange}
+          onCycleLyricsFont={cycleLyricsFont}
           currentKoreanDisplay={koreanDisplay}
           onToggleKoreanDisplay={toggleKorean}
           currentJapaneseFurigana={japaneseFurigana}
           onToggleJapaneseFurigana={toggleFurigana}
-          isShuffled={isShuffled}
-          isLoopAll={loopAll}
-          isLoopCurrent={loopCurrent}
-          onToggleShuffle={toggleShuffle}
-          onToggleLoop={handleToggleRepeat}
           fullScreenPlayerRef={fullScreenPlayerRef}
           isLoadingLyrics={fullScreenLyricsControls.isLoading}
           isProcessingLyrics={fullScreenLyricsControls.isTranslating}
