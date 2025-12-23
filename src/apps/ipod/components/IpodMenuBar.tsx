@@ -403,7 +403,7 @@ export function IpodMenuBar({
                 onCheckedChange={(checked) =>
                   setRomanization({ enabled: checked })
                 }
-                className="text-md h-6 px-3"
+                className="text-md h-6 px-3 truncate"
               >
                 {t("apps.ipod.menu.showPronunciation")}
               </MenubarCheckboxItem>
