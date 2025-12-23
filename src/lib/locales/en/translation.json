@@ -1413,6 +1413,7 @@
         "allSongs": "All Songs"
       },
       "translationLanguages": {
+        "auto": "Auto",
         "original": "Original",
         "english": "English",
         "chinese": "中文",

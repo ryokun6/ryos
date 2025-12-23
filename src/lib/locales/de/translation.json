@@ -1228,6 +1228,7 @@
         "translatingLyrics": "Liedtexte werden übersetzt…"
       },
       "translationLanguages": {
+        "auto": "Auto",
         "chinese": "Chinesisch",
         "english": "Englisch",
         "french": "Französisch",

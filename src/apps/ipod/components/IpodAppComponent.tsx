@@ -17,7 +17,7 @@ import { IpodWheel } from "./IpodWheel";
 import { PipPlayer } from "./PipPlayer";
 import { FullScreenPortal } from "./FullScreenPortal";
 import { LyricsDisplay } from "./LyricsDisplay";
-import { useIpodStore, Track } from "@/stores/useIpodStore";
+import { useIpodStore, Track, getEffectiveTranslationLanguage } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow, useAppStoreShallow, useAudioSettingsStoreShallow } from "@/stores/helpers";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
@@ -47,7 +47,7 @@ export function IpodAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps<IpodInitialData>) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { play: playClickSound } = useSound(Sounds.BUTTON_CLICK);
   const { play: playScrollSound } = useSound(Sounds.IPOD_CLICK_WHEEL);
   const vibrate = useVibration(100, 50);
@@ -1185,12 +1185,18 @@ export function IpodAppComponent({
     };
   }, [lyricsSearchOverride?.selection]);
 
+  // Resolve "auto" translation language to actual ryOS locale
+  const effectiveTranslationLanguage = useMemo(
+    () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
+    [lyricsTranslationLanguage, i18n.language]
+  );
+
   const fullScreenLyricsControls = useLyrics({
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
     album: currentTrack?.album ?? "",
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
-    translateTo: lyricsTranslationLanguage,
+    translateTo: effectiveTranslationLanguage,
     searchQueryOverride: lyricsSearchOverride?.query,
     selectedMatch: selectedMatchForLyrics,
   });

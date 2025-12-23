@@ -3,6 +3,10 @@ import { persist } from "zustand/middleware";
 import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, LyricsFont } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import { getApiUrl } from "@/utils/platform";
+import i18n from "@/lib/i18n";
+
+/** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
+export const LYRICS_TRANSLATION_AUTO = "auto";
 
 // Define the Track type (can be shared or defined here)
 export interface Track {
@@ -151,7 +155,7 @@ const initialIpodData: IpodData = {
   chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
-  lyricsTranslationLanguage: null,
+  lyricsTranslationLanguage: LYRICS_TRANSLATION_AUTO,
   currentLyrics: null,
   lyricsRefetchTrigger: 0,
   lyricsCacheBustTrigger: 0,
@@ -232,7 +236,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSearch: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 22; // Added lyricsFont for font style preference
+const CURRENT_IPOD_STORE_VERSION = 23; // Default lyricsTranslationLanguage to "auto"
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -906,7 +910,7 @@ export const useIpodStore = create<IpodState>()(
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
-            lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? null, // Preserve existing translation language preference
+            lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? LYRICS_TRANSLATION_AUTO, // Default to auto (ryOS locale)
             libraryState: "uninitialized" as LibraryState, // Reset to uninitialized on migration
             lastKnownVersion: state.lastKnownVersion ?? 0,
           };
@@ -952,3 +956,16 @@ export const useIpodStore = create<IpodState>()(
     }
   )
 );
+
+/**
+ * Resolves the effective translation language.
+ * If the stored value is "auto", returns the current ryOS locale language.
+ * If null, returns null (meaning no translation / "Original").
+ * Otherwise returns the stored language code.
+ */
+export function getEffectiveTranslationLanguage(storedValue: string | null): string | null {
+  if (storedValue === LYRICS_TRANSLATION_AUTO) {
+    return i18n.language;
+  }
+  return storedValue;
+}

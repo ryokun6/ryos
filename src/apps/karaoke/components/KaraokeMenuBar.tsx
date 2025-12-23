@@ -130,6 +130,7 @@ export function KaraokeMenuBar({
   }));
 
   const translationLanguages = [
+    { label: t("apps.ipod.translationLanguages.auto"), code: "auto" },
     { label: t("apps.ipod.translationLanguages.original"), code: null },
     { label: "English", code: "en" },
     { label: "中文", code: "zh-TW" },

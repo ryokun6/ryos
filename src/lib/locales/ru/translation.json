@@ -1228,6 +1228,7 @@
         "translatingLyrics": "Перевод текста…"
       },
       "translationLanguages": {
+        "auto": "Авто",
         "chinese": "Китайский",
         "english": "Английский",
         "french": "Французский",

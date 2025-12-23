@@ -1228,6 +1228,7 @@
         "translatingLyrics": "가사 번역 중…"
       },
       "translationLanguages": {
+        "auto": "자동",
         "chinese": "중국어",
         "english": "영어",
         "french": "프랑스어",

@@ -1,6 +1,7 @@
 // Shared constants for the iPod app
 
 import { LyricsAlignment } from "@/types/lyrics";
+import i18n from "@/lib/i18n";
 
 // Translation language options
 export interface TranslationLanguage {
@@ -10,6 +11,7 @@ export interface TranslationLanguage {
 }
 
 export const TRANSLATION_LANGUAGES: TranslationLanguage[] = [
+  { labelKey: "apps.ipod.translationLanguages.auto", code: "auto" },
   { labelKey: "apps.ipod.translationLanguages.original", code: null },
   { label: "English", code: "en" },
   { label: "中文", code: "zh-TW" },
@@ -73,5 +75,10 @@ export function getYouTubeVideoId(url: string): string | null {
 // Helper to get translation badge from code
 export function getTranslationBadge(code: string | null): string | null {
   if (!code) return null;
+  // For "auto", resolve to the actual ryOS language
+  if (code === "auto") {
+    const actualLang = i18n.language;
+    return TRANSLATION_BADGES[actualLang] || actualLang[0]?.toUpperCase() || "?";
+  }
   return TRANSLATION_BADGES[code] || code[0]?.toUpperCase() || "?";
 }

@@ -16,7 +16,7 @@ import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
-import { useIpodStore, Track } from "@/stores/useIpodStore";
+import { useIpodStore, Track, getEffectiveTranslationLanguage } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow, useAudioSettingsStoreShallow, useAppStoreShallow } from "@/stores/helpers";
@@ -42,7 +42,7 @@ export function KaraokeAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps<IpodInitialData>) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isOffline = useOffline();
   const translatedHelpItems = useTranslatedHelpItems("karaoke", helpItems);
 
@@ -190,12 +190,18 @@ export function KaraokeAppComponent({
     };
   }, [lyricsSearchOverride?.selection]);
 
+  // Resolve "auto" translation language to actual ryOS locale
+  const effectiveTranslationLanguage = useMemo(
+    () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
+    [lyricsTranslationLanguage, i18n.language]
+  );
+
   const lyricsControls = useLyrics({
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
     album: currentTrack?.album ?? "",
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
-    translateTo: lyricsTranslationLanguage,
+    translateTo: effectiveTranslationLanguage,
     searchQueryOverride: lyricsSearchOverride?.query,
     selectedMatch: selectedMatchForLyrics,
   });
@@ -206,7 +212,7 @@ export function KaraokeAppComponent({
     artist: currentTrack?.artist ?? "",
     album: currentTrack?.album ?? "",
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
-    translateTo: lyricsTranslationLanguage,
+    translateTo: effectiveTranslationLanguage,
     searchQueryOverride: lyricsSearchOverride?.query,
     selectedMatch: selectedMatchForLyrics,
   });
