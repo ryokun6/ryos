@@ -587,13 +587,15 @@ const getVariants = (
   // For lines with word timing, use subtle opacity fade for inactive lines
   // For non-word-timed lines, use normal opacity animation
   const getAnimateOpacity = () => {
+    // Alternating layout: less aggressive dimming
+    if (isAlternating) return isCurrent ? 1 : 0.8;
+    
     if (hasWordTiming) {
       // Word-timed lines: current at full, inactive more faded for focus effect
       if (isCurrent) return 1;
-      return 0.6;
+      return 0.8;
     }
     // Non-word-timed lines: normal opacity animation
-    if (isAlternating) return isCurrent ? 1 : 0.5;
     if (isCurrent) return 1;
     return position === 1 || position === -1 ? 0.35 : 0.1;
   };

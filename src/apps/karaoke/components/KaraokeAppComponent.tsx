@@ -839,7 +839,7 @@ export function KaraokeAppComponent({
                           gap: "clamp(0.25rem, 2cqw, 1rem)",
                         }}
                         interactive={true}
-                        bottomPaddingClass="pb-20"
+                        bottomPaddingClass={showControls || isLangMenuOpen || !isPlaying ? "pb-20" : "pb-10"}
                         onFuriganaLoadingChange={setIsFetchingFurigana}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                       />
@@ -1036,7 +1036,7 @@ export function KaraokeAppComponent({
           isProcessingLyrics={fullScreenLyricsControls.isTranslating}
           isFetchingFurigana={isFullScreenFetchingFurigana}
         >
-          {({ controlsVisible: _controlsVisible }) => (
+          {({ controlsVisible }) => (
             <div className="flex flex-col w-full h-full">
               <div className="relative w-full h-full overflow-visible">
                 <div
@@ -1151,7 +1151,7 @@ export function KaraokeAppComponent({
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
                         interactive={isPlaying}
-                        bottomPaddingClass="pb-[calc(max(env(safe-area-inset-bottom),0.5rem)+1.5rem)]"
+                        bottomPaddingClass="pb-2"
                         onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                       />

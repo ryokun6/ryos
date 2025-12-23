@@ -353,7 +353,7 @@ export const appRegistry = {
     helpItems: karaokeHelpItems,
     metadata: karaokeMetadata,
     windowConfig: {
-      defaultSize: { width: 640, height: 480 },
+      defaultSize: { width: 480, height: 480 },
       minSize: { width: 400, height: 300 },
     } as WindowConstraints,
   } as BaseApp<IpodInitialData> & { windowConfig: WindowConstraints },
