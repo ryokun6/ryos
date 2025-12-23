@@ -1018,7 +1018,8 @@ export function LyricsDisplay({
                 )}
               </div>
               {/* Translated subtitle (shown below original when translation is active) */}
-              {translatedText && (
+              {/* Only show if translation differs from original */}
+              {translatedText && translatedText !== line.words && (
                 <div 
                   className={`text-white ${fontClassName} ${translationSizeClass}`}
                   style={{
