@@ -186,10 +186,10 @@ function renderKoreanWithRomanization(text: string): React.ReactNode {
         if (segment.isKorean) {
           const reading = romanize(segment.text);
           return (
-            <ruby key={index} className="lyrics-furigana">
+            <ruby key={index} className="lyrics-furigana lyrics-korean-ruby">
               {segment.text}
               <rp>(</rp>
-              <rt className="lyrics-furigana-rt">{reading}</rt>
+              <rt className="lyrics-furigana-rt lyrics-korean-rt">{reading}</rt>
               <rp>)</rp>
             </ruby>
           );
