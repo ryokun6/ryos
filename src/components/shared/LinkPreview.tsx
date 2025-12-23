@@ -453,11 +453,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
-                    title="Open in iPod"
+                    title="Open iPod"
                     data-link-preview
                   >
                     {theme !== "macosx" && <Music className="h-3 w-3" />}
-                    <span>Open in iPod</span>
+                    <span>Open iPod</span>
                   </button>
                   <button
                     onClick={handleOpenYouTube}
@@ -484,11 +484,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
-                    title="Open in Karaoke"
+                    title="Open Karaoke"
                     data-link-preview
                   >
                     {theme !== "macosx" && <Mic className="h-3 w-3" />}
-                    <span>Open in Karaoke</span>
+                    <span>Open Karaoke</span>
                   </button>
                   <button
                     onClick={handleOpenYouTube}
@@ -668,11 +668,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
-                      title="Open in iPod"
+                      title="Open iPod"
                       data-link-preview
                     >
                       {theme !== "macosx" && <Music className="h-3 w-3" />}
-                      <span>Open in iPod</span>
+                      <span>Open iPod</span>
                     </button>
                     <button
                       onClick={handleOpenYouTube}
@@ -701,11 +701,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
-                      title="Open in Karaoke"
+                      title="Open Karaoke"
                       data-link-preview
                     >
                       {theme !== "macosx" && <Mic className="h-3 w-3" />}
-                      <span>Open in Karaoke</span>
+                      <span>Open Karaoke</span>
                     </button>
                     <button
                       onClick={handleOpenYouTube}
