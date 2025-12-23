@@ -132,6 +132,7 @@ export function KaraokeMenuBar({
   const translationLanguages = [
     { label: t("apps.ipod.translationLanguages.auto"), code: "auto" },
     { label: t("apps.ipod.translationLanguages.original"), code: null },
+    { separator: true },
     { label: "English", code: "en" },
     { label: "中文", code: "zh-TW" },
     { label: "日本語", code: "ja" },
@@ -444,7 +445,10 @@ export function KaraokeMenuBar({
                   setLyricsTranslationLanguage(value === "off" ? null : value);
                 }}
               >
-                {translationLanguages.map((lang) => {
+                {translationLanguages.map((lang, index) => {
+                  if (lang.separator) {
+                    return <MenubarSeparator key={`sep-${index}`} className="h-[2px] bg-black my-1" />;
+                  }
                   const value = lang.code || "off";
                   return (
                     <MenubarRadioItem

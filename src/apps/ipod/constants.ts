@@ -8,11 +8,13 @@ export interface TranslationLanguage {
   labelKey?: string;
   label?: string;
   code: string | null;
+  separator?: boolean;
 }
 
 export const TRANSLATION_LANGUAGES: TranslationLanguage[] = [
   { labelKey: "apps.ipod.translationLanguages.auto", code: "auto" },
   { labelKey: "apps.ipod.translationLanguages.original", code: null },
+  { separator: true, code: null, label: "" }, // Separator
   { label: "English", code: "en" },
   { label: "中文", code: "zh-TW" },
   { label: "日本語", code: "ja" },

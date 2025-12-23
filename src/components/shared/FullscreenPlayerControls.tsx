@@ -9,12 +9,14 @@ import {
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 export interface TranslationLanguageOption {
   label: string;
   code: string | null;
+  separator?: boolean;
 }
 
 export interface FullscreenPlayerControlsProps {
@@ -308,7 +310,7 @@ export function FullscreenPlayerControls({
             align="center"
             sideOffset={8}
             className={cn(
-              "max-h-[50vh] overflow-y-auto",
+              "px-0 max-h-[50vh] overflow-y-auto",
               variant === "compact" ? "w-40" : "w-44"
             )}
             onClick={(e) => e.stopPropagation()}
@@ -320,14 +322,20 @@ export function FullscreenPlayerControls({
                 onInteraction?.();
               }}
             >
-              {translationLanguages.map((lang) => (
-                <DropdownMenuRadioItem
-                  key={lang.code || "off"}
-                  value={lang.code || "off"}
-                >
-                  {lang.label}
-                </DropdownMenuRadioItem>
-              ))}
+              {translationLanguages.map((lang, index) => {
+                if (lang.separator) {
+                  return <DropdownMenuSeparator key={`sep-${index}`} />;
+                }
+                return (
+                  <DropdownMenuRadioItem
+                    key={lang.code || "off"}
+                    value={lang.code || "off"}
+                    className="text-md h-6 pr-3"
+                  >
+                    {lang.label}
+                  </DropdownMenuRadioItem>
+                );
+              })}
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>

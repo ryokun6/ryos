@@ -223,6 +223,7 @@ export function KaraokeAppComponent({
       TRANSLATION_LANGUAGES.map((lang) => ({
         label: lang.labelKey ? t(lang.labelKey) : lang.label || "",
         code: lang.code,
+        separator: lang.separator,
       })),
     [t]
   );
