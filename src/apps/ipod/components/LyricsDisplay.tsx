@@ -1071,7 +1071,7 @@ export function LyricsDisplay({
               exit="exit"
               variants={variants}
               transition={dynamicTransition}
-              className={`px-2 md:px-6 whitespace-pre-wrap break-words max-w-full text-white`}
+              className={`px-2 md:px-4 whitespace-pre-wrap break-words max-w-full text-white`}
               style={{
                 textAlign: lineTextAlign as CanvasTextAlign,
                 width: "100%",
