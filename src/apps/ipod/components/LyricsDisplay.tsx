@@ -1130,7 +1130,7 @@ export function LyricsDisplay({
               </div>
               {/* Translated subtitle (shown below original when translation is active) */}
               {/* Only show if translation differs from processed original (handles Traditional Chinese conversion) */}
-              {translatedText && translatedText !== processText(line.words) && (
+              {translatedText && processText(translatedText) !== processText(line.words) && (
                 <div 
                   className={`text-white ${fontClassName} ${translationSizeClass}`}
                   style={{
@@ -1139,7 +1139,7 @@ export function LyricsDisplay({
                     opacity: 0.5,
                   }}
                 >
-                  {translatedText}
+                  {processText(translatedText)}
                 </div>
               )}
             </motion.div>
