@@ -1129,8 +1129,8 @@ export function LyricsDisplay({
                 <div 
                   className={`text-white ${fontClassName} ${translationSizeClass}`}
                   style={{
-                    lineHeight: 1.3,
-                    marginTop: "0.1em",
+                    lineHeight: 1.1,
+                    marginTop: 0,
                     opacity: 0.5,
                   }}
                 >

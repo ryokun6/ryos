@@ -1055,3 +1055,14 @@ ruby.lyrics-furigana rp {
   font-weight: 700 !important;
 }
 
+/* Korean ruby sizes - match translation sizes for each context */
+/* Karaoke in-window: same as .lyrics-translation-karaoke */
+.karaoke-lyrics-text rt.lyrics-korean-rt {
+  font-size: clamp(14px, 4cqw, 60px) !important;
+}
+
+/* Fullscreen: same as .lyrics-translation-fullscreen */
+.fullscreen-lyrics-text rt.lyrics-korean-rt {
+  font-size: clamp(14px, min(5vw, 5vh), 60px) !important;
+}
+
