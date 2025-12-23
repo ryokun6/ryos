@@ -388,9 +388,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Rounded lyrics font utility */
   .font-lyrics-rounded {
-    font-family: "Zen Maru Gothic", "Jua", "SF Pro Rounded", "Arial Rounded MT Bold",
-      "Hiragino Maru Gothic ProN", "Yuanti SC", sans-serif;
+    font-family: "SF Pro Rounded", "Arial Rounded MT Bold", "Nanum Gothic",
+      "Hiragino Maru Gothic ProN", "Kosugi Maru", "Yuanti SC", sans-serif;
     font-weight: 700;
+    line-height: 1;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
@@ -401,6 +402,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-family: "Noto Serif JP", "Noto Serif KR", "Times New Roman", Charter, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
       "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
     font-weight: 700;
+    line-height: 1;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
@@ -411,6 +413,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
       "PingFang SC", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic",
       "Nanum Gothic", system-ui, -apple-system, sans-serif;
     font-weight: 400;
+    line-height: 1;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
