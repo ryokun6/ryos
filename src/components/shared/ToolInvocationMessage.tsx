@@ -113,7 +113,8 @@ export function ToolInvocationMessage({
       case "closeApp":
         displayCallMessage = t("apps.chats.toolCalls.closing", { appName: getAppName(input?.id) });
         break;
-      case "ipodControl": {
+      case "ipodControl":
+      case "karaokeControl": {
         const action = input?.action || "toggle";
         if (action === "next") {
           displayCallMessage = t("apps.chats.toolCalls.skippingToNext");
@@ -300,7 +301,7 @@ export function ToolInvocationMessage({
       displayResultMessage = t("apps.chats.toolCalls.launched", { appName: getAppName(input?.id) });
     } else if (toolName === "closeApp") {
       displayResultMessage = t("apps.chats.toolCalls.closed", { appName: getAppName(input?.id) });
-    } else if (toolName === "ipodControl") {
+    } else if (toolName === "ipodControl" || toolName === "karaokeControl") {
       // Use output directly if available (it contains detailed state information)
       if (typeof output === "string" && output.trim().length > 0) {
         displayResultMessage = output;

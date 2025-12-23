@@ -1518,7 +1518,7 @@ export function IpodAppComponent({
             isProcessingLyrics={fullScreenLyricsControls.isTranslating}
             isFetchingFurigana={isFullScreenFetchingFurigana}
           >
-            {() => (
+            {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
                 <div className="relative w-full h-full overflow-visible">
                   <div
@@ -1635,7 +1635,7 @@ export function IpodAppComponent({
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
                         interactive={isIOSSafari ? false : isPlaying}
-                        bottomPaddingClass="pb-8"
+                        bottomPaddingClass={controlsVisible ? "pb-6" : "pb-2"}
                         onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                       />
