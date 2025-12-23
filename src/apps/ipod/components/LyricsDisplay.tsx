@@ -379,7 +379,7 @@ function StaticWordRendering({
     <>
       {renderItems.map((item) => (
         <span key={item.key} className="lyrics-word-highlight">
-          <span className="lyrics-word-layer" style={{ textShadow: BASE_SHADOW }}>
+          <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW }}>
             {item.content}
           </span>
         </span>
@@ -534,6 +534,9 @@ function WordTimingHighlight({
     overlayRefs.current = overlayRefs.current.slice(0, renderItems.length);
   }, [renderItems.length]);
 
+  // Initial mask (hidden) - prevents flash before animation loop kicks in
+  const initialMask = calculateMask(0);
+
   // Render once - DOM updates happen via refs, not re-renders
   return (
     <>
@@ -546,7 +549,11 @@ function WordTimingHighlight({
             ref={(el) => { overlayRefs.current[idx] = el; }}
             aria-hidden="true"
             className="lyrics-word-layer"
-            style={{ textShadow: GLOW_SHADOW }}
+            style={{ 
+              textShadow: GLOW_SHADOW,
+              maskImage: initialMask,
+              WebkitMaskImage: initialMask,
+            }}
           >
             {item.content}
           </span>
@@ -566,14 +573,11 @@ const getVariants = (
   // For other lines, apply glow at the parent level
   const currentTextShadow = isCurrent && !hasWordTiming ? GLOW_SHADOW : BASE_SHADOW;
   
-  // For lines with word timing, use consistent opacity to avoid flicker
-  // Word-level highlighting handles the visual feedback instead
+  // For lines with word timing, use full opacity - word highlights handle visual feedback
+  // For non-word-timed lines, use normal opacity animation
   const getAnimateOpacity = () => {
     if (hasWordTiming) {
-      // Word-timed lines: current stays at 1, others fade normally
-      if (isCurrent) return 1;
-      if (isAlternating) return 0.5;
-      return position === 1 || position === -1 ? 0.5 : 0.1;
+      return 1;
     }
     // Non-word-timed lines: normal opacity animation
     if (isAlternating) return isCurrent ? 1 : 0.5;
@@ -581,8 +585,9 @@ const getVariants = (
     return position === 1 || position === -1 ? 0.5 : 0.1;
   };
 
-  // For word-timed current lines, start at full opacity to avoid flash
-  const initialOpacity = hasWordTiming && isCurrent ? 1 : 0;
+  // For word-timed lines, start at target opacity to avoid any opacity animation
+  // Word-level highlighting handles the visual feedback instead
+  const initialOpacity = hasWordTiming ? getAnimateOpacity() : 0;
   
   return {
     initial: {
@@ -1008,14 +1013,14 @@ export function LyricsDisplay({
             position,
             alignment === LyricsAlignment.Alternating,
             isCurrent,
-            shouldUseAnimatedWordTiming
+            hasWordTimings
           );
           // Ensure transitions are extra smooth during offset adjustments
-          // For word-timing lines, make opacity/textShadow instant to prevent flash during transition
+          // For word-timing lines, make opacity/textShadow instant since word highlights handle visual feedback
           const dynamicTransition = {
             ...ANIMATION_CONFIG.spring,
-            opacity: shouldUseAnimatedWordTiming ? { duration: 0 } : ANIMATION_CONFIG.fade,
-            textShadow: shouldUseAnimatedWordTiming ? { duration: 0 } : ANIMATION_CONFIG.fade,
+            opacity: hasWordTimings ? { duration: 0 } : ANIMATION_CONFIG.fade,
+            textShadow: hasWordTimings ? { duration: 0 } : ANIMATION_CONFIG.fade,
             filter: ANIMATION_CONFIG.fade,
             duration: 0.15, // Faster transitions for smoother adjustment feedback
           };
@@ -1119,7 +1124,7 @@ export function LyricsDisplay({
                   style={{
                     lineHeight: 1.3,
                     marginTop: "0.1em",
-                    opacity: 0.5,
+                    opacity: 0.4,
                   }}
                 >
                   {translatedText}
