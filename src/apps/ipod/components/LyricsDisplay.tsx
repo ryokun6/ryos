@@ -492,24 +492,34 @@ const getVariants = (
   // For other lines, apply glow at the parent level
   const currentTextShadow = isCurrent && !hasWordTiming ? GLOW_SHADOW : BASE_SHADOW;
   
+  // For lines with word timing, use consistent opacity to avoid flicker
+  // Word-level highlighting handles the visual feedback instead
+  const getAnimateOpacity = () => {
+    if (hasWordTiming) {
+      // Word-timed lines: current stays at 1, others fade normally
+      if (isCurrent) return 1;
+      if (isAlternating) return 0.5;
+      return position === 1 || position === -1 ? 0.5 : 0.1;
+    }
+    // Non-word-timed lines: normal opacity animation
+    if (isAlternating) return isCurrent ? 1 : 0.5;
+    if (isCurrent) return 1;
+    return position === 1 || position === -1 ? 0.5 : 0.1;
+  };
+
+  // For word-timed current lines, start at full opacity to avoid flash
+  const initialOpacity = hasWordTiming && isCurrent ? 1 : 0;
+  
   return {
     initial: {
-      opacity: 0,
+      opacity: initialOpacity,
       scale: 0.93,
       filter: "none",
       y: 10,
       textShadow: BASE_SHADOW,
     },
     animate: {
-      opacity: isAlternating
-        ? isCurrent
-          ? 1
-          : 0.5
-        : isCurrent
-        ? 1
-        : position === 1 || position === -1
-        ? 0.5
-        : 0.1,
+      opacity: getAnimateOpacity(),
       scale: isAlternating
         ? 1
         : isCurrent || position === 1 || position === -1
