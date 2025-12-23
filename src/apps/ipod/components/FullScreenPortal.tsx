@@ -7,7 +7,6 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isMobileSafari } from "@/utils/device";
-import type { LyricsFont } from "@/types/lyrics";
 import {
   TRANSLATION_LANGUAGES,
   SWIPE_THRESHOLD,
