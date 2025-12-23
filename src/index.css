@@ -406,7 +406,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Sans-serif lyrics font utility (default OS typeface) */
   .font-lyrics-sans {
-    font-family: "Geneva-12", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    font-family: "Geneva-12", "ArkPixel", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
       "PingFang SC", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic",
       "Nanum Gothic", system-ui, -apple-system, sans-serif;
     font-weight: 700;
