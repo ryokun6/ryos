@@ -1,17 +1,24 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { LyricLine } from "@/types/lyrics";
+import { LyricLine, RomanizationSettings } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { getApiUrl } from "@/utils/platform";
 import { isOffline } from "@/utils/offline";
 import { processSSEStream, isSSEResponse, SSEChunkEvent } from "@/utils/sse";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { isJapaneseText as isJapaneseTextUtil } from "@/utils/languageDetection";
+import { toRomaji } from "wanakana";
+import {
+  FuriganaSegment,
+  hasKoreanText,
+  isChineseText,
+  isJapaneseText,
+  hasKanaTextLocal,
+  renderKoreanWithRomanization,
+  renderChineseWithPinyin,
+  renderKanaWithRomaji,
+} from "@/utils/romanization";
 
-// Type for furigana segments from API
-export interface FuriganaSegment {
-  text: string;
-  reading?: string;
-}
+// Re-export FuriganaSegment for consumers
+export type { FuriganaSegment };
 
 // Types for SSE streaming events from furigana API
 interface FuriganaChunkEvent {
@@ -37,10 +44,10 @@ type FuriganaSSEEvent = FuriganaChunkEvent | FuriganaCompleteEvent | FuriganaErr
 interface UseFuriganaParams {
   /** Lyric lines to fetch furigana for */
   lines: LyricLine[];
-  /** Whether furigana is enabled */
-  enabled: boolean;
   /** Whether we're showing original lyrics (not translations) */
   isShowingOriginal: boolean;
+  /** Romanization settings object */
+  romanization: RomanizationSettings;
   /** Callback when loading state changes */
   onLoadingChange?: (isLoading: boolean) => void;
 }
@@ -52,21 +59,27 @@ interface UseFuriganaReturn {
   isFetching: boolean;
   /** Error message if any */
   error?: string;
-  /** Render helper that wraps text with ruby elements */
+  /** Render helper that wraps text with ruby elements (including all romanization types) */
   renderWithFurigana: (line: LyricLine, processedText: string) => React.ReactNode;
-  /** Check if text is Japanese (has both kanji and kana) */
-  isJapaneseText: (text: string) => boolean;
 }
 
 const FURIGANA_TIMEOUT = 30000; // 30 seconds
 
 /**
- * Hook for fetching and managing Japanese furigana annotations
+ * Hook for fetching and managing Japanese furigana annotations and other romanization
+ * 
+ * Handles:
+ * - Fetching furigana from API for Japanese text
+ * - Rendering with furigana (hiragana over kanji)
+ * - Converting furigana to romaji when enabled
+ * - Korean romanization for mixed content
+ * - Chinese pinyin for mixed content
+ * - Standalone kana to romaji conversion
  */
 export function useFurigana({
   lines,
-  enabled,
   isShowingOriginal,
+  romanization,
   onLoadingChange,
 }: UseFuriganaParams): UseFuriganaReturn {
   const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
@@ -83,13 +96,6 @@ export function useFurigana({
     onLoadingChange?.(isFetching);
   }, [isFetching, onLoadingChange]);
 
-  // Check if text is Japanese (contains kanji AND hiragana/katakana)
-  // This distinguishes Japanese from Chinese (which only has hanzi, no kana)
-  const isJapaneseText = useCallback(
-    (text: string): boolean => isJapaneseTextUtil(text),
-    []
-  );
-
   // Effect to immediately clear furigana when cache bust trigger changes
   useEffect(() => {
     if (lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger) {
@@ -101,8 +107,11 @@ export function useFurigana({
 
   // Fetch furigana for original lines when enabled
   useEffect(() => {
+    // Check if furigana fetching is needed
+    const shouldFetchFurigana = romanization.enabled && romanization.japaneseFurigana;
+    
     // If completely disabled or no lines, clear everything
-    if (!enabled || lines.length === 0) {
+    if (!shouldFetchFurigana || lines.length === 0) {
       setFuriganaMap(new Map());
       furiganaCacheKeyRef.current = "";
       setIsFetching(false);
@@ -111,7 +120,6 @@ export function useFurigana({
     }
 
     // If not showing original, don't fetch new data but keep existing furigana cached
-    // The render function handles not displaying furigana when showing translations
     if (!isShowingOriginal) {
       setIsFetching(false);
       return;
@@ -141,7 +149,7 @@ export function useFurigana({
     
     // Skip if we already have this data and it's not a force request
     if (!isForceRequest && cacheKey === furiganaCacheKeyRef.current) {
-      return; // Already fetched for these lines
+      return;
     }
 
     // Start loading
@@ -167,13 +175,10 @@ export function useFurigana({
           },
         });
 
-        if (controller.signal.aborted) {
-          return;
-        }
+        if (controller.signal.aborted) return;
 
         // Check if this is a streaming response
         if (isSSEResponse(res)) {
-          // Handle streaming response
           const collectedFurigana = new Map<string, FuriganaSegment[]>();
 
           await processSSEStream<FuriganaSSEEvent>({
@@ -182,9 +187,7 @@ export function useFurigana({
             onChunk: (event: SSEChunkEvent<FuriganaSSEEvent>) => {
               if (controller.signal.aborted) return;
               
-              // Server sends chunk data at top level, not nested in 'data'
               const chunkEvent = event as unknown as FuriganaChunkEvent;
-              // Update the collected map with this chunk's data
               chunkEvent.annotatedLines.forEach((segments, index) => {
                 const globalIndex = chunkEvent.startIndex + index;
                 if (globalIndex < lines.length) {
@@ -193,13 +196,11 @@ export function useFurigana({
                 }
               });
 
-              // Immediately update state with new data for progressive loading
               if (!controller.signal.aborted) {
                 setFuriganaMap(new Map(collectedFurigana));
               }
             },
             onComplete: () => {
-              // Final state - all furigana should be loaded
               if (!controller.signal.aborted) {
                 setFuriganaMap(new Map(collectedFurigana));
                 furiganaCacheKeyRef.current = cacheKey;
@@ -213,12 +214,11 @@ export function useFurigana({
             },
           });
 
-          // Set fetching to false after stream completes (similar to translate pattern)
           if (!controller.signal.aborted) {
             setIsFetching(false);
           }
         } else {
-          // Handle non-streaming response (small requests or cached)
+          // Handle non-streaming response
           const data: { annotatedLines: FuriganaSegment[][] } = await res.json();
           const newMap = new Map<string, FuriganaSegment[]>();
           lines.forEach((line, index) => {
@@ -235,9 +235,7 @@ export function useFurigana({
           }
         }
       } catch (err) {
-        if (controller.signal.aborted) {
-          return;
-        }
+        if (controller.signal.aborted) return;
         
         if (err instanceof Error && err.name === "AbortError") {
           setIsFetching(false);
@@ -256,41 +254,91 @@ export function useFurigana({
       controller.abort();
       setIsFetching(false);
     };
-  }, [lines, enabled, isShowingOriginal, isJapaneseText, lyricsCacheBustTrigger]);
+  }, [lines, romanization.enabled, romanization.japaneseFurigana, isShowingOriginal, lyricsCacheBustTrigger]);
 
-  // Render text with furigana using ruby elements
-  // Only applies furigana when showing original lyrics (not translations)
+  // Unified render function that handles all romanization types
   const renderWithFurigana = useCallback(
     (line: LyricLine, processedText: string): React.ReactNode => {
-      // Don't apply furigana if disabled or if we're showing translations
-      if (!enabled || !isShowingOriginal) {
+      // Master toggle - if romanization is disabled, return plain text
+      if (!romanization.enabled || !isShowingOriginal) {
+        return processedText;
+      }
+      
+      const keyPrefix = `line-${line.startTimeMs}`;
+      
+      // If furigana is disabled, try other romanization types
+      if (!romanization.japaneseFurigana) {
+        // Chinese pinyin
+        if (romanization.chinese && isChineseText(processedText)) {
+          return renderChineseWithPinyin(processedText, keyPrefix);
+        }
+        // Korean romanization
+        if (romanization.korean && hasKoreanText(processedText)) {
+          return renderKoreanWithRomanization(processedText, keyPrefix);
+        }
+        // Japanese kana to romaji
+        if (romanization.japaneseRomaji && hasKanaTextLocal(processedText)) {
+          return renderKanaWithRomaji(processedText, keyPrefix);
+        }
         return processedText;
       }
 
+      // Get furigana segments for this line
       const segments = furiganaMap.get(line.startTimeMs);
       if (!segments || segments.length === 0) {
+        // No furigana available - try other romanization types
+        if (romanization.chinese && isChineseText(processedText)) {
+          return renderChineseWithPinyin(processedText, keyPrefix);
+        }
+        if (romanization.korean && hasKoreanText(processedText)) {
+          return renderKoreanWithRomanization(processedText, keyPrefix);
+        }
+        if (romanization.japaneseRomaji && hasKanaTextLocal(processedText)) {
+          return renderKanaWithRomaji(processedText, keyPrefix);
+        }
         return processedText;
       }
 
+      // Render furigana segments with all romanization options
       return (
         <>
           {segments.map((segment, index) => {
+            // Handle Japanese furigana (hiragana reading over kanji)
             if (segment.reading) {
+              const displayReading = romanization.japaneseRomaji 
+                ? toRomaji(segment.reading)
+                : segment.reading;
               return (
                 <ruby key={index} className="lyrics-furigana">
                   {segment.text}
                   <rp>(</rp>
-                  <rt className="lyrics-furigana-rt">{segment.reading}</rt>
+                  <rt className="lyrics-furigana-rt">{displayReading}</rt>
                   <rp>)</rp>
                 </ruby>
               );
             }
+            
+            // Korean romanization for mixed content
+            if (romanization.korean && hasKoreanText(segment.text)) {
+              return renderKoreanWithRomanization(segment.text, `seg-${index}`);
+            }
+            
+            // Chinese pinyin for mixed content
+            if (romanization.chinese && isChineseText(segment.text)) {
+              return renderChineseWithPinyin(segment.text, `seg-${index}`);
+            }
+            
+            // Standalone kana to romaji
+            if (romanization.japaneseRomaji && hasKanaTextLocal(segment.text)) {
+              return renderKanaWithRomaji(segment.text, `seg-${index}`);
+            }
+            
             return <span key={index}>{segment.text}</span>;
           })}
         </>
       );
     },
-    [enabled, isShowingOriginal, furiganaMap]
+    [romanization, isShowingOriginal, furiganaMap]
   );
 
   return {
@@ -298,6 +346,5 @@ export function useFurigana({
     isFetching,
     error,
     renderWithFurigana,
-    isJapaneseText,
   };
 }

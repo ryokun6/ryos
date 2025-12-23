@@ -1040,6 +1040,7 @@
         "select": "Seleccionar",
         "toggleFurigana": "Alternar Furigana",
         "toggleHangulRomanization": "Alternar Hangul / Romanización",
+        "toggleRomanization": "Alternar Romanización",
         "translateLyrics": "Traducir letras"
       },
       "description": "Reproductor de música",
@@ -1111,6 +1112,10 @@
           "description": "Ajusta la retroiluminación, los temas y cambia a video en pantalla completa.",
           "title": "Pantalla y pantalla completa"
         },
+        "lyricsPronunciation": {
+          "description": "Ver letras sincronizadas con traducciones, furigana, romaji y pinyin.",
+          "title": "Letras y Pronunciación"
+        },
         "playbackControls": {
           "description": "Reproduce, pausa, salta pistas y controla tu canción actual.",
           "title": "Controles de reproducción"
@@ -1118,10 +1123,6 @@
         "playbackModes": {
           "description": "Activa la reproducción aleatoria, repite canciones o listas de reproducción y más.",
           "title": "Modos de reproducción"
-        },
-        "syncedLyrics": {
-          "description": "Visualiza letras sincronizadas con el tiempo y obtén traducciones instantáneas.",
-          "title": "Letras sincronizadas"
         },
         "wheelNavigation": {
           "description": "Usa la rueda de clic para navegar por los menús y tu biblioteca de música.",
@@ -1142,10 +1143,12 @@
         "backlight": "Retroiluminación",
         "black": "Negro",
         "cacheCleared": "Caché borrada",
+        "chinesePinyin": "Chino (Pinyin)",
         "classic": "Clásico",
         "clearCache": "Borrar caché",
         "clearLibrary": "Borrar biblioteca...",
         "controls": "Controles",
+        "enableRomanization": "Activar Romanización",
         "exportLibrary": "Exportar biblioteca...",
         "file": "Archivo",
         "fontRounded": "Redondeada",
@@ -1155,7 +1158,10 @@
         "furigana": "Furigana",
         "importLibrary": "Importar biblioteca...",
         "ipodHelp": "Ayuda del iPod",
+        "japaneseFurigana": "Japonés Furigana",
+        "japaneseRomaji": "Japonés Romaji",
         "korean": "Romanización",
+        "koreanRomanization": "Coreano",
         "lcdFilter": "Filtro LCD",
         "library": "Biblioteca",
         "lyrics": "Letras",
@@ -1164,13 +1170,16 @@
         "pause": "Pausa",
         "play": "Reproducir",
         "previous": "Anterior",
+        "pronunciation": "Pronunciación",
         "refreshLyrics": "Buscar letras",
         "repeatAll": "Repetir todo",
         "repeatOne": "Repetir uno",
+        "romanization": "Romanización",
         "searchSongs": "Buscar canciones...",
         "shareApp": "Compartir aplicación...",
         "shareSong": "Compartir canción...",
         "showLyrics": "Mostrar letras",
+        "showPronunciation": "Mostrar Pronunciación",
         "shuffle": "Aleatorio",
         "single": "Individual",
         "syncLibrary": "Sincronizar biblioteca...",
@@ -1206,7 +1215,6 @@
         "fontSerif": "Fuente: Serif",
         "furiganaOff": "Furigana Desactivado",
         "furiganaOn": "Furigana Activado",
-        "romanizationOff": "Romanización Desactivada",
         "layoutAlternating": "Diseño: Alterno",
         "layoutCenter": "Diseño: Centrado",
         "layoutFocus": "Diseño: Enfoque",
@@ -1219,6 +1227,7 @@
         "repeatAll": "Repetir TODO",
         "repeatOff": "Repetir DESACTIVADO",
         "repeatOne": "Repetir UNO",
+        "romanizationOff": "Romanización Desactivada",
         "romanizationOn": "Romanización Activada",
         "shuffleOff": "Aleatorio DESACTIVADO",
         "shuffleOn": "Aleatorio ACTIVADO",
@@ -1257,9 +1266,9 @@
           "description": "Espacio para reproducir/pausar, teclas de flecha para buscar y cambiar pistas.",
           "title": "Atajos de teclado"
         },
-        "styleLayout": {
-          "description": "Cambia fuentes, diseños (enfoque/centro/alternado) y traduce letras.",
-          "title": "Estilo y diseño"
+        "stylePronunciation": {
+          "description": "Cambiar fuentes, diseños, traducciones y añadir furigana/romaji/pinyin.",
+          "title": "Estilo y Pronunciación"
         },
         "syncLyricsTiming": {
           "description": "Usa las teclas [ ], la rueda del ratón o arrastra arriba/abajo para ajustar el desfase de la letra.",

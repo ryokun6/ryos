@@ -1040,6 +1040,7 @@
         "select": "選択",
         "toggleFurigana": "フリガナ切り替え",
         "toggleHangulRomanization": "ハングル / ローマ字表記を切り替える",
+        "toggleRomanization": "読み仮名の切り替え",
         "translateLyrics": "歌詞を翻訳"
       },
       "description": "ミュージックプレーヤー",
@@ -1111,6 +1112,10 @@
           "description": "バックライト、テーマを調整し、フルスクリーン動画に切り替え。",
           "title": "表示とフルスクリーン"
         },
+        "lyricsPronunciation": {
+          "description": "翻訳、ふりがな、ローマ字、ピンイン付きで同期歌詞を表示。",
+          "title": "歌詞・発音"
+        },
         "playbackControls": {
           "description": "再生、一時停止、トラックのスキップ、現在の曲の制御。",
           "title": "再生コントロール"
@@ -1118,10 +1123,6 @@
         "playbackModes": {
           "description": "シャッフル、曲またはプレイリストのリピートなどを有効化。",
           "title": "再生モード"
-        },
-        "syncedLyrics": {
-          "description": "時間同期された歌詞を表示し、即座に翻訳を取得。",
-          "title": "同期歌詞"
         },
         "wheelNavigation": {
           "description": "クリックホイールを使用してメニューとミュージックライブラリを閲覧。",
@@ -1142,10 +1143,12 @@
         "backlight": "バックライト",
         "black": "黒",
         "cacheCleared": "キャッシュをクリアしました",
+        "chinesePinyin": "中国語（ピンイン）",
         "classic": "クラシック",
         "clearCache": "キャッシュをクリア",
         "clearLibrary": "ライブラリを消去...",
         "controls": "コントロール",
+        "enableRomanization": "読み仮名を有効化",
         "exportLibrary": "ライブラリを書き出す...",
         "file": "ファイル",
         "fontRounded": "丸ゴシック",
@@ -1155,7 +1158,10 @@
         "furigana": "ふりがな",
         "importLibrary": "ライブラリを読み込む...",
         "ipodHelp": "iPod ヘルプ",
+        "japaneseFurigana": "日本語ふりがな",
+        "japaneseRomaji": "日本語ローマ字",
         "korean": "ローマ字",
+        "koreanRomanization": "韓国語",
         "lcdFilter": "LCD フィルター",
         "library": "ライブラリ",
         "lyrics": "歌詞",
@@ -1164,13 +1170,16 @@
         "pause": "一時停止",
         "play": "再生",
         "previous": "前へ",
+        "pronunciation": "発音",
         "refreshLyrics": "歌詞を検索",
         "repeatAll": "全曲リピート",
         "repeatOne": "1曲リピート",
+        "romanization": "読み仮名",
         "searchSongs": "曲を検索...",
         "shareApp": "アプリを共有...",
         "shareSong": "曲を共有...",
         "showLyrics": "歌詞を表示",
+        "showPronunciation": "発音を表示",
         "shuffle": "シャッフル",
         "single": "シングル",
         "syncLibrary": "ライブラリを同期...",
@@ -1206,7 +1215,6 @@
         "fontSerif": "フォント: 明朝",
         "furiganaOff": "フリガナ オフ",
         "furiganaOn": "フリガナ オン",
-        "romanizationOff": "ローマ字オフ",
         "layoutAlternating": "レイアウト: 交互",
         "layoutCenter": "レイアウト: 中央",
         "layoutFocus": "レイアウト: フォーカス",
@@ -1219,6 +1227,7 @@
         "repeatAll": "全てリピート",
         "repeatOff": "リピートオフ",
         "repeatOne": "1曲リピート",
+        "romanizationOff": "ローマ字オフ",
         "romanizationOn": "ローマ字オン",
         "shuffleOff": "シャッフルオフ",
         "shuffleOn": "シャッフルオン",
@@ -1257,9 +1266,9 @@
           "description": "スペースで再生/一時停止、矢印キーでシーク・トラック変更。",
           "title": "キーボードショートカット"
         },
-        "styleLayout": {
-          "description": "フォント、レイアウト（フォーカス/中央/交互）の変更、歌詞の翻訳。",
-          "title": "スタイル＆レイアウト"
+        "stylePronunciation": {
+          "description": "フォント、レイアウト、翻訳を変更し、ふりがな/ローマ字/ピンインを追加。",
+          "title": "スタイル・発音"
         },
         "syncLyricsTiming": {
           "description": "[ ]キー、マウスホイール、または上下ドラッグで歌詞オフセットを調整。",

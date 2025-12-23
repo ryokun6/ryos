@@ -1040,6 +1040,7 @@
         "select": "選取",
         "toggleFurigana": "切換振假名",
         "toggleHangulRomanization": "切換韓文 / 羅馬拼音",
+        "toggleRomanization": "切換羅馬拼音",
         "translateLyrics": "翻譯歌詞"
       },
       "description": "音樂播放器",
@@ -1111,6 +1112,10 @@
           "description": "調整背光燈、主題並切換至全螢幕影片。",
           "title": "顯示與全螢幕"
         },
+        "lyricsPronunciation": {
+          "description": "檢視同步歌詞，並顯示翻譯、振假名、羅馬字和拼音。",
+          "title": "歌詞與發音"
+        },
         "playbackControls": {
           "description": "播放、暫停、跳過曲目並控制目前歌曲。",
           "title": "播放控制"
@@ -1118,10 +1123,6 @@
         "playbackModes": {
           "description": "啟用隨機播放、重複歌曲或播放清單等功能。",
           "title": "播放模式"
-        },
-        "syncedLyrics": {
-          "description": "檢視時間同步的歌詞並獲得即時翻譯。",
-          "title": "同步歌詞"
         },
         "wheelNavigation": {
           "description": "使用點擊轉盤瀏覽選單和您的音樂資料庫。",
@@ -1142,10 +1143,12 @@
         "backlight": "背光燈",
         "black": "黑色",
         "cacheCleared": "緩存已清除",
+        "chinesePinyin": "中文（拼音）",
         "classic": "經典",
         "clearCache": "清除緩存",
         "clearLibrary": "清除資料庫...",
         "controls": "控制",
+        "enableRomanization": "啟用羅馬拼音",
         "exportLibrary": "輸出資料庫...",
         "file": "檔案",
         "fontRounded": "圓體",
@@ -1155,7 +1158,10 @@
         "furigana": "假名標音",
         "importLibrary": "匯入資料庫...",
         "ipodHelp": "iPod 輔助說明",
+        "japaneseFurigana": "日文假名",
+        "japaneseRomaji": "日文羅馬字",
         "korean": "羅馬拼音",
+        "koreanRomanization": "韓文",
         "lcdFilter": "LCD 濾鏡",
         "library": "資料庫",
         "lyrics": "歌詞",
@@ -1164,13 +1170,16 @@
         "pause": "暫停",
         "play": "播放",
         "previous": "上一首",
+        "pronunciation": "發音",
         "refreshLyrics": "搜尋歌詞",
         "repeatAll": "全部重複",
         "repeatOne": "單曲重複",
+        "romanization": "羅馬拼音",
         "searchSongs": "搜尋歌曲...",
         "shareApp": "分享 App...",
         "shareSong": "分享歌曲...",
         "showLyrics": "顯示歌詞",
+        "showPronunciation": "顯示發音",
         "shuffle": "隨機播放",
         "single": "單行",
         "syncLibrary": "同步資料庫...",
@@ -1206,7 +1215,6 @@
         "fontSerif": "字體：襯線體",
         "furiganaOff": "振假名：關",
         "furiganaOn": "振假名：開",
-        "romanizationOff": "羅馬拼音關閉",
         "layoutAlternating": "版面配置：交替",
         "layoutCenter": "版面配置：置中",
         "layoutFocus": "版面配置：焦點",
@@ -1219,6 +1227,7 @@
         "repeatAll": "全部重複",
         "repeatOff": "關閉重複",
         "repeatOne": "單曲重複",
+        "romanizationOff": "羅馬拼音關閉",
         "romanizationOn": "羅馬拼音開啟",
         "shuffleOff": "隨機播放關",
         "shuffleOn": "隨機播放開",
@@ -1257,9 +1266,9 @@
           "description": "空白鍵播放/暫停，方向鍵跳轉及切換曲目。",
           "title": "鍵盤快捷鍵"
         },
-        "styleLayout": {
-          "description": "更改字體、版面配置（焦點/置中/交替），以及翻譯歌詞。",
-          "title": "樣式與版面"
+        "stylePronunciation": {
+          "description": "更改字體、版面配置、翻譯，並加入振假名/羅馬字/拼音。",
+          "title": "樣式與發音"
         },
         "syncLyricsTiming": {
           "description": "使用 [ ] 鍵、滑鼠滾輪或上下拖曳來調整歌詞偏移。",

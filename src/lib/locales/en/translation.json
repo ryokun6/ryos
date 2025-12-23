@@ -1281,6 +1281,14 @@
         "traditionalChinese": "繁體",
         "korean": "Romanization",
         "furigana": "Furigana",
+        "romanization": "Romanization",
+        "pronunciation": "Pronunciation",
+        "showPronunciation": "Show Pronunciation",
+        "enableRomanization": "Enable Romanization",
+        "japaneseFurigana": "Japanese Furigana",
+        "japaneseRomaji": "Japanese Romaji",
+        "koreanRomanization": "Korean",
+        "chinesePinyin": "Chinese (Pinyin)",
         "multi": "Multi",
         "single": "Single",
         "alternating": "Alternating",
@@ -1436,6 +1444,7 @@
         "cycleLyricFont": "Cycle lyric font",
         "toggleHangulRomanization": "Toggle Hangul / Romanization",
         "toggleFurigana": "Toggle Furigana",
+        "toggleRomanization": "Toggle Romanization",
         "translateLyrics": "Translate lyrics",
         "select": "Select"
       },
@@ -1457,9 +1466,9 @@
           "title": "Playback Controls",
           "description": "Play, pause, skip tracks, and control your current song."
         },
-        "syncedLyrics": {
-          "title": "Synced Lyrics",
-          "description": "View time-synced lyrics and get instant translations."
+        "lyricsPronunciation": {
+          "title": "Lyrics & Pronunciation",
+          "description": "View synced lyrics with translations, furigana, romaji, and pinyin."
         },
         "playbackModes": {
           "title": "Playback Modes",
@@ -1499,9 +1508,9 @@
           "title": "Sync Lyrics Timing",
           "description": "Use [ ] keys, mouse wheel, or drag up/down to adjust lyrics offset."
         },
-        "styleLayout": {
-          "title": "Style & Layout",
-          "description": "Change fonts, layouts (focus/center/alternating), and translate lyrics."
+        "stylePronunciation": {
+          "title": "Style & Pronunciation",
+          "description": "Change fonts, layouts, translations, and add furigana/romaji/pinyin."
         },
         "syncedWithIpod": {
           "title": "Synced with iPod",

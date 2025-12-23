@@ -1040,6 +1040,7 @@
         "select": "Auswählen",
         "toggleFurigana": "Furigana umschalten",
         "toggleHangulRomanization": "Hangul / Romanisierung umschalten",
+        "toggleRomanization": "Romanisierung umschalten",
         "translateLyrics": "Liedtext übersetzen"
       },
       "description": "Musikplayer",
@@ -1111,6 +1112,10 @@
           "description": "Hintergrundbeleuchtung, Designs anpassen und zu Vollbild-Video wechseln.",
           "title": "Anzeige und Vollbild"
         },
+        "lyricsPronunciation": {
+          "description": "Synchronisierte Liedtexte mit Übersetzungen, Furigana, Romaji und Pinyin anzeigen.",
+          "title": "Liedtexte & Aussprache"
+        },
         "playbackControls": {
           "description": "Wiedergabe, Pause, Titel überspringen und Ihr aktuelles Lied steuern.",
           "title": "Wiedergabe-Steuerung"
@@ -1118,10 +1123,6 @@
         "playbackModes": {
           "description": "Mischen aktivieren, Lieder oder Wiedergabelisten wiederholen und mehr.",
           "title": "Wiedergabemodi"
-        },
-        "syncedLyrics": {
-          "description": "Zeitlich synchronisierte Texte anzeigen und sofortige Übersetzungen erhalten.",
-          "title": "Synchronisierte Texte"
         },
         "wheelNavigation": {
           "description": "Verwenden Sie das Klickrad, um Menüs und Ihre Musikbibliothek zu durchsuchen.",
@@ -1142,10 +1143,12 @@
         "backlight": "Hintergrundbeleuchtung",
         "black": "Schwarz",
         "cacheCleared": "Cache geleert",
+        "chinesePinyin": "Chinesisch (Pinyin)",
         "classic": "Klassisch",
         "clearCache": "Cache leeren",
         "clearLibrary": "Mediathek leeren...",
         "controls": "Steuerung",
+        "enableRomanization": "Romanisierung aktivieren",
         "exportLibrary": "Mediathek exportieren...",
         "file": "Datei",
         "fontRounded": "Abgerundet",
@@ -1155,7 +1158,10 @@
         "furigana": "Furigana",
         "importLibrary": "Mediathek importieren...",
         "ipodHelp": "iPod-Hilfe",
+        "japaneseFurigana": "Japanisch Furigana",
+        "japaneseRomaji": "Japanisch Romaji",
         "korean": "Romanisierung",
+        "koreanRomanization": "Koreanisch",
         "lcdFilter": "LCD-Filter",
         "library": "Mediathek",
         "lyrics": "Liedtext",
@@ -1164,13 +1170,16 @@
         "pause": "Pause",
         "play": "Wiedergabe",
         "previous": "Zurück",
+        "pronunciation": "Aussprache",
         "refreshLyrics": "Liedtext suchen",
         "repeatAll": "Alle wiederholen",
         "repeatOne": "Einen wiederholen",
+        "romanization": "Romanisierung",
         "searchSongs": "Lieder suchen...",
         "shareApp": "App teilen...",
         "shareSong": "Titel teilen...",
         "showLyrics": "Liedtext anzeigen",
+        "showPronunciation": "Aussprache anzeigen",
         "shuffle": "Zufallswiedergabe",
         "single": "Einzeln",
         "syncLibrary": "Mediathek synchronisieren...",
@@ -1206,7 +1215,6 @@
         "fontSerif": "Schriftart: Serif",
         "furiganaOff": "Furigana Aus",
         "furiganaOn": "Furigana An",
-        "romanizationOff": "Romanisierung Aus",
         "layoutAlternating": "Layout: Abwechselnd",
         "layoutCenter": "Layout: Zentriert",
         "layoutFocus": "Layout: Fokus",
@@ -1219,6 +1227,7 @@
         "repeatAll": "Alle wiederholen",
         "repeatOff": "Wiederholung AUS",
         "repeatOne": "Einen wiederholen",
+        "romanizationOff": "Romanisierung Aus",
         "romanizationOn": "Romanisierung An",
         "shuffleOff": "Zufall AUS",
         "shuffleOn": "Zufall EIN",
@@ -1257,9 +1266,9 @@
           "description": "Leertaste für Wiedergabe/Pause, Pfeiltasten zum Spulen und Titelwechsel.",
           "title": "Tastaturkürzel"
         },
-        "styleLayout": {
-          "description": "Ändern Sie Schriftarten, Layouts (Fokus/Zentriert/Wechselnd) und übersetzen Sie Liedtexte.",
-          "title": "Stil & Layout"
+        "stylePronunciation": {
+          "description": "Schriftarten, Layouts, Übersetzungen ändern und Furigana/Romaji/Pinyin hinzufügen.",
+          "title": "Stil & Aussprache"
         },
         "syncLyricsTiming": {
           "description": "Verwenden Sie [ ]-Tasten, Mausrad oder ziehen Sie nach oben/unten, um den Liedtext-Offset anzupassen.",

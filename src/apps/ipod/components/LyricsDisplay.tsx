@@ -5,16 +5,24 @@ import {
   ChineseVariant,
   KoreanDisplay,
   JapaneseFurigana,
+  RomanizationSettings,
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useRef, useState, useEffect } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Converter } from "opencc-js";
-import { convert as romanize } from "hangul-romanization";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useFurigana, FuriganaSegment } from "@/hooks/useFurigana";
 import { useShallow } from "zustand/react/shallow";
-import { hasKoreanText, isChineseText } from "@/utils/languageDetection";
+import {
+  isChineseText,
+  hasKanaTextLocal,
+  KOREAN_REGEX,
+  renderFuriganaSegments,
+  renderKoreanWithRomanization,
+  renderChineseWithPinyin,
+  renderKanaWithRomaji,
+} from "@/utils/romanization";
 
 interface LyricsDisplayProps {
   lines: LyricLine[];
@@ -61,6 +69,8 @@ interface LyricsDisplayProps {
   onFuriganaLoadingChange?: (isLoading: boolean) => void;
   /** Current playback time in milliseconds (for word-level highlighting) */
   currentTimeMs?: number;
+  /** Callback to seek to a specific time in ms */
+  onSeekToTime?: (timeMs: number) => void;
 }
 
 const ANIMATION_CONFIG = {
@@ -128,78 +138,6 @@ const ErrorState = ({
 };
 
 
-/**
- * Render furigana segments as React nodes
- */
-function renderFuriganaSegments(segments: FuriganaSegment[]): React.ReactNode {
-  return (
-    <>
-      {segments.map((segment, index) => {
-        if (segment.reading) {
-          return (
-            <ruby key={index} className="lyrics-furigana">
-              {segment.text}
-              <rp>(</rp>
-              <rt className="lyrics-furigana-rt">{segment.reading}</rt>
-              <rp>)</rp>
-            </ruby>
-          );
-        }
-        return <span key={index}>{segment.text}</span>;
-      })}
-    </>
-  );
-}
-
-// Korean character range regex
-const KOREAN_REGEX = /[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3]+/g;
-
-/**
- * Render Korean text with romanization as ruby (furigana-style)
- * Segments text into Korean and non-Korean parts, adding romanization above Korean parts
- */
-function renderKoreanWithRomanization(text: string): React.ReactNode {
-  const segments: { text: string; isKorean: boolean }[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  // Reset regex state
-  KOREAN_REGEX.lastIndex = 0;
-
-  while ((match = KOREAN_REGEX.exec(text)) !== null) {
-    // Add non-Korean text before this match
-    if (match.index > lastIndex) {
-      segments.push({ text: text.slice(lastIndex, match.index), isKorean: false });
-    }
-    // Add Korean text
-    segments.push({ text: match[0], isKorean: true });
-    lastIndex = match.index + match[0].length;
-  }
-
-  // Add remaining non-Korean text
-  if (lastIndex < text.length) {
-    segments.push({ text: text.slice(lastIndex), isKorean: false });
-  }
-
-  return (
-    <>
-      {segments.map((segment, index) => {
-        if (segment.isKorean) {
-          const reading = romanize(segment.text);
-          return (
-            <ruby key={index} className="lyrics-furigana lyrics-korean-ruby">
-              {segment.text}
-              <rp>(</rp>
-              <rt className="lyrics-furigana-rt lyrics-korean-rt">{reading}</rt>
-              <rp>)</rp>
-            </ruby>
-          );
-        }
-        return <span key={index}>{segment.text}</span>;
-      })}
-    </>
-  );
-}
 
 /**
  * Result of mapping furigana to a word, including timing adjustments
@@ -336,27 +274,44 @@ function StaticWordRendering({
   processText,
   furiganaSegments,
   koreanRomanized = false,
+  japaneseRomaji = false,
+  chinesePinyin = false,
+  lineStartTimeMs,
+  onSeekToTime,
 }: {
   wordTimings: LyricWord[];
   processText: (text: string) => string;
   furiganaSegments?: FuriganaSegment[];
   koreanRomanized?: boolean;
+  japaneseRomaji?: boolean;
+  chinesePinyin?: boolean;
+  lineStartTimeMs?: number;
+  onSeekToTime?: (timeMs: number) => void;
 }): ReactNode {
   // Pre-compute render items for consistency with animated version
   const renderItems = useMemo(() => {
-    // Helper to get content for a word (handles Korean romanization)
+    // Helper to get content for a word (handles romanization)
     const getWordContent = (text: string): ReactNode => {
       const processed = processText(text);
+      // Check for kana first (romaji)
+      if (japaneseRomaji && hasKanaTextLocal(processed)) {
+        return renderKanaWithRomaji(processed, "word");
+      }
+      // Then check Korean
       if (koreanRomanized && KOREAN_REGEX.test(text)) {
         KOREAN_REGEX.lastIndex = 0; // Reset regex state
         return renderKoreanWithRomanization(processed);
+      }
+      // Then check Chinese
+      if (chinesePinyin && isChineseText(processed)) {
+        return renderChineseWithPinyin(processed, "word");
       }
       return processed;
     };
 
     if (furiganaSegments && furiganaSegments.length > 0) {
       const wordFuriganaList = mapWordsToFurigana(wordTimings, furiganaSegments);
-      const items: { key: string; content: ReactNode }[] = [];
+      const items: { key: string; content: ReactNode; startTimeMs: number }[] = [];
       
       wordTimings.forEach((word, idx) => {
         const mapping = wordFuriganaList[idx];
@@ -365,8 +320,9 @@ function StaticWordRendering({
         items.push({
           key: `${idx}-${word.text}`,
           content: mapping.segments.length > 0
-            ? renderFuriganaSegments(mapping.segments)
+            ? renderFuriganaSegments(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin })
             : getWordContent(word.text),
+          startTimeMs: word.startTimeMs,
         });
       });
       
@@ -376,13 +332,24 @@ function StaticWordRendering({
     return wordTimings.map((word, idx) => ({
       key: `${idx}-${word.text}`,
       content: getWordContent(word.text),
+      startTimeMs: word.startTimeMs,
     }));
-  }, [wordTimings, furiganaSegments, processText, koreanRomanized]);
+  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin]);
+
+  const handleWordClick = (wordStartTimeMs: number) => {
+    if (onSeekToTime && lineStartTimeMs !== undefined) {
+      onSeekToTime(lineStartTimeMs + wordStartTimeMs);
+    }
+  };
 
   return (
     <>
       {renderItems.map((item) => (
-          <span key={item.key} className="lyrics-word-highlight">
+          <span
+            key={item.key}
+            className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
+            onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.startTimeMs); } : undefined}
+          >
             <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
               {item.content}
             </span>
@@ -417,6 +384,9 @@ function WordTimingHighlight({
   processText,
   furiganaSegments,
   koreanRomanized = false,
+  japaneseRomaji = false,
+  chinesePinyin = false,
+  onSeekToTime,
 }: {
   wordTimings: LyricWord[];
   lineStartTimeMs: number;
@@ -424,6 +394,9 @@ function WordTimingHighlight({
   processText: (text: string) => string;
   furiganaSegments?: FuriganaSegment[];
   koreanRomanized?: boolean;
+  japaneseRomaji?: boolean;
+  chinesePinyin?: boolean;
+  onSeekToTime?: (timeMs: number) => void;
 }): ReactNode {
   // Refs for direct DOM manipulation (bypasses React reconciliation)
   const overlayRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -437,12 +410,21 @@ function WordTimingHighlight({
 
   // Pre-compute render items (only recalculates when inputs change)
   const renderItems = useMemo((): WordRenderItem[] => {
-    // Helper to get content for a word (handles Korean romanization)
+    // Helper to get content for a word (handles romanization)
     const getWordContent = (text: string): ReactNode => {
       const processed = processText(text);
+      // Check for kana first (romaji)
+      if (japaneseRomaji && hasKanaTextLocal(processed)) {
+        return renderKanaWithRomaji(processed, "word");
+      }
+      // Then check Korean
       if (koreanRomanized && KOREAN_REGEX.test(text)) {
         KOREAN_REGEX.lastIndex = 0; // Reset regex state
         return renderKoreanWithRomanization(processed);
+      }
+      // Then check Chinese
+      if (chinesePinyin && isChineseText(processed)) {
+        return renderChineseWithPinyin(processed, "word");
       }
       return processed;
     };
@@ -457,7 +439,7 @@ function WordTimingHighlight({
         if (!mapping || mapping.segments === null) return;
         
         const content = mapping.segments.length > 0
-          ? renderFuriganaSegments(mapping.segments)
+          ? renderFuriganaSegments(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin })
           : getWordContent(word.text);
         
         items.push({
@@ -471,14 +453,14 @@ function WordTimingHighlight({
       return items;
     }
     
-    // No furigana - simple word list with Korean romanization support
+    // No furigana - simple word list with romanization support
     return wordTimings.map((word, idx) => ({
       word,
       extraDurationMs: 0,
       content: getWordContent(word.text),
       key: `${idx}-${word.text}`,
     }));
-  }, [wordTimings, furiganaSegments, processText, koreanRomanized]);
+  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin]);
 
   // Sync time ref when prop changes
   useEffect(() => {
@@ -541,11 +523,21 @@ function WordTimingHighlight({
   // Initial mask (hidden) - prevents flash before animation loop kicks in
   const initialMask = calculateMask(0);
 
+  const handleWordClick = (wordStartTimeMs: number) => {
+    if (onSeekToTime) {
+      onSeekToTime(lineStartTimeMs + wordStartTimeMs);
+    }
+  };
+
   // Render once - DOM updates happen via refs, not re-renders
   return (
     <>
       {renderItems.map((item, idx) => (
-        <span key={item.key} className="lyrics-word-highlight">
+        <span
+          key={item.key}
+          className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
+          onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.word.startTimeMs); } : undefined}
+        >
           <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
             {item.content}
           </span>
@@ -661,6 +653,7 @@ export function LyricsDisplay({
   containerStyle,
   onFuriganaLoadingChange,
   currentTimeMs,
+  onSeekToTime,
 }: LyricsDisplayProps) {
   // Read display settings from store (can be overridden by props)
   const {
@@ -668,12 +661,14 @@ export function LyricsDisplay({
     chineseVariant: storeChineseVariant,
     koreanDisplay: storeKoreanDisplay,
     japaneseFurigana: storeJapaneseFurigana,
+    romanization: storeRomanization,
   } = useIpodStore(
     useShallow((s) => ({
       lyricsAlignment: s.lyricsAlignment,
       chineseVariant: s.chineseVariant,
       koreanDisplay: s.koreanDisplay,
       japaneseFurigana: s.japaneseFurigana,
+      romanization: s.romanization,
     }))
   );
 
@@ -682,6 +677,21 @@ export function LyricsDisplay({
   const chineseVariant = chineseVariantOverride ?? storeChineseVariant;
   const koreanDisplay = koreanDisplayOverride ?? storeKoreanDisplay;
   const japaneseFurigana = japaneseFuriganaOverride ?? storeJapaneseFurigana;
+  
+  // Use new romanization settings with fallback to legacy settings
+  const romanization: RomanizationSettings = useMemo(() => {
+    if (storeRomanization) {
+      return storeRomanization;
+    }
+    // Fallback to legacy settings for backwards compatibility
+    return {
+      enabled: true,
+      japaneseFurigana: japaneseFurigana === JapaneseFurigana.On,
+      japaneseRomaji: false,
+      korean: koreanDisplay === KoreanDisplay.Romanized,
+      chinese: false,
+    };
+  }, [storeRomanization, japaneseFurigana, koreanDisplay]);
 
   const chineseConverter = useMemo(
     () => Converter({ from: "cn", to: "tw" }),
@@ -710,11 +720,11 @@ export function LyricsDisplay({
   // Use original lines for furigana fetching (furigana only applies to original Japanese text)
   const linesForFurigana = displayOriginalLines;
 
-  // Fetch and manage furigana using the extracted hook (always show original, so always enabled)
+  // Fetch and manage furigana using the extracted hook
   const { renderWithFurigana, furiganaMap } = useFurigana({
     lines: linesForFurigana,
-    enabled: japaneseFurigana === JapaneseFurigana.On,
     isShowingOriginal: true, // Always showing original now
+    romanization,
     onLoadingChange: onFuriganaLoadingChange,
   });
 
@@ -730,13 +740,8 @@ export function LyricsDisplay({
     return processed;
   };
 
-  // Render text with Korean romanization as ruby if enabled
-  const renderWithKoreanRomanization = (text: string): React.ReactNode => {
-    if (koreanDisplay === KoreanDisplay.Romanized && hasKoreanText(text)) {
-      return renderKoreanWithRomanization(text);
-    }
-    return text;
-  };
+  // For word-level timing, we still need to track Korean romanization state
+  const showKoreanRomanization = romanization.enabled && romanization.korean;
 
   const getTextAlign = (
     align: LyricsAlignment,
@@ -1085,7 +1090,10 @@ export function LyricsDisplay({
               }}
             >
               {/* Original lyrics with karaoke highlighting */}
-              <div className={`${textSizeClass} ${fontClassName} ${lineHeightClass}`}>
+              <div
+                className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer" : ""}`}
+                onClick={onSeekToTime && !hasWordTimings ? (e) => { e.stopPropagation(); onSeekToTime(parseInt(line.startTimeMs, 10)); } : undefined}
+              >
                 {shouldUseAnimatedWordTiming ? (
                   <WordTimingHighlight
                     wordTimings={line.wordTimings!}
@@ -1093,34 +1101,33 @@ export function LyricsDisplay({
                     currentTimeMs={currentTimeMs!}
                     processText={processText}
                     furiganaSegments={
-                      japaneseFurigana === JapaneseFurigana.On
+                      romanization.enabled && romanization.japaneseFurigana
                         ? furiganaMap.get(line.startTimeMs)
                         : undefined
                     }
-                    koreanRomanized={koreanDisplay === KoreanDisplay.Romanized}
+                    koreanRomanized={showKoreanRomanization}
+                    japaneseRomaji={romanization.enabled && romanization.japaneseRomaji}
+                    chinesePinyin={romanization.enabled && romanization.chinese}
+                    onSeekToTime={onSeekToTime}
                   />
                 ) : hasWordTimings ? (
                   <StaticWordRendering
                     wordTimings={line.wordTimings!}
                     processText={processText}
                     furiganaSegments={
-                      japaneseFurigana === JapaneseFurigana.On
+                      romanization.enabled && romanization.japaneseFurigana
                         ? furiganaMap.get(line.startTimeMs)
                         : undefined
                     }
-                    koreanRomanized={koreanDisplay === KoreanDisplay.Romanized}
+                    koreanRomanized={showKoreanRomanization}
+                    japaneseRomaji={romanization.enabled && romanization.japaneseRomaji}
+                    chinesePinyin={romanization.enabled && romanization.chinese}
+                    lineStartTimeMs={parseInt(line.startTimeMs, 10)}
+                    onSeekToTime={onSeekToTime}
                   />
                 ) : (
-                  // Check furigana first (for Japanese), then Korean romanization
-                  (() => {
-                    const furiganaResult = renderWithFurigana(line, processText(line.words));
-                    // If furigana was applied (returns ReactNode), use it
-                    if (furiganaResult !== processText(line.words)) {
-                      return furiganaResult;
-                    }
-                    // Otherwise check for Korean romanization
-                    return renderWithKoreanRomanization(processText(line.words));
-                  })()
+                  // The hook's renderWithFurigana handles furigana + all romanization types
+                  renderWithFurigana(line, processText(line.words))
                 )}
               </div>
               {/* Translated subtitle (shown below original when translation is active) */}

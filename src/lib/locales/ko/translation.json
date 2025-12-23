@@ -1040,6 +1040,7 @@
         "select": "선택",
         "toggleFurigana": "후리가나 전환",
         "toggleHangulRomanization": "한글 / 로마자 표기 전환",
+        "toggleRomanization": "발음 표기 전환",
         "translateLyrics": "가사 번역"
       },
       "description": "음악 플레이어",
@@ -1111,6 +1112,10 @@
           "description": "백라이트, 테마 조정 및 전체 화면 동영상으로 전환.",
           "title": "표시 및 전체 화면"
         },
+        "lyricsPronunciation": {
+          "description": "번역, 후리가나, 로마자, 병음이 포함된 동기화된 가사를 봅니다.",
+          "title": "가사 및 발음"
+        },
         "playbackControls": {
           "description": "재생, 일시 정지, 트랙 건너뛰기 및 현재 곡 제어.",
           "title": "재생 컨트롤"
@@ -1118,10 +1123,6 @@
         "playbackModes": {
           "description": "셔플, 곡 또는 재생 목록 반복 등을 활성화.",
           "title": "재생 모드"
-        },
-        "syncedLyrics": {
-          "description": "시간 동기화된 가사 보기 및 즉시 번역 받기.",
-          "title": "동기화된 가사"
         },
         "wheelNavigation": {
           "description": "클릭 휠을 사용하여 메뉴 및 음악 라이브러리 탐색.",
@@ -1142,10 +1143,12 @@
         "backlight": "백라이트",
         "black": "검정",
         "cacheCleared": "캐시 지워짐",
+        "chinesePinyin": "중국어 (병음)",
         "classic": "클래식",
         "clearCache": "캐시 지우기",
         "clearLibrary": "보관함 지우기...",
         "controls": "컨트롤",
+        "enableRomanization": "발음 표기 활성화",
         "exportLibrary": "보관함 내보내기...",
         "file": "파일",
         "fontRounded": "둥근",
@@ -1155,7 +1158,10 @@
         "furigana": "후리가나",
         "importLibrary": "보관함 가져오기...",
         "ipodHelp": "iPod 도움말",
+        "japaneseFurigana": "일본어 후리가나",
+        "japaneseRomaji": "일본어 로마자",
         "korean": "로마자 표기",
+        "koreanRomanization": "한국어",
         "lcdFilter": "LCD 필터",
         "library": "보관함",
         "lyrics": "가사",
@@ -1164,13 +1170,16 @@
         "pause": "일시 정지",
         "play": "재생",
         "previous": "이전",
+        "pronunciation": "발음",
         "refreshLyrics": "가사 검색",
         "repeatAll": "모두 반복",
         "repeatOne": "한 곡 반복",
+        "romanization": "발음 표기",
         "searchSongs": "노래 검색...",
         "shareApp": "앱 공유...",
         "shareSong": "노래 공유...",
         "showLyrics": "가사 보기",
+        "showPronunciation": "발음 표시",
         "shuffle": "임의 재생",
         "single": "단일",
         "syncLibrary": "보관함 동기화...",
@@ -1206,7 +1215,6 @@
         "fontSerif": "글꼴: 세리프",
         "furiganaOff": "후리가나 끄기",
         "furiganaOn": "후리가나 켜기",
-        "romanizationOff": "로마자 표기 끔",
         "layoutAlternating": "레이아웃: 교차",
         "layoutCenter": "레이아웃: 중앙",
         "layoutFocus": "레이아웃: 포커스",
@@ -1219,6 +1227,7 @@
         "repeatAll": "모두 반복",
         "repeatOff": "반복 끔",
         "repeatOne": "한 곡 반복",
+        "romanizationOff": "로마자 표기 끔",
         "romanizationOn": "로마자 표기 켜짐",
         "shuffleOff": "셔플 끄기",
         "shuffleOn": "셔플 켜기",
@@ -1257,9 +1266,9 @@
           "description": "스페이스바로 재생/일시 정지, 화살표 키로 탐색 및 트랙 변경.",
           "title": "키보드 단축키"
         },
-        "styleLayout": {
-          "description": "글꼴, 레이아웃(포커스/중앙/교차) 변경 및 가사 번역.",
-          "title": "스타일 및 레이아웃"
+        "stylePronunciation": {
+          "description": "글꼴, 레이아웃, 번역을 변경하고 후리가나/로마자/병음을 추가합니다.",
+          "title": "스타일 및 발음"
         },
         "syncLyricsTiming": {
           "description": "[ ] 키, 마우스 휠 또는 위/아래 드래그로 가사 오프셋을 조정하세요.",

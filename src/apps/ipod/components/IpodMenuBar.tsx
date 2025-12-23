@@ -17,7 +17,7 @@ import { useIpodStoreShallow } from "@/stores/helpers";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { LyricsAlignment, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import { LyricsAlignment } from "@/types/lyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
@@ -78,8 +78,7 @@ export function IpodMenuBar({
     showLyrics,
     isFullScreen,
     lyricsAlignment,
-    koreanDisplay,
-    japaneseFurigana,
+    romanization,
     lyricsTranslationLanguage,
     // Actions
     setCurrentIndex,
@@ -99,8 +98,7 @@ export function IpodMenuBar({
     setLyricsAlignment,
     refreshLyrics,
     clearLyricsCache,
-    setKoreanDisplay,
-    setJapaneseFurigana,
+    setRomanization,
     setLyricsTranslationLanguage,
     importLibrary,
     exportLibrary,
@@ -119,8 +117,7 @@ export function IpodMenuBar({
     showLyrics: s.showLyrics,
     isFullScreen: s.isFullScreen,
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
-    koreanDisplay: s.koreanDisplay ?? KoreanDisplay.Original,
-    japaneseFurigana: s.japaneseFurigana ?? JapaneseFurigana.On,
+    romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     // Actions
     setCurrentIndex: s.setCurrentIndex,
@@ -140,8 +137,7 @@ export function IpodMenuBar({
     setLyricsAlignment: s.setLyricsAlignment,
     refreshLyrics: s.refreshLyrics,
     clearLyricsCache: s.clearLyricsCache,
-    setKoreanDisplay: s.setKoreanDisplay,
-    setJapaneseFurigana: s.setJapaneseFurigana,
+    setRomanization: s.setRomanization,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
     importLibrary: s.importLibrary,
     exportLibrary: s.exportLibrary,
@@ -335,38 +331,6 @@ export function IpodMenuBar({
 
               <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-              {/* Korean toggle */}
-              <MenubarCheckboxItem
-                checked={koreanDisplay === KoreanDisplay.Romanized}
-                onCheckedChange={(checked) =>
-                  setKoreanDisplay(
-                    checked
-                      ? KoreanDisplay.Romanized
-                      : KoreanDisplay.Original
-                  )
-                }
-                className="text-md h-6 px-3"
-              >
-                {t("apps.ipod.menu.korean")}
-              </MenubarCheckboxItem>
-
-              {/* Japanese furigana toggle */}
-              <MenubarCheckboxItem
-                checked={japaneseFurigana === JapaneseFurigana.On}
-                onCheckedChange={(checked) =>
-                  setJapaneseFurigana(
-                    checked
-                      ? JapaneseFurigana.On
-                      : JapaneseFurigana.Off
-                  )
-                }
-                className="text-md h-6 px-3"
-              >
-                {t("apps.ipod.menu.furigana")}
-              </MenubarCheckboxItem>
-
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-
               {/* Alignment modes */}
               <MenubarCheckboxItem
                 checked={lyricsAlignment === LyricsAlignment.FocusThree}
@@ -429,6 +393,68 @@ export function IpodMenuBar({
               </MenubarRadioGroup>
             </MenubarSubContent>
           </MenubarSub>
+
+          {/* Pronunciation Submenu */}
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
+              {t("apps.ipod.menu.pronunciation")}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
+              <MenubarCheckboxItem
+                checked={romanization?.enabled ?? true}
+                onCheckedChange={(checked) =>
+                  setRomanization({ enabled: checked })
+                }
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.showPronunciation")}
+              </MenubarCheckboxItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarCheckboxItem
+                checked={romanization?.japaneseFurigana ?? true}
+                onCheckedChange={(checked) =>
+                  setRomanization({ japaneseFurigana: checked })
+                }
+                disabled={!romanization?.enabled || romanization?.japaneseRomaji}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.japaneseFurigana")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={romanization?.japaneseRomaji ?? false}
+                onCheckedChange={(checked) =>
+                  // Romaji requires furigana to annotate kanji
+                  setRomanization({ japaneseRomaji: checked, japaneseFurigana: checked || (romanization?.japaneseFurigana ?? true) })
+                }
+                disabled={!romanization?.enabled}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.japaneseRomaji")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={romanization?.korean ?? false}
+                onCheckedChange={(checked) =>
+                  setRomanization({ korean: checked })
+                }
+                disabled={!romanization?.enabled}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.koreanRomanization")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={romanization?.chinese ?? false}
+                onCheckedChange={(checked) =>
+                  setRomanization({ chinese: checked })
+                }
+                disabled={!romanization?.enabled}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.chinesePinyin")}
+              </MenubarCheckboxItem>
+            </MenubarSubContent>
+          </MenubarSub>
+
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
 
           <MenubarItem
             onClick={onRefreshLyrics || refreshLyrics}

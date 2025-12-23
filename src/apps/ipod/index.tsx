@@ -19,8 +19,8 @@ export const helpItems = [
   },
   {
     icon: "🎤",
-    title: "Synced Lyrics",
-    description: "View time-synced lyrics and get instant translations.",
+    title: "Lyrics & Pronunciation",
+    description: "View synced lyrics with translations, furigana, romaji, and pinyin.",
   },
   {
     icon: "⚙️",

@@ -44,3 +44,20 @@ export enum JapaneseFurigana {
   Off = "off",
   On = "on",
 }
+
+/**
+ * Romanization settings for lyrics display
+ * Controls ruby annotations for various languages
+ */
+export interface RomanizationSettings {
+  /** Master toggle - when false, no romanization is shown */
+  enabled: boolean;
+  /** Japanese furigana - hiragana readings over kanji (e.g., 日本 → にほん) */
+  japaneseFurigana: boolean;
+  /** Japanese romaji - Latin pronunciation over all Japanese (e.g., 日本 → nihon) */
+  japaneseRomaji: boolean;
+  /** Korean romanization - Latin over hangul (e.g., 한국 → hanguk) */
+  korean: boolean;
+  /** Chinese pinyin - Latin with tones over hanzi (e.g., 中国 → zhōngguó) */
+  chinese: boolean;
+}

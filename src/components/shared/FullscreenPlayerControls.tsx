@@ -1,12 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import type { LyricsAlignment, KoreanDisplay } from "@/types/lyrics";
+import type { LyricsAlignment, KoreanDisplay, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
 import { Globe, Maximize2, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
@@ -36,10 +37,17 @@ export interface FullscreenPlayerControlsProps {
   currentFont: LyricsFont;
   onFontCycle: () => void;
 
-  // Korean display
+  // Korean display (legacy - use romanization instead)
   koreanDisplay: KoreanDisplay;
   onKoreanToggle: () => void;
   showKoreanToggle?: boolean;
+  
+  // Romanization/Pronunciation settings
+  romanization?: RomanizationSettings;
+  onRomanizationChange?: (settings: Partial<RomanizationSettings>) => void;
+  showRomanizationToggle?: boolean;
+  isPronunciationMenuOpen?: boolean;
+  setIsPronunciationMenuOpen?: (open: boolean) => void;
 
   // Translation
   currentTranslationCode: string | null;
@@ -74,6 +82,11 @@ export function FullscreenPlayerControls({
   koreanDisplay,
   onKoreanToggle,
   showKoreanToggle = true,
+  romanization,
+  onRomanizationChange,
+  showRomanizationToggle = true,
+  isPronunciationMenuOpen = false,
+  setIsPronunciationMenuOpen,
   currentTranslationCode,
   onTranslationSelect,
   translationLanguages,
@@ -262,8 +275,108 @@ export function FullscreenPlayerControls({
           </span>
         </button>
 
-        {/* Hangul toggle */}
-        {showKoreanToggle && (
+        {/* Pronunciation menu (unified) */}
+        {showRomanizationToggle && romanization && onRomanizationChange && setIsPronunciationMenuOpen ? (
+          <DropdownMenu open={isPronunciationMenuOpen} onOpenChange={setIsPronunciationMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInteraction?.();
+                }}
+                aria-label={t("apps.ipod.menu.pronunciation")}
+                className={cn(
+                  buttonSize,
+                  "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+                )}
+                title={t("apps.ipod.menu.pronunciation")}
+              >
+                {romanization.enabled ? (
+                  <ruby className={cn(smallIconSize, "ruby-align-center")} style={{ rubyPosition: "over" }}>
+                    文
+                    <rt style={{ fontSize: variant === "compact" ? "8px" : "9px", opacity: 0.7, paddingBottom: "1px" }}>
+                      Aa
+                    </rt>
+                  </ruby>
+                ) : (
+                  <span className={smallIconSize}>文</span>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="top"
+              align="center"
+              sideOffset={8}
+              className={cn(
+                "px-0",
+                variant === "compact" ? "w-44" : "w-48"
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenuCheckboxItem
+                checked={romanization.enabled}
+                onCheckedChange={(checked) => {
+                  onRomanizationChange({ enabled: checked });
+                  onInteraction?.();
+                }}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.showPronunciation")}
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={romanization.japaneseFurigana}
+                onCheckedChange={(checked) => {
+                  onRomanizationChange({ japaneseFurigana: checked });
+                  onInteraction?.();
+                }}
+                disabled={!romanization.enabled || romanization.japaneseRomaji}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.japaneseFurigana")}
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={romanization.japaneseRomaji}
+                onCheckedChange={(checked) => {
+                  // Romaji requires furigana
+                  onRomanizationChange({ 
+                    japaneseRomaji: checked, 
+                    japaneseFurigana: checked || romanization.japaneseFurigana 
+                  });
+                  onInteraction?.();
+                }}
+                disabled={!romanization.enabled}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.japaneseRomaji")}
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={romanization.korean}
+                onCheckedChange={(checked) => {
+                  onRomanizationChange({ korean: checked });
+                  onInteraction?.();
+                }}
+                disabled={!romanization.enabled}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.koreanRomanization")}
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={romanization.chinese}
+                onCheckedChange={(checked) => {
+                  onRomanizationChange({ chinese: checked });
+                  onInteraction?.();
+                }}
+                disabled={!romanization.enabled}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.chinesePinyin")}
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : showKoreanToggle && (
+          /* Legacy Hangul toggle - fallback for backwards compatibility */
           <button
             type="button"
             onClick={handleClick(onKoreanToggle)}

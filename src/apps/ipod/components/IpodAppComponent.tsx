@@ -87,6 +87,8 @@ export function IpodAppComponent({
     chineseVariant,
     koreanDisplay,
     japaneseFurigana,
+    romanization,
+    setRomanization,
     lyricsTranslationLanguage,
     isFullScreen,
     toggleFullScreen,
@@ -114,6 +116,8 @@ export function IpodAppComponent({
     chineseVariant: s.chineseVariant,
     koreanDisplay: s.koreanDisplay,
     japaneseFurigana: s.japaneseFurigana,
+    romanization: s.romanization,
+    setRomanization: s.setRomanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     isFullScreen: s.isFullScreen,
     toggleFullScreen: s.toggleFullScreen,
@@ -1250,7 +1254,7 @@ export function IpodAppComponent({
     }
   }, [isFullScreen, elapsedTime, isPlaying, setIsPlaying, isIOSSafari]);
 
-  // Seek time for fullscreen
+  // Seek time for fullscreen (delta)
   const seekTime = useCallback(
     (delta: number) => {
       if (fullScreenPlayerRef.current) {
@@ -1261,6 +1265,25 @@ export function IpodAppComponent({
       }
     },
     [showStatus]
+  );
+
+  // Seek to absolute time (in ms) and start playing
+  // timeMs is in "lyrics time" (player time + offset), so we subtract the offset to get player time
+  const seekToTime = useCallback(
+    (timeMs: number) => {
+      if (fullScreenPlayerRef.current) {
+        // Subtract lyricOffset to convert from lyrics time to player time
+        const playerTimeMs = timeMs - lyricOffset;
+        const newTime = Math.max(0, playerTimeMs / 1000);
+        fullScreenPlayerRef.current.seekTo(newTime);
+        // Start playing if paused
+        if (!isPlaying) {
+          setIsPlaying(true);
+        }
+        showStatus(`▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`);
+      }
+    },
+    [showStatus, isPlaying, lyricOffset]
   );
 
   // Fullscreen callbacks
@@ -1513,6 +1536,8 @@ export function IpodAppComponent({
             showKoreanToggle={hasKoreanText}
             currentJapaneseFurigana={japaneseFurigana}
             onToggleJapaneseFurigana={toggleFurigana}
+            romanization={romanization}
+            onRomanizationChange={setRomanization}
             fullScreenPlayerRef={fullScreenPlayerRef}
             isLoadingLyrics={fullScreenLyricsControls.isLoading}
             isProcessingLyrics={fullScreenLyricsControls.isTranslating}
@@ -1638,6 +1663,7 @@ export function IpodAppComponent({
                         bottomPaddingClass={controlsVisible ? "pb-6" : "pb-2"}
                         onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                        onSeekToTime={seekToTime}
                       />
                     </div>
                   )}

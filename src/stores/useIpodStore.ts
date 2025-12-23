@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, LyricsFont } from "@/types/lyrics";
+import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, LyricsFont, RomanizationSettings } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import { getApiUrl } from "@/utils/platform";
 import i18n from "@/lib/i18n";
@@ -47,8 +47,12 @@ interface IpodData {
   lyricsAlignment: LyricsAlignment;
   lyricsFont: LyricsFont;
   chineseVariant: ChineseVariant;
+  /** @deprecated Use romanization settings instead */
   koreanDisplay: KoreanDisplay;
+  /** @deprecated Use romanization settings instead */
   japaneseFurigana: JapaneseFurigana;
+  /** Romanization settings for lyrics display */
+  romanization: RomanizationSettings;
   /** Persistent translation language preference that persists across tracks */
   lyricsTranslationLanguage: string | null;
   currentLyrics: { lines: LyricLine[] } | null;
@@ -155,6 +159,13 @@ const initialIpodData: IpodData = {
   chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
+  romanization: {
+    enabled: true,
+    japaneseFurigana: true,
+    japaneseRomaji: false,
+    korean: false,
+    chinese: false,
+  },
   lyricsTranslationLanguage: LYRICS_TRANSLATION_AUTO,
   currentLyrics: null,
   lyricsRefetchTrigger: 0,
@@ -197,10 +208,14 @@ export interface IpodState extends IpodData {
   setLyricsFont: (font: LyricsFont) => void;
   /** Set Chinese character variant */
   setChineseVariant: (variant: ChineseVariant) => void;
-  /** Set Korean text display mode */
+  /** Set Korean text display mode @deprecated Use setRomanization instead */
   setKoreanDisplay: (display: KoreanDisplay) => void;
-  /** Set Japanese furigana display mode */
+  /** Set Japanese furigana display mode @deprecated Use setRomanization instead */
   setJapaneseFurigana: (mode: JapaneseFurigana) => void;
+  /** Set romanization settings */
+  setRomanization: (settings: Partial<RomanizationSettings>) => void;
+  /** Toggle master romanization on/off */
+  toggleRomanization: () => void;
   /** Set the persistent translation language preference that persists across tracks */
   setLyricsTranslationLanguage: (language: string | null) => void;
   /** Import library from JSON string */
@@ -236,7 +251,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSearch: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 23; // Default lyricsTranslationLanguage to "auto"
+const CURRENT_IPOD_STORE_VERSION = 24; // Add unified romanization settings
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -554,6 +569,14 @@ export const useIpodStore = create<IpodState>()(
       setChineseVariant: (variant) => set({ chineseVariant: variant }),
       setKoreanDisplay: (display) => set({ koreanDisplay: display }),
       setJapaneseFurigana: (mode) => set({ japaneseFurigana: mode }),
+      setRomanization: (settings) =>
+        set((state) => ({
+          romanization: { ...state.romanization, ...settings },
+        })),
+      toggleRomanization: () =>
+        set((state) => ({
+          romanization: { ...state.romanization, enabled: !state.romanization.enabled },
+        })),
       setLyricsTranslationLanguage: (language) =>
         set({
           lyricsTranslationLanguage: language,
@@ -882,8 +905,9 @@ export const useIpodStore = create<IpodState>()(
         lyricsAlignment: state.lyricsAlignment,
         lyricsFont: state.lyricsFont, // Persist lyrics font style
         chineseVariant: state.chineseVariant,
-        koreanDisplay: state.koreanDisplay,
-        japaneseFurigana: state.japaneseFurigana,
+        koreanDisplay: state.koreanDisplay, // Kept for backwards compatibility
+        japaneseFurigana: state.japaneseFurigana, // Kept for backwards compatibility
+        romanization: state.romanization, // New unified romanization settings
         lyricsTranslationLanguage: state.lyricsTranslationLanguage, // Persist translation language preference
         isFullScreen: state.isFullScreen,
         libraryState: state.libraryState,
@@ -897,6 +921,21 @@ export const useIpodStore = create<IpodState>()(
           console.log(
             `Migrating iPod store from version ${version} to ${CURRENT_IPOD_STORE_VERSION}`
           );
+          
+          // Migrate old romanization settings to new unified format
+          // Cast to string for legacy value comparison (old stores may have string values)
+          const oldKoreanDisplay = state.koreanDisplay as string | undefined;
+          const oldJapaneseFurigana = state.japaneseFurigana as string | undefined;
+          
+          // Create romanization settings from old values
+          const romanization: RomanizationSettings = state.romanization ?? {
+            enabled: true, // Default to enabled for backwards compatibility
+            japaneseFurigana: oldJapaneseFurigana === JapaneseFurigana.On || oldJapaneseFurigana === "on" || oldJapaneseFurigana === undefined,
+            japaneseRomaji: false, // New feature, default off
+            korean: oldKoreanDisplay === KoreanDisplay.Romanized || oldKoreanDisplay === "romanized",
+            chinese: false, // New feature, default off
+          };
+          
           state = {
             ...state,
             tracks: [],
@@ -910,6 +949,7 @@ export const useIpodStore = create<IpodState>()(
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
+            romanization,
             lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? LYRICS_TRANSLATION_AUTO, // Default to auto (ryOS locale)
             libraryState: "uninitialized" as LibraryState, // Reset to uninitialized on migration
             lastKnownVersion: state.lastKnownVersion ?? 0,
@@ -934,6 +974,7 @@ export const useIpodStore = create<IpodState>()(
           chineseVariant: state.chineseVariant,
           koreanDisplay: state.koreanDisplay,
           japaneseFurigana: state.japaneseFurigana,
+          romanization: state.romanization ?? initialIpodData.romanization,
           lyricsTranslationLanguage: state.lyricsTranslationLanguage, // Persist translation language preference
           isFullScreen: state.isFullScreen,
           libraryState: state.libraryState,

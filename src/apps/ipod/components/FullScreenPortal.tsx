@@ -39,6 +39,8 @@ export function FullScreenPortal({
   showKoreanToggle = true,
   currentJapaneseFurigana: _currentJapaneseFurigana,
   onToggleJapaneseFurigana,
+  romanization,
+  onRomanizationChange,
   fullScreenPlayerRef,
   isLoadingLyrics,
   isProcessingLyrics,
@@ -47,6 +49,7 @@ export function FullScreenPortal({
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [isPronunciationMenuOpen, setIsPronunciationMenuOpen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const hideControlsTimeoutRef = useRef<number | null>(null);
   const isOffline = useOffline();
@@ -85,14 +88,14 @@ export function FullScreenPortal({
     if (hideControlsTimeoutRef.current) {
       clearTimeout(hideControlsTimeoutRef.current);
     }
-    // Only start hide timer when playing and menu is closed
+    // Only start hide timer when playing and menus are closed
     const actuallyPlaying = getActualPlayerState();
-    if (actuallyPlaying && !isLangMenuOpen) {
+    if (actuallyPlaying && !isLangMenuOpen && !isPronunciationMenuOpen) {
       hideControlsTimeoutRef.current = window.setTimeout(() => {
         setShowControls(false);
       }, 2000);
     }
-  }, [getActualPlayerState, isLangMenuOpen]);
+  }, [getActualPlayerState, isLangMenuOpen, isPronunciationMenuOpen]);
 
   // Use refs to store the latest values, avoiding stale closures
   const handlersRef = useRef<{
@@ -333,6 +336,8 @@ export function FullScreenPortal({
   }, [handleTouchStart, handleTouchEnd]);
 
   // Auto-hide controls after inactivity
+  const anyMenuOpen = isLangMenuOpen || isPronunciationMenuOpen;
+  
   useEffect(() => {
     const handleActivity = () => {
       if (!hasUserInteracted) {
@@ -351,7 +356,7 @@ export function FullScreenPortal({
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
       }
-      if (actuallyPlaying && !isLangMenuOpen) {
+      if (actuallyPlaying && !anyMenuOpen) {
         hideControlsTimeoutRef.current = window.setTimeout(() => {
           setShowControls(false);
         }, 2000);
@@ -359,7 +364,7 @@ export function FullScreenPortal({
     };
 
     const actuallyPlaying = getActualPlayerState();
-    if (isLangMenuOpen || !actuallyPlaying) setShowControls(true);
+    if (anyMenuOpen || !actuallyPlaying) setShowControls(true);
 
     window.addEventListener("mousemove", handleActivity, { passive: true });
     window.addEventListener("keydown", handleActivity);
@@ -367,7 +372,7 @@ export function FullScreenPortal({
     window.addEventListener("click", handleActivity, { passive: true });
 
     const actuallyPlayingOnMount = getActualPlayerState() || isPlaying;
-    if (actuallyPlayingOnMount && !isLangMenuOpen) {
+    if (actuallyPlayingOnMount && !anyMenuOpen) {
       hideControlsTimeoutRef.current = window.setTimeout(() => {
         setShowControls(false);
       }, 2000);
@@ -384,7 +389,7 @@ export function FullScreenPortal({
       }
     };
   }, [
-    isLangMenuOpen,
+    anyMenuOpen,
     isPlaying,
     hasUserInteracted,
     isMobileSafariDevice,
@@ -568,9 +573,9 @@ export function FullScreenPortal({
                 isLangMenuOpen: boolean;
               }) => React.ReactNode
             )({
-              controlsVisible:
-                showControls || isLangMenuOpen || !getActualPlayerState(),
-              isLangMenuOpen,
+                controlsVisible:
+                  showControls || anyMenuOpen || !getActualPlayerState(),
+                isLangMenuOpen,
             })
           : children}
       </div>
@@ -580,7 +585,7 @@ export function FullScreenPortal({
         data-toolbar
         className={cn(
           "w-full flex justify-center z-[10001] transition-opacity duration-200",
-          showControls || isLangMenuOpen || !getActualPlayerState()
+          showControls || anyMenuOpen || !getActualPlayerState()
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
         )}
@@ -605,6 +610,11 @@ export function FullScreenPortal({
           koreanDisplay={currentKoreanDisplay}
           onKoreanToggle={onToggleKoreanDisplay}
           showKoreanToggle={showKoreanToggle}
+          romanization={romanization}
+          onRomanizationChange={onRomanizationChange}
+          showRomanizationToggle={!!romanization && !!onRomanizationChange}
+          isPronunciationMenuOpen={isPronunciationMenuOpen}
+          setIsPronunciationMenuOpen={setIsPronunciationMenuOpen}
           currentTranslationCode={currentTranslationCode}
           onTranslationSelect={onSelectTranslation}
           translationLanguages={translationLanguages}

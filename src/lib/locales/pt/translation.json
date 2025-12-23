@@ -1040,6 +1040,7 @@
         "select": "Selecionar",
         "toggleFurigana": "Alternar Furigana",
         "toggleHangulRomanization": "Alternar Hangul / Romanização",
+        "toggleRomanization": "Alternar Romanização",
         "translateLyrics": "Traduzir letra"
       },
       "description": "Reprodutor de música",
@@ -1111,6 +1112,10 @@
           "description": "Ajuste a luz de fundo, temas e mude para vídeo em tela cheia.",
           "title": "Tela e Tela Cheia"
         },
+        "lyricsPronunciation": {
+          "description": "Ver letras sincronizadas com traduções, furigana, romaji e pinyin.",
+          "title": "Letras e Pronúncia"
+        },
         "playbackControls": {
           "description": "Reproduza, pause, pule faixas e controle sua música atual.",
           "title": "Controles de Reprodução"
@@ -1118,10 +1123,6 @@
         "playbackModes": {
           "description": "Ative a reprodução aleatória, repita músicas ou playlists, e muito mais.",
           "title": "Modos de Reprodução"
-        },
-        "syncedLyrics": {
-          "description": "Visualize letras sincronizadas com o tempo e obtenha traduções instantâneas.",
-          "title": "Letras Sincronizadas"
         },
         "wheelNavigation": {
           "description": "Use a click wheel para navegar pelos menus e pela sua biblioteca de músicas.",
@@ -1142,10 +1143,12 @@
         "backlight": "Luz de Fundo",
         "black": "Preto",
         "cacheCleared": "Cache limpo",
+        "chinesePinyin": "Chinês (Pinyin)",
         "classic": "Clássico",
         "clearCache": "Limpar Cache",
         "clearLibrary": "Limpar Biblioteca...",
         "controls": "Controles",
+        "enableRomanization": "Ativar Romanização",
         "exportLibrary": "Exportar Biblioteca...",
         "file": "Arquivo",
         "fontRounded": "Arredondada",
@@ -1155,7 +1158,10 @@
         "furigana": "Furigana",
         "importLibrary": "Importar Biblioteca...",
         "ipodHelp": "Ajuda do iPod",
+        "japaneseFurigana": "Japonês Furigana",
+        "japaneseRomaji": "Japonês Romaji",
         "korean": "Romanização",
+        "koreanRomanization": "Coreano",
         "lcdFilter": "Filtro LCD",
         "library": "Biblioteca",
         "lyrics": "Letras",
@@ -1164,13 +1170,16 @@
         "pause": "Pausar",
         "play": "Reproduzir",
         "previous": "Anterior",
+        "pronunciation": "Pronúncia",
         "refreshLyrics": "Pesquisar Letras",
         "repeatAll": "Repetir Tudo",
         "repeatOne": "Repetir Um",
+        "romanization": "Romanização",
         "searchSongs": "Pesquisar Músicas...",
         "shareApp": "Compartilhar App...",
         "shareSong": "Compartilhar Música...",
         "showLyrics": "Mostrar Letras",
+        "showPronunciation": "Mostrar Pronúncia",
         "shuffle": "Aleatório",
         "single": "Único",
         "syncLibrary": "Sincronizar Biblioteca...",
@@ -1206,7 +1215,6 @@
         "fontSerif": "Fonte: Serifa",
         "furiganaOff": "Furigana Desativado",
         "furiganaOn": "Furigana Ativado",
-        "romanizationOff": "Romanização DESLIGADA",
         "layoutAlternating": "Layout: Alternado",
         "layoutCenter": "Layout: Centro",
         "layoutFocus": "Layout: Foco",
@@ -1219,6 +1227,7 @@
         "repeatAll": "Repetir TODAS",
         "repeatOff": "Repetir DESLIGADO",
         "repeatOne": "Repetir UMA",
+        "romanizationOff": "Romanização DESLIGADA",
         "romanizationOn": "Romanização LIGADA",
         "shuffleOff": "Aleatório DESLIGADO",
         "shuffleOn": "Aleatório LIGADO",
@@ -1257,9 +1266,9 @@
           "description": "Espaço para reproduzir/pausar, teclas de seta para buscar e mudar de faixa.",
           "title": "Atalhos de Teclado"
         },
-        "styleLayout": {
-          "description": "Altere fontes, layouts (foco/central/alternado) e traduza letras.",
-          "title": "Estilo e Layout"
+        "stylePronunciation": {
+          "description": "Alterar fontes, layouts, traduções e adicionar furigana/romaji/pinyin.",
+          "title": "Estilo e Pronúncia"
         },
         "syncLyricsTiming": {
           "description": "Use as teclas [ ], a roda do mouse ou arraste para cima/baixo para ajustar o deslocamento da letra.",

@@ -56,6 +56,7 @@ export function KaraokeAppComponent({
     chineseVariant,
     koreanDisplay,
     japaneseFurigana,
+    romanization,
     lyricsTranslationLanguage,
   } = useIpodStore(
     useShallow((s) => ({
@@ -66,6 +67,7 @@ export function KaraokeAppComponent({
       chineseVariant: s.chineseVariant,
       koreanDisplay: s.koreanDisplay,
       japaneseFurigana: s.japaneseFurigana,
+      romanization: s.romanization,
       lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     }))
   );
@@ -75,6 +77,7 @@ export function KaraokeAppComponent({
     setLyricsFont,
     setKoreanDisplay,
     setJapaneseFurigana,
+    setRomanization,
     setLyricsTranslationLanguage,
     toggleLyrics,
     clearLibrary,
@@ -86,6 +89,7 @@ export function KaraokeAppComponent({
     setLyricsFont: s.setLyricsFont,
     setKoreanDisplay: s.setKoreanDisplay,
     setJapaneseFurigana: s.setJapaneseFurigana,
+    setRomanization: s.setRomanization,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
     toggleLyrics: s.toggleLyrics,
     clearLibrary: s.clearLibrary,
@@ -152,6 +156,8 @@ export function KaraokeAppComponent({
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [isPronunciationMenuOpen, setIsPronunciationMenuOpen] = useState(false);
+  const anyMenuOpen = isLangMenuOpen || isPronunciationMenuOpen;
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
   
   // New dialogs for iPod menu features
@@ -275,12 +281,12 @@ export function KaraokeAppComponent({
     if (hideControlsTimeoutRef.current) {
       clearTimeout(hideControlsTimeoutRef.current);
     }
-    if (isPlaying && !isLangMenuOpen) {
+    if (isPlaying && !anyMenuOpen) {
       hideControlsTimeoutRef.current = window.setTimeout(() => {
         setShowControls(false);
       }, 3000);
     }
-  }, [isPlaying, isLangMenuOpen]);
+  }, [isPlaying, anyMenuOpen]);
 
   // Register activity (for full screen portal)
   const registerActivity = useCallback(() => {
@@ -316,7 +322,7 @@ export function KaraokeAppComponent({
   }, [isOffline, showOfflineStatus, nextTrack, showStatus]);
 
   useEffect(() => {
-    if (!isPlaying || isLangMenuOpen) {
+    if (!isPlaying || anyMenuOpen) {
       setShowControls(true);
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
@@ -329,7 +335,7 @@ export function KaraokeAppComponent({
         clearTimeout(hideControlsTimeoutRef.current);
       }
     };
-  }, [isPlaying, isLangMenuOpen, restartAutoHideTimer]);
+  }, [isPlaying, anyMenuOpen, restartAutoHideTimer]);
 
   // Reset elapsed time on track change
   useEffect(() => {
@@ -433,7 +439,7 @@ export function KaraokeAppComponent({
     }
   }, [isFullScreen]);
 
-  // Seek time
+  // Seek time (delta)
   const seekTime = useCallback(
     (delta: number) => {
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
@@ -447,6 +453,29 @@ export function KaraokeAppComponent({
       }
     },
     [showStatus, isFullScreen]
+  );
+
+  // Seek to absolute time (in ms) and start playing
+  // timeMs is in "lyrics time" (player time + offset), so we subtract the offset to get player time
+  const seekToTime = useCallback(
+    (timeMs: number) => {
+      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      if (activePlayer) {
+        // Subtract lyricOffset to convert from lyrics time to player time
+        const lyricOffset = currentTrack?.lyricOffset ?? 0;
+        const playerTimeMs = timeMs - lyricOffset;
+        const newTime = Math.max(0, playerTimeMs / 1000);
+        activePlayer.seekTo(newTime);
+        // Start playing if paused
+        if (!isPlaying) {
+          setIsPlaying(true);
+        }
+        showStatus(
+          `▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
+        );
+      }
+    },
+    [showStatus, isFullScreen, isPlaying, currentTrack?.lyricOffset]
   );
 
   // Alignment cycle
@@ -846,9 +875,10 @@ export function KaraokeAppComponent({
                           gap: "clamp(0.25rem, 2cqw, 1rem)",
                         }}
                         interactive={true}
-                        bottomPaddingClass={showControls || isLangMenuOpen || !isPlaying ? "pb-20" : "pb-16"}
+                        bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-16"}
                         onFuriganaLoadingChange={setIsFetchingFurigana}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                        onSeekToTime={seekToTime}
                       />
               </div>
             </>
@@ -904,7 +934,7 @@ export function KaraokeAppComponent({
             data-toolbar
             className={cn(
               "absolute bottom-0 left-0 right-0 flex justify-center z-50 pb-6 transition-opacity duration-200",
-              showControls || isLangMenuOpen || !isPlaying
+              showControls || anyMenuOpen || !isPlaying
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none"
             )}
@@ -925,6 +955,11 @@ export function KaraokeAppComponent({
               koreanDisplay={koreanDisplay}
               onKoreanToggle={toggleKorean}
               showKoreanToggle={hasKoreanText}
+              romanization={romanization}
+              onRomanizationChange={setRomanization}
+              showRomanizationToggle={!!romanization}
+              isPronunciationMenuOpen={isPronunciationMenuOpen}
+              setIsPronunciationMenuOpen={setIsPronunciationMenuOpen}
               currentTranslationCode={lyricsTranslationLanguage}
               onTranslationSelect={setLyricsTranslationLanguage}
               translationLanguages={translationLanguages}
@@ -1162,6 +1197,7 @@ export function KaraokeAppComponent({
                         bottomPaddingClass={controlsVisible ? "pb-6" : "pb-2"}
                         onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                        onSeekToTime={seekToTime}
                       />
                     </div>
                   )}

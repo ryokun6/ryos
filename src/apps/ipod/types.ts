@@ -1,7 +1,7 @@
 // Shared types for the iPod app
 
 import type { Track } from "@/stores/useIpodStore";
-import type { LyricsAlignment, LyricsFont, ChineseVariant, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import type { LyricsAlignment, LyricsFont, ChineseVariant, KoreanDisplay, JapaneseFurigana, RomanizationSettings } from "@/types/lyrics";
 import type ReactPlayer from "react-player";
 import type { useLyrics } from "@/hooks/useLyrics";
 
@@ -64,6 +64,9 @@ export interface FullScreenPortalProps {
   showKoreanToggle?: boolean;
   currentJapaneseFurigana: JapaneseFurigana;
   onToggleJapaneseFurigana: () => void;
+  // Romanization/Pronunciation settings
+  romanization?: RomanizationSettings;
+  onRomanizationChange?: (settings: Partial<RomanizationSettings>) => void;
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
   // Lyrics loading state

@@ -14,8 +14,8 @@ export const helpItems = [
   },
   {
     icon: "🎨",
-    title: "Style & Layout",
-    description: "Change fonts, layouts (focus/center/alternating), and translate lyrics.",
+    title: "Style & Pronunciation",
+    description: "Change fonts, layouts, translations, and add furigana/romaji/pinyin.",
   },
   {
     icon: "🎵",
