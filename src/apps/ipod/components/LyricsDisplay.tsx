@@ -312,7 +312,10 @@ function mapWordsToFurigana(
 
 // Shared shadow constants for word highlighting
 const BASE_SHADOW = "0 0 2px black, 0 0 2px black, 0 0 2px black";
+// Text shadow glow for non-word-timed lines
 const GLOW_SHADOW = "0 0 8px rgba(255,255,255,0.9), 0 0 2px black, 0 0 2px black, 0 0 2px black";
+// Drop shadow filter for word-timed glow (applied to container, not clipped by mask)
+const GLOW_FILTER = "drop-shadow(0 0 6px rgba(255,255,255,0.4))";
 const FEATHER = 15; // Width of the soft edge in percentage
 
 /**
@@ -545,17 +548,24 @@ function WordTimingHighlight({
           <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW }}>
             {item.content}
           </span>
+          {/* Glow wrapper - filter applied here creates glow around masked content */}
           <span
-            ref={(el) => { overlayRefs.current[idx] = el; }}
             aria-hidden="true"
             className="lyrics-word-layer"
-            style={{ 
-              textShadow: GLOW_SHADOW,
-              maskImage: initialMask,
-              WebkitMaskImage: initialMask,
-            }}
+            style={{ filter: GLOW_FILTER }}
           >
-            {item.content}
+            {/* Masked text - only highlighted portion visible */}
+            <span
+              ref={(el) => { overlayRefs.current[idx] = el; }}
+              style={{ 
+                display: "block",
+                textShadow: BASE_SHADOW,
+                maskImage: initialMask,
+                WebkitMaskImage: initialMask,
+              }}
+            >
+              {item.content}
+            </span>
           </span>
         </span>
       ))}
