@@ -348,15 +348,57 @@ export function KaraokeAppComponent({
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, [isFullScreen, setFullScreen]);
 
+  // Sync playback position between main and fullscreen player
+  const prevFullScreenRef = useRef(isFullScreen);
+
+  useEffect(() => {
+    if (isFullScreen !== prevFullScreenRef.current) {
+      if (isFullScreen) {
+        // Entering fullscreen - sync position from main player to fullscreen player
+        const currentTime = playerRef.current?.getCurrentTime() || elapsedTime;
+        const wasPlaying = isPlaying;
+
+        setTimeout(() => {
+          if (fullScreenPlayerRef.current) {
+            fullScreenPlayerRef.current.seekTo(currentTime);
+            if (wasPlaying) {
+              setTimeout(() => {
+                const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
+                if (internalPlayer && typeof internalPlayer.playVideo === "function") {
+                  internalPlayer.playVideo();
+                }
+              }, 200);
+            }
+          }
+        }, 100);
+      } else {
+        // Exiting fullscreen - sync position from fullscreen player to main player
+        const currentTime = fullScreenPlayerRef.current?.getCurrentTime() || elapsedTime;
+        const wasPlaying = isPlaying;
+
+        setTimeout(() => {
+          if (playerRef.current) {
+            playerRef.current.seekTo(currentTime);
+            if (wasPlaying) {
+              setIsPlaying(true);
+            }
+          }
+        }, 200);
+      }
+      prevFullScreenRef.current = isFullScreen;
+    }
+  }, [isFullScreen, elapsedTime, isPlaying, setIsPlaying]);
+
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
     if (loopCurrent) {
-      playerRef.current?.seekTo(0);
+      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      activePlayer?.seekTo(0);
       setIsPlaying(true);
     } else {
       nextTrack();
     }
-  }, [loopCurrent, nextTrack]);
+  }, [loopCurrent, nextTrack, isFullScreen]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
@@ -373,16 +415,17 @@ export function KaraokeAppComponent({
   // Seek time
   const seekTime = useCallback(
     (delta: number) => {
-      if (playerRef.current) {
-        const currentTime = playerRef.current.getCurrentTime() || 0;
+      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      if (activePlayer) {
+        const currentTime = activePlayer.getCurrentTime() || 0;
         const newTime = Math.max(0, currentTime + delta);
-        playerRef.current.seekTo(newTime);
+        activePlayer.seekTo(newTime);
         showStatus(
           `${delta > 0 ? "⏩︎" : "⏪︎"} ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
         );
       }
     },
-    [showStatus]
+    [showStatus, isFullScreen]
   );
 
   // Alignment cycle
