@@ -124,8 +124,8 @@ export function renderChineseWithPinyin(text: string, keyPrefix: string = "cn"):
   // pinyin-pro gives wrong readings for traditional chars (e.g., 車 → jū instead of chē)
   const simplifiedText = traditionalToSimplified(text);
   
-  // Get pinyin with tone marks for each character (from simplified text)
-  const pinyinResult = pinyin(simplifiedText, { type: 'array', toneType: 'symbol' });
+  // Get pinyin without tone marks for each character (from simplified text)
+  const pinyinResult = pinyin(simplifiedText, { type: 'array', toneType: 'none' });
   const chars = [...text]; // Original characters for display
   
   if (chars.length === 0) {
