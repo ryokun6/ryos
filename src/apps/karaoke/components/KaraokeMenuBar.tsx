@@ -420,7 +420,7 @@ export function KaraokeMenuBar({
                 }
                 className="text-md h-6 px-3 truncate"
               >
-                {t("apps.ipod.menu.showPronunciation")}
+                {t("apps.ipod.menu.pronunciation")}
               </MenubarCheckboxItem>
               <MenubarSeparator className="h-[2px] bg-black my-1" />
               <MenubarCheckboxItem

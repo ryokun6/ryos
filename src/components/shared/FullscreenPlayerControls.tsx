@@ -267,7 +267,10 @@ export function FullscreenPlayerControls({
 
         {/* Pronunciation menu */}
         {romanization && onRomanizationChange && setIsPronunciationMenuOpen && (
-          <DropdownMenu open={isPronunciationMenuOpen} onOpenChange={setIsPronunciationMenuOpen}>
+          <DropdownMenu open={isPronunciationMenuOpen} onOpenChange={(open) => {
+            setIsPronunciationMenuOpen(open);
+            if (open) setIsLangMenuOpen(false);
+          }}>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
@@ -298,10 +301,7 @@ export function FullscreenPlayerControls({
               side="top"
               align="center"
               sideOffset={8}
-              className={cn(
-                "px-0",
-                variant === "compact" ? "w-44" : "w-48"
-              )}
+              className="px-0 w-max min-w-40 max-w-none"
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuCheckboxItem
@@ -310,9 +310,9 @@ export function FullscreenPlayerControls({
                   onRomanizationChange({ enabled: checked });
                   onInteraction?.();
                 }}
-                className="text-md h-6 px-3"
+                className="text-md h-6 px-3 whitespace-nowrap"
               >
-                {t("apps.ipod.menu.showPronunciation")}
+                {t("apps.ipod.menu.pronunciation")}
               </DropdownMenuCheckboxItem>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
@@ -322,7 +322,7 @@ export function FullscreenPlayerControls({
                   onInteraction?.();
                 }}
                 disabled={!romanization.enabled || romanization.japaneseRomaji}
-                className="text-md h-6 px-3"
+                className="text-md h-6 px-3 whitespace-nowrap"
               >
                 {t("apps.ipod.menu.japaneseFurigana")}
               </DropdownMenuCheckboxItem>
@@ -337,7 +337,7 @@ export function FullscreenPlayerControls({
                   onInteraction?.();
                 }}
                 disabled={!romanization.enabled}
-                className="text-md h-6 px-3"
+                className="text-md h-6 px-3 whitespace-nowrap"
               >
                 {t("apps.ipod.menu.japaneseRomaji")}
               </DropdownMenuCheckboxItem>
@@ -348,7 +348,7 @@ export function FullscreenPlayerControls({
                   onInteraction?.();
                 }}
                 disabled={!romanization.enabled}
-                className="text-md h-6 px-3"
+                className="text-md h-6 px-3 whitespace-nowrap"
               >
                 {t("apps.ipod.menu.koreanRomanization")}
               </DropdownMenuCheckboxItem>
@@ -359,7 +359,7 @@ export function FullscreenPlayerControls({
                   onInteraction?.();
                 }}
                 disabled={!romanization.enabled}
-                className="text-md h-6 px-3"
+                className="text-md h-6 px-3 whitespace-nowrap"
               >
                 {t("apps.ipod.menu.chinesePinyin")}
               </DropdownMenuCheckboxItem>
@@ -368,7 +368,10 @@ export function FullscreenPlayerControls({
         )}
 
         {/* Translation */}
-        <DropdownMenu open={isLangMenuOpen} onOpenChange={setIsLangMenuOpen}>
+        <DropdownMenu open={isLangMenuOpen} onOpenChange={(open) => {
+          setIsLangMenuOpen(open);
+          if (open && setIsPronunciationMenuOpen) setIsPronunciationMenuOpen(false);
+        }}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
