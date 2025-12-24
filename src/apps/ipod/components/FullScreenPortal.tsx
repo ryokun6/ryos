@@ -607,6 +607,7 @@ export function FullScreenPortal({
           variant="responsive"
           bgOpacity="35"
           onInteraction={registerActivity}
+          portalContainer={containerRef.current}
         />
       </div>
     </div>,
