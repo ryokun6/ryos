@@ -28,12 +28,31 @@ export interface LyricsSource {
 }
 
 /**
+ * Word-level timing from KRC format
+ */
+export interface WordTiming {
+  text: string;
+  startTimeMs: number;
+  durationMs: number;
+}
+
+/**
+ * Parsed lyric line (filtered and normalized)
+ */
+export interface ParsedLyricLine {
+  startTimeMs: string;
+  words: string;
+  wordTimings?: WordTiming[];
+}
+
+/**
  * Fetched lyrics content
  */
 export interface LyricsContent {
-  lrc: string; // LRC format lyrics
-  krc?: string; // KRC format if available (word-level timing)
+  lrc: string; // LRC format lyrics (raw, kept for backwards compat)
+  krc?: string; // KRC format if available (raw, kept for backwards compat)
   cover?: string; // Cover image URL
+  parsedLines?: ParsedLyricLine[]; // Pre-parsed and filtered lines (use this for display)
 }
 
 /**
@@ -254,22 +273,26 @@ async function getLegacySong(
   const metadata = parseSongDocument(metadataRaw);
   if (!metadata) return null;
 
+  // Legacy format has different property names
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const legacyData = metadata as any;
+
   // Convert legacy format to new format
   const song: SongDocument = {
-    id: metadata.youtubeId || id,
-    title: metadata.title,
-    artist: metadata.artist,
-    album: metadata.album,
-    lyricOffset: metadata.lyricOffset,
-    createdBy: metadata.createdBy,
-    createdAt: metadata.createdAt || Date.now(),
-    updatedAt: metadata.updatedAt || Date.now(),
-    importOrder: metadata.importOrder,
+    id: legacyData.youtubeId || id,
+    title: legacyData.title || metadata.title,
+    artist: legacyData.artist || metadata.artist,
+    album: legacyData.album || metadata.album,
+    lyricOffset: legacyData.lyricOffset || metadata.lyricOffset,
+    createdBy: legacyData.createdBy || metadata.createdBy,
+    createdAt: legacyData.createdAt || metadata.createdAt || Date.now(),
+    updatedAt: legacyData.updatedAt || metadata.updatedAt || Date.now(),
+    importOrder: legacyData.importOrder || metadata.importOrder,
   };
 
   // Convert legacy lyricsSearch to lyricsSource
-  if (metadata.lyricsSearch?.selection) {
-    song.lyricsSource = metadata.lyricsSearch.selection;
+  if (legacyData.lyricsSearch?.selection) {
+    song.lyricsSource = legacyData.lyricsSearch.selection;
   }
 
   return song;

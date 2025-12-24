@@ -716,6 +716,29 @@ export function LyricsDisplay({
   // Always use original lines for display and furigana
   const displayOriginalLines = originalLines || lines;
 
+  // Calculate the actual current line index based on timestamp and displayOriginalLines
+  // This fixes the bug where currentLine prop (from translated lines) doesn't match displayOriginalLines
+  const actualCurrentLine = useMemo(() => {
+    if (currentTimeMs === undefined || !displayOriginalLines.length) return currentLine;
+    
+    // Find the line that matches the current playback time
+    let idx = displayOriginalLines.findIndex((line, i) => {
+      const lineStart = parseInt(line.startTimeMs, 10);
+      const nextLineStart = i + 1 < displayOriginalLines.length
+        ? parseInt(displayOriginalLines[i + 1].startTimeMs, 10)
+        : Infinity;
+      return currentTimeMs >= lineStart && currentTimeMs < nextLineStart;
+    });
+
+    // If we're past all lines, use the last line
+    if (idx === -1 && displayOriginalLines.length > 0 && 
+        currentTimeMs >= parseInt(displayOriginalLines[displayOriginalLines.length - 1].startTimeMs, 10)) {
+      idx = displayOriginalLines.length - 1;
+    }
+
+    return idx;
+  }, [currentTimeMs, displayOriginalLines, currentLine]);
+
   // Create a map of startTimeMs -> translated text for quick lookup
   // Also create index-based fallback in case timestamps don't match exactly
   const { translationMap, translationByIndex } = useMemo(() => {
@@ -817,7 +840,7 @@ export function LyricsDisplay({
   // State to hold lines displayed in Alternating mode so we can delay updates
   // Use displayOriginalLines to ensure word timings are included (not translated lines)
   const [altLines, setAltLines] = useState<LyricLine[]>(() =>
-    computeAltVisibleLines(displayOriginalLines, currentLine)
+    computeAltVisibleLines(displayOriginalLines, actualCurrentLine)
   );
 
   // Track previous lines array to detect song/translation changes
@@ -832,14 +855,14 @@ export function LyricsDisplay({
     prevLinesRef.current = displayOriginalLines;
 
     // Instantly update on song load, translation switch, or initial state
-    if (linesChanged || currentLine < 0) {
-      setAltLines(computeAltVisibleLines(displayOriginalLines, currentLine));
+    if (linesChanged || actualCurrentLine < 0) {
+      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
       return;
     }
 
     // For normal line transitions within the same song, apply delay
     // Determine the duration of the new current line
-    const clampedIdx = Math.min(Math.max(0, currentLine), displayOriginalLines.length - 1);
+    const clampedIdx = Math.min(Math.max(0, actualCurrentLine), displayOriginalLines.length - 1);
     const currentStart =
       clampedIdx >= 0 && displayOriginalLines[clampedIdx]
         ? parseInt(displayOriginalLines[clampedIdx].startTimeMs)
@@ -856,24 +879,24 @@ export function LyricsDisplay({
     const delayMs = Math.max(20, Math.floor(rawDuration * 0.2));
 
     const timer = setTimeout(() => {
-      setAltLines(computeAltVisibleLines(displayOriginalLines, currentLine));
+      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
     }, delayMs);
 
     return () => clearTimeout(timer);
-  }, [alignment, displayOriginalLines, currentLine]);
+  }, [alignment, displayOriginalLines, actualCurrentLine]);
 
   const nonAltVisibleLines = useMemo(() => {
     if (!displayOriginalLines.length) return [] as LyricLine[];
 
-    // Handle initial display before any line is "current" (currentLine < 0)
-    if (currentLine < 0) {
+    // Handle initial display before any line is "current" (actualCurrentLine < 0)
+    if (actualCurrentLine < 0) {
       // Show just the first line initially for both Center and FocusThree
       return displayOriginalLines.slice(0, 1).filter(Boolean) as LyricLine[];
     }
 
     if (alignment === LyricsAlignment.Center) {
       const clampedCurrentLine = Math.min(
-        Math.max(0, currentLine),
+        Math.max(0, actualCurrentLine),
         displayOriginalLines.length - 1
       );
       const currentActualLine = displayOriginalLines[clampedCurrentLine];
@@ -881,8 +904,8 @@ export function LyricsDisplay({
     }
 
     // FocusThree (prev, current, next)
-    return displayOriginalLines.slice(Math.max(0, currentLine - 1), currentLine + 2);
-  }, [displayOriginalLines, currentLine, alignment]);
+    return displayOriginalLines.slice(Math.max(0, actualCurrentLine - 1), actualCurrentLine + 2);
+  }, [displayOriginalLines, actualCurrentLine, alignment]);
 
   const visibleLines =
     alignment === LyricsAlignment.Alternating ? altLines : nonAltVisibleLines;
@@ -1019,13 +1042,13 @@ export function LyricsDisplay({
     >
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
-          const isCurrent = line === displayOriginalLines[currentLine];
+          const isCurrent = line === displayOriginalLines[actualCurrentLine];
           let position = 0;
 
           if (alignment === LyricsAlignment.Alternating) {
             position = isCurrent ? 0 : 1;
           } else {
-            const currentActualIdx = displayOriginalLines.indexOf(displayOriginalLines[currentLine]);
+            const currentActualIdx = displayOriginalLines.indexOf(displayOriginalLines[actualCurrentLine]);
             const lineActualIdx = displayOriginalLines.indexOf(line);
             position = lineActualIdx - currentActualIdx;
           }
@@ -1081,38 +1104,38 @@ export function LyricsDisplay({
 
 
           return (
-            <motion.div
-              key={line.startTimeMs}
-              layout="position"
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              variants={variants}
-              transition={dynamicTransition}
-              className={`px-2 md:px-4 whitespace-pre-wrap break-words max-w-full text-white`}
-              style={{
-                textAlign: lineTextAlign as CanvasTextAlign,
-                width: "100%",
-                paddingLeft:
-                  alignment === LyricsAlignment.Alternating &&
-                  index === 0 &&
-                  visibleLines.length > 1
-                    ? "5%"
-                    : undefined,
-                paddingRight:
-                  alignment === LyricsAlignment.Alternating &&
-                  index === 1 &&
-                  visibleLines.length > 1
-                    ? "5%"
-                    : undefined,
-              }}
-            >
-              {/* Original lyrics with karaoke highlighting */}
-              <div
-                className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer" : ""}`}
-                onClick={onSeekToTime && !hasWordTimings ? (e) => { e.stopPropagation(); onSeekToTime(parseInt(line.startTimeMs, 10)); } : undefined}
-              >
-                {shouldUseAnimatedWordTiming ? (
+                          <motion.div
+                            key={line.startTimeMs}
+                            layout="position"
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            variants={variants}
+                            transition={dynamicTransition}
+                            className={`px-2 md:px-4 whitespace-pre-wrap break-words max-w-full text-white`}
+                            style={{
+                              textAlign: lineTextAlign as CanvasTextAlign,
+                              width: "100%",
+                              paddingLeft:
+                                alignment === LyricsAlignment.Alternating &&
+                                index === 0 &&
+                                visibleLines.length > 1
+                                  ? "5%"
+                                  : undefined,
+                              paddingRight:
+                                alignment === LyricsAlignment.Alternating &&
+                                index === 1 &&
+                                visibleLines.length > 1
+                                  ? "5%"
+                                  : undefined,
+                            }}
+                          >
+                            {/* Original lyrics with karaoke highlighting */}
+                            <div
+                              className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer" : ""}`}
+                              onClick={onSeekToTime && !hasWordTimings ? (e) => { e.stopPropagation(); onSeekToTime(parseInt(line.startTimeMs, 10)); } : undefined}
+                            >
+                              {shouldUseAnimatedWordTiming ? (
                   <WordTimingHighlight
                     wordTimings={line.wordTimings!}
                     lineStartTimeMs={parseInt(line.startTimeMs, 10)}

@@ -41,6 +41,8 @@ import {
   type LyricsSource,
   type LyricsContent,
   type FuriganaSegment,
+  type ParsedLyricLine,
+  type WordTiming,
 } from "../_utils/song-service.js";
 
 // Vercel Edge Function configuration
@@ -401,8 +403,10 @@ const SKIP_PREFIXES = [
 
 /**
  * Check if a line should be skipped (credits, metadata, etc.)
+ * @param title - Song title (optional, used to skip "title - artist" lines)
+ * @param artist - Song artist (optional, used to skip "title - artist" lines)
  */
-function shouldSkipLine(text: string): boolean {
+function shouldSkipLine(text: string, title?: string, artist?: string): boolean {
   const trimmed = text.trim();
   
   // Skip lines matching any skip prefix
@@ -418,10 +422,20 @@ function shouldSkipLine(text: string): boolean {
     return true;
   }
   
+  // Skip title-artist lines (must match client-side krcParser.ts behavior)
+  if (title && artist) {
+    const titleArtist = `${title} - ${artist}`;
+    const artistTitle = `${artist} - ${title}`;
+    if (trimmed === titleArtist || trimmed === artistTitle || 
+        trimmed.startsWith(titleArtist) || trimmed.startsWith(artistTitle)) {
+      return true;
+    }
+  }
+  
   return false;
 }
 
-function parseLrcToLines(lrc: string): LyricLine[] {
+function parseLrcToLines(lrc: string, title?: string, artist?: string): LyricLine[] {
   const lines: LyricLine[] = [];
   const lineRegex = /^\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)$/;
 
@@ -434,13 +448,129 @@ function parseLrcToLines(lrc: string): LyricLine[] {
       const startTimeMs = String(minutes * 60 * 1000 + seconds * 1000 + ms);
       const words = match[4].trim();
       // Skip empty lines and metadata/credits
-      if (words && !shouldSkipLine(words)) {
+      if (words && !shouldSkipLine(words, title, artist)) {
         lines.push({ words, startTimeMs });
       }
     }
   }
 
   return lines;
+}
+
+/**
+ * Parse KRC format with word-level timing
+ * Returns ParsedLyricLine[] with wordTimings populated
+ */
+function parseKrcToLines(krc: string, title?: string, artist?: string): ParsedLyricLine[] {
+  const lines: ParsedLyricLine[] = [];
+  const lineHeaderRegex = /^\[(\d+),(\d+)\](.*)$/;
+  const wordTimingRegex = /<(\d+),(\d+),\d+>([^<]*)/g;
+
+  // Normalize line endings
+  const normalizedText = krc.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+  for (const line of normalizedText.split("\n")) {
+    const lineMatch = line.match(lineHeaderRegex);
+    if (!lineMatch) continue;
+
+    const [, startMs, , content] = lineMatch;
+    
+    // Extract word timings
+    const wordTimings: WordTiming[] = [];
+    let fullText = "";
+    let match;
+
+    // Reset regex lastIndex
+    wordTimingRegex.lastIndex = 0;
+
+    while ((match = wordTimingRegex.exec(content)) !== null) {
+      const [, offsetMs, durationMs, text] = match;
+      
+      if (text) {
+        wordTimings.push({
+          text,
+          startTimeMs: parseInt(offsetMs, 10),
+          durationMs: parseInt(durationMs, 10),
+        });
+        fullText += text;
+      }
+    }
+
+    // If no word timings found, try plain text
+    if (wordTimings.length === 0) {
+      const plainText = content.replace(/<\d+,\d+,\d+>/g, "").trim();
+      if (plainText) {
+        fullText = plainText;
+      }
+    }
+
+    const trimmedText = fullText.trim();
+
+    // Skip lines based on filtering rules
+    if (shouldSkipLine(trimmedText, title, artist)) {
+      continue;
+    }
+
+    // Skip empty lines
+    if (!trimmedText) {
+      continue;
+    }
+
+    const lyricLine: ParsedLyricLine = {
+      startTimeMs: startMs,
+      words: trimmedText,
+    };
+    
+    if (wordTimings.length > 0) {
+      lyricLine.wordTimings = wordTimings;
+    }
+    
+    lines.push(lyricLine);
+  }
+
+  return lines;
+}
+
+/**
+ * Check if text appears to be KRC format
+ */
+function isKrcFormat(text: string): boolean {
+  // KRC word timing pattern: <number,number,number>text
+  const krcWordTimingPattern = /<\d+,\d+,\d+>/;
+  // KRC line format: [startMs,durationMs]
+  const krcLinePattern = /^\[\d+,\d+\]/m;
+  
+  return krcWordTimingPattern.test(text) || krcLinePattern.test(text);
+}
+
+/**
+ * Unified parsing function - parses KRC or LRC with consistent filtering
+ * This is the single source of truth for lyrics parsing on the server
+ */
+function parseLyricsContent(
+  lyrics: { lrc?: string; krc?: string },
+  title?: string,
+  artist?: string
+): ParsedLyricLine[] {
+  // Prefer KRC for word-level timing
+  if (lyrics.krc && isKrcFormat(lyrics.krc)) {
+    const parsed = parseKrcToLines(lyrics.krc, title, artist);
+    if (parsed.length > 0) {
+      return parsed;
+    }
+  }
+  
+  // Fallback to LRC
+  if (lyrics.lrc) {
+    const lrcLines = parseLrcToLines(lyrics.lrc, title, artist);
+    // Convert LyricLine to ParsedLyricLine (no word timings)
+    return lrcLines.map(line => ({
+      startTimeMs: line.startTimeMs,
+      words: line.words,
+    }));
+  }
+  
+  return [];
 }
 
 function msToLrcTime(msStr: string): string {
@@ -479,13 +609,22 @@ Do not include timestamps or any other formatting in your output strings; just t
   return chunk.map((line, index) => aiResponse.translatedTexts[index] || line.words);
 }
 
-async function translateLyrics(
-  lrc: string,
+/**
+ * Translate lyrics from pre-parsed lines
+ * This ensures translation uses the same lines as the client
+ */
+async function translateFromParsedLines(
+  parsedLines: ParsedLyricLine[],
   targetLanguage: string,
   requestId: string
 ): Promise<string> {
-  const lines = parseLrcToLines(lrc);
-  if (lines.length === 0) return "";
+  if (parsedLines.length === 0) return "";
+
+  // Convert to LyricLine format for chunk processing
+  const lines: LyricLine[] = parsedLines.map(line => ({
+    words: line.words,
+    startTimeMs: line.startTimeMs,
+  }));
 
   // Process in chunks
   const chunks: LyricLine[][] = [];
@@ -589,12 +728,21 @@ async function generateFuriganaForChunk(
   });
 }
 
-async function generateFurigana(
-  lrc: string,
+/**
+ * Generate furigana from pre-parsed lines
+ * This ensures furigana uses the same lines as the client
+ */
+async function generateFuriganaFromParsedLines(
+  parsedLines: ParsedLyricLine[],
   requestId: string
 ): Promise<FuriganaSegment[][]> {
-  const lines = parseLrcToLines(lrc);
-  if (lines.length === 0) return [];
+  if (parsedLines.length === 0) return [];
+
+  // Convert to LyricLine format for chunk processing
+  const lines: LyricLine[] = parsedLines.map(line => ({
+    words: line.words,
+    startTimeMs: line.startTimeMs,
+  }));
 
   // Check if any lines are Japanese
   const hasJapanese = lines.some((line) => isJapaneseText(line.words));
@@ -703,13 +851,25 @@ export default async function handler(req: Request) {
         return errorResponse("Song not found", 404);
       }
 
+      // Ensure parsedLines exist (generate for legacy data)
+      if (song.lyrics && !song.lyrics.parsedLines) {
+        logInfo(requestId, "Generating parsedLines for legacy data");
+        song.lyrics.parsedLines = parseLyricsContent(
+          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+          song.title,
+          song.artist
+        );
+        // Save updated lyrics with parsedLines
+        await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
+      }
+
       // Generate translation on-demand if requested
-      if (translateTo && song.lyrics?.lrc) {
+      if (translateTo && song.lyrics?.parsedLines && song.lyrics.parsedLines.length > 0) {
         const existingTranslation = song.translations?.[translateTo];
         if (!existingTranslation || force) {
           logInfo(requestId, `Generating translation to ${translateTo}`);
           try {
-            const translatedLrc = await translateLyrics(song.lyrics.lrc, translateTo, requestId);
+            const translatedLrc = await translateFromParsedLines(song.lyrics.parsedLines, translateTo, requestId);
             await saveTranslation(redis, songId, translateTo, translatedLrc);
             song.translations = song.translations || {};
             song.translations[translateTo] = translatedLrc;
@@ -721,12 +881,12 @@ export default async function handler(req: Request) {
       }
 
       // Generate furigana on-demand if requested
-      if (withFurigana && song.lyrics?.lrc) {
+      if (withFurigana && song.lyrics?.parsedLines && song.lyrics.parsedLines.length > 0) {
         const existingFurigana = song.furigana;
         if (!existingFurigana || force) {
           logInfo(requestId, "Generating furigana");
           try {
-            const furigana = await generateFurigana(song.lyrics.lrc, requestId);
+            const furigana = await generateFuriganaFromParsedLines(song.lyrics.parsedLines, requestId);
             await saveFurigana(redis, songId, furigana);
             song.furigana = furigana;
           } catch (err) {
@@ -847,20 +1007,34 @@ export default async function handler(req: Request) {
         }
 
         logInfo(requestId, "Fetching lyrics from Kugou", { source: lyricsSource });
-        const lyrics = await fetchLyricsFromKugou(lyricsSource, requestId);
+        const rawLyrics = await fetchLyricsFromKugou(lyricsSource, requestId);
 
-        if (!lyrics) {
+        if (!rawLyrics) {
           return errorResponse("Failed to fetch lyrics", 404);
         }
+
+        // Parse lyrics with consistent filtering (single source of truth)
+        const parsedLines = parseLyricsContent(
+          { lrc: rawLyrics.lrc, krc: rawLyrics.krc },
+          lyricsSource.title,
+          lyricsSource.artist
+        );
+
+        // Include parsedLines in the lyrics content
+        const lyrics: LyricsContent = {
+          ...rawLyrics,
+          parsedLines,
+        };
 
         // Save to song document
         const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource);
         logInfo(requestId, `Lyrics saved to song document`, { 
           songId,
           hasLyricsStored: !!savedSong.lyrics,
+          parsedLinesCount: parsedLines.length,
         });
 
-        logInfo(requestId, `Response: 200 OK - Lyrics fetched`, { hasKrc: !!lyrics.krc, hasCover: !!lyrics.cover });
+        logInfo(requestId, `Response: 200 OK - Lyrics fetched`, { hasKrc: !!lyrics.krc, hasCover: !!lyrics.cover, parsedLinesCount: parsedLines.length });
         return jsonResponse({ lyrics, cached: false });
       }
 
@@ -873,8 +1047,9 @@ export default async function handler(req: Request) {
 
         const { language, force } = parsed.data;
 
-        // Get song with lyrics
+        // Get song with lyrics and metadata (for title/artist filtering)
         const song = await getSong(redis, songId, {
+          includeMetadata: true,
           includeLyrics: true,
           includeTranslations: [language],
         });
@@ -892,8 +1067,24 @@ export default async function handler(req: Request) {
           });
         }
 
-        logInfo(requestId, `Translating to ${language}`);
-        const translatedLrc = await translateLyrics(song.lyrics.lrc, language, requestId);
+        // Ensure parsedLines exist (generate for legacy data)
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          logInfo(requestId, "Generating parsedLines for legacy data");
+          song.lyrics.parsedLines = parseLyricsContent(
+            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+            song.title,
+            song.artist
+          );
+          // Save updated lyrics with parsedLines
+          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
+        }
+
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          return errorResponse("No lyrics lines to translate", 404);
+        }
+
+        logInfo(requestId, `Translating to ${language} (${song.lyrics.parsedLines.length} lines)`);
+        const translatedLrc = await translateFromParsedLines(song.lyrics.parsedLines, language, requestId);
 
         // Save translation
         await saveTranslation(redis, songId, language, translatedLrc);
@@ -914,8 +1105,9 @@ export default async function handler(req: Request) {
 
         const { force } = parsed.data;
 
-        // Get song with lyrics
+        // Get song with lyrics and metadata (for title/artist filtering)
         const song = await getSong(redis, songId, {
+          includeMetadata: true,
           includeLyrics: true,
           includeFurigana: true,
         });
@@ -933,8 +1125,24 @@ export default async function handler(req: Request) {
           });
         }
 
-        logInfo(requestId, "Generating furigana");
-        const furigana = await generateFurigana(song.lyrics.lrc, requestId);
+        // Ensure parsedLines exist (generate for legacy data)
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          logInfo(requestId, "Generating parsedLines for legacy data");
+          song.lyrics.parsedLines = parseLyricsContent(
+            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+            song.title,
+            song.artist
+          );
+          // Save updated lyrics with parsedLines
+          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
+        }
+
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          return errorResponse("No lyrics lines for furigana", 404);
+        }
+
+        logInfo(requestId, `Generating furigana (${song.lyrics.parsedLines.length} lines)`);
+        const furigana = await generateFuriganaFromParsedLines(song.lyrics.parsedLines, requestId);
 
         // Save furigana
         await saveFurigana(redis, songId, furigana);
