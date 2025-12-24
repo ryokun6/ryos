@@ -33,6 +33,7 @@ import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { TRANSLATION_LANGUAGES } from "@/apps/ipod/constants";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
+import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -554,7 +555,16 @@ export function KaraokeAppComponent({
 
   // Share song handler
   const handleShareSong = useCallback(() => {
-    if (tracks.length > 0 && currentIndex >= 0) setIsShareDialogOpen(true);
+    if (tracks.length > 0 && currentIndex >= 0) {
+      const track = tracks[currentIndex];
+      // Save song metadata to cache when sharing
+      if (track) {
+        saveSongMetadataFromTrack(track).catch((error) => {
+          console.error("[Karaoke] Error saving song metadata to cache:", error);
+        });
+      }
+      setIsShareDialogOpen(true);
+    }
   }, [tracks, currentIndex]);
 
   // Generate share URL for song

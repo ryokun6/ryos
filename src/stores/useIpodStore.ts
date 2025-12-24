@@ -4,6 +4,7 @@ import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, Lyric
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
+import { getCachedSongMetadata } from "@/utils/songMetadataCache";
 import i18n from "@/lib/i18n";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
@@ -665,10 +666,10 @@ export const useIpodStore = create<IpodState>()(
           try {
             const url = new URL(input);
 
-            // Handle os.ryo.lu/ipod/:id format
+            // Handle os.ryo.lu/ipod/:id or os.ryo.lu/karaoke/:id format
             if (
               url.hostname === "os.ryo.lu" &&
-              url.pathname.startsWith("/ipod/")
+              (url.pathname.startsWith("/ipod/") || url.pathname.startsWith("/karaoke/"))
             ) {
               return url.pathname.split("/")[2] || null;
             }
@@ -720,6 +721,38 @@ export const useIpodStore = create<IpodState>()(
         }
 
         const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+        // Check song metadata cache first before fetching from external APIs
+        try {
+          const cachedMetadata = await getCachedSongMetadata(videoId);
+          if (cachedMetadata) {
+            console.log(`[iPod Store] Using cached metadata for ${videoId}`);
+            const newTrack: Track = {
+              id: videoId,
+              url: youtubeUrl,
+              title: cachedMetadata.title,
+              artist: cachedMetadata.artist,
+              album: cachedMetadata.album,
+              lyricOffset: cachedMetadata.lyricOffset ?? 500,
+              lyricsSearch: cachedMetadata.lyricsSearch,
+            };
+
+            try {
+              get().addTrack(newTrack);
+              if (!autoPlay) {
+                set({ isPlaying: false });
+              }
+              return newTrack;
+            } catch (error) {
+              console.error("Error adding track from cache to store:", error);
+              return null;
+            }
+          }
+        } catch (error) {
+          console.warn(`[iPod Store] Failed to check song metadata cache for ${videoId}, falling back to API:`, error);
+        }
+
+        // Cache miss - fetch metadata from external APIs
         let rawTitle = `Video ID: ${videoId}`; // Default title
         let authorName: string | undefined = undefined; // Store author_name
 
