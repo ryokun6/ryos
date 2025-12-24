@@ -124,7 +124,7 @@
       },
       "tableHeaders": {
         "added": "追加",
-        "addedBy": "追加者",
+        "addedBy": "作成者",
         "artist": "アーティスト",
         "lastActive": "最終アクティブ",
         "message": "メッセージ",

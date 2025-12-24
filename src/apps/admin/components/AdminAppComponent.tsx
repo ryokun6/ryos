@@ -293,17 +293,16 @@ export function AdminAppComponent({
       if (!username || !authToken) return;
 
       try {
-        const response = await fetch(`/api/chat-rooms`, {
+        const params = new URLSearchParams({
+          action: "deleteRoom",
+          roomId,
+        });
+        const response = await fetch(`/api/chat-rooms?${params}`, {
           method: "DELETE",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
             "x-username": username,
           },
-          body: JSON.stringify({
-            action: "deleteRoom",
-            roomId,
-          }),
         });
 
         if (response.ok) {
@@ -330,18 +329,17 @@ export function AdminAppComponent({
       if (!username || !authToken) return;
 
       try {
-        const response = await fetch(`/api/chat-rooms`, {
+        const params = new URLSearchParams({
+          action: "deleteMessage",
+          roomId,
+          messageId,
+        });
+        const response = await fetch(`/api/chat-rooms?${params}`, {
           method: "DELETE",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
             "x-username": username,
           },
-          body: JSON.stringify({
-            action: "deleteMessage",
-            roomId,
-            messageId,
-          }),
         });
 
         if (response.ok) {
@@ -755,7 +753,7 @@ export function AdminAppComponent({
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isImporting}
-                      className="h-7 px-2 text-[11px] gap-1"
+                      className="h-7 w-7 p-0"
                       title={t("apps.admin.songs.import", "Import Library")}
                     >
                       {isImporting ? (
@@ -763,7 +761,6 @@ export function AdminAppComponent({
                       ) : (
                         <Upload className="h-3.5 w-3.5" />
                       )}
-                      <span className="hidden sm:inline">{t("apps.admin.songs.import", "Import")}</span>
                     </Button>
                   </>
                 )}
@@ -798,7 +795,7 @@ export function AdminAppComponent({
                     variant="ghost"
                     size="sm"
                     onClick={() => promptDelete("room", selectedRoomId, selectedRoom?.name || "")}
-                    className="h-7 w-7 p-0 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                    className="h-7 w-7 p-0"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -983,14 +980,7 @@ export function AdminAppComponent({
                                   </span>
                                 </TableCell>
                                 <TableCell>
-                                  <span className={cn(
-                                    "px-1.5 py-0.5 text-[9px] rounded",
-                                    song.createdBy === "ryo" 
-                                      ? "bg-blue-100 text-blue-700" 
-                                      : "bg-neutral-100 text-neutral-600"
-                                  )}>
-                                    {song.createdBy || "unknown"}
-                                  </span>
+                                  {song.createdBy || "-"}
                                 </TableCell>
                                 <TableCell className="whitespace-nowrap">
                                   {formatRelativeTime(song.createdAt)}
@@ -1096,13 +1086,11 @@ export function AdminAppComponent({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() =>
-                                  promptDelete(
-                                    "message",
-                                    message.id,
-                                    message.content.substring(0, 30) + "..."
-                                  )
-                                }
+                                onClick={() => {
+                                  if (selectedRoomId) {
+                                    deleteMessage(selectedRoomId, message.id);
+                                  }
+                                }}
                                 className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                               >
                                 <Trash2 className="h-3 w-3" />

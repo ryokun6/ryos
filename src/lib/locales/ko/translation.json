@@ -124,7 +124,7 @@
       },
       "tableHeaders": {
         "added": "추가됨",
-        "addedBy": "추가자",
+        "addedBy": "작성자",
         "artist": "아티스트",
         "lastActive": "마지막 활동",
         "message": "메시지",
