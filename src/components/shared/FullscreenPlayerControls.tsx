@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Globe, Maximize2, X } from "lucide-react";
+import { Globe, Maximize2, X, TimerReset } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -28,6 +28,9 @@ export interface FullscreenPlayerControlsProps {
   onPrevious: () => void;
   onPlayPause: () => void;
   onNext: () => void;
+
+  // Sync mode (lyrics timing)
+  onSyncMode?: () => void;
 
   // Lyrics alignment
   currentAlignment: LyricsAlignment;
@@ -72,6 +75,7 @@ export function FullscreenPlayerControls({
   onPrevious,
   onPlayPause,
   onNext,
+  onSyncMode,
   currentAlignment,
   onAlignmentCycle,
   currentFont,
@@ -181,6 +185,22 @@ export function FullscreenPlayerControls({
           <span className={iconSize}>⏭</span>
         </button>
 
+        {/* Sync mode (lyrics timing) */}
+        {onSyncMode && (
+          <button
+            type="button"
+            onClick={handleClick(onSyncMode)}
+            aria-label={t("apps.ipod.syncMode.title", "Sync Lyrics")}
+            className={cn(
+              buttonSize,
+              "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+            )}
+            title={t("apps.ipod.syncMode.title", "Sync Lyrics")}
+          >
+            <TimerReset className={variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4"} />
+          </button>
+        )}
+
         {/* Layout alignment */}
         <button
           type="button"
@@ -269,6 +289,80 @@ export function FullscreenPlayerControls({
           </span>
         </button>
 
+        {/* Translation */}
+        <DropdownMenu open={isLangMenuOpen} onOpenChange={(open) => {
+          setIsLangMenuOpen(open);
+          if (open && setIsPronunciationMenuOpen) setIsPronunciationMenuOpen(false);
+        }}>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onInteraction?.();
+              }}
+              aria-label={t("apps.ipod.ariaLabels.translateLyrics")}
+              className={cn(
+                buttonSize,
+                "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+              )}
+              title={t("apps.ipod.ariaLabels.translateLyrics")}
+            >
+              {translationBadge ? (
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center leading-none",
+                    variant === "compact"
+                      ? "w-[20px] h-[20px] text-sm"
+                      : "w-[24px] h-[24px] md:w-[28px] md:h-[28px] text-[16px] md:text-[18px]"
+                  )}
+                >
+                  {translationBadge}
+                </span>
+              ) : (
+                <Globe
+                  size={svgSize}
+                  className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+                />
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            container={portalContainer}
+            side="top"
+            align="center"
+            sideOffset={8}
+            className={cn(
+              "px-0 max-h-[50vh] overflow-y-auto",
+              variant === "compact" ? "w-40" : "w-44"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+              <DropdownMenuRadioGroup
+                value={currentTranslationCode || "off"}
+                onValueChange={(value) => {
+                  onTranslationSelect(value === "off" ? null : value);
+                  onInteraction?.();
+                }}
+              >
+                {translationLanguages.map((lang, index) => {
+                  if (lang.separator) {
+                    return <DropdownMenuSeparator key={`sep-${index}`} />;
+                  }
+                  return (
+                    <DropdownMenuRadioItem
+                      key={lang.code || "off"}
+                      value={lang.code || "off"}
+                      className="text-md h-6 pr-3"
+                    >
+                      {lang.label}
+                    </DropdownMenuRadioItem>
+                  );
+                })}
+              </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Pronunciation menu */}
         {romanization && onRomanizationChange && setIsPronunciationMenuOpen && (
           <DropdownMenu open={isPronunciationMenuOpen} onOpenChange={(open) => {
@@ -292,7 +386,7 @@ export function FullscreenPlayerControls({
                 {romanization.enabled ? (
                   <ruby className={cn(smallIconSize, "ruby-align-center")} style={{ rubyPosition: "over" }}>
                     文
-                    <rt style={{ fontSize: variant === "compact" ? "8px" : "9px", opacity: 0.7, paddingBottom: "1px" }}>
+                    <rt style={{ fontSize: variant === "compact" ? "8px" : "9px", opacity: 0.7, paddingBottom: "1px", letterSpacing: "-0.5px", lineHeight: 1, maxHeight: "10px" }}>
                       Aa
                     </rt>
                   </ruby>
@@ -371,80 +465,6 @@ export function FullscreenPlayerControls({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-
-        {/* Translation */}
-        <DropdownMenu open={isLangMenuOpen} onOpenChange={(open) => {
-          setIsLangMenuOpen(open);
-          if (open && setIsPronunciationMenuOpen) setIsPronunciationMenuOpen(false);
-        }}>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onInteraction?.();
-              }}
-              aria-label={t("apps.ipod.ariaLabels.translateLyrics")}
-              className={cn(
-                buttonSize,
-                "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              )}
-              title={t("apps.ipod.ariaLabels.translateLyrics")}
-            >
-              {translationBadge ? (
-                <span
-                  className={cn(
-                    "inline-flex items-center justify-center leading-none",
-                    variant === "compact"
-                      ? "w-[20px] h-[20px] text-sm"
-                      : "w-[24px] h-[24px] md:w-[28px] md:h-[28px] text-[16px] md:text-[18px]"
-                  )}
-                >
-                  {translationBadge}
-                </span>
-              ) : (
-                <Globe
-                  size={svgSize}
-                  className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
-                />
-              )}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            container={portalContainer}
-            side="top"
-            align="center"
-            sideOffset={8}
-            className={cn(
-              "px-0 max-h-[50vh] overflow-y-auto",
-              variant === "compact" ? "w-40" : "w-44"
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
-              <DropdownMenuRadioGroup
-                value={currentTranslationCode || "off"}
-                onValueChange={(value) => {
-                  onTranslationSelect(value === "off" ? null : value);
-                  onInteraction?.();
-                }}
-              >
-                {translationLanguages.map((lang, index) => {
-                  if (lang.separator) {
-                    return <DropdownMenuSeparator key={`sep-${index}`} />;
-                  }
-                  return (
-                    <DropdownMenuRadioItem
-                      key={lang.code || "off"}
-                      value={lang.code || "off"}
-                      className="text-md h-6 pr-3"
-                    >
-                      {lang.label}
-                    </DropdownMenuRadioItem>
-                  );
-                })}
-              </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
 
         {/* Fullscreen button (for non-fullscreen mode) */}
         {onFullscreen && (

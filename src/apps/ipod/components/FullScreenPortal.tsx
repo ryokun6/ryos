@@ -36,6 +36,7 @@ export function FullScreenPortal({
   onCycleLyricsFont,
   romanization,
   onRomanizationChange,
+  onSyncMode,
   fullScreenPlayerRef,
   isLoadingLyrics,
   isProcessingLyrics,
@@ -590,6 +591,7 @@ export function FullScreenPortal({
           onPrevious={handlePrevious}
           onPlayPause={handlePlayPause}
           onNext={handleNext}
+          onSyncMode={onSyncMode}
           currentAlignment={currentAlignment}
           onAlignmentCycle={onCycleAlignment}
           currentFont={currentLyricsFont}

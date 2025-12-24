@@ -934,6 +934,7 @@ export function KaraokeAppComponent({
               onPrevious={handlePrevious}
               onPlayPause={handlePlayPause}
               onNext={handleNext}
+              onSyncMode={() => setIsSyncModeOpen(true)}
               currentAlignment={lyricsAlignment}
               onAlignmentCycle={cycleAlignment}
               currentFont={lyricsFont}
@@ -1084,6 +1085,7 @@ export function KaraokeAppComponent({
           onCycleLyricsFont={cycleLyricsFont}
           romanization={romanization}
           onRomanizationChange={setRomanization}
+          onSyncMode={() => setIsSyncModeOpen(true)}
           fullScreenPlayerRef={fullScreenPlayerRef}
           isLoadingLyrics={fullScreenLyricsControls.isLoading}
           isProcessingLyrics={fullScreenLyricsControls.isTranslating}

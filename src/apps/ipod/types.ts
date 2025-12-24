@@ -62,6 +62,8 @@ export interface FullScreenPortalProps {
   // Romanization/Pronunciation settings
   romanization?: RomanizationSettings;
   onRomanizationChange?: (settings: Partial<RomanizationSettings>) => void;
+  // Sync mode (lyrics timing)
+  onSyncMode?: () => void;
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
   // Lyrics loading state
