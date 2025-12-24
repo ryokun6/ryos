@@ -137,14 +137,25 @@ export function useLibraryUpdateChecker(isActive: boolean) {
       }
     };
 
-    // Always check immediately when app becomes active (with a small delay to allow store to rehydrate)
-    const immediateCheckTimeout = setTimeout(() => {
+    // Check immediately when app becomes active, but skip if checked recently (within 5 min)
+    const timeSinceLastCheck = Date.now() - lastCheckedRef.current;
+    const shouldCheckImmediately = timeSinceLastCheck >= CHECK_INTERVAL;
+    
+    const immediateCheckTimeout = shouldCheckImmediately
+      ? setTimeout(() => {
+          console.log(
+            "[iPod] Running immediate library update check on app activation"
+          );
+          checkForUpdates();
+          lastCheckedRef.current = Date.now();
+        }, 100)
+      : null;
+    
+    if (!shouldCheckImmediately) {
       console.log(
-        "[iPod] Running immediate library update check on app activation"
+        `[iPod] Skipping immediate check - last checked ${Math.round(timeSinceLastCheck / 1000)}s ago (< ${CHECK_INTERVAL / 1000}s)`
       );
-      checkForUpdates();
-      lastCheckedRef.current = Date.now();
-    }, 100);
+    }
 
     // Set up periodic checking
     intervalRef.current = setInterval(() => {
@@ -153,7 +164,9 @@ export function useLibraryUpdateChecker(isActive: boolean) {
     }, CHECK_INTERVAL);
 
     return () => {
-      clearTimeout(immediateCheckTimeout);
+      if (immediateCheckTimeout) {
+        clearTimeout(immediateCheckTimeout);
+      }
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;

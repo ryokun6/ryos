@@ -104,6 +104,11 @@ interface SongMetadata {
  * DELETE /api/song-metadata?id=YOUTUBE_ID - Delete song metadata (requires auth, admin only)
  */
 export default async function handler(req: Request) {
+  const requestId = Math.random().toString(36).substring(2, 10);
+  const startTime = Date.now();
+  
+  console.log(`[${requestId}] ${req.method} ${req.url}`);
+  
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     const effectiveOrigin = getEffectiveOrigin(req);
@@ -112,6 +117,7 @@ export default async function handler(req: Request) {
   }
 
   if (req.method !== "GET" && req.method !== "POST" && req.method !== "DELETE") {
+    console.log(`[${requestId}] INFO: Method not allowed`, { method: req.method });
     return new Response("Method not allowed", { status: 405 });
   }
 
@@ -142,11 +148,13 @@ export default async function handler(req: Request) {
       // List all songs endpoint (for sync)
       if (listAll) {
         const createdByFilter = url.searchParams.get("createdBy");
+        console.log(`[${requestId}] INFO: Listing all songs`, { createdByFilter: createdByFilter || "none" });
         
         // Get all song IDs from the set
         const songIds = await redis.smembers(SONG_METADATA_SET);
         
         if (!songIds || songIds.length === 0) {
+          console.log(`[${requestId}] INFO: No songs found`, { duration: `${Date.now() - startTime}ms` });
           return new Response(
             JSON.stringify({ songs: [] }),
             {
@@ -189,6 +197,7 @@ export default async function handler(req: Request) {
           return (a.importOrder ?? Infinity) - (b.importOrder ?? Infinity);
         });
 
+        console.log(`[${requestId}] INFO: Returning songs`, { count: songs.length, totalInDb: songIds.length, duration: `${Date.now() - startTime}ms` });
         return new Response(
           JSON.stringify({ songs }),
           {
@@ -203,6 +212,7 @@ export default async function handler(req: Request) {
 
       // Single song lookup
       if (!youtubeId) {
+        console.log(`[${requestId}] INFO: Missing id parameter`);
         return new Response(
           JSON.stringify({ error: "Missing id parameter" }),
           {
@@ -215,10 +225,12 @@ export default async function handler(req: Request) {
         );
       }
 
+      console.log(`[${requestId}] INFO: Looking up song`, { youtubeId });
       const key = `${SONG_METADATA_PREFIX}${youtubeId}`;
       const metadataRaw = await redis.get(key);
 
       if (!metadataRaw) {
+        console.log(`[${requestId}] INFO: Song cache MISS`, { youtubeId, duration: `${Date.now() - startTime}ms` });
         return new Response(
           JSON.stringify({ found: false }),
           {
@@ -238,6 +250,7 @@ export default async function handler(req: Request) {
           ? JSON.parse(metadataRaw)
           : metadataRaw as SongMetadata;
       } catch {
+        console.log(`[${requestId}] INFO: Invalid cached data`, { youtubeId, duration: `${Date.now() - startTime}ms` });
         return new Response(
           JSON.stringify({ found: false, error: "Invalid cached data" }),
           {
@@ -250,6 +263,7 @@ export default async function handler(req: Request) {
         );
       }
 
+      console.log(`[${requestId}] INFO: Song cache HIT`, { youtubeId, title: metadata.title, duration: `${Date.now() - startTime}ms` });
       return new Response(
         JSON.stringify({ found: true, metadata }),
         {
@@ -274,9 +288,12 @@ export default async function handler(req: Request) {
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
+      console.log(`[${requestId}] INFO: POST request`, { user: username || "anonymous", action: action || "save" });
+
       // Validate authentication
       const authResult = await validateAuthToken(redis, username, authToken);
       if (!authResult.valid) {
+        console.log(`[${requestId}] INFO: Auth failed`, { user: username || "anonymous", duration: `${Date.now() - startTime}ms` });
         return new Response(
           JSON.stringify({ error: "Unauthorized - authentication required" }),
           {
@@ -291,8 +308,11 @@ export default async function handler(req: Request) {
 
       // Handle bulk import action (admin only)
       if (action === "import") {
+        console.log(`[${requestId}] INFO: Bulk import requested`, { user: username });
+        
         // Only admin (ryo) can bulk import songs
         if (username?.toLowerCase() !== "ryo") {
+          console.log(`[${requestId}] INFO: Bulk import denied - admin required`, { user: username, duration: `${Date.now() - startTime}ms` });
           return new Response(
             JSON.stringify({ error: "Forbidden - admin access required" }),
             {
@@ -345,6 +365,8 @@ export default async function handler(req: Request) {
         let imported = 0;
         let updated = 0;
         const skipped = 0;
+
+        console.log(`[${requestId}] INFO: Starting bulk import`, { songCount: songs.length });
 
         // Process songs in order, with sequential timestamps to maintain order
         // Songs at the beginning of the array are "oldest" (imported first)
@@ -401,6 +423,7 @@ export default async function handler(req: Request) {
           }
         }
 
+        console.log(`[${requestId}] INFO: Bulk import complete`, { imported, updated, skipped, total: songs.length, duration: `${Date.now() - startTime}ms` });
         return new Response(
           JSON.stringify({
             success: true,
@@ -459,6 +482,8 @@ export default async function handler(req: Request) {
       const now = Date.now();
       const isAdmin = username?.toLowerCase() === "ryo";
 
+      console.log(`[${requestId}] INFO: Saving song`, { youtubeId, title, artist: artist || "unknown" });
+
       // Check if metadata already exists
       const existingRaw = await redis.get(key);
       let existingMetadata: SongMetadata | null = null;
@@ -484,6 +509,7 @@ export default async function handler(req: Request) {
       if (!canUpdate) {
         // Song exists and was created by someone else - don't update, but return success
         // This allows the share dialog to still work
+        console.log(`[${requestId}] INFO: Skipped update - owned by another user`, { youtubeId, owner: existingMetadata?.createdBy, duration: `${Date.now() - startTime}ms` });
         return new Response(
           JSON.stringify({
             success: true,
@@ -525,6 +551,7 @@ export default async function handler(req: Request) {
       // Add to the set of all song IDs for listing
       await redis.sadd(SONG_METADATA_SET, youtubeId);
 
+      console.log(`[${requestId}] INFO: Song ${existingMetadata ? "updated" : "created"}`, { youtubeId, createdBy: metadata.createdBy, duration: `${Date.now() - startTime}ms` });
       return new Response(
         JSON.stringify({
           success: true,
@@ -547,7 +574,10 @@ export default async function handler(req: Request) {
       const url = new URL(req.url);
       const youtubeId = url.searchParams.get("id");
 
+      console.log(`[${requestId}] INFO: DELETE request`, { youtubeId: youtubeId || "none" });
+
       if (!youtubeId) {
+        console.log(`[${requestId}] INFO: DELETE missing id parameter`);
         return new Response(
           JSON.stringify({ error: "Missing id parameter" }),
           {
@@ -570,6 +600,7 @@ export default async function handler(req: Request) {
       // Validate authentication
       const authResult = await validateAuthToken(redis, username, authToken);
       if (!authResult.valid) {
+        console.log(`[${requestId}] INFO: DELETE auth failed`, { user: username || "anonymous", duration: `${Date.now() - startTime}ms` });
         return new Response(
           JSON.stringify({ error: "Unauthorized - authentication required" }),
           {
@@ -584,6 +615,7 @@ export default async function handler(req: Request) {
 
       // Only admin (ryo) can delete songs
       if (username?.toLowerCase() !== "ryo") {
+        console.log(`[${requestId}] INFO: DELETE denied - admin required`, { user: username, duration: `${Date.now() - startTime}ms` });
         return new Response(
           JSON.stringify({ error: "Forbidden - admin access required" }),
           {
@@ -601,6 +633,7 @@ export default async function handler(req: Request) {
       // Check if song exists
       const existingRaw = await redis.get(key);
       if (!existingRaw) {
+        console.log(`[${requestId}] INFO: DELETE song not found`, { youtubeId, duration: `${Date.now() - startTime}ms` });
         return new Response(
           JSON.stringify({ error: "Song not found" }),
           {
@@ -619,6 +652,7 @@ export default async function handler(req: Request) {
       // Remove from the set of all song IDs
       await redis.srem(SONG_METADATA_SET, youtubeId);
 
+      console.log(`[${requestId}] INFO: Song deleted`, { youtubeId, user: username, duration: `${Date.now() - startTime}ms` });
       return new Response(
         JSON.stringify({
           success: true,
@@ -643,8 +677,8 @@ export default async function handler(req: Request) {
       },
     });
   } catch (error: unknown) {
-    console.error("Error in song-metadata API:", error);
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    console.error(`[${requestId}] ERROR: song-metadata API error`, { error: errorMessage, duration: `${Date.now() - startTime}ms` });
 
     return new Response(
       JSON.stringify({ error: errorMessage }),
