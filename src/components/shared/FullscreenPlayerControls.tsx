@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Globe, Maximize2, X, TimerReset } from "lucide-react";
+import { Globe, Maximize2, X, Clock } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -197,7 +197,7 @@ export function FullscreenPlayerControls({
             )}
             title={t("apps.ipod.syncMode.title", "Sync Lyrics")}
           >
-            <TimerReset className={variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4"} />
+            <Clock className={variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4"} />
           </button>
         )}
 
