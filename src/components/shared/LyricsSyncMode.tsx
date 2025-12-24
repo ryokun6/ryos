@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback } from "react";
+import { useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { X, Minus, Plus } from "lucide-react";
@@ -14,6 +14,53 @@ import {
   CHINESE_REGEX,
   FuriganaSegment,
 } from "@/utils/romanization";
+
+// Memoized lyric line component to prevent unnecessary re-renders
+const LyricLineItem = memo(function LyricLineItem({
+  line,
+  index,
+  isCurrent,
+  isPast,
+  romanizedText,
+  onClick,
+  setRef,
+}: {
+  line: LyricLine;
+  index: number;
+  isCurrent: boolean;
+  isPast: boolean;
+  romanizedText: string | null;
+  onClick: () => void;
+  setRef: (el: HTMLButtonElement | null) => void;
+}) {
+  return (
+    <button
+      type="button"
+      key={`${line.startTimeMs}-${index}`}
+      ref={setRef}
+      onClick={onClick}
+      className={cn(
+        "w-full text-left py-2 px-3 rounded-md",
+        "hover:bg-white/10 active:bg-white/20",
+        "focus:outline-none focus:ring-2 focus:ring-white/30",
+        isCurrent && "bg-white/20 text-white font-semibold",
+        isPast && !isCurrent && "text-white/40",
+        !isPast && !isCurrent && "text-white/60"
+      )}
+    >
+      <div className="text-base leading-relaxed">
+        {line.words || (
+          <span className="italic opacity-50">♪</span>
+        )}
+      </div>
+      {romanizedText && (
+        <div className="text-xs opacity-60 mt-0.5">
+          {romanizedText}
+        </div>
+      )}
+    </button>
+  );
+});
 
 export interface LyricsSyncModeProps {
   /** All lyrics lines for the current track */
@@ -174,9 +221,17 @@ export function LyricsSyncMode({
     [currentTimeMs, onSetOffset]
   );
 
-  // Auto-scroll to keep current line visible (centered)
+  // Track last scrolled line to avoid redundant scrolls
+  const lastScrolledLineRef = useRef<number>(-1);
+  
+  // Auto-scroll to keep current line visible (centered) - throttled
   useEffect(() => {
-    if (currentLineIndex >= 0 && lineRefs.current[currentLineIndex]) {
+    if (
+      currentLineIndex >= 0 && 
+      currentLineIndex !== lastScrolledLineRef.current &&
+      lineRefs.current[currentLineIndex]
+    ) {
+      lastScrolledLineRef.current = currentLineIndex;
       lineRefs.current[currentLineIndex]?.scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -202,9 +257,21 @@ export function LyricsSyncMode({
     lineRefs.current = lineRefs.current.slice(0, lines.length);
   }, [lines.length]);
 
+  // Pre-compute romanized text for all lines (only when lines/romanization/furiganaMap change)
+  const romanizedTexts = useMemo(() => {
+    if (!romanization.enabled) return new Map<number, string | null>();
+    
+    const map = new Map<number, string | null>();
+    lines.forEach((line, index) => {
+      const furiganaSegments = furiganaMap?.get(line.startTimeMs);
+      map.set(index, getRomanizedText(line.words, romanization, furiganaSegments));
+    });
+    return map;
+  }, [lines, romanization, furiganaMap]);
+
   return (
     <div 
-      className="absolute inset-0 z-50 flex flex-col bg-black/60 backdrop-blur-md"
+      className="absolute inset-0 z-50 flex flex-col bg-black/90"
       style={{ borderRadius: "inherit" }}
     >
       {/* Header */}
@@ -217,7 +284,7 @@ export function LyricsSyncMode({
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-0 p-1 rounded-full hover:bg-white/10 transition-colors text-white"
+            className="absolute right-0 p-1 rounded-full hover:bg-white/10 text-white"
             aria-label={t("common.close", "Close")}
           >
             <X className="w-4 h-4" />
@@ -247,7 +314,7 @@ export function LyricsSyncMode({
           <button
             type="button"
             onClick={() => onAdjustOffset(-OFFSET_STEP)}
-            className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors text-white"
+            className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
             aria-label={t("apps.ipod.syncMode.decreaseOffset", "Decrease offset")}
           >
             <Minus className="w-4 h-4" />
@@ -258,7 +325,7 @@ export function LyricsSyncMode({
           <button
             type="button"
             onClick={() => onAdjustOffset(OFFSET_STEP)}
-            className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors text-white"
+            className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
             aria-label={t("apps.ipod.syncMode.increaseOffset", "Increase offset")}
           >
             <Plus className="w-4 h-4" />
@@ -272,42 +339,20 @@ export function LyricsSyncMode({
         className="flex-1 overflow-y-auto px-3 py-4"
       >
         <div className="space-y-0.5">
-          {lines.map((line, index) => {
-            const isCurrent = index === currentLineIndex;
-            const isPast = index < currentLineIndex;
-            const furiganaSegments = furiganaMap?.get(line.startTimeMs);
-            const romanizedText = getRomanizedText(line.words, romanization, furiganaSegments);
-
-            return (
-              <button
-                type="button"
-                key={`${line.startTimeMs}-${index}`}
-                ref={(el) => {
-                  lineRefs.current[index] = el;
-                }}
-                onClick={() => handleLineTap(line)}
-                className={cn(
-                  "w-full text-left py-2 px-3 rounded-md transition-all duration-200",
-                  "hover:bg-white/10 active:bg-white/20",
-                  "focus:outline-none focus:ring-2 focus:ring-white/30",
-                  isCurrent && "bg-white/20 text-white font-semibold",
-                  isPast && !isCurrent && "text-white/40",
-                  !isPast && !isCurrent && "text-white/60"
-                )}
-              >
-                <div className="text-base leading-relaxed">
-                  {line.words || (
-                    <span className="italic opacity-50">♪</span>
-                  )}
-                </div>
-                {romanizedText && (
-                  <div className="text-xs opacity-60 mt-0.5">
-                    {romanizedText}
-                  </div>
-                )}
-              </button>
-            );
-          })}
+          {lines.map((line, index) => (
+            <LyricLineItem
+              key={`${line.startTimeMs}-${index}`}
+              line={line}
+              index={index}
+              isCurrent={index === currentLineIndex}
+              isPast={index < currentLineIndex}
+              romanizedText={romanizedTexts.get(index) ?? null}
+              onClick={() => handleLineTap(line)}
+              setRef={(el) => {
+                lineRefs.current[index] = el;
+              }}
+            />
+          ))}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { LyricLine, RomanizationSettings } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { getApiUrl } from "@/utils/platform";
@@ -90,11 +90,22 @@ export function useFurigana({
   // Track cache bust trigger for clearing caches
   const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
   const lastCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
+  
+  // Stable refs for callbacks to avoid effect re-runs
+  const onLoadingChangeRef = useRef(onLoadingChange);
+  onLoadingChangeRef.current = onLoadingChange;
 
-  // Notify parent when loading state changes
+  // Notify parent when loading state changes (use ref to avoid effect dependency)
   useEffect(() => {
-    onLoadingChange?.(isFetching);
-  }, [isFetching, onLoadingChange]);
+    onLoadingChangeRef.current?.(isFetching);
+  }, [isFetching]);
+
+  // Compute cache key outside effect - only when lines actually change
+  const cacheKey = useMemo(() => {
+    if (lines.length === 0) return "";
+    // Use a simpler, faster hash - just join timestamps and first chars
+    return lines.map((l) => `${l.startTimeMs}:${l.words.slice(0, 20)}`).join("|");
+  }, [lines]);
 
   // Effect to immediately clear furigana when cache bust trigger changes
   useEffect(() => {
@@ -105,17 +116,20 @@ export function useFurigana({
     }
   }, [lyricsCacheBustTrigger]);
 
+  // Check conditions outside effect to avoid running effect body when not needed
+  const shouldFetchFurigana = romanization.enabled && romanization.japaneseFurigana;
+  const hasLines = lines.length > 0;
+
   // Fetch furigana for original lines when enabled
   useEffect(() => {
-    // Check if furigana fetching is needed
-    const shouldFetchFurigana = romanization.enabled && romanization.japaneseFurigana;
-    
     // If completely disabled or no lines, clear everything
-    if (!shouldFetchFurigana || lines.length === 0) {
-      setFuriganaMap(new Map());
-      furiganaCacheKeyRef.current = "";
-      setIsFetching(false);
-      setError(undefined);
+    if (!shouldFetchFurigana || !hasLines) {
+      if (furiganaCacheKeyRef.current !== "") {
+        setFuriganaMap(new Map());
+        furiganaCacheKeyRef.current = "";
+        setIsFetching(false);
+        setError(undefined);
+      }
       return;
     }
 
@@ -143,9 +157,6 @@ export function useFurigana({
 
     // Check if this is a force cache clear request
     const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
-
-    // Create cache key from lines
-    const cacheKey = JSON.stringify(lines.map((l) => l.startTimeMs + l.words));
     
     // Skip if we already have this data and it's not a force request
     if (!isForceRequest && cacheKey === furiganaCacheKeyRef.current) {
@@ -254,7 +265,8 @@ export function useFurigana({
       controller.abort();
       setIsFetching(false);
     };
-  }, [lines, romanization.enabled, romanization.japaneseFurigana, isShowingOriginal, lyricsCacheBustTrigger]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
+  }, [cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger]);
 
   // Unified render function that handles all romanization types
   const renderWithFurigana = useCallback(

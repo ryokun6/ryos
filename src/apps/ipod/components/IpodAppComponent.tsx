@@ -1220,19 +1220,26 @@ export function IpodAppComponent({
     onLoadingChange: setIsFullScreenFetchingFurigana,
   });
 
+  // Convert furiganaMap to Record for storage - only when content actually changes
+  const furiganaRecord = useMemo(() => {
+    if (furiganaMap.size === 0) return null;
+    const record: Record<string, import("@/utils/romanization").FuriganaSegment[]> = {};
+    furiganaMap.forEach((value, key) => {
+      record[key] = value;
+    });
+    return record;
+  }, [furiganaMap]);
+
+  // Ref to track last stored value to avoid redundant updates
+  const lastFuriganaRecordRef = useRef<typeof furiganaRecord>(null);
+  
   // Update shared store when furiganaMap changes
   useEffect(() => {
-    if (furiganaMap.size > 0) {
-      // Convert Map to Record for storage
-      const record: Record<string, import("@/utils/romanization").FuriganaSegment[]> = {};
-      furiganaMap.forEach((value, key) => {
-        record[key] = value;
-      });
-      setCurrentFuriganaMap(record);
-    } else {
-      setCurrentFuriganaMap(null);
-    }
-  }, [furiganaMap, setCurrentFuriganaMap]);
+    // Skip if value hasn't actually changed (avoid unnecessary store updates)
+    if (furiganaRecord === lastFuriganaRecordRef.current) return;
+    lastFuriganaRecordRef.current = furiganaRecord;
+    setCurrentFuriganaMap(furiganaRecord);
+  }, [furiganaRecord, setCurrentFuriganaMap]);
 
   // Fullscreen sync
   const prevFullScreenRef = useRef(isFullScreen);
