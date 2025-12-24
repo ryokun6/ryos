@@ -1546,7 +1546,7 @@ export function IpodAppComponent({
             onCycleLyricsFont={cycleLyricsFont}
             romanization={romanization}
             onRomanizationChange={setRomanization}
-            onSyncMode={() => setIsSyncModeOpen(true)}
+            onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
             isSyncModeOpen={isSyncModeOpen}
             syncModeContent={
               fullScreenLyricsControls.originalLines.length > 0 ? (

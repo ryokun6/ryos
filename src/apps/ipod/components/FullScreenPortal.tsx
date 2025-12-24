@@ -570,11 +570,19 @@ export function FullScreenPortal({
           : children}
       </div>
 
+      {/* Spacer for fixed toolbar */}
+      <div 
+        className="flex-shrink-0"
+        style={{
+          height: "calc(max(env(safe-area-inset-bottom), 0.75rem) + clamp(1rem, 6dvh, 4rem) + 48px)",
+        }}
+      />
+
       {/* Inline toolbar */}
       <div
         data-toolbar
         className={cn(
-          "w-full flex justify-center z-[10001] transition-opacity duration-200",
+          "fixed bottom-0 left-0 right-0 flex justify-center z-[10001] transition-opacity duration-200",
           showControls || anyMenuOpen || !getActualPlayerState()
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -623,16 +631,16 @@ export function FullScreenPortal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8"
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8 pointer-events-none"
             style={{
               paddingTop: "env(safe-area-inset-top, 0px)",
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 100px)",
               paddingLeft: "env(safe-area-inset-left, 0px)",
               paddingRight: "env(safe-area-inset-right, 0px)",
             }}
           >
             <div 
-              className="relative w-full max-w-md h-[70vh] max-h-[600px] rounded-2xl overflow-hidden shadow-2xl bg-black/90"
+              className="relative w-full max-w-md h-[70vh] max-h-[600px] rounded-2xl overflow-hidden shadow-2xl bg-black/90 pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {syncModeContent}

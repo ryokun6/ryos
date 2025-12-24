@@ -919,7 +919,7 @@ export function KaraokeAppComponent({
           <div
             data-toolbar
             className={cn(
-              "absolute bottom-0 left-0 right-0 flex justify-center z-50 pb-6 transition-opacity duration-200",
+              "absolute bottom-0 left-0 right-0 flex justify-center z-[60] pb-6 transition-opacity duration-200",
               showControls || anyMenuOpen || !isPlaying
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none"
@@ -934,7 +934,7 @@ export function KaraokeAppComponent({
               onPrevious={handlePrevious}
               onPlayPause={handlePlayPause}
               onNext={handleNext}
-              onSyncMode={() => setIsSyncModeOpen(true)}
+              onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
               currentAlignment={lyricsAlignment}
               onAlignmentCycle={cycleAlignment}
               currentFont={lyricsFont}
@@ -1086,7 +1086,7 @@ export function KaraokeAppComponent({
           onCycleLyricsFont={cycleLyricsFont}
           romanization={romanization}
           onRomanizationChange={setRomanization}
-          onSyncMode={() => setIsSyncModeOpen(true)}
+          onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
           isSyncModeOpen={isSyncModeOpen}
           syncModeContent={
             lyricsControls.originalLines.length > 0 ? (
