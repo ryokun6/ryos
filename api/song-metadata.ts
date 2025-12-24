@@ -416,7 +416,7 @@ export default async function handler(req: Request) {
             artist: song.artist || undefined,
             album: song.album || undefined,
             lyricOffset: song.lyricOffset ?? undefined,
-            lyricsSearch: song.lyricsSearch || undefined,
+            lyricsSearch: song.lyricsSearch as SongMetadata["lyricsSearch"],
             // Preserve original creator, or set admin as creator for imports
             createdBy: existingMetadata?.createdBy || username || undefined,
             createdAt: songCreatedAt,
@@ -551,7 +551,7 @@ export default async function handler(req: Request) {
         artist: artist || undefined,
         album: album || undefined,
         lyricOffset: lyricOffset ?? undefined,
-        lyricsSearch: lyricsSearch || undefined,
+        lyricsSearch: lyricsSearch as SongMetadata["lyricsSearch"],
         lyricsHash: lyricsHash || undefined,
         translationHash: translationHash || undefined,
         // Preserve original creator, or set current user as creator

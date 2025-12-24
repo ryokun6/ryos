@@ -33,6 +33,7 @@ import {
   deleteAllSongs,
   type SongDocument,
   type GetSongOptions,
+  type LyricsSource,
 } from "../_utils/song-service.js";
 
 // Vercel Edge Function configuration
@@ -237,9 +238,9 @@ export default async function handler(req: Request) {
           const existing = await getSong(redis, songData.id, { includeMetadata: true });
 
           // Convert legacy lyricsSearch to lyricsSource
-          let lyricsSource = songData.lyricsSource;
+          let lyricsSource: LyricsSource | undefined = songData.lyricsSource;
           if (!lyricsSource && songData.lyricsSearch?.selection) {
-            lyricsSource = songData.lyricsSearch.selection;
+            lyricsSource = songData.lyricsSearch.selection as LyricsSource;
           }
 
           const songDoc: Partial<SongDocument> & { id: string } = {
@@ -319,7 +320,7 @@ export default async function handler(req: Request) {
           artist: songData.artist,
           album: songData.album,
           lyricOffset: songData.lyricOffset,
-          lyricsSource: songData.lyricsSource,
+          lyricsSource: songData.lyricsSource as LyricsSource | undefined,
           createdBy: existing?.createdBy || username || undefined,
         },
         { preserveLyrics: true, preserveTranslations: true, preserveFurigana: true }

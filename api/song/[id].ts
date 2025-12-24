@@ -961,7 +961,7 @@ export default async function handler(req: Request) {
         }
 
         const force = parsed.data.force || false;
-        let lyricsSource = parsed.data.lyricsSource;
+        let lyricsSource: LyricsSource | undefined = parsed.data.lyricsSource as LyricsSource | undefined;
 
         // Get existing song
         const song = await getSong(redis, songId, {
@@ -1174,11 +1174,13 @@ export default async function handler(req: Request) {
 
       // Update song
       const isUpdate = !!existingSong;
+      const { lyricsSource, ...restData } = parsed.data;
       const updatedSong = await saveSong(
         redis,
         {
           id: songId,
-          ...parsed.data,
+          ...restData,
+          lyricsSource: lyricsSource as LyricsSource | undefined,
           createdBy: existingSong?.createdBy || username || undefined,
         },
         { preserveLyrics: true, preserveTranslations: true, preserveFurigana: true }
