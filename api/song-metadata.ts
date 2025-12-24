@@ -457,6 +457,7 @@ export default async function handler(req: Request) {
       const { youtubeId, title, artist, album, lyricOffset, lyricsSearch, lyricsHash, translationHash } = body;
       const key = `${SONG_METADATA_PREFIX}${youtubeId}`;
       const now = Date.now();
+      const isAdmin = username?.toLowerCase() === "ryo";
 
       // Check if metadata already exists
       const existingRaw = await redis.get(key);
@@ -470,6 +471,36 @@ export default async function handler(req: Request) {
         } catch {
           // Ignore parse errors, will overwrite
         }
+      }
+
+      // Check if user can update this song:
+      // - Admin (ryo) can update any song
+      // - Original creator can update their own song
+      // - Anyone can create a new song
+      // - Non-creators cannot update songs created by others
+      const isOwnSong = !existingMetadata?.createdBy || existingMetadata.createdBy === username;
+      const canUpdate = isAdmin || isOwnSong || !existingMetadata;
+
+      if (!canUpdate) {
+        // Song exists and was created by someone else - don't update, but return success
+        // This allows the share dialog to still work
+        return new Response(
+          JSON.stringify({
+            success: true,
+            youtubeId,
+            isUpdate: false,
+            skipped: true,
+            createdBy: existingMetadata?.createdBy,
+            message: "Song already exists, created by another user",
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
       }
 
       // Build metadata object
