@@ -1000,7 +1000,7 @@
 /* CJK fonts come after Arial Rounded; Safari's ui-rounded doesn't fall back properly for CJK characters */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded {
   font-family: "Arial Rounded MT Bold", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-    "Yuanti SC", ui-rounded, "Nanum Gothic", sans-serif !important;
+    "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
   font-weight: 700 !important;
   line-height: 1.1 !important;
   font-synthesis: none !important;
@@ -1012,7 +1012,7 @@
 /* CJK fonts come after Arial Rounded; Safari's ui-rounded doesn't fall back properly for CJK characters */
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded {
   font-family: "Arial Rounded MT Bold", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-    "Yuanti SC", ui-rounded, "Nanum Gothic", sans-serif !important;
+    "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
   font-weight: 700 !important;
   line-height: 1.1 !important;
   font-synthesis: none !important;

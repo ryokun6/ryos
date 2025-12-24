@@ -390,7 +390,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   /* CJK fonts come after Arial Rounded; Safari's ui-rounded doesn't fall back properly for CJK characters */
   .font-lyrics-rounded {
     font-family: "Arial Rounded MT Bold", "Kosugi Maru", "Hiragino Maru Gothic ProN",
-      "Yuanti SC", ui-rounded, "Nanum Gothic", sans-serif;
+      "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif;
     font-weight: 700;
     line-height: 1.1;
     font-synthesis: none;
