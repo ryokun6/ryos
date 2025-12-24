@@ -28,11 +28,10 @@ import { toast } from "sonner";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, KoreanDisplay, JapaneseFurigana, LyricsFont } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
 import { track } from "@vercel/analytics";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
-import { lyricsHaveKorean } from "@/utils/languageDetection";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { BACKLIGHT_TIMEOUT_MS, SEEK_AMOUNT_SECONDS } from "../constants";
@@ -1206,13 +1205,6 @@ export function IpodAppComponent({
     selectedMatch: selectedMatchForLyrics,
   });
 
-  // Detect if lyrics contain Korean text (Hangul syllables and Jamo)
-  // Use originalLines to check ALL lyrics, not just currently displayed ones
-  const hasKoreanText = useMemo(
-    () => lyricsHaveKorean(fullScreenLyricsControls.originalLines),
-    [fullScreenLyricsControls.originalLines]
-  );
-
   // Fullscreen sync
   const prevFullScreenRef = useRef(isFullScreen);
 
@@ -1306,22 +1298,6 @@ export function IpodAppComponent({
         ? t("apps.ipod.status.layoutCenter")
         : t("apps.ipod.status.layoutAlternating")
     );
-  }, [showStatus, t]);
-
-  const toggleKorean = useCallback(() => {
-    const store = useIpodStore.getState();
-    const curr = store.koreanDisplay;
-    const next = curr === KoreanDisplay.Original ? KoreanDisplay.Romanized : KoreanDisplay.Original;
-    store.setKoreanDisplay(next);
-    showStatus(next === KoreanDisplay.Romanized ? t("apps.ipod.status.romanizationOn") : t("apps.ipod.status.romanizationOff"));
-  }, [showStatus, t]);
-
-  const toggleFurigana = useCallback(() => {
-    const store = useIpodStore.getState();
-    const curr = store.japaneseFurigana;
-    const next = curr === JapaneseFurigana.On ? JapaneseFurigana.Off : JapaneseFurigana.On;
-    store.setJapaneseFurigana(next);
-    showStatus(next === JapaneseFurigana.On ? t("apps.ipod.status.furiganaOn") : t("apps.ipod.status.furiganaOff"));
   }, [showStatus, t]);
 
   const cycleLyricsFont = useCallback(() => {
@@ -1531,11 +1507,6 @@ export function IpodAppComponent({
             onCycleAlignment={cycleAlignment}
             currentLyricsFont={lyricsFont}
             onCycleLyricsFont={cycleLyricsFont}
-            currentKoreanDisplay={koreanDisplay}
-            onToggleKoreanDisplay={toggleKorean}
-            showKoreanToggle={hasKoreanText}
-            currentJapaneseFurigana={japaneseFurigana}
-            onToggleJapaneseFurigana={toggleFurigana}
             romanization={romanization}
             onRomanizationChange={setRomanization}
             fullScreenPlayerRef={fullScreenPlayerRef}

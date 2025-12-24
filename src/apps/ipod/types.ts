@@ -59,11 +59,6 @@ export interface FullScreenPortalProps {
   onCycleAlignment: () => void;
   currentLyricsFont: LyricsFont;
   onCycleLyricsFont: () => void;
-  currentKoreanDisplay: KoreanDisplay;
-  onToggleKoreanDisplay: () => void;
-  showKoreanToggle?: boolean;
-  currentJapaneseFurigana: JapaneseFurigana;
-  onToggleJapaneseFurigana: () => void;
   // Romanization/Pronunciation settings
   romanization?: RomanizationSettings;
   onRomanizationChange?: (settings: Partial<RomanizationSettings>) => void;

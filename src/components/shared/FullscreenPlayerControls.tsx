@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import type { LyricsAlignment, KoreanDisplay, RomanizationSettings } from "@/types/lyrics";
+import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
 import { Globe, Maximize2, X } from "lucide-react";
@@ -37,15 +37,9 @@ export interface FullscreenPlayerControlsProps {
   currentFont: LyricsFont;
   onFontCycle: () => void;
 
-  // Korean display (legacy - use romanization instead)
-  koreanDisplay: KoreanDisplay;
-  onKoreanToggle: () => void;
-  showKoreanToggle?: boolean;
-  
   // Romanization/Pronunciation settings
   romanization?: RomanizationSettings;
   onRomanizationChange?: (settings: Partial<RomanizationSettings>) => void;
-  showRomanizationToggle?: boolean;
   isPronunciationMenuOpen?: boolean;
   setIsPronunciationMenuOpen?: (open: boolean) => void;
 
@@ -79,12 +73,8 @@ export function FullscreenPlayerControls({
   onAlignmentCycle,
   currentFont,
   onFontCycle,
-  koreanDisplay,
-  onKoreanToggle,
-  showKoreanToggle = true,
   romanization,
   onRomanizationChange,
-  showRomanizationToggle = true,
   isPronunciationMenuOpen = false,
   setIsPronunciationMenuOpen,
   currentTranslationCode,
@@ -275,8 +265,8 @@ export function FullscreenPlayerControls({
           </span>
         </button>
 
-        {/* Pronunciation menu (unified) */}
-        {showRomanizationToggle && romanization && onRomanizationChange && setIsPronunciationMenuOpen ? (
+        {/* Pronunciation menu */}
+        {romanization && onRomanizationChange && setIsPronunciationMenuOpen && (
           <DropdownMenu open={isPronunciationMenuOpen} onOpenChange={setIsPronunciationMenuOpen}>
             <DropdownMenuTrigger asChild>
               <button
@@ -375,29 +365,6 @@ export function FullscreenPlayerControls({
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : showKoreanToggle && (
-          /* Legacy Hangul toggle - fallback for backwards compatibility */
-          <button
-            type="button"
-            onClick={handleClick(onKoreanToggle)}
-            aria-label={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
-            className={cn(
-              buttonSize,
-              "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-            )}
-            title={t("apps.ipod.ariaLabels.toggleHangulRomanization")}
-          >
-            {koreanDisplay === "romanized" ? (
-              <ruby className={cn(smallIconSize, "ruby-align-center")} style={{ rubyPosition: "over" }}>
-                한
-                <rt style={{ fontSize: variant === "compact" ? "8px" : "9px", opacity: 0.7, paddingBottom: "1px" }}>
-                  han
-                </rt>
-              </ruby>
-            ) : (
-              <span className={smallIconSize}>한</span>
-            )}
-          </button>
         )}
 
         {/* Translation */}

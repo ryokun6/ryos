@@ -23,9 +23,8 @@ import { useIpodStoreShallow, useAudioSettingsStoreShallow, useAppStoreShallow }
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, LyricsFont, KoreanDisplay, JapaneseFurigana } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
 import { getTranslatedAppName } from "@/utils/i18n";
-import { lyricsHaveKorean } from "@/utils/languageDetection";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
@@ -75,8 +74,6 @@ export function KaraokeAppComponent({
   const {
     setLyricsAlignment,
     setLyricsFont,
-    setKoreanDisplay,
-    setJapaneseFurigana,
     setRomanization,
     setLyricsTranslationLanguage,
     toggleLyrics,
@@ -87,8 +84,6 @@ export function KaraokeAppComponent({
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
-    setKoreanDisplay: s.setKoreanDisplay,
-    setJapaneseFurigana: s.setJapaneseFurigana,
     setRomanization: s.setRomanization,
     setLyricsTranslationLanguage: s.setLyricsTranslationLanguage,
     toggleLyrics: s.toggleLyrics,
@@ -238,13 +233,6 @@ export function KaraokeAppComponent({
         separator: lang.separator,
       })),
     [t]
-  );
-
-  // Detect if lyrics contain Korean text (Hangul syllables and Jamo)
-  // Use originalLines to check ALL lyrics, not just currently displayed ones
-  const hasKoreanText = useMemo(
-    () => lyricsHaveKorean(lyricsControls.originalLines),
-    [lyricsControls.originalLines]
   );
 
   // Get CSS class name for current lyrics font
@@ -511,22 +499,6 @@ export function KaraokeAppComponent({
         : t("apps.ipod.status.fontSansSerif")
     );
   }, [lyricsFont, setLyricsFont, showStatus, t]);
-
-  // Korean toggle
-  const toggleKorean = useCallback(() => {
-    const curr = koreanDisplay;
-    const next = curr === KoreanDisplay.Original ? KoreanDisplay.Romanized : KoreanDisplay.Original;
-    setKoreanDisplay(next);
-    showStatus(next === KoreanDisplay.Romanized ? t("apps.ipod.status.romanizationOn") : t("apps.ipod.status.romanizationOff"));
-  }, [koreanDisplay, setKoreanDisplay, showStatus, t]);
-
-  // Furigana toggle
-  const toggleFurigana = useCallback(() => {
-    const curr = japaneseFurigana;
-    const next = curr === JapaneseFurigana.On ? JapaneseFurigana.Off : JapaneseFurigana.On;
-    setJapaneseFurigana(next);
-    showStatus(next === JapaneseFurigana.On ? t("apps.ipod.status.furiganaOn") : t("apps.ipod.status.furiganaOff"));
-  }, [japaneseFurigana, setJapaneseFurigana, showStatus, t]);
 
   // Track handling for add dialog
   const handleAddTrack = useCallback(
@@ -951,12 +923,8 @@ export function KaraokeAppComponent({
               onAlignmentCycle={cycleAlignment}
               currentFont={lyricsFont}
               onFontCycle={cycleLyricsFont}
-              koreanDisplay={koreanDisplay}
-              onKoreanToggle={toggleKorean}
-              showKoreanToggle={hasKoreanText}
               romanization={romanization}
               onRomanizationChange={setRomanization}
-              showRomanizationToggle={!!romanization}
               isPronunciationMenuOpen={isPronunciationMenuOpen}
               setIsPronunciationMenuOpen={setIsPronunciationMenuOpen}
               currentTranslationCode={lyricsTranslationLanguage}
@@ -1069,10 +1037,8 @@ export function KaraokeAppComponent({
           onCycleAlignment={cycleAlignment}
           currentLyricsFont={lyricsFont}
           onCycleLyricsFont={cycleLyricsFont}
-          currentKoreanDisplay={koreanDisplay}
-          onToggleKoreanDisplay={toggleKorean}
-          currentJapaneseFurigana={japaneseFurigana}
-          onToggleJapaneseFurigana={toggleFurigana}
+          romanization={romanization}
+          onRomanizationChange={setRomanization}
           fullScreenPlayerRef={fullScreenPlayerRef}
           isLoadingLyrics={fullScreenLyricsControls.isLoading}
           isProcessingLyrics={fullScreenLyricsControls.isTranslating}

@@ -34,11 +34,6 @@ export function FullScreenPortal({
   onCycleAlignment,
   currentLyricsFont,
   onCycleLyricsFont,
-  currentKoreanDisplay,
-  onToggleKoreanDisplay,
-  showKoreanToggle = true,
-  currentJapaneseFurigana: _currentJapaneseFurigana,
-  onToggleJapaneseFurigana,
   romanization,
   onRomanizationChange,
   fullScreenPlayerRef,
@@ -109,8 +104,6 @@ export function FullScreenPortal({
     onSelectTranslation: (code: string | null) => void;
     onCycleAlignment: () => void;
     onCycleLyricsFont: () => void;
-    onToggleKoreanDisplay: () => void;
-    onToggleJapaneseFurigana: () => void;
     setIsLangMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   }>({
     onClose,
@@ -123,8 +116,6 @@ export function FullScreenPortal({
     onSelectTranslation,
     onCycleAlignment,
     onCycleLyricsFont,
-    onToggleKoreanDisplay,
-    onToggleJapaneseFurigana,
     setIsLangMenuOpen,
   });
 
@@ -141,8 +132,6 @@ export function FullScreenPortal({
       onSelectTranslation,
       onCycleAlignment,
       onCycleLyricsFont,
-      onToggleKoreanDisplay,
-      onToggleJapaneseFurigana,
       setIsLangMenuOpen,
     };
   }, [
@@ -156,8 +145,6 @@ export function FullScreenPortal({
     onSelectTranslation,
     onCycleAlignment,
     onCycleLyricsFont,
-    onToggleKoreanDisplay,
-    onToggleJapaneseFurigana,
   ]);
 
   // Touch handling for swipe gestures
@@ -607,12 +594,8 @@ export function FullScreenPortal({
           onAlignmentCycle={onCycleAlignment}
           currentFont={currentLyricsFont}
           onFontCycle={onCycleLyricsFont}
-          koreanDisplay={currentKoreanDisplay}
-          onKoreanToggle={onToggleKoreanDisplay}
-          showKoreanToggle={showKoreanToggle}
           romanization={romanization}
           onRomanizationChange={onRomanizationChange}
-          showRomanizationToggle={!!romanization && !!onRomanizationChange}
           isPronunciationMenuOpen={isPronunciationMenuOpen}
           setIsPronunciationMenuOpen={setIsPronunciationMenuOpen}
           currentTranslationCode={currentTranslationCode}
