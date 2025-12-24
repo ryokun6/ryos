@@ -473,8 +473,6 @@ export default async function handler(req: Request) {
       }
 
       // Build metadata object
-      // For single song shares, always use current timestamp (song moves to top of library)
-      // This differs from bulk import which preserves existing timestamps
       const metadata: SongMetadata = {
         youtubeId,
         title,
@@ -486,7 +484,7 @@ export default async function handler(req: Request) {
         translationHash: translationHash || undefined,
         // Preserve original creator, or set current user as creator
         createdBy: existingMetadata?.createdBy || username || undefined,
-        createdAt: now,
+        createdAt: existingMetadata?.createdAt || now,
         updatedAt: now,
       };
 
