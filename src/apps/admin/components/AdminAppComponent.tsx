@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, ExternalLink } from "lucide-react";
+import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, ExternalLink, Upload } from "lucide-react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Table,
@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { listAllCachedSongMetadata, deleteSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
+import { listAllCachedSongMetadata, deleteSongMetadata, bulkImportSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
 
 interface User {
   username: string;
@@ -111,6 +111,8 @@ export function AdminAppComponent({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isFrameNarrow, setIsFrameNarrow] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isAdmin = username?.toLowerCase() === "ryo";
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId) || null;
@@ -371,6 +373,74 @@ export function AdminAppComponent({
     [username, authToken, fetchSongs, t]
   );
 
+  // Handle import file selection
+  const handleImportFile = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file || !username || !authToken) return;
+
+      setIsImporting(true);
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        // Support both formats: { videos: [...] } or direct array
+        const videos = data.videos || data;
+        if (!Array.isArray(videos)) {
+          toast.error(t("apps.admin.errors.invalidImportFormat", "Invalid file format"));
+          return;
+        }
+
+        // Map to the expected song format
+        const songs = videos.map((v: Record<string, unknown>) => ({
+          id: v.id as string,
+          url: v.url as string | undefined,
+          title: v.title as string,
+          artist: v.artist as string | undefined,
+          album: v.album as string | undefined,
+          lyricOffset: v.lyricOffset as number | undefined,
+          lyricsSearch: v.lyricsSearch as {
+            query?: string;
+            selection?: {
+              hash: string;
+              albumId: string | number;
+              title: string;
+              artist: string;
+              album?: string;
+            };
+          } | undefined,
+        }));
+
+        const result = await bulkImportSongMetadata(songs, { username, authToken });
+
+        if (result.success) {
+          toast.success(
+            t("apps.admin.messages.importSuccess", {
+              imported: result.imported,
+              updated: result.updated,
+              total: result.total,
+              defaultValue: `Imported ${result.imported} new, updated ${result.updated} (${result.total} total)`,
+            })
+          );
+          fetchSongs();
+        } else {
+          toast.error(result.error || t("apps.admin.errors.importFailed", "Import failed"));
+        }
+      } catch (error) {
+        console.error("Failed to import songs:", error);
+        toast.error(t("apps.admin.errors.importFailed", "Import failed"));
+      } finally {
+        setIsImporting(false);
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }
+    },
+    [username, authToken, fetchSongs, t]
+  );
+
   // Handle delete confirmation
   const handleDeleteConfirm = useCallback(() => {
     if (!deleteTarget) return;
@@ -613,15 +683,40 @@ export function AdminAppComponent({
                 )}
 
                 {activeSection === "songs" && !selectedRoomId && (
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
-                    <Input
-                      placeholder={t("apps.admin.search.songsPlaceholder", "Search songs...")}
-                      value={songSearch}
-                      onChange={(e) => setSongSearch(e.target.value)}
-                      className="pl-7 h-7 text-[12px]"
+                  <>
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+                      <Input
+                        placeholder={t("apps.admin.search.songsPlaceholder", "Search songs...")}
+                        value={songSearch}
+                        onChange={(e) => setSongSearch(e.target.value)}
+                        className="pl-7 h-7 text-[12px]"
+                      />
+                    </div>
+                    {/* Import button */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportFile}
+                      className="hidden"
                     />
-                  </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isImporting}
+                      className="h-7 px-2 text-[11px] gap-1"
+                      title={t("apps.admin.songs.import", "Import Library")}
+                    >
+                      {isImporting ? (
+                        <ActivityIndicator size={14} />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5" />
+                      )}
+                      <span className="hidden sm:inline">{t("apps.admin.songs.import", "Import")}</span>
+                    </Button>
+                  </>
                 )}
 
                 {selectedRoomId && selectedRoom && (

@@ -49,6 +49,24 @@ const SaveSongMetadataSchema = z.object({
 type SaveSongMetadataRequest = z.infer<typeof SaveSongMetadataSchema>;
 
 /**
+ * Schema for bulk import request (array of songs)
+ */
+const BulkImportSchema = z.object({
+  songs: z.array(z.object({
+    id: z.string().min(1),
+    url: z.string().optional(),
+    title: z.string().min(1),
+    artist: z.string().optional(),
+    album: z.string().optional(),
+    lyricOffset: z.number().optional(),
+    lyricsSearch: z.object({
+      query: z.string().optional(),
+      selection: LyricsSearchSelectionSchema.optional(),
+    }).optional(),
+  })),
+});
+
+/**
  * Stored song metadata structure
  */
 interface SongMetadata {
@@ -72,6 +90,8 @@ interface SongMetadata {
   createdBy?: string;
   createdAt: number;
   updatedAt: number;
+  // Optional import order for stable sorting when createdAt is identical
+  importOrder?: number;
 }
 
 /**
@@ -161,7 +181,13 @@ export default async function handler(req: Request) {
         }
 
         // Sort by createdAt (most recently added first)
-        songs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        // Use importOrder as secondary sort when createdAt is the same (lower order = appears first)
+        songs.sort((a, b) => {
+          const createdAtDiff = (b.createdAt || 0) - (a.createdAt || 0);
+          if (createdAtDiff !== 0) return createdAtDiff;
+          // When createdAt is the same, sort by importOrder (ascending)
+          return (a.importOrder ?? Infinity) - (b.importOrder ?? Infinity);
+        });
 
         return new Response(
           JSON.stringify({ songs }),
@@ -238,6 +264,9 @@ export default async function handler(req: Request) {
 
     // POST: Save song metadata (requires authentication)
     if (req.method === "POST") {
+      const url = new URL(req.url);
+      const action = url.searchParams.get("action");
+
       // Extract authentication from headers
       const authHeader = req.headers.get("Authorization");
       const usernameHeader = req.headers.get("X-Username");
@@ -260,7 +289,137 @@ export default async function handler(req: Request) {
         );
       }
 
-      // Parse and validate request body
+      // Handle bulk import action (admin only)
+      if (action === "import") {
+        // Only admin (ryo) can bulk import songs
+        if (username?.toLowerCase() !== "ryo") {
+          return new Response(
+            JSON.stringify({ error: "Forbidden - admin access required" }),
+            {
+              status: 403,
+              headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": effectiveOrigin!,
+              },
+            }
+          );
+        }
+
+        // Parse and validate bulk import request
+        let importBody: z.infer<typeof BulkImportSchema>;
+        try {
+          const rawBody = await req.json();
+          const validation = BulkImportSchema.safeParse(rawBody);
+          
+          if (!validation.success) {
+            return new Response(
+              JSON.stringify({
+                error: "Invalid request body",
+                details: validation.error.format(),
+              }),
+              {
+                status: 400,
+                headers: {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": effectiveOrigin!,
+                },
+              }
+            );
+          }
+          importBody = validation.data;
+        } catch {
+          return new Response(
+            JSON.stringify({ error: "Invalid JSON in request body" }),
+            {
+              status: 400,
+              headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": effectiveOrigin!,
+              },
+            }
+          );
+        }
+
+        const { songs } = importBody;
+        const now = Date.now();
+        let imported = 0;
+        let updated = 0;
+        const skipped = 0;
+
+        // Process songs in order, with sequential timestamps to maintain order
+        // Songs at the beginning of the array are "oldest" (imported first)
+        // This maintains top-to-bottom order in the library
+        for (let i = 0; i < songs.length; i++) {
+          const song = songs[i];
+          const key = `${SONG_METADATA_PREFIX}${song.id}`;
+
+          // Check if metadata already exists
+          const existingRaw = await redis.get(key);
+          let existingMetadata: SongMetadata | null = null;
+          
+          if (existingRaw) {
+            try {
+              existingMetadata = typeof existingRaw === "string"
+                ? JSON.parse(existingRaw)
+                : existingRaw as SongMetadata;
+            } catch {
+              // Ignore parse errors, will overwrite
+            }
+          }
+
+          // Build metadata object
+          // Songs are ordered from top (index 0) to bottom (last index)
+          // To sort "newest first", we assign higher timestamps to songs at the top
+          // createdAt = now - i so first song (i=0) has highest timestamp
+          const songCreatedAt = existingMetadata?.createdAt || (now - i);
+
+          const metadata: SongMetadata = {
+            youtubeId: song.id,
+            title: song.title,
+            artist: song.artist || undefined,
+            album: song.album || undefined,
+            lyricOffset: song.lyricOffset ?? undefined,
+            lyricsSearch: song.lyricsSearch || undefined,
+            // Preserve original creator, or set admin as creator for imports
+            createdBy: existingMetadata?.createdBy || username || undefined,
+            createdAt: songCreatedAt,
+            updatedAt: now,
+            // Store import order for stable sorting (lower = appears first)
+            importOrder: existingMetadata?.importOrder ?? i,
+          };
+
+          // Save to Redis
+          await redis.set(key, JSON.stringify(metadata));
+          
+          // Add to the set of all song IDs
+          await redis.sadd(SONG_METADATA_SET, song.id);
+
+          if (existingMetadata) {
+            updated++;
+          } else {
+            imported++;
+          }
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            imported,
+            updated,
+            skipped,
+            total: songs.length,
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Parse and validate request body (single song save)
       let body: SaveSongMetadataRequest;
       try {
         const rawBody = await req.json();

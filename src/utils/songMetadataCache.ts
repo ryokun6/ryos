@@ -36,6 +36,8 @@ export interface CachedSongMetadata {
   createdBy?: string;
   createdAt: number;
   updatedAt: number;
+  // Optional import order for stable sorting when createdAt is identical
+  importOrder?: number;
 }
 
 /**
@@ -262,6 +264,72 @@ export async function saveSongMetadata(
   } catch (error) {
     console.error(`[SongMetadataCache] Error saving metadata for ${metadata.youtubeId}:`, error);
     return false;
+  }
+}
+
+/**
+ * Bulk import songs to Redis cache
+ * Requires admin authentication
+ * 
+ * @param songs - Array of songs to import
+ * @param auth - Authentication credentials (username and token)
+ * @returns Import result with counts
+ */
+export async function bulkImportSongMetadata(
+  songs: Array<{
+    id: string;
+    url?: string;
+    title: string;
+    artist?: string;
+    album?: string;
+    lyricOffset?: number;
+    lyricsSearch?: {
+      query?: string;
+      selection?: CachedLyricsSearchSelection;
+    };
+  }>,
+  auth: SongMetadataAuthCredentials
+): Promise<{ success: boolean; imported: number; updated: number; total: number; error?: string }> {
+  try {
+    const response = await fetch(getApiUrl("/api/song-metadata?action=import"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${auth.authToken}`,
+        "X-Username": auth.username,
+      },
+      body: JSON.stringify({ songs }),
+    });
+
+    if (response.status === 401) {
+      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to import`);
+      return { success: false, imported: 0, updated: 0, total: 0, error: "Unauthorized" };
+    }
+
+    if (response.status === 403) {
+      console.warn(`[SongMetadataCache] Forbidden - admin access required to import`);
+      return { success: false, imported: 0, updated: 0, total: 0, error: "Forbidden - admin only" };
+    }
+
+    if (!response.ok) {
+      console.warn(`[SongMetadataCache] Failed to import songs: ${response.status}`);
+      return { success: false, imported: 0, updated: 0, total: 0, error: `HTTP ${response.status}` };
+    }
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log(
+        `[SongMetadataCache] Imported ${data.imported} new, updated ${data.updated}, total ${data.total}`
+      );
+      return { success: true, imported: data.imported, updated: data.updated, total: data.total };
+    }
+
+    console.warn(`[SongMetadataCache] Failed to import: ${data.error}`);
+    return { success: false, imported: 0, updated: 0, total: 0, error: data.error };
+  } catch (error) {
+    console.error(`[SongMetadataCache] Error importing songs:`, error);
+    return { success: false, imported: 0, updated: 0, total: 0, error: String(error) };
   }
 }
 

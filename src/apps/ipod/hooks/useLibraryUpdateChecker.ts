@@ -3,6 +3,7 @@ import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
@@ -35,21 +36,24 @@ export function useLibraryUpdateChecker(isActive: boolean) {
         const currentTracks = useIpodStore.getState().tracks;
         const wasEmpty = currentTracks.length === 0;
 
-        // Get server tracks directly (same as syncLibrary does)
-        const res = await fetch("/data/ipod-videos.json");
-        const data = await res.json();
-        const serverTracks: Track[] = (data.videos || data).map(
-          (v: Record<string, unknown>) => ({
-            id: v.id as string,
-            url: v.url as string,
-            title: v.title as string,
-            artist: v.artist as string | undefined,
-            album: (v.album as string | undefined) ?? "",
-            lyricOffset: v.lyricOffset as number | undefined,
-            lyricsSearch: v.lyricsSearch as Track["lyricsSearch"],
-          })
-        );
-        const serverVersion = data.version || 1;
+        // Get server tracks from Redis cache (only songs by ryo)
+        const cachedSongs = await listAllCachedSongMetadata("ryo");
+        
+        if (cachedSongs.length === 0) {
+          console.log("[iPod] No songs found in Redis cache, skipping update check");
+          return;
+        }
+        
+        const serverTracks: Track[] = cachedSongs.map((song) => ({
+          id: song.youtubeId,
+          url: `https://www.youtube.com/watch?v=${song.youtubeId}`,
+          title: song.title,
+          artist: song.artist,
+          album: song.album ?? "",
+          lyricOffset: song.lyricOffset,
+          lyricsSearch: song.lyricsSearch,
+        }));
+        const serverVersion = Math.max(...cachedSongs.map((s) => s.createdAt || 1));
 
         // Check for new tracks (same logic as syncLibrary)
         const existingIds = new Set(currentTracks.map((track) => track.id));
@@ -155,7 +159,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
         intervalRef.current = null;
       }
     };
-  }, [isActive, syncLibrary, debugMode]);
+  }, [isActive, syncLibrary, debugMode, t]);
 
   // Manual check function that can be called externally
   const manualCheck = async () => {
