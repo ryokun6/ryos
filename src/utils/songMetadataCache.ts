@@ -33,6 +33,7 @@ export interface CachedSongMetadata {
   };
   lyricsHash?: string;
   translationHash?: string;
+  createdBy?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -53,7 +54,23 @@ interface SaveSongMetadataResponse {
   success: boolean;
   youtubeId?: string;
   isUpdate?: boolean;
+  createdBy?: string;
   error?: string;
+}
+
+/**
+ * Response from the song metadata API when listing all songs
+ */
+interface ListSongMetadataResponse {
+  songs: CachedSongMetadata[];
+}
+
+/**
+ * Authentication credentials for saving metadata
+ */
+export interface SongMetadataAuthCredentials {
+  username: string;
+  authToken: string;
 }
 
 /**
@@ -97,32 +114,75 @@ export async function getCachedSongMetadata(
 }
 
 /**
+ * List all cached song metadata from Redis (for sync)
+ * 
+ * @returns Array of all cached song metadata
+ */
+export async function listAllCachedSongMetadata(): Promise<CachedSongMetadata[]> {
+  try {
+    const response = await fetch(
+      getApiUrl("/api/song-metadata?list=true"),
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(`[SongMetadataCache] Failed to list all metadata: ${response.status}`);
+      return [];
+    }
+
+    const data: ListSongMetadataResponse = await response.json();
+    console.log(`[SongMetadataCache] Listed ${data.songs?.length || 0} songs from cache`);
+    return data.songs || [];
+  } catch (error) {
+    console.error(`[SongMetadataCache] Error listing metadata:`, error);
+    return [];
+  }
+}
+
+/**
  * Save song metadata to Redis cache
+ * Requires authentication - will fail if not logged in
  * 
  * @param metadata - Song metadata to save
+ * @param auth - Authentication credentials (username and token)
  * @returns true if saved successfully, false otherwise
  */
-export async function saveSongMetadata(metadata: {
-  youtubeId: string;
-  title: string;
-  artist?: string;
-  album?: string;
-  lyricOffset?: number;
-  lyricsSearch?: {
-    query?: string;
-    selection?: CachedLyricsSearchSelection;
-  };
-  lyricsHash?: string;
-  translationHash?: string;
-}): Promise<boolean> {
+export async function saveSongMetadata(
+  metadata: {
+    youtubeId: string;
+    title: string;
+    artist?: string;
+    album?: string;
+    lyricOffset?: number;
+    lyricsSearch?: {
+      query?: string;
+      selection?: CachedLyricsSearchSelection;
+    };
+    lyricsHash?: string;
+    translationHash?: string;
+  },
+  auth: SongMetadataAuthCredentials
+): Promise<boolean> {
   try {
     const response = await fetch(getApiUrl("/api/song-metadata"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${auth.authToken}`,
+        "X-Username": auth.username,
       },
       body: JSON.stringify(metadata),
     });
+
+    if (response.status === 401) {
+      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to save metadata`);
+      return false;
+    }
 
     if (!response.ok) {
       console.warn(`[SongMetadataCache] Failed to save metadata for ${metadata.youtubeId}: ${response.status}`);
@@ -133,7 +193,7 @@ export async function saveSongMetadata(metadata: {
 
     if (data.success) {
       console.log(
-        `[SongMetadataCache] ${data.isUpdate ? "Updated" : "Saved"} metadata for ${metadata.youtubeId}`
+        `[SongMetadataCache] ${data.isUpdate ? "Updated" : "Saved"} metadata for ${metadata.youtubeId} (by ${data.createdBy || auth.username})`
       );
       return true;
     }
@@ -148,33 +208,47 @@ export async function saveSongMetadata(metadata: {
 
 /**
  * Save song metadata from a Track object (convenience function)
+ * Requires authentication - will skip if not logged in
  * 
  * @param track - Track object from iPod store
- * @returns true if saved successfully, false otherwise
+ * @param auth - Authentication credentials (username and token), or null to skip
+ * @returns true if saved successfully, false otherwise (including when skipped due to no auth)
  */
-export async function saveSongMetadataFromTrack(track: {
-  id: string;
-  title: string;
-  artist?: string;
-  album?: string;
-  lyricOffset?: number;
-  lyricsSearch?: {
-    query?: string;
-    selection?: {
-      hash: string;
-      albumId: string | number;
-      title: string;
-      artist: string;
-      album?: string;
+export async function saveSongMetadataFromTrack(
+  track: {
+    id: string;
+    title: string;
+    artist?: string;
+    album?: string;
+    lyricOffset?: number;
+    lyricsSearch?: {
+      query?: string;
+      selection?: {
+        hash: string;
+        albumId: string | number;
+        title: string;
+        artist: string;
+        album?: string;
+      };
     };
-  };
-}): Promise<boolean> {
-  return saveSongMetadata({
-    youtubeId: track.id,
-    title: track.title,
-    artist: track.artist,
-    album: track.album,
-    lyricOffset: track.lyricOffset,
-    lyricsSearch: track.lyricsSearch,
-  });
+  },
+  auth: SongMetadataAuthCredentials | null
+): Promise<boolean> {
+  // Skip if not authenticated
+  if (!auth || !auth.username || !auth.authToken) {
+    console.log(`[SongMetadataCache] Skipping save for ${track.id} - user not logged in`);
+    return false;
+  }
+
+  return saveSongMetadata(
+    {
+      youtubeId: track.id,
+      title: track.title,
+      artist: track.artist,
+      album: track.album,
+      lyricOffset: track.lyricOffset,
+      lyricsSearch: track.lyricsSearch,
+    },
+    auth
+  );
 }

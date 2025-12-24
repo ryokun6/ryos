@@ -4,7 +4,7 @@ import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, Lyric
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
-import { getCachedSongMetadata } from "@/utils/songMetadataCache";
+import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import i18n from "@/lib/i18n";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
@@ -89,7 +89,8 @@ export function preloadIpodData(): void {
 }
 
 /**
- * Load default tracks from JSON.
+ * Load default tracks from Redis song metadata cache.
+ * Falls back to ipod-videos.json if Redis cache is unavailable.
  * @param forceRefresh - If true, bypasses cache and fetches fresh data (used by syncLibrary)
  */
 async function loadDefaultTracks(forceRefresh = false): Promise<{
@@ -110,6 +111,28 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
   // Start new fetch
   const fetchPromise = (async () => {
     try {
+      // Try to load from Redis song metadata cache first
+      const cachedSongs = await listAllCachedSongMetadata();
+      
+      if (cachedSongs.length > 0) {
+        console.log(`[iPod Store] Loaded ${cachedSongs.length} tracks from Redis cache`);
+        const tracks: Track[] = cachedSongs.map((song) => ({
+          id: song.youtubeId,
+          url: `https://www.youtube.com/watch?v=${song.youtubeId}`,
+          title: song.title,
+          artist: song.artist,
+          album: song.album ?? "",
+          lyricOffset: song.lyricOffset,
+          lyricsSearch: song.lyricsSearch,
+        }));
+        // Use the latest updatedAt timestamp as version
+        const version = Math.max(...cachedSongs.map((s) => s.updatedAt || 1));
+        cachedIpodData = { tracks, version };
+        return cachedIpodData;
+      }
+      
+      // Fallback to ipod-videos.json if Redis cache is empty
+      console.log("[iPod Store] Redis cache empty, falling back to ipod-videos.json");
       const res = await fetch("/data/ipod-videos.json");
       const data = await res.json();
       const videos: unknown[] = data.videos || data;
@@ -130,7 +153,7 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
       cachedIpodData = { tracks, version };
       return cachedIpodData;
     } catch (err) {
-      console.error("Failed to load ipod-videos.json", err);
+      console.error("Failed to load tracks from cache", err);
       return { tracks: [], version: 1 };
     }
   })();
