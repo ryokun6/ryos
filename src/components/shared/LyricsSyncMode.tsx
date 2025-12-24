@@ -1,7 +1,7 @@
-import { useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { useEffect, useRef, useMemo, useCallback, memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { X, Minus, Plus } from "lucide-react";
+import { Minus, Plus, ChevronsDown, Search } from "lucide-react";
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
 import { convert as romanizeKorean } from "hangul-romanization";
 import { pinyin } from "pinyin-pro";
@@ -40,9 +40,9 @@ const LyricLineItem = memo(function LyricLineItem({
       ref={setRef}
       onClick={onClick}
       className={cn(
-        "w-full text-left py-2 px-3 rounded-md",
+        "w-full text-left py-2 px-3 rounded-xl",
         "hover:bg-white/10 active:bg-white/20",
-        "focus:outline-none focus:ring-2 focus:ring-white/30",
+        "focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-0",
         isCurrent && "bg-white/20 text-white font-semibold",
         isPast && !isCurrent && "text-white/40",
         !isPast && !isCurrent && "text-white/60"
@@ -83,6 +83,8 @@ export interface LyricsSyncModeProps {
   onSeek: (timeMs: number) => void;
   /** Callback to close the sync mode */
   onClose: () => void;
+  /** Callback to open lyrics search dialog */
+  onSearchLyrics?: () => void;
 }
 
 /**
@@ -186,10 +188,14 @@ export function LyricsSyncMode({
   onAdjustOffset,
   onSeek,
   onClose,
+  onSearchLyrics,
 }: LyricsSyncModeProps) {
   const { t } = useTranslation();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lineRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  
+  // Auto-scroll state
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
   
   // Offset adjustment step in ms
   const OFFSET_STEP = 100;
@@ -227,11 +233,45 @@ export function LyricsSyncMode({
   // Auto-scroll to keep current line visible (centered) - throttled
   useEffect(() => {
     if (
+      isAutoScrollEnabled &&
       currentLineIndex >= 0 && 
       currentLineIndex !== lastScrolledLineRef.current &&
       lineRefs.current[currentLineIndex]
     ) {
       lastScrolledLineRef.current = currentLineIndex;
+      lineRefs.current[currentLineIndex]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [currentLineIndex, isAutoScrollEnabled]);
+
+  // Detect user scroll via wheel/touch events (these only fire from actual user interaction)
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleUserScroll = () => {
+      setIsAutoScrollEnabled(false);
+    };
+
+    // wheel event only fires from mouse wheel / trackpad
+    container.addEventListener("wheel", handleUserScroll, { passive: true });
+    // touchmove fires when user drags on touch devices
+    container.addEventListener("touchmove", handleUserScroll, { passive: true });
+    
+    return () => {
+      container.removeEventListener("wheel", handleUserScroll);
+      container.removeEventListener("touchmove", handleUserScroll);
+    };
+  }, []);
+
+  // Resume auto-scroll and immediately scroll to current line
+  const handleResumeAutoScroll = useCallback(() => {
+    setIsAutoScrollEnabled(true);
+    lastScrolledLineRef.current = -1; // Force scroll on next update
+    // Immediately scroll to current line
+    if (currentLineIndex >= 0 && lineRefs.current[currentLineIndex]) {
       lineRefs.current[currentLineIndex]?.scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -274,20 +314,67 @@ export function LyricsSyncMode({
       className="w-full h-full flex flex-col bg-black/90"
       style={{ borderRadius: "inherit" }}
     >
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-white/10 space-y-3">
-        {/* Top row: close button and centered instructions */}
-        <div className="relative flex items-center justify-center">
-          <div className="text-white text-xs opacity-70 text-center">
-            {t("apps.ipod.syncMode.instructions", "Tap the line you're hearing")}
+      {/* Header - pt-7 to accommodate notitlebar hover titlebar */}
+      <div className="px-4 pt-7 pb-3 border-b border-white/10 space-y-3">
+        {/* Top row: Offset controls, action buttons, and close button */}
+        <div className="flex items-center gap-3">
+          {/* Offset controls */}
+          <div className="flex items-center gap-1 bg-white/10 rounded-full px-1 py-0.5">
+            <button
+              type="button"
+              onClick={() => onAdjustOffset(-OFFSET_STEP)}
+              className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
+              aria-label={t("apps.ipod.syncMode.decreaseOffset", "Decrease offset")}
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <div className="text-white text-sm font-medium min-w-[70px] text-center">
+              {formatOffset(currentOffset)}
+            </div>
+            <button
+              type="button"
+              onClick={() => onAdjustOffset(OFFSET_STEP)}
+              className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
+              aria-label={t("apps.ipod.syncMode.increaseOffset", "Increase offset")}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Sync Scroll button */}
+          {!isAutoScrollEnabled && (
+            <button
+              type="button"
+              onClick={handleResumeAutoScroll}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white"
+              aria-label={t("apps.ipod.syncMode.syncScroll", "Sync Scroll")}
+            >
+              <ChevronsDown className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Search Lyrics button */}
+          {onSearchLyrics && (
+            <button
+              type="button"
+              onClick={onSearchLyrics}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white"
+              aria-label={t("apps.ipod.syncMode.searchLyrics", "Search Lyrics")}
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Done button */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-0 p-1 rounded-full hover:bg-white/10 text-white"
-            aria-label={t("common.close", "Close")}
+            className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-medium"
           >
-            <X className="w-4 h-4" />
+            {t("common.dialog.done", "Done")}
           </button>
         </div>
 
@@ -309,53 +396,36 @@ export function LyricsSyncMode({
           <span className="w-10 opacity-70">{formatTime(durationMs)}</span>
         </div>
 
-        {/* Offset controls */}
-        <div className="flex items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => onAdjustOffset(-OFFSET_STEP)}
-            className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
-            aria-label={t("apps.ipod.syncMode.decreaseOffset", "Decrease offset")}
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-          <div className="text-white text-sm font-medium min-w-[80px] text-center">
-            {formatOffset(currentOffset)}
-          </div>
-          <button
-            type="button"
-            onClick={() => onAdjustOffset(OFFSET_STEP)}
-            className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
-            aria-label={t("apps.ipod.syncMode.increaseOffset", "Increase offset")}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+        {/* Instructions */}
+        <div className="text-white/40 text-[10px] text-center">
+          {t("apps.ipod.syncMode.instructions", "Tap the line you're hearing to sync lyrics")}
         </div>
       </div>
 
       {/* Scrollable lyrics list */}
-      <div
-        ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-3 py-4"
-      >
-        <div className="space-y-0.5">
-          {lines.map((line, index) => (
-            <LyricLineItem
-              key={`${line.startTimeMs}-${index}`}
-              line={line}
-              index={index}
-              isCurrent={index === currentLineIndex}
-              isPast={index < currentLineIndex}
-              romanizedText={romanizedTexts.get(index) ?? null}
-              onClick={() => handleLineTap(line)}
-              setRef={(el) => {
-                lineRefs.current[index] = el;
-              }}
-            />
-          ))}
+      <div className="flex-1 relative overflow-hidden">
+        <div
+          ref={scrollContainerRef}
+          className="absolute inset-0 overflow-y-auto px-3 py-4"
+        >
+          <div className="space-y-0.5">
+            {lines.map((line, index) => (
+              <LyricLineItem
+                key={`${line.startTimeMs}-${index}`}
+                line={line}
+                index={index}
+                isCurrent={index === currentLineIndex}
+                isPast={index < currentLineIndex}
+                romanizedText={romanizedTexts.get(index) ?? null}
+                onClick={() => handleLineTap(line)}
+                setRef={(el) => {
+                  lineRefs.current[index] = el;
+                }}
+              />
+            ))}
+          </div>
         </div>
       </div>
-
     </div>
   );
 }

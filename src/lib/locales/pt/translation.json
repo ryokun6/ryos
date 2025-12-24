@@ -11,18 +11,25 @@
         "banDescription": "Tem certeza de que deseja banir {{username}}? Ele(a) será desconectado(a) e não poderá acessar o serviço.",
         "banTitle": "Banir Usuário?",
         "deleteDescription": "Tem certeza de que deseja excluir {{type}} \"{{name}}\"? Esta ação não pode ser desfeita.",
-        "deleteTitle": "Excluir {{type}}?"
+        "deleteTitle": "Excluir {{type}}?",
+        "editSong": "Editar {{field}}",
+        "editSongDescription": "Digite o novo valor"
       },
       "errors": {
         "failedToBanUser": "Falha ao banir usuário",
         "failedToDeleteMessage": "Falha ao excluir mensagem",
         "failedToDeleteRoom": "Falha ao excluir sala",
+        "failedToDeleteSong": "Falha ao excluir música",
         "failedToDeleteUser": "Falha ao excluir usuário",
         "failedToFetchMessages": "Falha ao buscar mensagens",
         "failedToFetchProfile": "Falha ao carregar perfil do usuário",
         "failedToFetchRooms": "Falha ao buscar salas",
+        "failedToFetchSongs": "Falha ao buscar músicas",
         "failedToFetchUsers": "Falha ao buscar usuários",
-        "failedToUnbanUser": "Falha ao desbanir usuário"
+        "failedToUnbanUser": "Falha ao desbanir usuário",
+        "failedToUpdateSong": "Falha ao atualizar música",
+        "importFailed": "Falha na importação",
+        "invalidImportFormat": "Formato de arquivo inválido"
       },
       "help": {
         "adminAccess": {
@@ -51,8 +58,11 @@
       },
       "messages": {
         "dataRefreshed": "Dados atualizados",
+        "importSuccess": "Importadas {{imported}} novas, atualizadas {{updated}} ({{total}} no total)",
         "messageDeleted": "Mensagem eliminada",
         "roomDeleted": "Sala eliminada",
+        "songDeleted": "Música excluída",
+        "songUpdated": "Música atualizada",
         "userBanned": "Usuário {{username}} banido",
         "userDeleted": "Utilizador {{username}} eliminado",
         "userUnbanned": "Usuário {{username}} desbanido"
@@ -87,14 +97,20 @@
       },
       "search": {
         "noResults": "Nenhum utilizador encontrado",
-        "placeholder": "Pesquisar utilizadores..."
+        "placeholder": "Pesquisar utilizadores...",
+        "songsPlaceholder": "Pesquisar músicas..."
       },
       "sidebar": {
         "messagesCount": "{{count}} mensagens",
         "online": "online",
         "private": "Privado",
         "rooms": "Salas",
+        "songs": "Músicas",
         "users": "Utilizadores"
+      },
+      "songs": {
+        "import": "Importar",
+        "noSongs": "Nenhuma música em cache"
       },
       "statusBar": {
         "loggedInAs": "Sessão iniciada como {{username}}",
@@ -102,15 +118,20 @@
         "messagesCount_plural": "{{count}} mensagens",
         "roomsCount": "{{count}} quarto",
         "roomsCount_plural": "{{count}} quartos",
+        "songsCount": "{{count}} músicas",
         "usersCount": "{{count}} usuário",
         "usersCount_plural": "{{count}} usuários"
       },
       "tableHeaders": {
+        "added": "Adicionado",
+        "addedBy": "Adicionado por",
+        "artist": "Artista",
         "lastActive": "Última Atividade",
         "message": "Mensagem",
         "role": "Função",
         "status": "Status",
         "time": "Hora",
+        "title": "Título",
         "user": "Usuário",
         "username": "Nome de Usuário"
       },
@@ -1241,7 +1262,9 @@
         "hint": "Pressione ESC ou X para sair",
         "increaseOffset": "Aumentar deslocamento",
         "instructions": "Toque na linha que você está ouvindo",
-        "offset": "Deslocamento"
+        "offset": "Deslocamento",
+        "searchLyrics": "Pesquisar Letras",
+        "syncScroll": "Sincronizar Rolagem"
       },
       "translationLanguages": {
         "auto": "Auto",
@@ -2039,6 +2062,7 @@
       "delete": "Excluir",
       "discardChanges": "Descartar Alterações",
       "discardChangesDesc": "Deseja descartar suas alterações e criar um novo arquivo?",
+      "done": "Concluído",
       "emoji": {
         "chooseEmoji": "Escolha um emoji",
         "description": "Escolha um emoji para este slot de som",

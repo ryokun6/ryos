@@ -11,18 +11,25 @@
         "banDescription": "¿Está seguro de que desea banear a {{username}}? Se cerrará su sesión y no podrán acceder al servicio.",
         "banTitle": "¿Banear usuario?",
         "deleteDescription": "¿Estás seguro de que quieres eliminar {{type}} \"{{name}}\"? Esta acción no se puede deshacer.",
-        "deleteTitle": "¿Eliminar {{type}}?"
+        "deleteTitle": "¿Eliminar {{type}}?",
+        "editSong": "Editar {{field}}",
+        "editSongDescription": "Introduzca el nuevo valor"
       },
       "errors": {
         "failedToBanUser": "Error al banear al usuario",
         "failedToDeleteMessage": "Error al eliminar mensaje",
         "failedToDeleteRoom": "Error al eliminar sala",
+        "failedToDeleteSong": "No se pudo eliminar la canción",
         "failedToDeleteUser": "Error al eliminar usuario",
         "failedToFetchMessages": "Error al obtener mensajes",
         "failedToFetchProfile": "Error al obtener el perfil del usuario",
         "failedToFetchRooms": "Error al obtener salas",
+        "failedToFetchSongs": "No se pudieron obtener las canciones",
         "failedToFetchUsers": "Error al obtener usuarios",
-        "failedToUnbanUser": "Error al desbanear al usuario"
+        "failedToUnbanUser": "Error al desbanear al usuario",
+        "failedToUpdateSong": "No se pudo actualizar la canción",
+        "importFailed": "Importación fallida",
+        "invalidImportFormat": "Formato de archivo no válido"
       },
       "help": {
         "adminAccess": {
@@ -51,8 +58,11 @@
       },
       "messages": {
         "dataRefreshed": "Datos actualizados",
+        "importSuccess": "Importadas {{imported}} nuevas, actualizadas {{updated}} ({{total}} en total)",
         "messageDeleted": "Mensaje eliminado",
         "roomDeleted": "Sala eliminada",
+        "songDeleted": "Canción eliminada",
+        "songUpdated": "Canción actualizada",
         "userBanned": "Usuario {{username}} baneado",
         "userDeleted": "Usuario {{username}} eliminado",
         "userUnbanned": "Usuario {{username}} desbaneado"
@@ -87,14 +97,20 @@
       },
       "search": {
         "noResults": "No se encontraron usuarios",
-        "placeholder": "Buscar usuarios..."
+        "placeholder": "Buscar usuarios...",
+        "songsPlaceholder": "Buscar canciones..."
       },
       "sidebar": {
         "messagesCount": "{{count}} mensajes",
         "online": "en línea",
         "private": "Privada",
         "rooms": "Salas",
+        "songs": "Canciones",
         "users": "Usuarios"
+      },
+      "songs": {
+        "import": "Importar",
+        "noSongs": "No hay canciones en caché"
       },
       "statusBar": {
         "loggedInAs": "Sesión iniciada como {{username}}",
@@ -102,15 +118,20 @@
         "messagesCount_plural": "{{count}} mensajes",
         "roomsCount": "{{count}} habitación",
         "roomsCount_plural": "{{count}} habitaciones",
+        "songsCount": "{{count}} canciones",
         "usersCount": "{{count}} usuario",
         "usersCount_plural": "{{count}} usuarios"
       },
       "tableHeaders": {
+        "added": "Añadido",
+        "addedBy": "Añadido por",
+        "artist": "Artista",
         "lastActive": "Última actividad",
         "message": "Mensaje",
         "role": "Rol",
         "status": "Estado",
         "time": "Hora",
+        "title": "Título",
         "user": "Usuario",
         "username": "Nombre de usuario"
       },
@@ -1241,7 +1262,9 @@
         "hint": "Presiona ESC o X para salir",
         "increaseOffset": "Aumentar desplazamiento",
         "instructions": "Toca la línea que estás escuchando",
-        "offset": "Desplazamiento"
+        "offset": "Desplazamiento",
+        "searchLyrics": "Buscar letras",
+        "syncScroll": "Sincronizar desplazamiento"
       },
       "translationLanguages": {
         "auto": "Auto",
@@ -2039,6 +2062,7 @@
       "delete": "Eliminar",
       "discardChanges": "Descartar cambios",
       "discardChangesDesc": "¿Quieres descartar tus cambios y crear un nuevo archivo?",
+      "done": "Listo",
       "emoji": {
         "chooseEmoji": "Elige un emoji",
         "description": "Elige un emoji para esta ranura de sonido",

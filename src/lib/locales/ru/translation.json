@@ -11,18 +11,25 @@
         "banDescription": "Вы уверены, что хотите заблокировать {{username}}? Они будут выведены из системы и не смогут получить доступ к сервису.",
         "banTitle": "Заблокировать пользователя?",
         "deleteDescription": "Вы уверены, что хотите удалить {{type}} «{{name}}»? Это действие невозможно отменить.",
-        "deleteTitle": "Удалить {{type}}?"
+        "deleteTitle": "Удалить {{type}}?",
+        "editSong": "Редактировать {{field}}",
+        "editSongDescription": "Введите новое значение"
       },
       "errors": {
         "failedToBanUser": "Не удалось заблокировать пользователя",
         "failedToDeleteMessage": "Не удалось удалить сообщение",
         "failedToDeleteRoom": "Не удалось удалить комнату",
+        "failedToDeleteSong": "Не удалось удалить песню",
         "failedToDeleteUser": "Не удалось удалить пользователя",
         "failedToFetchMessages": "Не удалось получить сообщения",
         "failedToFetchProfile": "Не удалось загрузить профиль пользователя",
         "failedToFetchRooms": "Не удалось получить комнаты",
+        "failedToFetchSongs": "Не удалось получить песни",
         "failedToFetchUsers": "Не удалось получить пользователей",
-        "failedToUnbanUser": "Не удалось разблокировать пользователя"
+        "failedToUnbanUser": "Не удалось разблокировать пользователя",
+        "failedToUpdateSong": "Не удалось обновить песню",
+        "importFailed": "Импорт не удался",
+        "invalidImportFormat": "Неверный формат файла"
       },
       "help": {
         "adminAccess": {
@@ -51,8 +58,11 @@
       },
       "messages": {
         "dataRefreshed": "Данные обновлены",
+        "importSuccess": "Импортировано {{imported}} новых, обновлено {{updated}} (всего {{total}})",
         "messageDeleted": "Сообщение удалено",
         "roomDeleted": "Комната удалена",
+        "songDeleted": "Песня удалена",
+        "songUpdated": "Песня обновлена",
         "userBanned": "Пользователь {{username}} заблокирован",
         "userDeleted": "Пользователь {{username}} удален",
         "userUnbanned": "Пользователь {{username}} разблокирован"
@@ -87,14 +97,20 @@
       },
       "search": {
         "noResults": "Пользователи не найдены",
-        "placeholder": "Поиск пользователей..."
+        "placeholder": "Поиск пользователей...",
+        "songsPlaceholder": "Поиск песен..."
       },
       "sidebar": {
         "messagesCount": "{{count}} сообщений",
         "online": "онлайн",
         "private": "Приватный",
         "rooms": "Комнаты",
+        "songs": "Песни",
         "users": "Пользователи"
+      },
+      "songs": {
+        "import": "Импорт",
+        "noSongs": "Нет песен в кэше"
       },
       "statusBar": {
         "loggedInAs": "Вы вошли как {{username}}",
@@ -102,15 +118,20 @@
         "messagesCount_plural": "{{count}} сообщений",
         "roomsCount": "{{count}} комната",
         "roomsCount_plural": "{{count}} комнат",
+        "songsCount": "{{count}} песен",
         "usersCount": "{{count}} пользователь",
         "usersCount_plural": "{{count}} пользователей"
       },
       "tableHeaders": {
+        "added": "Добавлено",
+        "addedBy": "Кем добавлено",
+        "artist": "Исполнитель",
         "lastActive": "Последняя активность",
         "message": "Сообщение",
         "role": "Роль",
         "status": "Статус",
         "time": "Время",
+        "title": "Название",
         "user": "Пользователь",
         "username": "Имя пользователя"
       },
@@ -1241,7 +1262,9 @@
         "hint": "Нажмите ESC или X для выхода",
         "increaseOffset": "Увеличить смещение",
         "instructions": "Нажмите на строку, которую слышите",
-        "offset": "Смещение"
+        "offset": "Смещение",
+        "searchLyrics": "Поиск текста",
+        "syncScroll": "Синхронная прокрутка"
       },
       "translationLanguages": {
         "auto": "Авто",
@@ -2039,6 +2062,7 @@
       "delete": "Удалить",
       "discardChanges": "Отменить изменения",
       "discardChangesDesc": "Вы хотите отменить изменения и создать новый файл?",
+      "done": "Готово",
       "emoji": {
         "chooseEmoji": "Выберите эмодзи",
         "description": "Выберите эмодзи для этого звукового слота",

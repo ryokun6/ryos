@@ -11,18 +11,25 @@
         "banDescription": "您確定要封鎖 {{username}} 嗎？他們將會登出且無法存取服務。",
         "banTitle": "封鎖使用者？",
         "deleteDescription": "您確定要刪除{{type}}「{{name}}」嗎？此動作無法復原。",
-        "deleteTitle": "刪除{{type}}？"
+        "deleteTitle": "刪除{{type}}？",
+        "editSong": "編輯 {{field}}",
+        "editSongDescription": "輸入新值"
       },
       "errors": {
         "failedToBanUser": "無法封鎖使用者",
         "failedToDeleteMessage": "無法刪除訊息",
         "failedToDeleteRoom": "無法刪除聊天室",
+        "failedToDeleteSong": "刪除歌曲失敗",
         "failedToDeleteUser": "無法刪除使用者",
         "failedToFetchMessages": "無法擷取訊息",
         "failedToFetchProfile": "無法取得使用者個人檔案",
         "failedToFetchRooms": "無法擷取聊天室",
+        "failedToFetchSongs": "擷取歌曲失敗",
         "failedToFetchUsers": "無法擷取使用者",
-        "failedToUnbanUser": "無法解除封鎖使用者"
+        "failedToUnbanUser": "無法解除封鎖使用者",
+        "failedToUpdateSong": "更新歌曲失敗",
+        "importFailed": "匯入失敗",
+        "invalidImportFormat": "無效的檔案格式"
       },
       "help": {
         "adminAccess": {
@@ -51,8 +58,11 @@
       },
       "messages": {
         "dataRefreshed": "資料已重新整理",
+        "importSuccess": "新增 {{imported}} 首，更新 {{updated}} 首 (共 {{total}} 首)",
         "messageDeleted": "訊息已刪除",
         "roomDeleted": "聊天室已刪除",
+        "songDeleted": "歌曲已刪除",
+        "songUpdated": "歌曲已更新",
         "userBanned": "使用者 {{username}} 已封鎖",
         "userDeleted": "使用者 {{username}} 已刪除",
         "userUnbanned": "使用者 {{username}} 已解除封鎖"
@@ -87,14 +97,20 @@
       },
       "search": {
         "noResults": "找不到使用者",
-        "placeholder": "搜尋使用者..."
+        "placeholder": "搜尋使用者...",
+        "songsPlaceholder": "搜尋歌曲..."
       },
       "sidebar": {
         "messagesCount": "{{count}} 則訊息",
         "online": "線上",
         "private": "私人",
         "rooms": "聊天室",
+        "songs": "歌曲",
         "users": "使用者"
+      },
+      "songs": {
+        "import": "匯入",
+        "noSongs": "快取中沒有歌曲"
       },
       "statusBar": {
         "loggedInAs": "已登入為 {{username}}",
@@ -102,15 +118,20 @@
         "messagesCount_plural": "{{count}} 則訊息",
         "roomsCount": "{{count}} 房間",
         "roomsCount_plural": "{{count}} 房間",
+        "songsCount": "{{count}} 首歌曲",
         "usersCount": "{{count}} 用戶",
         "usersCount_plural": "{{count}} 用戶"
       },
       "tableHeaders": {
+        "added": "新增",
+        "addedBy": "新增者",
+        "artist": "藝人",
         "lastActive": "上次活動",
         "message": "訊息",
         "role": "角色",
         "status": "狀態",
         "time": "時間",
+        "title": "歌名",
         "user": "使用者",
         "username": "使用者名稱"
       },
@@ -1241,7 +1262,9 @@
         "hint": "按 ESC 或 X 關閉",
         "increaseOffset": "增加偏移",
         "instructions": "點擊你正在聽到的歌詞",
-        "offset": "偏移"
+        "offset": "偏移",
+        "searchLyrics": "搜尋歌詞",
+        "syncScroll": "同步捲動"
       },
       "translationLanguages": {
         "auto": "自動",
@@ -2039,6 +2062,7 @@
       "delete": "刪除",
       "discardChanges": "捨棄變更",
       "discardChangesDesc": "您確定要捨棄變更並建立新檔案嗎？",
+      "done": "完成",
       "emoji": {
         "chooseEmoji": "選擇表情符號",
         "description": "為此音效槽選擇表情符號",

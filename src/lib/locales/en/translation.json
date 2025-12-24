@@ -28,6 +28,7 @@
       "cancel": "Cancel",
       "confirm": "Confirm",
       "close": "Close",
+      "done": "Done",
       "adding": "Adding...",
       "saveFile": "Save File",
       "enterFileName": "Enter a name for your file",
@@ -1345,11 +1346,13 @@
         "offset": "Offset"
       },
       "syncMode": {
-        "instructions": "Tap the line you're hearing",
+        "instructions": "Tap the line you're hearing to sync lyrics",
         "offset": "Offset",
         "hint": "Press ESC or tap X to exit",
         "decreaseOffset": "Decrease offset",
-        "increaseOffset": "Increase offset"
+        "increaseOffset": "Increase offset",
+        "syncScroll": "Sync Scroll",
+        "searchLyrics": "Search Lyrics"
       },
       "dialogs": {
         "clearLibraryTitle": "Clear Library",
@@ -2059,18 +2062,24 @@
       "sidebar": {
         "users": "Users",
         "rooms": "Rooms",
+        "songs": "Songs",
         "private": "Private",
         "messagesCount": "{{count}} messages",
         "online": "online"
       },
       "search": {
         "placeholder": "Search users...",
+        "songsPlaceholder": "Search songs...",
         "noResults": "No users found"
       },
       "loadMore": "Load more ({{remaining}} remaining)",
       "room": {
         "messagesCount": "{{count}} messages",
         "noMessages": "No messages"
+      },
+      "songs": {
+        "import": "Import",
+        "noSongs": "No songs in cache"
       },
       "user": {
         "admin": "Admin",
@@ -2085,7 +2094,11 @@
         "lastActive": "Last Active",
         "user": "User",
         "message": "Message",
-        "time": "Time"
+        "time": "Time",
+        "title": "Title",
+        "artist": "Artist",
+        "addedBy": "Added By",
+        "added": "Added"
       },
       "time": {
         "now": "now",
@@ -2099,6 +2112,9 @@
         "userUnbanned": "User {{username}} unbanned",
         "roomDeleted": "Room deleted",
         "messageDeleted": "Message deleted",
+        "songDeleted": "Song deleted",
+        "songUpdated": "Song updated",
+        "importSuccess": "Imported {{imported}} new, updated {{updated}} ({{total}} total)",
         "dataRefreshed": "Data refreshed"
       },
       "errors": {
@@ -2106,11 +2122,16 @@
         "failedToFetchRooms": "Failed to fetch rooms",
         "failedToFetchMessages": "Failed to fetch messages",
         "failedToFetchProfile": "Failed to fetch user profile",
+        "failedToFetchSongs": "Failed to fetch songs",
         "failedToDeleteUser": "Failed to delete user",
         "failedToDeleteRoom": "Failed to delete room",
         "failedToDeleteMessage": "Failed to delete message",
+        "failedToDeleteSong": "Failed to delete song",
+        "failedToUpdateSong": "Failed to update song",
         "failedToBanUser": "Failed to ban user",
-        "failedToUnbanUser": "Failed to unban user"
+        "failedToUnbanUser": "Failed to unban user",
+        "invalidImportFormat": "Invalid file format",
+        "importFailed": "Import failed"
       },
       "statusBar": {
         "usersCount": "{{count}} user",
@@ -2119,6 +2140,7 @@
         "messagesCount_plural": "{{count}} messages",
         "roomsCount": "{{count}} room",
         "roomsCount_plural": "{{count}} rooms",
+        "songsCount": "{{count}} songs",
         "loggedInAs": "Logged in as {{username}}"
       },
       "accessDenied": {
@@ -2153,7 +2175,9 @@
         "deleteTitle": "Delete {{type}}?",
         "deleteDescription": "Are you sure you want to delete {{type}} \"{{name}}\"? This action cannot be undone.",
         "banTitle": "Ban User?",
-        "banDescription": "Are you sure you want to ban {{username}}? They will be logged out and unable to access the service."
+        "banDescription": "Are you sure you want to ban {{username}}? They will be logged out and unable to access the service.",
+        "editSong": "Edit {{field}}",
+        "editSongDescription": "Enter the new value"
       },
       "help": {
         "adminAccess": {

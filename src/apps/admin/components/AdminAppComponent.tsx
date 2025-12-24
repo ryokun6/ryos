@@ -137,7 +137,8 @@ export function AdminAppComponent({
       });
       if (response.ok) {
         const data = await response.json();
-        setStats(data);
+        // Merge with existing stats to preserve totalSongs (which comes from fetchSongs)
+        setStats((prev) => ({ ...prev, ...data }));
       }
     } catch (error) {
       console.error("Failed to fetch stats:", error);

@@ -11,18 +11,25 @@
         "banDescription": "Voulez-vous vraiment bannir {{username}} ? Il/Elle sera déconnecté(e) et ne pourra plus accéder au service.",
         "banTitle": "Bannir l'utilisateur ?",
         "deleteDescription": "Êtes-vous sûr de vouloir supprimer {{type}} « {{name}} » ? Cette action est irréversible.",
-        "deleteTitle": "Supprimer {{type}} ?"
+        "deleteTitle": "Supprimer {{type}} ?",
+        "editSong": "Modifier {{field}}",
+        "editSongDescription": "Saisir la nouvelle valeur"
       },
       "errors": {
         "failedToBanUser": "Échec du bannissement de l'utilisateur",
         "failedToDeleteMessage": "Échec de la suppression du message",
         "failedToDeleteRoom": "Échec de la suppression du salon",
+        "failedToDeleteSong": "Impossible de supprimer le morceau",
         "failedToDeleteUser": "Échec de la suppression de l'utilisateur",
         "failedToFetchMessages": "Échec de la récupération des messages",
         "failedToFetchProfile": "Échec de la récupération du profil utilisateur",
         "failedToFetchRooms": "Échec de la récupération des salons",
+        "failedToFetchSongs": "Impossible de récupérer les morceaux",
         "failedToFetchUsers": "Échec de la récupération des utilisateurs",
-        "failedToUnbanUser": "Échec du débannissement de l'utilisateur"
+        "failedToUnbanUser": "Échec du débannissement de l'utilisateur",
+        "failedToUpdateSong": "Impossible de mettre à jour le morceau",
+        "importFailed": "Échec de l'importation",
+        "invalidImportFormat": "Format de fichier non valide"
       },
       "help": {
         "adminAccess": {
@@ -51,8 +58,11 @@
       },
       "messages": {
         "dataRefreshed": "Données actualisées",
+        "importSuccess": "Importés : {{imported}} nouveaux, mis à jour : {{updated}} ({{total}} au total)",
         "messageDeleted": "Message supprimé",
         "roomDeleted": "Salon supprimé",
+        "songDeleted": "Morceau supprimé",
+        "songUpdated": "Morceau mis à jour",
         "userBanned": "Utilisateur {{username}} banni",
         "userDeleted": "Utilisateur {{username}} supprimé",
         "userUnbanned": "Utilisateur {{username}} débanni"
@@ -87,14 +97,20 @@
       },
       "search": {
         "noResults": "Aucun utilisateur trouvé",
-        "placeholder": "Rechercher des utilisateurs..."
+        "placeholder": "Rechercher des utilisateurs...",
+        "songsPlaceholder": "Rechercher des morceaux..."
       },
       "sidebar": {
         "messagesCount": "{{count}} messages",
         "online": "en ligne",
         "private": "Privé",
         "rooms": "Salons",
+        "songs": "Morceaux",
         "users": "Utilisateurs"
+      },
+      "songs": {
+        "import": "Importation",
+        "noSongs": "Aucun morceau en cache"
       },
       "statusBar": {
         "loggedInAs": "Connecté en tant que {{username}}",
@@ -102,15 +118,20 @@
         "messagesCount_plural": "{{count}} messages",
         "roomsCount": "{{count}} pièce",
         "roomsCount_plural": "{{count}} pièces",
+        "songsCount": "{{count}} morceaux",
         "usersCount": "{{count}} utilisateur",
         "usersCount_plural": "{{count}} utilisateurs"
       },
       "tableHeaders": {
+        "added": "Ajouté",
+        "addedBy": "Ajouté par",
+        "artist": "Artiste",
         "lastActive": "Dernière activité",
         "message": "Message",
         "role": "Rôle",
         "status": "Statut",
         "time": "Heure",
+        "title": "Titre",
         "user": "Utilisateur",
         "username": "Nom d'utilisateur"
       },
@@ -1241,7 +1262,9 @@
         "hint": "Appuyez sur ESC ou X pour fermer",
         "increaseOffset": "Augmenter le décalage",
         "instructions": "Appuyez sur la ligne que vous entendez",
-        "offset": "Décalage"
+        "offset": "Décalage",
+        "searchLyrics": "Rechercher les paroles",
+        "syncScroll": "Synchroniser le défilement"
       },
       "translationLanguages": {
         "auto": "Auto",
@@ -2039,6 +2062,7 @@
       "delete": "Supprimer",
       "discardChanges": "Ignorer les modifications",
       "discardChangesDesc": "Voulez-vous ignorer vos modifications et créer un nouveau fichier ?",
+      "done": "Terminé",
       "emoji": {
         "chooseEmoji": "Choisir un emoji",
         "description": "Choisir un emoji pour cet emplacement sonore",

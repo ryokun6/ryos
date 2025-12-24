@@ -11,18 +11,25 @@
         "banDescription": "{{username}}님을 차단하시겠습니까? 해당 사용자는 로그아웃되며 서비스에 접속할 수 없게 됩니다.",
         "banTitle": "사용자 차단",
         "deleteDescription": "{{type}} \"{{name}}\"을(를) 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
-        "deleteTitle": "{{type}}(을)를 삭제하시겠습니까?"
+        "deleteTitle": "{{type}}(을)를 삭제하시겠습니까?",
+        "editSong": "{{field}} 수정",
+        "editSongDescription": "새 값을 입력하세요."
       },
       "errors": {
         "failedToBanUser": "사용자 차단 실패",
         "failedToDeleteMessage": "메시지 삭제 실패",
         "failedToDeleteRoom": "채팅방 삭제 실패",
+        "failedToDeleteSong": "곡 삭제에 실패했습니다.",
         "failedToDeleteUser": "사용자 삭제 실패",
         "failedToFetchMessages": "메시지 불러오기 실패",
         "failedToFetchProfile": "사용자 프로필 가져오기 실패",
         "failedToFetchRooms": "채팅방 불러오기 실패",
+        "failedToFetchSongs": "곡을 가져오는 데 실패했습니다.",
         "failedToFetchUsers": "사용자 불러오기 실패",
-        "failedToUnbanUser": "사용자 차단 해제 실패"
+        "failedToUnbanUser": "사용자 차단 해제 실패",
+        "failedToUpdateSong": "곡 업데이트에 실패했습니다.",
+        "importFailed": "가져오기 실패",
+        "invalidImportFormat": "잘못된 파일 형식"
       },
       "help": {
         "adminAccess": {
@@ -51,8 +58,11 @@
       },
       "messages": {
         "dataRefreshed": "데이터 새로고침 완료",
+        "importSuccess": "{{imported}}개 새로 가져옴, {{updated}}개 업데이트됨 (총 {{total}}개)",
         "messageDeleted": "메시지 삭제됨",
         "roomDeleted": "방 삭제됨",
+        "songDeleted": "곡 삭제됨",
+        "songUpdated": "곡 업데이트됨",
         "userBanned": "{{username}}님 차단됨",
         "userDeleted": "사용자 {{username}} 삭제됨",
         "userUnbanned": "{{username}}님 차단 해제됨"
@@ -87,14 +97,20 @@
       },
       "search": {
         "noResults": "사용자를 찾을 수 없습니다.",
-        "placeholder": "사용자 검색..."
+        "placeholder": "사용자 검색...",
+        "songsPlaceholder": "곡 검색..."
       },
       "sidebar": {
         "messagesCount": "{{count}}개 메시지",
         "online": "온라인",
         "private": "비공개",
         "rooms": "방",
+        "songs": "곡",
         "users": "사용자"
+      },
+      "songs": {
+        "import": "가져오기",
+        "noSongs": "캐시에 곡 없음"
       },
       "statusBar": {
         "loggedInAs": "{{username}}님으로 로그인됨",
@@ -102,15 +118,20 @@
         "messagesCount_plural": "{{count}}개 메시지",
         "roomsCount": "{{count}}개",
         "roomsCount_plural": "{{count}}개",
+        "songsCount": "{{count}}곡",
         "usersCount": "{{count}}명",
         "usersCount_plural": "{{count}}명"
       },
       "tableHeaders": {
+        "added": "추가됨",
+        "addedBy": "추가자",
+        "artist": "아티스트",
         "lastActive": "마지막 활동",
         "message": "메시지",
         "role": "역할",
         "status": "상태",
         "time": "시간",
+        "title": "제목",
         "user": "사용자",
         "username": "사용자 이름"
       },
@@ -1241,7 +1262,9 @@
         "hint": "ESC 또는 X를 눌러 종료",
         "increaseOffset": "오프셋 늘리기",
         "instructions": "듣고 있는 줄을 탭하세요",
-        "offset": "오프셋"
+        "offset": "오프셋",
+        "searchLyrics": "가사 검색",
+        "syncScroll": "스크롤 동기화"
       },
       "translationLanguages": {
         "auto": "자동",
@@ -2039,6 +2062,7 @@
       "delete": "삭제",
       "discardChanges": "변경 사항 폐기",
       "discardChangesDesc": "변경 사항을 폐기하고 새 파일을 만들겠습니까?",
+      "done": "완료",
       "emoji": {
         "chooseEmoji": "이모티콘 선택",
         "description": "이 사운드 슬롯에 사용할 이모티콘을 선택하세요.",

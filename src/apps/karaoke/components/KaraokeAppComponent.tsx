@@ -284,12 +284,13 @@ export function KaraokeAppComponent({
     if (hideControlsTimeoutRef.current) {
       clearTimeout(hideControlsTimeoutRef.current);
     }
-    if (isPlaying && !anyMenuOpen) {
+    // Don't auto-hide when sync mode is open
+    if (isPlaying && !anyMenuOpen && !isSyncModeOpen) {
       hideControlsTimeoutRef.current = window.setTimeout(() => {
         setShowControls(false);
       }, 3000);
     }
-  }, [isPlaying, anyMenuOpen]);
+  }, [isPlaying, anyMenuOpen, isSyncModeOpen]);
 
   // Register activity (for full screen portal)
   const registerActivity = useCallback(() => {
@@ -325,7 +326,8 @@ export function KaraokeAppComponent({
   }, [isOffline, showOfflineStatus, nextTrack, showStatus]);
 
   useEffect(() => {
-    if (!isPlaying || anyMenuOpen) {
+    // Always show controls when not playing, menu is open, or sync mode is open
+    if (!isPlaying || anyMenuOpen || isSyncModeOpen) {
       setShowControls(true);
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
@@ -338,7 +340,7 @@ export function KaraokeAppComponent({
         clearTimeout(hideControlsTimeoutRef.current);
       }
     };
-  }, [isPlaying, anyMenuOpen, restartAutoHideTimer]);
+  }, [isPlaying, anyMenuOpen, isSyncModeOpen, restartAutoHideTimer]);
 
   // Reset elapsed time on track change
   useEffect(() => {
@@ -1025,8 +1027,9 @@ export function KaraokeAppComponent({
         />
 
         {/* Lyrics Sync Mode (non-fullscreen only - fullscreen renders in portal) */}
+        {/* z-40 so the notitlebar hover titlebar (z-50) appears above it */}
         {!isFullScreen && isSyncModeOpen && lyricsControls.originalLines.length > 0 && (
-          <div className="absolute inset-0 z-50" style={{ borderRadius: "inherit" }}>
+          <div className="absolute inset-0 z-40" style={{ borderRadius: "inherit" }}>
             <LyricsSyncMode
               lines={lyricsControls.originalLines}
               currentTimeMs={elapsedTime * 1000}
@@ -1051,6 +1054,7 @@ export function KaraokeAppComponent({
                 playerRef.current?.seekTo(timeMs / 1000);
               }}
               onClose={() => setIsSyncModeOpen(false)}
+              onSearchLyrics={handleRefreshLyrics}
             />
           </div>
         )}
@@ -1128,6 +1132,7 @@ export function KaraokeAppComponent({
                   activePlayer?.seekTo(timeMs / 1000);
                 }}
                 onClose={() => setIsSyncModeOpen(false)}
+                onSearchLyrics={handleRefreshLyrics}
               />
             ) : undefined
           }

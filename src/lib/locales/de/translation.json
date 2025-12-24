@@ -11,18 +11,25 @@
         "banDescription": "Möchten Sie {{username}} wirklich sperren? Die Person wird abgemeldet und kann den Dienst nicht mehr nutzen.",
         "banTitle": "Nutzer sperren?",
         "deleteDescription": "Möchten Sie {{type}} „{{name}}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-        "deleteTitle": "{{type}} löschen?"
+        "deleteTitle": "{{type}} löschen?",
+        "editSong": "{{field}} bearbeiten",
+        "editSongDescription": "Neuen Wert eingeben"
       },
       "errors": {
         "failedToBanUser": "Nutzer konnte nicht gesperrt werden",
         "failedToDeleteMessage": "Nachricht konnte nicht gelöscht werden",
         "failedToDeleteRoom": "Raum konnte nicht gelöscht werden",
+        "failedToDeleteSong": "Löschen des Liedes fehlgeschlagen",
         "failedToDeleteUser": "Benutzer konnte nicht gelöscht werden",
         "failedToFetchMessages": "Nachrichten konnten nicht abgerufen werden",
         "failedToFetchProfile": "Nutzerprofil konnte nicht geladen werden",
         "failedToFetchRooms": "Räume konnten nicht abgerufen werden",
+        "failedToFetchSongs": "Abrufen der Lieder fehlgeschlagen",
         "failedToFetchUsers": "Benutzer konnten nicht abgerufen werden",
-        "failedToUnbanUser": "Nutzer konnte nicht entsperrt werden"
+        "failedToUnbanUser": "Nutzer konnte nicht entsperrt werden",
+        "failedToUpdateSong": "Aktualisieren des Liedes fehlgeschlagen",
+        "importFailed": "Import fehlgeschlagen",
+        "invalidImportFormat": "Ungültiges Dateiformat"
       },
       "help": {
         "adminAccess": {
@@ -51,8 +58,11 @@
       },
       "messages": {
         "dataRefreshed": "Daten aktualisiert",
+        "importSuccess": "{{imported}} neu, {{updated}} aktualisiert (insgesamt {{total}})",
         "messageDeleted": "Nachricht gelöscht",
         "roomDeleted": "Raum gelöscht",
+        "songDeleted": "Lied gelöscht",
+        "songUpdated": "Lied aktualisiert",
         "userBanned": "Nutzer {{username}} gesperrt",
         "userDeleted": "Benutzer {{username}} gelöscht",
         "userUnbanned": "Nutzer {{username}} entsperrt"
@@ -87,14 +97,20 @@
       },
       "search": {
         "noResults": "Keine Benutzer gefunden",
-        "placeholder": "Benutzer suchen..."
+        "placeholder": "Benutzer suchen...",
+        "songsPlaceholder": "Lieder suchen..."
       },
       "sidebar": {
         "messagesCount": "{{count}} Nachrichten",
         "online": "online",
         "private": "Privat",
         "rooms": "Räume",
+        "songs": "Lieder",
         "users": "Benutzer"
+      },
+      "songs": {
+        "import": "Import",
+        "noSongs": "Keine Lieder im Cache"
       },
       "statusBar": {
         "loggedInAs": "Angemeldet als {{username}}",
@@ -102,15 +118,20 @@
         "messagesCount_plural": "{{count}} Nachrichten",
         "roomsCount": "{{count}} Raum",
         "roomsCount_plural": "{{count}} Räume",
+        "songsCount": "{{count}} Lieder",
         "usersCount": "{{count}} Benutzer",
         "usersCount_plural": "{{count}} Benutzer"
       },
       "tableHeaders": {
+        "added": "Hinzugefügt",
+        "addedBy": "Hinzugefügt von",
+        "artist": "Künstler",
         "lastActive": "Zuletzt aktiv",
         "message": "Nachricht",
         "role": "Rolle",
         "status": "Status",
         "time": "Zeit",
+        "title": "Titel",
         "user": "Benutzer",
         "username": "Benutzername"
       },
@@ -1241,7 +1262,9 @@
         "hint": "ESC oder X drücken zum Schließen",
         "increaseOffset": "Offset erhöhen",
         "instructions": "Tippen Sie auf die Zeile, die Sie hören",
-        "offset": "Versatz"
+        "offset": "Versatz",
+        "searchLyrics": "Liedtexte suchen",
+        "syncScroll": "Bildlauf synchronisieren"
       },
       "translationLanguages": {
         "auto": "Auto",
@@ -2039,6 +2062,7 @@
       "delete": "Löschen",
       "discardChanges": "Änderungen verwerfen",
       "discardChangesDesc": "Möchten Sie Ihre Änderungen verwerfen und eine neue Datei erstellen?",
+      "done": "Fertig",
       "emoji": {
         "chooseEmoji": "Emoji auswählen",
         "description": "Wählen Sie ein Emoji für diesen Sound-Slot",

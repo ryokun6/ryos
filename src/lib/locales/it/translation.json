@@ -11,18 +11,25 @@
         "banDescription": "Sei sicuro di voler bannare {{username}}? Verrà disconnesso e non potrà più accedere al servizio.",
         "banTitle": "Bannare utente?",
         "deleteDescription": "Sei sicuro di voler eliminare {{type}} \"{{name}}\"? Questa azione non può essere annullata.",
-        "deleteTitle": "Eliminare {{type}}?"
+        "deleteTitle": "Eliminare {{type}}?",
+        "editSong": "Modifica {{field}}",
+        "editSongDescription": "Inserisci il nuovo valore"
       },
       "errors": {
         "failedToBanUser": "Impossibile bannare l'utente",
         "failedToDeleteMessage": "Impossibile eliminare il messaggio",
         "failedToDeleteRoom": "Impossibile eliminare la stanza",
+        "failedToDeleteSong": "Impossibile eliminare il brano",
         "failedToDeleteUser": "Impossibile eliminare l'utente",
         "failedToFetchMessages": "Impossibile recuperare i messaggi",
         "failedToFetchProfile": "Impossibile caricare il profilo utente",
         "failedToFetchRooms": "Impossibile recuperare le stanze",
+        "failedToFetchSongs": "Impossibile recuperare i brani",
         "failedToFetchUsers": "Impossibile recuperare gli utenti",
-        "failedToUnbanUser": "Impossibile sbannare l'utente"
+        "failedToUnbanUser": "Impossibile sbannare l'utente",
+        "failedToUpdateSong": "Impossibile aggiornare il brano",
+        "importFailed": "Importazione non riuscita",
+        "invalidImportFormat": "Formato file non valido"
       },
       "help": {
         "adminAccess": {
@@ -51,8 +58,11 @@
       },
       "messages": {
         "dataRefreshed": "Dati aggiornati",
+        "importSuccess": "Importati {{imported}} nuovi, aggiornati {{updated}} ({{total}} totali)",
         "messageDeleted": "Messaggio eliminato",
         "roomDeleted": "Stanza eliminata",
+        "songDeleted": "Brano eliminato",
+        "songUpdated": "Brano aggiornato",
         "userBanned": "Utente {{username}} bannato",
         "userDeleted": "Utente {{username}} eliminato",
         "userUnbanned": "Utente {{username}} sbannato"
@@ -87,14 +97,20 @@
       },
       "search": {
         "noResults": "Nessun utente trovato",
-        "placeholder": "Cerca utenti..."
+        "placeholder": "Cerca utenti...",
+        "songsPlaceholder": "Cerca brani..."
       },
       "sidebar": {
         "messagesCount": "{{count}} messaggi",
         "online": "online",
         "private": "Privato",
         "rooms": "Stanze",
+        "songs": "Brani",
         "users": "Utenti"
+      },
+      "songs": {
+        "import": "Importa",
+        "noSongs": "Nessun brano nella cache"
       },
       "statusBar": {
         "loggedInAs": "Accesso effettuato come {{username}}",
@@ -102,15 +118,20 @@
         "messagesCount_plural": "{{count}} messaggi",
         "roomsCount": "{{count}} stanza",
         "roomsCount_plural": "{{count}} stanze",
+        "songsCount": "{{count}} brani",
         "usersCount": "{{count}} utente",
         "usersCount_plural": "{{count}} utenti"
       },
       "tableHeaders": {
+        "added": "Aggiunto",
+        "addedBy": "Aggiunto da",
+        "artist": "Artista",
         "lastActive": "Ultima Attività",
         "message": "Messaggio",
         "role": "Ruolo",
         "status": "Stato",
         "time": "Ora",
+        "title": "Titolo",
         "user": "Utente",
         "username": "Nome utente"
       },
@@ -1241,7 +1262,9 @@
         "hint": "Premi ESC o X per uscire",
         "increaseOffset": "Aumenta scostamento",
         "instructions": "Tocca la riga che stai ascoltando",
-        "offset": "Offset"
+        "offset": "Offset",
+        "searchLyrics": "Cerca Testi",
+        "syncScroll": "Sincronizza Scorrimento"
       },
       "translationLanguages": {
         "auto": "Auto",
@@ -2039,6 +2062,7 @@
       "delete": "Elimina",
       "discardChanges": "Ignora modifiche",
       "discardChangesDesc": "Vuoi ignorare le modifiche e creare un nuovo file?",
+      "done": "Fatto",
       "emoji": {
         "chooseEmoji": "Scegli un'emoji",
         "description": "Scegli un'emoji per questo slot audio",

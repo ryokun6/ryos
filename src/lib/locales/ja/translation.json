@@ -11,18 +11,25 @@
         "banDescription": "{{username}}をBANしてもよろしいですか？彼らはログアウトされ、サービスにアクセスできなくなります。",
         "banTitle": "ユーザーをBAN",
         "deleteDescription": "{{type}}「{{name}}」を削除しますか？この操作は元に戻せません。",
-        "deleteTitle": "{{type}}を削除しますか？"
+        "deleteTitle": "{{type}}を削除しますか？",
+        "editSong": "{{field}}を編集",
+        "editSongDescription": "新しい値を入力"
       },
       "errors": {
         "failedToBanUser": "ユーザーのBANに失敗しました",
         "failedToDeleteMessage": "メッセージの削除に失敗しました。",
         "failedToDeleteRoom": "ルームの削除に失敗しました。",
+        "failedToDeleteSong": "曲の削除に失敗しました",
         "failedToDeleteUser": "ユーザーの削除に失敗しました。",
         "failedToFetchMessages": "メッセージの取得に失敗しました。",
         "failedToFetchProfile": "ユーザープロフィールの取得に失敗しました",
         "failedToFetchRooms": "ルームの取得に失敗しました。",
+        "failedToFetchSongs": "曲の取得に失敗しました",
         "failedToFetchUsers": "ユーザーの取得に失敗しました。",
-        "failedToUnbanUser": "ユーザーのBAN解除に失敗しました"
+        "failedToUnbanUser": "ユーザーのBAN解除に失敗しました",
+        "failedToUpdateSong": "曲の更新に失敗しました",
+        "importFailed": "インポートに失敗しました",
+        "invalidImportFormat": "無効なファイル形式"
       },
       "help": {
         "adminAccess": {
@@ -51,8 +58,11 @@
       },
       "messages": {
         "dataRefreshed": "データが更新されました",
+        "importSuccess": "新規 {{imported}} 件、更新 {{updated}} 件 (合計 {{total}} 件)",
         "messageDeleted": "メッセージが削除されました",
         "roomDeleted": "ルームが削除されました",
+        "songDeleted": "曲を削除しました",
+        "songUpdated": "曲を更新しました",
         "userBanned": "ユーザー{{username}}をBANしました",
         "userDeleted": "ユーザー {{username}} が削除されました",
         "userUnbanned": "ユーザー{{username}}のBANを解除しました"
@@ -87,14 +97,20 @@
       },
       "search": {
         "noResults": "ユーザーが見つかりません",
-        "placeholder": "ユーザーを検索..."
+        "placeholder": "ユーザーを検索...",
+        "songsPlaceholder": "曲を検索..."
       },
       "sidebar": {
         "messagesCount": "メッセージ{{count}}件",
         "online": "オンライン",
         "private": "プライベート",
         "rooms": "ルーム",
+        "songs": "曲",
         "users": "ユーザー"
+      },
+      "songs": {
+        "import": "インポート",
+        "noSongs": "キャッシュに曲がありません"
       },
       "statusBar": {
         "loggedInAs": "{{username}}としてログイン中",
@@ -102,15 +118,20 @@
         "messagesCount_plural": "メッセージ{{count}}件",
         "roomsCount": "{{count}}部屋",
         "roomsCount_plural": "{{count}}部屋",
+        "songsCount": "{{count}} 曲",
         "usersCount": "{{count}}人",
         "usersCount_plural": "{{count}}人"
       },
       "tableHeaders": {
+        "added": "追加",
+        "addedBy": "追加者",
+        "artist": "アーティスト",
         "lastActive": "最終アクティブ",
         "message": "メッセージ",
         "role": "役割",
         "status": "ステータス",
         "time": "時間",
+        "title": "曲名",
         "user": "ユーザー",
         "username": "ユーザー名"
       },
@@ -1241,7 +1262,9 @@
         "hint": "ESC または X で閉じる",
         "increaseOffset": "オフセットを増加",
         "instructions": "聞こえている行をタップ",
-        "offset": "オフセット"
+        "offset": "オフセット",
+        "searchLyrics": "歌詞検索",
+        "syncScroll": "同期スクロール"
       },
       "translationLanguages": {
         "auto": "自動",
@@ -2039,6 +2062,7 @@
       "delete": "削除",
       "discardChanges": "変更を破棄",
       "discardChangesDesc": "変更を破棄して新しいファイルを作成しますか？",
+      "done": "完了",
       "emoji": {
         "chooseEmoji": "絵文字を選択",
         "description": "このサウンドスロットの絵文字を選択",
