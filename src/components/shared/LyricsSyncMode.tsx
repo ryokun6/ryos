@@ -2,7 +2,18 @@ import { useEffect, useRef, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { X, Minus, Plus } from "lucide-react";
-import type { LyricLine } from "@/types/lyrics";
+import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
+import { convert as romanizeKorean } from "hangul-romanization";
+import { pinyin } from "pinyin-pro";
+import { toRomaji } from "wanakana";
+import {
+  hasKoreanText,
+  isChineseText,
+  hasKanaTextLocal,
+  KOREAN_REGEX,
+  CHINESE_REGEX,
+  FuriganaSegment,
+} from "@/utils/romanization";
 
 export interface LyricsSyncModeProps {
   /** All lyrics lines for the current track */
@@ -13,6 +24,10 @@ export interface LyricsSyncModeProps {
   durationMs: number;
   /** Current offset in milliseconds */
   currentOffset: number;
+  /** Romanization settings */
+  romanization: RomanizationSettings;
+  /** Furigana map for Japanese romaji (startTimeMs -> FuriganaSegment[]) */
+  furiganaMap?: Map<string, FuriganaSegment[]>;
   /** Callback to set the new offset */
   onSetOffset: (offsetMs: number) => void;
   /** Callback to adjust offset by a delta */
@@ -42,6 +57,71 @@ function formatTime(ms: number): string {
 }
 
 /**
+ * Convert furigana segments to plain romaji text
+ * Uses the reading (furigana) for kanji, converts kana directly
+ */
+function furiganaSegmentsToRomaji(segments: FuriganaSegment[]): string {
+  return segments
+    .map((seg) => {
+      // If there's a reading (furigana for kanji), convert it to romaji
+      if (seg.reading) {
+        return toRomaji(seg.reading);
+      }
+      // Otherwise, check if the text itself is kana and convert it
+      if (hasKanaTextLocal(seg.text)) {
+        return toRomaji(seg.text);
+      }
+      // Keep non-Japanese characters as-is (spaces, punctuation, etc.)
+      return seg.text;
+    })
+    .join("");
+}
+
+/**
+ * Get plain text romanization for a line based on detected language
+ * Returns null if no romanization applies
+ */
+function getRomanizedText(
+  text: string,
+  romanization: RomanizationSettings,
+  furiganaSegments?: FuriganaSegment[]
+): string | null {
+  if (!romanization.enabled || !text) return null;
+
+  // Check for Korean text
+  if (romanization.korean && hasKoreanText(text)) {
+    // Romanize only Korean parts, keep other characters
+    KOREAN_REGEX.lastIndex = 0;
+    return text.replace(KOREAN_REGEX, (match) => romanizeKorean(match));
+  }
+
+  // Check for Japanese romaji - use furigana segments if available
+  if (romanization.japaneseRomaji) {
+    if (furiganaSegments && furiganaSegments.length > 0) {
+      // Use furigana data for accurate kanji readings
+      return furiganaSegmentsToRomaji(furiganaSegments);
+    }
+    // Fallback: only convert kana (no kanji readings available)
+    if (hasKanaTextLocal(text)) {
+      // For text without furigana, we can only romanize the kana parts
+      // Kanji will be kept as-is since we don't have readings
+      return null; // Don't show partial romaji without kanji readings
+    }
+  }
+
+  // Check for Chinese text (pinyin)
+  if (romanization.chinese && isChineseText(text)) {
+    // Get pinyin for the whole text
+    CHINESE_REGEX.lastIndex = 0;
+    return text.replace(CHINESE_REGEX, (match) => 
+      pinyin(match, { type: 'string', toneType: 'none', separator: '' })
+    );
+  }
+
+  return null;
+}
+
+/**
  * Interactive "Tap to Sync" mode for calibrating lyrics offset.
  * Shows a scrollable list of all lyrics lines with the current line highlighted.
  * User taps the line they're hearing to automatically calculate and set the offset.
@@ -53,6 +133,8 @@ export function LyricsSyncMode({
   currentTimeMs,
   durationMs,
   currentOffset,
+  romanization,
+  furiganaMap,
   onSetOffset,
   onAdjustOffset,
   onSeek,
@@ -193,6 +275,8 @@ export function LyricsSyncMode({
           {lines.map((line, index) => {
             const isCurrent = index === currentLineIndex;
             const isPast = index < currentLineIndex;
+            const furiganaSegments = furiganaMap?.get(line.startTimeMs);
+            const romanizedText = getRomanizedText(line.words, romanization, furiganaSegments);
 
             return (
               <button
@@ -204,7 +288,6 @@ export function LyricsSyncMode({
                 onClick={() => handleLineTap(line)}
                 className={cn(
                   "w-full text-left py-2 px-3 rounded-md transition-all duration-200",
-                  "text-base leading-relaxed",
                   "hover:bg-white/10 active:bg-white/20",
                   "focus:outline-none focus:ring-2 focus:ring-white/30",
                   isCurrent && "bg-white/20 text-white font-semibold",
@@ -212,8 +295,15 @@ export function LyricsSyncMode({
                   !isPast && !isCurrent && "text-white/60"
                 )}
               >
-                {line.words || (
-                  <span className="italic opacity-50">♪</span>
+                <div className="text-base leading-relaxed">
+                  {line.words || (
+                    <span className="italic opacity-50">♪</span>
+                  )}
+                </div>
+                {romanizedText && (
+                  <div className="text-xs opacity-60 mt-0.5">
+                    {romanizedText}
+                  </div>
                 )}
               </button>
             );

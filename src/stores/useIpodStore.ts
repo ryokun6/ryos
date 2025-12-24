@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, LyricsFont, RomanizationSettings } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
+import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
 import i18n from "@/lib/i18n";
 
@@ -56,6 +57,8 @@ interface IpodData {
   /** Persistent translation language preference that persists across tracks */
   lyricsTranslationLanguage: string | null;
   currentLyrics: { lines: LyricLine[] } | null;
+  /** Furigana map for current lyrics (startTimeMs -> FuriganaSegment[]) - not persisted */
+  currentFuriganaMap: Record<string, FuriganaSegment[]> | null;
   /** Incrementing trigger to force-refresh lyrics fetching (client-side refetch) */
   lyricsRefetchTrigger: number;
   /** Incrementing trigger to force-clear all lyrics caches (bypasses server cache) */
@@ -168,6 +171,7 @@ const initialIpodData: IpodData = {
   },
   lyricsTranslationLanguage: LYRICS_TRANSLATION_AUTO,
   currentLyrics: null,
+  currentFuriganaMap: null,
   lyricsRefetchTrigger: 0,
   lyricsCacheBustTrigger: 0,
   isFullScreen: false,
@@ -200,6 +204,8 @@ export interface IpodState extends IpodData {
   refreshLyrics: () => void;
   /** Clear all lyrics caches (lyrics, translation, furigana) and refetch */
   clearLyricsCache: () => void;
+  /** Set the furigana map for current lyrics */
+  setCurrentFuriganaMap: (map: Record<string, FuriganaSegment[]> | null) => void;
   /** Adjust the lyric offset (in ms) for the track at the given index. */
   adjustLyricOffset: (trackIndex: number, deltaMs: number) => void;
   /** Set the lyric offset (in ms) for the track at the given index to an absolute value. */
@@ -538,13 +544,16 @@ export const useIpodStore = create<IpodState>()(
         set((state) => ({
           lyricsRefetchTrigger: state.lyricsRefetchTrigger + 1,
           currentLyrics: null,
+          currentFuriganaMap: null,
         })),
       clearLyricsCache: () =>
         set((state) => ({
           lyricsRefetchTrigger: state.lyricsRefetchTrigger + 1,
           lyricsCacheBustTrigger: state.lyricsCacheBustTrigger + 1,
           currentLyrics: null,
+          currentFuriganaMap: null,
         })),
+      setCurrentFuriganaMap: (map) => set({ currentFuriganaMap: map }),
       adjustLyricOffset: (trackIndex, deltaMs) =>
         set((state) => {
           if (

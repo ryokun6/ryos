@@ -27,6 +27,7 @@ import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
 import { SongSearchDialog, SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { toast } from "sonner";
 import { useLyrics } from "@/hooks/useLyrics";
+import { useFurigana } from "@/hooks/useFurigana";
 import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
@@ -108,6 +109,7 @@ export function IpodAppComponent({
     setTrackLyricsSearch,
     clearTrackLyricsSearch,
     setLyricOffset,
+    setCurrentFuriganaMap,
   } = useIpodStoreShallow((s) => ({
     theme: s.theme,
     lcdFilterOn: s.lcdFilterOn,
@@ -138,6 +140,7 @@ export function IpodAppComponent({
     setTrackLyricsSearch: s.setTrackLyricsSearch,
     clearTrackLyricsSearch: s.clearTrackLyricsSearch,
     setLyricOffset: s.setLyricOffset,
+    setCurrentFuriganaMap: s.setCurrentFuriganaMap,
   }));
 
   const lyricOffset = useIpodStore(
@@ -1209,6 +1212,28 @@ export function IpodAppComponent({
     selectedMatch: selectedMatchForLyrics,
   });
 
+  // Fetch furigana for lyrics and store in shared state
+  const { furiganaMap } = useFurigana({
+    lines: fullScreenLyricsControls.originalLines,
+    isShowingOriginal: true,
+    romanization,
+    onLoadingChange: setIsFullScreenFetchingFurigana,
+  });
+
+  // Update shared store when furiganaMap changes
+  useEffect(() => {
+    if (furiganaMap.size > 0) {
+      // Convert Map to Record for storage
+      const record: Record<string, import("@/utils/romanization").FuriganaSegment[]> = {};
+      furiganaMap.forEach((value, key) => {
+        record[key] = value;
+      });
+      setCurrentFuriganaMap(record);
+    } else {
+      setCurrentFuriganaMap(null);
+    }
+  }, [furiganaMap, setCurrentFuriganaMap]);
+
   // Fullscreen sync
   const prevFullScreenRef = useRef(isFullScreen);
 
@@ -1637,7 +1662,7 @@ export function IpodAppComponent({
                         }}
                         interactive={isIOSSafari ? false : isPlaying}
                         bottomPaddingClass={controlsVisible ? "pb-6" : "pb-2"}
-                        onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
+                        furiganaMap={furiganaMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
                       />
@@ -1711,6 +1736,8 @@ export function IpodAppComponent({
             currentTimeMs={elapsedTime * 1000}
             durationMs={totalTime * 1000}
             currentOffset={lyricOffset}
+            romanization={romanization}
+            furiganaMap={furiganaMap}
             onSetOffset={(offsetMs) => {
               setLyricOffset(currentIndex, offsetMs);
               showStatus(

@@ -67,6 +67,8 @@ interface LyricsDisplayProps {
   containerStyle?: CSSProperties;
   /** Callback when furigana loading state changes */
   onFuriganaLoadingChange?: (isLoading: boolean) => void;
+  /** Pre-fetched furigana map (if provided, skips internal fetching) */
+  furiganaMap?: Map<string, FuriganaSegment[]>;
   /** Current playback time in milliseconds (for word-level highlighting) */
   currentTimeMs?: number;
   /** Callback to seek to a specific time in ms */
@@ -652,6 +654,7 @@ export function LyricsDisplay({
   fontClassName = "font-geneva-12",
   containerStyle,
   onFuriganaLoadingChange,
+  furiganaMap: externalFuriganaMap,
   currentTimeMs,
   onSeekToTime,
 }: LyricsDisplayProps) {
@@ -720,13 +723,17 @@ export function LyricsDisplay({
   // Use original lines for furigana fetching (furigana only applies to original Japanese text)
   const linesForFurigana = displayOriginalLines;
 
-  // Fetch and manage furigana using the extracted hook
-  const { renderWithFurigana, furiganaMap } = useFurigana({
-    lines: linesForFurigana,
+  // Use external furigana map if provided, otherwise fetch internally
+  const shouldFetchFurigana = !externalFuriganaMap;
+  const { renderWithFurigana, furiganaMap: fetchedFuriganaMap } = useFurigana({
+    lines: shouldFetchFurigana ? linesForFurigana : [],
     isShowingOriginal: true, // Always showing original now
     romanization,
-    onLoadingChange: onFuriganaLoadingChange,
+    onLoadingChange: shouldFetchFurigana ? onFuriganaLoadingChange : undefined,
   });
+  
+  // Use external map if provided, otherwise use fetched
+  const furiganaMap = externalFuriganaMap ?? fetchedFuriganaMap;
 
   const processText = (text: string) => {
     let processed = text;

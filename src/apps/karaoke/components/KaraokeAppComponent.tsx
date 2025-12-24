@@ -23,6 +23,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow, useAudioSettingsStoreShallow, useAppStoreShallow } from "@/stores/helpers";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLyrics } from "@/hooks/useLyrics";
+import { useFurigana } from "@/hooks/useFurigana";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -166,7 +167,6 @@ export function KaraokeAppComponent({
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
 
   // Full screen additional state
-  const [isFullScreenFetchingFurigana, setIsFullScreenFetchingFurigana] = useState(false);
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
 
   // Playback state
@@ -227,6 +227,14 @@ export function KaraokeAppComponent({
     translateTo: effectiveTranslationLanguage,
     searchQueryOverride: lyricsSearchOverride?.query,
     selectedMatch: selectedMatchForLyrics,
+  });
+
+  // Fetch furigana for lyrics (shared between main and fullscreen displays)
+  const { furiganaMap } = useFurigana({
+    lines: lyricsControls.originalLines,
+    isShowingOriginal: true,
+    romanization,
+    onLoadingChange: setIsFetchingFurigana,
   });
 
   // Translation languages with translated labels
@@ -854,7 +862,7 @@ export function KaraokeAppComponent({
                         }}
                         interactive={true}
                         bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-16"}
-                        onFuriganaLoadingChange={setIsFetchingFurigana}
+                        furiganaMap={furiganaMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
                       />
@@ -1009,6 +1017,8 @@ export function KaraokeAppComponent({
             currentTimeMs={elapsedTime * 1000}
             durationMs={duration * 1000}
             currentOffset={currentTrack?.lyricOffset ?? 0}
+            romanization={romanization}
+            furiganaMap={furiganaMap}
             onSetOffset={(offsetMs) => {
               setLyricOffset(currentIndex, offsetMs);
               showStatus(
@@ -1077,7 +1087,7 @@ export function KaraokeAppComponent({
           fullScreenPlayerRef={fullScreenPlayerRef}
           isLoadingLyrics={fullScreenLyricsControls.isLoading}
           isProcessingLyrics={fullScreenLyricsControls.isTranslating}
-          isFetchingFurigana={isFullScreenFetchingFurigana}
+          isFetchingFurigana={isFetchingFurigana}
         >
           {({ controlsVisible }) => (
             <div className="flex flex-col w-full h-full">
@@ -1195,7 +1205,7 @@ export function KaraokeAppComponent({
                         }}
                         interactive={isPlaying}
                         bottomPaddingClass={controlsVisible ? "pb-6" : "pb-2"}
-                        onFuriganaLoadingChange={setIsFullScreenFetchingFurigana}
+                        furiganaMap={furiganaMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
                       />
