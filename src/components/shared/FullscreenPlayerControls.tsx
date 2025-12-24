@@ -7,12 +7,12 @@ import { Globe, Maximize2, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
+  DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 
 export interface TranslationLanguageOption {
   label: string;
@@ -301,18 +301,14 @@ export function FullscreenPlayerControls({
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuPrimitive.Portal container={portalContainer}>
-              <DropdownMenuPrimitive.Content
-                side="top"
-                align="center"
-                sideOffset={8}
-                className={cn(
-                  "z-[10003] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-                  "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-                  "px-0 w-max min-w-40 max-w-none"
-                )}
-                onClick={(e) => e.stopPropagation()}
-              >
+            <DropdownMenuContent
+              container={portalContainer}
+              side="top"
+              align="center"
+              sideOffset={8}
+              className="px-0 w-max min-w-40 max-w-none"
+              onClick={(e) => e.stopPropagation()}
+            >
                 <DropdownMenuCheckboxItem
                   checked={romanization.enabled}
                   onCheckedChange={(checked) => {
@@ -372,8 +368,7 @@ export function FullscreenPlayerControls({
                 >
                   {t("apps.ipod.menu.chinesePinyin")}
                 </DropdownMenuCheckboxItem>
-              </DropdownMenuPrimitive.Content>
-            </DropdownMenuPrimitive.Portal>
+            </DropdownMenuContent>
           </DropdownMenu>
         )}
 
@@ -415,19 +410,17 @@ export function FullscreenPlayerControls({
               )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuPrimitive.Portal container={portalContainer}>
-            <DropdownMenuPrimitive.Content
-              side="top"
-              align="center"
-              sideOffset={8}
-              className={cn(
-                "z-[10003] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-                "px-0 max-h-[50vh] overflow-y-auto",
-                variant === "compact" ? "w-40" : "w-44"
-              )}
-              onClick={(e) => e.stopPropagation()}
-            >
+          <DropdownMenuContent
+            container={portalContainer}
+            side="top"
+            align="center"
+            sideOffset={8}
+            className={cn(
+              "px-0 max-h-[50vh] overflow-y-auto",
+              variant === "compact" ? "w-40" : "w-44"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
               <DropdownMenuRadioGroup
                 value={currentTranslationCode || "off"}
                 onValueChange={(value) => {
@@ -450,8 +443,7 @@ export function FullscreenPlayerControls({
                   );
                 })}
               </DropdownMenuRadioGroup>
-            </DropdownMenuPrimitive.Content>
-          </DropdownMenuPrimitive.Portal>
+          </DropdownMenuContent>
         </DropdownMenu>
 
         {/* Fullscreen button (for non-fullscreen mode) */}
