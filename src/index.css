@@ -443,13 +443,13 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   /* Karaoke in-window: ~50% of main lyrics (4cqw vs 8cqw) */
   .lyrics-translation-karaoke {
     font-size: clamp(14px, 4cqw, 60px);
-    margin-top: 0;
+    margin-top: 0.1em;
   }
 
   /* Fullscreen: ~50% of main lyrics (5vw/5vh vs 10vw/10vh) */
   .lyrics-translation-fullscreen {
     font-size: clamp(14px, min(5vw, 5vh), 60px);
-    margin-top: 0;
+    margin-top: 0.1em;
   }
 
   /* Karaoke status text - scales with container */
