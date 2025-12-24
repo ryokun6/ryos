@@ -1,3 +1,8 @@
+/**
+ * @deprecated This endpoint is deprecated. Use /api/song/{id} instead.
+ * The unified song endpoint provides lyrics, translations, and furigana in a single request.
+ * This endpoint will be removed in a future version.
+ */
 import { z } from "zod";
 import { Redis } from "@upstash/redis";
 import pako from "pako";
@@ -11,6 +16,15 @@ import {
 export const config = {
   runtime: "edge",
 };
+
+// Deprecation warning - will be logged on first request
+let deprecationLogged = false;
+function logDeprecationWarning(requestId: string) {
+  if (!deprecationLogged) {
+    console.warn(`[${requestId}] DEPRECATION WARNING: /api/lyrics is deprecated. Use /api/song/{id} instead.`);
+    deprecationLogged = true;
+  }
+}
 
 /**
  * Expected request body
@@ -379,6 +393,7 @@ async function fetchLyricsWithKrcFallback(
  */
 export default async function handler(req: Request) {
   const requestId = generateRequestId();
+  logDeprecationWarning(requestId);
   logRequest(req.method, req.url, null, requestId);
 
   if (req.method === "OPTIONS") {

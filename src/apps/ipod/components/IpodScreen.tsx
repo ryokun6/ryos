@@ -325,6 +325,7 @@ export function IpodScreen({
 
             {/* Lyrics Overlay */}
             <LyricsDisplay
+              songId={currentTrack?.id ?? ""}
               lines={lyricsControls.lines}
               originalLines={lyricsControls.originalLines}
               currentLine={lyricsControls.currentLine}

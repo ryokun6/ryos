@@ -1,3 +1,8 @@
+/**
+ * @deprecated This endpoint is deprecated. Use /api/song and /api/song/{id} instead.
+ * The unified song endpoint consolidates metadata, lyrics, translations, and furigana.
+ * This endpoint will be removed in a future version.
+ */
 import { Redis } from "@upstash/redis";
 import { z } from "zod";
 import {
@@ -11,6 +16,15 @@ import { validateAuthToken } from "./_utils/auth-validate.js";
 export const config = {
   runtime: "edge",
 };
+
+// Deprecation warning - will be logged on first request
+let deprecationLogged = false;
+function logDeprecationWarning(requestId: string) {
+  if (!deprecationLogged) {
+    console.warn(`[${requestId}] DEPRECATION WARNING: /api/song-metadata is deprecated. Use /api/song and /api/song/{id} instead.`);
+    deprecationLogged = true;
+  }
+}
 
 // Song metadata cache key prefix
 const SONG_METADATA_PREFIX = "song:metadata:";
@@ -105,6 +119,7 @@ interface SongMetadata {
  */
 export default async function handler(req: Request) {
   const requestId = Math.random().toString(36).substring(2, 10);
+  logDeprecationWarning(requestId);
   const startTime = Date.now();
   
   console.log(`[${requestId}] ${req.method} ${req.url}`);

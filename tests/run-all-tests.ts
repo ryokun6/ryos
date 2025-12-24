@@ -13,6 +13,7 @@ import { runLyricsTests } from "./test-lyrics";
 import { runSpeechTests } from "./test-speech";
 import { runTranslateLyricsTests } from "./test-translate-lyrics";
 import { runShareAppletTests } from "./test-share-applet";
+import { runSongTests } from "./test-song";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -81,6 +82,7 @@ async function runAllTests(): Promise<void> {
     { name: "link-preview", run: runLinkPreviewTests },
     { name: "parse-title", run: runParseTitleTests },
     { name: "lyrics", run: runLyricsTests },
+    { name: "song", run: runSongTests },
     { name: "speech", run: runSpeechTests },
     { name: "translate-lyrics", run: runTranslateLyricsTests },
     { name: "share-applet", run: runShareAppletTests },

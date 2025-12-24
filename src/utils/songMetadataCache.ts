@@ -3,14 +3,16 @@
  * 
  * Provides functions to save and retrieve song metadata from Redis cache.
  * Used by iPod and Karaoke apps to share song metadata between users.
+ * 
+ * Uses the unified /api/song endpoint.
  */
 
 import { getApiUrl } from "./platform";
 
 /**
- * Lyrics search selection stored in cache
+ * Lyrics source stored in cache
  */
-export interface CachedLyricsSearchSelection {
+export interface CachedLyricsSource {
   hash: string;
   albumId: string | number;
   title: string;
@@ -19,52 +21,55 @@ export interface CachedLyricsSearchSelection {
 }
 
 /**
- * Song metadata structure stored in cache
+ * Song metadata structure
  */
 export interface CachedSongMetadata {
+  /** YouTube video ID */
   youtubeId: string;
   title: string;
   artist?: string;
   album?: string;
   lyricOffset?: number;
-  lyricsSearch?: {
-    query?: string;
-    selection?: CachedLyricsSearchSelection;
-  };
-  lyricsHash?: string;
-  translationHash?: string;
+  /** Lyrics source from Kugou */
+  lyricsSource?: CachedLyricsSource;
   createdBy?: string;
   createdAt: number;
   updatedAt: number;
-  // Optional import order for stable sorting when createdAt is identical
   importOrder?: number;
 }
 
 /**
- * Response from the song metadata API when fetching
+ * Unified song document from /api/song endpoint
  */
-interface GetSongMetadataResponse {
-  found: boolean;
-  metadata?: CachedSongMetadata;
-  error?: string;
+interface UnifiedSongDocument {
+  id: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  lyricOffset?: number;
+  lyricsSource?: CachedLyricsSource;
+  createdBy?: string;
+  createdAt: number;
+  updatedAt: number;
+  importOrder?: number;
 }
 
 /**
- * Response from the song metadata API when saving
+ * Response from unified /api/song list endpoint
  */
-interface SaveSongMetadataResponse {
+interface UnifiedSongListResponse {
+  songs: UnifiedSongDocument[];
+}
+
+/**
+ * Response from the song API when saving
+ */
+interface SaveSongResponse {
   success: boolean;
-  youtubeId?: string;
+  id?: string;
   isUpdate?: boolean;
   createdBy?: string;
   error?: string;
-}
-
-/**
- * Response from the song metadata API when listing all songs
- */
-interface ListSongMetadataResponse {
-  songs: CachedSongMetadata[];
 }
 
 /**
@@ -73,6 +78,24 @@ interface ListSongMetadataResponse {
 export interface SongMetadataAuthCredentials {
   username: string;
   authToken: string;
+}
+
+/**
+ * Convert unified song document to CachedSongMetadata format
+ */
+function unifiedToMetadata(doc: UnifiedSongDocument): CachedSongMetadata {
+  return {
+    youtubeId: doc.id,
+    title: doc.title,
+    artist: doc.artist,
+    album: doc.album,
+    lyricOffset: doc.lyricOffset,
+    lyricsSource: doc.lyricsSource,
+    createdBy: doc.createdBy,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+    importOrder: doc.importOrder,
+  };
 }
 
 /**
@@ -86,7 +109,7 @@ export async function getCachedSongMetadata(
 ): Promise<CachedSongMetadata | null> {
   try {
     const response = await fetch(
-      getApiUrl(`/api/song-metadata?id=${encodeURIComponent(youtubeId)}`),
+      getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata`),
       {
         method: "GET",
         headers: {
@@ -95,19 +118,18 @@ export async function getCachedSongMetadata(
       }
     );
 
-    if (!response.ok) {
-      console.warn(`[SongMetadataCache] Failed to fetch metadata for ${youtubeId}: ${response.status}`);
+    if (response.ok) {
+      const data: UnifiedSongDocument = await response.json();
+      console.log(`[SongMetadataCache] Cache HIT for ${youtubeId}`);
+      return unifiedToMetadata(data);
+    }
+
+    if (response.status === 404) {
+      console.log(`[SongMetadataCache] Cache MISS for ${youtubeId}`);
       return null;
     }
 
-    const data: GetSongMetadataResponse = await response.json();
-
-    if (data.found && data.metadata) {
-      console.log(`[SongMetadataCache] Cache HIT for ${youtubeId}`);
-      return data.metadata;
-    }
-
-    console.log(`[SongMetadataCache] Cache MISS for ${youtubeId}`);
+    console.warn(`[SongMetadataCache] Failed to fetch metadata for ${youtubeId}: ${response.status}`);
     return null;
   } catch (error) {
     console.error(`[SongMetadataCache] Error fetching metadata for ${youtubeId}:`, error);
@@ -123,7 +145,7 @@ export async function getCachedSongMetadata(
  */
 export async function listAllCachedSongMetadata(createdBy?: string): Promise<CachedSongMetadata[]> {
   try {
-    let url = "/api/song-metadata?list=true";
+    let url = "/api/song?include=metadata";
     if (createdBy) {
       url += `&createdBy=${encodeURIComponent(createdBy)}`;
     }
@@ -143,9 +165,10 @@ export async function listAllCachedSongMetadata(createdBy?: string): Promise<Cac
       return [];
     }
 
-    const data: ListSongMetadataResponse = await response.json();
-    console.log(`[SongMetadataCache] Listed ${data.songs?.length || 0} songs from cache${createdBy ? ` (by ${createdBy})` : ""}`);
-    return data.songs || [];
+    const data: UnifiedSongListResponse = await response.json();
+    const songs = data.songs?.map(unifiedToMetadata) || [];
+    console.log(`[SongMetadataCache] Listed ${songs.length} songs${createdBy ? ` (by ${createdBy})` : ""}`);
+    return songs;
   } catch (error) {
     console.error(`[SongMetadataCache] Error listing metadata:`, error);
     return [];
@@ -166,7 +189,7 @@ export async function deleteSongMetadata(
 ): Promise<boolean> {
   try {
     const response = await fetch(
-      getApiUrl(`/api/song-metadata?id=${encodeURIComponent(youtubeId)}`),
+      getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
       {
         method: "DELETE",
         headers: {
@@ -192,13 +215,13 @@ export async function deleteSongMetadata(
       return false;
     }
 
-    if (!response.ok) {
-      console.warn(`[SongMetadataCache] Failed to delete metadata for ${youtubeId}: ${response.status}`);
-      return false;
+    if (response.ok) {
+      console.log(`[SongMetadataCache] Deleted metadata for ${youtubeId}`);
+      return true;
     }
 
-    console.log(`[SongMetadataCache] Deleted metadata for ${youtubeId}`);
-    return true;
+    console.warn(`[SongMetadataCache] Failed to delete metadata for ${youtubeId}: ${response.status}`);
+    return false;
   } catch (error) {
     console.error(`[SongMetadataCache] Error deleting metadata for ${youtubeId}:`, error);
     return false;
@@ -220,24 +243,25 @@ export async function saveSongMetadata(
     artist?: string;
     album?: string;
     lyricOffset?: number;
-    lyricsSearch?: {
-      query?: string;
-      selection?: CachedLyricsSearchSelection;
-    };
-    lyricsHash?: string;
-    translationHash?: string;
+    lyricsSource?: CachedLyricsSource;
   },
   auth: SongMetadataAuthCredentials
 ): Promise<boolean> {
   try {
-    const response = await fetch(getApiUrl("/api/song-metadata"), {
+    const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(metadata.youtubeId)}`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${auth.authToken}`,
         "X-Username": auth.username,
       },
-      body: JSON.stringify(metadata),
+      body: JSON.stringify({
+        title: metadata.title,
+        artist: metadata.artist,
+        album: metadata.album,
+        lyricOffset: metadata.lyricOffset,
+        lyricsSource: metadata.lyricsSource,
+      }),
     });
 
     if (response.status === 401) {
@@ -250,17 +274,11 @@ export async function saveSongMetadata(
       return false;
     }
 
-    const data: SaveSongMetadataResponse = await response.json();
-
-    if (data.success) {
-      console.log(
-        `[SongMetadataCache] ${data.isUpdate ? "Updated" : "Saved"} metadata for ${metadata.youtubeId} (by ${data.createdBy || auth.username})`
-      );
-      return true;
-    }
-
-    console.warn(`[SongMetadataCache] Failed to save metadata: ${data.error}`);
-    return false;
+    const data: SaveSongResponse = await response.json();
+    console.log(
+      `[SongMetadataCache] ${data.isUpdate ? "Updated" : "Saved"} metadata for ${metadata.youtubeId} (by ${data.createdBy || auth.username})`
+    );
+    return true;
   } catch (error) {
     console.error(`[SongMetadataCache] Error saving metadata for ${metadata.youtubeId}:`, error);
     return false;
@@ -283,22 +301,19 @@ export async function bulkImportSongMetadata(
     artist?: string;
     album?: string;
     lyricOffset?: number;
-    lyricsSearch?: {
-      query?: string;
-      selection?: CachedLyricsSearchSelection;
-    };
+    lyricsSource?: CachedLyricsSource;
   }>,
   auth: SongMetadataAuthCredentials
 ): Promise<{ success: boolean; imported: number; updated: number; total: number; error?: string }> {
   try {
-    const response = await fetch(getApiUrl("/api/song-metadata?action=import"), {
+    const response = await fetch(getApiUrl("/api/song"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${auth.authToken}`,
         "X-Username": auth.username,
       },
-      body: JSON.stringify({ songs }),
+      body: JSON.stringify({ action: "import", songs }),
     });
 
     if (response.status === 401) {
@@ -374,7 +389,7 @@ export async function saveSongMetadataFromTrack(
       artist: track.artist,
       album: track.album,
       lyricOffset: track.lyricOffset,
-      lyricsSearch: track.lyricsSearch,
+      lyricsSource: track.lyricsSearch?.selection,
     },
     auth
   );

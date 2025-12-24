@@ -1,13 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { LyricLine, RomanizationSettings } from "@/types/lyrics";
+import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { getApiUrl } from "@/utils/platform";
 import { isOffline } from "@/utils/offline";
-import { processSSEStream, isSSEResponse, SSEChunkEvent } from "@/utils/sse";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { toRomaji } from "wanakana";
 import {
-  FuriganaSegment,
   hasKoreanText,
   isChineseText,
   isJapaneseText,
@@ -16,32 +14,14 @@ import {
   renderChineseWithPinyin,
   renderKanaWithRomaji,
 } from "@/utils/romanization";
+import type { FuriganaSegment } from "@/utils/romanization";
 
 // Re-export FuriganaSegment for consumers
 export type { FuriganaSegment };
 
-// Types for SSE streaming events from furigana API
-interface FuriganaChunkEvent {
-  type: "chunk";
-  chunkIndex: number;
-  totalChunks: number;
-  startIndex: number;
-  annotatedLines: FuriganaSegment[][];
-}
-
-interface FuriganaCompleteEvent {
-  type: "complete";
-  totalLines: number;
-}
-
-interface FuriganaErrorEvent {
-  type: "error";
-  message: string;
-}
-
-type FuriganaSSEEvent = FuriganaChunkEvent | FuriganaCompleteEvent | FuriganaErrorEvent;
-
 interface UseFuriganaParams {
+  /** Song ID (YouTube video ID) - required for unified endpoint */
+  songId: string;
   /** Lyric lines to fetch furigana for */
   lines: LyricLine[];
   /** Whether we're showing original lyrics (not translations) */
@@ -66,10 +46,18 @@ interface UseFuriganaReturn {
 const FURIGANA_TIMEOUT = 30000; // 30 seconds
 
 /**
+ * Response from unified song endpoint for furigana
+ */
+interface UnifiedFuriganaResponse {
+  furigana: FuriganaSegment[][];
+  cached?: boolean;
+}
+
+/**
  * Hook for fetching and managing Japanese furigana annotations and other romanization
  * 
  * Handles:
- * - Fetching furigana from API for Japanese text
+ * - Fetching furigana from unified /api/song/{id} endpoint
  * - Rendering with furigana (hiragana over kanji)
  * - Converting furigana to romaji when enabled
  * - Korean romanization for mixed content
@@ -77,6 +65,7 @@ const FURIGANA_TIMEOUT = 30000; // 30 seconds
  * - Standalone kana to romaji conversion
  */
 export function useFurigana({
+  songId,
   lines,
   isShowingOriginal,
   romanization,
@@ -102,10 +91,9 @@ export function useFurigana({
 
   // Compute cache key outside effect - only when lines actually change
   const cacheKey = useMemo(() => {
-    if (lines.length === 0) return "";
-    // Use a simpler, faster hash - just join timestamps and first chars
-    return lines.map((l) => `${l.startTimeMs}:${l.words.slice(0, 20)}`).join("|");
-  }, [lines]);
+    if (!songId || lines.length === 0) return "";
+    return `song:${songId}:` + lines.map((l) => `${l.startTimeMs}:${l.words.slice(0, 20)}`).join("|");
+  }, [songId, lines]);
 
   // Effect to immediately clear furigana when cache bust trigger changes
   useEffect(() => {
@@ -121,9 +109,10 @@ export function useFurigana({
   const hasLines = lines.length > 0;
 
   // Fetch furigana for original lines when enabled
+  // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   useEffect(() => {
-    // If completely disabled or no lines, clear everything
-    if (!shouldFetchFurigana || !hasLines) {
+    // If completely disabled, no songId, or no lines, clear everything
+    if (!songId || !shouldFetchFurigana || !hasLines) {
       if (furiganaCacheKeyRef.current !== "") {
         setFuriganaMap(new Map());
         furiganaCacheKeyRef.current = "";
@@ -171,10 +160,13 @@ export function useFurigana({
 
     const fetchFurigana = async () => {
       try {
-        const res = await abortableFetch(getApiUrl("/api/furigana"), {
+        const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lines, force: isForceRequest }),
+          body: JSON.stringify({
+            action: "furigana",
+            force: isForceRequest,
+          }),
           signal: controller.signal,
           timeout: FURIGANA_TIMEOUT,
           retry: {
@@ -188,62 +180,26 @@ export function useFurigana({
 
         if (controller.signal.aborted) return;
 
-        // Check if this is a streaming response
-        if (isSSEResponse(res)) {
-          const collectedFurigana = new Map<string, FuriganaSegment[]>();
+        if (!res.ok) {
+          throw new Error(`Failed to fetch furigana (status ${res.status})`);
+        }
 
-          await processSSEStream<FuriganaSSEEvent>({
-            response: res,
-            signal: controller.signal,
-            onChunk: (event: SSEChunkEvent<FuriganaSSEEvent>) => {
-              if (controller.signal.aborted) return;
-              
-              const chunkEvent = event as unknown as FuriganaChunkEvent;
-              chunkEvent.annotatedLines.forEach((segments, index) => {
-                const globalIndex = chunkEvent.startIndex + index;
-                if (globalIndex < lines.length) {
-                  const lineKey = lines[globalIndex].startTimeMs;
-                  collectedFurigana.set(lineKey, segments);
-                }
-              });
-
-              if (!controller.signal.aborted) {
-                setFuriganaMap(new Map(collectedFurigana));
-              }
-            },
-            onComplete: () => {
-              if (!controller.signal.aborted) {
-                setFuriganaMap(new Map(collectedFurigana));
-                furiganaCacheKeyRef.current = cacheKey;
-                lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
-              }
-            },
-            onError: (err) => {
-              if (!controller.signal.aborted) {
-                setError(err.message);
-              }
-            },
-          });
-
-          if (!controller.signal.aborted) {
-            setIsFetching(false);
-          }
-        } else {
-          // Handle non-streaming response
-          const data: { annotatedLines: FuriganaSegment[][] } = await res.json();
-          const newMap = new Map<string, FuriganaSegment[]>();
+        const data = await res.json() as UnifiedFuriganaResponse;
+        const newMap = new Map<string, FuriganaSegment[]>();
+        
+        if (data.furigana) {
           lines.forEach((line, index) => {
-            if (data.annotatedLines[index]) {
-              newMap.set(line.startTimeMs, data.annotatedLines[index]);
+            if (data.furigana[index]) {
+              newMap.set(line.startTimeMs, data.furigana[index]);
             }
           });
-          
-          if (!controller.signal.aborted) {
-            setFuriganaMap(newMap);
-            furiganaCacheKeyRef.current = cacheKey;
-            lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
-            setIsFetching(false);
-          }
+        }
+
+        if (!controller.signal.aborted) {
+          setFuriganaMap(newMap);
+          furiganaCacheKeyRef.current = cacheKey;
+          lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+          setIsFetching(false);
         }
       } catch (err) {
         if (controller.signal.aborted) return;
@@ -266,7 +222,7 @@ export function useFurigana({
       setIsFetching(false);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
-  }, [cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger]);
+  }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger]);
 
   // Unified render function that handles all romanization types
   const renderWithFurigana = useCallback(
@@ -321,6 +277,7 @@ export function useFurigana({
                 ? toRomaji(segment.reading)
                 : segment.reading;
               return (
+                // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
                 <ruby key={index} className="lyrics-furigana">
                   {segment.text}
                   <rp>(</rp>
@@ -345,6 +302,7 @@ export function useFurigana({
               return renderKanaWithRomaji(segment.text, `seg-${index}`);
             }
             
+            // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
             return <span key={index}>{segment.text}</span>;
           })}
         </>

@@ -211,28 +211,27 @@ export function KaraokeAppComponent({
   );
 
   const lyricsControls = useLyrics({
+    songId: currentTrack?.id ?? "",
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
-    album: currentTrack?.album ?? "",
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
     translateTo: effectiveTranslationLanguage,
-    searchQueryOverride: lyricsSearchOverride?.query,
     selectedMatch: selectedMatchForLyrics,
   });
 
   // Full screen lyrics hook (separate instance for independent time tracking)
   const fullScreenLyricsControls = useLyrics({
+    songId: currentTrack?.id ?? "",
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
-    album: currentTrack?.album ?? "",
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
     translateTo: effectiveTranslationLanguage,
-    searchQueryOverride: lyricsSearchOverride?.query,
     selectedMatch: selectedMatchForLyrics,
   });
 
   // Fetch furigana for lyrics (shared between main and fullscreen displays)
   const { furiganaMap } = useFurigana({
+    songId: currentTrack?.id ?? "",
     lines: lyricsControls.originalLines,
     isShowingOriginal: true,
     romanization,
@@ -834,6 +833,7 @@ export function KaraokeAppComponent({
               <div className="absolute inset-0 bg-black/50 pointer-events-none" />
               <div className="absolute inset-0 pointer-events-none karaoke-force-font">
               <LyricsDisplay
+                        songId={currentTrack?.id ?? ""}
                         lines={lyricsControls.lines}
                         originalLines={lyricsControls.originalLines}
                         currentLine={lyricsControls.currentLine}
@@ -1198,6 +1198,7 @@ export function KaraokeAppComponent({
                   {showLyrics && currentTrack && (
                     <div className="absolute inset-0 pointer-events-none z-20">
                       <LyricsDisplay
+                        songId={currentTrack?.id ?? ""}
                         lines={fullScreenLyricsControls.lines}
                         originalLines={fullScreenLyricsControls.originalLines}
                         currentLine={fullScreenLyricsControls.currentLine}

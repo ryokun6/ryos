@@ -1216,17 +1216,17 @@ export function IpodAppComponent({
   );
 
   const fullScreenLyricsControls = useLyrics({
+    songId: currentTrack?.id ?? "",
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
-    album: currentTrack?.album ?? "",
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
     translateTo: effectiveTranslationLanguage,
-    searchQueryOverride: lyricsSearchOverride?.query,
     selectedMatch: selectedMatchForLyrics,
   });
 
   // Fetch furigana for lyrics and store in shared state
   const { furiganaMap } = useFurigana({
+    songId: currentTrack?.id ?? "",
     lines: fullScreenLyricsControls.originalLines,
     isShowingOriginal: true,
     romanization,
@@ -1655,6 +1655,7 @@ export function IpodAppComponent({
                   {showLyrics && tracks[currentIndex] && (
                     <div className="absolute inset-0 pointer-events-none z-20">
                       <LyricsDisplay
+                        songId={tracks[currentIndex]?.id ?? ""}
                         lines={fullScreenLyricsControls.lines}
                         originalLines={fullScreenLyricsControls.originalLines}
                         currentLine={fullScreenLyricsControls.currentLine}

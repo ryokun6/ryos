@@ -25,6 +25,8 @@ import {
 } from "@/utils/romanization";
 
 interface LyricsDisplayProps {
+  /** Song ID (YouTube video ID) - required for internal furigana fetching if furiganaMap not provided */
+  songId?: string;
   lines: LyricLine[];
   /** Original untranslated lyrics (used for furigana) */
   originalLines?: LyricLine[];
@@ -637,6 +639,7 @@ const getVariants = (
 };
 
 export function LyricsDisplay({
+  songId = "",
   lines,
   originalLines,
   currentLine,
@@ -730,8 +733,9 @@ export function LyricsDisplay({
   const linesForFurigana = displayOriginalLines;
 
   // Use external furigana map if provided, otherwise fetch internally
-  const shouldFetchFurigana = !externalFuriganaMap;
+  const shouldFetchFurigana = !externalFuriganaMap && !!songId;
   const { renderWithFurigana, furiganaMap: fetchedFuriganaMap } = useFurigana({
+    songId,
     lines: shouldFetchFurigana ? linesForFurigana : [],
     isShowingOriginal: true, // Always showing original now
     romanization,
@@ -811,8 +815,9 @@ export function LyricsDisplay({
   };
 
   // State to hold lines displayed in Alternating mode so we can delay updates
+  // Use displayOriginalLines to ensure word timings are included (not translated lines)
   const [altLines, setAltLines] = useState<LyricLine[]>(() =>
-    computeAltVisibleLines(lines, currentLine)
+    computeAltVisibleLines(displayOriginalLines, currentLine)
   );
 
   // Track previous lines array to detect song/translation changes

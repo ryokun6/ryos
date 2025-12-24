@@ -1,3 +1,8 @@
+/**
+ * @deprecated This endpoint is deprecated. Use /api/song/{id} with action=translate instead.
+ * The unified song endpoint provides lyrics, translations, and furigana in a single request.
+ * This endpoint will be removed in a future version.
+ */
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
@@ -14,6 +19,15 @@ export const config = {
 
 // Extend timeout for chunked AI processing
 export const maxDuration = 120;
+
+// Deprecation warning - will be logged on first request
+let deprecationLogged = false;
+function logDeprecationWarning(requestId: string) {
+  if (!deprecationLogged) {
+    console.warn(`[${requestId}] DEPRECATION WARNING: /api/translate-lyrics is deprecated. Use /api/song/{id} with action=translate instead.`);
+    deprecationLogged = true;
+  }
+}
 
 const LyricLineSchema = z.object({
   words: z.string(),
@@ -181,6 +195,7 @@ Do not include timestamps or any other formatting in your output strings; just t
 
 export default async function handler(req: Request) {
   const requestId = generateRequestId();
+  logDeprecationWarning(requestId);
   logRequest(req.method, req.url, null, requestId);
 
   if (req.method === "OPTIONS") {

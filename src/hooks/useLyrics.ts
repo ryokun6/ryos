@@ -1,47 +1,23 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { LyricLine } from "@/types/lyrics";
+import type { LyricLine } from "@/types/lyrics";
 import { parseLRC } from "@/utils/lrcParser";
 import { parseKRC, isKRCFormat } from "@/utils/krcParser";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { isOffline } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
-import { processSSEStream, isSSEResponse, SSEChunkEvent } from "@/utils/sse";
 import { abortableFetch } from "@/utils/abortableFetch";
 
-// Types for SSE streaming events from translation API
-interface TranslationChunkEvent {
-  type: "chunk";
-  chunkIndex: number;
-  totalChunks: number;
-  startIndex: number;
-  lines: string[];
-}
-
-interface TranslationCompleteEvent {
-  type: "complete";
-  totalLines: number;
-}
-
-interface TranslationErrorEvent {
-  type: "error";
-  message: string;
-}
-
-type TranslationSSEEvent = TranslationChunkEvent | TranslationCompleteEvent | TranslationErrorEvent;
-
 interface UseLyricsParams {
-  /** Song title */
+  /** Song ID (YouTube video ID) - required for unified endpoint */
+  songId: string;
+  /** Song title (used for parsing) */
   title?: string;
-  /** Song artist */
+  /** Song artist (used for parsing) */
   artist?: string;
-  /** Song album */
-  album?: string;
   /** Current playback time in seconds */
   currentTime: number;
   /** Target language for translation (e.g., "en", "es", "ja"). If null or undefined, no translation. */
   translateTo?: string | null;
-  /** Override search query for lyrics lookup */
-  searchQueryOverride?: string;
   /** Override selected match for lyrics fetching */
   selectedMatch?: {
     hash: string;
@@ -64,25 +40,38 @@ interface LyricsState {
 }
 
 /**
- * Extract text from an LRC line (removes timestamp)
+ * Response from unified song endpoint for lyrics
  */
-function extractLrcText(lrcLine: string): string {
-  const match = lrcLine.match(/^\[[\d:.]+\](.*)$/);
-  return match ? match[1] : lrcLine;
+interface UnifiedLyricsResponse {
+  lyrics?: {
+    lrc: string;
+    krc?: string;
+    cover?: string;
+  };
+  cached?: boolean;
+}
+
+/**
+ * Response from unified song endpoint for translation
+ */
+interface UnifiedTranslationResponse {
+  translation: string;
+  cached?: boolean;
 }
 
 /**
  * Fetch timed lyrics (LRC) for a given song, optionally translate them,
  * and keep track of which line is currently active based on playback time.
  * Returns the parsed lyric lines and the index of the current line.
+ * 
+ * Uses the unified /api/song/{id} endpoint for all operations.
  */
 export function useLyrics({
+  songId,
   title = "",
   artist = "",
-  album = "",
   currentTime,
   translateTo,
-  searchQueryOverride,
   selectedMatch,
 }: UseLyricsParams): LyricsState {
   const [originalLines, setOriginalLines] = useState<LyricLine[]>([]);
@@ -103,9 +92,8 @@ export function useLyrics({
 
   // Effect for fetching original lyrics
   useEffect(() => {
-    // Early return checks - don't clear state for these
-    if (!title && !artist && !album) {
-      // Clear state only when there's no track info
+    // Early return if no songId
+    if (!songId) {
       setOriginalLines([]);
       setTranslatedLines(null);
       setCurrentLine(-1);
@@ -123,15 +111,13 @@ export function useLyrics({
 
     // Include selectedMatch hash in cache key to ensure different versions are cached separately
     const selectedMatchKey = selectedMatch?.hash || "";
-    const cacheKey = `${title}__${artist}__${album}__${selectedMatchKey}`;
+    const cacheKey = `song:${songId}:${selectedMatchKey}`;
     
     // Force refresh only when user explicitly triggers via refreshLyrics()
     const isForced = lastRefetchTriggerRef.current !== refetchTrigger;
     
     // Skip fetch if we have cached data and no force refresh requested
     if (!isForced && cacheKey === cachedKeyRef.current) {
-      // If original lyrics are cached, we might still need to translate if translateTo changed.
-      // The translation effect will handle this.
       lastRefetchTriggerRef.current = refetchTrigger;
       return;
     }
@@ -146,38 +132,33 @@ export function useLyrics({
 
     const controller = new AbortController();
 
-    // Build request body
+    // Build request body for unified endpoint
     const requestBody: {
-      title?: string;
-      artist?: string;
-      album?: string;
-      force: boolean;
-      action?: "auto" | "fetch";
-      query?: string;
-      selectedHash?: string;
-      selectedAlbumId?: string | number;
-      selectedTitle?: string;
-      selectedArtist?: string;
-      selectedAlbum?: string;
+      action: "fetch-lyrics";
+      lyricsSource?: {
+        hash: string;
+        albumId: string | number;
+        title: string;
+        artist: string;
+        album?: string;
+      };
+      force?: boolean;
     } = {
-      title,
-      artist,
-      album,
+      action: "fetch-lyrics",
       force: isForced,
     };
 
     if (selectedMatch) {
-      requestBody.action = "fetch";
-      requestBody.selectedHash = selectedMatch.hash;
-      requestBody.selectedAlbumId = selectedMatch.albumId;
-      if (selectedMatch.title) requestBody.selectedTitle = selectedMatch.title;
-      if (selectedMatch.artist) requestBody.selectedArtist = selectedMatch.artist;
-      if (selectedMatch.album) requestBody.selectedAlbum = selectedMatch.album;
-    } else if (searchQueryOverride) {
-      requestBody.query = searchQueryOverride;
+      requestBody.lyricsSource = {
+        hash: selectedMatch.hash,
+        albumId: selectedMatch.albumId,
+        title: selectedMatch.title || title,
+        artist: selectedMatch.artist || artist,
+        album: selectedMatch.album,
+      };
     }
 
-    abortableFetch(getApiUrl("/api/lyrics"), {
+    abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),
@@ -190,87 +171,50 @@ export function useLyrics({
           if (res.status === 404) return null;
           throw new Error(`Failed to fetch lyrics (status ${res.status})`);
         }
-        return res.json();
+        return res.json() as Promise<UnifiedLyricsResponse>;
       })
       .then((json) => {
         if (controller.signal.aborted) return;
-        if (!json) throw new Error("No lyrics found or fetch timed out");
+        if (!json || !json.lyrics) throw new Error("No lyrics found");
 
-        const lrc: string | undefined = json?.lyrics;
-        const krc: string | undefined = json?.krcLyrics;
+        const lrc = json.lyrics.lrc;
+        const krc = json.lyrics.krc;
         if (!lrc && !krc) throw new Error("No lyrics found");
-
-        const songTitle = json?.title ?? title;
-        const songArtist = json?.artist ?? artist;
 
         console.log("[useLyrics] Received lyrics response:", {
           hasLrc: !!lrc,
           hasKrc: !!krc,
-          lrcLength: lrc?.length,
-          krcLength: krc?.length,
-          songTitle,
-          songArtist,
+          cached: json.cached,
         });
 
         let parsed: LyricLine[];
 
         // Prefer KRC format if available (has word-level timing)
         if (krc && isKRCFormat(krc)) {
-          console.log("[useLyrics] KRC format detected, parsing with parseKRC");
           const cleanedKrc = krc.replace(/\u200b/g, "");
-          parsed = parseKRC(cleanedKrc, songTitle, songArtist);
-          console.log("[useLyrics] Parsed KRC lyrics:", parsed.length, "lines");
+          parsed = parseKRC(cleanedKrc, title, artist);
           if (parsed.length === 0 && lrc) {
-            console.log("[useLyrics] KRC parsing returned 0 lines, falling back to LRC");
             const cleanedLrc = lrc.replace(/\u200b/g, "");
-            parsed = parseLRC(cleanedLrc, songTitle, songArtist);
-            console.log("[useLyrics] Fallback LRC parsing:", parsed.length, "lines");
+            parsed = parseLRC(cleanedLrc, title, artist);
           }
         } else if (lrc) {
-          console.log("[useLyrics] Using LRC format (no KRC or not KRC format)");
           const cleanedLrc = lrc.replace(/\u200b/g, "");
-          parsed = parseLRC(cleanedLrc, songTitle, songArtist);
-          console.log("[useLyrics] Parsed LRC lyrics:", parsed.length, "lines");
+          parsed = parseLRC(cleanedLrc, title, artist);
         } else {
           throw new Error("No valid lyrics format found");
         }
-        
+
         if (parsed.length === 0) {
-          console.warn("[useLyrics] Parsing resulted in 0 lines! This will show 'No lyrics available'");
+          console.warn("[useLyrics] Parsing resulted in 0 lines");
         }
 
         setOriginalLines(parsed);
         cachedKeyRef.current = cacheKey;
-
-        // Update iPod store with current lyrics
         useIpodStore.setState({ currentLyrics: { lines: parsed } });
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        console.error("[useLyrics] Error during lyrics fetch/parse:", err);
-        if (err instanceof DOMException && err.name === "AbortError") {
-          setError("Lyrics search timed out.");
-        } else {
-          const errorMessage = err instanceof Error ? err.message : "Unknown error fetching lyrics";
-          console.error("[useLyrics] Setting error state:", errorMessage);
-          // Show a friendly message for common "not found" errors
-          const isNoLyricsError = 
-            errorMessage.includes("500") || 
-            errorMessage.includes("404") ||
-            errorMessage.includes("Internal Server Error") ||
-            errorMessage.includes("No lyrics") || 
-            errorMessage.includes("not found") ||
-            errorMessage.includes("No valid lyrics");
-          if (isNoLyricsError) {
-            setError("No lyrics available");
-          } else {
-            setError(errorMessage);
-          }
-        }
-        setOriginalLines([]);
-        setCurrentLine(-1);
-        // Clear lyrics in iPod store on error
-        useIpodStore.setState({ currentLyrics: null });
+        handleLyricsError(err, setError, setOriginalLines, setCurrentLine);
       })
       .finally(() => {
         if (!controller.signal.aborted) {
@@ -282,11 +226,11 @@ export function useLyrics({
     return () => {
       controller.abort();
     };
-  }, [title, artist, album, refetchTrigger, searchQueryOverride, selectedMatch]);
+  }, [songId, title, artist, refetchTrigger, selectedMatch]);
 
-  // Effect for translating lyrics - now handles both streaming and non-streaming responses
+  // Effect for translating lyrics
   useEffect(() => {
-    if (!translateTo || originalLines.length === 0) {
+    if (!songId || !translateTo || originalLines.length === 0) {
       setTranslatedLines(null);
       setIsTranslating(false);
       return;
@@ -313,118 +257,37 @@ export function useLyrics({
 
     const controller = new AbortController();
 
-    abortableFetch(getApiUrl("/api/translate-lyrics"), {
+    abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        lines: originalLines,
-        targetLanguage: translateTo,
+        action: "translate",
+        language: translateTo,
         force: isForceRequest,
       }),
       signal: controller.signal,
-      timeout: 180000, // Increased timeout for streaming
+      timeout: 180000,
     })
       .then(async (res) => {
         if (controller.signal.aborted) return;
-
-        // Check if this is a streaming response
-        if (isSSEResponse(res)) {
-          // Handle streaming response
-          const lrcLinesCollected: string[] = new Array(originalLines.length).fill("");
-
-          await processSSEStream<TranslationSSEEvent>({
-            response: res,
-            signal: controller.signal,
-            onChunk: (event: SSEChunkEvent<TranslationSSEEvent>) => {
-              if (controller.signal.aborted) return;
-
-              // Server sends chunk data at top level, not nested in 'data'
-              const chunkEvent = event as unknown as TranslationChunkEvent;
-
-              // Update the collected LRC lines with this chunk's data
-              chunkEvent.lines.forEach((lrcLine, index) => {
-                const globalIndex = chunkEvent.startIndex + index;
-                if (globalIndex < lrcLinesCollected.length) {
-                  lrcLinesCollected[globalIndex] = lrcLine;
-                }
-              });
-
-              // Build progressive lines: use translated where available, original elsewhere
-              if (!controller.signal.aborted) {
-                const progressiveLines: LyricLine[] = originalLines.map((origLine, idx) => {
-                  if (lrcLinesCollected[idx]) {
-                    const translatedText = extractLrcText(lrcLinesCollected[idx]);
-                    return {
-                      ...origLine,
-                      words: translatedText,
-                    };
-                  }
-                  return origLine;
-                });
-                setTranslatedLines([...progressiveLines]);
-              }
-            },
-            onComplete: () => {
-              // Final state - all lines should be translated
-              if (!controller.signal.aborted) {
-                const finalLines: LyricLine[] = originalLines.map((origLine, idx) => {
-                  if (lrcLinesCollected[idx]) {
-                    const translatedText = extractLrcText(lrcLinesCollected[idx]);
-                    return {
-                      ...origLine,
-                      words: translatedText,
-                    };
-                  }
-                  return origLine;
-                });
-                setTranslatedLines(finalLines);
-                lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
-              }
-            },
-            onError: (err) => {
-              if (!controller.signal.aborted) {
-                setError(err.message);
-                setIsTranslating(false);
-              }
-            },
-          });
-        } else {
-          // Handle non-streaming response (small requests or cached)
-          const responseText = await res.text();
-          if (controller.signal.aborted) return;
-          
-          if (!res.ok) {
-            const errorMessage = responseText.startsWith("Error: ")
-              ? responseText.substring(7)
-              : responseText;
-            throw new Error(
-              errorMessage || `Translation request failed with status ${res.status}`
-            );
-          }
-          
-          if (responseText) {
-            const parsedTranslatedLines = parseLRC(responseText, title, artist);
-            setTranslatedLines(parsedTranslatedLines);
-            lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
-          } else {
-            setTranslatedLines([]);
-          }
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || `Translation failed (status ${res.status})`);
         }
+
+        const json = await res.json() as UnifiedTranslationResponse;
+        if (!json.translation) {
+          throw new Error("No translation returned");
+        }
+
+        const parsedTranslatedLines = parseLRC(json.translation, title, artist);
+        setTranslatedLines(parsedTranslatedLines);
+        lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        console.error("useLyrics translation error", err);
-        if (err instanceof DOMException && err.name === "AbortError") {
-          setError("Lyrics translation timed out.");
-        } else {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Unknown error during translation"
-          );
-        }
-        setTranslatedLines(null);
-        // Keep original lyrics in iPod store on translation error
+        handleTranslationError(err, setError, setTranslatedLines);
       })
       .finally(() => {
         if (!controller.signal.aborted) {
@@ -436,7 +299,7 @@ export function useLyrics({
     return () => {
       controller.abort();
     };
-  }, [originalLines, translateTo, isFetchingOriginal, title, artist, lyricsCacheBustTrigger]);
+  }, [songId, originalLines, translateTo, isFetchingOriginal, title, artist, lyricsCacheBustTrigger]);
 
   const displayLines = translatedLines || originalLines;
 
@@ -491,4 +354,48 @@ export function useLyrics({
     error,
     updateCurrentTimeManually,
   };
+}
+
+// Helper functions for error handling
+function handleLyricsError(
+  err: unknown,
+  setError: (e: string | undefined) => void,
+  setOriginalLines: (lines: LyricLine[]) => void,
+  setCurrentLine: (line: number) => void
+) {
+  console.error("[useLyrics] Error during lyrics fetch/parse:", err);
+  if (err instanceof DOMException && err.name === "AbortError") {
+    setError("Lyrics search timed out.");
+  } else {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error fetching lyrics";
+    const isNoLyricsError = 
+      errorMessage.includes("500") || 
+      errorMessage.includes("404") ||
+      errorMessage.includes("Internal Server Error") ||
+      errorMessage.includes("No lyrics") || 
+      errorMessage.includes("not found") ||
+      errorMessage.includes("No valid lyrics");
+    if (isNoLyricsError) {
+      setError("No lyrics available");
+    } else {
+      setError(errorMessage);
+    }
+  }
+  setOriginalLines([]);
+  setCurrentLine(-1);
+  useIpodStore.setState({ currentLyrics: null });
+}
+
+function handleTranslationError(
+  err: unknown,
+  setError: (e: string | undefined) => void,
+  setTranslatedLines: (lines: LyricLine[] | null) => void
+) {
+  console.error("useLyrics translation error", err);
+  if (err instanceof DOMException && err.name === "AbortError") {
+    setError("Lyrics translation timed out.");
+  } else {
+    setError(err instanceof Error ? err.message : "Unknown error during translation");
+  }
+  setTranslatedLines(null);
 }
