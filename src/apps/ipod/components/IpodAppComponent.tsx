@@ -1547,6 +1547,37 @@ export function IpodAppComponent({
             romanization={romanization}
             onRomanizationChange={setRomanization}
             onSyncMode={() => setIsSyncModeOpen(true)}
+            isSyncModeOpen={isSyncModeOpen}
+            syncModeContent={
+              fullScreenLyricsControls.originalLines.length > 0 ? (
+                <LyricsSyncMode
+                  lines={fullScreenLyricsControls.originalLines}
+                  currentTimeMs={elapsedTime * 1000}
+                  durationMs={totalTime * 1000}
+                  currentOffset={lyricOffset}
+                  romanization={romanization}
+                  furiganaMap={furiganaMap}
+                  onSetOffset={(offsetMs) => {
+                    setLyricOffset(currentIndex, offsetMs);
+                    showStatus(
+                      `${t("apps.ipod.status.offset")} ${offsetMs >= 0 ? "+" : ""}${(offsetMs / 1000).toFixed(2)}s`
+                    );
+                  }}
+                  onAdjustOffset={(deltaMs) => {
+                    useIpodStore.getState().adjustLyricOffset(currentIndex, deltaMs);
+                    const newOffset = lyricOffset + deltaMs;
+                    showStatus(
+                      `${t("apps.ipod.status.offset")} ${newOffset >= 0 ? "+" : ""}${(newOffset / 1000).toFixed(2)}s`
+                    );
+                  }}
+                  onSeek={(timeMs) => {
+                    const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+                    activePlayer?.seekTo(timeMs / 1000);
+                  }}
+                  onClose={() => setIsSyncModeOpen(false)}
+                />
+              ) : undefined
+            }
             fullScreenPlayerRef={fullScreenPlayerRef}
             isLoadingLyrics={fullScreenLyricsControls.isLoading}
             isProcessingLyrics={fullScreenLyricsControls.isTranslating}
@@ -1737,34 +1768,35 @@ export function IpodAppComponent({
           onAddUrl={handleAddUrl}
         />
 
-        {/* Lyrics Sync Mode */}
-        {isSyncModeOpen && fullScreenLyricsControls.originalLines.length > 0 && (
-          <LyricsSyncMode
-            lines={fullScreenLyricsControls.originalLines}
-            currentTimeMs={elapsedTime * 1000}
-            durationMs={totalTime * 1000}
-            currentOffset={lyricOffset}
-            romanization={romanization}
-            furiganaMap={furiganaMap}
-            onSetOffset={(offsetMs) => {
-              setLyricOffset(currentIndex, offsetMs);
-              showStatus(
-                `${t("apps.ipod.status.offset")} ${offsetMs >= 0 ? "+" : ""}${(offsetMs / 1000).toFixed(2)}s`
-              );
-            }}
-            onAdjustOffset={(deltaMs) => {
-              useIpodStore.getState().adjustLyricOffset(currentIndex, deltaMs);
-              const newOffset = lyricOffset + deltaMs;
-              showStatus(
-                `${t("apps.ipod.status.offset")} ${newOffset >= 0 ? "+" : ""}${(newOffset / 1000).toFixed(2)}s`
-              );
-            }}
-            onSeek={(timeMs) => {
-              const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-              activePlayer?.seekTo(timeMs / 1000);
-            }}
-            onClose={() => setIsSyncModeOpen(false)}
-          />
+        {/* Lyrics Sync Mode (non-fullscreen only - fullscreen renders in portal) */}
+        {!isFullScreen && isSyncModeOpen && fullScreenLyricsControls.originalLines.length > 0 && (
+          <div className="absolute inset-0 z-50" style={{ borderRadius: "inherit" }}>
+            <LyricsSyncMode
+              lines={fullScreenLyricsControls.originalLines}
+              currentTimeMs={elapsedTime * 1000}
+              durationMs={totalTime * 1000}
+              currentOffset={lyricOffset}
+              romanization={romanization}
+              furiganaMap={furiganaMap}
+              onSetOffset={(offsetMs) => {
+                setLyricOffset(currentIndex, offsetMs);
+                showStatus(
+                  `${t("apps.ipod.status.offset")} ${offsetMs >= 0 ? "+" : ""}${(offsetMs / 1000).toFixed(2)}s`
+                );
+              }}
+              onAdjustOffset={(deltaMs) => {
+                useIpodStore.getState().adjustLyricOffset(currentIndex, deltaMs);
+                const newOffset = lyricOffset + deltaMs;
+                showStatus(
+                  `${t("apps.ipod.status.offset")} ${newOffset >= 0 ? "+" : ""}${(newOffset / 1000).toFixed(2)}s`
+                );
+              }}
+              onSeek={(timeMs) => {
+                playerRef.current?.seekTo(timeMs / 1000);
+              }}
+              onClose={() => setIsSyncModeOpen(false)}
+            />
+          </div>
         )}
       </WindowFrame>
 

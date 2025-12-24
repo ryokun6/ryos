@@ -270,8 +270,8 @@ export function LyricsSyncMode({
   }, [lines, romanization, furiganaMap]);
 
   return (
-    <div 
-      className="absolute inset-0 z-50 flex flex-col bg-black/90"
+    <div
+      className="w-full h-full flex flex-col bg-black/90"
       style={{ borderRadius: "inherit" }}
     >
       {/* Header */}

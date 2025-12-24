@@ -37,6 +37,8 @@ export function FullScreenPortal({
   romanization,
   onRomanizationChange,
   onSyncMode,
+  isSyncModeOpen,
+  syncModeContent,
   fullScreenPlayerRef,
   isLoadingLyrics,
   isProcessingLyrics,
@@ -612,6 +614,32 @@ export function FullScreenPortal({
           portalContainer={containerRef.current}
         />
       </div>
+
+      {/* Sync Mode floating panel */}
+      <AnimatePresence>
+        {isSyncModeOpen && syncModeContent && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8"
+            style={{
+              paddingTop: "env(safe-area-inset-top, 0px)",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              paddingLeft: "env(safe-area-inset-left, 0px)",
+              paddingRight: "env(safe-area-inset-right, 0px)",
+            }}
+          >
+            <div 
+              className="relative w-full max-w-md h-[70vh] max-h-[600px] rounded-2xl overflow-hidden shadow-2xl bg-black/90"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {syncModeContent}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>,
     document.body
   );
