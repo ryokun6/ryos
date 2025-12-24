@@ -1396,6 +1396,8 @@
         "lyricsSearchNoResults": "No results found",
         "lyricsSearchError": "Error searching for lyrics",
         "lyricsSearchInvalidResponse": "Invalid response from server",
+        "lyricsLoadError": "Failed to load lyrics",
+        "lyricsLoadErrorAction": "Search",
         "songSearchTitle": "Search Songs",
         "songSearchDescription": "Search song, artist, or paste YouTube URL",
         "songSearchPlaceholder": "Search or paste URL...",

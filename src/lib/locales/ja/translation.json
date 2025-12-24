@@ -1076,6 +1076,8 @@
         "lyricsSearchEmptyQuery": "検索クエリを入力してください",
         "lyricsSearchError": "歌詞の検索中にエラーが発生しました",
         "lyricsSearchInvalidResponse": "サーバーからの無効な応答",
+        "lyricsLoadError": "歌詞の読み込みに失敗しました",
+        "lyricsLoadErrorAction": "検索",
         "lyricsSearchNoResults": "結果が見つかりません",
         "lyricsSearchPlaceholder": "検索クエリを入力（例：曲名、アーティスト）",
         "lyricsSearchReset": "自動にリセット",

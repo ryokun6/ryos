@@ -1076,6 +1076,8 @@
         "lyricsSearchEmptyQuery": "Bitte geben Sie einen Suchbegriff ein",
         "lyricsSearchError": "Fehler beim Suchen nach Liedtext",
         "lyricsSearchInvalidResponse": "Ungültige Antwort vom Server",
+        "lyricsLoadError": "Liedtext konnte nicht geladen werden",
+        "lyricsLoadErrorAction": "Suchen",
         "lyricsSearchNoResults": "Keine Ergebnisse gefunden",
         "lyricsSearchPlaceholder": "Suchbegriff eingeben (z.B. Songtitel, Künstler)",
         "lyricsSearchReset": "Auf Auto zurücksetzen",

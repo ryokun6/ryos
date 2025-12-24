@@ -1076,6 +1076,8 @@
         "lyricsSearchEmptyQuery": "Пожалуйста, введите поисковый запрос",
         "lyricsSearchError": "Ошибка при поиске текста",
         "lyricsSearchInvalidResponse": "Неверный ответ от сервера",
+        "lyricsLoadError": "Не удалось загрузить текст",
+        "lyricsLoadErrorAction": "Поиск",
         "lyricsSearchNoResults": "Результаты не найдены",
         "lyricsSearchPlaceholder": "Введите поисковый запрос (например, название песни, исполнитель)",
         "lyricsSearchReset": "Сбросить на автоматический",

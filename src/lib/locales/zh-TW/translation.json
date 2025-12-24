@@ -1076,6 +1076,8 @@
         "lyricsSearchEmptyQuery": "請輸入搜尋關鍵字",
         "lyricsSearchError": "搜尋歌詞時發生錯誤",
         "lyricsSearchInvalidResponse": "伺服器回應無效",
+        "lyricsLoadError": "無法載入歌詞",
+        "lyricsLoadErrorAction": "搜尋",
         "lyricsSearchNoResults": "找不到結果",
         "lyricsSearchPlaceholder": "輸入搜尋關鍵字（例如：歌曲名稱、歌手）",
         "lyricsSearchReset": "重設為自動",

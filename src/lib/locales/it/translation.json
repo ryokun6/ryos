@@ -1076,6 +1076,8 @@
         "lyricsSearchEmptyQuery": "Inserisci una query di ricerca",
         "lyricsSearchError": "Errore nella ricerca del testo",
         "lyricsSearchInvalidResponse": "Risposta non valida dal server",
+        "lyricsLoadError": "Impossibile caricare i testi",
+        "lyricsLoadErrorAction": "Cerca",
         "lyricsSearchNoResults": "Nessun risultato trovato",
         "lyricsSearchPlaceholder": "Inserisci query di ricerca (es. titolo canzone, artista)",
         "lyricsSearchReset": "Reimposta su auto",

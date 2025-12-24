@@ -1076,6 +1076,8 @@
         "lyricsSearchEmptyQuery": "Por favor, digite uma consulta de pesquisa",
         "lyricsSearchError": "Erro ao pesquisar letras",
         "lyricsSearchInvalidResponse": "Resposta inválida do servidor",
+        "lyricsLoadError": "Falha ao carregar letras",
+        "lyricsLoadErrorAction": "Pesquisar",
         "lyricsSearchNoResults": "Nenhum resultado encontrado",
         "lyricsSearchPlaceholder": "Digite a consulta de pesquisa (ex: título da música, artista)",
         "lyricsSearchReset": "Redefinir para automático",
