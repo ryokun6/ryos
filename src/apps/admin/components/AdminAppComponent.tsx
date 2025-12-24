@@ -966,7 +966,7 @@ export function AdminAppComponent({
                                 className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/50 group"
                               >
                                 <TableCell 
-                                  className="max-w-[180px] cursor-pointer hover:bg-blue-50"
+                                  className="max-w-[180px] cursor-pointer"
                                   onClick={() => startEditSong(song, "title")}
                                 >
                                   <span className="truncate block" title={song.title}>
@@ -974,7 +974,7 @@ export function AdminAppComponent({
                                   </span>
                                 </TableCell>
                                 <TableCell 
-                                  className="max-w-[120px] cursor-pointer hover:bg-blue-50"
+                                  className="max-w-[120px] cursor-pointer"
                                   onClick={() => startEditSong(song, "artist")}
                                 >
                                   <span className="truncate block" title={song.artist}>
