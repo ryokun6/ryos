@@ -116,12 +116,18 @@ export async function getCachedSongMetadata(
 /**
  * List all cached song metadata from Redis (for sync)
  * 
+ * @param createdBy - Optional filter to only return songs created by a specific user
  * @returns Array of all cached song metadata
  */
-export async function listAllCachedSongMetadata(): Promise<CachedSongMetadata[]> {
+export async function listAllCachedSongMetadata(createdBy?: string): Promise<CachedSongMetadata[]> {
   try {
+    let url = "/api/song-metadata?list=true";
+    if (createdBy) {
+      url += `&createdBy=${encodeURIComponent(createdBy)}`;
+    }
+    
     const response = await fetch(
-      getApiUrl("/api/song-metadata?list=true"),
+      getApiUrl(url),
       {
         method: "GET",
         headers: {
@@ -136,11 +142,64 @@ export async function listAllCachedSongMetadata(): Promise<CachedSongMetadata[]>
     }
 
     const data: ListSongMetadataResponse = await response.json();
-    console.log(`[SongMetadataCache] Listed ${data.songs?.length || 0} songs from cache`);
+    console.log(`[SongMetadataCache] Listed ${data.songs?.length || 0} songs from cache${createdBy ? ` (by ${createdBy})` : ""}`);
     return data.songs || [];
   } catch (error) {
     console.error(`[SongMetadataCache] Error listing metadata:`, error);
     return [];
+  }
+}
+
+/**
+ * Delete song metadata from Redis cache
+ * Requires admin authentication (user ryo only)
+ * 
+ * @param youtubeId - YouTube video ID to delete
+ * @param auth - Authentication credentials (username and token)
+ * @returns true if deleted successfully, false otherwise
+ */
+export async function deleteSongMetadata(
+  youtubeId: string,
+  auth: SongMetadataAuthCredentials
+): Promise<boolean> {
+  try {
+    const response = await fetch(
+      getApiUrl(`/api/song-metadata?id=${encodeURIComponent(youtubeId)}`),
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${auth.authToken}`,
+          "X-Username": auth.username,
+        },
+      }
+    );
+
+    if (response.status === 401) {
+      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to delete metadata`);
+      return false;
+    }
+
+    if (response.status === 403) {
+      console.warn(`[SongMetadataCache] Forbidden - admin access required to delete metadata`);
+      return false;
+    }
+
+    if (response.status === 404) {
+      console.warn(`[SongMetadataCache] Song not found: ${youtubeId}`);
+      return false;
+    }
+
+    if (!response.ok) {
+      console.warn(`[SongMetadataCache] Failed to delete metadata for ${youtubeId}: ${response.status}`);
+      return false;
+    }
+
+    console.log(`[SongMetadataCache] Deleted metadata for ${youtubeId}`);
+    return true;
+  } catch (error) {
+    console.error(`[SongMetadataCache] Error deleting metadata for ${youtubeId}:`, error);
+    return false;
   }
 }
 

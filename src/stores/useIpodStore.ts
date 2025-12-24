@@ -112,10 +112,12 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
   const fetchPromise = (async () => {
     try {
       // Try to load from Redis song metadata cache first
-      const cachedSongs = await listAllCachedSongMetadata();
+      // Only sync songs created by user "ryo" (the admin/curator)
+      const cachedSongs = await listAllCachedSongMetadata("ryo");
       
       if (cachedSongs.length > 0) {
-        console.log(`[iPod Store] Loaded ${cachedSongs.length} tracks from Redis cache`);
+        console.log(`[iPod Store] Loaded ${cachedSongs.length} tracks from Redis cache (by ryo)`);
+        // Songs are already sorted by createdAt (newest first) from the API
         const tracks: Track[] = cachedSongs.map((song) => ({
           id: song.youtubeId,
           url: `https://www.youtube.com/watch?v=${song.youtubeId}`,
@@ -125,8 +127,8 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
           lyricOffset: song.lyricOffset,
           lyricsSearch: song.lyricsSearch,
         }));
-        // Use the latest updatedAt timestamp as version
-        const version = Math.max(...cachedSongs.map((s) => s.updatedAt || 1));
+        // Use the latest createdAt timestamp as version
+        const version = Math.max(...cachedSongs.map((s) => s.createdAt || 1));
         cachedIpodData = { tracks, version };
         return cachedIpodData;
       }

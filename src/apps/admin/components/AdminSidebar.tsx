@@ -1,11 +1,11 @@
 import React from "react";
-import { ChevronRight, Hash } from "lucide-react";
+import { ChevronRight, Hash, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 
-type AdminSection = "users" | "rooms";
+type AdminSection = "users" | "rooms" | "songs";
 
 interface Room {
   id: string;
@@ -26,6 +26,7 @@ interface AdminSidebarProps {
     totalUsers: number;
     totalRooms: number;
     totalMessages: number;
+    totalSongs?: number;
   };
   isVisible: boolean;
 }
@@ -105,6 +106,42 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               )}
             >
               {stats.totalUsers}
+            </span>
+          </div>
+
+          {/* Songs Section */}
+          <div
+            className={cn(
+              "py-1.5 px-5 flex items-center gap-2 cursor-pointer",
+              activeSection === "songs" && selectedRoomId === null
+                ? ""
+                : "hover:bg-black/5"
+            )}
+            style={
+              activeSection === "songs" && selectedRoomId === null
+                ? {
+                    background: "var(--os-color-selection-bg)",
+                    color: "var(--os-color-selection-text)",
+                  }
+                : undefined
+            }
+            onClick={() => {
+              playButtonClick();
+              onSectionChange("songs");
+              onRoomSelect(null);
+            }}
+          >
+            <Music className="w-3 h-3 flex-shrink-0" />
+            <span>{t("apps.admin.sidebar.songs", "Songs")}</span>
+            <span
+              className={cn(
+                "text-[10px] ml-auto",
+                activeSection === "songs" && selectedRoomId === null
+                  ? "text-white/60"
+                  : "text-black/40"
+              )}
+            >
+              {stats.totalSongs ?? 0}
             </span>
           </div>
 

@@ -78,18 +78,20 @@ interface SongMetadata {
  * Main handler for song metadata API
  * 
  * GET /api/song-metadata?id=YOUTUBE_ID - Retrieve cached song metadata
- * GET /api/song-metadata?list=true - List all cached song metadata (for sync)
+ * GET /api/song-metadata?list=true - List all cached song metadata
+ * GET /api/song-metadata?list=true&createdBy=ryo - List songs by specific user (for sync)
  * POST /api/song-metadata - Save song metadata to cache (requires auth)
+ * DELETE /api/song-metadata?id=YOUTUBE_ID - Delete song metadata (requires auth, admin only)
  */
 export default async function handler(req: Request) {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "OPTIONS"], effectiveOrigin);
+    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "OPTIONS"], effectiveOrigin);
     if (resp) return resp;
   }
 
-  if (req.method !== "GET" && req.method !== "POST") {
+  if (req.method !== "GET" && req.method !== "POST" && req.method !== "DELETE") {
     return new Response("Method not allowed", { status: 405 });
   }
 
@@ -119,6 +121,8 @@ export default async function handler(req: Request) {
 
       // List all songs endpoint (for sync)
       if (listAll) {
+        const createdByFilter = url.searchParams.get("createdBy");
+        
         // Get all song IDs from the set
         const songIds = await redis.smembers(SONG_METADATA_SET);
         
@@ -146,14 +150,18 @@ export default async function handler(req: Request) {
           
           try {
             const metadata = typeof raw === "string" ? JSON.parse(raw) : raw as SongMetadata;
+            // Filter by createdBy if specified
+            if (createdByFilter && metadata.createdBy !== createdByFilter) {
+              continue;
+            }
             songs.push(metadata);
           } catch {
             // Skip invalid entries
           }
         }
 
-        // Sort by updatedAt (most recent first)
-        songs.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        // Sort by createdAt (most recently added first)
+        songs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
         return new Response(
           JSON.stringify({ songs }),
@@ -333,6 +341,99 @@ export default async function handler(req: Request) {
           youtubeId,
           isUpdate: !!existingMetadata,
           createdBy: metadata.createdBy,
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
+          },
+        }
+      );
+    }
+
+    // DELETE: Remove song metadata (requires authentication, admin only)
+    if (req.method === "DELETE") {
+      const url = new URL(req.url);
+      const youtubeId = url.searchParams.get("id");
+
+      if (!youtubeId) {
+        return new Response(
+          JSON.stringify({ error: "Missing id parameter" }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Extract authentication from headers
+      const authHeader = req.headers.get("Authorization");
+      const usernameHeader = req.headers.get("X-Username");
+
+      const authToken = authHeader?.replace("Bearer ", "") || null;
+      const username = usernameHeader || null;
+
+      // Validate authentication
+      const authResult = await validateAuthToken(redis, username, authToken);
+      if (!authResult.valid) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - authentication required" }),
+          {
+            status: 401,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Only admin (ryo) can delete songs
+      if (username?.toLowerCase() !== "ryo") {
+        return new Response(
+          JSON.stringify({ error: "Forbidden - admin access required" }),
+          {
+            status: 403,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      const key = `${SONG_METADATA_PREFIX}${youtubeId}`;
+
+      // Check if song exists
+      const existingRaw = await redis.get(key);
+      if (!existingRaw) {
+        return new Response(
+          JSON.stringify({ error: "Song not found" }),
+          {
+            status: 404,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Delete from Redis
+      await redis.del(key);
+      
+      // Remove from the set of all song IDs
+      await redis.srem(SONG_METADATA_SET, youtubeId);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          youtubeId,
+          deleted: true,
         }),
         {
           status: 200,
