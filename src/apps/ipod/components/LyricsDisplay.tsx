@@ -591,11 +591,17 @@ const getVariants = (
     if (hasWordTiming) {
       // Word-timed lines: current at full, inactive more faded for focus effect
       if (isCurrent) return 1;
+      // Past line (position -1) dimmer than next line (position 1)
+      if (position === -1) return 0.5;
+      if (position === 1) return 0.8;
       return 0.8;
     }
     // Non-word-timed lines: normal opacity animation
     if (isCurrent) return 1;
-    return position === 1 || position === -1 ? 0.35 : 0.1;
+    // Past line dimmer than next line in FocusThree mode
+    if (position === -1) return 0.2;
+    if (position === 1) return 0.35;
+    return 0.1;
   };
 
   // For word-timed lines, start at target opacity to avoid flash on entry
@@ -1140,11 +1146,10 @@ export function LyricsDisplay({
               {/* Translated subtitle (shown below original when translation is active) */}
               {/* Only show if translation differs from processed original (handles Traditional Chinese conversion) */}
               {translatedText && processText(translatedText) !== processText(line.words) && (
-                <div 
+                <div
                   className={`text-white ${fontClassName} ${translationSizeClass}`}
                   style={{
                     lineHeight: 1.1,
-                    marginTop: 0,
                     opacity: 0.5,
                   }}
                 >

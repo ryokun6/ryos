@@ -1663,7 +1663,7 @@ export function IpodAppComponent({
                         textSizeClass="fullscreen-lyrics-text"
                         gapClass="gap-0"
                         containerStyle={{
-                          gap: "clamp(0.15rem, calc(min(10vw,10vh) * 0.06), 1rem)",
+                          gap: "clamp(0.2rem, calc(min(10vw,10vh) * 0.08), 1rem)",
                           paddingLeft: "env(safe-area-inset-left, 0px)",
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
