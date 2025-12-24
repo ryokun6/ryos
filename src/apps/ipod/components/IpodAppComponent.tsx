@@ -17,6 +17,7 @@ import { IpodWheel } from "./IpodWheel";
 import { PipPlayer } from "./PipPlayer";
 import { FullScreenPortal } from "./FullScreenPortal";
 import { LyricsDisplay } from "./LyricsDisplay";
+import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { useIpodStore, Track, getEffectiveTranslationLanguage } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow, useAppStoreShallow, useAudioSettingsStoreShallow } from "@/stores/helpers";
@@ -106,6 +107,7 @@ export function IpodAppComponent({
     refreshLyrics,
     setTrackLyricsSearch,
     clearTrackLyricsSearch,
+    setLyricOffset,
   } = useIpodStoreShallow((s) => ({
     theme: s.theme,
     lcdFilterOn: s.lcdFilterOn,
@@ -135,6 +137,7 @@ export function IpodAppComponent({
     refreshLyrics: s.refreshLyrics,
     setTrackLyricsSearch: s.setTrackLyricsSearch,
     clearTrackLyricsSearch: s.clearTrackLyricsSearch,
+    setLyricOffset: s.setLyricOffset,
   }));
 
   const lyricOffset = useIpodStore(
@@ -170,6 +173,7 @@ export function IpodAppComponent({
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isFullScreenFetchingFurigana, setIsFullScreenFetchingFurigana] = useState(false);
+  const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -1355,6 +1359,7 @@ export function IpodAppComponent({
       onAddSong={handleAddSong}
       onShareSong={handleShareSong}
       onRefreshLyrics={handleRefreshLyrics}
+      onAdjustTiming={() => setIsSyncModeOpen(true)}
     />
   );
 
@@ -1698,6 +1703,34 @@ export function IpodAppComponent({
           onSelect={handleSongSearchSelect}
           onAddUrl={handleAddUrl}
         />
+
+        {/* Lyrics Sync Mode */}
+        {isSyncModeOpen && fullScreenLyricsControls.originalLines.length > 0 && (
+          <LyricsSyncMode
+            lines={fullScreenLyricsControls.originalLines}
+            currentTimeMs={elapsedTime * 1000}
+            durationMs={totalTime * 1000}
+            currentOffset={lyricOffset}
+            onSetOffset={(offsetMs) => {
+              setLyricOffset(currentIndex, offsetMs);
+              showStatus(
+                `${t("apps.ipod.status.offset")} ${offsetMs >= 0 ? "+" : ""}${(offsetMs / 1000).toFixed(2)}s`
+              );
+            }}
+            onAdjustOffset={(deltaMs) => {
+              useIpodStore.getState().adjustLyricOffset(currentIndex, deltaMs);
+              const newOffset = lyricOffset + deltaMs;
+              showStatus(
+                `${t("apps.ipod.status.offset")} ${newOffset >= 0 ? "+" : ""}${(newOffset / 1000).toFixed(2)}s`
+              );
+            }}
+            onSeek={(timeMs) => {
+              const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+              activePlayer?.seekTo(timeMs / 1000);
+            }}
+            onClose={() => setIsSyncModeOpen(false)}
+          />
+        )}
       </WindowFrame>
 
       {/* PIP Player */}

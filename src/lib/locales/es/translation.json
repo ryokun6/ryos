@@ -1138,6 +1138,7 @@
         "aboutIpod": "Acerca del iPod",
         "addSong": "Añadir canción...",
         "addToLibrary": "Añadir a la biblioteca...",
+        "adjustTiming": "Ajustar sincronización...",
         "allSongs": "Todas las canciones",
         "alternating": "Alterno",
         "backlight": "Retroiluminación",
@@ -1171,7 +1172,7 @@
         "play": "Reproducir",
         "previous": "Anterior",
         "pronunciation": "Pronunciación",
-        "refreshLyrics": "Buscar letras",
+        "refreshLyrics": "Buscar letras...",
         "repeatAll": "Repetir todo",
         "repeatOne": "Repetir uno",
         "romanization": "Romanización",
@@ -1234,6 +1235,13 @@
         "themeClassic": "Tema: Clásico",
         "themeU2": "Tema: U2",
         "translatingLyrics": "Traduciendo letras…"
+      },
+      "syncMode": {
+        "decreaseOffset": "Disminuir desplazamiento",
+        "hint": "Presiona ESC o X para salir",
+        "increaseOffset": "Aumentar desplazamiento",
+        "instructions": "Toca la línea que estás escuchando",
+        "offset": "Desplazamiento"
       },
       "translationLanguages": {
         "auto": "Auto",

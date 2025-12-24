@@ -1138,6 +1138,7 @@
         "aboutIpod": "Об iPod",
         "addSong": "Добавить песню...",
         "addToLibrary": "Добавить в медиатеку...",
+        "adjustTiming": "Настроить синхронизацию...",
         "allSongs": "Все песни",
         "alternating": "Чередующийся",
         "backlight": "Подсветка",
@@ -1171,7 +1172,7 @@
         "play": "Воспроизвести",
         "previous": "Предыдущий",
         "pronunciation": "Произношение",
-        "refreshLyrics": "Поиск текста",
+        "refreshLyrics": "Поиск текста...",
         "repeatAll": "Повторить все",
         "repeatOne": "Повторить одну",
         "romanization": "Романизация",
@@ -1234,6 +1235,13 @@
         "themeClassic": "Тема: Классическая",
         "themeU2": "Тема: U2",
         "translatingLyrics": "Перевод текста…"
+      },
+      "syncMode": {
+        "decreaseOffset": "Уменьшить смещение",
+        "hint": "Нажмите ESC или X для выхода",
+        "increaseOffset": "Увеличить смещение",
+        "instructions": "Нажмите на строку, которую слышите",
+        "offset": "Смещение"
       },
       "translationLanguages": {
         "auto": "Авто",

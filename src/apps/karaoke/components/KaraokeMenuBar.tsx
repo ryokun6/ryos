@@ -50,6 +50,7 @@ interface KaraokeMenuBarProps {
   onToggleLyrics: () => void;
   onToggleFullScreen: () => void;
   onRefreshLyrics?: () => void;
+  onAdjustTiming?: () => void;
   // Tracks
   tracks: Track[];
   currentIndex: number;
@@ -78,6 +79,7 @@ export function KaraokeMenuBar({
   onToggleLyrics,
   onToggleFullScreen,
   onRefreshLyrics,
+  onAdjustTiming,
   tracks,
   currentIndex,
 }: KaraokeMenuBarProps) {
@@ -475,6 +477,13 @@ export function KaraokeMenuBar({
             disabled={tracks.length === 0 || currentIndex === -1}
           >
             {t("apps.ipod.menu.refreshLyrics")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={onAdjustTiming}
+            className="text-md h-6 px-3"
+            disabled={tracks.length === 0 || currentIndex === -1}
+          >
+            {t("apps.ipod.menu.adjustTiming")}
           </MenubarItem>
 
           {debugMode && (

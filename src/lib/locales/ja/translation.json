@@ -1138,6 +1138,7 @@
         "aboutIpod": "iPodについて",
         "addSong": "曲を追加...",
         "addToLibrary": "ライブラリに追加...",
+        "adjustTiming": "タイミングを調整...",
         "allSongs": "全曲",
         "alternating": "交互",
         "backlight": "バックライト",
@@ -1171,7 +1172,7 @@
         "play": "再生",
         "previous": "前へ",
         "pronunciation": "発音",
-        "refreshLyrics": "歌詞を検索",
+        "refreshLyrics": "歌詞を検索...",
         "repeatAll": "全曲リピート",
         "repeatOne": "1曲リピート",
         "romanization": "読み仮名",
@@ -1234,6 +1235,13 @@
         "themeClassic": "テーマ：クラシック",
         "themeU2": "テーマ：U2",
         "translatingLyrics": "歌詞を翻訳中…"
+      },
+      "syncMode": {
+        "decreaseOffset": "オフセットを減少",
+        "hint": "ESC または X で閉じる",
+        "increaseOffset": "オフセットを増加",
+        "instructions": "聞こえている行をタップ",
+        "offset": "オフセット"
       },
       "translationLanguages": {
         "auto": "自動",

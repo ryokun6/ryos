@@ -16,6 +16,7 @@ import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
+import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { useIpodStore, Track, getEffectiveTranslationLanguage } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
@@ -81,6 +82,7 @@ export function KaraokeAppComponent({
     refreshLyrics,
     setTrackLyricsSearch,
     clearTrackLyricsSearch,
+    setLyricOffset,
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
@@ -91,6 +93,7 @@ export function KaraokeAppComponent({
     refreshLyrics: s.refreshLyrics,
     setTrackLyricsSearch: s.setTrackLyricsSearch,
     clearTrackLyricsSearch: s.clearTrackLyricsSearch,
+    setLyricOffset: s.setLyricOffset,
   }));
 
   // Library update checker
@@ -160,6 +163,7 @@ export function KaraokeAppComponent({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
+  const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
 
   // Full screen additional state
   const [isFullScreenFetchingFurigana, setIsFullScreenFetchingFurigana] = useState(false);
@@ -167,6 +171,7 @@ export function KaraokeAppComponent({
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const playerRef = useRef<ReactPlayer | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -718,6 +723,7 @@ export function KaraokeAppComponent({
       onToggleLyrics={toggleLyrics}
       onToggleFullScreen={toggleFullScreen}
       onRefreshLyrics={handleRefreshLyrics}
+      onAdjustTiming={() => setIsSyncModeOpen(true)}
       tracks={tracks}
       currentIndex={currentIndex}
     />
@@ -766,6 +772,7 @@ export function KaraokeAppComponent({
                   loop={loopCurrent}
                   onEnded={handleTrackEnd}
                   onProgress={handleProgress}
+                  onDuration={setDuration}
                   progressInterval={100}
                   onPlay={handlePlay}
                   onPause={handleMainPlayerPause}
@@ -994,6 +1001,34 @@ export function KaraokeAppComponent({
           onSelect={handleSongSearchSelect}
           onAddUrl={handleAddUrl}
         />
+
+        {/* Lyrics Sync Mode */}
+        {isSyncModeOpen && lyricsControls.originalLines.length > 0 && (
+          <LyricsSyncMode
+            lines={lyricsControls.originalLines}
+            currentTimeMs={elapsedTime * 1000}
+            durationMs={duration * 1000}
+            currentOffset={currentTrack?.lyricOffset ?? 0}
+            onSetOffset={(offsetMs) => {
+              setLyricOffset(currentIndex, offsetMs);
+              showStatus(
+                `${t("apps.ipod.status.offset")} ${offsetMs >= 0 ? "+" : ""}${(offsetMs / 1000).toFixed(2)}s`
+              );
+            }}
+            onAdjustOffset={(deltaMs) => {
+              useIpodStore.getState().adjustLyricOffset(currentIndex, deltaMs);
+              const newOffset = (currentTrack?.lyricOffset ?? 0) + deltaMs;
+              showStatus(
+                `${t("apps.ipod.status.offset")} ${newOffset >= 0 ? "+" : ""}${(newOffset / 1000).toFixed(2)}s`
+              );
+            }}
+            onSeek={(timeMs) => {
+              const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+              activePlayer?.seekTo(timeMs / 1000);
+            }}
+            onClose={() => setIsSyncModeOpen(false)}
+          />
+        )}
       </WindowFrame>
 
       {/* Full screen portal */}

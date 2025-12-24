@@ -202,6 +202,8 @@ export interface IpodState extends IpodData {
   clearLyricsCache: () => void;
   /** Adjust the lyric offset (in ms) for the track at the given index. */
   adjustLyricOffset: (trackIndex: number, deltaMs: number) => void;
+  /** Set the lyric offset (in ms) for the track at the given index to an absolute value. */
+  setLyricOffset: (trackIndex: number, offsetMs: number) => void;
   /** Set lyrics alignment mode */
   setLyricsAlignment: (alignment: LyricsAlignment) => void;
   /** Set lyrics font style */
@@ -560,6 +562,24 @@ export const useIpodStore = create<IpodState>()(
           tracks[trackIndex] = {
             ...current,
             lyricOffset: newOffset,
+          };
+
+          return { tracks } as Partial<IpodState>;
+        }),
+      setLyricOffset: (trackIndex, offsetMs) =>
+        set((state) => {
+          if (
+            trackIndex < 0 ||
+            trackIndex >= state.tracks.length ||
+            Number.isNaN(offsetMs)
+          ) {
+            return {} as Partial<IpodState>;
+          }
+
+          const tracks = [...state.tracks];
+          tracks[trackIndex] = {
+            ...tracks[trackIndex],
+            lyricOffset: offsetMs,
           };
 
           return { tracks } as Partial<IpodState>;

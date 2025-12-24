@@ -1275,7 +1275,7 @@
         "repeatOne": "Repeat One",
         "lyrics": "Lyrics",
         "showLyrics": "Show Lyrics",
-        "refreshLyrics": "Search Lyrics",
+        "refreshLyrics": "Search Lyrics...",
         "clearCache": "Clear Cache",
         "cacheCleared": "Cache cleared",
         "traditionalChinese": "繁體",
@@ -1291,6 +1291,7 @@
         "multi": "Multi",
         "single": "Single",
         "alternating": "Alternating",
+        "adjustTiming": "Adjust Timing...",
         "fontRounded": "Rounded",
         "fontSerif": "Serif",
         "fontSansSerif": "Sans Serif",
@@ -1342,6 +1343,13 @@
         "translatingLyrics": "Translating lyrics…",
         "loadingFurigana": "Loading furigana…",
         "offset": "Offset"
+      },
+      "syncMode": {
+        "instructions": "Tap the line you're hearing",
+        "offset": "Offset",
+        "hint": "Press ESC or tap X to exit",
+        "decreaseOffset": "Decrease offset",
+        "increaseOffset": "Increase offset"
       },
       "dialogs": {
         "clearLibraryTitle": "Clear Library",

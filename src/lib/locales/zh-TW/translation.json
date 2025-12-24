@@ -1138,6 +1138,7 @@
         "aboutIpod": "關於 iPod",
         "addSong": "加入歌曲...",
         "addToLibrary": "加入資料庫...",
+        "adjustTiming": "調整時間...",
         "allSongs": "所有歌曲",
         "alternating": "交替",
         "backlight": "背光燈",
@@ -1171,7 +1172,7 @@
         "play": "播放",
         "previous": "上一首",
         "pronunciation": "發音",
-        "refreshLyrics": "搜尋歌詞",
+        "refreshLyrics": "搜尋歌詞...",
         "repeatAll": "全部重複",
         "repeatOne": "單曲重複",
         "romanization": "羅馬拼音",
@@ -1234,6 +1235,13 @@
         "themeClassic": "主題：經典",
         "themeU2": "主題：U2",
         "translatingLyrics": "正在翻譯歌詞…"
+      },
+      "syncMode": {
+        "decreaseOffset": "減少偏移",
+        "hint": "按 ESC 或 X 關閉",
+        "increaseOffset": "增加偏移",
+        "instructions": "點擊你正在聽到的歌詞",
+        "offset": "偏移"
       },
       "translationLanguages": {
         "auto": "自動",
