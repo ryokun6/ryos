@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { listAllCachedSongMetadata, deleteSongMetadata, bulkImportSongMetadata, saveSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
+import { listAllCachedSongMetadata, deleteSongMetadata, deleteAllSongMetadata, bulkImportSongMetadata, saveSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
 
 interface User {
   username: string;
@@ -81,7 +81,7 @@ export function AdminAppComponent({
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{
-    type: "user" | "room" | "message" | "song";
+    type: "user" | "room" | "message" | "song" | "allSongs";
     id: string;
     name: string;
   } | null>(null);
@@ -119,6 +119,7 @@ export function AdminAppComponent({
   const [isFrameNarrow, setIsFrameNarrow] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isAdmin = username?.toLowerCase() === "ryo";
@@ -406,15 +407,12 @@ export function AdminAppComponent({
           artist: v.artist as string | undefined,
           album: v.album as string | undefined,
           lyricOffset: v.lyricOffset as number | undefined,
-          lyricsSearch: v.lyricsSearch as {
-            query?: string;
-            selection?: {
-              hash: string;
-              albumId: string | number;
-              title: string;
-              artist: string;
-              album?: string;
-            };
+          lyricsSource: (v.lyricsSource || (v.lyricsSearch as { selection?: unknown })?.selection) as {
+            hash: string;
+            albumId: string | number;
+            title: string;
+            artist: string;
+            album?: string;
           } | undefined,
         }));
 
@@ -447,6 +445,43 @@ export function AdminAppComponent({
     [username, authToken, fetchSongs, t]
   );
 
+  // Prompt delete all songs (opens dialog)
+  const handleDeleteAllSongs = useCallback(() => {
+    setDeleteTarget({ type: "allSongs", id: "all", name: t("apps.admin.songs.allSongs", "all songs") });
+    setIsDeleteDialogOpen(true);
+  }, [t]);
+
+  // Execute delete all songs (called from confirm dialog)
+  const executeDeleteAllSongs = useCallback(async () => {
+    if (!username || !authToken) return;
+
+    setIsDeletingAll(true);
+
+    try {
+      const result = await deleteAllSongMetadata({ username, authToken });
+
+      if (result.success > 0) {
+        toast.success(
+          t("apps.admin.messages.deleteAllSuccess", {
+            count: result.success,
+            total: result.total,
+            defaultValue: `Deleted ${result.success} of ${result.total} songs`,
+          })
+        );
+        fetchSongs();
+      } else if (result.total === 0) {
+        toast.info(t("apps.admin.messages.noSongsToDelete", "No songs to delete"));
+      } else {
+        toast.error(t("apps.admin.errors.deleteAllFailed", "Failed to delete songs"));
+      }
+    } catch (error) {
+      console.error("Failed to delete all songs:", error);
+      toast.error(t("apps.admin.errors.deleteAllFailed", "Failed to delete songs"));
+    } finally {
+      setIsDeletingAll(false);
+    }
+  }, [username, authToken, fetchSongs, t]);
+
   // Start editing a song field
   const startEditSong = useCallback((song: CachedSongMetadata, field: "title" | "artist") => {
     setEditingSong(song);
@@ -466,7 +501,7 @@ export function AdminAppComponent({
         artist: editField === "artist" ? newValue : editingSong.artist,
         album: editingSong.album,
         lyricOffset: editingSong.lyricOffset,
-        lyricsSearch: editingSong.lyricsSearch,
+        lyricsSource: editingSong.lyricsSource,
       };
 
       const success = await saveSongMetadata(updatedMetadata, { username, authToken });
@@ -507,10 +542,13 @@ export function AdminAppComponent({
       case "song":
         deleteSong(deleteTarget.id);
         break;
+      case "allSongs":
+        executeDeleteAllSongs();
+        break;
     }
     setDeleteTarget(null);
     setIsDeleteDialogOpen(false);
-  }, [deleteTarget, selectedRoomId, deleteUser, deleteRoom, deleteMessage, deleteSong]);
+  }, [deleteTarget, selectedRoomId, deleteUser, deleteRoom, deleteMessage, deleteSong, executeDeleteAllSongs]);
 
   // Prompt for delete
   const promptDelete = (
@@ -752,7 +790,7 @@ export function AdminAppComponent({
                       variant="ghost"
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={isImporting}
+                      disabled={isImporting || isDeletingAll}
                       className="h-7 w-7 p-0"
                       title={t("apps.admin.songs.import", "Import Library")}
                     >
@@ -760,6 +798,21 @@ export function AdminAppComponent({
                         <ActivityIndicator size={14} />
                       ) : (
                         <Upload className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    {/* Delete all button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDeleteAllSongs}
+                      disabled={isDeletingAll || isImporting || songs.length === 0}
+                      className="h-7 w-7 p-0"
+                      title={t("apps.admin.songs.deleteAll", "Delete All Songs")}
+                    >
+                      {isDeletingAll ? (
+                        <ActivityIndicator size={14} />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
                       )}
                     </Button>
                   </>
@@ -777,6 +830,17 @@ export function AdminAppComponent({
                   </div>
                 )}
 
+                {selectedRoomId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => promptDelete("room", selectedRoomId, selectedRoom?.name || "")}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -789,17 +853,6 @@ export function AdminAppComponent({
                     <RefreshCw className="h-3.5 w-3.5" />
                   )}
                 </Button>
-
-                {selectedRoomId && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => promptDelete("room", selectedRoomId, selectedRoom?.name || "")}
-                    className="h-7 w-7 p-0"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                )}
               </div>
             )}
 

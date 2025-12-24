@@ -30,7 +30,7 @@ export interface CachedSongMetadata {
   artist?: string;
   album?: string;
   lyricOffset?: number;
-  /** Lyrics source from Kugou */
+  /** Lyrics source from Kugou (user-selected or auto-detected) */
   lyricsSource?: CachedLyricsSource;
   createdBy?: string;
   createdAt: number;
@@ -229,6 +229,53 @@ export async function deleteSongMetadata(
 }
 
 /**
+ * Delete all song metadata from Redis cache
+ * Requires admin authentication (user ryo only)
+ * Uses bulk delete endpoint for efficiency
+ * 
+ * @param auth - Authentication credentials (username and token)
+ * @returns Object with deleted count
+ */
+export async function deleteAllSongMetadata(
+  auth: SongMetadataAuthCredentials
+): Promise<{ success: number; total: number }> {
+  try {
+    console.log(`[SongMetadataCache] Deleting all songs...`);
+
+    const response = await fetch(getApiUrl("/api/song"), {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${auth.authToken}`,
+        "X-Username": auth.username,
+      },
+    });
+
+    if (response.status === 401) {
+      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in`);
+      return { success: 0, total: 0 };
+    }
+
+    if (response.status === 403) {
+      console.warn(`[SongMetadataCache] Forbidden - admin access required`);
+      return { success: 0, total: 0 };
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log(`[SongMetadataCache] Deleted ${data.deleted} songs`);
+      return { success: data.deleted, total: data.deleted };
+    }
+
+    console.warn(`[SongMetadataCache] Failed to delete all: ${response.status}`);
+    return { success: 0, total: 0 };
+  } catch (error) {
+    console.error(`[SongMetadataCache] Error deleting all metadata:`, error);
+    return { success: 0, total: 0 };
+  }
+}
+
+/**
  * Save song metadata to Redis cache
  * Requires authentication - will fail if not logged in
  * 
@@ -363,15 +410,12 @@ export async function saveSongMetadataFromTrack(
     artist?: string;
     album?: string;
     lyricOffset?: number;
-    lyricsSearch?: {
-      query?: string;
-      selection?: {
-        hash: string;
-        albumId: string | number;
-        title: string;
-        artist: string;
-        album?: string;
-      };
+    lyricsSource?: {
+      hash: string;
+      albumId: string | number;
+      title: string;
+      artist: string;
+      album?: string;
     };
   },
   auth: SongMetadataAuthCredentials | null
@@ -389,7 +433,7 @@ export async function saveSongMetadataFromTrack(
       artist: track.artist,
       album: track.album,
       lyricOffset: track.lyricOffset,
-      lyricsSource: track.lyricsSearch?.selection,
+      lyricsSource: track.lyricsSource,
     },
     auth
   );

@@ -386,6 +386,28 @@ export async function deleteSong(redis: Redis, id: string): Promise<boolean> {
 }
 
 /**
+ * Delete all songs from Redis (admin only)
+ * Returns the number of songs deleted
+ */
+export async function deleteAllSongs(redis: Redis): Promise<number> {
+  // Get all song IDs
+  const songIds = await redis.smembers(SONG_SET_KEY);
+  
+  if (!songIds || songIds.length === 0) {
+    return 0;
+  }
+
+  // Delete all song documents
+  const keys = songIds.map((id) => getSongKey(id));
+  await redis.del(...keys);
+
+  // Clear the set
+  await redis.del(SONG_SET_KEY);
+
+  return songIds.length;
+}
+
+/**
  * List songs with optional filtering
  */
 export async function listSongs(

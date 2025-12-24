@@ -10,6 +10,15 @@ import i18n from "@/lib/i18n";
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
 
+/** Lyrics source from Kugou */
+export interface LyricsSource {
+  hash: string;
+  albumId: string | number;
+  title: string;
+  artist: string;
+  album?: string;
+}
+
 // Define the Track type (can be shared or defined here)
 export interface Track {
   id: string;
@@ -19,17 +28,8 @@ export interface Track {
   album?: string;
   /** Offset in milliseconds to adjust lyrics timing for this track (positive = lyrics earlier) */
   lyricOffset?: number;
-  /** Override for lyrics search query and selected match */
-  lyricsSearch?: {
-    query?: string;
-    selection?: {
-      hash: string;
-      albumId: string | number;
-      title: string;
-      artist: string;
-      album?: string;
-    };
-  };
+  /** Selected lyrics source from Kugou (user override) */
+  lyricsSource?: LyricsSource;
 }
 
 type LibraryState = "uninitialized" | "loaded" | "cleared";
@@ -123,7 +123,7 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
         artist: song.artist,
         album: song.album ?? "",
         lyricOffset: song.lyricOffset,
-        lyricsSearch: song.lyricsSearch,
+        lyricsSource: song.lyricsSource,
       }));
       // Use the latest createdAt timestamp as version (or 1 if empty)
       const version = cachedSongs.length > 0 
@@ -244,22 +244,13 @@ export interface IpodState extends IpodData {
     tracksUpdated: number;
     totalTracks: number;
   }>;
-  /** Set lyrics search override for a specific track */
-  setTrackLyricsSearch: (
+  /** Set lyrics source override for a specific track */
+  setTrackLyricsSource: (
     trackId: string,
-    lyricsSearch: {
-      query?: string;
-      selection?: {
-        hash: string;
-        albumId: string | number;
-        title: string;
-        artist: string;
-        album?: string;
-      };
-    } | null
+    lyricsSource: LyricsSource | null
   ) => void;
-  /** Clear lyrics search override for a specific track */
-  clearTrackLyricsSearch: (trackId: string) => void;
+  /** Clear lyrics source override for a specific track */
+  clearTrackLyricsSource: (trackId: string) => void;
 }
 
 const CURRENT_IPOD_STORE_VERSION = 24; // Add unified romanization settings
@@ -736,7 +727,7 @@ export const useIpodStore = create<IpodState>()(
               artist: cachedMetadata.artist,
               album: cachedMetadata.album,
               lyricOffset: cachedMetadata.lyricOffset ?? 500,
-              lyricsSearch: cachedMetadata.lyricsSearch,
+              lyricsSource: cachedMetadata.lyricsSource,
             };
 
             try {
@@ -860,13 +851,12 @@ export const useIpodStore = create<IpodState>()(
                 currentTrack.url !== serverTrack.url ||
                 currentTrack.lyricOffset !== serverTrack.lyricOffset;
 
-              // Check if we should update lyricsSearch:
-              // - Server has lyricsSearch but user doesn't have one yet
-              const shouldUpdateLyricsSearch =
-                serverTrack.lyricsSearch?.selection &&
-                !currentTrack.lyricsSearch?.selection;
+              // Check if we should update lyricsSource:
+              // - Server has lyricsSource but user doesn't have one yet
+              const shouldUpdateLyricsSource =
+                serverTrack.lyricsSource && !currentTrack.lyricsSource;
 
-              if (hasMetadataChanges || shouldUpdateLyricsSearch) {
+              if (hasMetadataChanges || shouldUpdateLyricsSource) {
                 tracksUpdated++;
                 // Update with server metadata but preserve any user customizations we want to keep
                 return {
@@ -876,9 +866,9 @@ export const useIpodStore = create<IpodState>()(
                   album: serverTrack.album,
                   url: serverTrack.url,
                   lyricOffset: serverTrack.lyricOffset,
-                  // Only set lyricsSearch from server if user doesn't have one
-                  ...(shouldUpdateLyricsSearch && {
-                    lyricsSearch: serverTrack.lyricsSearch,
+                  // Only set lyricsSource from server if user doesn't have one
+                  ...(shouldUpdateLyricsSource && {
+                    lyricsSource: serverTrack.lyricsSource,
                   }),
                 };
               }
@@ -928,25 +918,25 @@ export const useIpodStore = create<IpodState>()(
           throw error;
         }
       },
-      setTrackLyricsSearch: (trackId, lyricsSearch) =>
+      setTrackLyricsSource: (trackId, lyricsSource) =>
         set((state) => {
           const tracks = state.tracks.map((track) =>
             track.id === trackId
               ? {
                   ...track,
-                  lyricsSearch: lyricsSearch || undefined,
+                  lyricsSource: lyricsSource || undefined,
                 }
               : track
           );
           return { tracks };
         }),
-      clearTrackLyricsSearch: (trackId) =>
+      clearTrackLyricsSource: (trackId) =>
         set((state) => {
           const tracks = state.tracks.map((track) =>
             track.id === trackId
               ? {
                   ...track,
-                  lyricsSearch: undefined,
+                  lyricsSource: undefined,
                 }
               : track
           );

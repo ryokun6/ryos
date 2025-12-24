@@ -3,6 +3,7 @@
  *
  * GET /api/song - List all songs
  * POST /api/song - Create new song or bulk import
+ * DELETE /api/song - Delete all songs (admin only)
  *
  * Query params for GET:
  * - createdBy: Filter by creator username
@@ -29,6 +30,7 @@ import {
   saveSong,
   canModifySong,
   getSong,
+  deleteAllSongs,
   type SongDocument,
   type GetSongOptions,
 } from "../_utils/song-service.js";
@@ -110,7 +112,7 @@ export default async function handler(req: Request) {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "OPTIONS"], effectiveOrigin);
+    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "OPTIONS"], effectiveOrigin);
     if (resp) return resp;
   }
 
@@ -333,6 +335,42 @@ export default async function handler(req: Request) {
         id: song.id,
         isUpdate: !!existing,
         createdBy: song.createdBy,
+      });
+    }
+
+    // =========================================================================
+    // DELETE: Delete all songs (admin only)
+    // =========================================================================
+    if (req.method === "DELETE") {
+      // Extract auth credentials
+      const authHeader = req.headers.get("Authorization");
+      const usernameHeader = req.headers.get("X-Username");
+      const authToken = authHeader?.replace("Bearer ", "") || null;
+      const username = usernameHeader || null;
+
+      // Validate authentication
+      const authResult = await validateAuthToken(redis, username, authToken);
+      if (!authResult.valid) {
+        return errorResponse("Unauthorized - authentication required", 401);
+      }
+
+      // Only admin can delete all songs
+      if (username?.toLowerCase() !== "ryo") {
+        return errorResponse("Forbidden - admin access required", 403);
+      }
+
+      logInfo(requestId, "Deleting all songs");
+
+      const deletedCount = await deleteAllSongs(redis);
+
+      logInfo(requestId, "Delete all complete", {
+        deleted: deletedCount,
+        duration: `${Date.now() - startTime}ms`,
+      });
+
+      return jsonResponse({
+        success: true,
+        deleted: deletedCount,
       });
     }
 

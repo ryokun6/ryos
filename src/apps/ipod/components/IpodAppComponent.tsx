@@ -108,8 +108,8 @@ export function IpodAppComponent({
     nextTrack,
     previousTrack,
     refreshLyrics,
-    setTrackLyricsSearch,
-    clearTrackLyricsSearch,
+    setTrackLyricsSource,
+    clearTrackLyricsSource,
     setLyricOffset,
     setCurrentFuriganaMap,
   } = useIpodStoreShallow((s) => ({
@@ -139,8 +139,8 @@ export function IpodAppComponent({
     nextTrack: s.nextTrack,
     previousTrack: s.previousTrack,
     refreshLyrics: s.refreshLyrics,
-    setTrackLyricsSearch: s.setTrackLyricsSearch,
-    clearTrackLyricsSearch: s.clearTrackLyricsSearch,
+    setTrackLyricsSource: s.setTrackLyricsSource,
+    clearTrackLyricsSource: s.clearTrackLyricsSource,
     setLyricOffset: s.setLyricOffset,
     setCurrentFuriganaMap: s.setCurrentFuriganaMap,
   }));
@@ -1165,7 +1165,7 @@ export function IpodAppComponent({
   );
 
   const currentTrack = tracks[currentIndex];
-  const lyricsSearchOverride = currentTrack?.lyricsSearch;
+  const lyricsSourceOverride = currentTrack?.lyricsSource;
 
   const handleRefreshLyrics = useCallback(() => {
     if (tracks.length > 0 && currentIndex >= 0) setIsLyricsSearchDialogOpen(true);
@@ -1175,20 +1175,20 @@ export function IpodAppComponent({
     (result: { hash: string; albumId: string | number; title: string; artist: string; album?: string }) => {
       const track = tracks[currentIndex];
       if (track) {
-        setTrackLyricsSearch(track.id, { query: undefined, selection: result });
+        setTrackLyricsSource(track.id, result);
         refreshLyrics();
       }
     },
-    [tracks, currentIndex, setTrackLyricsSearch, refreshLyrics]
+    [tracks, currentIndex, setTrackLyricsSource, refreshLyrics]
   );
 
   const handleLyricsSearchReset = useCallback(() => {
     const track = tracks[currentIndex];
     if (track) {
-      clearTrackLyricsSearch(track.id);
+      clearTrackLyricsSource(track.id);
       refreshLyrics();
     }
-  }, [tracks, currentIndex, clearTrackLyricsSearch, refreshLyrics]);
+  }, [tracks, currentIndex, clearTrackLyricsSource, refreshLyrics]);
 
   const ipodGenerateShareUrl = (videoId: string): string => {
     return `${window.location.origin}/ipod/${videoId}`;
@@ -1199,15 +1199,15 @@ export function IpodAppComponent({
 
   // Lyrics hook
   const selectedMatchForLyrics = useMemo(() => {
-    if (!lyricsSearchOverride?.selection) return undefined;
+    if (!lyricsSourceOverride) return undefined;
     return {
-      hash: lyricsSearchOverride.selection.hash,
-      albumId: lyricsSearchOverride.selection.albumId,
-      title: lyricsSearchOverride.selection.title,
-      artist: lyricsSearchOverride.selection.artist,
-      album: lyricsSearchOverride.selection.album,
+      hash: lyricsSourceOverride.hash,
+      albumId: lyricsSourceOverride.albumId,
+      title: lyricsSourceOverride.title,
+      artist: lyricsSourceOverride.artist,
+      album: lyricsSourceOverride.album,
     };
-  }, [lyricsSearchOverride?.selection]);
+  }, [lyricsSourceOverride]);
 
   // Resolve "auto" translation language to actual ryOS locale
   const effectiveTranslationLanguage = useMemo(
@@ -1765,14 +1765,11 @@ export function IpodAppComponent({
             onOpenChange={setIsLyricsSearchDialogOpen}
             trackTitle={currentTrack.title}
             trackArtist={currentTrack.artist}
-            initialQuery={
-              lyricsSearchOverride?.query ||
-              `${currentTrack.title} ${currentTrack.artist || ""}`.trim()
-            }
+            initialQuery={`${currentTrack.title} ${currentTrack.artist || ""}`.trim()}
             onSelect={handleLyricsSearchSelect}
             onReset={handleLyricsSearchReset}
-            hasOverride={!!lyricsSearchOverride}
-            currentSelection={lyricsSearchOverride?.selection}
+            hasOverride={!!lyricsSourceOverride}
+            currentSelection={lyricsSourceOverride}
           />
         )}
         <SongSearchDialog

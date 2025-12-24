@@ -51,7 +51,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           artist: song.artist,
           album: song.album ?? "",
           lyricOffset: song.lyricOffset,
-          lyricsSearch: song.lyricsSearch,
+          lyricsSource: song.lyricsSource,
         }));
         const serverVersion = Math.max(...cachedSongs.map((s) => s.createdAt || 1));
 
@@ -75,8 +75,8 @@ export function useLibraryUpdateChecker(isActive: boolean) {
               currentTrack.album !== serverTrack.album ||
               currentTrack.url !== serverTrack.url ||
               currentTrack.lyricOffset !== serverTrack.lyricOffset ||
-              // Check if server has lyricsSearch but user doesn't
-              (serverTrack.lyricsSearch?.selection && !currentTrack.lyricsSearch?.selection);
+              // Check if server has lyricsSource but user doesn't
+              (serverTrack.lyricsSource && !currentTrack.lyricsSource);
             if (hasChanges) tracksUpdated++;
           }
         });

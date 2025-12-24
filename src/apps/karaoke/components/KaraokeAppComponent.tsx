@@ -83,8 +83,8 @@ export function KaraokeAppComponent({
     toggleLyrics,
     clearLibrary,
     refreshLyrics,
-    setTrackLyricsSearch,
-    clearTrackLyricsSearch,
+    setTrackLyricsSource,
+    clearTrackLyricsSource,
     setLyricOffset,
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
@@ -94,8 +94,8 @@ export function KaraokeAppComponent({
     toggleLyrics: s.toggleLyrics,
     clearLibrary: s.clearLibrary,
     refreshLyrics: s.refreshLyrics,
-    setTrackLyricsSearch: s.setTrackLyricsSearch,
-    clearTrackLyricsSearch: s.clearTrackLyricsSearch,
+    setTrackLyricsSource: s.setTrackLyricsSource,
+    clearTrackLyricsSource: s.clearTrackLyricsSource,
     setLyricOffset: s.setLyricOffset,
   }));
 
@@ -190,19 +190,19 @@ export function KaraokeAppComponent({
 
   // Current track
   const currentTrack: Track | null = tracks[currentIndex] || null;
-  const lyricsSearchOverride = currentTrack?.lyricsSearch;
+  const lyricsSourceOverride = currentTrack?.lyricsSource;
 
   // Lyrics hook
   const selectedMatchForLyrics = useMemo(() => {
-    if (!lyricsSearchOverride?.selection) return undefined;
+    if (!lyricsSourceOverride) return undefined;
     return {
-      hash: lyricsSearchOverride.selection.hash,
-      albumId: lyricsSearchOverride.selection.albumId,
-      title: lyricsSearchOverride.selection.title,
-      artist: lyricsSearchOverride.selection.artist,
-      album: lyricsSearchOverride.selection.album,
+      hash: lyricsSourceOverride.hash,
+      albumId: lyricsSourceOverride.albumId,
+      title: lyricsSourceOverride.title,
+      artist: lyricsSourceOverride.artist,
+      album: lyricsSourceOverride.album,
     };
-  }, [lyricsSearchOverride?.selection]);
+  }, [lyricsSourceOverride]);
 
   // Resolve "auto" translation language to actual ryOS locale
   const effectiveTranslationLanguage = useMemo(
@@ -585,20 +585,20 @@ export function KaraokeAppComponent({
     (result: { hash: string; albumId: string | number; title: string; artist: string; album?: string }) => {
       const track = tracks[currentIndex];
       if (track) {
-        setTrackLyricsSearch(track.id, { query: undefined, selection: result });
+        setTrackLyricsSource(track.id, result);
         refreshLyrics();
       }
     },
-    [tracks, currentIndex, setTrackLyricsSearch, refreshLyrics]
+    [tracks, currentIndex, setTrackLyricsSource, refreshLyrics]
   );
 
   const handleLyricsSearchReset = useCallback(() => {
     const track = tracks[currentIndex];
     if (track) {
-      clearTrackLyricsSearch(track.id);
+      clearTrackLyricsSource(track.id);
       refreshLyrics();
     }
-  }, [tracks, currentIndex, clearTrackLyricsSearch, refreshLyrics]);
+  }, [tracks, currentIndex, clearTrackLyricsSource, refreshLyrics]);
 
   // Song search/add handlers
   const handleAddSong = useCallback(() => {
@@ -1009,14 +1009,11 @@ export function KaraokeAppComponent({
             onOpenChange={setIsLyricsSearchDialogOpen}
             trackTitle={currentTrack.title}
             trackArtist={currentTrack.artist}
-            initialQuery={
-              lyricsSearchOverride?.query ||
-              `${currentTrack.title} ${currentTrack.artist || ""}`.trim()
-            }
+            initialQuery={`${currentTrack.title} ${currentTrack.artist || ""}`.trim()}
             onSelect={handleLyricsSearchSelect}
             onReset={handleLyricsSearchReset}
-            hasOverride={!!lyricsSearchOverride}
-            currentSelection={lyricsSearchOverride?.selection}
+            hasOverride={!!lyricsSourceOverride}
+            currentSelection={lyricsSourceOverride}
           />
         )}
         <SongSearchDialog
