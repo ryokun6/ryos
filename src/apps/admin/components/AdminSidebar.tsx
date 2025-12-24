@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronRight, Hash, Music } from "lucide-react";
+import { ChevronRight, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -131,7 +131,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               onRoomSelect(null);
             }}
           >
-            <Music className="w-3 h-3 flex-shrink-0" />
             <span>{t("apps.admin.sidebar.songs", "Songs")}</span>
             <span
               className={cn(
