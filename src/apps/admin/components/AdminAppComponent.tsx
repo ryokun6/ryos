@@ -92,8 +92,8 @@ export function AdminAppComponent({
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [visibleUsersCount, setVisibleUsersCount] = useState(20);
-  const USERS_PER_PAGE = 20;
+  const [visibleUsersCount, setVisibleUsersCount] = useState(100);
+  const USERS_PER_PAGE = 100;
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
     totalRooms: 0,
@@ -105,8 +105,8 @@ export function AdminAppComponent({
   const [selectedUserProfile, setSelectedUserProfile] = useState<string | null>(null);
   const [songs, setSongs] = useState<CachedSongMetadata[]>([]);
   const [songSearch, setSongSearch] = useState("");
-  const [visibleSongsCount, setVisibleSongsCount] = useState(20);
-  const SONGS_PER_PAGE = 20;
+  const [visibleSongsCount, setVisibleSongsCount] = useState(100);
+  const SONGS_PER_PAGE = 100;
   
   // Song editing state
   const [editingSong, setEditingSong] = useState<CachedSongMetadata | null>(null);
@@ -157,13 +157,13 @@ export function AdminAppComponent({
         },
       });
       const data = await response.json();
-      // Sort users: banned first, then alphabetically by username
+      // Sort users: banned first, then by most recently active
       let sortedUsers = (data.users || []).sort((a: User, b: User) => {
         // Banned users first
         if (a.banned && !b.banned) return -1;
         if (!a.banned && b.banned) return 1;
-        // Then alphabetically
-        return a.username.toLowerCase().localeCompare(b.username.toLowerCase());
+        // Then by last active (most recent first)
+        return b.lastActive - a.lastActive;
       });
       // Filter by search query client-side
       if (search.length > 0) {
