@@ -7,6 +7,7 @@ import { UserProfilePanel } from "./UserProfilePanel";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { InputDialog } from "@/components/dialogs/InputDialog";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Trash2, RefreshCw, AlertTriangle, Ban } from "lucide-react";
+import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, ExternalLink, Upload } from "lucide-react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Table,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { listAllCachedSongMetadata, deleteSongMetadata, bulkImportSongMetadata, saveSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
 
 interface User {
   username: string;
@@ -55,9 +57,10 @@ interface Stats {
   totalUsers: number;
   totalRooms: number;
   totalMessages: number;
+  totalSongs?: number;
 }
 
-type AdminSection = "users" | "rooms";
+type AdminSection = "users" | "rooms" | "songs";
 
 export function AdminAppComponent({
   isWindowOpen,
@@ -78,7 +81,7 @@ export function AdminAppComponent({
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{
-    type: "user" | "room" | "message";
+    type: "user" | "room" | "message" | "song";
     id: string;
     name: string;
   } | null>(null);
@@ -100,11 +103,23 @@ export function AdminAppComponent({
   const [activeSection, setActiveSection] = useState<AdminSection>("users");
   const [isRoomsExpanded, setIsRoomsExpanded] = useState(true);
   const [selectedUserProfile, setSelectedUserProfile] = useState<string | null>(null);
+  const [songs, setSongs] = useState<CachedSongMetadata[]>([]);
+  const [songSearch, setSongSearch] = useState("");
+  const [visibleSongsCount, setVisibleSongsCount] = useState(20);
+  const SONGS_PER_PAGE = 20;
+  
+  // Song editing state
+  const [editingSong, setEditingSong] = useState<CachedSongMetadata | null>(null);
+  const [editField, setEditField] = useState<"title" | "artist" | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [isEditSaving, setIsEditSaving] = useState(false);
 
   // Sidebar visibility and mobile detection
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isFrameNarrow, setIsFrameNarrow] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isAdmin = username?.toLowerCase() === "ryo";
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId) || null;
@@ -220,6 +235,22 @@ export function AdminAppComponent({
     [username, authToken, t]
   );
 
+  // Fetch songs from Redis cache
+  const fetchSongs = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const allSongs = await listAllCachedSongMetadata();
+      setSongs(allSongs);
+      setStats((prev) => ({ ...prev, totalSongs: allSongs.length }));
+      setVisibleSongsCount(SONGS_PER_PAGE);
+    } catch (error) {
+      console.error("Failed to fetch songs:", error);
+      toast.error(t("apps.admin.errors.failedToFetchSongs", "Failed to fetch songs"));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [t, SONGS_PER_PAGE]);
+
   // Delete user
   const deleteUser = useCallback(
     async (targetUsername: string) => {
@@ -327,6 +358,137 @@ export function AdminAppComponent({
     [username, authToken, fetchRoomMessages, t]
   );
 
+  // Delete song
+  const deleteSong = useCallback(
+    async (youtubeId: string) => {
+      if (!username || !authToken) return;
+
+      try {
+        const success = await deleteSongMetadata(youtubeId, { username, authToken });
+
+        if (success) {
+          toast.success(t("apps.admin.messages.songDeleted", "Song deleted"));
+          fetchSongs();
+        } else {
+          toast.error(t("apps.admin.errors.failedToDeleteSong", "Failed to delete song"));
+        }
+      } catch (error) {
+        console.error("Failed to delete song:", error);
+        toast.error(t("apps.admin.errors.failedToDeleteSong", "Failed to delete song"));
+      }
+    },
+    [username, authToken, fetchSongs, t]
+  );
+
+  // Handle import file selection
+  const handleImportFile = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file || !username || !authToken) return;
+
+      setIsImporting(true);
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        // Support both formats: { videos: [...] } or direct array
+        const videos = data.videos || data;
+        if (!Array.isArray(videos)) {
+          toast.error(t("apps.admin.errors.invalidImportFormat", "Invalid file format"));
+          return;
+        }
+
+        // Map to the expected song format
+        const songs = videos.map((v: Record<string, unknown>) => ({
+          id: v.id as string,
+          url: v.url as string | undefined,
+          title: v.title as string,
+          artist: v.artist as string | undefined,
+          album: v.album as string | undefined,
+          lyricOffset: v.lyricOffset as number | undefined,
+          lyricsSearch: v.lyricsSearch as {
+            query?: string;
+            selection?: {
+              hash: string;
+              albumId: string | number;
+              title: string;
+              artist: string;
+              album?: string;
+            };
+          } | undefined,
+        }));
+
+        const result = await bulkImportSongMetadata(songs, { username, authToken });
+
+        if (result.success) {
+          toast.success(
+            t("apps.admin.messages.importSuccess", {
+              imported: result.imported,
+              updated: result.updated,
+              total: result.total,
+              defaultValue: `Imported ${result.imported} new, updated ${result.updated} (${result.total} total)`,
+            })
+          );
+          fetchSongs();
+        } else {
+          toast.error(result.error || t("apps.admin.errors.importFailed", "Import failed"));
+        }
+      } catch (error) {
+        console.error("Failed to import songs:", error);
+        toast.error(t("apps.admin.errors.importFailed", "Import failed"));
+      } finally {
+        setIsImporting(false);
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }
+    },
+    [username, authToken, fetchSongs, t]
+  );
+
+  // Start editing a song field
+  const startEditSong = useCallback((song: CachedSongMetadata, field: "title" | "artist") => {
+    setEditingSong(song);
+    setEditField(field);
+    setEditValue(field === "title" ? song.title : (song.artist || ""));
+  }, []);
+
+  // Save edited song field
+  const saveEditSong = useCallback(async (newValue: string) => {
+    if (!editingSong || !editField || !username || !authToken) return;
+
+    setIsEditSaving(true);
+    try {
+      const updatedMetadata = {
+        youtubeId: editingSong.youtubeId,
+        title: editField === "title" ? newValue : editingSong.title,
+        artist: editField === "artist" ? newValue : editingSong.artist,
+        album: editingSong.album,
+        lyricOffset: editingSong.lyricOffset,
+        lyricsSearch: editingSong.lyricsSearch,
+      };
+
+      const success = await saveSongMetadata(updatedMetadata, { username, authToken });
+
+      if (success) {
+        toast.success(t("apps.admin.messages.songUpdated", "Song updated"));
+        fetchSongs();
+        setEditingSong(null);
+        setEditField(null);
+        setEditValue("");
+      } else {
+        toast.error(t("apps.admin.errors.failedToUpdateSong", "Failed to update song"));
+      }
+    } catch (error) {
+      console.error("Failed to update song:", error);
+      toast.error(t("apps.admin.errors.failedToUpdateSong", "Failed to update song"));
+    } finally {
+      setIsEditSaving(false);
+    }
+  }, [editingSong, editField, username, authToken, fetchSongs, t]);
+
   // Handle delete confirmation
   const handleDeleteConfirm = useCallback(() => {
     if (!deleteTarget) return;
@@ -343,14 +505,17 @@ export function AdminAppComponent({
           deleteMessage(selectedRoomId, deleteTarget.id);
         }
         break;
+      case "song":
+        deleteSong(deleteTarget.id);
+        break;
     }
     setDeleteTarget(null);
     setIsDeleteDialogOpen(false);
-  }, [deleteTarget, selectedRoomId, deleteUser, deleteRoom, deleteMessage]);
+  }, [deleteTarget, selectedRoomId, deleteUser, deleteRoom, deleteMessage, deleteSong]);
 
   // Prompt for delete
   const promptDelete = (
-    type: "user" | "room" | "message",
+    type: "user" | "room" | "message" | "song",
     id: string,
     name: string
   ) => {
@@ -363,8 +528,9 @@ export function AdminAppComponent({
     if (isAdmin && isWindowOpen) {
       fetchRooms();
       fetchStats();
+      fetchSongs();
     }
-  }, [isAdmin, isWindowOpen, fetchRooms, fetchStats]);
+  }, [isAdmin, isWindowOpen, fetchRooms, fetchStats, fetchSongs]);
 
   // Handle user search
   useEffect(() => {
@@ -384,6 +550,7 @@ export function AdminAppComponent({
   const handleRefresh = useCallback(() => {
     fetchRooms();
     fetchStats();
+    fetchSongs();
     if (selectedRoomId) {
       fetchRoomMessages(selectedRoomId);
     }
@@ -392,6 +559,7 @@ export function AdminAppComponent({
   }, [
     fetchRooms,
     fetchStats,
+    fetchSongs,
     fetchRoomMessages,
     fetchUsers,
     selectedRoomId,
@@ -562,6 +730,43 @@ export function AdminAppComponent({
                   </div>
                 )}
 
+                {activeSection === "songs" && !selectedRoomId && (
+                  <>
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+                      <Input
+                        placeholder={t("apps.admin.search.songsPlaceholder", "Search songs...")}
+                        value={songSearch}
+                        onChange={(e) => setSongSearch(e.target.value)}
+                        className="pl-7 h-7 text-[12px]"
+                      />
+                    </div>
+                    {/* Import button */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportFile}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isImporting}
+                      className="h-7 px-2 text-[11px] gap-1"
+                      title={t("apps.admin.songs.import", "Import Library")}
+                    >
+                      {isImporting ? (
+                        <ActivityIndicator size={14} />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5" />
+                      )}
+                      <span className="hidden sm:inline">{t("apps.admin.songs.import", "Import")}</span>
+                    </Button>
+                  </>
+                )}
+
                 {selectedRoomId && selectedRoom && (
                   <div className="flex-1 flex items-center gap-2">
                     <span className="text-[12px] font-medium">
@@ -717,6 +922,134 @@ export function AdminAppComponent({
                 </div>
               )}
 
+              {/* Songs View */}
+              {activeSection === "songs" && !selectedRoomId && !selectedUserProfile && (
+                <div className="font-geneva-12">
+                  {songs.length === 0 && !isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
+                      <Music className="h-8 w-8 mb-2 opacity-50" />
+                      <span className="text-[11px]">
+                        {t("apps.admin.songs.noSongs", "No songs in cache")}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="text-[10px] border-none font-normal">
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                              {t("apps.admin.tableHeaders.title", "Title")}
+                            </TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                              {t("apps.admin.tableHeaders.artist", "Artist")}
+                            </TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
+                              {t("apps.admin.tableHeaders.addedBy", "Added By")}
+                            </TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
+                              {t("apps.admin.tableHeaders.added", "Added")}
+                            </TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px] w-16"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="text-[11px]">
+                          {songs
+                            .filter((song) =>
+                              songSearch.length === 0 ||
+                              song.title.toLowerCase().includes(songSearch.toLowerCase()) ||
+                              (song.artist?.toLowerCase().includes(songSearch.toLowerCase()) ?? false)
+                            )
+                            .slice(0, visibleSongsCount)
+                            .map((song) => (
+                              <TableRow
+                                key={song.youtubeId}
+                                className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/50 group"
+                              >
+                                <TableCell 
+                                  className="max-w-[180px] cursor-pointer"
+                                  onClick={() => startEditSong(song, "title")}
+                                >
+                                  <span className="truncate block" title={song.title}>
+                                    {song.title}
+                                  </span>
+                                </TableCell>
+                                <TableCell 
+                                  className="max-w-[120px] cursor-pointer"
+                                  onClick={() => startEditSong(song, "artist")}
+                                >
+                                  <span className="truncate block" title={song.artist}>
+                                    {song.artist || "-"}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className={cn(
+                                    "px-1.5 py-0.5 text-[9px] rounded",
+                                    song.createdBy === "ryo" 
+                                      ? "bg-blue-100 text-blue-700" 
+                                      : "bg-neutral-100 text-neutral-600"
+                                  )}>
+                                    {song.createdBy || "unknown"}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
+                                  {formatRelativeTime(song.createdAt)}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        window.open(`https://www.youtube.com/watch?v=${song.youtubeId}`, "_blank");
+                                      }}
+                                      className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                                      title="Open on YouTube"
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        promptDelete("song", song.youtubeId, song.title)
+                                      }
+                                      className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                      {songs.filter((song) =>
+                        songSearch.length === 0 ||
+                        song.title.toLowerCase().includes(songSearch.toLowerCase()) ||
+                        (song.artist?.toLowerCase().includes(songSearch.toLowerCase()) ?? false)
+                      ).length > visibleSongsCount && (
+                        <div className="pt-2 pb-1 flex justify-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setVisibleSongsCount((prev) => prev + SONGS_PER_PAGE)}
+                            className="h-7 text-[11px] text-neutral-500 hover:text-neutral-700"
+                          >
+                            {t("apps.admin.loadMore", {
+                              remaining: songs.filter((song) =>
+                                songSearch.length === 0 ||
+                                song.title.toLowerCase().includes(songSearch.toLowerCase()) ||
+                                (song.artist?.toLowerCase().includes(songSearch.toLowerCase()) ?? false)
+                              ).length - visibleSongsCount,
+                            })}
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Room Messages View */}
               {selectedRoomId && !selectedUserProfile && (
                 <div className="font-geneva-12">
@@ -788,6 +1121,8 @@ export function AdminAppComponent({
               <span>
                 {activeSection === "users" && !selectedRoomId
                   ? t("apps.admin.statusBar.usersCount", { count: users.length })
+                  : activeSection === "songs" && !selectedRoomId
+                  ? t("apps.admin.statusBar.songsCount", { count: songs.length, defaultValue: `${songs.length} songs` })
                   : selectedRoomId
                   ? t("apps.admin.statusBar.messagesCount", { count: roomMessages.length })
                   : t("apps.admin.statusBar.roomsCount", { count: rooms.length })}
@@ -817,6 +1152,23 @@ export function AdminAppComponent({
           onConfirm={handleDeleteConfirm}
           title={t("apps.admin.dialogs.deleteTitle", { type: deleteTarget?.type })}
           description={t("apps.admin.dialogs.deleteDescription", { type: deleteTarget?.type, name: deleteTarget?.name })}
+        />
+        <InputDialog
+          isOpen={editingSong !== null && editField !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingSong(null);
+              setEditField(null);
+              setEditValue("");
+            }
+          }}
+          onSubmit={saveEditSong}
+          title={t("apps.admin.dialogs.editSong", { field: editField === "title" ? t("apps.admin.tableHeaders.title", "Title") : t("apps.admin.tableHeaders.artist", "Artist"), defaultValue: `Edit ${editField}` })}
+          description={t("apps.admin.dialogs.editSongDescription", { defaultValue: "Enter the new value" })}
+          value={editValue}
+          onChange={setEditValue}
+          isLoading={isEditSaving}
+          submitLabel={t("common.dialog.save", "Save")}
         />
       </WindowFrame>
     </>

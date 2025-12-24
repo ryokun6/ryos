@@ -4,6 +4,7 @@ import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, Lyric
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
+import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import i18n from "@/lib/i18n";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
@@ -88,7 +89,7 @@ export function preloadIpodData(): void {
 }
 
 /**
- * Load default tracks from JSON.
+ * Load default tracks from Redis song metadata cache.
  * @param forceRefresh - If true, bypasses cache and fetches fresh data (used by syncLibrary)
  */
 async function loadDefaultTracks(forceRefresh = false): Promise<{
@@ -109,27 +110,29 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
   // Start new fetch
   const fetchPromise = (async () => {
     try {
-      const res = await fetch("/data/ipod-videos.json");
-      const data = await res.json();
-      const videos: unknown[] = data.videos || data;
-      const version = data.version || 1;
-      const tracks: Track[] = videos.map((v) => {
-        const video = v as Record<string, unknown>;
-        return {
-          id: video.id as string,
-          url: video.url as string,
-          title: video.title as string,
-          artist: video.artist as string | undefined,
-          album: (video.album as string | undefined) ?? "",
-          lyricOffset: video.lyricOffset as number | undefined,
-          lyricsSearch: video.lyricsSearch as Track["lyricsSearch"],
-        };
-      });
-      // Update cache with fresh data
+      // Load from Redis song metadata cache
+      // Only sync songs created by user "ryo" (the admin/curator)
+      const cachedSongs = await listAllCachedSongMetadata("ryo");
+      
+      console.log(`[iPod Store] Loaded ${cachedSongs.length} tracks from Redis cache (by ryo)`);
+      // Songs are already sorted by createdAt (newest first) from the API
+      const tracks: Track[] = cachedSongs.map((song) => ({
+        id: song.youtubeId,
+        url: `https://www.youtube.com/watch?v=${song.youtubeId}`,
+        title: song.title,
+        artist: song.artist,
+        album: song.album ?? "",
+        lyricOffset: song.lyricOffset,
+        lyricsSearch: song.lyricsSearch,
+      }));
+      // Use the latest createdAt timestamp as version (or 1 if empty)
+      const version = cachedSongs.length > 0 
+        ? Math.max(...cachedSongs.map((s) => s.createdAt || 1))
+        : 1;
       cachedIpodData = { tracks, version };
       return cachedIpodData;
     } catch (err) {
-      console.error("Failed to load ipod-videos.json", err);
+      console.error("Failed to load tracks from cache", err);
       return { tracks: [], version: 1 };
     }
   })();
@@ -665,10 +668,10 @@ export const useIpodStore = create<IpodState>()(
           try {
             const url = new URL(input);
 
-            // Handle os.ryo.lu/ipod/:id format
+            // Handle os.ryo.lu/ipod/:id or os.ryo.lu/karaoke/:id format
             if (
               url.hostname === "os.ryo.lu" &&
-              url.pathname.startsWith("/ipod/")
+              (url.pathname.startsWith("/ipod/") || url.pathname.startsWith("/karaoke/"))
             ) {
               return url.pathname.split("/")[2] || null;
             }
@@ -720,6 +723,38 @@ export const useIpodStore = create<IpodState>()(
         }
 
         const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+        // Check song metadata cache first before fetching from external APIs
+        try {
+          const cachedMetadata = await getCachedSongMetadata(videoId);
+          if (cachedMetadata) {
+            console.log(`[iPod Store] Using cached metadata for ${videoId}`);
+            const newTrack: Track = {
+              id: videoId,
+              url: youtubeUrl,
+              title: cachedMetadata.title,
+              artist: cachedMetadata.artist,
+              album: cachedMetadata.album,
+              lyricOffset: cachedMetadata.lyricOffset ?? 500,
+              lyricsSearch: cachedMetadata.lyricsSearch,
+            };
+
+            try {
+              get().addTrack(newTrack);
+              if (!autoPlay) {
+                set({ isPlaying: false });
+              }
+              return newTrack;
+            } catch (error) {
+              console.error("Error adding track from cache to store:", error);
+              return null;
+            }
+          }
+        } catch (error) {
+          console.warn(`[iPod Store] Failed to check song metadata cache for ${videoId}, falling back to API:`, error);
+        }
+
+        // Cache miss - fetch metadata from external APIs
         let rawTitle = `Video ID: ${videoId}`; // Default title
         let authorName: string | undefined = undefined; // Store author_name
 

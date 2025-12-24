@@ -36,6 +36,8 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
+import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { BACKLIGHT_TIMEOUT_MS, SEEK_AMOUNT_SECONDS } from "../constants";
 import type { WheelArea, RotationDirection } from "../types";
 
@@ -1123,7 +1125,18 @@ export function IpodAppComponent({
 
   // Share and lyrics handlers
   const handleShareSong = useCallback(() => {
-    if (tracks.length > 0 && currentIndex >= 0) setIsShareDialogOpen(true);
+    if (tracks.length > 0 && currentIndex >= 0) {
+      const track = tracks[currentIndex];
+      // Save song metadata to cache when sharing (requires auth)
+      if (track) {
+        const { username, authToken } = useChatsStore.getState();
+        const auth = username && authToken ? { username, authToken } : null;
+        saveSongMetadataFromTrack(track, auth).catch((error) => {
+          console.error("[iPod] Error saving song metadata to cache:", error);
+        });
+      }
+      setIsShareDialogOpen(true);
+    }
   }, [tracks, currentIndex]);
 
   // Song search/add handlers
