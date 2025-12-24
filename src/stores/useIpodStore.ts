@@ -90,7 +90,6 @@ export function preloadIpodData(): void {
 
 /**
  * Load default tracks from Redis song metadata cache.
- * Falls back to ipod-videos.json if Redis cache is unavailable.
  * @param forceRefresh - If true, bypasses cache and fetches fresh data (used by syncLibrary)
  */
 async function loadDefaultTracks(forceRefresh = false): Promise<{
@@ -111,47 +110,25 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
   // Start new fetch
   const fetchPromise = (async () => {
     try {
-      // Try to load from Redis song metadata cache first
+      // Load from Redis song metadata cache
       // Only sync songs created by user "ryo" (the admin/curator)
       const cachedSongs = await listAllCachedSongMetadata("ryo");
       
-      if (cachedSongs.length > 0) {
-        console.log(`[iPod Store] Loaded ${cachedSongs.length} tracks from Redis cache (by ryo)`);
-        // Songs are already sorted by createdAt (newest first) from the API
-        const tracks: Track[] = cachedSongs.map((song) => ({
-          id: song.youtubeId,
-          url: `https://www.youtube.com/watch?v=${song.youtubeId}`,
-          title: song.title,
-          artist: song.artist,
-          album: song.album ?? "",
-          lyricOffset: song.lyricOffset,
-          lyricsSearch: song.lyricsSearch,
-        }));
-        // Use the latest createdAt timestamp as version
-        const version = Math.max(...cachedSongs.map((s) => s.createdAt || 1));
-        cachedIpodData = { tracks, version };
-        return cachedIpodData;
-      }
-      
-      // Fallback to ipod-videos.json if Redis cache is empty
-      console.log("[iPod Store] Redis cache empty, falling back to ipod-videos.json");
-      const res = await fetch("/data/ipod-videos.json");
-      const data = await res.json();
-      const videos: unknown[] = data.videos || data;
-      const version = data.version || 1;
-      const tracks: Track[] = videos.map((v) => {
-        const video = v as Record<string, unknown>;
-        return {
-          id: video.id as string,
-          url: video.url as string,
-          title: video.title as string,
-          artist: video.artist as string | undefined,
-          album: (video.album as string | undefined) ?? "",
-          lyricOffset: video.lyricOffset as number | undefined,
-          lyricsSearch: video.lyricsSearch as Track["lyricsSearch"],
-        };
-      });
-      // Update cache with fresh data
+      console.log(`[iPod Store] Loaded ${cachedSongs.length} tracks from Redis cache (by ryo)`);
+      // Songs are already sorted by createdAt (newest first) from the API
+      const tracks: Track[] = cachedSongs.map((song) => ({
+        id: song.youtubeId,
+        url: `https://www.youtube.com/watch?v=${song.youtubeId}`,
+        title: song.title,
+        artist: song.artist,
+        album: song.album ?? "",
+        lyricOffset: song.lyricOffset,
+        lyricsSearch: song.lyricsSearch,
+      }));
+      // Use the latest createdAt timestamp as version (or 1 if empty)
+      const version = cachedSongs.length > 0 
+        ? Math.max(...cachedSongs.map((s) => s.createdAt || 1))
+        : 1;
       cachedIpodData = { tracks, version };
       return cachedIpodData;
     } catch (err) {
