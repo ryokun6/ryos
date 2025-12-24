@@ -3,16 +3,14 @@ import { cn } from "@/lib/utils";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Globe, Maximize2, X, Check, Circle } from "lucide-react";
+import { Globe, Maximize2, X } from "lucide-react";
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 
@@ -97,100 +95,6 @@ export function FullscreenPlayerControls({
   const { t, i18n } = useTranslation();
 
   const translationBadge = getTranslationBadge(currentTranslationCode);
-
-  // Custom dropdown content that can render to a specific container (for fullscreen mode)
-  // When in native fullscreen, portals to document.body are hidden, so we need to render inside the fullscreen element
-  const FullscreenDropdownContent = ({
-    children,
-    className,
-    ...props
-  }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>) => {
-    const content = (
-      <DropdownMenuPrimitive.Content
-        sideOffset={8}
-        className={cn(
-          "z-[10003] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </DropdownMenuPrimitive.Content>
-    );
-
-    // When we have a portal container, render inside it to work with native fullscreen
-    if (portalContainer) {
-      return (
-        <DropdownMenuPortal container={portalContainer}>
-          {content}
-        </DropdownMenuPortal>
-      );
-    }
-
-    // Default behavior - portal to document.body
-    return <DropdownMenuPortal>{content}</DropdownMenuPortal>;
-  };
-
-  // Custom checkbox item for fullscreen dropdown
-  const FullscreenCheckboxItem = ({
-    children,
-    checked,
-    onCheckedChange,
-    disabled,
-    className,
-  }: {
-    children: React.ReactNode;
-    checked?: boolean;
-    onCheckedChange?: (checked: boolean) => void;
-    disabled?: boolean;
-    className?: string;
-  }) => (
-    <DropdownMenuPrimitive.CheckboxItem
-      checked={checked}
-      onCheckedChange={onCheckedChange}
-      disabled={disabled}
-      className={cn(
-        "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors",
-        "rounded-sm focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        className
-      )}
-    >
-      <span className="absolute left-3 flex h-3.5 w-3.5 items-center justify-center">
-        <DropdownMenuPrimitive.ItemIndicator>
-          <Check className="h-4 w-4" />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
-      {children}
-    </DropdownMenuPrimitive.CheckboxItem>
-  );
-
-  // Custom radio item for fullscreen dropdown
-  const FullscreenRadioItem = ({
-    children,
-    value,
-    className,
-  }: {
-    children: React.ReactNode;
-    value: string;
-    className?: string;
-  }) => (
-    <DropdownMenuPrimitive.RadioItem
-      value={value}
-      className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        className
-      )}
-    >
-      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-        <DropdownMenuPrimitive.ItemIndicator>
-          <Circle className="h-2 w-2 fill-current" />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
-      {children}
-    </DropdownMenuPrimitive.RadioItem>
-  );
 
   // Get font label based on current locale
   const getFontLabel = () => {
@@ -397,79 +301,16 @@ export function FullscreenPlayerControls({
                 )}
               </button>
             </DropdownMenuTrigger>
-            {portalContainer ? (
-              <FullscreenDropdownContent
-                side="top"
-                align="center"
-                className="px-0 w-max min-w-40 max-w-none"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <FullscreenCheckboxItem
-                  checked={romanization.enabled}
-                  onCheckedChange={(checked) => {
-                    onRomanizationChange({ enabled: checked });
-                    onInteraction?.();
-                  }}
-                  className="text-md h-6 px-3 whitespace-nowrap"
-                >
-                  {t("apps.ipod.menu.pronunciation")}
-                </FullscreenCheckboxItem>
-                <DropdownMenuSeparator />
-                <FullscreenCheckboxItem
-                  checked={romanization.japaneseFurigana}
-                  onCheckedChange={(checked) => {
-                    onRomanizationChange({ japaneseFurigana: checked });
-                    onInteraction?.();
-                  }}
-                  disabled={!romanization.enabled || romanization.japaneseRomaji}
-                  className="text-md h-6 px-3 whitespace-nowrap"
-                >
-                  {t("apps.ipod.menu.japaneseFurigana")}
-                </FullscreenCheckboxItem>
-                <FullscreenCheckboxItem
-                  checked={romanization.japaneseRomaji}
-                  onCheckedChange={(checked) => {
-                    // Romaji requires furigana
-                    onRomanizationChange({ 
-                      japaneseRomaji: checked, 
-                      japaneseFurigana: checked || romanization.japaneseFurigana 
-                    });
-                    onInteraction?.();
-                  }}
-                  disabled={!romanization.enabled}
-                  className="text-md h-6 px-3 whitespace-nowrap"
-                >
-                  {t("apps.ipod.menu.japaneseRomaji")}
-                </FullscreenCheckboxItem>
-                <FullscreenCheckboxItem
-                  checked={romanization.korean}
-                  onCheckedChange={(checked) => {
-                    onRomanizationChange({ korean: checked });
-                    onInteraction?.();
-                  }}
-                  disabled={!romanization.enabled}
-                  className="text-md h-6 px-3 whitespace-nowrap"
-                >
-                  {t("apps.ipod.menu.koreanRomanization")}
-                </FullscreenCheckboxItem>
-                <FullscreenCheckboxItem
-                  checked={romanization.chinese}
-                  onCheckedChange={(checked) => {
-                    onRomanizationChange({ chinese: checked });
-                    onInteraction?.();
-                  }}
-                  disabled={!romanization.enabled}
-                  className="text-md h-6 px-3 whitespace-nowrap"
-                >
-                  {t("apps.ipod.menu.chinesePinyin")}
-                </FullscreenCheckboxItem>
-              </FullscreenDropdownContent>
-            ) : (
-              <DropdownMenuContent
+            <DropdownMenuPrimitive.Portal container={portalContainer}>
+              <DropdownMenuPrimitive.Content
                 side="top"
                 align="center"
                 sideOffset={8}
-                className="px-0 w-max min-w-40 max-w-none"
+                className={cn(
+                  "z-[10003] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+                  "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                  "px-0 w-max min-w-40 max-w-none"
+                )}
                 onClick={(e) => e.stopPropagation()}
               >
                 <DropdownMenuCheckboxItem
@@ -531,8 +372,8 @@ export function FullscreenPlayerControls({
                 >
                   {t("apps.ipod.menu.chinesePinyin")}
                 </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            )}
+              </DropdownMenuPrimitive.Content>
+            </DropdownMenuPrimitive.Portal>
           </DropdownMenu>
         )}
 
@@ -574,45 +415,14 @@ export function FullscreenPlayerControls({
               )}
             </button>
           </DropdownMenuTrigger>
-          {portalContainer ? (
-            <FullscreenDropdownContent
-              side="top"
-              align="center"
-              className={cn(
-                "px-0 max-h-[50vh] overflow-y-auto",
-                variant === "compact" ? "w-40" : "w-44"
-              )}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DropdownMenuRadioGroup
-                value={currentTranslationCode || "off"}
-                onValueChange={(value) => {
-                  onTranslationSelect(value === "off" ? null : value);
-                  onInteraction?.();
-                }}
-              >
-                {translationLanguages.map((lang, index) => {
-                  if (lang.separator) {
-                    return <DropdownMenuSeparator key={`sep-${index}`} />;
-                  }
-                  return (
-                    <FullscreenRadioItem
-                      key={lang.code || "off"}
-                      value={lang.code || "off"}
-                      className="text-md h-6 pr-3"
-                    >
-                      {lang.label}
-                    </FullscreenRadioItem>
-                  );
-                })}
-              </DropdownMenuRadioGroup>
-            </FullscreenDropdownContent>
-          ) : (
-            <DropdownMenuContent
+          <DropdownMenuPrimitive.Portal container={portalContainer}>
+            <DropdownMenuPrimitive.Content
               side="top"
               align="center"
               sideOffset={8}
               className={cn(
+                "z-[10003] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
                 "px-0 max-h-[50vh] overflow-y-auto",
                 variant === "compact" ? "w-40" : "w-44"
               )}
@@ -640,8 +450,8 @@ export function FullscreenPlayerControls({
                   );
                 })}
               </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          )}
+            </DropdownMenuPrimitive.Content>
+          </DropdownMenuPrimitive.Portal>
         </DropdownMenu>
 
         {/* Fullscreen button (for non-fullscreen mode) */}
