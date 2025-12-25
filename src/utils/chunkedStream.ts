@@ -68,7 +68,8 @@ export async function getChunkInfo(
   songId: string,
   operation: "translate" | "furigana",
   language?: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  force?: boolean
 ): Promise<ChunkInfoResponse> {
   const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
     method: "POST",
@@ -77,6 +78,7 @@ export async function getChunkInfo(
       action: "get-chunk-info",
       operation,
       ...(language ? { language } : {}),
+      ...(force ? { force } : {}),
     }),
     signal,
     timeout: 15000,
@@ -104,9 +106,10 @@ export async function processTranslationChunks(
   } = {}
 ): Promise<string[]> {
   const { force, signal, onProgress, onChunk } = options;
-
+  
   // First get chunk info (and check for cached result)
-  const chunkInfo = await getChunkInfo(songId, "translate", language, signal);
+  // Pass force to skip consolidated cache check on server
+  const chunkInfo = await getChunkInfo(songId, "translate", language, signal, force);
 
   // If fully cached, return immediately
   if (chunkInfo.cached && chunkInfo.translation) {
@@ -214,7 +217,8 @@ export async function processFuriganaChunks(
   const { force, signal, onProgress, onChunk } = options;
 
   // First get chunk info (and check for cached result)
-  const chunkInfo = await getChunkInfo(songId, "furigana", undefined, signal);
+  // Pass force to skip consolidated cache check on server
+  const chunkInfo = await getChunkInfo(songId, "furigana", undefined, signal, force);
 
   // If fully cached, return immediately
   if (chunkInfo.cached && chunkInfo.furigana) {

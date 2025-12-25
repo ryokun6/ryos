@@ -139,6 +139,7 @@ const GetChunkInfoSchema = z.object({
   action: z.literal("get-chunk-info"),
   operation: z.enum(["translate", "furigana"]),
   language: z.string().max(10).optional(), // Required for translate
+  force: z.boolean().optional(), // Skip consolidated cache if true
 });
 
 // Schema for saving consolidated translation after chunked processing
@@ -1368,7 +1369,7 @@ export default async function handler(req: Request) {
           return errorResponse("Invalid request body");
         }
 
-        const { operation, language } = parsed.data;
+        const { operation, language, force } = parsed.data;
 
         // Get song with lyrics
         const song = await getSong(redis, songId, {
@@ -1396,11 +1397,14 @@ export default async function handler(req: Request) {
         const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
         // Check if already cached (must have actual data, not just empty arrays/objects)
+        // Skip cache check if force=true (user wants to regenerate)
         let cached = false;
-        if (operation === "translate" && language && song.translations?.[language]) {
-          cached = true;
-        } else if (operation === "furigana" && song.furigana && song.furigana.length > 0) {
-          cached = true;
+        if (!force) {
+          if (operation === "translate" && language && song.translations?.[language]) {
+            cached = true;
+          } else if (operation === "furigana" && song.furigana && song.furigana.length > 0) {
+            cached = true;
+          }
         }
 
         // If not cached and has chunks, process chunk 0 inline to eliminate one round-trip
@@ -1518,6 +1522,27 @@ export default async function handler(req: Request) {
             const cachedChunk = await redis.get(chunkCacheKey) as string[] | null;
             if (cachedChunk) {
               logInfo(requestId, `Translate chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
+              
+              // Auto-consolidate on last chunk even if cached (in case previous consolidation failed)
+              if (chunkIndex === totalChunks - 1) {
+                const allTranslations: string[] = [];
+                for (let i = 0; i < totalChunks; i++) {
+                  const cachedChunkKeyForConsolidation = lyricsHash
+                    ? `song:${songId}:translate:${language}:chunk:${i}:${lyricsHash}`
+                    : `song:${songId}:translate:${language}:chunk:${i}`;
+                  const chunk = i === chunkIndex ? cachedChunk : await redis.get(cachedChunkKeyForConsolidation) as string[] | null;
+                  if (chunk) {
+                    allTranslations.push(...chunk);
+                  }
+                }
+                // Build LRC and save
+                const translatedLrc = song.lyrics!.parsedLines!
+                  .map((line, idx) => `${msToLrcTime(line.startTimeMs)}${allTranslations[idx] || line.words}`)
+                  .join("\n");
+                await saveTranslation(redis, songId, language, translatedLrc);
+                logInfo(requestId, `Auto-consolidated translation from cache (${language}, ${allTranslations.length} lines)`);
+              }
+              
               return jsonResponse({
                 chunkIndex,
                 totalChunks,
@@ -1635,6 +1660,24 @@ export default async function handler(req: Request) {
             const cachedChunk = await redis.get(chunkCacheKey) as FuriganaSegment[][] | null;
             if (cachedChunk) {
               logInfo(requestId, `Furigana chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
+              
+              // Auto-consolidate on last chunk even if cached (in case previous consolidation failed)
+              if (chunkIndex === totalChunks - 1) {
+                const allFurigana: FuriganaSegment[][] = [];
+                for (let i = 0; i < totalChunks; i++) {
+                  const cachedChunkKeyForConsolidation = lyricsHash
+                    ? `song:${songId}:furigana:chunk:${i}:${lyricsHash}`
+                    : `song:${songId}:furigana:chunk:${i}`;
+                  const chunk = i === chunkIndex ? cachedChunk : await redis.get(cachedChunkKeyForConsolidation) as FuriganaSegment[][] | null;
+                  if (chunk) {
+                    allFurigana.push(...chunk);
+                  }
+                }
+                // Save consolidated furigana
+                await saveFurigana(redis, songId, allFurigana);
+                logInfo(requestId, `Auto-consolidated furigana from cache (${allFurigana.length} lines)`);
+              }
+              
               return jsonResponse({
                 chunkIndex,
                 totalChunks,
@@ -1780,7 +1823,7 @@ export default async function handler(req: Request) {
 
         const { clearTranslations: shouldClearTranslations, clearFurigana: shouldClearFurigana } = parsed.data;
 
-        // Get song to update
+        // Get song to check what needs clearing
         const song = await getSong(redis, songId, {
           includeMetadata: true,
           includeLyrics: true,
@@ -1793,16 +1836,57 @@ export default async function handler(req: Request) {
         }
 
         const cleared: string[] = [];
+        const lyricsHash = song.lyricsSource?.hash;
+        const totalLines = song.lyrics?.parsedLines?.length || 0;
+        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
-        // Clear translations if requested (use empty object to actually clear, not undefined)
-        if (shouldClearTranslations && song.translations && Object.keys(song.translations).length > 0) {
-          await saveSong(redis, { id: songId, translations: {} }, { preserveTranslations: false });
+        // Clear translations if requested
+        if (shouldClearTranslations) {
+          // Clear consolidated translations
+          if (song.translations && Object.keys(song.translations).length > 0) {
+            await saveSong(redis, { id: songId, translations: {} }, { preserveTranslations: false });
+          }
+          
+          // Clear chunk caches for all languages
+          // We need to scan for translation chunk keys since we don't know all languages
+          try {
+            const pattern = lyricsHash
+              ? `song:${songId}:translate:*:chunk:*:${lyricsHash}`
+              : `song:${songId}:translate:*:chunk:*`;
+            const keys = await redis.keys(pattern);
+            if (keys.length > 0) {
+              await redis.del(...keys);
+              logInfo(requestId, `Deleted ${keys.length} translation chunk caches`);
+            }
+          } catch (e) {
+            logError(requestId, "Failed to delete translation chunk caches", e);
+          }
+          
           cleared.push("translations");
         }
 
-        // Clear furigana if requested (use empty array to actually clear, not undefined)
-        if (shouldClearFurigana && song.furigana && song.furigana.length > 0) {
-          await saveSong(redis, { id: songId, furigana: [] }, { preserveFurigana: false });
+        // Clear furigana if requested
+        if (shouldClearFurigana) {
+          // Clear consolidated furigana
+          if (song.furigana && song.furigana.length > 0) {
+            await saveSong(redis, { id: songId, furigana: [] }, { preserveFurigana: false });
+          }
+          
+          // Clear furigana chunk caches
+          try {
+            for (let i = 0; i < totalChunks; i++) {
+              const chunkKey = lyricsHash
+                ? `song:${songId}:furigana:chunk:${i}:${lyricsHash}`
+                : `song:${songId}:furigana:chunk:${i}`;
+              await redis.del(chunkKey);
+            }
+            if (totalChunks > 0) {
+              logInfo(requestId, `Deleted ${totalChunks} furigana chunk caches`);
+            }
+          } catch (e) {
+            logError(requestId, "Failed to delete furigana chunk caches", e);
+          }
+          
           cleared.push("furigana");
         }
 
