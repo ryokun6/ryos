@@ -355,16 +355,18 @@ const lyricOffsetSaveTimers: Map<string, ReturnType<typeof setTimeout>> = new Ma
 async function saveLyricOffsetToServer(
   trackId: string,
   lyricOffset: number
-): Promise<void> {
+): Promise<boolean> {
   // Get auth credentials from chats store
   const { username, authToken } = useChatsStore.getState();
   
   // Skip if not authenticated
   if (!username || !authToken) {
     console.log(`[iPod Store] Skipping lyric offset save for ${trackId} - user not logged in`);
-    return;
+    return false;
   }
 
+  console.log(`[iPod Store] Saving lyric offset for ${trackId}: ${lyricOffset}ms...`);
+  
   try {
     const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(trackId)}`), {
       method: "POST",
@@ -380,24 +382,32 @@ async function saveLyricOffsetToServer(
 
     if (response.status === 401) {
       console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyric offset`);
-      return;
+      return false;
     }
 
     if (response.status === 403) {
       // Permission denied - song is owned by another user
       console.log(`[iPod Store] Cannot save lyric offset for ${trackId} - song owned by another user`);
-      return;
+      return false;
     }
 
     if (!response.ok) {
-      console.warn(`[iPod Store] Failed to save lyric offset for ${trackId}: ${response.status}`);
-      return;
+      const errorText = await response.text();
+      console.warn(`[iPod Store] Failed to save lyric offset for ${trackId}: ${response.status} - ${errorText}`);
+      return false;
     }
 
     const data = await response.json();
-    console.log(`[iPod Store] Saved lyric offset for ${trackId}: ${lyricOffset}ms (by ${data.createdBy || username})`);
+    if (data.success) {
+      console.log(`[iPod Store] ✓ Saved lyric offset for ${trackId}: ${lyricOffset}ms (by ${data.createdBy || username})`);
+      return true;
+    } else {
+      console.warn(`[iPod Store] Server returned failure for ${trackId}:`, data);
+      return false;
+    }
   } catch (error) {
     console.error(`[iPod Store] Error saving lyric offset for ${trackId}:`, error);
+    return false;
   }
 }
 
@@ -431,8 +441,9 @@ function debouncedSaveLyricOffset(trackId: string, lyricOffset: number): void {
 /**
  * Immediately flush any pending lyric offset save for a track.
  * Call this when closing the sync mode to ensure changes are saved.
+ * Returns a Promise that resolves when the save completes.
  */
-export function flushPendingLyricOffsetSave(trackId: string): void {
+export async function flushPendingLyricOffsetSave(trackId: string): Promise<void> {
   const existingTimer = lyricOffsetSaveTimers.get(trackId);
   const pendingOffset = pendingLyricOffsets.get(trackId);
   
@@ -442,9 +453,9 @@ export function flushPendingLyricOffsetSave(trackId: string): void {
     lyricOffsetSaveTimers.delete(trackId);
     pendingLyricOffsets.delete(trackId);
     
-    // Save immediately
+    // Save immediately and wait for completion
     console.log(`[iPod Store] Flushing pending lyric offset save for ${trackId}: ${pendingOffset}ms`);
-    saveLyricOffsetToServer(trackId, pendingOffset);
+    await saveLyricOffsetToServer(trackId, pendingOffset);
   }
 }
 

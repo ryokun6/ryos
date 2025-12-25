@@ -823,11 +823,11 @@ export function IpodAppComponent({
   }, [processVideoId, bringToForeground]);
 
   // Handle closing sync mode - flush pending offset saves
-  const closeSyncMode = useCallback(() => {
+  const closeSyncMode = useCallback(async () => {
     // Flush any pending lyric offset save for the current track
     const currentTrackId = tracks[currentIndex]?.id;
     if (currentTrackId) {
-      flushPendingLyricOffsetSave(currentTrackId);
+      await flushPendingLyricOffsetSave(currentTrackId);
     }
     setIsSyncModeOpen(false);
   }, [tracks, currentIndex]);
