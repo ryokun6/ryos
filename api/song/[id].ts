@@ -23,6 +23,7 @@ import { z } from "zod";
 import pako from "pako";
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
+import { Converter } from "opencc-js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -49,6 +50,9 @@ import {
 export const config = {
   runtime: "edge",
 };
+
+// Simplified Chinese to Traditional Chinese converter for Kugou metadata
+const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
 
 // Extended timeout for AI processing
 export const maxDuration = 120;
@@ -426,10 +430,11 @@ async function searchKugou(
   const searchJson = (await searchRes.json()) as unknown as KugouSearchResponse;
   const infoList: KugouSongInfo[] = searchJson?.data?.info ?? [];
 
+  // Convert Kugou metadata from Simplified to Traditional Chinese
   const scoredResults = infoList.map((song) => ({
-    title: song.songname,
-    artist: song.singername,
-    album: song.album_name,
+    title: simplifiedToTraditional(song.songname),
+    artist: simplifiedToTraditional(song.singername),
+    album: song.album_name ? simplifiedToTraditional(song.album_name) : undefined,
     hash: song.hash,
     albumId: song.album_id,
     score: Math.round(scoreSongMatch(song, title, artist) * 1000) / 1000,
