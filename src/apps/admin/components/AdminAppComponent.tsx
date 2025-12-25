@@ -970,7 +970,7 @@ export function AdminAppComponent({
                             <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
                               {t("apps.admin.tableHeaders.added", "Added")}
                             </TableHead>
-                            <TableHead className="font-normal bg-gray-100/50 h-[28px] w-16"></TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[28px] w-8"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody className="text-[11px]">
