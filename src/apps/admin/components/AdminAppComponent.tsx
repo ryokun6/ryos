@@ -4,10 +4,10 @@ import { WindowFrame } from "@/components/layout/WindowFrame";
 import { AdminMenuBar } from "./AdminMenuBar";
 import { AdminSidebar } from "./AdminSidebar";
 import { UserProfilePanel } from "./UserProfilePanel";
+import { SongDetailPanel } from "./SongDetailPanel";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { InputDialog } from "@/components/dialogs/InputDialog";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { listAllCachedSongMetadata, deleteSongMetadata, deleteAllSongMetadata, bulkImportSongMetadata, saveSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
+import { listAllCachedSongMetadata, deleteSongMetadata, deleteAllSongMetadata, bulkImportSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
 
 interface User {
   username: string;
@@ -103,16 +103,12 @@ export function AdminAppComponent({
   const [activeSection, setActiveSection] = useState<AdminSection>("users");
   const [isRoomsExpanded, setIsRoomsExpanded] = useState(true);
   const [selectedUserProfile, setSelectedUserProfile] = useState<string | null>(null);
+  const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
   const [songs, setSongs] = useState<CachedSongMetadata[]>([]);
   const [songSearch, setSongSearch] = useState("");
   const [visibleSongsCount, setVisibleSongsCount] = useState(100);
   const SONGS_PER_PAGE = 100;
   
-  // Song editing state
-  const [editingSong, setEditingSong] = useState<CachedSongMetadata | null>(null);
-  const [editField, setEditField] = useState<"title" | "artist" | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [isEditSaving, setIsEditSaving] = useState(false);
 
   // Sidebar visibility and mobile detection
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -482,46 +478,6 @@ export function AdminAppComponent({
     }
   }, [username, authToken, fetchSongs, t]);
 
-  // Start editing a song field
-  const startEditSong = useCallback((song: CachedSongMetadata, field: "title" | "artist") => {
-    setEditingSong(song);
-    setEditField(field);
-    setEditValue(field === "title" ? song.title : (song.artist || ""));
-  }, []);
-
-  // Save edited song field
-  const saveEditSong = useCallback(async (newValue: string) => {
-    if (!editingSong || !editField || !username || !authToken) return;
-
-    setIsEditSaving(true);
-    try {
-      const updatedMetadata = {
-        youtubeId: editingSong.youtubeId,
-        title: editField === "title" ? newValue : editingSong.title,
-        artist: editField === "artist" ? newValue : editingSong.artist,
-        album: editingSong.album,
-        lyricOffset: editingSong.lyricOffset,
-        lyricsSource: editingSong.lyricsSource,
-      };
-
-      const success = await saveSongMetadata(updatedMetadata, { username, authToken });
-
-      if (success) {
-        toast.success(t("apps.admin.messages.songUpdated", "Song updated"));
-        fetchSongs();
-        setEditingSong(null);
-        setEditField(null);
-        setEditValue("");
-      } else {
-        toast.error(t("apps.admin.errors.failedToUpdateSong", "Failed to update song"));
-      }
-    } catch (error) {
-      console.error("Failed to update song:", error);
-      toast.error(t("apps.admin.errors.failedToUpdateSong", "Failed to update song"));
-    } finally {
-      setIsEditSaving(false);
-    }
-  }, [editingSong, editField, username, authToken, fetchSongs, t]);
 
   // Handle delete confirmation
   const handleDeleteConfirm = useCallback(() => {
@@ -739,7 +695,7 @@ export function AdminAppComponent({
           {/* Main Content */}
           <div className="flex-1 flex flex-col bg-white overflow-hidden">
             {/* Toolbar */}
-            {!selectedUserProfile && (
+            {!selectedUserProfile && !selectedSongId && (
               <div
                 className={cn(
                   "flex items-center gap-2 px-2 py-1.5 border-b",
@@ -870,6 +826,18 @@ export function AdminAppComponent({
                 />
               )}
 
+              {/* Song Detail View */}
+              {selectedSongId && (
+                <SongDetailPanel
+                  youtubeId={selectedSongId}
+                  onBack={() => setSelectedSongId(null)}
+                  onSongDeleted={() => {
+                    fetchSongs();
+                    fetchStats();
+                  }}
+                />
+              )}
+
               {/* Users View */}
               {activeSection === "users" && !selectedRoomId && !selectedUserProfile && (
                 <div className="font-geneva-12">
@@ -974,7 +942,7 @@ export function AdminAppComponent({
               )}
 
               {/* Songs View */}
-              {activeSection === "songs" && !selectedRoomId && !selectedUserProfile && (
+              {activeSection === "songs" && !selectedRoomId && !selectedUserProfile && !selectedSongId && (
                 <div className="font-geneva-12">
                   {songs.length === 0 && !isLoading ? (
                     <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
@@ -1014,20 +982,15 @@ export function AdminAppComponent({
                             .map((song) => (
                               <TableRow
                                 key={song.youtubeId}
-                                className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/50 group"
+                                className="border-none hover:bg-gray-100/50 transition-colors cursor-pointer odd:bg-gray-200/50 group"
+                                onClick={() => setSelectedSongId(song.youtubeId)}
                               >
-                                <TableCell 
-                                  className="max-w-[180px] cursor-pointer"
-                                  onClick={() => startEditSong(song, "title")}
-                                >
+                                <TableCell className="max-w-[180px]">
                                   <span className="truncate block" title={song.title}>
                                     {song.title}
                                   </span>
                                 </TableCell>
-                                <TableCell 
-                                  className="max-w-[120px] cursor-pointer"
-                                  onClick={() => startEditSong(song, "artist")}
-                                >
+                                <TableCell className="max-w-[120px]">
                                   <span className="truncate block" title={song.artist}>
                                     {song.artist || "-"}
                                   </span>
@@ -1042,9 +1005,10 @@ export function AdminAppComponent({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() =>
-                                      promptDelete("song", song.youtubeId, song.title)
-                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      promptDelete("song", song.youtubeId, song.title);
+                                    }}
                                     className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -1181,23 +1145,6 @@ export function AdminAppComponent({
           onConfirm={handleDeleteConfirm}
           title={t("apps.admin.dialogs.deleteTitle", { type: deleteTarget?.type })}
           description={t("apps.admin.dialogs.deleteDescription", { type: deleteTarget?.type, name: deleteTarget?.name })}
-        />
-        <InputDialog
-          isOpen={editingSong !== null && editField !== null}
-          onOpenChange={(open) => {
-            if (!open) {
-              setEditingSong(null);
-              setEditField(null);
-              setEditValue("");
-            }
-          }}
-          onSubmit={saveEditSong}
-          title={t("apps.admin.dialogs.editSong", { field: editField === "title" ? t("apps.admin.tableHeaders.title", "Title") : t("apps.admin.tableHeaders.artist", "Artist"), defaultValue: `Edit ${editField}` })}
-          description={t("apps.admin.dialogs.editSongDescription", { defaultValue: "Enter the new value" })}
-          value={editValue}
-          onChange={setEditValue}
-          isLoading={isEditSaving}
-          submitLabel={t("common.dialog.save", "Save")}
         />
       </WindowFrame>
     </>
