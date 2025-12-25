@@ -514,7 +514,7 @@ export function FullScreenPortal({
       <div 
         className="flex-shrink-0"
         style={{
-          height: "calc(max(env(safe-area-inset-bottom), 0.75rem) + 48px)",
+          height: "calc(env(safe-area-inset-bottom, 0px) + 48px)",
         }}
       />
 
@@ -522,7 +522,7 @@ export function FullScreenPortal({
       <div
         data-toolbar
         className={cn(
-          "fixed bottom-0 left-0 right-0 flex justify-center z-[10001] transition-opacity duration-200 pb-6",
+          "fixed bottom-0 left-0 right-0 flex justify-center z-[10001] transition-opacity duration-200",
           showControls || anyMenuOpen || !getActualPlayerState()
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
