@@ -1810,6 +1810,7 @@ export function IpodAppComponent({
           <LyricsSearchDialog
             isOpen={isLyricsSearchDialogOpen}
             onOpenChange={setIsLyricsSearchDialogOpen}
+            trackId={currentTrack.id}
             trackTitle={currentTrack.title}
             trackArtist={currentTrack.artist}
             initialQuery={`${currentTrack.title} ${currentTrack.artist || ""}`.trim()}
