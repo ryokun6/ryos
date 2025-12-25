@@ -31,6 +31,8 @@ import {
   canModifySong,
   getSong,
   deleteAllSongs,
+  getSongKey,
+  SONG_SET_KEY,
   type SongDocument,
   type GetSongOptions,
   type LyricsSource,
@@ -225,17 +227,20 @@ export default async function handler(req: Request) {
 
         const { songs } = parsed.data;
         const now = Date.now();
-        let imported = 0;
-        let updated = 0;
 
         logInfo(requestId, "Starting bulk import", { songCount: songs.length });
 
-        // Process songs in order
-        for (let i = 0; i < songs.length; i++) {
-          const songData = songs[i];
+        // Batch fetch all existing songs (1 Redis call instead of N)
+        const songIds = songs.map((s) => s.id);
+        const existingSongs = await listSongs(redis, {
+          ids: songIds,
+          getOptions: { includeMetadata: true },
+        });
+        const existingMap = new Map(existingSongs.map((s) => [s.id, s]));
 
-          // Check if song already exists
-          const existing = await getSong(redis, songData.id, { includeMetadata: true });
+        // Build all song documents (no async needed)
+        const songDocs = songs.map((songData, i) => {
+          const existing = existingMap.get(songData.id);
 
           // Convert legacy lyricsSearch to lyricsSource
           let lyricsSource: LyricsSource | undefined = songData.lyricsSource;
@@ -243,30 +248,33 @@ export default async function handler(req: Request) {
             lyricsSource = songData.lyricsSearch.selection as LyricsSource;
           }
 
-          const songDoc: Partial<SongDocument> & { id: string } = {
-            id: songData.id,
-            title: songData.title,
-            artist: songData.artist,
-            album: songData.album,
-            lyricOffset: songData.lyricOffset,
-            lyricsSource,
-            createdBy: existing?.createdBy || username || undefined,
-            createdAt: existing?.createdAt || now - i, // Maintain order
-            importOrder: existing?.importOrder ?? i,
+          return {
+            doc: {
+              id: songData.id,
+              title: songData.title,
+              artist: songData.artist,
+              album: songData.album,
+              lyricOffset: songData.lyricOffset,
+              lyricsSource,
+              createdBy: existing?.createdBy || username || undefined,
+              createdAt: existing?.createdAt || now - i, // Maintain order
+              updatedAt: now,
+              importOrder: existing?.importOrder ?? i,
+            } as SongDocument,
+            isUpdate: !!existing,
           };
+        });
 
-          await saveSong(redis, songDoc, {
-            preserveLyrics: true,
-            preserveTranslations: true,
-            preserveFurigana: true,
-          });
-
-          if (existing) {
-            updated++;
-          } else {
-            imported++;
-          }
+        // Use pipeline for all writes (1 batched Redis call instead of 2N)
+        const pipeline = redis.pipeline();
+        for (const { doc } of songDocs) {
+          pipeline.set(getSongKey(doc.id), JSON.stringify(doc));
+          pipeline.sadd(SONG_SET_KEY, doc.id);
         }
+        await pipeline.exec();
+
+        const imported = songDocs.filter((d) => !d.isUpdate).length;
+        const updated = songDocs.filter((d) => d.isUpdate).length;
 
         logInfo(requestId, "Bulk import complete", {
           imported,

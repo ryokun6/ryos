@@ -27,9 +27,18 @@ export interface ChunkResult<T> {
   cached: boolean;
 }
 
+interface InitialChunk {
+  chunkIndex: number;
+  startIndex: number;
+  translations?: string[];
+  furigana?: Array<Array<{ text: string; reading?: string }>>;
+  cached: boolean;
+}
+
 interface ChunkInfoResponse extends ChunkInfo {
   translation?: string;
   furigana?: unknown[][];
+  initialChunk?: InitialChunk;
 }
 
 interface TranslateChunkResponse {
@@ -50,7 +59,6 @@ interface FuriganaChunkResponse {
 
 const MAX_CONCURRENT_CHUNKS = 2; // Limit concurrent requests to avoid overwhelming the server
 const CHUNK_TIMEOUT = 60000; // 60 seconds per chunk
-const SAVE_TIMEOUT = 15000; // 15 seconds for saving consolidated result
 
 /**
  * Get chunk info for an operation (translation or furigana)
@@ -83,68 +91,6 @@ export async function getChunkInfo(
 }
 
 /**
- * Save consolidated translation to song document
- * Called after all chunks have been processed so future requests get instant cached results
- */
-async function saveConsolidatedTranslation(
-  songId: string,
-  language: string,
-  translations: string[],
-  signal?: AbortSignal
-): Promise<void> {
-  try {
-    const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "save-translation",
-        language,
-        translations,
-      }),
-      signal,
-      timeout: SAVE_TIMEOUT,
-    });
-
-    if (!res.ok) {
-      console.warn(`Failed to save consolidated translation (status ${res.status})`);
-    }
-  } catch (err) {
-    // Don't throw - this is a best-effort operation
-    console.warn("Failed to save consolidated translation:", err);
-  }
-}
-
-/**
- * Save consolidated furigana to song document
- * Called after all chunks have been processed so future requests get instant cached results
- */
-async function saveConsolidatedFurigana(
-  songId: string,
-  furigana: Array<Array<{ text: string; reading?: string }>>,
-  signal?: AbortSignal
-): Promise<void> {
-  try {
-    const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "save-furigana",
-        furigana,
-      }),
-      signal,
-      timeout: SAVE_TIMEOUT,
-    });
-
-    if (!res.ok) {
-      console.warn(`Failed to save consolidated furigana (status ${res.status})`);
-    }
-  } catch (err) {
-    // Don't throw - this is a best-effort operation
-    console.warn("Failed to save consolidated furigana:", err);
-  }
-}
-
-/**
  * Process translation chunks with streaming progress
  */
 export async function processTranslationChunks(
@@ -173,8 +119,24 @@ export async function processTranslationChunks(
   const allTranslations: string[] = new Array(chunkInfo.totalLines).fill("");
   let completedChunks = 0;
 
-  // Process chunks with limited concurrency
-  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
+  // Use the pre-processed chunk 0 from the server if present
+  if (chunkInfo.initialChunk?.translations) {
+    const { startIndex, translations } = chunkInfo.initialChunk;
+    translations.forEach((text, i) => {
+      const targetIndex = startIndex + i;
+      if (targetIndex < allTranslations.length) {
+        allTranslations[targetIndex] = text;
+      }
+    });
+    completedChunks++;
+    onProgress?.({ completedChunks, totalChunks, percentage: Math.round((completedChunks / totalChunks) * 100) });
+    onChunk?.(0, startIndex, translations);
+  }
+
+  // Process remaining chunks (skip chunk 0 if we already have it)
+  const chunkIndices = chunkInfo.initialChunk?.translations
+    ? Array.from({ length: totalChunks - 1 }, (_, i) => i + 1)
+    : Array.from({ length: totalChunks }, (_, i) => i);
   
   await processWithConcurrency(
     chunkIndices,
@@ -227,10 +189,7 @@ export async function processTranslationChunks(
     MAX_CONCURRENT_CHUNKS
   );
 
-  // Save consolidated result so future requests get instant cached results
-  // This runs in the background - we don't await it to avoid blocking the UI
-  saveConsolidatedTranslation(songId, language, allTranslations, signal);
-
+  // Server auto-consolidates on the last chunk, no need to save here
   return allTranslations;
 }
 
@@ -261,8 +220,24 @@ export async function processFuriganaChunks(
   const allFurigana: Array<Array<{ text: string; reading?: string }>> = new Array(totalLines);
   let completedChunks = 0;
 
-  // Process chunks with limited concurrency
-  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
+  // Use the pre-processed chunk 0 from the server if present
+  if (chunkInfo.initialChunk?.furigana) {
+    const { startIndex, furigana } = chunkInfo.initialChunk;
+    furigana.forEach((segments, i) => {
+      const targetIndex = startIndex + i;
+      if (targetIndex < allFurigana.length) {
+        allFurigana[targetIndex] = segments;
+      }
+    });
+    completedChunks++;
+    onProgress?.({ completedChunks, totalChunks, percentage: Math.round((completedChunks / totalChunks) * 100) });
+    onChunk?.(0, startIndex, furigana);
+  }
+
+  // Process remaining chunks (skip chunk 0 if we already have it)
+  const chunkIndices = chunkInfo.initialChunk?.furigana
+    ? Array.from({ length: totalChunks - 1 }, (_, i) => i + 1)
+    : Array.from({ length: totalChunks }, (_, i) => i);
   
   await processWithConcurrency(
     chunkIndices,
@@ -314,10 +289,7 @@ export async function processFuriganaChunks(
     MAX_CONCURRENT_CHUNKS
   );
 
-  // Save consolidated result so future requests get instant cached results
-  // This runs in the background - we don't await it to avoid blocking the UI
-  saveConsolidatedFurigana(songId, allFurigana, signal);
-
+  // Server auto-consolidates on the last chunk, no need to save here
   return allFurigana;
 }
 

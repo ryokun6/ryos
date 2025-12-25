@@ -124,11 +124,8 @@ export const SONG_KEY_PREFIX = "song:";
 /** Redis set tracking all song IDs */
 export const SONG_SET_KEY = "song:all";
 
-/** Old key prefixes for backwards compatibility */
+/** Old key prefix for backwards compatibility */
 export const LEGACY_SONG_METADATA_PREFIX = "song:metadata:";
-export const LEGACY_LYRICS_CACHE_PREFIX = "lyrics:cache:";
-export const LEGACY_TRANSLATION_PREFIX = "lyrics:translations:";
-export const LEGACY_FURIGANA_PREFIX = "lyrics:furigana:";
 
 // =============================================================================
 // Utility Functions
@@ -139,33 +136,6 @@ export const LEGACY_FURIGANA_PREFIX = "lyrics:furigana:";
  */
 export function getSongKey(id: string): string {
   return `${SONG_KEY_PREFIX}${id}`;
-}
-
-/**
- * Simple djb2 string hash for cache key generation
- */
-export function hashString(str: string): string {
-  let hash = 5381;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 33) ^ str.charCodeAt(i);
-  }
-  return (hash >>> 0).toString(16);
-}
-
-/**
- * Build legacy lyrics cache key for backwards compatibility
- */
-export function buildLegacyLyricsCacheKey(
-  title: string,
-  artist: string,
-  songHash?: string
-): string {
-  const normalized = [title.trim().toLowerCase(), artist.trim().toLowerCase()]
-    .filter(Boolean)
-    .join("|");
-  const keySource = songHash ? `${normalized}|${songHash}` : normalized;
-  const fingerprint = hashString(keySource);
-  return `${LEGACY_LYRICS_CACHE_PREFIX}${fingerprint}`;
 }
 
 /**
@@ -304,15 +274,17 @@ async function getLegacySong(
 export async function saveSong(
   redis: Redis,
   song: Partial<SongDocument> & { id: string },
-  options: SaveSongOptions = {}
+  options: SaveSongOptions = {},
+  existingSong?: SongDocument | null
 ): Promise<SongDocument> {
   const { preserveLyrics = false, preserveTranslations = false, preserveFurigana = false } = options;
   const songKey = getSongKey(song.id);
   const now = Date.now();
 
-  // Get existing song to merge with
-  const existingRaw = await redis.get(songKey);
-  const existing = parseSongDocument(existingRaw);
+  // Get existing song to merge with (use provided or fetch)
+  const existing = existingSong !== undefined 
+    ? existingSong 
+    : parseSongDocument(await redis.get(songKey));
 
   // Build the document
   const doc: SongDocument = {
@@ -340,30 +312,6 @@ export async function saveSong(
   await redis.sadd(SONG_SET_KEY, song.id);
 
   return doc;
-}
-
-/**
- * Update specific fields of a song
- */
-export async function updateSong(
-  redis: Redis,
-  id: string,
-  updates: Partial<Omit<SongDocument, "id" | "createdAt">>
-): Promise<SongDocument | null> {
-  const existing = await getSong(redis, id, {
-    includeMetadata: true,
-    includeLyrics: true,
-    includeTranslations: true,
-    includeFurigana: true,
-  });
-
-  if (!existing) return null;
-
-  return saveSong(redis, {
-    ...existing,
-    ...updates,
-    id,
-  });
 }
 
 /**
@@ -530,7 +478,7 @@ export async function saveLyrics(
   }, {
     preserveTranslations: true,
     preserveFurigana: true,
-  });
+  }, existing);
 }
 
 /**
@@ -556,7 +504,7 @@ export async function saveTranslation(
   return saveSong(redis, {
     ...existing,
     translations,
-  });
+  }, {}, existing);
 }
 
 /**
@@ -579,62 +527,7 @@ export async function saveFurigana(
   return saveSong(redis, {
     ...existing,
     furigana,
-  });
-}
-
-/**
- * Clear cached data for a song (lyrics, translations, furigana)
- */
-export async function clearSongCache(
-  redis: Redis,
-  id: string,
-  options: {
-    clearLyrics?: boolean;
-    clearTranslations?: boolean | string[];
-    clearFurigana?: boolean;
-  } = {}
-): Promise<SongDocument | null> {
-  const { clearLyrics = true, clearTranslations = true, clearFurigana = true } = options;
-
-  const existing = await getSong(redis, id, {
-    includeMetadata: true,
-    includeLyrics: true,
-    includeTranslations: true,
-    includeFurigana: true,
-  });
-
-  if (!existing) return null;
-
-  const updates: Partial<SongDocument> = {};
-
-  if (clearLyrics) {
-    updates.lyrics = undefined;
-  }
-
-  if (clearFurigana) {
-    updates.furigana = undefined;
-  }
-
-  if (clearTranslations === true) {
-    updates.translations = undefined;
-  } else if (Array.isArray(clearTranslations) && existing.translations) {
-    const newTranslations = { ...existing.translations };
-    for (const lang of clearTranslations) {
-      delete newTranslations[lang];
-    }
-    updates.translations = Object.keys(newTranslations).length > 0 ? newTranslations : undefined;
-  }
-
-  // If nothing to clear, return existing
-  if (Object.keys(updates).length === 0) {
-    return existing;
-  }
-
-  return saveSong(redis, {
-    ...existing,
-    ...updates,
-    id,
-  });
+  }, {}, existing);
 }
 
 /**

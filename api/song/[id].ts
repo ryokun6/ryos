@@ -118,17 +118,6 @@ const SearchLyricsSchema = z.object({
   query: z.string().max(500).optional(),
 });
 
-const TranslateSchema = z.object({
-  action: z.literal("translate"),
-  language: z.string().max(10),
-  force: z.boolean().optional(),
-});
-
-const FuriganaSchema = z.object({
-  action: z.literal("furigana"),
-  force: z.boolean().optional(),
-});
-
 // Chunked processing schemas - for avoiding edge function timeouts
 const TranslateChunkSchema = z.object({
   action: z.literal("translate-chunk"),
@@ -1148,11 +1137,8 @@ export default async function handler(req: Request) {
     if (req.method === "GET") {
       const includeParam = url.searchParams.get("include") || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
-      const translateTo = url.searchParams.get("translateTo");
-      const withFurigana = url.searchParams.get("withFurigana") === "true";
-      const force = url.searchParams.get("force") === "true";
 
-      logInfo(requestId, "GET song", { songId, includes, translateTo, withFurigana, force });
+      logInfo(requestId, "GET song", { songId, includes });
 
       // Fetch song with requested includes
       const song = await getSong(redis, songId, {
@@ -1176,39 +1162,6 @@ export default async function handler(req: Request) {
         );
         // Save updated lyrics with parsedLines
         await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
-      }
-
-      // Generate translation on-demand if requested
-      if (translateTo && song.lyrics?.parsedLines && song.lyrics.parsedLines.length > 0) {
-        const existingTranslation = song.translations?.[translateTo];
-        if (!existingTranslation || force) {
-          logInfo(requestId, `Generating translation to ${translateTo}`);
-          try {
-            const translatedLrc = await translateFromParsedLines(song.lyrics.parsedLines, translateTo, requestId);
-            await saveTranslation(redis, songId, translateTo, translatedLrc);
-            song.translations = song.translations || {};
-            song.translations[translateTo] = translatedLrc;
-          } catch (err) {
-            logError(requestId, "Translation failed", err);
-            // Continue without translation
-          }
-        }
-      }
-
-      // Generate furigana on-demand if requested
-      if (withFurigana && song.lyrics?.parsedLines && song.lyrics.parsedLines.length > 0) {
-        const existingFurigana = song.furigana;
-        if (!existingFurigana || force) {
-          logInfo(requestId, "Generating furigana");
-          try {
-            const furigana = await generateFuriganaFromParsedLines(song.lyrics.parsedLines, requestId);
-            await saveFurigana(redis, songId, furigana);
-            song.furigana = furigana;
-          } catch (err) {
-            logError(requestId, "Furigana generation failed", err);
-            // Continue without furigana
-          }
-        }
       }
 
       logInfo(requestId, `Response: 200 OK`, { 
@@ -1399,122 +1352,6 @@ export default async function handler(req: Request) {
         return jsonResponse({ lyrics, cached: false });
       }
 
-      // Handle translate action (no auth required for reading, but we save results)
-      if (action === "translate") {
-        const parsed = TranslateSchema.safeParse(body);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        const { language, force } = parsed.data;
-
-        // Get song with lyrics and metadata (for title/artist filtering)
-        const song = await getSong(redis, songId, {
-          includeMetadata: true,
-          includeLyrics: true,
-          includeTranslations: [language],
-        });
-
-        if (!song?.lyrics?.lrc) {
-          return errorResponse("Song has no lyrics to translate", 404);
-        }
-
-        // Check for cached translation
-        if (!force && song.translations?.[language]) {
-          logInfo(requestId, `Response: 200 OK - Returning cached translation (${language})`);
-          return jsonResponse({
-            translation: song.translations[language],
-            cached: true,
-          });
-        }
-
-        // Ensure parsedLines exist (generate for legacy data)
-        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
-          logInfo(requestId, "Generating parsedLines for legacy data");
-          song.lyrics.parsedLines = parseLyricsContent(
-            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-            song.title,
-            song.artist
-          );
-          // Save updated lyrics with parsedLines
-          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
-        }
-
-        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
-          return errorResponse("No lyrics lines to translate", 404);
-        }
-
-        logInfo(requestId, `Translating to ${language} (${song.lyrics.parsedLines.length} lines)`);
-        const translatedLrc = await translateFromParsedLines(song.lyrics.parsedLines, language, requestId);
-
-        // Save translation
-        await saveTranslation(redis, songId, language, translatedLrc);
-
-        logInfo(requestId, `Response: 200 OK - Translation generated (${language})`);
-        return jsonResponse({
-          translation: translatedLrc,
-          cached: false,
-        });
-      }
-
-      // Handle furigana action (no auth required)
-      if (action === "furigana") {
-        const parsed = FuriganaSchema.safeParse(body);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        const { force } = parsed.data;
-
-        // Get song with lyrics and metadata (for title/artist filtering)
-        const song = await getSong(redis, songId, {
-          includeMetadata: true,
-          includeLyrics: true,
-          includeFurigana: true,
-        });
-
-        if (!song?.lyrics?.lrc) {
-          return errorResponse("Song has no lyrics", 404);
-        }
-
-        // Check for cached furigana
-        if (!force && song.furigana) {
-          logInfo(requestId, `Response: 200 OK - Returning cached furigana`);
-          return jsonResponse({
-            furigana: song.furigana,
-            cached: true,
-          });
-        }
-
-        // Ensure parsedLines exist (generate for legacy data)
-        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
-          logInfo(requestId, "Generating parsedLines for legacy data");
-          song.lyrics.parsedLines = parseLyricsContent(
-            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-            song.title,
-            song.artist
-          );
-          // Save updated lyrics with parsedLines
-          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
-        }
-
-        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
-          return errorResponse("No lyrics lines for furigana", 404);
-        }
-
-        logInfo(requestId, `Generating furigana (${song.lyrics.parsedLines.length} lines)`);
-        const furigana = await generateFuriganaFromParsedLines(song.lyrics.parsedLines, requestId);
-
-        // Save furigana
-        await saveFurigana(redis, songId, furigana);
-
-        logInfo(requestId, `Response: 200 OK - Furigana generated (${furigana.length} lines)`);
-        return jsonResponse({
-          furigana,
-          cached: false,
-        });
-      }
-
       // =======================================================================
       // Handle get-chunk-info action - returns chunk metadata for client
       // =======================================================================
@@ -1559,7 +1396,51 @@ export default async function handler(req: Request) {
           cached = true;
         }
 
-        logInfo(requestId, `Chunk info: ${operation}`, { totalLines, totalChunks, cached });
+        // If not cached and has chunks, process chunk 0 inline to eliminate one round-trip
+        let initialChunk: {
+          chunkIndex: number;
+          startIndex: number;
+          translations?: string[];
+          furigana?: FuriganaSegment[][];
+          cached: boolean;
+        } | undefined;
+
+        if (!cached && totalChunks > 0) {
+          const startIndex = 0;
+          const endIndex = Math.min(CHUNK_SIZE, totalLines);
+          const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
+
+          if (operation === "translate" && language) {
+            // Convert to LyricLine format and translate
+            const lines: LyricLine[] = chunkLines.map(line => ({ words: line.words, startTimeMs: line.startTimeMs }));
+            const translations = await translateChunk(lines, language, requestId);
+
+            // Cache chunk 0
+            const lyricsHash = song.lyricsSource?.hash;
+            const chunkCacheKey = lyricsHash
+              ? `song:${songId}:translate:${language}:chunk:0:${lyricsHash}`
+              : `song:${songId}:translate:${language}:chunk:0`;
+            await redis.set(chunkCacheKey, translations, { ex: 60 * 60 * 24 * 30 });
+
+            initialChunk = { chunkIndex: 0, startIndex: 0, translations, cached: false };
+            logInfo(requestId, `Chunk info: ${operation} - processed chunk 0 inline`, { totalLines, totalChunks });
+          } else if (operation === "furigana") {
+            const lines: LyricLine[] = chunkLines.map(line => ({ words: line.words, startTimeMs: line.startTimeMs }));
+            const furigana = await generateFuriganaForChunk(lines, requestId);
+
+            const lyricsHash = song.lyricsSource?.hash;
+            const chunkCacheKey = lyricsHash
+              ? `song:${songId}:furigana:chunk:0:${lyricsHash}`
+              : `song:${songId}:furigana:chunk:0`;
+            await redis.set(chunkCacheKey, furigana, { ex: 60 * 60 * 24 * 30 });
+
+            initialChunk = { chunkIndex: 0, startIndex: 0, furigana, cached: false };
+            logInfo(requestId, `Chunk info: ${operation} - processed chunk 0 inline`, { totalLines, totalChunks });
+          }
+        } else {
+          logInfo(requestId, `Chunk info: ${operation}`, { totalLines, totalChunks, cached });
+        }
+
         return jsonResponse({
           totalLines,
           totalChunks,
@@ -1570,6 +1451,8 @@ export default async function handler(req: Request) {
             ? { translation: song.translations[language] }
             : {}),
           ...(cached && operation === "furigana" && song.furigana ? { furigana: song.furigana } : {}),
+          // Include first chunk if not cached (eliminates one round-trip)
+          ...(initialChunk ? { initialChunk } : {}),
         });
       }
 
@@ -1653,6 +1536,31 @@ export default async function handler(req: Request) {
           await redis.set(chunkCacheKey, translations, { ex: 60 * 60 * 24 * 30 });
         } catch (e) {
           logError(requestId, "Chunk cache write failed", e);
+        }
+
+        // Auto-consolidate on last chunk: fetch all cached chunks and save to song document
+        if (chunkIndex === totalChunks - 1) {
+          const allTranslations: string[] = [];
+          for (let i = 0; i < totalChunks; i++) {
+            const cachedChunkKey = lyricsHash
+              ? `song:${songId}:translate:${language}:chunk:${i}:${lyricsHash}`
+              : `song:${songId}:translate:${language}:chunk:${i}`;
+            if (i === chunkIndex) {
+              // Current chunk - use translations we just generated
+              allTranslations.push(...translations);
+            } else {
+              const cachedChunk = await redis.get(cachedChunkKey) as string[] | null;
+              if (cachedChunk) {
+                allTranslations.push(...cachedChunk);
+              }
+            }
+          }
+          // Build LRC and save
+          const translatedLrc = song.lyrics!.parsedLines!
+            .map((line, idx) => `${msToLrcTime(line.startTimeMs)}${allTranslations[idx] || line.words}`)
+            .join("\n");
+          await saveTranslation(redis, songId, language, translatedLrc);
+          logInfo(requestId, `Auto-consolidated translation (${language}, ${allTranslations.length} lines)`);
         }
 
         logInfo(requestId, `Translate chunk ${chunkIndex + 1}/${totalChunks} - completed`);
@@ -1745,6 +1653,28 @@ export default async function handler(req: Request) {
           await redis.set(chunkCacheKey, furigana, { ex: 60 * 60 * 24 * 30 });
         } catch (e) {
           logError(requestId, "Chunk cache write failed", e);
+        }
+
+        // Auto-consolidate on last chunk: fetch all cached chunks and save to song document
+        if (chunkIndex === totalChunks - 1) {
+          const allFurigana: FuriganaSegment[][] = [];
+          for (let i = 0; i < totalChunks; i++) {
+            const cachedChunkKey = lyricsHash
+              ? `song:${songId}:furigana:chunk:${i}:${lyricsHash}`
+              : `song:${songId}:furigana:chunk:${i}`;
+            if (i === chunkIndex) {
+              // Current chunk - use furigana we just generated
+              allFurigana.push(...furigana);
+            } else {
+              const cachedChunk = await redis.get(cachedChunkKey) as FuriganaSegment[][] | null;
+              if (cachedChunk) {
+                allFurigana.push(...cachedChunk);
+              }
+            }
+          }
+          // Save consolidated furigana
+          await saveFurigana(redis, songId, allFurigana);
+          logInfo(requestId, `Auto-consolidated furigana (${allFurigana.length} lines)`);
         }
 
         logInfo(requestId, `Furigana chunk ${chunkIndex + 1}/${totalChunks} - completed`);
