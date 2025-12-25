@@ -529,7 +529,7 @@ export function FullScreenPortal({
         )}
         style={{
           paddingBottom:
-            "calc(max(env(safe-area-inset-bottom), 0.75rem) + 1.5rem)",
+            "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)",
         }}
         onClick={(e) => {
           e.stopPropagation();
