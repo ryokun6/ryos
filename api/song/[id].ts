@@ -96,6 +96,9 @@ const FetchLyricsSchema = z.object({
   action: z.literal("fetch-lyrics"),
   lyricsSource: LyricsSourceSchema.optional(),
   force: z.boolean().optional(),
+  // Allow client to pass title/artist for auto-search when song not in Redis yet
+  title: z.string().optional(),
+  artist: z.string().optional(),
 });
 
 const SearchLyricsSchema = z.object({
@@ -1117,6 +1120,10 @@ export default async function handler(req: Request) {
 
         const force = parsed.data.force || false;
         let lyricsSource: LyricsSource | undefined = parsed.data.lyricsSource as LyricsSource | undefined;
+        
+        // Client can pass title/artist directly (useful when song not in Redis yet)
+        const clientTitle = parsed.data.title;
+        const clientArtist = parsed.data.artist;
 
         // Get existing song
         const song = await getSong(redis, songId, {
@@ -1142,16 +1149,21 @@ export default async function handler(req: Request) {
           });
         }
 
+        // Determine title/artist for auto-search
+        // Priority: song from Redis > client-provided > empty
+        const rawTitle = song?.title || clientTitle || "";
+        const rawArtist = song?.artist || clientArtist || "";
+
         // If no source, try auto-search with AI-parsed title
-        if (!lyricsSource && song) {
+        if (!lyricsSource && rawTitle) {
           // Use AI to parse the title for better search results
-          const aiParsed = await parseYouTubeTitleWithAI(song.title, song.artist || "", requestId);
-          const searchTitle = aiParsed.title || song.title;
-          const searchArtist = aiParsed.artist || song.artist || "";
+          const aiParsed = await parseYouTubeTitleWithAI(rawTitle, rawArtist, requestId);
+          const searchTitle = aiParsed.title || rawTitle;
+          const searchArtist = aiParsed.artist || rawArtist;
           const query = `${stripParentheses(searchTitle)} ${stripParentheses(searchArtist)}`.trim();
           
           logInfo(requestId, "Auto-searching lyrics with AI-parsed title", { 
-            original: { title: song.title, artist: song.artist },
+            original: { title: rawTitle, artist: rawArtist },
             parsed: { title: searchTitle, artist: searchArtist },
             query 
           });

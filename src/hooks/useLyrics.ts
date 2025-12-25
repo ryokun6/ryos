@@ -150,9 +150,15 @@ export function useLyrics({
         album?: string;
       };
       force?: boolean;
+      // Pass title/artist for auto-search when song not in Redis yet
+      title?: string;
+      artist?: string;
     } = {
       action: "fetch-lyrics",
       force: isForced,
+      // Always pass title/artist so server can auto-search even if song not in Redis
+      title: title || undefined,
+      artist: artist || undefined,
     };
 
     if (selectedMatch) {
