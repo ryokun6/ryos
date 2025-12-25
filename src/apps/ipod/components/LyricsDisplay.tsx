@@ -354,7 +354,7 @@ function StaticWordRendering({
             className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
             onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.startTimeMs); } : undefined}
           >
-            <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
+            <span className="opacity-55 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
               {item.content}
             </span>
           </span>
@@ -539,7 +539,7 @@ function WordTimingHighlight({
           className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
           onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.word.startTimeMs); } : undefined}
         >
-          <span className="opacity-50 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
+          <span className="opacity-55 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
             {item.content}
           </span>
           {/* Glow wrapper - filter applied here creates glow around masked content */}
@@ -586,22 +586,22 @@ const getVariants = (
   // For non-word-timed lines, use normal opacity animation
   const getAnimateOpacity = () => {
     // Alternating layout: less aggressive dimming
-    if (isAlternating) return isCurrent ? 1 : 0.8;
+    if (isAlternating) return isCurrent ? 1 : 0.75;
     
     if (hasWordTiming) {
       // Word-timed lines: current at full, inactive more faded for focus effect
       if (isCurrent) return 1;
       // Past line (position -1) dimmer than next line (position 1)
-      if (position === -1) return 0.5;
-      if (position === 1) return 0.8;
-      return 0.8;
+      if (position === -1) return 0.55;
+      if (position === 1) return 0.75;
+      return 0.75;
     }
     // Non-word-timed lines: normal opacity animation
     if (isCurrent) return 1;
     // Past line dimmer than next line in FocusThree mode
-    if (position === -1) return 0.2;
-    if (position === 1) return 0.35;
-    return 0.1;
+    if (position === -1) return 0.3;
+    if (position === 1) return 0.4;
+    return 0.2;
   };
 
   // For word-timed lines, start at target opacity to avoid flash on entry
@@ -1186,7 +1186,7 @@ export function LyricsDisplay({
                   className={`text-white ${fontClassName} ${translationSizeClass}`}
                   style={{
                     lineHeight: 1.1,
-                    opacity: 0.5,
+                    opacity: 0.55,
                   }}
                 >
                   {processedTranslation}
