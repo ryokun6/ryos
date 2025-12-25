@@ -67,6 +67,9 @@ export function useFurigana({
   const [progress, setProgress] = useState<number | undefined>();
   const [error, setError] = useState<string>();
   const furiganaCacheKeyRef = useRef<string>("");
+  // Track current songId for race condition prevention
+  const currentSongIdRef = useRef(songId);
+  currentSongIdRef.current = songId;
   
   // Track cache bust trigger for clearing caches
   const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
@@ -103,8 +106,11 @@ export function useFurigana({
   // Fetch furigana for original lines when enabled using chunked streaming
   // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   useEffect(() => {
+    // Capture songId at effect start for stale request detection
+    const effectSongId = songId;
+
     // If completely disabled, no songId, or no lines, clear everything
-    if (!songId || !shouldFetchFurigana || !hasLines) {
+    if (!effectSongId || !shouldFetchFurigana || !hasLines) {
       if (furiganaCacheKeyRef.current !== "") {
         setFuriganaMap(new Map());
         furiganaCacheKeyRef.current = "";
@@ -154,17 +160,21 @@ export function useFurigana({
     const controller = new AbortController();
 
     // Use chunked streaming for furigana to avoid edge function timeouts
-    processFuriganaChunks(songId, {
+    processFuriganaChunks(effectSongId, {
       force: isForceRequest,
       signal: controller.signal,
       onProgress: (chunkProgress) => {
         if (!controller.signal.aborted) {
+          // Check for stale request
+          if (effectSongId !== currentSongIdRef.current) return;
           setProgress(chunkProgress.percentage);
         }
       },
       onChunk: (_chunkIndex, startIndex, furiganaChunk) => {
         // Progressive update: merge new chunk into current map
         if (!controller.signal.aborted) {
+          // Check for stale request
+          if (effectSongId !== currentSongIdRef.current) return;
           setFuriganaMap((prevMap) => {
             const newMap = new Map(prevMap);
             furiganaChunk.forEach((segments, i) => {
@@ -180,6 +190,8 @@ export function useFurigana({
     })
       .then((allFurigana) => {
         if (controller.signal.aborted) return;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return;
 
         // Final update with all furigana
         const newMap = new Map<string, FuriganaSegment[]>();
@@ -195,6 +207,8 @@ export function useFurigana({
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return;
         
         if (err instanceof Error && err.name === "AbortError") {
           return;
@@ -204,7 +218,7 @@ export function useFurigana({
         setError(err instanceof Error ? err.message : "Failed to fetch furigana");
       })
       .finally(() => {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsFetching(false);
           setProgress(undefined);
         }

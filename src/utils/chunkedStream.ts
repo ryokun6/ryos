@@ -50,6 +50,7 @@ interface FuriganaChunkResponse {
 
 const MAX_CONCURRENT_CHUNKS = 2; // Limit concurrent requests to avoid overwhelming the server
 const CHUNK_TIMEOUT = 60000; // 60 seconds per chunk
+const SAVE_TIMEOUT = 15000; // 15 seconds for saving consolidated result
 
 /**
  * Get chunk info for an operation (translation or furigana)
@@ -79,6 +80,68 @@ export async function getChunkInfo(
   }
 
   return res.json();
+}
+
+/**
+ * Save consolidated translation to song document
+ * Called after all chunks have been processed so future requests get instant cached results
+ */
+async function saveConsolidatedTranslation(
+  songId: string,
+  language: string,
+  translations: string[],
+  signal?: AbortSignal
+): Promise<void> {
+  try {
+    const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save-translation",
+        language,
+        translations,
+      }),
+      signal,
+      timeout: SAVE_TIMEOUT,
+    });
+
+    if (!res.ok) {
+      console.warn(`Failed to save consolidated translation (status ${res.status})`);
+    }
+  } catch (err) {
+    // Don't throw - this is a best-effort operation
+    console.warn("Failed to save consolidated translation:", err);
+  }
+}
+
+/**
+ * Save consolidated furigana to song document
+ * Called after all chunks have been processed so future requests get instant cached results
+ */
+async function saveConsolidatedFurigana(
+  songId: string,
+  furigana: Array<Array<{ text: string; reading?: string }>>,
+  signal?: AbortSignal
+): Promise<void> {
+  try {
+    const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save-furigana",
+        furigana,
+      }),
+      signal,
+      timeout: SAVE_TIMEOUT,
+    });
+
+    if (!res.ok) {
+      console.warn(`Failed to save consolidated furigana (status ${res.status})`);
+    }
+  } catch (err) {
+    // Don't throw - this is a best-effort operation
+    console.warn("Failed to save consolidated furigana:", err);
+  }
 }
 
 /**
@@ -137,9 +200,20 @@ export async function processTranslationChunks(
 
       const result = await res.json() as TranslateChunkResponse;
       
-      // Store translations in correct positions
+      // Validate startIndex is a valid non-negative number
+      if (typeof result.startIndex !== 'number' || result.startIndex < 0 || !Number.isFinite(result.startIndex)) {
+        console.warn(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}, skipping`);
+        return;
+      }
+      
+      // Store translations in correct positions with bounds checking
       result.translations.forEach((text, i) => {
-        allTranslations[result.startIndex + i] = text;
+        const targetIndex = result.startIndex + i;
+        if (targetIndex < allTranslations.length) {
+          allTranslations[targetIndex] = text;
+        } else {
+          console.warn(`Translation bounds exceeded: index ${targetIndex} >= array length ${allTranslations.length} (chunk ${chunkIndex})`);
+        }
       });
 
       completedChunks++;
@@ -152,6 +226,10 @@ export async function processTranslationChunks(
     },
     MAX_CONCURRENT_CHUNKS
   );
+
+  // Save consolidated result so future requests get instant cached results
+  // This runs in the background - we don't await it to avoid blocking the UI
+  saveConsolidatedTranslation(songId, language, allTranslations, signal);
 
   return allTranslations;
 }
@@ -209,9 +287,20 @@ export async function processFuriganaChunks(
 
       const result = await res.json() as FuriganaChunkResponse;
       
-      // Store furigana in correct positions
+      // Validate startIndex is a valid non-negative number
+      if (typeof result.startIndex !== 'number' || result.startIndex < 0 || !Number.isFinite(result.startIndex)) {
+        console.warn(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}, skipping`);
+        return;
+      }
+      
+      // Store furigana in correct positions with bounds checking
       result.furigana.forEach((segments, i) => {
-        allFurigana[result.startIndex + i] = segments;
+        const targetIndex = result.startIndex + i;
+        if (targetIndex < allFurigana.length) {
+          allFurigana[targetIndex] = segments;
+        } else {
+          console.warn(`Furigana bounds exceeded: index ${targetIndex} >= array length ${allFurigana.length} (chunk ${chunkIndex})`);
+        }
       });
 
       completedChunks++;
@@ -224,6 +313,10 @@ export async function processFuriganaChunks(
     },
     MAX_CONCURRENT_CHUNKS
   );
+
+  // Save consolidated result so future requests get instant cached results
+  // This runs in the background - we don't await it to avoid blocking the UI
+  saveConsolidatedFurigana(songId, allFurigana, signal);
 
   return allFurigana;
 }

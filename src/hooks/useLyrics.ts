@@ -90,6 +90,9 @@ export function useLyrics({
 
   const cachedKeyRef = useRef<string | null>(null);
   const lastTimeRef = useRef<number>(currentTime);
+  // Track current songId for race condition prevention
+  const currentSongIdRef = useRef(songId);
+  currentSongIdRef.current = songId;
   // Track refresh trigger from the iPod store to force re-fetching
   const refetchTrigger = useIpodStore((s) => s.lyricsRefetchTrigger);
   const lastRefetchTriggerRef = useRef<number>(0);
@@ -99,8 +102,11 @@ export function useLyrics({
 
   // Effect for fetching original lyrics
   useEffect(() => {
+    // Capture songId at effect start for stale request detection
+    const effectSongId = songId;
+
     // Early return if no songId
-    if (!songId) {
+    if (!effectSongId) {
       setOriginalLines([]);
       setTranslatedLines(null);
       setCurrentLine(-1);
@@ -118,7 +124,7 @@ export function useLyrics({
 
     // Include selectedMatch hash in cache key to ensure different versions are cached separately
     const selectedMatchKey = selectedMatch?.hash || "";
-    const cacheKey = `song:${songId}:${selectedMatchKey}`;
+    const cacheKey = `song:${effectSongId}:${selectedMatchKey}`;
     
     // Force refresh only when user explicitly triggers via refreshLyrics()
     const isForced = lastRefetchTriggerRef.current !== refetchTrigger;
@@ -171,7 +177,7 @@ export function useLyrics({
       };
     }
 
-    abortableFetch(getApiUrl(`/api/song/${songId}`), {
+    abortableFetch(getApiUrl(`/api/song/${effectSongId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),
@@ -180,6 +186,8 @@ export function useLyrics({
     })
       .then(async (res) => {
         if (controller.signal.aborted) return null;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return null;
         if (!res.ok) {
           if (res.status === 404) return null;
           throw new Error(`Failed to fetch lyrics (status ${res.status})`);
@@ -188,6 +196,8 @@ export function useLyrics({
       })
       .then((json) => {
         if (controller.signal.aborted) return;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return;
         if (!json || !json.lyrics) throw new Error("No lyrics found");
 
         const parsedLines = json.lyrics.parsedLines;
@@ -214,10 +224,12 @@ export function useLyrics({
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return;
         handleLyricsError(err, setError, setOriginalLines, setCurrentLine);
       })
       .finally(() => {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsFetchingOriginal(false);
           lastRefetchTriggerRef.current = refetchTrigger;
         }
@@ -230,7 +242,10 @@ export function useLyrics({
 
   // Effect for translating lyrics using chunked streaming
   useEffect(() => {
-    if (!songId || !translateTo || originalLines.length === 0) {
+    // Capture songId at effect start for stale request detection
+    const effectSongId = songId;
+
+    if (!effectSongId || !translateTo || originalLines.length === 0) {
       setTranslatedLines(null);
       setIsTranslating(false);
       setTranslationProgress(undefined);
@@ -260,17 +275,21 @@ export function useLyrics({
     const controller = new AbortController();
 
     // Use chunked streaming for translation to avoid edge function timeouts
-    processTranslationChunks(songId, translateTo, {
+    processTranslationChunks(effectSongId, translateTo, {
       force: isForceRequest,
       signal: controller.signal,
       onProgress: (progress) => {
         if (!controller.signal.aborted) {
+          // Check for stale request
+          if (effectSongId !== currentSongIdRef.current) return;
           setTranslationProgress(progress.percentage);
         }
       },
       onChunk: (_chunkIndex, startIndex, translations) => {
         // Progressive update: merge new chunk translations into current state
         if (!controller.signal.aborted) {
+          // Check for stale request
+          if (effectSongId !== currentSongIdRef.current) return;
           setTranslatedLines((prev) => {
             // Create new array based on original lines if no previous state
             const base = prev || originalLines.map((line) => ({ ...line }));
@@ -291,6 +310,8 @@ export function useLyrics({
     })
       .then((allTranslations) => {
         if (controller.signal.aborted) return;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return;
 
         // Final update with all translations
         const finalTranslatedLines: LyricLine[] = originalLines.map((line, index) => ({
@@ -302,10 +323,12 @@ export function useLyrics({
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return;
         handleTranslationError(err, setError, setTranslatedLines);
       })
       .finally(() => {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsTranslating(false);
           setTranslationProgress(undefined);
           lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;

@@ -72,19 +72,31 @@ const kugouHeaders: HeadersInit = {
 // KRC decryption key
 const KRC_DECRYPTION_KEY = [64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49, 45, 206, 210, 110, 105];
 
+// YouTube video ID format: 11 characters, alphanumeric with - and _
+const YOUTUBE_VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
+
+/**
+ * Validate that a string is a valid YouTube video ID format
+ * @param id - The string to validate
+ * @returns true if valid YouTube video ID format, false otherwise
+ */
+function isValidYouTubeVideoId(id: string): boolean {
+  return YOUTUBE_VIDEO_ID_REGEX.test(id);
+}
+
 const LyricsSourceSchema = z.object({
   hash: z.string(),
   albumId: z.union([z.string(), z.number()]),
-  title: z.string(),
-  artist: z.string(),
-  album: z.string().optional(),
+  title: z.string().max(500),
+  artist: z.string().max(500),
+  album: z.string().max(500).optional(),
 });
 
 const UpdateSongSchema = z.object({
-  title: z.string().optional(),
-  artist: z.string().optional(),
-  album: z.string().optional(),
-  lyricOffset: z.number().optional(),
+  title: z.string().max(500).optional(),
+  artist: z.string().max(500).optional(),
+  album: z.string().max(500).optional(),
+  lyricOffset: z.number().min(-60000).max(60000).optional(),
   lyricsSource: LyricsSourceSchema.optional(),
   // Options to clear cached data when lyrics source changes
   clearTranslations: z.boolean().optional(),
@@ -97,18 +109,18 @@ const FetchLyricsSchema = z.object({
   lyricsSource: LyricsSourceSchema.optional(),
   force: z.boolean().optional(),
   // Allow client to pass title/artist for auto-search when song not in Redis yet
-  title: z.string().optional(),
-  artist: z.string().optional(),
+  title: z.string().max(500).optional(),
+  artist: z.string().max(500).optional(),
 });
 
 const SearchLyricsSchema = z.object({
   action: z.literal("search-lyrics"),
-  query: z.string().optional(),
+  query: z.string().max(500).optional(),
 });
 
 const TranslateSchema = z.object({
   action: z.literal("translate"),
-  language: z.string(),
+  language: z.string().max(10),
   force: z.boolean().optional(),
 });
 
@@ -120,16 +132,16 @@ const FuriganaSchema = z.object({
 // Chunked processing schemas - for avoiding edge function timeouts
 const TranslateChunkSchema = z.object({
   action: z.literal("translate-chunk"),
-  language: z.string(),
-  chunkIndex: z.number(),
-  totalChunks: z.number().optional(), // Optional, will be computed if not provided
+  language: z.string().max(10),
+  chunkIndex: z.number().int().min(0).max(1000),
+  totalChunks: z.number().int().min(0).max(1000).optional(), // Optional, will be computed if not provided
   force: z.boolean().optional(),
 });
 
 const FuriganaChunkSchema = z.object({
   action: z.literal("furigana-chunk"),
-  chunkIndex: z.number(),
-  totalChunks: z.number().optional(),
+  chunkIndex: z.number().int().min(0).max(1000),
+  totalChunks: z.number().int().min(0).max(1000).optional(),
   force: z.boolean().optional(),
 });
 
@@ -137,7 +149,23 @@ const FuriganaChunkSchema = z.object({
 const GetChunkInfoSchema = z.object({
   action: z.literal("get-chunk-info"),
   operation: z.enum(["translate", "furigana"]),
-  language: z.string().optional(), // Required for translate
+  language: z.string().max(10).optional(), // Required for translate
+});
+
+// Schema for saving consolidated translation after chunked processing
+const SaveTranslationSchema = z.object({
+  action: z.literal("save-translation"),
+  language: z.string().max(10),
+  translations: z.array(z.string()).max(500),
+});
+
+// Schema for saving consolidated furigana after chunked processing
+const SaveFuriganaSchema = z.object({
+  action: z.literal("save-furigana"),
+  furigana: z.array(z.array(z.object({
+    text: z.string(),
+    reading: z.string().optional(),
+  }))).max(500),
 });
 
 // AI response schemas
@@ -160,6 +188,23 @@ const AiFuriganaResponseSchema = z.object({
 
 function generateRequestId(): string {
   return Math.random().toString(36).substring(2, 10);
+}
+
+/**
+ * Fetch with timeout using AbortController
+ * @param url - The URL to fetch
+ * @param options - Fetch options
+ * @param timeoutMs - Timeout in milliseconds (default 10000)
+ */
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 10000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function logInfo(id: string, message: string, data?: unknown) {
@@ -198,71 +243,50 @@ function decodeKRC(krcBase64: string): string {
   return new TextDecoder("utf-8").decode(decompressed);
 }
 
-/**
- * Kugou embedded language data structure
- * Found in [language:base64] tag in KRC format
- */
-interface KugouLanguageContent {
-  lyricContent: string[][];  // Array of arrays - romanization or translation per line
-  type: number;  // 0 = romanization, 1 = translation
-  language: number;  // Language identifier
-}
-
-interface KugouLanguageData {
-  content: KugouLanguageContent[];
-  version: number;
-}
-
-/**
- * Extracted language data from KRC
- */
-interface ExtractedKrcLanguageData {
-  romaji?: string[][];  // Romanization per line (joined from word arrays)
-  translation?: string[];  // Translation per line (for Chinese translations)
-}
-
-/**
- * Extract and parse the [language:base64] tag from KRC content
- * This tag contains embedded romanization and translations from Kugou
- */
-function extractKrcLanguageData(krc: string): ExtractedKrcLanguageData | null {
-  // Match [language:base64data]
-  const languageMatch = krc.match(/\[language:([A-Za-z0-9+/=]+)\]/);
-  if (!languageMatch) {
-    return null;
-  }
-
-  try {
-    const base64Data = languageMatch[1];
-    const jsonStr = base64ToUtf8(base64Data);
-    const data = JSON.parse(jsonStr) as KugouLanguageData;
-
-    const result: ExtractedKrcLanguageData = {};
-
-    for (const content of data.content) {
-      if (content.type === 0) {
-        // Type 0 = Romanization (romaji/pinyin)
-        // Each line is an array of romanized syllables
-        result.romaji = content.lyricContent;
-      } else if (content.type === 1) {
-        // Type 1 = Translation (usually Chinese)
-        // Each line is an array with a single string (the translation)
-        result.translation = content.lyricContent.map(line => 
-          Array.isArray(line) ? line.join("") : String(line)
-        );
-      }
-    }
-
-    return result;
-  } catch (error) {
-    console.error("[extractKrcLanguageData] Failed to parse language data:", error);
-    return null;
-  }
-}
-
 function stripParentheses(str: string): string {
   if (!str) return str;
   return str.replace(/\s*\([^)]*\)\s*/g, " ").trim();
+}
+
+/**
+ * Sanitize input string by removing invisible/zero-width characters
+ * These can break AI parsing and JSON output
+ */
+function sanitizeInput(str: string): string {
+  if (!str) return str;
+  // Remove zero-width and invisible characters
+  // \u200B-\u200D: zero-width spaces
+  // \uFEFF: byte order mark
+  // \u2060: word joiner
+  // \u00AD: soft hyphen
+  // \u034F: combining grapheme joiner
+  // \u061C: arabic letter mark
+  // \u115F-\u1160: hangul fillers
+  // \u17B4-\u17B5: khmer vowel inherent
+  // \u180B-\u180D: mongolian free variation selectors
+  // \u180E: mongolian vowel separator
+  // \u2000-\u200F: general punctuation spaces and marks
+  // \u202A-\u202E: bidirectional text controls
+  // \u2061-\u2064: invisible operators
+  // \u206A-\u206F: deprecated formatting characters
+  return str.replace(/[\u200B-\u200D\uFEFF\u2060\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B-\u180E\u2000-\u200F\u202A-\u202E\u2061-\u2064\u206A-\u206F]/g, "").trim();
+}
+
+/**
+ * Check if a parsed result looks valid (not malformed AI output)
+ */
+function isValidParsedResult(result: { title: string; artist: string }, rawTitle: string): boolean {
+  // Check for JSON syntax embedded in the values (malformed AI response)
+  const jsonPattern = /[{}":].*[{}":]|"artist"|"title"/i;
+  if (jsonPattern.test(result.title) || jsonPattern.test(result.artist)) {
+    return false;
+  }
+  // Check if result is suspiciously different from input (possible hallucination)
+  // Title should not be dramatically longer than the original
+  if (result.title.length > rawTitle.length * 2) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -274,6 +298,18 @@ async function parseYouTubeTitleWithAI(
   channelName?: string,
   requestId?: string
 ): Promise<{ title: string; artist: string }> {
+  // Sanitize inputs to remove invisible characters that can break AI/JSON
+  const cleanTitle = sanitizeInput(rawTitle);
+  const cleanChannel = channelName ? sanitizeInput(channelName) : undefined;
+  
+  // If sanitization results in empty title, use fallback
+  if (!cleanTitle) {
+    if (requestId) {
+      logInfo(requestId, "Title empty after sanitization, using fallback", { raw: rawTitle });
+    }
+    return parseYouTubeTitleSimple(rawTitle, channelName);
+  }
+  
   try {
     const { object: parsedData } = await generateObject({
       model: google("gemini-2.0-flash"),
@@ -284,32 +320,42 @@ async function parseYouTubeTitleWithAI(
       messages: [
         {
           role: "system",
-          content: `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist. Respond ONLY with a valid JSON object. If you cannot determine a field, set it to null.
+          content: `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist.
 
 Rules:
+- Return ONLY the clean song title and artist name as simple strings
 - Prefer original language names (e.g., "周杰倫" over "Jay Chou", "뉴진스" over "NewJeans")
 - Remove video markers like "Official MV", "Lyric Video", "[MV]", etc. from the title
 - The artist is usually before the delimiter (-, |, etc.) or in the channel name
 - Channel names ending in "VEVO", "- Topic", or containing "Official" often indicate the artist
+- If you cannot determine a field, return null
 
 Examples:
-- "Jay Chou - Sunny Day (周杰倫 - 晴天)" → {"title": "晴天", "artist": "周杰倫"}
-- "NewJeans (뉴진스) 'How Sweet' Official MV" → {"title": "How Sweet", "artist": "뉴진스"}
-- "Kenshi Yonezu - KICK BACK" with channel "Kenshi Yonezu" → {"title": "KICK BACK", "artist": "米津玄師"}
-- "Lofi Hip Hop Radio" with channel "ChillHop Music" → {"title": "Lofi Hip Hop Radio", "artist": null}`,
+- "Jay Chou - Sunny Day (周杰倫 - 晴天)" → title: "晴天", artist: "周杰倫"
+- "NewJeans (뉴진스) 'How Sweet' Official MV" → title: "How Sweet", artist: "뉴진스"
+- "Kenshi Yonezu - KICK BACK" with channel "Kenshi Yonezu" → title: "KICK BACK", artist: "米津玄師"
+- "Lofi Hip Hop Radio" with channel "ChillHop Music" → title: "Lofi Hip Hop Radio", artist: null`,
         },
         {
           role: "user",
-          content: `Title: ${rawTitle}${channelName ? `\nChannel: ${channelName}` : ""}`,
+          content: `Title: ${cleanTitle}${cleanChannel ? `\nChannel: ${cleanChannel}` : ""}`,
         },
       ],
       temperature: 0.1,
     });
 
     const result = {
-      title: parsedData.title || rawTitle,
+      title: parsedData.title || cleanTitle,
       artist: parsedData.artist || "",
     };
+    
+    // Validate the result doesn't contain malformed data
+    if (!isValidParsedResult(result, cleanTitle)) {
+      if (requestId) {
+        logInfo(requestId, "AI returned malformed result, using fallback", { raw: rawTitle, malformed: result });
+      }
+      return parseYouTubeTitleSimple(rawTitle, channelName);
+    }
     
     if (requestId) {
       logInfo(requestId, "AI parsed title", { raw: rawTitle, parsed: result });
@@ -438,18 +484,23 @@ function scoreSongMatch(
 // =============================================================================
 
 async function getCover(hash: string, albumId: string | number): Promise<string> {
-  const url = new URL("https://wwwapi.kugou.com/yy/index.php");
-  url.searchParams.set("r", "play/getdata");
-  url.searchParams.set("hash", hash);
-  url.searchParams.set("dfid", randomString(23, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"));
-  url.searchParams.set("mid", randomString(23, "abcdefghijklmnopqrstuvwxyz0123456789"));
-  url.searchParams.set("album_id", String(albumId));
-  url.searchParams.set("_", String(Date.now()));
+  try {
+    const url = new URL("https://wwwapi.kugou.com/yy/index.php");
+    url.searchParams.set("r", "play/getdata");
+    url.searchParams.set("hash", hash);
+    url.searchParams.set("dfid", randomString(23, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"));
+    url.searchParams.set("mid", randomString(23, "abcdefghijklmnopqrstuvwxyz0123456789"));
+    url.searchParams.set("album_id", String(albumId));
+    url.searchParams.set("_", String(Date.now()));
 
-  const res = await fetch(url.toString(), { headers: kugouHeaders });
-  if (!res.ok) return "";
-  const json = (await res.json()) as { data?: { img?: string } };
-  return json?.data?.img ?? "";
+    const res = await fetchWithTimeout(url.toString(), { headers: kugouHeaders });
+    if (!res.ok) return "";
+    const json = (await res.json()) as { data?: { img?: string } };
+    return json?.data?.img ?? "";
+  } catch {
+    // Return empty string on any error (network, timeout, parse, etc.)
+    return "";
+  }
 }
 
 type KugouSongInfo = {
@@ -487,7 +538,16 @@ async function searchKugou(
   const keyword = encodeURIComponent(query);
   const searchUrl = `http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=${keyword}&page=1&pagesize=20&showtype=1`;
 
-  const searchRes = await fetch(searchUrl, { headers: kugouHeaders });
+  let searchRes: Response;
+  try {
+    searchRes = await fetchWithTimeout(searchUrl, { headers: kugouHeaders });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Kugou search timed out after 10 seconds");
+    }
+    throw new Error(`Kugou search network error: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+
   if (!searchRes.ok) {
     throw new Error(`Kugou search failed with status ${searchRes.status}`);
   }
@@ -509,30 +569,35 @@ async function searchKugou(
   return scoredResults;
 }
 
-/**
- * Extended lyrics content with embedded language data from KRC
- */
-interface FetchedLyricsResult {
-  lyrics: LyricsContent;
-  embeddedRomaji?: string[][];  // Romanization per line (from [language:] tag)
-  embeddedTranslation?: string[];  // Translation per line (from [language:] tag)
-}
-
 async function fetchLyricsFromKugou(
   source: LyricsSource,
   requestId: string
-): Promise<FetchedLyricsResult | null> {
+): Promise<LyricsContent | null> {
   const { hash, albumId } = source;
 
   // Get lyrics candidate
   const candidateUrl = `https://krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword=&duration=&hash=${hash}&album_audio_id=`;
-  const candidateRes = await fetch(candidateUrl, { headers: kugouHeaders });
+  let candidateRes: Response;
+  try {
+    candidateRes = await fetchWithTimeout(candidateUrl, { headers: kugouHeaders });
+  } catch (err) {
+    logError(requestId, "Failed to fetch lyrics candidate (network/timeout)", err);
+    return null;
+  }
+
   if (!candidateRes.ok) {
     logError(requestId, "Failed to get lyrics candidate", candidateRes.status);
     return null;
   }
 
-  const candidateJson = (await candidateRes.json()) as unknown as CandidateResponse;
+  let candidateJson: CandidateResponse;
+  try {
+    candidateJson = (await candidateRes.json()) as unknown as CandidateResponse;
+  } catch (err) {
+    logError(requestId, "Failed to parse lyrics candidate response", err);
+    return null;
+  }
+
   const candidate = candidateJson?.candidates?.[0];
   if (!candidate) {
     logError(requestId, "No lyrics candidate found", null);
@@ -545,44 +610,37 @@ async function fetchLyricsFromKugou(
   // Try KRC format first
   let lrc: string | undefined;
   let krc: string | undefined;
-  let embeddedRomaji: string[][] | undefined;
-  let embeddedTranslation: string[] | undefined;
 
   const krcUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=krc&charset=utf8`;
   try {
-    const krcRes = await fetch(krcUrl, { headers: kugouHeaders });
+    const krcRes = await fetchWithTimeout(krcUrl, { headers: kugouHeaders });
     if (krcRes.ok) {
       const krcJson = (await krcRes.json()) as unknown as LyricsDownloadResponse;
       if (krcJson?.content) {
-        krc = decodeKRC(krcJson.content);
-        logInfo(requestId, "Successfully decoded KRC lyrics");
-        
-        // Extract embedded language data (romaji/translations) from [language:] tag
-        const languageData = extractKrcLanguageData(krc);
-        if (languageData) {
-          if (languageData.romaji) {
-            embeddedRomaji = languageData.romaji;
-            logInfo(requestId, `Extracted embedded romaji for ${languageData.romaji.length} lines`);
-          }
-          if (languageData.translation) {
-            embeddedTranslation = languageData.translation;
-            logInfo(requestId, `Extracted embedded translation for ${languageData.translation.length} lines`);
-          }
+        try {
+          krc = decodeKRC(krcJson.content);
+          logInfo(requestId, "Successfully decoded KRC lyrics");
+        } catch (decodeErr) {
+          logInfo(requestId, "KRC decode failed", decodeErr);
         }
       }
     }
   } catch (err) {
-    logInfo(requestId, "KRC fetch/decode failed, trying LRC", err);
+    logInfo(requestId, "KRC fetch failed, trying LRC", err);
   }
 
   // Fetch LRC format
   const lrcUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=lrc&charset=utf8`;
   try {
-    const lrcRes = await fetch(lrcUrl, { headers: kugouHeaders });
+    const lrcRes = await fetchWithTimeout(lrcUrl, { headers: kugouHeaders });
     if (lrcRes.ok) {
       const lrcJson = (await lrcRes.json()) as unknown as LyricsDownloadResponse;
       if (lrcJson?.content) {
-        lrc = base64ToUtf8(lrcJson.content);
+        try {
+          lrc = base64ToUtf8(lrcJson.content);
+        } catch (decodeErr) {
+          logInfo(requestId, "LRC base64 decode failed", decodeErr);
+        }
       }
     }
   } catch (err) {
@@ -597,13 +655,9 @@ async function fetchLyricsFromKugou(
   const cover = await getCover(hash, albumId);
 
   return {
-    lyrics: {
-      lrc: lrc || krc || "",
-      krc,
-      cover,
-    },
-    embeddedRomaji,
-    embeddedTranslation,
+    lrc: lrc || krc || "",
+    krc,
+    cover,
   };
 }
 
@@ -671,7 +725,7 @@ function shouldSkipLine(text: string, title?: string, artist?: string): boolean 
 
 function parseLrcToLines(lrc: string, title?: string, artist?: string): LyricLine[] {
   const lines: LyricLine[] = [];
-  const lineRegex = /^\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)$/;
+  const lineRegex = /^\[(\d{1,2}):(\d{1,2})\.(\d{2,3})\](.+)$/;
 
   for (const line of lrc.split("\n")) {
     const match = line.trim().match(lineRegex);
@@ -698,7 +752,7 @@ function parseLrcToLines(lrc: string, title?: string, artist?: string): LyricLin
 function parseKrcToLines(krc: string, title?: string, artist?: string): ParsedLyricLine[] {
   const lines: ParsedLyricLine[] = [];
   const lineHeaderRegex = /^\[(\d+),(\d+)\](.*)$/;
-  const wordTimingRegex = /<(\d+),(\d+),\d+>([^<]*)/g;
+  const wordTimingRegex = /<(\d+),(\d+),\d+>((?:[^<]|<(?!\d))*)/g;
 
   // Normalize line endings
   const normalizedText = krc.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
@@ -830,17 +884,28 @@ If the lyrics are already in ${targetLanguage}, return the original "words" text
 If a line is purely instrumental or cannot be translated (e.g., "---"), return its original "words" text.
 Do not include timestamps or any other formatting in your output strings; just the raw translated text for each line. Do not use , . ! ? : ; punctuation at the end of lines. Preserve the artistic intent and natural rhythm of the lyrics.`;
 
-  const { object: aiResponse } = await generateObject({
-    model: google("gemini-2.5-flash"),
-    schema: AiTranslatedTextsSchema,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: JSON.stringify(chunk.map((line) => ({ words: line.words }))) },
-    ],
-    temperature: 0.3,
-  });
+  try {
+    const { object: aiResponse } = await generateObject({
+      model: google("gemini-2.5-flash"),
+      schema: AiTranslatedTextsSchema,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: JSON.stringify(chunk.map((line) => ({ words: line.words }))) },
+      ],
+      temperature: 0.3,
+    });
 
-  return chunk.map((line, index) => aiResponse.translatedTexts[index] || line.words);
+    // Validate array length matches
+    if (aiResponse.translatedTexts.length !== chunk.length) {
+      logInfo(requestId, `Warning: Translation response length mismatch - expected ${chunk.length}, got ${aiResponse.translatedTexts.length}`);
+    }
+
+    return chunk.map((line, index) => aiResponse.translatedTexts[index] || line.words);
+  } catch (error) {
+    logError(requestId, `Translation chunk failed, returning original text as fallback`, error);
+    // Return original text for each line as fallback
+    return chunk.map((line) => line.words);
+  }
 }
 
 /**
@@ -942,24 +1007,35 @@ async function generateFuriganaForChunk(
 
   const textsToProcess = linesNeedingFurigana.map((line) => line.words);
 
-  const { object: aiResponse } = await generateObject({
-    model: google("gemini-2.5-flash"),
-    schema: AiFuriganaResponseSchema,
-    messages: [
-      { role: "system", content: FURIGANA_SYSTEM_PROMPT },
-      { role: "user", content: JSON.stringify(textsToProcess) },
-    ],
-    temperature: 0.1,
-  });
+  try {
+    const { object: aiResponse } = await generateObject({
+      model: google("gemini-2.5-flash"),
+      schema: AiFuriganaResponseSchema,
+      messages: [
+        { role: "system", content: FURIGANA_SYSTEM_PROMPT },
+        { role: "user", content: JSON.stringify(textsToProcess) },
+      ],
+      temperature: 0.1,
+    });
 
-  // Map results back to all lines
-  let furiganaIndex = 0;
-  return lines.map((line) => {
-    if (containsKanji(line.words)) {
-      return aiResponse.annotatedLines[furiganaIndex++] || [{ text: line.words }];
+    // Validate array length matches
+    if (aiResponse.annotatedLines.length !== linesNeedingFurigana.length) {
+      logInfo(requestId, `Warning: Furigana response length mismatch - expected ${linesNeedingFurigana.length}, got ${aiResponse.annotatedLines.length}`);
     }
-    return [{ text: line.words }];
-  });
+
+    // Map results back to all lines
+    let furiganaIndex = 0;
+    return lines.map((line) => {
+      if (containsKanji(line.words)) {
+        return aiResponse.annotatedLines[furiganaIndex++] || [{ text: line.words }];
+      }
+      return [{ text: line.words }];
+    });
+  } catch (error) {
+    logError(requestId, `Furigana chunk failed, returning plain text segments as fallback`, error);
+    // Return plain text segments without readings as fallback
+    return lines.map((line) => [{ text: line.words }]);
+  }
 }
 
 /**
@@ -1031,7 +1107,7 @@ export default async function handler(req: Request) {
   // Validate origin
   const effectiveOrigin = getEffectiveOrigin(req);
   if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+    return errorResponse("Unauthorized", 403);
   }
 
   // Create Redis client
@@ -1058,6 +1134,11 @@ export default async function handler(req: Request) {
 
   if (!songId || songId === "[id]") {
     return errorResponse("Song ID is required", 400);
+  }
+
+  // Validate YouTube video ID format
+  if (!isValidYouTubeVideoId(songId)) {
+    return errorResponse("Invalid song ID format. Expected YouTube video ID (11 characters, alphanumeric with - and _)", 400);
   }
 
   try {
@@ -1180,13 +1261,17 @@ export default async function handler(req: Request) {
         let searchTitle = rawTitle;
         let searchArtist = rawArtist;
         
-        // If no custom query provided, use AI to parse the title for better results
+        // If no custom query provided, build search query
         if (!query && rawTitle) {
-          const aiParsed = await parseYouTubeTitleWithAI(rawTitle, rawArtist, requestId);
-          searchTitle = aiParsed.title || rawTitle;
-          searchArtist = aiParsed.artist || rawArtist;
+          // Only use AI parsing if we don't have a proper artist (new video without metadata)
+          // If artist exists, title/artist are already clean metadata - use them directly
+          if (!rawArtist) {
+            const aiParsed = await parseYouTubeTitleWithAI(rawTitle, rawArtist, requestId);
+            searchTitle = aiParsed.title || rawTitle;
+            searchArtist = aiParsed.artist || rawArtist;
+            logInfo(requestId, "AI-parsed search query (no artist)", { original: rawTitle, parsed: { title: searchTitle, artist: searchArtist } });
+          }
           query = `${stripParentheses(searchTitle)} ${stripParentheses(searchArtist)}`.trim();
-          logInfo(requestId, "AI-parsed search query", { original: rawTitle, parsed: { title: searchTitle, artist: searchArtist }, query });
         } else if (!query) {
           query = `${stripParentheses(rawTitle)} ${stripParentheses(rawArtist)}`.trim();
         }
@@ -1244,20 +1329,28 @@ export default async function handler(req: Request) {
         const rawTitle = song?.title || clientTitle || "";
         const rawArtist = song?.artist || clientArtist || "";
 
-        // If no source, try auto-search with AI-parsed title
+        // If no source, try auto-search
         if (!lyricsSource && rawTitle) {
-          // Use AI to parse the title for better search results
-          const aiParsed = await parseYouTubeTitleWithAI(rawTitle, rawArtist, requestId);
-          const searchTitle = aiParsed.title || rawTitle;
-          const searchArtist = aiParsed.artist || rawArtist;
+          let searchTitle = rawTitle;
+          let searchArtist = rawArtist;
+          
+          // Only use AI parsing if we don't have a proper artist (new video without metadata)
+          // If artist exists, title/artist are already clean metadata - use them directly
+          if (!rawArtist) {
+            const aiParsed = await parseYouTubeTitleWithAI(rawTitle, rawArtist, requestId);
+            searchTitle = aiParsed.title || rawTitle;
+            searchArtist = aiParsed.artist || rawArtist;
+            logInfo(requestId, "Auto-searching lyrics with AI-parsed title (no artist)", { 
+              original: { title: rawTitle, artist: rawArtist },
+              parsed: { title: searchTitle, artist: searchArtist }
+            });
+          } else {
+            logInfo(requestId, "Auto-searching lyrics with existing metadata", { 
+              title: searchTitle, artist: searchArtist
+            });
+          }
+          
           const query = `${stripParentheses(searchTitle)} ${stripParentheses(searchArtist)}`.trim();
-          
-          logInfo(requestId, "Auto-searching lyrics with AI-parsed title", { 
-            original: { title: rawTitle, artist: rawArtist },
-            parsed: { title: searchTitle, artist: searchArtist },
-            query 
-          });
-          
           const results = await searchKugou(query, searchTitle, searchArtist);
           if (results.length > 0) {
             lyricsSource = {
@@ -1275,13 +1368,11 @@ export default async function handler(req: Request) {
         }
 
         logInfo(requestId, "Fetching lyrics from Kugou", { source: lyricsSource });
-        const fetchResult = await fetchLyricsFromKugou(lyricsSource, requestId);
+        const rawLyrics = await fetchLyricsFromKugou(lyricsSource, requestId);
 
-        if (!fetchResult) {
+        if (!rawLyrics) {
           return errorResponse("Failed to fetch lyrics", 404);
         }
-
-        const { lyrics: rawLyrics, embeddedRomaji, embeddedTranslation } = fetchResult;
 
         // Parse lyrics with consistent filtering (single source of truth)
         const parsedLines = parseLyricsContent(
@@ -1297,43 +1388,14 @@ export default async function handler(req: Request) {
         };
 
         // Save to song document
-        let savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource);
-
-        // If we have embedded translation from Kugou, save it as Chinese translation
-        // This avoids needing AI translation for songs that already have it
-        if (embeddedTranslation && embeddedTranslation.length > 0) {
-          // Filter embedded translation to only include non-empty lines
-          // The embedded translation array corresponds 1:1 with the original KRC lines,
-          // but we've filtered out some lines (credits, title, etc.) in parsedLines
-          // So we need to filter the translation to match
-          const nonEmptyTranslations = embeddedTranslation
-            .filter(line => line && line.trim() !== "")
-            .slice(0, parsedLines.length);  // Ensure we don't exceed parsedLines count
-          
-          if (nonEmptyTranslations.length > 0 && nonEmptyTranslations.length === parsedLines.length) {
-            const translationText = nonEmptyTranslations.join("\n");
-            // Save as Chinese translation
-            savedSong = await saveTranslation(redis, songId, "zh", translationText);
-            logInfo(requestId, `Saved embedded Chinese translation (${nonEmptyTranslations.length} lines)`);
-          } else {
-            logInfo(requestId, `Skipping embedded translation - line count mismatch (${nonEmptyTranslations.length} vs ${parsedLines.length})`);
-          }
-        }
-
+        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource);
         logInfo(requestId, `Lyrics saved to song document`, { 
           songId,
           hasLyricsStored: !!savedSong.lyrics,
           parsedLinesCount: parsedLines.length,
-          hasEmbeddedRomaji: !!embeddedRomaji,
-          hasEmbeddedTranslation: !!embeddedTranslation,
         });
 
-        logInfo(requestId, `Response: 200 OK - Lyrics fetched`, { 
-          hasKrc: !!lyrics.krc, 
-          hasCover: !!lyrics.cover, 
-          parsedLinesCount: parsedLines.length,
-          hasEmbeddedTranslation: !!embeddedTranslation,
-        });
+        logInfo(requestId, `Response: 200 OK - Lyrics fetched`, { hasKrc: !!lyrics.krc, hasCover: !!lyrics.cover, parsedLinesCount: parsedLines.length });
         return jsonResponse({ lyrics, cached: false });
       }
 
@@ -1504,10 +1566,10 @@ export default async function handler(req: Request) {
           chunkSize: CHUNK_SIZE,
           cached,
           // If cached, return the full result
-          ...(cached && operation === "translate" && language
-            ? { translation: song.translations![language] }
+          ...(cached && operation === "translate" && language && song.translations?.[language]
+            ? { translation: song.translations[language] }
             : {}),
-          ...(cached && operation === "furigana" ? { furigana: song.furigana } : {}),
+          ...(cached && operation === "furigana" && song.furigana ? { furigana: song.furigana } : {}),
         });
       }
 
@@ -1554,8 +1616,11 @@ export default async function handler(req: Request) {
         const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
         const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
 
-        // Check chunk cache
-        const chunkCacheKey = `song:${songId}:translate:${language}:chunk:${chunkIndex}`;
+        // Check chunk cache (include lyrics hash to invalidate when source changes)
+        const lyricsHash = song.lyricsSource?.hash;
+        const chunkCacheKey = lyricsHash
+          ? `song:${songId}:translate:${language}:chunk:${chunkIndex}:${lyricsHash}`
+          : `song:${songId}:translate:${language}:chunk:${chunkIndex}`;
         if (!force) {
           try {
             const cachedChunk = await redis.get(chunkCacheKey) as string[] | null;
@@ -1643,8 +1708,11 @@ export default async function handler(req: Request) {
         const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
         const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
 
-        // Check chunk cache
-        const chunkCacheKey = `song:${songId}:furigana:chunk:${chunkIndex}`;
+        // Check chunk cache (include lyrics hash to invalidate when source changes)
+        const lyricsHash = song.lyricsSource?.hash;
+        const chunkCacheKey = lyricsHash
+          ? `song:${songId}:furigana:chunk:${chunkIndex}:${lyricsHash}`
+          : `song:${songId}:furigana:chunk:${chunkIndex}`;
         if (!force) {
           try {
             const cachedChunk = await redis.get(chunkCacheKey) as FuriganaSegment[][] | null;
@@ -1687,6 +1755,79 @@ export default async function handler(req: Request) {
           furigana,
           cached: false,
         });
+      }
+
+      // =======================================================================
+      // Handle save-translation action - saves consolidated translation to song
+      // This is called by the client after all chunks have been processed
+      // =======================================================================
+      if (action === "save-translation") {
+        const parsed = SaveTranslationSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { language, translations } = parsed.data;
+
+        // Get song with lyrics to build the LRC
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+        });
+
+        if (!song?.lyrics?.parsedLines) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Verify the translations array matches the parsed lines
+        if (translations.length !== song.lyrics.parsedLines.length) {
+          return errorResponse(`Translation count mismatch: ${translations.length} vs ${song.lyrics.parsedLines.length} lines`);
+        }
+
+        // Build translated LRC from the parsed lines and translations
+        const translatedLrc = song.lyrics.parsedLines
+          .map((line, index) => `${msToLrcTime(line.startTimeMs)}${translations[index] || line.words}`)
+          .join("\n");
+
+        // Save to song document
+        await saveTranslation(redis, songId, language, translatedLrc);
+
+        logInfo(requestId, `Saved consolidated translation (${language}, ${translations.length} lines)`);
+        return jsonResponse({ success: true, language, lineCount: translations.length });
+      }
+
+      // =======================================================================
+      // Handle save-furigana action - saves consolidated furigana to song
+      // This is called by the client after all chunks have been processed
+      // =======================================================================
+      if (action === "save-furigana") {
+        const parsed = SaveFuriganaSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { furigana } = parsed.data;
+
+        // Get song to verify it exists and has lyrics
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+        });
+
+        if (!song?.lyrics?.parsedLines) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Verify the furigana array matches the parsed lines
+        if (furigana.length !== song.lyrics.parsedLines.length) {
+          return errorResponse(`Furigana count mismatch: ${furigana.length} vs ${song.lyrics.parsedLines.length} lines`);
+        }
+
+        // Save to song document
+        await saveFurigana(redis, songId, furigana as FuriganaSegment[][]);
+
+        logInfo(requestId, `Saved consolidated furigana (${furigana.length} lines)`);
+        return jsonResponse({ success: true, lineCount: furigana.length });
       }
 
       // Default POST: Update song metadata (requires auth)
