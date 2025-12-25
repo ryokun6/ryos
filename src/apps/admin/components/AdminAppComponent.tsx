@@ -100,7 +100,7 @@ export function AdminAppComponent({
     totalMessages: 0,
   });
 
-  const [activeSection, setActiveSection] = useState<AdminSection>("users");
+  const [activeSection, setActiveSection] = useState<AdminSection>("songs");
   const [isRoomsExpanded, setIsRoomsExpanded] = useState(true);
   const [selectedUserProfile, setSelectedUserProfile] = useState<string | null>(null);
   const [selectedSongId, setSelectedSongId] = useState<string | null>(null);

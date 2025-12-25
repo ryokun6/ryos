@@ -63,15 +63,6 @@ export function AdminMenuBar({
         <MenubarContent align="start" sideOffset={1} className="px-0">
           {/* Section Selection */}
           <MenubarCheckboxItem
-            checked={activeSection === "users"}
-            onCheckedChange={(checked) => {
-              if (checked) onSectionChange("users");
-            }}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.admin.sidebar.users")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
             checked={activeSection === "songs"}
             onCheckedChange={(checked) => {
               if (checked) onSectionChange("songs");
@@ -79,6 +70,15 @@ export function AdminMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.admin.sidebar.songs")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={activeSection === "users"}
+            onCheckedChange={(checked) => {
+              if (checked) onSectionChange("users");
+            }}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.admin.sidebar.users")}
           </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarCheckboxItem

@@ -12,12 +12,9 @@ import {
   Disc,
   Hash,
   ExternalLink,
-  Languages,
-  FileText,
-  Type,
   AlertTriangle,
-  Play,
   RefreshCw,
+  Mic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -26,13 +23,10 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { deleteSongMetadata, saveSongMetadata, CachedLyricsSource } from "@/utils/songMetadataCache";
 import { getApiUrl } from "@/utils/platform";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
-
-interface LyricsContent {
-  lrc?: string;
-  krc?: string;
-  cover?: string;
-  parsedLines?: Array<{ startTimeMs: string; words: string }>;
-}
+import { useAppStore } from "@/stores/useAppStore";
+import { useIpodStore } from "@/stores/useIpodStore";
+import { useKaraokeStore } from "@/stores/useKaraokeStore";
+import { useLaunchApp } from "@/hooks/useLaunchApp";
 
 interface SongDetail {
   id: string;
@@ -41,9 +35,6 @@ interface SongDetail {
   album?: string;
   lyricOffset?: number;
   lyricsSource?: CachedLyricsSource;
-  lyrics?: LyricsContent;
-  translations?: Record<string, string>;
-  furigana?: Array<Array<{ text: string; reading?: string }>>;
   createdBy?: string;
   createdAt: number;
   updatedAt: number;
@@ -62,6 +53,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 }) => {
   const { t } = useTranslation();
   const { username, authToken } = useAuth();
+  const launchApp = useLaunchApp();
   const [song, setSong] = useState<SongDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -81,7 +73,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     setIsLoading(true);
     try {
       const response = await fetch(
-        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata,lyrics,translations,furigana`),
+        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata`),
         {
           headers: {
             "Content-Type": "application/json",
@@ -102,6 +94,53 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
       setIsLoading(false);
     }
   }, [youtubeId, t]);
+
+  // Play song in iPod
+  const handlePlayInIpod = useCallback(() => {
+    // Ensure iPod is open
+    const appState = useAppStore.getState();
+    const ipodInstances = appState.getInstancesByAppId("ipod");
+    const hasOpenIpodInstance = ipodInstances.some((inst) => inst.isOpen);
+    if (!hasOpenIpodInstance) {
+      launchApp("ipod");
+    }
+
+    const ipodStore = useIpodStore.getState();
+    const trackIndex = ipodStore.tracks.findIndex((t) => t.id === youtubeId);
+
+    if (trackIndex !== -1) {
+      // Song is in library, play it
+      ipodStore.setCurrentIndex(trackIndex);
+      ipodStore.setIsPlaying(true);
+      toast.success(t("apps.admin.messages.playingInIpod", "Playing in iPod"));
+    } else {
+      toast.error(t("apps.admin.errors.songNotInLibrary", "Song not in library"));
+    }
+  }, [youtubeId, launchApp, t]);
+
+  // Play song in Karaoke
+  const handlePlayInKaraoke = useCallback(() => {
+    // Ensure Karaoke is open
+    const appState = useAppStore.getState();
+    const karaokeInstances = appState.getInstancesByAppId("karaoke");
+    const hasOpenKaraokeInstance = karaokeInstances.some((inst) => inst.isOpen);
+    if (!hasOpenKaraokeInstance) {
+      launchApp("karaoke");
+    }
+
+    const ipodStore = useIpodStore.getState();
+    const karaokeStore = useKaraokeStore.getState();
+    const trackIndex = ipodStore.tracks.findIndex((t) => t.id === youtubeId);
+
+    if (trackIndex !== -1) {
+      // Song is in library, play it
+      karaokeStore.setCurrentIndex(trackIndex);
+      karaokeStore.setIsPlaying(true);
+      toast.success(t("apps.admin.messages.playingInKaraoke", "Playing in Karaoke"));
+    } else {
+      toast.error(t("apps.admin.errors.songNotInLibrary", "Song not in library"));
+    }
+  }, [youtubeId, launchApp, t]);
 
   useEffect(() => {
     fetchSong();
@@ -173,10 +212,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     return t("apps.admin.time.daysAgo", { count: days });
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
-  };
-
   const formatOffset = (ms: number | undefined) => {
     if (ms === undefined) return "0ms";
     const sign = ms >= 0 ? "+" : "";
@@ -203,11 +238,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     );
   }
 
-  const translationLanguages = song?.translations ? Object.keys(song.translations) : [];
-  const lyricsLineCount = song?.lyrics?.parsedLines?.length || 0;
-  const hasLyrics = !!song?.lyrics?.lrc || !!song?.lyrics?.krc;
-  const hasFurigana = !!song?.furigana && song.furigana.length > 0;
-
   return (
     <div className="flex flex-col h-full font-geneva-12">
       {/* Header */}
@@ -223,11 +253,17 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div
             className={cn(
-              "w-8 h-8 rounded flex items-center justify-center text-sm font-medium text-neutral-600 flex-shrink-0",
+              "w-10 h-10 rounded flex items-center justify-center text-sm font-medium text-neutral-600 flex-shrink-0 overflow-hidden",
               isLoading ? "bg-neutral-200 animate-pulse" : "bg-neutral-200"
             )}
           >
-            {!isLoading && <Music className="h-4 w-4" />}
+            {!isLoading && (
+              <img
+                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
@@ -249,6 +285,16 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
         <Button
           variant="ghost"
           size="sm"
+          onClick={() => setIsDeleteDialogOpen(true)}
+          disabled={isLoading}
+          className="h-6 w-6 p-0 flex-shrink-0"
+          title={t("apps.admin.song.delete", "Delete Song")}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={fetchSong}
           disabled={isLoading}
           className="h-6 w-6 p-0 flex-shrink-0"
@@ -263,46 +309,30 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-4">
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
-              <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <FileText className="h-3 w-3" />
-                {t("apps.admin.song.lyrics", "Lyrics")}
-              </div>
-              {isLoading ? (
-                <Skeleton className="h-5 w-12" />
-              ) : (
-                <span className="text-[14px] font-medium">
-                  {hasLyrics ? `${lyricsLineCount} lines` : "None"}
-                </span>
-              )}
+          {/* Actions */}
+          {isLoading ? (
+            <div className="flex flex-wrap gap-2">
+              <Skeleton className="h-7 w-24" />
+              <Skeleton className="h-7 w-28" />
             </div>
-            <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
-              <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <Languages className="h-3 w-3" />
-                {t("apps.admin.song.translations", "Translations")}
-              </div>
-              {isLoading ? (
-                <Skeleton className="h-5 w-8" />
-              ) : (
-                <span className="text-[14px] font-medium">{translationLanguages.length}</span>
-              )}
+          ) : song && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handlePlayInIpod}
+                className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+              >
+                <Music className="h-3 w-3" />
+                <span>{t("apps.admin.song.playInIpod", "Play in iPod")}</span>
+              </button>
+              <button
+                onClick={handlePlayInKaraoke}
+                className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+              >
+                <Mic className="h-3 w-3" />
+                <span>{t("apps.admin.song.playInKaraoke", "Play in Karaoke")}</span>
+              </button>
             </div>
-            <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
-              <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <Type className="h-3 w-3" />
-                {t("apps.admin.song.furigana", "Furigana")}
-              </div>
-              {isLoading ? (
-                <Skeleton className="h-5 w-8" />
-              ) : (
-                <span className="text-[14px] font-medium">
-                  {hasFurigana ? "Yes" : "No"}
-                </span>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* Metadata Section */}
           <div className="space-y-2">
@@ -331,7 +361,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         disabled={isSaving}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {isSaving ? <ActivityIndicator size={12} /> : "Save"}
+                        {isSaving ? <ActivityIndicator size={12} /> : t("common.actions.save")}
                       </Button>
                       <Button
                         size="sm"
@@ -339,7 +369,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         onClick={() => setIsEditingTitle(false)}
                         className="h-6 px-2 text-[10px]"
                       >
-                        Cancel
+                        {t("common.actions.cancel")}
                       </Button>
                     </div>
                   ) : (
@@ -377,7 +407,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         disabled={isSaving}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {isSaving ? <ActivityIndicator size={12} /> : "Save"}
+                        {isSaving ? <ActivityIndicator size={12} /> : t("common.actions.save")}
                       </Button>
                       <Button
                         size="sm"
@@ -385,7 +415,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         onClick={() => setIsEditingArtist(false)}
                         className="h-6 px-2 text-[10px]"
                       >
-                        Cancel
+                        {t("common.actions.cancel")}
                       </Button>
                     </div>
                   ) : (
@@ -423,7 +453,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         disabled={isSaving}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {isSaving ? <ActivityIndicator size={12} /> : "Save"}
+                        {isSaving ? <ActivityIndicator size={12} /> : t("common.actions.save")}
                       </Button>
                       <Button
                         size="sm"
@@ -431,7 +461,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         onClick={() => setIsEditingAlbum(false)}
                         className="h-6 px-2 text-[10px]"
                       >
-                        Cancel
+                        {t("common.actions.cancel")}
                       </Button>
                     </div>
                   ) : (
@@ -471,7 +501,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         disabled={isSaving}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {isSaving ? <ActivityIndicator size={12} /> : "Save"}
+                        {isSaving ? <ActivityIndicator size={12} /> : t("common.actions.save")}
                       </Button>
                       <Button
                         size="sm"
@@ -479,7 +509,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         onClick={() => setIsEditingOffset(false)}
                         className="h-6 px-2 text-[10px]"
                       >
-                        Cancel
+                        {t("common.actions.cancel")}
                       </Button>
                     </div>
                   ) : (
@@ -514,15 +544,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                       >
                         <ExternalLink className="h-3 w-3" />
                       </a>
-                      <a
-                        href={`/ipod/${song?.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-green-500 hover:text-green-600"
-                        title="Open in iPod"
-                      >
-                        <Play className="h-3 w-3" />
-                      </a>
                     </div>
                   )}
                 </div>
@@ -530,112 +551,28 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             </div>
           </div>
 
-          {/* Lyrics Source Section */}
-          {!isLoading && song?.lyricsSource && (
-            <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
-                {t("apps.admin.song.lyricsSource", "Lyrics Source")}
-              </div>
-              <div className="p-3 bg-blue-50 rounded border border-blue-200 text-[11px] space-y-1">
-                <div>
-                  <span className="text-neutral-500">{t("apps.admin.tableHeaders.title", "Title")}:</span>{" "}
-                  {song.lyricsSource.title}
-                </div>
-                <div>
-                  <span className="text-neutral-500">{t("apps.admin.tableHeaders.artist", "Artist")}:</span>{" "}
-                  {song.lyricsSource.artist}
-                </div>
-                {song.lyricsSource.album && (
-                  <div>
-                    <span className="text-neutral-500">{t("apps.admin.song.album", "Album")}:</span>{" "}
-                    {song.lyricsSource.album}
-                  </div>
-                )}
-                <div>
-                  <span className="text-neutral-500">Hash:</span>{" "}
-                  <span className="font-mono text-[10px]">{song.lyricsSource.hash}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Translations Section */}
-          {!isLoading && translationLanguages.length > 0 && (
-            <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
-                {t("apps.admin.song.availableTranslations", "Available Translations")}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {translationLanguages.map((lang) => (
-                  <span
-                    key={lang}
-                    className="px-2 py-1 text-[10px] bg-gray-100 rounded uppercase"
-                  >
-                    {lang}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Timestamps Section */}
+          {/* Info Section */}
           {!isLoading && song && (
             <div className="space-y-2">
               <div className="!text-[11px] uppercase tracking-wide text-black/50">
-                {t("apps.admin.song.timestamps", "Timestamps")}
+                {t("apps.admin.song.info", "Info")}
               </div>
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                  <div className="text-[10px] text-neutral-500 mb-0.5">
-                    {t("apps.admin.song.createdAt", "Created")}
+              <div className="text-[11px] text-neutral-500 space-y-1">
+                {song.createdBy && (
+                  <div>
+                    {t("apps.admin.tableHeaders.addedBy", "Added By")}: <span className="text-neutral-700">{song.createdBy}</span>
                   </div>
-                  <div>{formatDate(song.createdAt)}</div>
-                  <div className="text-[10px] text-neutral-400">
-                    ({formatRelativeTime(song.createdAt)})
-                  </div>
+                )}
+                <div>
+                  {t("apps.admin.song.createdAt", "Created")}: <span className="text-neutral-700">{formatRelativeTime(song.createdAt)}</span>
                 </div>
-                <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                  <div className="text-[10px] text-neutral-500 mb-0.5">
-                    {t("apps.admin.song.updatedAt", "Updated")}
-                  </div>
-                  <div>{formatDate(song.updatedAt)}</div>
-                  <div className="text-[10px] text-neutral-400">
-                    ({formatRelativeTime(song.updatedAt)})
-                  </div>
+                <div>
+                  {t("apps.admin.song.updatedAt", "Updated")}: <span className="text-neutral-700">{formatRelativeTime(song.updatedAt)}</span>
                 </div>
               </div>
-              {song.createdBy && (
-                <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                  <div className="text-[10px] text-neutral-500 mb-0.5">
-                    {t("apps.admin.tableHeaders.addedBy", "Added By")}
-                  </div>
-                  <div className="text-[11px]">{song.createdBy}</div>
-                </div>
-              )}
             </div>
           )}
 
-          {/* Actions */}
-          <div className="space-y-2">
-            <div className="!text-[11px] uppercase tracking-wide text-black/50">
-              {t("apps.admin.profile.actions", "Actions")}
-            </div>
-            {isLoading ? (
-              <div className="flex gap-2">
-                <Skeleton className="h-7 w-24" />
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  <span>{t("apps.admin.song.delete", "Delete Song")}</span>
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </ScrollArea>
 

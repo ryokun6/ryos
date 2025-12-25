@@ -24,12 +24,14 @@
         "failedToFetchMessages": "Impossibile recuperare i messaggi",
         "failedToFetchProfile": "Impossibile caricare il profilo utente",
         "failedToFetchRooms": "Impossibile recuperare le stanze",
+        "failedToFetchSong": "Impossibile recuperare il brano",
         "failedToFetchSongs": "Impossibile recuperare i brani",
         "failedToFetchUsers": "Impossibile recuperare gli utenti",
         "failedToUnbanUser": "Impossibile sbannare l'utente",
         "failedToUpdateSong": "Impossibile aggiornare il brano",
         "importFailed": "Importazione non riuscita",
-        "invalidImportFormat": "Formato file non valido"
+        "invalidImportFormat": "Formato file non valido",
+        "songNotInLibrary": "Brano non nella libreria"
       },
       "help": {
         "adminAccess": {
@@ -60,6 +62,8 @@
         "dataRefreshed": "Dati aggiornati",
         "importSuccess": "Importati {{imported}} nuovi, aggiornati {{updated}} ({{total}} totali)",
         "messageDeleted": "Messaggio eliminato",
+        "playingInIpod": "In riproduzione su iPod",
+        "playingInKaraoke": "In riproduzione in Karaoke",
         "roomDeleted": "Stanza eliminata",
         "songDeleted": "Brano eliminato",
         "songUpdated": "Brano aggiornato",
@@ -107,6 +111,20 @@
         "rooms": "Stanze",
         "songs": "Brani",
         "users": "Utenti"
+      },
+      "song": {
+        "album": "Album",
+        "createdAt": "Creato",
+        "delete": "Elimina brano",
+        "info": "Info",
+        "lyricsOffset": "Offset testi",
+        "metadata": "Metadati",
+        "notFound": "Brano non trovato",
+        "playInIpod": "Riproduci su iPod",
+        "playInKaraoke": "Riproduci in Karaoke",
+        "unknownArtist": "Artista sconosciuto",
+        "updatedAt": "Aggiornato",
+        "youtubeId": "ID YouTube"
       },
       "songs": {
         "import": "Importa",

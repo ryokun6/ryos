@@ -74,41 +74,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           className="space-y-0.5 flex-1 overflow-y-auto min-h-0"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {/* Users Section */}
-          <div
-            className={cn(
-              "py-1.5 px-5 flex items-center gap-2 cursor-pointer",
-              activeSection === "users" && selectedRoomId === null
-                ? ""
-                : "hover:bg-black/5"
-            )}
-            style={
-              activeSection === "users" && selectedRoomId === null
-                ? {
-                    background: "var(--os-color-selection-bg)",
-                    color: "var(--os-color-selection-text)",
-                  }
-                : undefined
-            }
-            onClick={() => {
-              playButtonClick();
-              onSectionChange("users");
-              onRoomSelect(null);
-            }}
-          >
-            <span>{t("apps.admin.sidebar.users")}</span>
-            <span
-              className={cn(
-                "text-[10px] ml-auto",
-                activeSection === "users" && selectedRoomId === null
-                  ? "text-white/60"
-                  : "text-black/40"
-              )}
-            >
-              {stats.totalUsers}
-            </span>
-          </div>
-
           {/* Songs Section */}
           <div
             className={cn(
@@ -141,6 +106,41 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               )}
             >
               {stats.totalSongs ?? 0}
+            </span>
+          </div>
+
+          {/* Users Section */}
+          <div
+            className={cn(
+              "py-1.5 px-5 flex items-center gap-2 cursor-pointer",
+              activeSection === "users" && selectedRoomId === null
+                ? ""
+                : "hover:bg-black/5"
+            )}
+            style={
+              activeSection === "users" && selectedRoomId === null
+                ? {
+                    background: "var(--os-color-selection-bg)",
+                    color: "var(--os-color-selection-text)",
+                  }
+                : undefined
+            }
+            onClick={() => {
+              playButtonClick();
+              onSectionChange("users");
+              onRoomSelect(null);
+            }}
+          >
+            <span>{t("apps.admin.sidebar.users")}</span>
+            <span
+              className={cn(
+                "text-[10px] ml-auto",
+                activeSection === "users" && selectedRoomId === null
+                  ? "text-white/60"
+                  : "text-black/40"
+              )}
+            >
+              {stats.totalUsers}
             </span>
           </div>
 

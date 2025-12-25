@@ -24,12 +24,14 @@
         "failedToFetchMessages": "Не удалось получить сообщения",
         "failedToFetchProfile": "Не удалось загрузить профиль пользователя",
         "failedToFetchRooms": "Не удалось получить комнаты",
+        "failedToFetchSong": "Не удалось получить песню",
         "failedToFetchSongs": "Не удалось получить песни",
         "failedToFetchUsers": "Не удалось получить пользователей",
         "failedToUnbanUser": "Не удалось разблокировать пользователя",
         "failedToUpdateSong": "Не удалось обновить песню",
         "importFailed": "Импорт не удался",
-        "invalidImportFormat": "Неверный формат файла"
+        "invalidImportFormat": "Неверный формат файла",
+        "songNotInLibrary": "Песни нет в библиотеке"
       },
       "help": {
         "adminAccess": {
@@ -60,6 +62,8 @@
         "dataRefreshed": "Данные обновлены",
         "importSuccess": "Импортировано {{imported}} новых, обновлено {{updated}} (всего {{total}})",
         "messageDeleted": "Сообщение удалено",
+        "playingInIpod": "Воспроизводится на iPod",
+        "playingInKaraoke": "Воспроизводится в Караоке",
         "roomDeleted": "Комната удалена",
         "songDeleted": "Песня удалена",
         "songUpdated": "Песня обновлена",
@@ -107,6 +111,20 @@
         "rooms": "Комнаты",
         "songs": "Песни",
         "users": "Пользователи"
+      },
+      "song": {
+        "album": "Альбом",
+        "createdAt": "Создано",
+        "delete": "Удалить песню",
+        "info": "Инфо",
+        "lyricsOffset": "Смещение текста",
+        "metadata": "Метаданные",
+        "notFound": "Песня не найдена",
+        "playInIpod": "Воспроизвести на iPod",
+        "playInKaraoke": "Воспроизвести в Караоке",
+        "unknownArtist": "Неизвестный исполнитель",
+        "updatedAt": "Обновлено",
+        "youtubeId": "ID YouTube"
       },
       "songs": {
         "import": "Импорт",

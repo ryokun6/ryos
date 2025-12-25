@@ -24,12 +24,14 @@
         "failedToFetchMessages": "メッセージの取得に失敗しました。",
         "failedToFetchProfile": "ユーザープロフィールの取得に失敗しました",
         "failedToFetchRooms": "ルームの取得に失敗しました。",
+        "failedToFetchSong": "曲の取得に失敗しました",
         "failedToFetchSongs": "曲の取得に失敗しました",
         "failedToFetchUsers": "ユーザーの取得に失敗しました。",
         "failedToUnbanUser": "ユーザーのBAN解除に失敗しました",
         "failedToUpdateSong": "曲の更新に失敗しました",
         "importFailed": "インポートに失敗しました",
-        "invalidImportFormat": "無効なファイル形式"
+        "invalidImportFormat": "無効なファイル形式",
+        "songNotInLibrary": "ライブラリに曲がありません"
       },
       "help": {
         "adminAccess": {
@@ -60,6 +62,8 @@
         "dataRefreshed": "データが更新されました",
         "importSuccess": "新規 {{imported}} 件、更新 {{updated}} 件 (合計 {{total}} 件)",
         "messageDeleted": "メッセージが削除されました",
+        "playingInIpod": "iPodで再生中",
+        "playingInKaraoke": "カラオケで再生中",
         "roomDeleted": "ルームが削除されました",
         "songDeleted": "曲を削除しました",
         "songUpdated": "曲を更新しました",
@@ -107,6 +111,20 @@
         "rooms": "ルーム",
         "songs": "曲",
         "users": "ユーザー"
+      },
+      "song": {
+        "album": "アルバム",
+        "createdAt": "作成",
+        "delete": "曲を削除",
+        "info": "情報",
+        "lyricsOffset": "歌詞オフセット",
+        "metadata": "メタデータ",
+        "notFound": "曲が見つかりません",
+        "playInIpod": "iPodで再生",
+        "playInKaraoke": "カラオケで再生",
+        "unknownArtist": "不明なアーティスト",
+        "updatedAt": "更新",
+        "youtubeId": "YouTube ID"
       },
       "songs": {
         "import": "インポート",

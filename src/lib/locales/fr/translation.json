@@ -24,12 +24,14 @@
         "failedToFetchMessages": "Échec de la récupération des messages",
         "failedToFetchProfile": "Échec de la récupération du profil utilisateur",
         "failedToFetchRooms": "Échec de la récupération des salons",
+        "failedToFetchSong": "Échec de la récupération de la chanson",
         "failedToFetchSongs": "Impossible de récupérer les morceaux",
         "failedToFetchUsers": "Échec de la récupération des utilisateurs",
         "failedToUnbanUser": "Échec du débannissement de l'utilisateur",
         "failedToUpdateSong": "Impossible de mettre à jour le morceau",
         "importFailed": "Échec de l'importation",
-        "invalidImportFormat": "Format de fichier non valide"
+        "invalidImportFormat": "Format de fichier non valide",
+        "songNotInLibrary": "Chanson absente de la bibliothèque"
       },
       "help": {
         "adminAccess": {
@@ -60,6 +62,8 @@
         "dataRefreshed": "Données actualisées",
         "importSuccess": "Importés : {{imported}} nouveaux, mis à jour : {{updated}} ({{total}} au total)",
         "messageDeleted": "Message supprimé",
+        "playingInIpod": "Lecture sur iPod",
+        "playingInKaraoke": "Lecture Karaoké",
         "roomDeleted": "Salon supprimé",
         "songDeleted": "Morceau supprimé",
         "songUpdated": "Morceau mis à jour",
@@ -107,6 +111,20 @@
         "rooms": "Salons",
         "songs": "Morceaux",
         "users": "Utilisateurs"
+      },
+      "song": {
+        "album": "Album",
+        "createdAt": "Créé",
+        "delete": "Supprimer la chanson",
+        "info": "Infos",
+        "lyricsOffset": "Décalage des paroles",
+        "metadata": "Métadonnées",
+        "notFound": "Chanson introuvable",
+        "playInIpod": "Lire sur iPod",
+        "playInKaraoke": "Lire en Karaoké",
+        "unknownArtist": "Artiste inconnu",
+        "updatedAt": "Mis à jour",
+        "youtubeId": "ID YouTube"
       },
       "songs": {
         "import": "Importation",

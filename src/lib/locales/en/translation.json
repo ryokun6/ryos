@@ -2081,6 +2081,20 @@
         "import": "Import",
         "noSongs": "No songs in cache"
       },
+      "song": {
+        "notFound": "Song not found",
+        "unknownArtist": "Unknown Artist",
+        "delete": "Delete Song",
+        "playInIpod": "Play in iPod",
+        "playInKaraoke": "Play in Karaoke",
+        "metadata": "Metadata",
+        "album": "Album",
+        "lyricsOffset": "Lyrics Offset",
+        "youtubeId": "YouTube ID",
+        "info": "Info",
+        "createdAt": "Created",
+        "updatedAt": "Updated"
+      },
       "user": {
         "admin": "Admin",
         "user": "User",
@@ -2115,7 +2129,9 @@
         "songDeleted": "Song deleted",
         "songUpdated": "Song updated",
         "importSuccess": "Imported {{imported}} new, updated {{updated}} ({{total}} total)",
-        "dataRefreshed": "Data refreshed"
+        "dataRefreshed": "Data refreshed",
+        "playingInIpod": "Playing in iPod",
+        "playingInKaraoke": "Playing in Karaoke"
       },
       "errors": {
         "failedToFetchUsers": "Failed to fetch users",
@@ -2123,6 +2139,7 @@
         "failedToFetchMessages": "Failed to fetch messages",
         "failedToFetchProfile": "Failed to fetch user profile",
         "failedToFetchSongs": "Failed to fetch songs",
+        "failedToFetchSong": "Failed to fetch song",
         "failedToDeleteUser": "Failed to delete user",
         "failedToDeleteRoom": "Failed to delete room",
         "failedToDeleteMessage": "Failed to delete message",
@@ -2131,7 +2148,8 @@
         "failedToBanUser": "Failed to ban user",
         "failedToUnbanUser": "Failed to unban user",
         "invalidImportFormat": "Invalid file format",
-        "importFailed": "Import failed"
+        "importFailed": "Import failed",
+        "songNotInLibrary": "Song not in library"
       },
       "statusBar": {
         "usersCount": "{{count}} user",
