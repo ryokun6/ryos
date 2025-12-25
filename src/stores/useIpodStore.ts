@@ -6,6 +6,7 @@ import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
 import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import i18n from "@/lib/i18n";
+import { useChatsStore } from "./useChatsStore";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -339,6 +340,87 @@ function updatePlaybackHistory(
   return updated.slice(-maxHistory);
 }
 
+// ============================================================================
+// DEBOUNCED LYRIC OFFSET SAVE
+// ============================================================================
+
+// Debounce timers for saving lyric offset (keyed by track ID)
+const lyricOffsetSaveTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+
+/**
+ * Save lyric offset to server with debouncing.
+ * Only saves if user is authenticated.
+ * Allows updates for songs with empty createdBy (not shared by anyone).
+ */
+async function saveLyricOffsetToServer(
+  trackId: string,
+  lyricOffset: number
+): Promise<void> {
+  // Get auth credentials from chats store
+  const { username, authToken } = useChatsStore.getState();
+  
+  // Skip if not authenticated
+  if (!username || !authToken) {
+    console.log(`[iPod Store] Skipping lyric offset save for ${trackId} - user not logged in`);
+    return;
+  }
+
+  try {
+    const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(trackId)}`), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${authToken}`,
+        "X-Username": username,
+      },
+      body: JSON.stringify({
+        lyricOffset,
+      }),
+    });
+
+    if (response.status === 401) {
+      console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyric offset`);
+      return;
+    }
+
+    if (response.status === 403) {
+      // Permission denied - song is owned by another user
+      console.log(`[iPod Store] Cannot save lyric offset for ${trackId} - song owned by another user`);
+      return;
+    }
+
+    if (!response.ok) {
+      console.warn(`[iPod Store] Failed to save lyric offset for ${trackId}: ${response.status}`);
+      return;
+    }
+
+    const data = await response.json();
+    console.log(`[iPod Store] Saved lyric offset for ${trackId}: ${lyricOffset}ms (by ${data.createdBy || username})`);
+  } catch (error) {
+    console.error(`[iPod Store] Error saving lyric offset for ${trackId}:`, error);
+  }
+}
+
+/**
+ * Debounced wrapper for saving lyric offset.
+ * Waits 2 seconds after the last change before saving.
+ */
+function debouncedSaveLyricOffset(trackId: string, lyricOffset: number): void {
+  // Clear any existing timer for this track
+  const existingTimer = lyricOffsetSaveTimers.get(trackId);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+  }
+
+  // Set new timer
+  const timer = setTimeout(() => {
+    lyricOffsetSaveTimers.delete(trackId);
+    saveLyricOffsetToServer(trackId, lyricOffset);
+  }, 2000); // 2 second debounce
+
+  lyricOffsetSaveTimers.set(trackId, timer);
+}
+
 export const useIpodStore = create<IpodState>()(
   persist(
     (set, get) => ({
@@ -567,6 +649,9 @@ export const useIpodStore = create<IpodState>()(
             lyricOffset: newOffset,
           };
 
+          // Save to server with debouncing
+          debouncedSaveLyricOffset(current.id, newOffset);
+
           return { tracks } as Partial<IpodState>;
         }),
       setLyricOffset: (trackIndex, offsetMs) =>
@@ -580,10 +665,14 @@ export const useIpodStore = create<IpodState>()(
           }
 
           const tracks = [...state.tracks];
+          const trackId = tracks[trackIndex].id;
           tracks[trackIndex] = {
             ...tracks[trackIndex],
             lyricOffset: offsetMs,
           };
+
+          // Save to server with debouncing
+          debouncedSaveLyricOffset(trackId, offsetMs);
 
           return { tracks } as Partial<IpodState>;
         }),
