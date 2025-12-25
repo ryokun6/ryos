@@ -238,7 +238,7 @@ export default async function handler(req: Request) {
           const existing = await getSong(redis, songData.id, { includeMetadata: true });
 
           // Convert legacy lyricsSearch to lyricsSource
-          let lyricsSource: LyricsSource | undefined = songData.lyricsSource;
+          let lyricsSource: LyricsSource | undefined = songData.lyricsSource as LyricsSource | undefined;
           if (!lyricsSource && songData.lyricsSearch?.selection) {
             lyricsSource = songData.lyricsSearch.selection as LyricsSource;
           }
