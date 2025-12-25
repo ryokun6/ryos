@@ -31,7 +31,8 @@
         "failedToUpdateSong": "곡 업데이트에 실패했습니다.",
         "importFailed": "가져오기 실패",
         "invalidImportFormat": "잘못된 파일 형식",
-        "songNotInLibrary": "보관함에 없는 노래"
+        "songNotInLibrary": "보관함에 없는 노래",
+        "failedToAddToLibrary": "라이브러리에 추가 실패"
       },
       "help": {
         "adminAccess": {
@@ -64,6 +65,7 @@
         "messageDeleted": "메시지 삭제됨",
         "playingInIpod": "iPod에서 재생 중",
         "playingInKaraoke": "노래방에서 재생 중",
+        "addingToLibrary": "라이브러리에 추가 중...",
         "roomDeleted": "방 삭제됨",
         "songDeleted": "곡 삭제됨",
         "songUpdated": "곡 업데이트됨",

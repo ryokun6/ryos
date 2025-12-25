@@ -31,7 +31,8 @@
         "failedToUpdateSong": "Falha ao atualizar música",
         "importFailed": "Falha na importação",
         "invalidImportFormat": "Formato de arquivo inválido",
-        "songNotInLibrary": "Música não está na biblioteca"
+        "songNotInLibrary": "Música não está na biblioteca",
+        "failedToAddToLibrary": "Falha ao adicionar à biblioteca"
       },
       "help": {
         "adminAccess": {
@@ -64,6 +65,7 @@
         "messageDeleted": "Mensagem eliminada",
         "playingInIpod": "Reproduzindo no iPod",
         "playingInKaraoke": "Reproduzindo no Karaokê",
+        "addingToLibrary": "Adicionando à biblioteca...",
         "roomDeleted": "Sala eliminada",
         "songDeleted": "Música excluída",
         "songUpdated": "Música atualizada",

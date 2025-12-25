@@ -31,7 +31,8 @@
         "failedToUpdateSong": "更新歌曲失敗",
         "importFailed": "匯入失敗",
         "invalidImportFormat": "無效的檔案格式",
-        "songNotInLibrary": "歌曲不在媒體庫中"
+        "songNotInLibrary": "歌曲不在媒體庫中",
+        "failedToAddToLibrary": "加入音樂庫失敗"
       },
       "help": {
         "adminAccess": {
@@ -64,6 +65,7 @@
         "messageDeleted": "訊息已刪除",
         "playingInIpod": "正在 iPod 中播放",
         "playingInKaraoke": "正在卡拉 OK 中播放",
+        "addingToLibrary": "正在加入音樂庫...",
         "roomDeleted": "聊天室已刪除",
         "songDeleted": "歌曲已刪除",
         "songUpdated": "歌曲已更新",

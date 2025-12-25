@@ -31,7 +31,8 @@
         "failedToUpdateSong": "Не удалось обновить песню",
         "importFailed": "Импорт не удался",
         "invalidImportFormat": "Неверный формат файла",
-        "songNotInLibrary": "Песни нет в библиотеке"
+        "songNotInLibrary": "Песни нет в библиотеке",
+        "failedToAddToLibrary": "Не удалось добавить в библиотеку"
       },
       "help": {
         "adminAccess": {
@@ -64,6 +65,7 @@
         "messageDeleted": "Сообщение удалено",
         "playingInIpod": "Воспроизводится на iPod",
         "playingInKaraoke": "Воспроизводится в Караоке",
+        "addingToLibrary": "Добавление в библиотеку...",
         "roomDeleted": "Комната удалена",
         "songDeleted": "Песня удалена",
         "songUpdated": "Песня обновлена",

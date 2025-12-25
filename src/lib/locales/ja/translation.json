@@ -31,7 +31,8 @@
         "failedToUpdateSong": "曲の更新に失敗しました",
         "importFailed": "インポートに失敗しました",
         "invalidImportFormat": "無効なファイル形式",
-        "songNotInLibrary": "ライブラリに曲がありません"
+        "songNotInLibrary": "ライブラリに曲がありません",
+        "failedToAddToLibrary": "ライブラリへの追加に失敗しました"
       },
       "help": {
         "adminAccess": {
@@ -64,6 +65,7 @@
         "messageDeleted": "メッセージが削除されました",
         "playingInIpod": "iPodで再生中",
         "playingInKaraoke": "カラオケで再生中",
+        "addingToLibrary": "ライブラリに追加中...",
         "roomDeleted": "ルームが削除されました",
         "songDeleted": "曲を削除しました",
         "songUpdated": "曲を更新しました",

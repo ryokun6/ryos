@@ -31,7 +31,8 @@
         "failedToUpdateSong": "Aktualisieren des Liedes fehlgeschlagen",
         "importFailed": "Import fehlgeschlagen",
         "invalidImportFormat": "Ungültiges Dateiformat",
-        "songNotInLibrary": "Song nicht in Mediathek"
+        "songNotInLibrary": "Song nicht in Mediathek",
+        "failedToAddToLibrary": "Hinzufügen zur Bibliothek fehlgeschlagen"
       },
       "help": {
         "adminAccess": {
@@ -64,6 +65,7 @@
         "messageDeleted": "Nachricht gelöscht",
         "playingInIpod": "Wird auf iPod wiedergegeben",
         "playingInKaraoke": "Wird im Karaoke wiedergegeben",
+        "addingToLibrary": "Wird zur Bibliothek hinzugefügt...",
         "roomDeleted": "Raum gelöscht",
         "songDeleted": "Lied gelöscht",
         "songUpdated": "Lied aktualisiert",

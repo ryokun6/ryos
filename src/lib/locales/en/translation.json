@@ -2131,7 +2131,8 @@
         "importSuccess": "Imported {{imported}} new, updated {{updated}} ({{total}} total)",
         "dataRefreshed": "Data refreshed",
         "playingInIpod": "Playing in iPod",
-        "playingInKaraoke": "Playing in Karaoke"
+        "playingInKaraoke": "Playing in Karaoke",
+        "addingToLibrary": "Adding to library..."
       },
       "errors": {
         "failedToFetchUsers": "Failed to fetch users",
@@ -2149,7 +2150,8 @@
         "failedToUnbanUser": "Failed to unban user",
         "invalidImportFormat": "Invalid file format",
         "importFailed": "Import failed",
-        "songNotInLibrary": "Song not in library"
+        "songNotInLibrary": "Song not in library",
+        "failedToAddToLibrary": "Failed to add to library"
       },
       "statusBar": {
         "usersCount": "{{count}} user",

@@ -96,7 +96,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   }, [youtubeId, t]);
 
   // Play song in iPod
-  const handlePlayInIpod = useCallback(() => {
+  const handlePlayInIpod = useCallback(async () => {
     // Ensure iPod is open
     const appState = useAppStore.getState();
     const ipodInstances = appState.getInstancesByAppId("ipod");
@@ -114,12 +114,19 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
       ipodStore.setIsPlaying(true);
       toast.success(t("apps.admin.messages.playingInIpod", "Playing in iPod"));
     } else {
-      toast.error(t("apps.admin.errors.songNotInLibrary", "Song not in library"));
+      // Song not in library, add it first
+      toast.info(t("apps.admin.messages.addingToLibrary", "Adding to library..."));
+      const track = await ipodStore.addTrackFromVideoId(youtubeId, true);
+      if (track) {
+        toast.success(t("apps.admin.messages.playingInIpod", "Playing in iPod"));
+      } else {
+        toast.error(t("apps.admin.errors.failedToAddToLibrary", "Failed to add to library"));
+      }
     }
   }, [youtubeId, launchApp, t]);
 
   // Play song in Karaoke
-  const handlePlayInKaraoke = useCallback(() => {
+  const handlePlayInKaraoke = useCallback(async () => {
     // Ensure Karaoke is open
     const appState = useAppStore.getState();
     const karaokeInstances = appState.getInstancesByAppId("karaoke");
@@ -130,15 +137,25 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
     const ipodStore = useIpodStore.getState();
     const karaokeStore = useKaraokeStore.getState();
-    const trackIndex = ipodStore.tracks.findIndex((t) => t.id === youtubeId);
+    let trackIndex = ipodStore.tracks.findIndex((t) => t.id === youtubeId);
+
+    if (trackIndex === -1) {
+      // Song not in library, add it first
+      toast.info(t("apps.admin.messages.addingToLibrary", "Adding to library..."));
+      const track = await ipodStore.addTrackFromVideoId(youtubeId, false);
+      if (!track) {
+        toast.error(t("apps.admin.errors.failedToAddToLibrary", "Failed to add to library"));
+        return;
+      }
+      // Re-find the track index after adding
+      trackIndex = ipodStore.tracks.findIndex((t) => t.id === youtubeId);
+    }
 
     if (trackIndex !== -1) {
       // Song is in library, play it
       karaokeStore.setCurrentIndex(trackIndex);
       karaokeStore.setIsPlaying(true);
       toast.success(t("apps.admin.messages.playingInKaraoke", "Playing in Karaoke"));
-    } else {
-      toast.error(t("apps.admin.errors.songNotInLibrary", "Song not in library"));
     }
   }, [youtubeId, launchApp, t]);
 
@@ -361,7 +378,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         disabled={isSaving}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {isSaving ? <ActivityIndicator size={12} /> : t("common.actions.save")}
+                        {isSaving ? <ActivityIndicator size={12} /> : t("common.dialog.save")}
                       </Button>
                       <Button
                         size="sm"
@@ -369,7 +386,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         onClick={() => setIsEditingTitle(false)}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {t("common.actions.cancel")}
+                        {t("common.dialog.cancel")}
                       </Button>
                     </div>
                   ) : (
@@ -407,7 +424,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         disabled={isSaving}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {isSaving ? <ActivityIndicator size={12} /> : t("common.actions.save")}
+                        {isSaving ? <ActivityIndicator size={12} /> : t("common.dialog.save")}
                       </Button>
                       <Button
                         size="sm"
@@ -415,7 +432,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         onClick={() => setIsEditingArtist(false)}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {t("common.actions.cancel")}
+                        {t("common.dialog.cancel")}
                       </Button>
                     </div>
                   ) : (
@@ -453,7 +470,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         disabled={isSaving}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {isSaving ? <ActivityIndicator size={12} /> : t("common.actions.save")}
+                        {isSaving ? <ActivityIndicator size={12} /> : t("common.dialog.save")}
                       </Button>
                       <Button
                         size="sm"
@@ -461,7 +478,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         onClick={() => setIsEditingAlbum(false)}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {t("common.actions.cancel")}
+                        {t("common.dialog.cancel")}
                       </Button>
                     </div>
                   ) : (
@@ -501,7 +518,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         disabled={isSaving}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {isSaving ? <ActivityIndicator size={12} /> : t("common.actions.save")}
+                        {isSaving ? <ActivityIndicator size={12} /> : t("common.dialog.save")}
                       </Button>
                       <Button
                         size="sm"
@@ -509,7 +526,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         onClick={() => setIsEditingOffset(false)}
                         className="h-6 px-2 text-[10px]"
                       >
-                        {t("common.actions.cancel")}
+                        {t("common.dialog.cancel")}
                       </Button>
                     </div>
                   ) : (
