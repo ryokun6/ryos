@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { getApiUrl } from "@/utils/platform";
 import { isOffline } from "@/utils/offline";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { toRomaji } from "wanakana";
 import {
   hasKoreanText,
@@ -15,6 +13,7 @@ import {
   renderKanaWithRomaji,
 } from "@/utils/romanization";
 import type { FuriganaSegment } from "@/utils/romanization";
+import { processFuriganaChunks } from "@/utils/chunkedStream";
 
 // Re-export FuriganaSegment for consumers
 export type { FuriganaSegment };
@@ -37,20 +36,12 @@ interface UseFuriganaReturn {
   furiganaMap: Map<string, FuriganaSegment[]>;
   /** Whether currently fetching */
   isFetching: boolean;
+  /** Progress percentage (0-100) when streaming */
+  progress?: number;
   /** Error message if any */
   error?: string;
   /** Render helper that wraps text with ruby elements (including all romanization types) */
   renderWithFurigana: (line: LyricLine, processedText: string) => React.ReactNode;
-}
-
-const FURIGANA_TIMEOUT = 30000; // 30 seconds
-
-/**
- * Response from unified song endpoint for furigana
- */
-interface UnifiedFuriganaResponse {
-  furigana: FuriganaSegment[][];
-  cached?: boolean;
 }
 
 /**
@@ -73,6 +64,7 @@ export function useFurigana({
 }: UseFuriganaParams): UseFuriganaReturn {
   const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
   const [isFetching, setIsFetching] = useState(false);
+  const [progress, setProgress] = useState<number | undefined>();
   const [error, setError] = useState<string>();
   const furiganaCacheKeyRef = useRef<string>("");
   
@@ -108,7 +100,7 @@ export function useFurigana({
   const shouldFetchFurigana = romanization.enabled && romanization.japaneseFurigana;
   const hasLines = lines.length > 0;
 
-  // Fetch furigana for original lines when enabled
+  // Fetch furigana for original lines when enabled using chunked streaming
   // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   useEffect(() => {
     // If completely disabled, no songId, or no lines, clear everything
@@ -117,6 +109,7 @@ export function useFurigana({
         setFuriganaMap(new Map());
         furiganaCacheKeyRef.current = "";
         setIsFetching(false);
+        setProgress(undefined);
         setError(undefined);
       }
       return;
@@ -133,6 +126,7 @@ export function useFurigana({
     if (!hasJapanese) {
       setFuriganaMap(new Map());
       setIsFetching(false);
+      setProgress(undefined);
       setError(undefined);
       return;
     }
@@ -154,72 +148,72 @@ export function useFurigana({
 
     // Start loading
     setIsFetching(true);
+    setProgress(0);
     setError(undefined);
     
     const controller = new AbortController();
 
-    const fetchFurigana = async () => {
-      try {
-        const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "furigana",
-            force: isForceRequest,
-          }),
-          signal: controller.signal,
-          timeout: FURIGANA_TIMEOUT,
-          retry: {
-            maxAttempts: 3,
-            initialDelayMs: 1000,
-            onRetry: (attempt, delayMs) => {
-              console.warn(`Furigana fetch attempt ${attempt} failed, retrying in ${delayMs}ms...`);
-            },
-          },
-        });
-
-        if (controller.signal.aborted) return;
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch furigana (status ${res.status})`);
+    // Use chunked streaming for furigana to avoid edge function timeouts
+    processFuriganaChunks(songId, {
+      force: isForceRequest,
+      signal: controller.signal,
+      onProgress: (chunkProgress) => {
+        if (!controller.signal.aborted) {
+          setProgress(chunkProgress.percentage);
         }
-
-        const data = await res.json() as UnifiedFuriganaResponse;
-        const newMap = new Map<string, FuriganaSegment[]>();
-        
-        if (data.furigana) {
-          lines.forEach((line, index) => {
-            if (data.furigana[index]) {
-              newMap.set(line.startTimeMs, data.furigana[index]);
-            }
+      },
+      onChunk: (_chunkIndex, startIndex, furiganaChunk) => {
+        // Progressive update: merge new chunk into current map
+        if (!controller.signal.aborted) {
+          setFuriganaMap((prevMap) => {
+            const newMap = new Map(prevMap);
+            furiganaChunk.forEach((segments, i) => {
+              const lineIndex = startIndex + i;
+              if (lineIndex < lines.length) {
+                newMap.set(lines[lineIndex].startTimeMs, segments);
+              }
+            });
+            return newMap;
           });
         }
+      },
+    })
+      .then((allFurigana) => {
+        if (controller.signal.aborted) return;
 
-        if (!controller.signal.aborted) {
-          setFuriganaMap(newMap);
-          furiganaCacheKeyRef.current = cacheKey;
-          lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
-          setIsFetching(false);
-        }
-      } catch (err) {
+        // Final update with all furigana
+        const newMap = new Map<string, FuriganaSegment[]>();
+        allFurigana.forEach((segments, index) => {
+          if (index < lines.length && segments) {
+            newMap.set(lines[index].startTimeMs, segments);
+          }
+        });
+
+        setFuriganaMap(newMap);
+        furiganaCacheKeyRef.current = cacheKey;
+        lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+      })
+      .catch((err) => {
         if (controller.signal.aborted) return;
         
         if (err instanceof Error && err.name === "AbortError") {
-          setIsFetching(false);
           return;
         }
 
         console.error("Failed to fetch furigana:", err);
         setError(err instanceof Error ? err.message : "Failed to fetch furigana");
-        setIsFetching(false);
-      }
-    };
-
-    fetchFurigana();
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsFetching(false);
+          setProgress(undefined);
+        }
+      });
 
     return () => {
       controller.abort();
       setIsFetching(false);
+      setProgress(undefined);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger]);
@@ -314,6 +308,7 @@ export function useFurigana({
   return {
     furiganaMap,
     isFetching,
+    progress,
     error,
     renderWithFurigana,
   };

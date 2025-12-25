@@ -106,6 +106,29 @@ const FuriganaSchema = z.object({
   force: z.boolean().optional(),
 });
 
+// Chunked processing schemas - for avoiding edge function timeouts
+const TranslateChunkSchema = z.object({
+  action: z.literal("translate-chunk"),
+  language: z.string(),
+  chunkIndex: z.number(),
+  totalChunks: z.number().optional(), // Optional, will be computed if not provided
+  force: z.boolean().optional(),
+});
+
+const FuriganaChunkSchema = z.object({
+  action: z.literal("furigana-chunk"),
+  chunkIndex: z.number(),
+  totalChunks: z.number().optional(),
+  force: z.boolean().optional(),
+});
+
+// Schema for getting chunk info (how many chunks total)
+const GetChunkInfoSchema = z.object({
+  action: z.literal("get-chunk-info"),
+  operation: z.enum(["translate", "furigana"]),
+  language: z.string().optional(), // Required for translate
+});
+
 // AI response schemas
 const AiTranslatedTextsSchema = z.object({
   translatedTexts: z.array(z.string()),
@@ -1149,6 +1172,242 @@ export default async function handler(req: Request) {
 
         logInfo(requestId, `Response: 200 OK - Furigana generated (${furigana.length} lines)`);
         return jsonResponse({
+          furigana,
+          cached: false,
+        });
+      }
+
+      // =======================================================================
+      // Handle get-chunk-info action - returns chunk metadata for client
+      // =======================================================================
+      if (action === "get-chunk-info") {
+        const parsed = GetChunkInfoSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { operation, language } = parsed.data;
+
+        // Get song with lyrics
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+          includeTranslations: language ? [language] : undefined,
+          includeFurigana: operation === "furigana",
+        });
+
+        if (!song?.lyrics?.lrc) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Ensure parsedLines exist
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          song.lyrics.parsedLines = parseLyricsContent(
+            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+            song.title,
+            song.artist
+          );
+          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
+        }
+
+        const totalLines = song.lyrics.parsedLines.length;
+        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+
+        // Check if already cached
+        let cached = false;
+        if (operation === "translate" && language && song.translations?.[language]) {
+          cached = true;
+        } else if (operation === "furigana" && song.furigana) {
+          cached = true;
+        }
+
+        logInfo(requestId, `Chunk info: ${operation}`, { totalLines, totalChunks, cached });
+        return jsonResponse({
+          totalLines,
+          totalChunks,
+          chunkSize: CHUNK_SIZE,
+          cached,
+          // If cached, return the full result
+          ...(cached && operation === "translate" && language
+            ? { translation: song.translations![language] }
+            : {}),
+          ...(cached && operation === "furigana" ? { furigana: song.furigana } : {}),
+        });
+      }
+
+      // =======================================================================
+      // Handle translate-chunk action - processes a single chunk
+      // =======================================================================
+      if (action === "translate-chunk") {
+        const parsed = TranslateChunkSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { language, chunkIndex, force } = parsed.data;
+
+        // Get song with lyrics
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+        });
+
+        if (!song?.lyrics?.lrc) {
+          return errorResponse("Song has no lyrics to translate", 404);
+        }
+
+        // Ensure parsedLines exist
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          song.lyrics.parsedLines = parseLyricsContent(
+            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+            song.title,
+            song.artist
+          );
+          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
+        }
+
+        const totalLines = song.lyrics.parsedLines.length;
+        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+
+        if (chunkIndex < 0 || chunkIndex >= totalChunks) {
+          return errorResponse(`Invalid chunk index: ${chunkIndex}. Valid range: 0-${totalChunks - 1}`);
+        }
+
+        // Extract chunk
+        const startIndex = chunkIndex * CHUNK_SIZE;
+        const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
+        const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
+
+        // Check chunk cache
+        const chunkCacheKey = `song:${songId}:translate:${language}:chunk:${chunkIndex}`;
+        if (!force) {
+          try {
+            const cachedChunk = await redis.get(chunkCacheKey) as string[] | null;
+            if (cachedChunk) {
+              logInfo(requestId, `Translate chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
+              return jsonResponse({
+                chunkIndex,
+                totalChunks,
+                startIndex,
+                translations: cachedChunk,
+                cached: true,
+              });
+            }
+          } catch (e) {
+            logError(requestId, "Chunk cache lookup failed", e);
+          }
+        }
+
+        // Convert to LyricLine format and translate
+        const lines: LyricLine[] = chunkLines.map(line => ({
+          words: line.words,
+          startTimeMs: line.startTimeMs,
+        }));
+
+        logInfo(requestId, `Translating chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
+        const translations = await translateChunk(lines, language, requestId);
+
+        // Cache the chunk result (30 days)
+        try {
+          await redis.set(chunkCacheKey, translations, { ex: 60 * 60 * 24 * 30 });
+        } catch (e) {
+          logError(requestId, "Chunk cache write failed", e);
+        }
+
+        logInfo(requestId, `Translate chunk ${chunkIndex + 1}/${totalChunks} - completed`);
+        return jsonResponse({
+          chunkIndex,
+          totalChunks,
+          startIndex,
+          translations,
+          cached: false,
+        });
+      }
+
+      // =======================================================================
+      // Handle furigana-chunk action - processes a single chunk
+      // =======================================================================
+      if (action === "furigana-chunk") {
+        const parsed = FuriganaChunkSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { chunkIndex, force } = parsed.data;
+
+        // Get song with lyrics
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+        });
+
+        if (!song?.lyrics?.lrc) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Ensure parsedLines exist
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          song.lyrics.parsedLines = parseLyricsContent(
+            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+            song.title,
+            song.artist
+          );
+          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
+        }
+
+        const totalLines = song.lyrics.parsedLines.length;
+        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+
+        if (chunkIndex < 0 || chunkIndex >= totalChunks) {
+          return errorResponse(`Invalid chunk index: ${chunkIndex}. Valid range: 0-${totalChunks - 1}`);
+        }
+
+        // Extract chunk
+        const startIndex = chunkIndex * CHUNK_SIZE;
+        const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
+        const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
+
+        // Check chunk cache
+        const chunkCacheKey = `song:${songId}:furigana:chunk:${chunkIndex}`;
+        if (!force) {
+          try {
+            const cachedChunk = await redis.get(chunkCacheKey) as FuriganaSegment[][] | null;
+            if (cachedChunk) {
+              logInfo(requestId, `Furigana chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
+              return jsonResponse({
+                chunkIndex,
+                totalChunks,
+                startIndex,
+                furigana: cachedChunk,
+                cached: true,
+              });
+            }
+          } catch (e) {
+            logError(requestId, "Chunk cache lookup failed", e);
+          }
+        }
+
+        // Convert to LyricLine format and generate furigana
+        const lines: LyricLine[] = chunkLines.map(line => ({
+          words: line.words,
+          startTimeMs: line.startTimeMs,
+        }));
+
+        logInfo(requestId, `Generating furigana chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
+        const furigana = await generateFuriganaForChunk(lines, requestId);
+
+        // Cache the chunk result (30 days)
+        try {
+          await redis.set(chunkCacheKey, furigana, { ex: 60 * 60 * 24 * 30 });
+        } catch (e) {
+          logError(requestId, "Chunk cache write failed", e);
+        }
+
+        logInfo(requestId, `Furigana chunk ${chunkIndex + 1}/${totalChunks} - completed`);
+        return jsonResponse({
+          chunkIndex,
+          totalChunks,
+          startIndex,
           furigana,
           cached: false,
         });
