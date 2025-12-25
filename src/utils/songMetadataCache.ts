@@ -281,6 +281,8 @@ export async function deleteAllSongMetadata(
  * 
  * @param metadata - Song metadata to save
  * @param auth - Authentication credentials (username and token)
+ * @param options - Additional options
+ * @param options.isShare - If true, this is a share action and will update createdBy
  * @returns true if saved successfully, false otherwise
  */
 export async function saveSongMetadata(
@@ -292,7 +294,8 @@ export async function saveSongMetadata(
     lyricOffset?: number;
     lyricsSource?: CachedLyricsSource;
   },
-  auth: SongMetadataAuthCredentials
+  auth: SongMetadataAuthCredentials,
+  options?: { isShare?: boolean }
 ): Promise<boolean> {
   try {
     const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(metadata.youtubeId)}`), {
@@ -308,6 +311,7 @@ export async function saveSongMetadata(
         album: metadata.album,
         lyricOffset: metadata.lyricOffset,
         lyricsSource: metadata.lyricsSource,
+        isShare: options?.isShare,
       }),
     });
 
@@ -401,6 +405,8 @@ export async function bulkImportSongMetadata(
  * 
  * @param track - Track object from iPod store
  * @param auth - Authentication credentials (username and token), or null to skip
+ * @param options - Additional options
+ * @param options.isShare - If true, this is a share action and will update createdBy
  * @returns true if saved successfully, false otherwise (including when skipped due to no auth)
  */
 export async function saveSongMetadataFromTrack(
@@ -418,7 +424,8 @@ export async function saveSongMetadataFromTrack(
       album?: string;
     };
   },
-  auth: SongMetadataAuthCredentials | null
+  auth: SongMetadataAuthCredentials | null,
+  options?: { isShare?: boolean }
 ): Promise<boolean> {
   // Skip if not authenticated
   if (!auth || !auth.username || !auth.authToken) {
@@ -435,6 +442,7 @@ export async function saveSongMetadataFromTrack(
       lyricOffset: track.lyricOffset,
       lyricsSource: track.lyricsSource,
     },
-    auth
+    auth,
+    options
   );
 }

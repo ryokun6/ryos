@@ -102,6 +102,8 @@ const UpdateSongSchema = z.object({
   clearTranslations: z.boolean().optional(),
   clearFurigana: z.boolean().optional(),
   clearLyrics: z.boolean().optional(),
+  // Flag to indicate this is a share action (sets createdBy)
+  isShare: z.boolean().optional(),
 });
 
 const FetchLyricsSchema = z.object({
@@ -1103,17 +1105,8 @@ export default async function handler(req: Request) {
 
   // Validate origin
   const effectiveOrigin = getEffectiveOrigin(req);
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    return errorResponse("Unauthorized", 403);
-  }
 
-  // Create Redis client
-  const redis = new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-
-  // Helper for JSON responses
+  // Helper for JSON responses (defined early for use in origin validation)
   const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) =>
     new Response(JSON.stringify(data), {
       status,
@@ -1128,6 +1121,16 @@ export default async function handler(req: Request) {
     logInfo(requestId, `Response: ${status} - ${message}`);
     return jsonResponse({ error: message }, status);
   };
+
+  if (!isAllowedOrigin(effectiveOrigin)) {
+    return errorResponse("Unauthorized", 403);
+  }
+
+  // Create Redis client
+  const redis = new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
 
   if (!songId || songId === "[id]") {
     return errorResponse("Song ID is required", 400);
@@ -1914,7 +1917,7 @@ export default async function handler(req: Request) {
 
       // Update song
       const isUpdate = !!existingSong;
-      const { lyricsSource, clearTranslations, clearFurigana, clearLyrics, ...restData } = parsed.data;
+      const { lyricsSource, clearTranslations, clearFurigana, clearLyrics, isShare, ...restData } = parsed.data;
       
       // Determine what to preserve vs clear
       // If clearing is requested, don't preserve; otherwise preserve existing data
@@ -1924,12 +1927,24 @@ export default async function handler(req: Request) {
         preserveFurigana: !clearFurigana,
       };
 
+      // Determine createdBy:
+      // - Only update createdBy when isShare is true (sharing via share dialog)
+      // - Only allow setting createdBy if user is "ryo" OR song has no existing createdBy
+      let createdBy = existingSong?.createdBy; // Default: preserve existing
+      if (isShare) {
+        const canSetCreatedBy = username?.toLowerCase() === "ryo" || !existingSong?.createdBy;
+        if (canSetCreatedBy) {
+          createdBy = username || undefined;
+        }
+        // If can't set createdBy, just preserve existing (don't fail the request)
+      }
+
       // Build update data - if clearing, explicitly set to undefined
       const updateData: Parameters<typeof saveSong>[1] = {
         id: songId,
         ...restData,
         lyricsSource: lyricsSource as LyricsSource | undefined,
-        createdBy: existingSong?.createdBy || username || undefined,
+        createdBy,
       };
 
       // If clearing translations or furigana, explicitly set them to undefined

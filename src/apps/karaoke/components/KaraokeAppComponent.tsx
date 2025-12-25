@@ -687,10 +687,11 @@ export function KaraokeAppComponent({
     if (tracks.length > 0 && currentIndex >= 0) {
       const track = tracks[currentIndex];
       // Save song metadata to cache when sharing (requires auth)
+      // Pass isShare: true to update createdBy (if allowed)
       if (track) {
         const { username, authToken } = useChatsStore.getState();
         const auth = username && authToken ? { username, authToken } : null;
-        saveSongMetadataFromTrack(track, auth).catch((error) => {
+        saveSongMetadataFromTrack(track, auth, { isShare: true }).catch((error) => {
           console.error("[Karaoke] Error saving song metadata to cache:", error);
         });
       }
