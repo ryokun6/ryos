@@ -196,6 +196,115 @@ function stripParentheses(str: string): string {
   return str.replace(/\s*\([^)]*\)\s*/g, " ").trim();
 }
 
+/**
+ * Use AI to parse a YouTube title into song title and artist.
+ * Falls back to simple parsing if AI fails.
+ */
+async function parseYouTubeTitleWithAI(
+  rawTitle: string,
+  channelName?: string,
+  requestId?: string
+): Promise<{ title: string; artist: string }> {
+  try {
+    const { object: parsedData } = await generateObject({
+      model: google("gemini-2.0-flash"),
+      schema: z.object({
+        title: z.string().optional().nullable(),
+        artist: z.string().optional().nullable(),
+      }),
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist. Respond ONLY with a valid JSON object. If you cannot determine a field, set it to null.
+
+Rules:
+- Prefer original language names (e.g., "周杰倫" over "Jay Chou", "뉴진스" over "NewJeans")
+- Remove video markers like "Official MV", "Lyric Video", "[MV]", etc. from the title
+- The artist is usually before the delimiter (-, |, etc.) or in the channel name
+- Channel names ending in "VEVO", "- Topic", or containing "Official" often indicate the artist
+
+Examples:
+- "Jay Chou - Sunny Day (周杰倫 - 晴天)" → {"title": "晴天", "artist": "周杰倫"}
+- "NewJeans (뉴진스) 'How Sweet' Official MV" → {"title": "How Sweet", "artist": "뉴진스"}
+- "Kenshi Yonezu - KICK BACK" with channel "Kenshi Yonezu" → {"title": "KICK BACK", "artist": "米津玄師"}
+- "Lofi Hip Hop Radio" with channel "ChillHop Music" → {"title": "Lofi Hip Hop Radio", "artist": null}`,
+        },
+        {
+          role: "user",
+          content: `Title: ${rawTitle}${channelName ? `\nChannel: ${channelName}` : ""}`,
+        },
+      ],
+      temperature: 0.1,
+    });
+
+    const result = {
+      title: parsedData.title || rawTitle,
+      artist: parsedData.artist || "",
+    };
+    
+    if (requestId) {
+      logInfo(requestId, "AI parsed title", { raw: rawTitle, parsed: result });
+    }
+    
+    return result;
+  } catch (error) {
+    if (requestId) {
+      logError(requestId, "AI title parsing failed, using fallback", error);
+    }
+    // Fallback to simple parsing
+    return parseYouTubeTitleSimple(rawTitle, channelName);
+  }
+}
+
+/**
+ * Simple regex-based title parser as fallback.
+ * Handles common patterns like "Artist - Song", "Song | Artist", etc.
+ */
+function parseYouTubeTitleSimple(rawTitle: string, channelName?: string): { title: string; artist: string } {
+  if (!rawTitle) {
+    return { title: "", artist: "" };
+  }
+
+  // Clean common video markers
+  let cleaned = rawTitle
+    .replace(/\s*[\[\(【「『]?\s*(official\s*)?(music\s*)?(video|mv|m\/v|audio|lyric|lyrics|visualizer|live)\s*[\]\)】」』]?\s*/gi, " ")
+    .replace(/\s*【[^】]*】\s*/g, " ")
+    .replace(/\s*\[[^\]]*\]\s*/g, " ")
+    .trim();
+
+  // Remove parentheses content
+  cleaned = stripParentheses(cleaned);
+
+  // Try common delimiters
+  const delimiterMatch = cleaned.match(/^(.+?)\s*[-–—|]\s*(.+)$/);
+  if (delimiterMatch) {
+    return {
+      title: delimiterMatch[2].trim(),
+      artist: delimiterMatch[1].trim(),
+    };
+  }
+
+  // Try quoted patterns (K-pop style)
+  const quotedMatch = cleaned.match(/^(.+?)\s*[「'"]([^」'"]+)[」'"]/);
+  if (quotedMatch) {
+    return {
+      title: quotedMatch[2].trim(),
+      artist: quotedMatch[1].trim(),
+    };
+  }
+
+  // Use channel name as artist if available and not generic
+  let artist = "";
+  if (channelName) {
+    const genericPatterns = /vevo|topic|official|music|records|entertainment|labels/i;
+    if (!genericPatterns.test(channelName)) {
+      artist = channelName.replace(/\s*-\s*Topic$/i, "").replace(/VEVO$/i, "").trim();
+    }
+  }
+
+  return { title: cleaned, artist };
+}
+
 function normalizeForComparison(str: string): string {
   if (!str) return "";
   return str
@@ -966,16 +1075,30 @@ export default async function handler(req: Request) {
 
         // Get song for title/artist context
         const song = await getSong(redis, songId, { includeMetadata: true });
-        const title = song?.title || "";
-        const artist = song?.artist || "";
-        const query = parsed.data.query || `${stripParentheses(title)} ${stripParentheses(artist)}`.trim();
+        const rawTitle = song?.title || "";
+        const rawArtist = song?.artist || "";
+        
+        let query = parsed.data.query;
+        let searchTitle = rawTitle;
+        let searchArtist = rawArtist;
+        
+        // If no custom query provided, use AI to parse the title for better results
+        if (!query && rawTitle) {
+          const aiParsed = await parseYouTubeTitleWithAI(rawTitle, rawArtist, requestId);
+          searchTitle = aiParsed.title || rawTitle;
+          searchArtist = aiParsed.artist || rawArtist;
+          query = `${stripParentheses(searchTitle)} ${stripParentheses(searchArtist)}`.trim();
+          logInfo(requestId, "AI-parsed search query", { original: rawTitle, parsed: { title: searchTitle, artist: searchArtist }, query });
+        } else if (!query) {
+          query = `${stripParentheses(rawTitle)} ${stripParentheses(rawArtist)}`.trim();
+        }
 
         if (!query) {
           return errorResponse("Search query is required");
         }
 
         logInfo(requestId, "Searching lyrics", { query });
-        const results = await searchKugou(query, title, artist);
+        const results = await searchKugou(query, searchTitle, searchArtist);
         logInfo(requestId, `Response: 200 OK - Found ${results.length} results`);
         return jsonResponse({ results });
       }
@@ -1014,10 +1137,21 @@ export default async function handler(req: Request) {
           });
         }
 
-        // If no source, try auto-search
+        // If no source, try auto-search with AI-parsed title
         if (!lyricsSource && song) {
-          const query = `${stripParentheses(song.title)} ${stripParentheses(song.artist || "")}`.trim();
-          const results = await searchKugou(query, song.title, song.artist || "");
+          // Use AI to parse the title for better search results
+          const aiParsed = await parseYouTubeTitleWithAI(song.title, song.artist || "", requestId);
+          const searchTitle = aiParsed.title || song.title;
+          const searchArtist = aiParsed.artist || song.artist || "";
+          const query = `${stripParentheses(searchTitle)} ${stripParentheses(searchArtist)}`.trim();
+          
+          logInfo(requestId, "Auto-searching lyrics with AI-parsed title", { 
+            original: { title: song.title, artist: song.artist },
+            parsed: { title: searchTitle, artist: searchArtist },
+            query 
+          });
+          
+          const results = await searchKugou(query, searchTitle, searchArtist);
           if (results.length > 0) {
             lyricsSource = {
               hash: results[0].hash,
