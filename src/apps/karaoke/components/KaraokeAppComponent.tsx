@@ -987,7 +987,7 @@ export function KaraokeAppComponent({
                 : "opacity-0 pointer-events-none"
             )}
             style={{
-              paddingBottom: "0.75rem",
+              paddingBottom: "1.5rem",
             }}
             onClick={(e) => {
               e.stopPropagation();
