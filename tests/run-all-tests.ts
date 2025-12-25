@@ -9,9 +9,7 @@ import { runAdminTests } from "./test-admin";
 import { runIframeCheckTests } from "./test-iframe-check";
 import { runLinkPreviewTests } from "./test-link-preview";
 import { runParseTitleTests } from "./test-parse-title";
-import { runLyricsTests } from "./test-lyrics";
 import { runSpeechTests } from "./test-speech";
-import { runTranslateLyricsTests } from "./test-translate-lyrics";
 import { runShareAppletTests } from "./test-share-applet";
 import { runSongTests } from "./test-song";
 
@@ -81,10 +79,8 @@ async function runAllTests(): Promise<void> {
     { name: "iframe-check", run: runIframeCheckTests },
     { name: "link-preview", run: runLinkPreviewTests },
     { name: "parse-title", run: runParseTitleTests },
-    { name: "lyrics", run: runLyricsTests },
     { name: "song", run: runSongTests },
     { name: "speech", run: runSpeechTests },
-    { name: "translate-lyrics", run: runTranslateLyricsTests },
     { name: "share-applet", run: runShareAppletTests },
   ];
 

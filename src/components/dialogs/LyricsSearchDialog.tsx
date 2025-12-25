@@ -27,6 +27,8 @@ export interface LyricsSearchResult {
 interface LyricsSearchDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Song ID (e.g., YouTube video ID) for API calls */
+  trackId: string;
   trackTitle: string;
   trackArtist?: string;
   initialQuery?: string;
@@ -44,6 +46,7 @@ interface LyricsSearchDialogProps {
 export function LyricsSearchDialog({
   isOpen,
   onOpenChange,
+  trackId,
   trackTitle,
   trackArtist,
   initialQuery,
@@ -85,14 +88,12 @@ export function LyricsSearchDialog({
     setSelectedIndex(-1);
 
     try {
-      const response = await fetch(getApiUrl("/api/lyrics"), {
+      const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(trackId)}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "search",
+          action: "search-lyrics",
           query: query.trim(),
-          title: trackTitle,
-          artist: trackArtist || "",
         }),
       });
 
