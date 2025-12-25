@@ -1761,7 +1761,7 @@ export function IpodAppComponent({
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
                         interactive={isIOSSafari ? false : isPlaying}
-                        bottomPaddingClass={controlsVisible ? "pb-6" : "pb-2"}
+                        bottomPaddingClass={controlsVisible ? "pb-16" : "pb-6"}
                         furiganaMap={furiganaMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}

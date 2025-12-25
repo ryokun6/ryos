@@ -923,7 +923,7 @@ export function KaraokeAppComponent({
                           gap: "clamp(0.3rem, 2.5cqw, 1rem)",
                         }}
                         interactive={true}
-                        bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-16"}
+                        bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-22" : "pb-12"}
                         furiganaMap={furiganaMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
@@ -981,11 +981,14 @@ export function KaraokeAppComponent({
           <div
             data-toolbar
             className={cn(
-              "absolute bottom-0 left-0 right-0 flex justify-center z-[60] pb-6 transition-opacity duration-200",
+              "absolute bottom-0 left-0 right-0 flex justify-center z-[60] transition-opacity duration-200",
               showControls || anyMenuOpen || !isPlaying
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none"
             )}
+            style={{
+              paddingBottom: "calc(max(env(safe-area-inset-bottom), 0.75rem) + 1.5rem)",
+            }}
             onClick={(e) => {
               e.stopPropagation();
               restartAutoHideTimer();
@@ -1300,7 +1303,7 @@ export function KaraokeAppComponent({
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
                         interactive={isPlaying}
-                        bottomPaddingClass={controlsVisible ? "pb-6" : "pb-2"}
+                        bottomPaddingClass={controlsVisible ? "pb-16" : "pb-6"}
                         furiganaMap={furiganaMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
