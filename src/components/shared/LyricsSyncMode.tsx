@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Minus, Plus, ChevronsDown, Search } from "lucide-react";
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
+import { ChineseVariant } from "@/types/lyrics";
 import { convert as romanizeKorean } from "hangul-romanization";
 import { pinyin } from "pinyin-pro";
 import { toRomaji } from "wanakana";
+import { Converter } from "opencc-js";
 import {
   hasKoreanText,
   isChineseText,
@@ -15,6 +17,11 @@ import {
   FuriganaSegment,
 } from "@/utils/romanization";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
+import { useIpodStore } from "@/stores/useIpodStore";
+import { useShallow } from "zustand/react/shallow";
+
+// Simplified to Traditional Chinese converter
+const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
 
 // Memoized lyric line component to prevent unnecessary re-renders
 const LyricLineItem = memo(function LyricLineItem({
@@ -23,6 +30,7 @@ const LyricLineItem = memo(function LyricLineItem({
   isCurrent,
   isPast,
   romanizedText,
+  displayText,
   onClick,
   setRef,
 }: {
@@ -31,6 +39,7 @@ const LyricLineItem = memo(function LyricLineItem({
   isCurrent: boolean;
   isPast: boolean;
   romanizedText: string | null;
+  displayText: string;
   onClick: () => void;
   setRef: (el: HTMLButtonElement | null) => void;
 }) {
@@ -50,7 +59,7 @@ const LyricLineItem = memo(function LyricLineItem({
       )}
     >
       <div className="text-base leading-relaxed">
-        {line.words || (
+        {displayText || (
           <span className="italic opacity-50">♪</span>
         )}
       </div>
@@ -201,6 +210,13 @@ export function LyricsSyncMode({
   // Offset adjustment step in ms
   const OFFSET_STEP = 100;
 
+  // Read Chinese variant setting from store
+  const { chineseVariant } = useIpodStore(
+    useShallow((s) => ({
+      chineseVariant: s.chineseVariant,
+    }))
+  );
+
   // Pre-parse timestamps once for binary search (O(n) once, not on every time update)
   const parsedTimestamps = useMemo(
     () => parseLyricTimestamps(lines),
@@ -307,6 +323,29 @@ export function LyricsSyncMode({
     });
     return map;
   }, [lines, romanization, furiganaMap]);
+
+  // Pre-compute display text for all lines (Chinese variant conversion)
+  // Convert Chinese to Traditional if setting is enabled, but skip if text contains Japanese kana
+  const displayTexts = useMemo(() => {
+    const map = new Map<number, string>();
+    lines.forEach((line, index) => {
+      let text = line.words;
+      // Only convert if:
+      // 1. Chinese variant is Traditional
+      // 2. Text is Chinese (has CJK characters, no kana, no hangul)
+      // 3. Text doesn't contain Japanese kana (extra safety check)
+      if (
+        chineseVariant === ChineseVariant.Traditional &&
+        text &&
+        isChineseText(text) &&
+        !hasKanaTextLocal(text)
+      ) {
+        text = simplifiedToTraditional(text);
+      }
+      map.set(index, text);
+    });
+    return map;
+  }, [lines, chineseVariant]);
 
   return (
     <div
@@ -416,6 +455,7 @@ export function LyricsSyncMode({
                 isCurrent={index === currentLineIndex}
                 isPast={index < currentLineIndex}
                 romanizedText={romanizedTexts.get(index) ?? null}
+                displayText={displayTexts.get(index) ?? line.words}
                 onClick={() => handleLineTap(line)}
                 setRef={(el) => {
                   lineRefs.current[index] = el;
