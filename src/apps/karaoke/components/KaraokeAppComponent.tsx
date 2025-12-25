@@ -987,7 +987,7 @@ export function KaraokeAppComponent({
                 : "opacity-0 pointer-events-none"
             )}
             style={{
-              paddingBottom: "calc(max(env(safe-area-inset-bottom), 0.75rem) + 1.5rem)",
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)",
             }}
             onClick={(e) => {
               e.stopPropagation();
