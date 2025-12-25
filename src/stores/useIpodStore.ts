@@ -774,31 +774,84 @@ export const useIpodStore = create<IpodState>()(
           title: rawTitle,
           artist: undefined as string | undefined,
           album: undefined as string | undefined,
+          lyricsSource: undefined as {
+            hash: string;
+            albumId: string | number;
+            title: string;
+            artist: string;
+            album?: string;
+          } | undefined,
         };
 
+        // First, try searching Kugou for lyrics using the YouTube title
+        // If found with a good match, use Kugou's metadata (more accurate for songs)
         try {
-          // Call /api/parse-title
-          const parseResponse = await fetch(getApiUrl("/api/parse-title"), {
+          const searchResponse = await fetch(getApiUrl(`/api/song/${videoId}`), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              title: rawTitle,
-              author_name: authorName,
+              action: "search-lyrics",
+              query: rawTitle,
             }),
           });
 
-          if (parseResponse.ok) {
-            const parsedData = await parseResponse.json();
-            trackInfo.title = parsedData.title || rawTitle;
-            trackInfo.artist = parsedData.artist;
-            trackInfo.album = parsedData.album;
-          } else {
-            console.warn(
-              `Failed to parse title with AI (status: ${parseResponse.status}), using raw title from oEmbed/default.`
-            );
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            const results = searchData.results || [];
+            
+            // If we have a result with a reasonable score (> 0.3), use its metadata
+            if (results.length > 0 && results[0].score > 0.3) {
+              const bestMatch = results[0];
+              console.log(`[iPod Store] Found Kugou match for ${videoId}:`, {
+                title: bestMatch.title,
+                artist: bestMatch.artist,
+                score: bestMatch.score,
+              });
+              
+              trackInfo.title = bestMatch.title;
+              trackInfo.artist = bestMatch.artist;
+              trackInfo.album = bestMatch.album;
+              trackInfo.lyricsSource = {
+                hash: bestMatch.hash,
+                albumId: bestMatch.albumId,
+                title: bestMatch.title,
+                artist: bestMatch.artist,
+                album: bestMatch.album,
+              };
+            } else {
+              console.log(`[iPod Store] No good Kugou match for ${videoId}, falling back to AI parse`);
+            }
           }
         } catch (error) {
-          console.error("Error calling /api/parse-title:", error);
+          console.warn(`[iPod Store] Failed to search Kugou for ${videoId}:`, error);
+        }
+
+        // If no Kugou match found, fall back to AI title parsing
+        if (!trackInfo.lyricsSource) {
+          try {
+            // Call /api/parse-title
+            const parseResponse = await fetch(getApiUrl("/api/parse-title"), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: rawTitle,
+                author_name: authorName,
+              }),
+            });
+
+            if (parseResponse.ok) {
+              const parsedData = await parseResponse.json();
+              trackInfo.title = parsedData.title || rawTitle;
+              trackInfo.artist = parsedData.artist;
+              trackInfo.album = parsedData.album;
+            } else {
+              console.warn(
+                `Failed to parse title with AI (status: ${parseResponse.status}), using raw title from oEmbed/default.`
+              );
+            }
+          } catch (error) {
+            console.error("Error calling /api/parse-title:", error);
+          }
         }
 
         const newTrack: Track = {
@@ -808,6 +861,7 @@ export const useIpodStore = create<IpodState>()(
           artist: trackInfo.artist,
           album: trackInfo.album,
           lyricOffset: 500, // Default 500ms offset for new tracks
+          lyricsSource: trackInfo.lyricsSource,
         };
 
         try {
