@@ -18,7 +18,7 @@ import { PipPlayer } from "./PipPlayer";
 import { FullScreenPortal } from "./FullScreenPortal";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
-import { useIpodStore, Track, getEffectiveTranslationLanguage } from "@/stores/useIpodStore";
+import { useIpodStore, Track, getEffectiveTranslationLanguage, flushPendingLyricOffsetSave } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow, useAppStoreShallow, useAudioSettingsStoreShallow } from "@/stores/helpers";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
@@ -822,6 +822,16 @@ export function IpodAppComponent({
     return () => window.removeEventListener("updateApp", handleUpdateApp as EventListener);
   }, [processVideoId, bringToForeground]);
 
+  // Handle closing sync mode - flush pending offset saves
+  const closeSyncMode = useCallback(async () => {
+    // Flush any pending lyric offset save for the current track
+    const currentTrackId = tracks[currentIndex]?.id;
+    if (currentTrackId) {
+      await flushPendingLyricOffsetSave(currentTrackId);
+    }
+    setIsSyncModeOpen(false);
+  }, [tracks, currentIndex]);
+
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
     if (loopCurrent) {
@@ -1624,7 +1634,7 @@ export function IpodAppComponent({
                     const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
                     activePlayer?.seekTo(timeMs / 1000);
                   }}
-                  onClose={() => setIsSyncModeOpen(false)}
+                  onClose={closeSyncMode}
                 />
               ) : undefined
             }
@@ -1842,7 +1852,7 @@ export function IpodAppComponent({
               onSeek={(timeMs) => {
                 playerRef.current?.seekTo(timeMs / 1000);
               }}
-              onClose={() => setIsSyncModeOpen(false)}
+              onClose={closeSyncMode}
             />
           </div>
         )}

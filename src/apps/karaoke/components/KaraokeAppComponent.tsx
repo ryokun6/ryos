@@ -17,7 +17,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
-import { useIpodStore, Track, getEffectiveTranslationLanguage } from "@/stores/useIpodStore";
+import { useIpodStore, Track, getEffectiveTranslationLanguage, flushPendingLyricOffsetSave } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow, useAudioSettingsStoreShallow, useAppStoreShallow } from "@/stores/helpers";
@@ -447,6 +447,16 @@ export function KaraokeAppComponent({
       prevFullScreenRef.current = isFullScreen;
     }
   }, [isFullScreen, elapsedTime, isPlaying, setIsPlaying]);
+
+  // Handle closing sync mode - flush pending offset saves
+  const closeSyncMode = useCallback(async () => {
+    // Flush any pending lyric offset save for the current track
+    const currentTrackId = tracks[currentIndex]?.id;
+    if (currentTrackId) {
+      await flushPendingLyricOffsetSave(currentTrackId);
+    }
+    setIsSyncModeOpen(false);
+  }, [tracks, currentIndex]);
 
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
@@ -1087,7 +1097,7 @@ export function KaraokeAppComponent({
               onSeek={(timeMs) => {
                 playerRef.current?.seekTo(timeMs / 1000);
               }}
-              onClose={() => setIsSyncModeOpen(false)}
+              onClose={closeSyncMode}
               onSearchLyrics={handleRefreshLyrics}
             />
           </div>
@@ -1165,7 +1175,7 @@ export function KaraokeAppComponent({
                   const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
                   activePlayer?.seekTo(timeMs / 1000);
                 }}
-                onClose={() => setIsSyncModeOpen(false)}
+                onClose={closeSyncMode}
                 onSearchLyrics={handleRefreshLyrics}
               />
             ) : undefined
