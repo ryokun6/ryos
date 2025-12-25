@@ -217,33 +217,11 @@ export function FullScreenPortal({
         handlers.registerActivity();
 
         if (deltaY < 0) {
-          // Swipe up - next track
+          // Swipe up - next track (parent callback handles status)
           handlers.nextTrack();
-          setTimeout(() => {
-            const currentTrackIndex = useIpodStore.getState().currentIndex;
-            const currentTrack =
-              useIpodStore.getState().tracks[currentTrackIndex];
-            if (currentTrack) {
-              const artistInfo = currentTrack.artist
-                ? ` - ${currentTrack.artist}`
-                : "";
-              handlers.showStatus(`⏭ ${currentTrack.title}${artistInfo}`);
-            }
-          }, 100);
         } else {
-          // Swipe down - previous track
+          // Swipe down - previous track (parent callback handles status)
           handlers.previousTrack();
-          setTimeout(() => {
-            const currentTrackIndex = useIpodStore.getState().currentIndex;
-            const currentTrack =
-              useIpodStore.getState().tracks[currentTrackIndex];
-            if (currentTrack) {
-              const artistInfo = currentTrack.artist
-                ? ` - ${currentTrack.artist}`
-                : "";
-              handlers.showStatus(`⏮ ${currentTrack.title}${artistInfo}`);
-            }
-          }, 100);
         }
       }
 
@@ -268,18 +246,9 @@ export function FullScreenPortal({
   // Wrapped handlers for fullscreen controls
   const handlePrevious = useCallback(() => {
     registerActivity();
-    previousTrack();
-    setTimeout(() => {
-      const currentTrackIndex = useIpodStore.getState().currentIndex;
-      const currentTrack = useIpodStore.getState().tracks[currentTrackIndex];
-      if (currentTrack) {
-        const artistInfo = currentTrack.artist
-          ? ` - ${currentTrack.artist}`
-          : "";
-        showStatus(`⏮ ${currentTrack.title}${artistInfo}`);
-      }
-    }, 100);
-  }, [registerActivity, previousTrack, showStatus]);
+    // Parent handles the status message (knows which store to use)
+    handlersRef.current.previousTrack();
+  }, [registerActivity]);
 
   const handlePlayPause = useCallback(() => {
     registerActivity();
@@ -298,18 +267,9 @@ export function FullScreenPortal({
 
   const handleNext = useCallback(() => {
     registerActivity();
-    nextTrack();
-    setTimeout(() => {
-      const currentTrackIndex = useIpodStore.getState().currentIndex;
-      const currentTrack = useIpodStore.getState().tracks[currentTrackIndex];
-      if (currentTrack) {
-        const artistInfo = currentTrack.artist
-          ? ` - ${currentTrack.artist}`
-          : "";
-        showStatus(`⏭ ${currentTrack.title}${artistInfo}`);
-      }
-    }, 100);
-  }, [registerActivity, nextTrack, showStatus]);
+    // Parent handles the status message (knows which store to use)
+    handlersRef.current.nextTrack();
+  }, [registerActivity]);
 
   // Set up touch event listeners
   useEffect(() => {
@@ -407,31 +367,11 @@ export function FullScreenPortal({
       } else if (e.key === "ArrowRight") {
         handlers.seekTime(5);
       } else if (e.key === "ArrowUp") {
+        // Parent callback handles status message (knows which store to use)
         handlers.previousTrack();
-        setTimeout(() => {
-          const currentTrackIndex = useIpodStore.getState().currentIndex;
-          const currentTrack =
-            useIpodStore.getState().tracks[currentTrackIndex];
-          if (currentTrack) {
-            const artistInfo = currentTrack.artist
-              ? ` - ${currentTrack.artist}`
-              : "";
-            handlers.showStatus(`⏮ ${currentTrack.title}${artistInfo}`);
-          }
-        }, 800);
       } else if (e.key === "ArrowDown") {
+        // Parent callback handles status message (knows which store to use)
         handlers.nextTrack();
-        setTimeout(() => {
-          const currentTrackIndex = useIpodStore.getState().currentIndex;
-          const currentTrack =
-            useIpodStore.getState().tracks[currentTrackIndex];
-          if (currentTrack) {
-            const artistInfo = currentTrack.artist
-              ? ` - ${currentTrack.artist}`
-              : "";
-            handlers.showStatus(`⏭ ${currentTrack.title}${artistInfo}`);
-          }
-        }, 800);
       } else if (e.key === "[" || e.key === "]") {
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;

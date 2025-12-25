@@ -1573,24 +1573,24 @@ export function IpodAppComponent({
             nextTrack={() => {
               skipOperationRef.current = true;
               nextTrack();
-              setTimeout(() => {
-                const newTrack = tracks[useIpodStore.getState().currentIndex];
-                if (newTrack) {
-                  const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                  showStatus(`⏭ ${newTrack.title}${artistInfo}`);
-                }
-              }, 100);
+              // Read from iPod store (which has the updated currentIndex)
+              const state = useIpodStore.getState();
+              const newTrack = state.tracks[state.currentIndex];
+              if (newTrack) {
+                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+              }
             }}
             previousTrack={() => {
               skipOperationRef.current = true;
               previousTrack();
-              setTimeout(() => {
-                const newTrack = tracks[useIpodStore.getState().currentIndex];
-                if (newTrack) {
-                  const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                  showStatus(`⏮ ${newTrack.title}${artistInfo}`);
-                }
-              }, 100);
+              // Read from iPod store (which has the updated currentIndex)
+              const state = useIpodStore.getState();
+              const newTrack = state.tracks[state.currentIndex];
+              if (newTrack) {
+                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+              }
             }}
             seekTime={seekTime}
             showStatus={showStatus}
@@ -1728,13 +1728,13 @@ export function IpodAppComponent({
                           } else {
                             skipOperationRef.current = true;
                             nextTrack();
-                            setTimeout(() => {
-                              const newTrack = tracks[useIpodStore.getState().currentIndex];
-                              if (newTrack) {
-                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
-                              }
-                            }, 100);
+                            // Read state synchronously after store update
+                            const state = useIpodStore.getState();
+                            const newTrack = state.tracks[state.currentIndex];
+                            if (newTrack) {
+                              const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                              showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+                            }
                           }
                         }}
                         onSwipeDown={() => {
@@ -1743,13 +1743,13 @@ export function IpodAppComponent({
                           } else {
                             skipOperationRef.current = true;
                             previousTrack();
-                            setTimeout(() => {
-                              const newTrack = tracks[useIpodStore.getState().currentIndex];
-                              if (newTrack) {
-                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
-                              }
-                            }, 100);
+                            // Read state synchronously after store update
+                            const state = useIpodStore.getState();
+                            const newTrack = state.tracks[state.currentIndex];
+                            if (newTrack) {
+                              const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                              showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+                            }
                           }
                         }}
                         isTranslating={fullScreenLyricsControls.isTranslating}

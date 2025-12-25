@@ -1112,27 +1112,25 @@ export function KaraokeAppComponent({
           togglePlay={togglePlay}
           nextTrack={() => {
             nextTrack();
-            // Show status with correct track info (using setTimeout to get updated state)
-            setTimeout(() => {
-              const newIndex = (currentIndex + 1) % tracks.length;
-              const newTrack = tracks[newIndex];
-              if (newTrack) {
-                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
-              }
-            }, 150);
+            // Read from Karaoke store (which has the updated currentIndex) and iPod store (which has tracks)
+            const karaokeState = useKaraokeStore.getState();
+            const ipodState = useIpodStore.getState();
+            const newTrack = ipodState.tracks[karaokeState.currentIndex];
+            if (newTrack) {
+              const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+              showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+            }
           }}
           previousTrack={() => {
             previousTrack();
-            // Show status with correct track info (using setTimeout to get updated state)
-            setTimeout(() => {
-              const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
-              const newTrack = tracks[newIndex];
-              if (newTrack) {
-                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
-              }
-            }, 150);
+            // Read from Karaoke store (which has the updated currentIndex) and iPod store (which has tracks)
+            const karaokeState = useKaraokeStore.getState();
+            const ipodState = useIpodStore.getState();
+            const newTrack = ipodState.tracks[karaokeState.currentIndex];
+            if (newTrack) {
+              const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+              showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+            }
           }}
           seekTime={seekTime}
           showStatus={showStatus}
