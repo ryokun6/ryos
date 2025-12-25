@@ -401,11 +401,17 @@ async function saveLyricOffsetToServer(
   }
 }
 
+// Store the last offset value for each track (to flush on demand)
+const pendingLyricOffsets: Map<string, number> = new Map();
+
 /**
  * Debounced wrapper for saving lyric offset.
  * Waits 2 seconds after the last change before saving.
  */
 function debouncedSaveLyricOffset(trackId: string, lyricOffset: number): void {
+  // Store the pending value
+  pendingLyricOffsets.set(trackId, lyricOffset);
+  
   // Clear any existing timer for this track
   const existingTimer = lyricOffsetSaveTimers.get(trackId);
   if (existingTimer) {
@@ -415,10 +421,31 @@ function debouncedSaveLyricOffset(trackId: string, lyricOffset: number): void {
   // Set new timer
   const timer = setTimeout(() => {
     lyricOffsetSaveTimers.delete(trackId);
+    pendingLyricOffsets.delete(trackId);
     saveLyricOffsetToServer(trackId, lyricOffset);
   }, 2000); // 2 second debounce
 
   lyricOffsetSaveTimers.set(trackId, timer);
+}
+
+/**
+ * Immediately flush any pending lyric offset save for a track.
+ * Call this when closing the sync mode to ensure changes are saved.
+ */
+export function flushPendingLyricOffsetSave(trackId: string): void {
+  const existingTimer = lyricOffsetSaveTimers.get(trackId);
+  const pendingOffset = pendingLyricOffsets.get(trackId);
+  
+  if (existingTimer && pendingOffset !== undefined) {
+    // Clear the timer
+    clearTimeout(existingTimer);
+    lyricOffsetSaveTimers.delete(trackId);
+    pendingLyricOffsets.delete(trackId);
+    
+    // Save immediately
+    console.log(`[iPod Store] Flushing pending lyric offset save for ${trackId}: ${pendingOffset}ms`);
+    saveLyricOffsetToServer(trackId, pendingOffset);
+  }
 }
 
 /**
