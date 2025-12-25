@@ -573,18 +573,35 @@ export function KaraokeAppComponent({
     (timeMs: number) => {
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
       if (activePlayer) {
+        // Set guard to prevent spurious onPause events during seek from killing playback
+        isTrackSwitchingRef.current = true;
+        if (trackSwitchTimeoutRef.current) {
+          clearTimeout(trackSwitchTimeoutRef.current);
+        }
+        
         // Subtract lyricOffset to convert from lyrics time to player time
         const lyricOffset = currentTrack?.lyricOffset ?? 0;
         const playerTimeMs = timeMs - lyricOffset;
         const newTime = Math.max(0, playerTimeMs / 1000);
         activePlayer.seekTo(newTime);
-        // Start playing if paused
+        
+        // Start playing if paused - also call playVideo() directly for iOS Safari
         if (!isPlaying) {
           setIsPlaying(true);
+          // Directly call playVideo on the internal player to ensure it plays
+          const internalPlayer = activePlayer?.getInternalPlayer?.();
+          if (internalPlayer && typeof internalPlayer.playVideo === "function") {
+            internalPlayer.playVideo();
+          }
         }
         showStatus(
           `▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
         );
+        
+        // Clear guard after a short delay to allow seek + play to complete
+        trackSwitchTimeoutRef.current = setTimeout(() => {
+          isTrackSwitchingRef.current = false;
+        }, 500);
       }
     },
     [showStatus, isFullScreen, isPlaying, currentTrack?.lyricOffset]
@@ -1306,7 +1323,7 @@ export function KaraokeAppComponent({
                   )}
 
                   {showLyrics && currentTrack && (
-                    <div className="absolute inset-0 pointer-events-none z-20">
+                    <div className="absolute inset-0 z-20" data-lyrics>
                       <LyricsDisplay
                         songId={currentTrack?.id ?? ""}
                         lines={fullScreenLyricsControls.lines}
@@ -1366,7 +1383,7 @@ export function KaraokeAppComponent({
                           paddingLeft: "env(safe-area-inset-left, 0px)",
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
-                        interactive={isPlaying}
+                        interactive={true}
                         bottomPaddingClass={controlsVisible ? "pb-16" : "pb-6"}
                         furiganaMap={furiganaMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}

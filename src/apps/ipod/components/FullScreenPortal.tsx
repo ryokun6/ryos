@@ -158,9 +158,9 @@ export function FullScreenPortal({
   // Stable event handlers using refs
   const handleTouchStart = useCallback(
     (e: TouchEvent) => {
-      // Don't handle touches on toolbar elements
+      // Don't handle touches on toolbar or lyrics elements
       const target = e.target as HTMLElement;
-      if (target.closest("[data-toolbar]")) {
+      if (target.closest("[data-toolbar]") || target.closest("[data-lyrics]")) {
         return;
       }
 
@@ -183,19 +183,9 @@ export function FullScreenPortal({
     (e: TouchEvent) => {
       if (!touchStartRef.current) return;
 
-      // Don't handle touches on toolbar elements
+      // Don't handle touches on toolbar or lyrics elements
       const target = e.target as HTMLElement;
-      if (target.closest("[data-toolbar]")) {
-        touchStartRef.current = null;
-        return;
-      }
-
-      // On mobile Safari, when not playing and after first interaction,
-      // disable gesture handling to let YouTube player be interactive
-      const shouldDisableGestures =
-        isMobileSafariDevice && !isPlaying && hasUserInteracted;
-
-      if (shouldDisableGestures) {
+      if (target.closest("[data-toolbar]") || target.closest("[data-lyrics]")) {
         touchStartRef.current = null;
         return;
       }
@@ -227,7 +217,7 @@ export function FullScreenPortal({
 
       touchStartRef.current = null;
     },
-    [isMobileSafariDevice, isPlaying, hasUserInteracted]
+    []
   );
 
   // Effect to request fullscreen when component mounts
@@ -398,44 +388,25 @@ export function FullScreenPortal({
         if (target.closest("[data-toolbar]")) {
           return;
         }
+        // Don't handle clicks on lyrics (let them handle their own click events for seeking)
+        if (target.closest("[data-lyrics]")) {
+          return;
+        }
 
         if (!hasUserInteracted) {
           setHasUserInteracted(true);
         }
 
         const actuallyPlaying = getActualPlayerState();
-        const shouldDisableClick =
-          isMobileSafariDevice && !actuallyPlaying && hasUserInteracted;
-
-        if (!shouldDisableClick) {
-          const handlers = handlersRef.current;
-          handlers.registerActivity();
-          if (isOffline) {
-            showOfflineStatus();
-          } else {
-            handlers.togglePlay();
-            handlers.showStatus(actuallyPlaying ? "⏸" : "▶");
-          }
-        }
-
-        // Handle mobile Safari special case
-        if (isMobileSafariDevice && isPlaying && hasUserInteracted) {
-          const internalPlayer =
-            fullScreenPlayerRef?.current?.getInternalPlayer?.();
-          if (
-            internalPlayer &&
-            typeof internalPlayer.getPlayerState === "function"
-          ) {
-            const playerState = internalPlayer.getPlayerState();
-            if (playerState !== 1) {
-              const handlers = handlersRef.current;
-              handlers.registerActivity();
-              if (typeof internalPlayer.playVideo === "function") {
-                internalPlayer.playVideo();
-                handlers.showStatus("▶");
-              }
-            }
-          }
+        const handlers = handlersRef.current;
+        handlers.registerActivity();
+        
+        if (isOffline) {
+          showOfflineStatus();
+        } else {
+          // Always allow play/pause toggle, even on mobile Safari when paused
+          handlers.togglePlay();
+          handlers.showStatus(actuallyPlaying ? "⏸" : "▶");
         }
       }}
     >

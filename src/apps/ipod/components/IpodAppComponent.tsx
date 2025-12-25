@@ -1427,15 +1427,32 @@ export function IpodAppComponent({
   const seekToTime = useCallback(
     (timeMs: number) => {
       if (fullScreenPlayerRef.current) {
+        // Set guard to prevent spurious onPause events during seek from killing playback
+        isTrackSwitchingRef.current = true;
+        if (trackSwitchTimeoutRef.current) {
+          clearTimeout(trackSwitchTimeoutRef.current);
+        }
+        
         // Subtract lyricOffset to convert from lyrics time to player time
         const playerTimeMs = timeMs - lyricOffset;
         const newTime = Math.max(0, playerTimeMs / 1000);
         fullScreenPlayerRef.current.seekTo(newTime);
-        // Start playing if paused
+        
+        // Start playing if paused - also call playVideo() directly for iOS Safari
         if (!isPlaying) {
           setIsPlaying(true);
+          // Directly call playVideo on the internal player to ensure it plays
+          const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
+          if (internalPlayer && typeof internalPlayer.playVideo === "function") {
+            internalPlayer.playVideo();
+          }
         }
         showStatus(`▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`);
+        
+        // Clear guard after a short delay to allow seek + play to complete
+        trackSwitchTimeoutRef.current = setTimeout(() => {
+          isTrackSwitchingRef.current = false;
+        }, 500);
       }
     },
     [showStatus, isPlaying, lyricOffset]
@@ -1771,7 +1788,7 @@ export function IpodAppComponent({
                   )}
 
                   {showLyrics && tracks[currentIndex] && (
-                    <div className="absolute inset-0 pointer-events-none z-20">
+                    <div className="absolute inset-0 z-20" data-lyrics>
                       <LyricsDisplay
                         songId={tracks[currentIndex]?.id ?? ""}
                         lines={fullScreenLyricsControls.lines}
@@ -1833,7 +1850,7 @@ export function IpodAppComponent({
                           paddingLeft: "env(safe-area-inset-left, 0px)",
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
-                        interactive={isIOSSafari ? false : isPlaying}
+                        interactive={true}
                         bottomPaddingClass={controlsVisible ? "pb-16" : "pb-6"}
                         furiganaMap={furiganaMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
