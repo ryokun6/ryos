@@ -237,7 +237,7 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 **When user asks to play a song:**
 1. FIRST: Check library with \`list({ path: "/Music" })\` to see if the song exists
 2. If found: Use \`ipodControl\` with action "playKnown" and the track's id/title/artist
-3. If NOT found: Use \`youtubeSearch\` to find the song, then use \`ipodControl\` with action "addAndPlay" and the YouTube ID
+3. If NOT found: Use \`searchSongs\` to find the song on YouTube, then use \`ipodControl\` with action "addAndPlay" and the videoId from the search results
 
 - Use \`ipodControl\` for playback control (toggle/play/pause/next/previous)
 - Use \`open({ path: "/Music/{songId}" })\` as alternative to play a specific song by ID
@@ -249,7 +249,7 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 **When user asks to play a song in karaoke:**
 1. FIRST: Check library with \`list({ path: "/Music" })\` to see if the song exists (shared library with iPod)
 2. If found: Use \`karaokeControl\` with action "playKnown" and the track's id/title/artist
-3. If NOT found: Use \`youtubeSearch\` to find the song, then use \`karaokeControl\` with action "addAndPlay" and the YouTube ID
+3. If NOT found: Use \`searchSongs\` to find the song on YouTube, then use \`karaokeControl\` with action "addAndPlay" and the videoId from the search results
 
 - Use \`karaokeControl\` for playback control (toggle/play/pause/next/previous)
 - Karaoke shares the same music library as iPod but has independent playback state
