@@ -167,6 +167,11 @@ const ClearCachedDataSchema = z.object({
   clearFurigana: z.boolean().optional(),
 });
 
+// Schema for unsharing a song (clearing createdBy)
+const UnshareSongSchema = z.object({
+  action: z.literal("unshare"),
+});
+
 // AI response schemas
 const AiTranslatedTextsSchema = z.object({
   translatedTexts: z.array(z.string()),
@@ -1895,6 +1900,51 @@ export default async function handler(req: Request) {
 
         logInfo(requestId, `Cleared cached data: ${cleared.length > 0 ? cleared.join(", ") : "nothing to clear"}`);
         return jsonResponse({ success: true, cleared });
+      }
+
+      // =======================================================================
+      // Handle unshare action - clears the createdBy field (admin only)
+      // =======================================================================
+      if (action === "unshare") {
+        const parsed = UnshareSongSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        // Validate auth
+        const authResult = await validateAuthToken(redis, username, authToken);
+        if (!authResult.valid) {
+          return errorResponse("Unauthorized - authentication required", 401);
+        }
+
+        // Only admin can unshare
+        if (username?.toLowerCase() !== "ryo") {
+          return errorResponse("Forbidden - admin access required", 403);
+        }
+
+        // Get existing song
+        const existingSong = await getSong(redis, songId, { includeMetadata: true });
+        if (!existingSong) {
+          return errorResponse("Song not found", 404);
+        }
+
+        // Clear createdBy by explicitly setting to undefined
+        const updatedSong = await saveSong(
+          redis,
+          {
+            ...existingSong,
+            createdBy: undefined,
+          },
+          { preserveLyrics: true, preserveTranslations: true, preserveFurigana: true },
+          existingSong
+        );
+
+        logInfo(requestId, "Song unshared (createdBy cleared)", { duration: `${Date.now() - startTime}ms` });
+        return jsonResponse({
+          success: true,
+          id: updatedSong.id,
+          createdBy: updatedSong.createdBy,
+        });
       }
 
       // Default POST: Update song metadata (requires auth)
