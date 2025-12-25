@@ -626,6 +626,8 @@ export function AdminAppComponent({
       onRefresh={handleRefresh}
       onToggleSidebar={toggleSidebarVisibility}
       isSidebarVisible={isSidebarVisible}
+      activeSection={activeSection}
+      onSectionChange={setActiveSection}
     />
   );
 

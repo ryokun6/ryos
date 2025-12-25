@@ -10,6 +10,8 @@ import {
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 
+type AdminSection = "users" | "rooms" | "songs";
+
 interface AdminMenuBarProps {
   onClose: () => void;
   onShowHelp: () => void;
@@ -17,6 +19,8 @@ interface AdminMenuBarProps {
   onRefresh: () => void;
   onToggleSidebar: () => void;
   isSidebarVisible: boolean;
+  activeSection: AdminSection;
+  onSectionChange: (section: AdminSection) => void;
 }
 
 export function AdminMenuBar({
@@ -26,6 +30,8 @@ export function AdminMenuBar({
   onRefresh,
   onToggleSidebar,
   isSidebarVisible,
+  activeSection,
+  onSectionChange,
 }: AdminMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
@@ -55,6 +61,37 @@ export function AdminMenuBar({
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          {/* Section Selection */}
+          <MenubarCheckboxItem
+            checked={activeSection === "users"}
+            onCheckedChange={(checked) => {
+              if (checked) onSectionChange("users");
+            }}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.admin.sidebar.users")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={activeSection === "songs"}
+            onCheckedChange={(checked) => {
+              if (checked) onSectionChange("songs");
+            }}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.admin.sidebar.songs")}
+          </MenubarCheckboxItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarCheckboxItem
+            checked={activeSection === "rooms"}
+            onCheckedChange={(checked) => {
+              if (checked) onSectionChange("rooms");
+            }}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.admin.sidebar.rooms")}
+          </MenubarCheckboxItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          {/* Sidebar Toggle */}
           <MenubarCheckboxItem
             checked={isSidebarVisible}
             onCheckedChange={(checked) => {
