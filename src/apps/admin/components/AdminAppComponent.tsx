@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, ExternalLink, Upload } from "lucide-react";
+import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, Upload } from "lucide-react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Table,
@@ -1039,29 +1039,16 @@ export function AdminAppComponent({
                                   {formatRelativeTime(song.createdAt)}
                                 </TableCell>
                                 <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        window.open(`https://www.youtube.com/watch?v=${song.youtubeId}`, "_blank");
-                                      }}
-                                      className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
-                                      title="Open on YouTube"
-                                    >
-                                      <ExternalLink className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        promptDelete("song", song.youtubeId, song.title)
-                                      }
-                                      className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      promptDelete("song", song.youtubeId, song.title)
+                                    }
+                                    className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
                                 </TableCell>
                               </TableRow>
                             ))}
