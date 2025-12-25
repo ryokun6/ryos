@@ -198,6 +198,68 @@ function decodeKRC(krcBase64: string): string {
   return new TextDecoder("utf-8").decode(decompressed);
 }
 
+/**
+ * Kugou embedded language data structure
+ * Found in [language:base64] tag in KRC format
+ */
+interface KugouLanguageContent {
+  lyricContent: string[][];  // Array of arrays - romanization or translation per line
+  type: number;  // 0 = romanization, 1 = translation
+  language: number;  // Language identifier
+}
+
+interface KugouLanguageData {
+  content: KugouLanguageContent[];
+  version: number;
+}
+
+/**
+ * Extracted language data from KRC
+ */
+interface ExtractedKrcLanguageData {
+  romaji?: string[][];  // Romanization per line (joined from word arrays)
+  translation?: string[];  // Translation per line (for Chinese translations)
+}
+
+/**
+ * Extract and parse the [language:base64] tag from KRC content
+ * This tag contains embedded romanization and translations from Kugou
+ */
+function extractKrcLanguageData(krc: string): ExtractedKrcLanguageData | null {
+  // Match [language:base64data]
+  const languageMatch = krc.match(/\[language:([A-Za-z0-9+/=]+)\]/);
+  if (!languageMatch) {
+    return null;
+  }
+
+  try {
+    const base64Data = languageMatch[1];
+    const jsonStr = base64ToUtf8(base64Data);
+    const data = JSON.parse(jsonStr) as KugouLanguageData;
+
+    const result: ExtractedKrcLanguageData = {};
+
+    for (const content of data.content) {
+      if (content.type === 0) {
+        // Type 0 = Romanization (romaji/pinyin)
+        // Each line is an array of romanized syllables
+        result.romaji = content.lyricContent;
+      } else if (content.type === 1) {
+        // Type 1 = Translation (usually Chinese)
+        // Each line is an array with a single string (the translation)
+        result.translation = content.lyricContent.map(line => 
+          Array.isArray(line) ? line.join("") : String(line)
+        );
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error("[extractKrcLanguageData] Failed to parse language data:", error);
+    return null;
+  }
+}
+
 function stripParentheses(str: string): string {
   if (!str) return str;
   return str.replace(/\s*\([^)]*\)\s*/g, " ").trim();
@@ -447,10 +509,19 @@ async function searchKugou(
   return scoredResults;
 }
 
+/**
+ * Extended lyrics content with embedded language data from KRC
+ */
+interface FetchedLyricsResult {
+  lyrics: LyricsContent;
+  embeddedRomaji?: string[][];  // Romanization per line (from [language:] tag)
+  embeddedTranslation?: string[];  // Translation per line (from [language:] tag)
+}
+
 async function fetchLyricsFromKugou(
   source: LyricsSource,
   requestId: string
-): Promise<LyricsContent | null> {
+): Promise<FetchedLyricsResult | null> {
   const { hash, albumId } = source;
 
   // Get lyrics candidate
@@ -474,6 +545,8 @@ async function fetchLyricsFromKugou(
   // Try KRC format first
   let lrc: string | undefined;
   let krc: string | undefined;
+  let embeddedRomaji: string[][] | undefined;
+  let embeddedTranslation: string[] | undefined;
 
   const krcUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=krc&charset=utf8`;
   try {
@@ -483,6 +556,19 @@ async function fetchLyricsFromKugou(
       if (krcJson?.content) {
         krc = decodeKRC(krcJson.content);
         logInfo(requestId, "Successfully decoded KRC lyrics");
+        
+        // Extract embedded language data (romaji/translations) from [language:] tag
+        const languageData = extractKrcLanguageData(krc);
+        if (languageData) {
+          if (languageData.romaji) {
+            embeddedRomaji = languageData.romaji;
+            logInfo(requestId, `Extracted embedded romaji for ${languageData.romaji.length} lines`);
+          }
+          if (languageData.translation) {
+            embeddedTranslation = languageData.translation;
+            logInfo(requestId, `Extracted embedded translation for ${languageData.translation.length} lines`);
+          }
+        }
       }
     }
   } catch (err) {
@@ -511,9 +597,13 @@ async function fetchLyricsFromKugou(
   const cover = await getCover(hash, albumId);
 
   return {
-    lrc: lrc || krc || "",
-    krc,
-    cover,
+    lyrics: {
+      lrc: lrc || krc || "",
+      krc,
+      cover,
+    },
+    embeddedRomaji,
+    embeddedTranslation,
   };
 }
 
@@ -1185,11 +1275,13 @@ export default async function handler(req: Request) {
         }
 
         logInfo(requestId, "Fetching lyrics from Kugou", { source: lyricsSource });
-        const rawLyrics = await fetchLyricsFromKugou(lyricsSource, requestId);
+        const fetchResult = await fetchLyricsFromKugou(lyricsSource, requestId);
 
-        if (!rawLyrics) {
+        if (!fetchResult) {
           return errorResponse("Failed to fetch lyrics", 404);
         }
+
+        const { lyrics: rawLyrics, embeddedRomaji, embeddedTranslation } = fetchResult;
 
         // Parse lyrics with consistent filtering (single source of truth)
         const parsedLines = parseLyricsContent(
@@ -1205,14 +1297,43 @@ export default async function handler(req: Request) {
         };
 
         // Save to song document
-        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource);
+        let savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource);
+
+        // If we have embedded translation from Kugou, save it as Chinese translation
+        // This avoids needing AI translation for songs that already have it
+        if (embeddedTranslation && embeddedTranslation.length > 0) {
+          // Filter embedded translation to only include non-empty lines
+          // The embedded translation array corresponds 1:1 with the original KRC lines,
+          // but we've filtered out some lines (credits, title, etc.) in parsedLines
+          // So we need to filter the translation to match
+          const nonEmptyTranslations = embeddedTranslation
+            .filter(line => line && line.trim() !== "")
+            .slice(0, parsedLines.length);  // Ensure we don't exceed parsedLines count
+          
+          if (nonEmptyTranslations.length > 0 && nonEmptyTranslations.length === parsedLines.length) {
+            const translationText = nonEmptyTranslations.join("\n");
+            // Save as Chinese translation
+            savedSong = await saveTranslation(redis, songId, "zh", translationText);
+            logInfo(requestId, `Saved embedded Chinese translation (${nonEmptyTranslations.length} lines)`);
+          } else {
+            logInfo(requestId, `Skipping embedded translation - line count mismatch (${nonEmptyTranslations.length} vs ${parsedLines.length})`);
+          }
+        }
+
         logInfo(requestId, `Lyrics saved to song document`, { 
           songId,
           hasLyricsStored: !!savedSong.lyrics,
           parsedLinesCount: parsedLines.length,
+          hasEmbeddedRomaji: !!embeddedRomaji,
+          hasEmbeddedTranslation: !!embeddedTranslation,
         });
 
-        logInfo(requestId, `Response: 200 OK - Lyrics fetched`, { hasKrc: !!lyrics.krc, hasCover: !!lyrics.cover, parsedLinesCount: parsedLines.length });
+        logInfo(requestId, `Response: 200 OK - Lyrics fetched`, { 
+          hasKrc: !!lyrics.krc, 
+          hasCover: !!lyrics.cover, 
+          parsedLinesCount: parsedLines.length,
+          hasEmbeddedTranslation: !!embeddedTranslation,
+        });
         return jsonResponse({ lyrics, cached: false });
       }
 
