@@ -229,6 +229,43 @@ export function KaraokeAppComponent({
     selectedMatch: selectedMatchForLyrics,
   });
 
+  // Track last song ID we showed a lyrics error toast for to avoid duplicates
+  const lastLyricsErrorToastSongRef = useRef<string | null>(null);
+
+  // Show toast with Search button when lyrics fetch fails
+  useEffect(() => {
+    const lyricsError = lyricsControls.error;
+    const songId = currentTrack?.id;
+    
+    // Only show toast for "No lyrics available" type errors (not network errors, timeouts, etc.)
+    const isNoLyricsError = lyricsError && (
+      lyricsError.includes("No lyrics") ||
+      lyricsError.includes("not found") ||
+      lyricsError.includes("400") ||
+      lyricsError.includes("No valid lyrics") ||
+      lyricsError.includes("No lyrics source")
+    );
+    
+    // Show toast if we have a no-lyrics error and haven't shown one for this song yet
+    if (isNoLyricsError && songId && lastLyricsErrorToastSongRef.current !== songId) {
+      lastLyricsErrorToastSongRef.current = songId;
+      toast(t("apps.karaoke.lyrics.noLyricsFound", { defaultValue: "No lyrics found" }), {
+        id: `lyrics-error-${songId}`,
+        description: t("apps.karaoke.lyrics.searchForLyrics", { defaultValue: "Search for lyrics manually" }),
+        action: {
+          label: t("apps.karaoke.lyrics.search", { defaultValue: "Search" }),
+          onClick: () => setIsLyricsSearchDialogOpen(true),
+        },
+        duration: 5000,
+      });
+    }
+    
+    // Reset when song changes
+    if (songId !== lastLyricsErrorToastSongRef.current && !lyricsError) {
+      lastLyricsErrorToastSongRef.current = null;
+    }
+  }, [lyricsControls.error, currentTrack?.id, t]);
+
   // Fetch furigana for lyrics (shared between main and fullscreen displays)
   const { furiganaMap } = useFurigana({
     songId: currentTrack?.id ?? "",
