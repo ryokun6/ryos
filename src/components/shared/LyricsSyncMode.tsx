@@ -14,6 +14,7 @@ import {
   CHINESE_REGEX,
   FuriganaSegment,
 } from "@/utils/romanization";
+import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
 // Memoized lyric line component to prevent unnecessary re-renders
 const LyricLineItem = memo(function LyricLineItem({
@@ -200,20 +201,18 @@ export function LyricsSyncMode({
   // Offset adjustment step in ms
   const OFFSET_STEP = 100;
 
-  // Calculate which line should be highlighted based on current time + offset
+  // Pre-parse timestamps once for binary search (O(n) once, not on every time update)
+  const parsedTimestamps = useMemo(
+    () => parseLyricTimestamps(lines),
+    [lines]
+  );
+
+  // Calculate which line should be highlighted using binary search O(log n)
   const currentLineIndex = useMemo(() => {
     if (!lines.length) return -1;
     const adjustedTime = currentTimeMs + currentOffset;
-
-    // Find the line that should be active at the adjusted time
-    for (let i = lines.length - 1; i >= 0; i--) {
-      const lineStart = parseInt(lines[i].startTimeMs, 10);
-      if (adjustedTime >= lineStart) {
-        return i;
-      }
-    }
-    return -1;
-  }, [lines, currentTimeMs, currentOffset]);
+    return findCurrentLineIndex(parsedTimestamps, adjustedTime);
+  }, [parsedTimestamps, lines.length, currentTimeMs, currentOffset]);
 
   // Handle line tap - calculate new offset so this line plays at current time
   const handleLineTap = useCallback(

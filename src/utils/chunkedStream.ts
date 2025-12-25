@@ -154,6 +154,12 @@ export async function processTranslationChunks(
         }),
         signal,
         timeout: CHUNK_TIMEOUT,
+        // Retry on transient failures with exponential backoff
+        retry: {
+          maxAttempts: 3,
+          initialDelayMs: 2000,
+          backoffMultiplier: 2,
+        },
       });
 
       if (!res.ok) {
@@ -254,6 +260,12 @@ export async function processFuriganaChunks(
         }),
         signal,
         timeout: CHUNK_TIMEOUT,
+        // Retry on transient failures with exponential backoff
+        retry: {
+          maxAttempts: 3,
+          initialDelayMs: 2000,
+          backoffMultiplier: 2,
+        },
       });
 
       if (!res.ok) {

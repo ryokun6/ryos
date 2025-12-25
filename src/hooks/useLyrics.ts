@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import type { LyricLine } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { isOffline } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { processTranslationChunks } from "@/utils/chunkedStream";
+import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
 interface UseLyricsParams {
   /** Song ID (YouTube video ID) - required for unified endpoint */
@@ -342,31 +343,19 @@ export function useLyrics({
 
   const displayLines = translatedLines || originalLines;
 
-  // Function to calculate the current line based on a given time
+  // Pre-parse timestamps once when displayLines change (O(n) once, not on every search)
+  const parsedTimestamps = useMemo(
+    () => parseLyricTimestamps(displayLines),
+    [displayLines]
+  );
+
+  // Function to calculate the current line based on a given time using binary search O(log n)
   const calculateCurrentLine = useCallback(
     (timeInSeconds: number) => {
-      if (!displayLines.length) return -1;
-
       const timeMs = timeInSeconds * 1000;
-      let idx = displayLines.findIndex((line, i) => {
-        const nextLineStart =
-          i + 1 < displayLines.length
-            ? parseInt(displayLines[i + 1].startTimeMs)
-            : Infinity;
-        return timeMs >= parseInt(line.startTimeMs) && timeMs < nextLineStart;
-      });
-
-      if (
-        idx === -1 &&
-        displayLines.length > 0 &&
-        timeMs >= parseInt(displayLines[displayLines.length - 1].startTimeMs)
-      ) {
-        idx = displayLines.length - 1;
-      }
-
-      return idx;
+      return findCurrentLineIndex(parsedTimestamps, timeMs);
     },
-    [displayLines]
+    [parsedTimestamps]
   );
 
   // Update current line based on displayed lines and current time

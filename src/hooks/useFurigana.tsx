@@ -160,6 +160,9 @@ export function useFurigana({
     const controller = new AbortController();
 
     // Use chunked streaming for furigana to avoid edge function timeouts
+    // NOTE: We don't use onChunk for progressive updates to avoid creating
+    // intermediate Map objects (O(n) work per chunk with GC pressure).
+    // Instead, we do a single batched update when all chunks complete.
     processFuriganaChunks(effectSongId, {
       force: isForceRequest,
       signal: controller.signal,
@@ -170,23 +173,7 @@ export function useFurigana({
           setProgress(chunkProgress.percentage);
         }
       },
-      onChunk: (_chunkIndex, startIndex, furiganaChunk) => {
-        // Progressive update: merge new chunk into current map
-        if (!controller.signal.aborted) {
-          // Check for stale request
-          if (effectSongId !== currentSongIdRef.current) return;
-          setFuriganaMap((prevMap) => {
-            const newMap = new Map(prevMap);
-            furiganaChunk.forEach((segments, i) => {
-              const lineIndex = startIndex + i;
-              if (lineIndex < lines.length) {
-                newMap.set(lines[lineIndex].startTimeMs, segments);
-              }
-            });
-            return newMap;
-          });
-        }
-      },
+      // No onChunk callback - we batch all updates at the end
     })
       .then((allFurigana) => {
         if (controller.signal.aborted) return;

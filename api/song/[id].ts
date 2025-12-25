@@ -157,6 +157,13 @@ const SaveFuriganaSchema = z.object({
   }))).max(500),
 });
 
+// Schema for clearing cached translations and furigana
+const ClearCachedDataSchema = z.object({
+  action: z.literal("clear-cached-data"),
+  clearTranslations: z.boolean().optional(),
+  clearFurigana: z.boolean().optional(),
+});
+
 // AI response schemas
 const AiTranslatedTextsSchema = z.object({
   translatedTexts: z.array(z.string()),
@@ -665,7 +672,7 @@ interface LyricLine {
  */
 const SKIP_PREFIXES = [
   "作词", "作曲", "编曲", "制作", "发行", "出品", "监制", "策划", "统筹",
-  "录音", "混音", "母带", "和声", "版权", "吉他", "贝斯", "鼓", "键盘",
+  "录音", "混音", "母带", "和声", "合声", "合声编写", "版权", "吉他", "贝斯", "鼓", "键盘",
   "企划", "词", "詞：", "曲", "男：", "女：", "合：", "OP", "SP",
   "Produced", "Composed", "Arranged", "Mixed", "Lyrics", "Keyboard",
   "Guitar", "Bass", "Drum", "Vocal", "Original Publisher", "Sub-publisher",
@@ -1388,11 +1395,11 @@ export default async function handler(req: Request) {
         const totalLines = song.lyrics.parsedLines.length;
         const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
-        // Check if already cached
+        // Check if already cached (must have actual data, not just empty arrays/objects)
         let cached = false;
         if (operation === "translate" && language && song.translations?.[language]) {
           cached = true;
-        } else if (operation === "furigana" && song.furigana) {
+        } else if (operation === "furigana" && song.furigana && song.furigana.length > 0) {
           cached = true;
         }
 
@@ -1450,7 +1457,9 @@ export default async function handler(req: Request) {
           ...(cached && operation === "translate" && language && song.translations?.[language]
             ? { translation: song.translations[language] }
             : {}),
-          ...(cached && operation === "furigana" && song.furigana ? { furigana: song.furigana } : {}),
+          ...(cached && operation === "furigana" && song.furigana && song.furigana.length > 0 
+            ? { furigana: song.furigana } 
+            : {}),
           // Include first chunk if not cached (eliminates one round-trip)
           ...(initialChunk ? { initialChunk } : {}),
         });
@@ -1758,6 +1767,47 @@ export default async function handler(req: Request) {
 
         logInfo(requestId, `Saved consolidated furigana (${furigana.length} lines)`);
         return jsonResponse({ success: true, lineCount: furigana.length });
+      }
+
+      // =======================================================================
+      // Handle clear-cached-data action - clears translations and/or furigana
+      // =======================================================================
+      if (action === "clear-cached-data") {
+        const parsed = ClearCachedDataSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { clearTranslations: shouldClearTranslations, clearFurigana: shouldClearFurigana } = parsed.data;
+
+        // Get song to update
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+          includeTranslations: true,
+          includeFurigana: true,
+        });
+
+        if (!song) {
+          return errorResponse("Song not found", 404);
+        }
+
+        const cleared: string[] = [];
+
+        // Clear translations if requested (use empty object to actually clear, not undefined)
+        if (shouldClearTranslations && song.translations && Object.keys(song.translations).length > 0) {
+          await saveSong(redis, { id: songId, translations: {} }, { preserveTranslations: false });
+          cleared.push("translations");
+        }
+
+        // Clear furigana if requested (use empty array to actually clear, not undefined)
+        if (shouldClearFurigana && song.furigana && song.furigana.length > 0) {
+          await saveSong(redis, { id: songId, furigana: [] }, { preserveFurigana: false });
+          cleared.push("furigana");
+        }
+
+        logInfo(requestId, `Cleared cached data: ${cleared.length > 0 ? cleared.join(", ") : "nothing to clear"}`);
+        return jsonResponse({ success: true, cleared });
       }
 
       // Default POST: Update song metadata (requires auth)

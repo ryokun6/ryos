@@ -47,22 +47,25 @@ export async function abortableFetch(
     }, timeout);
 
     // Combine external signal with our controller
-    let combinedSignal: AbortSignal;
+    // Use a named handler so we can remove it later to prevent memory leaks
+    let abortHandler: (() => void) | undefined;
     if (externalSignal) {
       // If external signal aborts, abort our controller too
-      externalSignal.addEventListener("abort", () => controller.abort());
-      combinedSignal = controller.signal;
-    } else {
-      combinedSignal = controller.signal;
+      abortHandler = () => controller.abort();
+      externalSignal.addEventListener("abort", abortHandler);
     }
 
     try {
       const response = await fetch(url, {
         ...fetchOptions,
-        signal: combinedSignal,
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
+      // Clean up event listener to prevent memory leaks
+      if (abortHandler && externalSignal) {
+        externalSignal.removeEventListener("abort", abortHandler);
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -71,6 +74,10 @@ export async function abortableFetch(
       return response;
     } catch (err) {
       clearTimeout(timeoutId);
+      // Clean up event listener to prevent memory leaks
+      if (abortHandler && externalSignal) {
+        externalSignal.removeEventListener("abort", abortHandler);
+      }
 
       // Don't retry on abort errors
       if (err instanceof Error && err.name === "AbortError") {

@@ -718,60 +718,81 @@ export const useIpodStore = create<IpodState>()(
           currentLyrics: null,
           currentFuriganaMap: null,
         })),
-      clearLyricsCache: () =>
-        set((state) => ({
-          lyricsRefetchTrigger: state.lyricsRefetchTrigger + 1,
-          lyricsCacheBustTrigger: state.lyricsCacheBustTrigger + 1,
+      clearLyricsCache: () => {
+        const state = get();
+        const currentTrack = state.tracks[state.currentIndex];
+        
+        // Clear server-side cache for translations and furigana
+        if (currentTrack?.id) {
+          fetch(getApiUrl(`/api/song/${currentTrack.id}`), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "clear-cached-data",
+              clearTranslations: true,
+              clearFurigana: true,
+            }),
+          }).catch((err) => {
+            console.error("[iPod Store] Failed to clear server cache:", err);
+          });
+        }
+        
+        // Clear local state and trigger refetch
+        set((s) => ({
+          lyricsRefetchTrigger: s.lyricsRefetchTrigger + 1,
+          lyricsCacheBustTrigger: s.lyricsCacheBustTrigger + 1,
           currentLyrics: null,
           currentFuriganaMap: null,
-        })),
+        }));
+      },
       setCurrentFuriganaMap: (map) => set({ currentFuriganaMap: map }),
-      adjustLyricOffset: (trackIndex, deltaMs) =>
-        set((state) => {
-          if (
-            trackIndex < 0 ||
-            trackIndex >= state.tracks.length ||
-            Number.isNaN(deltaMs)
-          ) {
-            return {} as Partial<IpodState>;
-          }
+      adjustLyricOffset: (trackIndex, deltaMs) => {
+        // Validate before calling set() to avoid unnecessary state updates
+        const state = get();
+        if (
+          trackIndex < 0 ||
+          trackIndex >= state.tracks.length ||
+          Number.isNaN(deltaMs)
+        ) {
+          return;
+        }
 
-          const tracks = [...state.tracks];
-          const current = tracks[trackIndex];
-          const newOffset = (current.lyricOffset || 0) + deltaMs;
+        const current = state.tracks[trackIndex];
+        const newOffset = (current.lyricOffset || 0) + deltaMs;
 
-          tracks[trackIndex] = {
-            ...current,
-            lyricOffset: newOffset,
-          };
+        // Only update the single track that changed using map
+        set((s) => ({
+          tracks: s.tracks.map((track, i) =>
+            i === trackIndex ? { ...track, lyricOffset: newOffset } : track
+          ),
+        }));
 
-          // Save to server with debouncing
-          debouncedSaveLyricOffset(current.id, newOffset);
+        // Side effect moved outside set() for cleaner separation
+        debouncedSaveLyricOffset(current.id, newOffset);
+      },
+      setLyricOffset: (trackIndex, offsetMs) => {
+        // Validate before calling set() to avoid unnecessary state updates
+        const state = get();
+        if (
+          trackIndex < 0 ||
+          trackIndex >= state.tracks.length ||
+          Number.isNaN(offsetMs)
+        ) {
+          return;
+        }
 
-          return { tracks } as Partial<IpodState>;
-        }),
-      setLyricOffset: (trackIndex, offsetMs) =>
-        set((state) => {
-          if (
-            trackIndex < 0 ||
-            trackIndex >= state.tracks.length ||
-            Number.isNaN(offsetMs)
-          ) {
-            return {} as Partial<IpodState>;
-          }
+        const trackId = state.tracks[trackIndex].id;
 
-          const tracks = [...state.tracks];
-          const trackId = tracks[trackIndex].id;
-          tracks[trackIndex] = {
-            ...tracks[trackIndex],
-            lyricOffset: offsetMs,
-          };
+        // Only update the single track that changed using map
+        set((s) => ({
+          tracks: s.tracks.map((track, i) =>
+            i === trackIndex ? { ...track, lyricOffset: offsetMs } : track
+          ),
+        }));
 
-          // Save to server with debouncing
-          debouncedSaveLyricOffset(trackId, offsetMs);
-
-          return { tracks } as Partial<IpodState>;
-        }),
+        // Side effect moved outside set() for cleaner separation
+        debouncedSaveLyricOffset(trackId, offsetMs);
+      },
       setLyricsAlignment: (alignment) => set({ lyricsAlignment: alignment }),
       setLyricsFont: (font) => set({ lyricsFont: font }),
       setChineseVariant: (variant) => set({ chineseVariant: variant }),

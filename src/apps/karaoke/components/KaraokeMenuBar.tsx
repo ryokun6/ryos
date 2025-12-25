@@ -19,6 +19,7 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useIpodStoreShallow } from "@/stores/helpers";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
 import { Track } from "@/stores/useIpodStore";
@@ -91,6 +92,8 @@ export function KaraokeMenuBar({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
+  const username = useChatsStore((state) => state.username);
+  const isAdmin = username?.toLowerCase() === "ryo";
 
   // Lyrics settings from iPod store
   const {
@@ -486,7 +489,7 @@ export function KaraokeMenuBar({
             {t("apps.ipod.menu.adjustTiming")}
           </MenubarItem>
 
-          {debugMode && (
+          {(debugMode || isAdmin) && (
             <MenubarItem
               onClick={() => {
                 clearLyricsCache();

@@ -8,7 +8,7 @@ import {
   RomanizationSettings,
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Converter } from "opencc-js";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -23,6 +23,7 @@ import {
   renderChineseWithPinyin,
   renderKanaWithRomaji,
 } from "@/utils/romanization";
+import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
 interface LyricsDisplayProps {
   /** Song ID (YouTube video ID) - required for internal furigana fetching if furiganaMap not provided */
@@ -262,12 +263,11 @@ const GLOW_FILTER = "drop-shadow(0 0 6px rgba(255,255,255,0.4))";
 const FEATHER = 15; // Width of the soft edge in percentage
 
 /**
- * Calculate gradient mask values for a word based on progress
+ * CSS-based mask using custom property for GPU-accelerated animation.
+ * The gradient is computed in CSS using calc(), avoiding string allocation on every frame.
+ * --mask-progress is a value from 0 to 1 set via JS.
  */
-function calculateMask(progress: number): string {
-  const progressPercent = progress * (100 + FEATHER) - FEATHER;
-  return `linear-gradient(to right, black ${progressPercent}%, transparent ${progressPercent + FEATHER}%)`;
-}
+const CSS_MASK_GRADIENT = `linear-gradient(to right, black calc(var(--mask-progress, 0) * ${100 + FEATHER}% - ${FEATHER}%), transparent calc(var(--mask-progress, 0) * ${100 + FEATHER}%))`;
 
 /**
  * Static word rendering without animation (for inactive lines with word timings)
@@ -473,6 +473,7 @@ function WordTimingHighlight({
   }, [currentTimeMs]);
 
   // Animation loop - updates DOM directly without React re-renders
+  // Uses CSS custom properties for GPU-accelerated mask animation
   useEffect(() => {
     let animationFrameId: number;
     
@@ -483,14 +484,15 @@ function WordTimingHighlight({
       const rawTime = timeRef.current.propTime + clampedElapsed;
       
       // Monotonic time: prevent backward jitter unless it's a significant seek
+      // Reduced threshold from 500ms to 100ms to allow small backward seeks
       const lastDisplayed = timeRef.current.lastDisplayedTime;
-      const isSeek = lastDisplayed - rawTime >= 500;
+      const isSeek = lastDisplayed - rawTime >= 100;
       const interpolatedTime = isSeek || rawTime >= lastDisplayed ? rawTime : lastDisplayed;
       timeRef.current.lastDisplayedTime = interpolatedTime;
       
       const timeIntoLine = interpolatedTime - lineStartTimeMs;
       
-      // Update each word's mask directly via DOM
+      // Update each word's mask progress via CSS custom property (single property update per word)
       renderItems.forEach((item, idx) => {
         const overlayEl = overlayRefs.current[idx];
         if (!overlayEl) return;
@@ -506,10 +508,8 @@ function WordTimingHighlight({
             : 1;
         }
         
-        // Apply gradient mask directly to DOM
-        const mask = calculateMask(progress);
-        overlayEl.style.maskImage = mask;
-        overlayEl.style.webkitMaskImage = mask;
+        // Set CSS custom property - CSS gradient calc handles the rest
+        overlayEl.style.setProperty('--mask-progress', String(progress));
       });
       
       animationFrameId = requestAnimationFrame(updateMasks);
@@ -524,16 +524,13 @@ function WordTimingHighlight({
     overlayRefs.current = overlayRefs.current.slice(0, renderItems.length);
   }, [renderItems.length]);
 
-  // Initial mask (hidden) - prevents flash before animation loop kicks in
-  const initialMask = calculateMask(0);
-
   const handleWordClick = (wordStartTimeMs: number) => {
     if (onSeekToTime) {
       onSeekToTime(lineStartTimeMs + wordStartTimeMs);
     }
   };
 
-  // Render once - DOM updates happen via refs, not re-renders
+  // Render once - DOM updates happen via refs using CSS custom properties
   return (
     <>
       {renderItems.map((item, idx) => (
@@ -551,19 +548,20 @@ function WordTimingHighlight({
             className="lyrics-word-layer"
             style={{ filter: GLOW_FILTER }}
           >
-            {/* Masked text - only highlighted portion visible */}
+            {/* Masked text - uses CSS custom property for GPU-accelerated animation */}
             <span
               ref={(el) => { overlayRefs.current[idx] = el; }}
               style={{ 
                 display: "block",
                 color: "rgba(255,255,255,0.9)",
                 textShadow: BASE_SHADOW,
-                maskImage: initialMask,
-                WebkitMaskImage: initialMask,
+                // Use CSS custom property for mask - JS sets --mask-progress (0-1)
+                maskImage: CSS_MASK_GRADIENT,
+                WebkitMaskImage: CSS_MASK_GRADIENT,
                 overflow: "visible",
                 paddingBottom: "0.35em",
                 marginBottom: "-0.35em",
-              }}
+              } as React.CSSProperties}
             >
               {item.content}
             </span>
@@ -716,28 +714,18 @@ export function LyricsDisplay({
   // Always use original lines for display and furigana
   const displayOriginalLines = originalLines || lines;
 
-  // Calculate the actual current line index based on timestamp and displayOriginalLines
+  // Pre-parse timestamps once for binary search (O(n) once, not on every search)
+  const parsedTimestamps = useMemo(
+    () => parseLyricTimestamps(displayOriginalLines),
+    [displayOriginalLines]
+  );
+
+  // Calculate the actual current line index using binary search O(log n)
   // This fixes the bug where currentLine prop (from translated lines) doesn't match displayOriginalLines
   const actualCurrentLine = useMemo(() => {
     if (currentTimeMs === undefined || !displayOriginalLines.length) return currentLine;
-    
-    // Find the line that matches the current playback time
-    let idx = displayOriginalLines.findIndex((line, i) => {
-      const lineStart = parseInt(line.startTimeMs, 10);
-      const nextLineStart = i + 1 < displayOriginalLines.length
-        ? parseInt(displayOriginalLines[i + 1].startTimeMs, 10)
-        : Infinity;
-      return currentTimeMs >= lineStart && currentTimeMs < nextLineStart;
-    });
-
-    // If we're past all lines, use the last line
-    if (idx === -1 && displayOriginalLines.length > 0 && 
-        currentTimeMs >= parseInt(displayOriginalLines[displayOriginalLines.length - 1].startTimeMs, 10)) {
-      idx = displayOriginalLines.length - 1;
-    }
-
-    return idx;
-  }, [currentTimeMs, displayOriginalLines, currentLine]);
+    return findCurrentLineIndex(parsedTimestamps, currentTimeMs);
+  }, [currentTimeMs, parsedTimestamps, displayOriginalLines.length, currentLine]);
 
   // Create a map of startTimeMs -> translated text for quick lookup
   // Also create index-based fallback in case timestamps don't match exactly
@@ -768,17 +756,21 @@ export function LyricsDisplay({
   // Use external map if provided, otherwise use fetched
   const furiganaMap = externalFuriganaMap ?? fetchedFuriganaMap;
 
-  const processText = (text: string) => {
-    let processed = text;
-    if (
-      chineseVariant === ChineseVariant.Traditional &&
-      isChineseText(processed)
-    ) {
-      processed = chineseConverter(processed);
-    }
-    // Note: Korean romanization is now handled via ruby rendering, not text replacement
-    return processed;
-  };
+  // Memoize processText to prevent WordTimingHighlight renderItems from recomputing on every parent render
+  const processText = useCallback(
+    (text: string) => {
+      let processed = text;
+      if (
+        chineseVariant === ChineseVariant.Traditional &&
+        isChineseText(processed)
+      ) {
+        processed = chineseConverter(processed);
+      }
+      // Note: Korean romanization is now handled via ruby rendering, not text replacement
+      return processed;
+    },
+    [chineseVariant, chineseConverter]
+  );
 
   // For word-level timing, we still need to track Korean romanization state
   const showKoreanRomanization = romanization.enabled && romanization.korean;
@@ -875,8 +867,9 @@ export function LyricsDisplay({
     const rawDuration =
       currentStart !== null && nextStart !== null ? nextStart - currentStart : 0;
 
-    // Use 20% of the line duration; clamp to a reasonable range to avoid extremes
-    const delayMs = Math.max(20, Math.floor(rawDuration * 0.2));
+    // Use 20% of the line duration; clamp to 20-400ms range to avoid extremes
+    // (prevents 6+ second delays on long instrumental breaks)
+    const delayMs = Math.min(400, Math.max(20, Math.floor(rawDuration * 0.2)));
 
     const timer = setTimeout(() => {
       setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
@@ -938,7 +931,8 @@ export function LyricsDisplay({
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!interactive || !touchStartRef.current) return;
+    // Guard against missing touch data (e.g., multi-touch where first finger was lifted)
+    if (!interactive || !touchStartRef.current || e.touches.length === 0) return;
     
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
@@ -1000,6 +994,14 @@ export function LyricsDisplay({
     touchStartRef.current = null;
   };
 
+  // Handle touch cancel (e.g., incoming call, browser gesture conflict)
+  // Clears refs to prevent stale state
+  const handleTouchCancel = useCallback(() => {
+    touchStartRef.current = null;
+    accumulatedDeltaRef.current = { x: 0, y: 0 };
+    hasTriggeredSwipeRef.current = false;
+  }, []);
+
   if (!visible) return null;
   if (isLoading)
     return (
@@ -1039,6 +1041,7 @@ export function LyricsDisplay({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
     >
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
@@ -1089,6 +1092,10 @@ export function LyricsDisplay({
           const translatedText = hasTranslation 
             ? (translationMap.get(line.startTimeMs) || translationByIndex[lineIndex] || null)
             : null;
+
+          // Pre-compute processed text values once to avoid calling processText 3x per line
+          const processedOriginal = processText(line.words);
+          const processedTranslation = translatedText ? processText(translatedText) : null;
 
           // Determine translation size class based on textSizeClass
           // - Fullscreen (viewport units vw/vh or fullscreen-lyrics-text): use viewport-relative sizing
@@ -1168,12 +1175,13 @@ export function LyricsDisplay({
                   />
                 ) : (
                   // The hook's renderWithFurigana handles furigana + all romanization types
-                  renderWithFurigana(line, processText(line.words))
+                  renderWithFurigana(line, processedOriginal)
                 )}
               </div>
               {/* Translated subtitle (shown below original when translation is active) */}
               {/* Only show if translation differs from processed original (handles Traditional Chinese conversion) */}
-              {translatedText && processText(translatedText) !== processText(line.words) && (
+              {/* Uses pre-computed values to avoid calling processText 3x per line */}
+              {processedTranslation && processedTranslation !== processedOriginal && (
                 <div
                   className={`text-white ${fontClassName} ${translationSizeClass}`}
                   style={{
@@ -1181,7 +1189,7 @@ export function LyricsDisplay({
                     opacity: 0.5,
                   }}
                 >
-                  {processText(translatedText)}
+                  {processedTranslation}
                 </div>
               )}
             </motion.div>

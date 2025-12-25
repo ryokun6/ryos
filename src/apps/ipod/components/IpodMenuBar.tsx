@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/menubar";
 import { useIpodStoreShallow } from "@/stores/helpers";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { LyricsAlignment } from "@/types/lyrics";
@@ -146,6 +147,8 @@ export function IpodMenuBar({
   const appTheme = useThemeStore((state) => state.current);
   const isXpTheme = appTheme === "xp" || appTheme === "win98";
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
+  const username = useChatsStore((state) => state.username);
+  const isAdmin = username?.toLowerCase() === "ryo";
 
   const handlePlayTrack = (index: number) => {
     setCurrentIndex(index);
@@ -471,7 +474,7 @@ export function IpodMenuBar({
             {t("apps.ipod.menu.adjustTiming")}
           </MenubarItem>
 
-          {debugMode && (
+          {(debugMode || isAdmin) && (
             <MenubarItem
               onClick={() => {
                 clearLyricsCache();
