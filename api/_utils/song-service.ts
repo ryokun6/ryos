@@ -287,6 +287,10 @@ export async function saveSong(
     : parseSongDocument(await redis.get(songKey));
 
   // Build the document
+  // Note: For createdBy, we check if the key exists in the song object to allow explicit clearing
+  // If 'createdBy' key exists (even as undefined), use that value; otherwise preserve existing
+  const createdByValue = 'createdBy' in song ? song.createdBy : existing?.createdBy;
+  
   const doc: SongDocument = {
     id: song.id,
     title: song.title ?? existing?.title ?? "",
@@ -299,7 +303,7 @@ export async function saveSong(
       ? { ...existing?.translations, ...song.translations }
       : (song.translations ?? existing?.translations),
     furigana: preserveFurigana ? (existing?.furigana ?? song.furigana) : (song.furigana ?? existing?.furigana),
-    createdBy: song.createdBy ?? existing?.createdBy,
+    createdBy: createdByValue,
     createdAt: existing?.createdAt ?? song.createdAt ?? now,
     updatedAt: now,
     importOrder: song.importOrder ?? existing?.importOrder,

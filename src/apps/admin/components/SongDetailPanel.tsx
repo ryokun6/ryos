@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Mic,
+  UserX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -57,6 +58,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   const [song, setSong] = useState<SongDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUnshareDialogOpen, setIsUnshareDialogOpen] = useState(false);
+  const [isUnsharing, setIsUnsharing] = useState(false);
   
   // Edit states
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -181,6 +184,40 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
       toast.error(t("apps.admin.errors.failedToDeleteSong", "Failed to delete song"));
     }
     setIsDeleteDialogOpen(false);
+  };
+
+  const handleUnshare = async () => {
+    if (!username || !authToken) return;
+
+    setIsUnsharing(true);
+    try {
+      const response = await fetch(
+        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`,
+            "X-Username": username,
+          },
+          body: JSON.stringify({ action: "unshare" }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success(t("apps.admin.messages.songUnshared", "Song unshared"));
+        fetchSong();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || t("apps.admin.errors.failedToUnshareSong", "Failed to unshare song"));
+      }
+    } catch (error) {
+      console.error("Failed to unshare song:", error);
+      toast.error(t("apps.admin.errors.failedToUnshareSong", "Failed to unshare song"));
+    } finally {
+      setIsUnsharing(false);
+      setIsUnshareDialogOpen(false);
+    }
   };
 
   const saveField = async (field: "title" | "artist" | "album" | "lyricOffset", value: string) => {
@@ -348,6 +385,20 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                 <Mic className="h-3 w-3" />
                 <span>{t("apps.admin.song.playInKaraoke", "Play in Karaoke")}</span>
               </button>
+              {song.createdBy && (
+                <button
+                  onClick={() => setIsUnshareDialogOpen(true)}
+                  disabled={isUnsharing}
+                  className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+                >
+                  {isUnsharing ? (
+                    <ActivityIndicator size={12} />
+                  ) : (
+                    <UserX className="h-3 w-3" />
+                  )}
+                  <span>{t("apps.admin.song.unshare", "Unshare")}</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -593,7 +644,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
         </div>
       </ScrollArea>
 
-      {/* Confirm Dialog */}
+      {/* Confirm Dialogs */}
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
@@ -602,6 +653,17 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
         description={t("apps.admin.dialogs.deleteDescription", {
           type: "song",
           name: song?.title || youtubeId,
+        })}
+      />
+      <ConfirmDialog
+        isOpen={isUnshareDialogOpen}
+        onOpenChange={setIsUnshareDialogOpen}
+        onConfirm={handleUnshare}
+        title={t("apps.admin.dialogs.unshareTitle", "Unshare Song")}
+        description={t("apps.admin.dialogs.unshareDescription", {
+          name: song?.title || youtubeId,
+          user: song?.createdBy || "",
+          defaultValue: `This will remove "${song?.title || youtubeId}" from ${song?.createdBy || "user"}'s shared songs. The song will remain in the library but won't be associated with any user.`,
         })}
       />
     </div>
