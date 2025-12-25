@@ -1,9 +1,16 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
 import { Globe, Maximize2, X, Clock } from "lucide-react";
+import { useIpodStore } from "@/stores/useIpodStore";
+import {
+  lyricsHaveJapanese,
+  lyricsHaveKorean,
+  lyricsHaveChinese,
+} from "@/utils/languageDetection";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -99,6 +106,46 @@ export function FullscreenPlayerControls({
   const { t, i18n } = useTranslation();
 
   const translationBadge = getTranslationBadge(currentTranslationCode);
+
+  // Get current lyrics from store to detect language
+  const currentLyrics = useIpodStore((s) => s.currentLyrics);
+
+  // Detect lyrics language for pronunciation button glyph
+  const lyricsLanguage = useMemo(() => {
+    if (!currentLyrics?.lines) return null;
+    if (lyricsHaveJapanese(currentLyrics.lines)) return "ja";
+    if (lyricsHaveKorean(currentLyrics.lines)) return "ko";
+    if (lyricsHaveChinese(currentLyrics.lines)) return "zh";
+    return null;
+  }, [currentLyrics]);
+
+  // Get pronunciation button glyph based on lyrics language
+  const getPronunciationGlyph = () => {
+    if (lyricsLanguage === "ja") return "字";
+    if (lyricsLanguage === "ko") return "가";
+    if (lyricsLanguage === "zh") return "字";
+    return "文";
+  };
+
+  // Get pronunciation button ruby text based on lyrics language
+  const getPronunciationRuby = () => {
+    if (lyricsLanguage === "ja") {
+      // Show romaji if enabled, otherwise show furigana
+      return romanization?.japaneseRomaji ? "ji" : "じ";
+    }
+    if (lyricsLanguage === "ko") return "ga";
+    if (lyricsLanguage === "zh") return "zì";
+    return "Aa";
+  };
+
+  // Check if romanization is active for the current lyrics language
+  const isRomanizationActiveForLyrics = () => {
+    if (!romanization?.enabled) return false;
+    if (lyricsLanguage === "ja") return romanization.japaneseFurigana || romanization.japaneseRomaji;
+    if (lyricsLanguage === "ko") return romanization.korean;
+    if (lyricsLanguage === "zh") return romanization.chinese;
+    return romanization.enabled; // Default fallback
+  };
 
   // Get font label based on current locale
   const getFontLabel = () => {
@@ -383,15 +430,15 @@ export function FullscreenPlayerControls({
                 )}
                 title={t("apps.ipod.menu.pronunciation")}
               >
-                {romanization.enabled ? (
+                {isRomanizationActiveForLyrics() ? (
                   <ruby className={cn(smallIconSize, "ruby-align-center")} style={{ rubyPosition: "over" }}>
-                    文
+                    {getPronunciationGlyph()}
                     <rt style={{ fontSize: variant === "compact" ? "8px" : "9px", opacity: 0.7, paddingBottom: "1px", letterSpacing: "-0.5px", lineHeight: 1, maxHeight: "10px" }}>
-                      Aa
+                      {getPronunciationRuby()}
                     </rt>
                   </ruby>
                 ) : (
-                  <span className={smallIconSize}>文</span>
+                  <span className={smallIconSize}>{getPronunciationGlyph()}</span>
                 )}
               </button>
             </DropdownMenuTrigger>
