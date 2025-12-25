@@ -421,6 +421,64 @@ function debouncedSaveLyricOffset(trackId: string, lyricOffset: number): void {
   lyricOffsetSaveTimers.set(trackId, timer);
 }
 
+/**
+ * Save lyrics source to server and clear translations/furigana.
+ * Called when user selects a different lyrics source from search.
+ * This clears cached translations and furigana since they're based on the old lyrics.
+ */
+async function saveLyricsSourceToServer(
+  trackId: string,
+  lyricsSource: LyricsSource | null
+): Promise<void> {
+  // Get auth credentials from chats store
+  const { username, authToken } = useChatsStore.getState();
+  
+  // Skip if not authenticated
+  if (!username || !authToken) {
+    console.log(`[iPod Store] Skipping lyrics source save for ${trackId} - user not logged in`);
+    return;
+  }
+
+  try {
+    const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(trackId)}`), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${authToken}`,
+        "X-Username": username,
+      },
+      body: JSON.stringify({
+        lyricsSource: lyricsSource || undefined,
+        // Clear translations and furigana since lyrics changed
+        clearTranslations: true,
+        clearFurigana: true,
+        clearLyrics: true,
+      }),
+    });
+
+    if (response.status === 401) {
+      console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyrics source`);
+      return;
+    }
+
+    if (response.status === 403) {
+      // Permission denied - song is owned by another user
+      console.log(`[iPod Store] Cannot save lyrics source for ${trackId} - song owned by another user`);
+      return;
+    }
+
+    if (!response.ok) {
+      console.warn(`[iPod Store] Failed to save lyrics source for ${trackId}: ${response.status}`);
+      return;
+    }
+
+    const data = await response.json();
+    console.log(`[iPod Store] Saved lyrics source for ${trackId}, cleared translations/furigana (by ${data.createdBy || username})`);
+  } catch (error) {
+    console.error(`[iPod Store] Error saving lyrics source for ${trackId}:`, error);
+  }
+}
+
 export const useIpodStore = create<IpodState>()(
   persist(
     (set, get) => ({
@@ -1061,7 +1119,7 @@ export const useIpodStore = create<IpodState>()(
           throw error;
         }
       },
-      setTrackLyricsSource: (trackId, lyricsSource) =>
+      setTrackLyricsSource: (trackId, lyricsSource) => {
         set((state) => {
           const tracks = state.tracks.map((track) =>
             track.id === trackId
@@ -1072,8 +1130,12 @@ export const useIpodStore = create<IpodState>()(
               : track
           );
           return { tracks };
-        }),
-      clearTrackLyricsSource: (trackId) =>
+        });
+        
+        // Save to server and clear translations/furigana
+        saveLyricsSourceToServer(trackId, lyricsSource);
+      },
+      clearTrackLyricsSource: (trackId) => {
         set((state) => {
           const tracks = state.tracks.map((track) =>
             track.id === trackId
@@ -1084,7 +1146,11 @@ export const useIpodStore = create<IpodState>()(
               : track
           );
           return { tracks };
-        }),
+        });
+        
+        // Save to server (clearing the source) and clear translations/furigana
+        saveLyricsSourceToServer(trackId, null);
+      },
     }),
     {
       name: "ryos:ipod", // Unique name for localStorage persistence

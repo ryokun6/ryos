@@ -82,6 +82,10 @@ const UpdateSongSchema = z.object({
   album: z.string().optional(),
   lyricOffset: z.number().optional(),
   lyricsSource: LyricsSourceSchema.optional(),
+  // Options to clear cached data when lyrics source changes
+  clearTranslations: z.boolean().optional(),
+  clearFurigana: z.boolean().optional(),
+  clearLyrics: z.boolean().optional(),
 });
 
 const FetchLyricsSchema = z.object({
@@ -1433,17 +1437,36 @@ export default async function handler(req: Request) {
 
       // Update song
       const isUpdate = !!existingSong;
-      const { lyricsSource, ...restData } = parsed.data;
-      const updatedSong = await saveSong(
-        redis,
-        {
-          id: songId,
-          ...restData,
-          lyricsSource: lyricsSource as LyricsSource | undefined,
-          createdBy: existingSong?.createdBy || username || undefined,
-        },
-        { preserveLyrics: true, preserveTranslations: true, preserveFurigana: true }
-      );
+      const { lyricsSource, clearTranslations, clearFurigana, clearLyrics, ...restData } = parsed.data;
+      
+      // Determine what to preserve vs clear
+      // If clearing is requested, don't preserve; otherwise preserve existing data
+      const preserveOptions = {
+        preserveLyrics: !clearLyrics,
+        preserveTranslations: !clearTranslations,
+        preserveFurigana: !clearFurigana,
+      };
+
+      // Build update data - if clearing, explicitly set to undefined
+      const updateData: Parameters<typeof saveSong>[1] = {
+        id: songId,
+        ...restData,
+        lyricsSource: lyricsSource as LyricsSource | undefined,
+        createdBy: existingSong?.createdBy || username || undefined,
+      };
+
+      // If clearing translations or furigana, explicitly set them to undefined
+      if (clearTranslations) {
+        updateData.translations = undefined;
+      }
+      if (clearFurigana) {
+        updateData.furigana = undefined;
+      }
+      if (clearLyrics) {
+        updateData.lyrics = undefined;
+      }
+
+      const updatedSong = await saveSong(redis, updateData, preserveOptions);
 
       logInfo(requestId, isUpdate ? "Song updated" : "Song created", { duration: `${Date.now() - startTime}ms` });
       return jsonResponse({
