@@ -160,9 +160,9 @@ export function useFurigana({
     const controller = new AbortController();
 
     // Use chunked streaming for furigana to avoid edge function timeouts
-    // NOTE: We don't use onChunk for progressive updates to avoid creating
-    // intermediate Map objects (O(n) work per chunk with GC pressure).
-    // Instead, we do a single batched update when all chunks complete.
+    // Use a mutable map that we update progressively, then copy for state updates
+    const progressiveMap = new Map<string, FuriganaSegment[]>();
+    
     processFuriganaChunks(effectSongId, {
       force: isForceRequest,
       signal: controller.signal,
@@ -173,22 +173,37 @@ export function useFurigana({
           setProgress(chunkProgress.percentage);
         }
       },
-      // No onChunk callback - we batch all updates at the end
+      onChunk: (_chunkIndex, startIndex, furigana) => {
+        if (controller.signal.aborted) return;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return;
+        
+        // Update the progressive map with new segments
+        furigana.forEach((segments, i) => {
+          const lineIndex = startIndex + i;
+          if (lineIndex < lines.length && segments) {
+            progressiveMap.set(lines[lineIndex].startTimeMs, segments);
+          }
+        });
+        
+        // Trigger re-render with a shallow copy of the updated map
+        setFuriganaMap(new Map(progressiveMap));
+      },
     })
       .then((allFurigana) => {
         if (controller.signal.aborted) return;
         // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
 
-        // Final update with all furigana
-        const newMap = new Map<string, FuriganaSegment[]>();
+        // Final update to ensure we have everything
+        const finalMap = new Map<string, FuriganaSegment[]>();
         allFurigana.forEach((segments, index) => {
           if (index < lines.length && segments) {
-            newMap.set(lines[index].startTimeMs, segments);
+            finalMap.set(lines[index].startTimeMs, segments);
           }
         });
 
-        setFuriganaMap(newMap);
+        setFuriganaMap(finalMap);
         furiganaCacheKeyRef.current = cacheKey;
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
       })
