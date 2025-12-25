@@ -66,6 +66,8 @@ const SKIP_PREFIXES = [
   "Background Vocals",
   "Recording Engineer",
   "Digital Editing",
+  "All programming：",
+  "Sessions：",
 ] as const;
 
 export const parseLRC = (
