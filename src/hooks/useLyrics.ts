@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { LyricLine } from "@/types/lyrics";
-import { parseLRC } from "@/utils/lrcParser";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { isOffline } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { processTranslationChunks } from "@/utils/chunkedStream";
 
 interface UseLyricsParams {
   /** Song ID (YouTube video ID) - required for unified endpoint */
@@ -34,6 +34,8 @@ interface LyricsState {
   currentLine: number;
   isLoading: boolean; // True when fetching original LRC
   isTranslating: boolean; // True when translating lyrics
+  /** Translation progress (0-100) when streaming */
+  translationProgress?: number;
   error?: string;
   updateCurrentTimeManually: (newTimeInSeconds: number) => void;
 }
@@ -64,14 +66,6 @@ interface UnifiedLyricsResponse {
 }
 
 /**
- * Response from unified song endpoint for translation
- */
-interface UnifiedTranslationResponse {
-  translation: string;
-  cached?: boolean;
-}
-
-/**
  * Fetch timed lyrics (LRC) for a given song, optionally translate them,
  * and keep track of which line is currently active based on playback time.
  * Returns the parsed lyric lines and the index of the current line.
@@ -91,6 +85,7 @@ export function useLyrics({
   const [currentLine, setCurrentLine] = useState(-1);
   const [isFetchingOriginal, setIsFetchingOriginal] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [translationProgress, setTranslationProgress] = useState<number | undefined>();
   const [error, setError] = useState<string | undefined>();
 
   const cachedKeyRef = useRef<string | null>(null);
@@ -227,11 +222,12 @@ export function useLyrics({
     };
   }, [songId, title, artist, refetchTrigger, selectedMatch]);
 
-  // Effect for translating lyrics
+  // Effect for translating lyrics using chunked streaming
   useEffect(() => {
     if (!songId || !translateTo || originalLines.length === 0) {
       setTranslatedLines(null);
       setIsTranslating(false);
+      setTranslationProgress(undefined);
       return;
     }
 
@@ -252,36 +248,50 @@ export function useLyrics({
     const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
 
     setIsTranslating(true);
+    setTranslationProgress(0);
     setError(undefined);
 
     const controller = new AbortController();
 
-    abortableFetch(getApiUrl(`/api/song/${songId}`), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "translate",
-        language: translateTo,
-        force: isForceRequest,
-      }),
+    // Use chunked streaming for translation to avoid edge function timeouts
+    processTranslationChunks(songId, translateTo, {
+      force: isForceRequest,
       signal: controller.signal,
-      timeout: 180000,
+      onProgress: (progress) => {
+        if (!controller.signal.aborted) {
+          setTranslationProgress(progress.percentage);
+        }
+      },
+      onChunk: (_chunkIndex, startIndex, translations) => {
+        // Progressive update: merge new chunk translations into current state
+        if (!controller.signal.aborted) {
+          setTranslatedLines((prev) => {
+            // Create new array based on original lines if no previous state
+            const base = prev || originalLines.map((line) => ({ ...line }));
+            const updated = [...base];
+            translations.forEach((text, i) => {
+              const lineIndex = startIndex + i;
+              if (lineIndex < updated.length) {
+                updated[lineIndex] = {
+                  ...updated[lineIndex],
+                  words: text,
+                };
+              }
+            });
+            return updated;
+          });
+        }
+      },
     })
-      .then(async (res) => {
+      .then((allTranslations) => {
         if (controller.signal.aborted) return;
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(errorText || `Translation failed (status ${res.status})`);
-        }
 
-        const json = await res.json() as UnifiedTranslationResponse;
-        if (!json.translation) {
-          throw new Error("No translation returned");
-        }
-
-        const parsedTranslatedLines = parseLRC(json.translation, title, artist);
-        setTranslatedLines(parsedTranslatedLines);
+        // Final update with all translations
+        const finalTranslatedLines: LyricLine[] = originalLines.map((line, index) => ({
+          ...line,
+          words: allTranslations[index] || line.words,
+        }));
+        setTranslatedLines(finalTranslatedLines);
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
       })
       .catch((err: unknown) => {
@@ -291,6 +301,7 @@ export function useLyrics({
       .finally(() => {
         if (!controller.signal.aborted) {
           setIsTranslating(false);
+          setTranslationProgress(undefined);
           lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
         }
       });
@@ -298,7 +309,7 @@ export function useLyrics({
     return () => {
       controller.abort();
     };
-  }, [songId, originalLines, translateTo, isFetchingOriginal, title, artist, lyricsCacheBustTrigger]);
+  }, [songId, originalLines, translateTo, isFetchingOriginal, lyricsCacheBustTrigger]);
 
   const displayLines = translatedLines || originalLines;
 
@@ -350,6 +361,7 @@ export function useLyrics({
     currentLine,
     isLoading: isFetchingOriginal,
     isTranslating,
+    translationProgress,
     error,
     updateCurrentTimeManually,
   };
