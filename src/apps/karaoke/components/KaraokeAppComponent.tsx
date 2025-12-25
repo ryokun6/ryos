@@ -333,15 +333,28 @@ export function KaraokeAppComponent({
     restartAutoHideTimer();
   }, [restartAutoHideTimer]);
 
+  // Helper to mark track switch start and schedule end
+  const startTrackSwitch = useCallback(() => {
+    isTrackSwitchingRef.current = true;
+    if (trackSwitchTimeoutRef.current) {
+      clearTimeout(trackSwitchTimeoutRef.current);
+    }
+    // Allow 2 seconds for YouTube to load before accepting play/pause events
+    trackSwitchTimeoutRef.current = setTimeout(() => {
+      isTrackSwitchingRef.current = false;
+    }, 2000);
+  }, []);
+
   // Wrapped handlers for fullscreen controls (with offline check)
   const handlePrevious = useCallback(() => {
     if (isOffline) {
       showOfflineStatus();
     } else {
+      startTrackSwitch();
       previousTrack();
       showStatus("⏮");
     }
-  }, [isOffline, showOfflineStatus, previousTrack, showStatus]);
+  }, [isOffline, showOfflineStatus, previousTrack, showStatus, startTrackSwitch]);
 
   const handlePlayPause = useCallback(() => {
     if (isOffline) {
@@ -356,10 +369,11 @@ export function KaraokeAppComponent({
     if (isOffline) {
       showOfflineStatus();
     } else {
+      startTrackSwitch();
       nextTrack();
       showStatus("⏭");
     }
-  }, [isOffline, showOfflineStatus, nextTrack, showStatus]);
+  }, [isOffline, showOfflineStatus, nextTrack, showStatus, startTrackSwitch]);
 
   useEffect(() => {
     // Always show controls when not playing, menu is open, or sync mode is open
@@ -378,9 +392,22 @@ export function KaraokeAppComponent({
     };
   }, [isPlaying, anyMenuOpen, isSyncModeOpen, restartAutoHideTimer]);
 
-  // Reset elapsed time on track change
+  // Reset elapsed time on track change and set track switching guard
+  // This catches track changes from any source (AI tools, shared URLs, menu selections, etc.)
+  const prevCurrentIndexRef = useRef(currentIndex);
   useEffect(() => {
     setElapsedTime(0);
+    // Only trigger track switch guard if index actually changed (not on initial render)
+    if (prevCurrentIndexRef.current !== currentIndex) {
+      isTrackSwitchingRef.current = true;
+      if (trackSwitchTimeoutRef.current) {
+        clearTimeout(trackSwitchTimeoutRef.current);
+      }
+      trackSwitchTimeoutRef.current = setTimeout(() => {
+        isTrackSwitchingRef.current = false;
+      }, 2000);
+    }
+    prevCurrentIndexRef.current = currentIndex;
   }, [currentIndex]);
 
   // Cleanup
@@ -391,6 +418,9 @@ export function KaraokeAppComponent({
       }
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
+      }
+      if (trackSwitchTimeoutRef.current) {
+        clearTimeout(trackSwitchTimeoutRef.current);
       }
     };
   }, []);
@@ -412,24 +442,39 @@ export function KaraokeAppComponent({
 
   useEffect(() => {
     if (isFullScreen !== prevFullScreenRef.current) {
+      // Mark as track switching to prevent spurious play/pause events during sync
+      isTrackSwitchingRef.current = true;
+      if (trackSwitchTimeoutRef.current) {
+        clearTimeout(trackSwitchTimeoutRef.current);
+      }
+      
       if (isFullScreen) {
         // Entering fullscreen - sync position from main player to fullscreen player
         const currentTime = playerRef.current?.getCurrentTime() || elapsedTime;
         const wasPlaying = isPlaying;
 
-        setTimeout(() => {
-          if (fullScreenPlayerRef.current) {
-            fullScreenPlayerRef.current.seekTo(currentTime);
-            if (wasPlaying) {
-              setTimeout(() => {
-                const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
-                if (internalPlayer && typeof internalPlayer.playVideo === "function") {
-                  internalPlayer.playVideo();
-                }
-              }, 200);
+        // Wait for fullscreen player to be ready before seeking
+        const checkAndSync = () => {
+          const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
+          if (internalPlayer && typeof internalPlayer.getPlayerState === "function") {
+            const playerState = internalPlayer.getPlayerState();
+            // -1 = unstarted, 3 = buffering, 5 = cued are "not ready" states
+            if (playerState !== -1) {
+              fullScreenPlayerRef.current?.seekTo(currentTime);
+              if (wasPlaying && typeof internalPlayer.playVideo === "function") {
+                internalPlayer.playVideo();
+              }
+              // End track switch after sync complete
+              trackSwitchTimeoutRef.current = setTimeout(() => {
+                isTrackSwitchingRef.current = false;
+              }, 500);
+              return;
             }
           }
-        }, 100);
+          // Player not ready, retry
+          setTimeout(checkAndSync, 100);
+        };
+        setTimeout(checkAndSync, 100);
       } else {
         // Exiting fullscreen - sync position from fullscreen player to main player
         const currentTime = fullScreenPlayerRef.current?.getCurrentTime() || elapsedTime;
@@ -442,6 +487,10 @@ export function KaraokeAppComponent({
               setIsPlaying(true);
             }
           }
+          // End track switch after sync complete
+          trackSwitchTimeoutRef.current = setTimeout(() => {
+            isTrackSwitchingRef.current = false;
+          }, 500);
         }, 200);
       }
       prevFullScreenRef.current = isFullScreen;
@@ -457,6 +506,10 @@ export function KaraokeAppComponent({
     }
     setIsSyncModeOpen(false);
   }, [tracks, currentIndex]);
+
+  // Track switching state to prevent race conditions
+  const isTrackSwitchingRef = useRef(false);
+  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
@@ -474,18 +527,26 @@ export function KaraokeAppComponent({
   }, []);
 
   const handlePlay = useCallback(() => {
+    // Don't update state if we're in the middle of a track switch
+    if (isTrackSwitchingRef.current) {
+      return;
+    }
     setIsPlaying(true);
   }, []);
 
   const handlePause = useCallback(() => {
+    // Don't update state if we're in the middle of a track switch
+    if (isTrackSwitchingRef.current) {
+      return;
+    }
     setIsPlaying(false);
   }, []);
 
-  // Main player pause handler - ignore pause when switching to fullscreen
+  // Main player pause handler - ignore pause when switching to fullscreen or switching tracks
   const handleMainPlayerPause = useCallback(() => {
-    // Don't set isPlaying to false if we're in fullscreen mode
+    // Don't set isPlaying to false if we're in fullscreen mode or switching tracks
     // (the pause was triggered by switching players, not user action)
-    if (!isFullScreen) {
+    if (!isFullScreen && !isTrackSwitchingRef.current) {
       setIsPlaying(false);
     }
   }, [isFullScreen]);
@@ -570,13 +631,14 @@ export function KaraokeAppComponent({
       if (addedTrack) {
         showStatus(t("apps.ipod.status.added"));
         // New tracks are added at the beginning of the array, so set index to 0
+        startTrackSwitch();
         setCurrentIndex(0);
         if (autoplay) setIsPlaying(true);
       } else {
         throw new Error("Failed to add track");
       }
     },
-    [showStatus, t, setCurrentIndex, setIsPlaying]
+    [showStatus, t, setCurrentIndex, setIsPlaying, startTrackSwitch]
   );
 
   // Process video ID from shared link (add if not in library, then play)
@@ -589,6 +651,7 @@ export function KaraokeAppComponent({
 
       if (existingTrackIndex !== -1) {
         toast.info(t("apps.ipod.dialogs.openedSharedTrack"));
+        startTrackSwitch();
         setCurrentIndex(existingTrackIndex);
         if (shouldAutoplay) setIsPlaying(true);
       } else {
@@ -599,7 +662,7 @@ export function KaraokeAppComponent({
         }
       }
     },
-    [setCurrentIndex, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari]
+    [setCurrentIndex, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari, startTrackSwitch]
   );
 
   // Share song handler
@@ -674,9 +737,10 @@ export function KaraokeAppComponent({
 
   // Play track handler for Library menu
   const handlePlayTrack = useCallback((index: number) => {
+    startTrackSwitch();
     setCurrentIndex(index);
     setIsPlaying(true);
-  }, []);
+  }, [startTrackSwitch]);
 
   // Keyboard controls
   useEffect(() => {

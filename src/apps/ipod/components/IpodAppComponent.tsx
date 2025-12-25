@@ -187,6 +187,10 @@ export function IpodAppComponent({
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
   const lastTrackedSongRef = useRef<{ trackId: string; elapsedTime: number } | null>(null);
   const skipOperationRef = useRef(false);
+  
+  // Track switching state to prevent race conditions
+  const isTrackSwitchingRef = useRef(false);
+  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Menu state
   const initialMenuMode = useMemo(() => {
@@ -375,10 +379,23 @@ export function IpodAppComponent({
     prevIsForeground.current = isForeground;
   }, [isForeground, toggleBacklight, registerActivity]);
 
-  // Reset elapsed time on track change
+  // Reset elapsed time on track change and set track switching guard
+  // This catches track changes from any source (AI tools, shared URLs, menu selections, etc.)
+  const prevCurrentIndexRef = useRef(currentIndex);
   useEffect(() => {
     setElapsedTime(0);
     useIpodStore.setState({ currentLyrics: null });
+    // Only trigger track switch guard if index actually changed (not on initial render)
+    if (prevCurrentIndexRef.current !== currentIndex) {
+      isTrackSwitchingRef.current = true;
+      if (trackSwitchTimeoutRef.current) {
+        clearTimeout(trackSwitchTimeoutRef.current);
+      }
+      trackSwitchTimeoutRef.current = setTimeout(() => {
+        isTrackSwitchingRef.current = false;
+      }, 2000);
+    }
+    prevCurrentIndexRef.current = currentIndex;
   }, [currentIndex]);
 
   // Cleanup status timeout
@@ -386,6 +403,9 @@ export function IpodAppComponent({
     return () => {
       if (statusTimeoutRef.current) {
         clearTimeout(statusTimeoutRef.current);
+      }
+      if (trackSwitchTimeoutRef.current) {
+        clearTimeout(trackSwitchTimeoutRef.current);
       }
     };
   }, []);
@@ -740,17 +760,31 @@ export function IpodAppComponent({
     }
   }, [rebuildMenuItems, selectedMenuItem]);
 
+  // Helper to mark track switch start and schedule end
+  const startTrackSwitch = useCallback(() => {
+    isTrackSwitchingRef.current = true;
+    if (trackSwitchTimeoutRef.current) {
+      clearTimeout(trackSwitchTimeoutRef.current);
+    }
+    // Allow 2 seconds for YouTube to load before accepting play/pause events
+    trackSwitchTimeoutRef.current = setTimeout(() => {
+      isTrackSwitchingRef.current = false;
+    }, 2000);
+  }, []);
+
   // Track handling
   const handleAddTrack = useCallback(
     async (url: string) => {
       const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
       if (addedTrack) {
         showStatus(t("apps.ipod.status.added"));
+        // Start track switch guard since addTrackFromVideoId sets currentIndex to 0 and isPlaying to true
+        startTrackSwitch();
       } else {
         throw new Error("Failed to add track");
       }
     },
-    [showStatus, t]
+    [showStatus, t, startTrackSwitch]
   );
 
   const processVideoId = useCallback(
@@ -761,6 +795,7 @@ export function IpodAppComponent({
 
       if (existingTrackIndex !== -1) {
         toast.info(t("apps.ipod.dialogs.openedSharedTrack"));
+        startTrackSwitch();
         setCurrentIndex(existingTrackIndex);
         if (shouldAutoplay) setIsPlaying(true);
         setMenuMode(false);
@@ -771,6 +806,7 @@ export function IpodAppComponent({
           const newIndex = useIpodStore.getState().currentIndex;
           const addedTrack = useIpodStore.getState().tracks[newIndex];
           if (addedTrack?.id === videoId) {
+            startTrackSwitch();
             setIsPlaying(true);
           }
         } else if (isOffline) {
@@ -778,7 +814,7 @@ export function IpodAppComponent({
         }
       }
     },
-    [setCurrentIndex, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari]
+    [setCurrentIndex, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari, startTrackSwitch]
   );
 
   // Initial data handling
@@ -839,9 +875,10 @@ export function IpodAppComponent({
       activePlayer?.seekTo(0);
       setIsPlaying(true);
     } else {
+      startTrackSwitch();
       nextTrack();
     }
-  }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen]);
+  }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen, startTrackSwitch]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
@@ -852,6 +889,10 @@ export function IpodAppComponent({
   }, []);
 
   const handlePlay = useCallback(() => {
+    // Don't update state if we're in the middle of a track switch
+    if (isTrackSwitchingRef.current) {
+      return;
+    }
     setIsPlaying(true);
     if (!skipOperationRef.current) showStatus("▶");
     skipOperationRef.current = false;
@@ -874,6 +915,10 @@ export function IpodAppComponent({
   }, [setIsPlaying, showStatus, tracks, currentIndex, elapsedTime]);
 
   const handlePause = useCallback(() => {
+    // Don't update state if we're in the middle of a track switch
+    if (isTrackSwitchingRef.current) {
+      return;
+    }
     setIsPlaying(false);
     showStatus("⏸︎");
   }, [setIsPlaying, showStatus]);
@@ -990,6 +1035,7 @@ export function IpodAppComponent({
             showOfflineStatus();
           } else {
             skipOperationRef.current = true;
+            startTrackSwitch();
             nextTrack();
             showStatus("⏭");
           }
@@ -1007,6 +1053,7 @@ export function IpodAppComponent({
             showOfflineStatus();
           } else {
             skipOperationRef.current = true;
+            startTrackSwitch();
             previousTrack();
             showStatus("⏮");
           }
@@ -1037,7 +1084,7 @@ export function IpodAppComponent({
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus]
+    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch]
   );
 
   // Wheel rotation handler
@@ -1306,23 +1353,41 @@ export function IpodAppComponent({
 
   useEffect(() => {
     if (isFullScreen !== prevFullScreenRef.current) {
+      // Mark as track switching to prevent spurious play/pause events during sync
+      isTrackSwitchingRef.current = true;
+      if (trackSwitchTimeoutRef.current) {
+        clearTimeout(trackSwitchTimeoutRef.current);
+      }
+
       if (isFullScreen) {
         const currentTime = playerRef.current?.getCurrentTime() || elapsedTime;
         const wasPlaying = isPlaying;
 
-        setTimeout(() => {
-          if (fullScreenPlayerRef.current) {
-            fullScreenPlayerRef.current.seekTo(currentTime);
-            if (wasPlaying && isIOSSafari && userHasInteractedRef.current) {
-              setTimeout(() => {
-                const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
-                if (internalPlayer && typeof internalPlayer.playVideo === "function") {
+        // Wait for fullscreen player to be ready before seeking
+        const checkAndSync = () => {
+          const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
+          if (internalPlayer && typeof internalPlayer.getPlayerState === "function") {
+            const playerState = internalPlayer.getPlayerState();
+            // -1 = unstarted, wait for player to be ready
+            if (playerState !== -1) {
+              fullScreenPlayerRef.current?.seekTo(currentTime);
+              if (wasPlaying && typeof internalPlayer.playVideo === "function") {
+                // On iOS Safari, only play if user has interacted
+                if (!isIOSSafari || userHasInteractedRef.current) {
                   internalPlayer.playVideo();
                 }
-              }, 200);
+              }
+              // End track switch after sync complete
+              trackSwitchTimeoutRef.current = setTimeout(() => {
+                isTrackSwitchingRef.current = false;
+              }, 500);
+              return;
             }
           }
-        }, 100);
+          // Player not ready, retry
+          setTimeout(checkAndSync, 100);
+        };
+        setTimeout(checkAndSync, 100);
       } else {
         const currentTime = fullScreenPlayerRef.current?.getCurrentTime() || elapsedTime;
         const wasPlaying = isPlaying;
@@ -1330,12 +1395,14 @@ export function IpodAppComponent({
         setTimeout(() => {
           if (playerRef.current) {
             playerRef.current.seekTo(currentTime);
-            setTimeout(() => {
-              if (wasPlaying && !useIpodStore.getState().isPlaying) {
-                setIsPlaying(true);
-              }
-            }, 50);
+            if (wasPlaying && !useIpodStore.getState().isPlaying) {
+              setIsPlaying(true);
+            }
           }
+          // End track switch after sync complete
+          trackSwitchTimeoutRef.current = setTimeout(() => {
+            isTrackSwitchingRef.current = false;
+          }, 500);
         }, 200);
       }
       prevFullScreenRef.current = isFullScreen;
@@ -1541,6 +1608,7 @@ export function IpodAppComponent({
                   showOfflineStatus();
                 } else {
                   skipOperationRef.current = true;
+                  startTrackSwitch();
                   nextTrack();
                   showStatus("⏭");
                 }
@@ -1550,6 +1618,7 @@ export function IpodAppComponent({
                   showOfflineStatus();
                 } else {
                   skipOperationRef.current = true;
+                  startTrackSwitch();
                   previousTrack();
                   showStatus("⏮");
                 }
@@ -1572,6 +1641,7 @@ export function IpodAppComponent({
             togglePlay={togglePlay}
             nextTrack={() => {
               skipOperationRef.current = true;
+              startTrackSwitch();
               nextTrack();
               // Read from iPod store (which has the updated currentIndex)
               const state = useIpodStore.getState();
@@ -1583,6 +1653,7 @@ export function IpodAppComponent({
             }}
             previousTrack={() => {
               skipOperationRef.current = true;
+              startTrackSwitch();
               previousTrack();
               // Read from iPod store (which has the updated currentIndex)
               const state = useIpodStore.getState();
@@ -1727,6 +1798,7 @@ export function IpodAppComponent({
                             showOfflineStatus();
                           } else {
                             skipOperationRef.current = true;
+                            startTrackSwitch();
                             nextTrack();
                             // Read state synchronously after store update
                             const state = useIpodStore.getState();
@@ -1742,6 +1814,7 @@ export function IpodAppComponent({
                             showOfflineStatus();
                           } else {
                             skipOperationRef.current = true;
+                            startTrackSwitch();
                             previousTrack();
                             // Read state synchronously after store update
                             const state = useIpodStore.getState();
@@ -1866,8 +1939,8 @@ export function IpodAppComponent({
             currentTrack={tracks[currentIndex] || null}
             isPlaying={isPlaying}
             onTogglePlay={togglePlay}
-            onNextTrack={nextTrack}
-            onPreviousTrack={previousTrack}
+            onNextTrack={() => { startTrackSwitch(); nextTrack(); }}
+            onPreviousTrack={() => { startTrackSwitch(); previousTrack(); }}
             onRestore={() => {
               if (instanceId) restoreInstance(instanceId);
             }}
