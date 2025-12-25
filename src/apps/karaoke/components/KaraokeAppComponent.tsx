@@ -923,7 +923,7 @@ export function KaraokeAppComponent({
                           gap: "clamp(0.3rem, 2.5cqw, 1rem)",
                         }}
                         interactive={true}
-                        bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-22" : "pb-12"}
+                        bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-28" : "pb-12"}
                         furiganaMap={furiganaMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
