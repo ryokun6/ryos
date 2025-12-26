@@ -11,8 +11,9 @@ import { SKIP_PREFIXES, AiTranslatedTextsSchema } from "./_constants.js";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { LyricsContent, ParsedLyricLine, WordTiming } from "../_utils/song-service.js";
 
-// Simplified Chinese to Traditional Chinese converter
+// Chinese character converters
 const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
+const traditionalToSimplified = Converter({ from: "tw", to: "cn" });
 
 // =============================================================================
 // Types
@@ -93,8 +94,14 @@ export function shouldSkipLine(text: string, title?: string, artist?: string): b
   if (title && artist) {
     const titleArtist = `${title} - ${artist}`;
     const artistTitle = `${artist} - ${title}`;
+    // Also create simplified Chinese versions for matching lyrics with different character variants
+    const titleArtistSimplified = traditionalToSimplified(titleArtist);
+    const artistTitleSimplified = traditionalToSimplified(artistTitle);
+    
     if (trimmed === titleArtist || trimmed === artistTitle || 
-        trimmed.startsWith(titleArtist) || trimmed.startsWith(artistTitle)) {
+        trimmed.startsWith(titleArtist) || trimmed.startsWith(artistTitle) ||
+        trimmed === titleArtistSimplified || trimmed === artistTitleSimplified ||
+        trimmed.startsWith(titleArtistSimplified) || trimmed.startsWith(artistTitleSimplified)) {
       return true;
     }
   }

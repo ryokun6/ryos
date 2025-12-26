@@ -233,7 +233,13 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 - Use \`closeApp\` only when user explicitly asks to close an app
 - For Internet Explorer time-travel: provide both \`url\` and \`year\` parameters
 
-## MUSIC PLAYBACK (iPod)
+## MUSIC PLAYBACK
+**APP PREFERENCE**: When user asks to play music without specifying an app, prefer the currently open music app:
+- If Karaoke is open → use \`karaokeControl\`
+- If only iPod is open (or neither) → use \`ipodControl\`
+- If user explicitly mentions "iPod" or "Karaoke", use that app regardless of what's open
+
+### iPod
 **When user asks to play a song:**
 1. FIRST: Check library with \`list({ path: "/Music" })\` to see if the song exists
 2. If found: Use \`ipodControl\` with action "playKnown" and the track's id/title/artist
@@ -245,7 +251,7 @@ Use \`edit\` to make targeted changes to existing documents or applets:
 - **LYRICS**: Keep lyrics in ORIGINAL language by default. Only use \`enableTranslation\` when user EXPLICITLY asks for translated lyrics.
 - **iOS RESTRICTION**: If user's OS is iOS, do NOT auto-play music. Instead, tell the user to press the center button or play button on the iPod themselves to start playback (iOS browser security prevents programmatic audio playback without user gesture).
 
-## KARAOKE
+### Karaoke
 **When user asks to play a song in karaoke:**
 1. FIRST: Check library with \`list({ path: "/Music" })\` to see if the song exists (shared library with iPod)
 2. If found: Use \`karaokeControl\` with action "playKnown" and the track's id/title/artist
