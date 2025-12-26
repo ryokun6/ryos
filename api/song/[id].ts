@@ -108,6 +108,60 @@ function extractChineseFromKrcLanguage(krc: string): string[] | null {
 }
 
 /**
+ * Parse raw KRC lines WITHOUT filtering to get indices that match embedded translation
+ * Returns array of { rawIndex, startTimeMs, words, shouldSkip }
+ */
+function parseKrcRawLines(krc: string, title?: string, artist?: string): Array<{
+  rawIndex: number;
+  startTimeMs: string;
+  words: string;
+  shouldSkip: boolean;
+}> {
+  const lines: Array<{ rawIndex: number; startTimeMs: string; words: string; shouldSkip: boolean }> = [];
+  const lineHeaderRegex = /^\[(\d+),(\d+)\](.*)$/;
+  const wordTimingRegex = /<(\d+),(\d+),\d+>((?:[^<]|<(?!\d))*)/g;
+
+  // Normalize line endings
+  const normalizedText = krc.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  let rawIndex = 0;
+
+  for (const line of normalizedText.split("\n")) {
+    const lineMatch = line.match(lineHeaderRegex);
+    if (!lineMatch) continue;
+
+    const [, startMs, , content] = lineMatch;
+    
+    // Extract text from word timings
+    let fullText = "";
+    let match;
+    wordTimingRegex.lastIndex = 0;
+
+    while ((match = wordTimingRegex.exec(content)) !== null) {
+      const [, , , text] = match;
+      if (text) fullText += text;
+    }
+
+    // If no word timings found, try plain text
+    if (!fullText) {
+      fullText = content.replace(/<\d+,\d+,\d+>/g, "").trim();
+    }
+
+    const trimmedText = fullText.trim();
+    const shouldSkip = !trimmedText || shouldSkipLine(trimmedText, title, artist);
+
+    lines.push({
+      rawIndex,
+      startTimeMs: startMs,
+      words: trimmedText,
+      shouldSkip,
+    });
+    rawIndex++;
+  }
+
+  return lines;
+}
+
+/**
  * Build a Traditional Chinese LRC from KRC embedded translation
  * Returns null if KRC doesn't have embedded Chinese translation
  */
@@ -118,32 +172,31 @@ function buildChineseTranslationFromKrc(
 ): string | null {
   if (!lyrics.krc) return null;
 
-  // Try to extract Chinese from the embedded language field first
+  // Try to extract Chinese from the embedded language field
   const embeddedChinese = extractChineseFromKrcLanguage(lyrics.krc);
+  if (!embeddedChinese || embeddedChinese.length === 0) return null;
+
+  // Parse raw KRC lines to get the mapping between raw indices and filtered lines
+  const rawLines = parseKrcRawLines(lyrics.krc, title, artist);
+  if (rawLines.length === 0) return null;
+
+  // Build LRC with Traditional Chinese for non-skipped lines only
+  const resultLines: string[] = [];
   
-  if (embeddedChinese && embeddedChinese.length > 0) {
-    // Parse KRC to get timestamps (we need the timing info)
-    const parsedLines = parseKrcToLines(lyrics.krc, title, artist);
-    if (parsedLines.length === 0) return null;
+  for (const rawLine of rawLines) {
+    if (rawLine.shouldSkip) continue;
 
-    // The embedded translation may have different line count due to metadata lines
-    // We need to align them - skip empty lines at the start of embedded translation
-    let embeddedIdx = 0;
-    while (embeddedIdx < embeddedChinese.length && !embeddedChinese[embeddedIdx]) {
-      embeddedIdx++;
-    }
-
-    // Build LRC with Traditional Chinese
-    return parsedLines
-      .map((line, idx) => {
-        const chineseLine = embeddedChinese[embeddedIdx + idx] || "";
-        const traditionalText = chineseLine ? simplifiedToTraditional(chineseLine) : line.words;
-        return `${msToLrcTime(line.startTimeMs)}${traditionalText}`;
-      })
-      .join("\n");
+    // Get Chinese translation at the same raw index
+    const chineseLine = embeddedChinese[rawLine.rawIndex] || "";
+    
+    // If Chinese line is metadata (empty or matches skip prefixes), use original lyrics
+    const chineseIsMetadata = !chineseLine || shouldSkipLine(chineseLine, title, artist);
+    const textToUse = chineseIsMetadata ? rawLine.words : simplifiedToTraditional(chineseLine);
+    
+    resultLines.push(`${msToLrcTime(rawLine.startTimeMs)}${textToUse}`);
   }
 
-  return null;
+  return resultLines.length > 0 ? resultLines.join("\n") : null;
 }
 
 // Extended timeout for AI processing
