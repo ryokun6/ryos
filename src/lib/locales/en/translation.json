@@ -1284,6 +1284,7 @@
         "furigana": "Furigana",
         "romanization": "Romanization",
         "pronunciation": "Pronunciation",
+        "pronunciationOnly": "Only Pronunciation",
         "enableRomanization": "Enable Romanization",
         "japaneseFurigana": "Japanese Furigana",
         "japaneseRomaji": "Japanese Romaji",

@@ -1214,6 +1214,7 @@
         "play": "Воспроизвести",
         "previous": "Предыдущий",
         "pronunciation": "Произношение",
+        "pronunciationOnly": "Только произношение",
         "refreshLyrics": "Поиск текста...",
         "repeatAll": "Повторить все",
         "repeatOne": "Повторить одну",

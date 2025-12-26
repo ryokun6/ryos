@@ -1214,6 +1214,7 @@
         "play": "再生",
         "previous": "前へ",
         "pronunciation": "発音",
+        "pronunciationOnly": "発音のみ",
         "refreshLyrics": "歌詞を検索...",
         "repeatAll": "全曲リピート",
         "repeatOne": "1曲リピート",

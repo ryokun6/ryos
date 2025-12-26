@@ -22,6 +22,10 @@ import {
   renderKoreanWithRomanization,
   renderChineseWithPinyin,
   renderKanaWithRomaji,
+  getFuriganaSegmentsPronunciationOnly,
+  getKoreanPronunciationOnly,
+  getChinesePronunciationOnly,
+  getKanaPronunciationOnly,
 } from "@/utils/romanization";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
@@ -298,6 +302,7 @@ function StaticWordRendering({
   koreanRomanized = false,
   japaneseRomaji = false,
   chinesePinyin = false,
+  pronunciationOnly = false,
   lineStartTimeMs,
   onSeekToTime,
   isOldSchoolKaraoke = false,
@@ -308,6 +313,8 @@ function StaticWordRendering({
   koreanRomanized?: boolean;
   japaneseRomaji?: boolean;
   chinesePinyin?: boolean;
+  /** Show only pronunciation (replace original text with phonetic content) */
+  pronunciationOnly?: boolean;
   lineStartTimeMs?: number;
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline, white text) */
@@ -320,15 +327,24 @@ function StaticWordRendering({
       const processed = processText(text);
       // Check for kana first (romaji)
       if (japaneseRomaji && hasKanaTextLocal(processed)) {
+        if (pronunciationOnly) {
+          return getKanaPronunciationOnly(processed);
+        }
         return renderKanaWithRomaji(processed, "word");
       }
       // Then check Korean
       if (koreanRomanized && KOREAN_REGEX.test(text)) {
         KOREAN_REGEX.lastIndex = 0; // Reset regex state
+        if (pronunciationOnly) {
+          return getKoreanPronunciationOnly(processed);
+        }
         return renderKoreanWithRomanization(processed);
       }
       // Then check Chinese
       if (chinesePinyin && isChineseText(processed)) {
+        if (pronunciationOnly) {
+          return getChinesePronunciationOnly(processed);
+        }
         return renderChineseWithPinyin(processed, "word");
       }
       return processed;
@@ -345,7 +361,9 @@ function StaticWordRendering({
         items.push({
           key: `${idx}-${word.text}`,
           content: mapping.segments.length > 0
-            ? renderFuriganaSegments(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin })
+            ? (pronunciationOnly 
+                ? getFuriganaSegmentsPronunciationOnly(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin })
+                : renderFuriganaSegments(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin }))
             : getWordContent(word.text),
           startTimeMs: word.startTimeMs,
         });
@@ -359,7 +377,7 @@ function StaticWordRendering({
       content: getWordContent(word.text),
       startTimeMs: word.startTimeMs,
     }));
-  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin]);
+  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly]);
 
   const handleWordClick = (wordStartTimeMs: number) => {
     if (onSeekToTime && lineStartTimeMs !== undefined) {
@@ -427,6 +445,7 @@ function WordTimingHighlight({
   koreanRomanized = false,
   japaneseRomaji = false,
   chinesePinyin = false,
+  pronunciationOnly = false,
   onSeekToTime,
   isOldSchoolKaraoke = false,
 }: {
@@ -438,6 +457,8 @@ function WordTimingHighlight({
   koreanRomanized?: boolean;
   japaneseRomaji?: boolean;
   chinesePinyin?: boolean;
+  /** Show only pronunciation (replace original text with phonetic content) */
+  pronunciationOnly?: boolean;
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline white text -> white outline blue text) */
   isOldSchoolKaraoke?: boolean;
@@ -459,15 +480,24 @@ function WordTimingHighlight({
       const processed = processText(text);
       // Check for kana first (romaji)
       if (japaneseRomaji && hasKanaTextLocal(processed)) {
+        if (pronunciationOnly) {
+          return getKanaPronunciationOnly(processed);
+        }
         return renderKanaWithRomaji(processed, "word");
       }
       // Then check Korean
       if (koreanRomanized && KOREAN_REGEX.test(text)) {
         KOREAN_REGEX.lastIndex = 0; // Reset regex state
+        if (pronunciationOnly) {
+          return getKoreanPronunciationOnly(processed);
+        }
         return renderKoreanWithRomanization(processed);
       }
       // Then check Chinese
       if (chinesePinyin && isChineseText(processed)) {
+        if (pronunciationOnly) {
+          return getChinesePronunciationOnly(processed);
+        }
         return renderChineseWithPinyin(processed, "word");
       }
       return processed;
@@ -483,7 +513,9 @@ function WordTimingHighlight({
         if (!mapping || mapping.segments === null) return;
         
         const content = mapping.segments.length > 0
-          ? renderFuriganaSegments(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin })
+          ? (pronunciationOnly 
+              ? getFuriganaSegmentsPronunciationOnly(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin })
+              : renderFuriganaSegments(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin }))
           : getWordContent(word.text);
         
         items.push({
@@ -504,7 +536,7 @@ function WordTimingHighlight({
       content: getWordContent(word.text),
       key: `${idx}-${word.text}`,
     }));
-  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin]);
+  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly]);
 
   // Sync time ref when prop changes
   useEffect(() => {
@@ -1257,6 +1289,7 @@ export function LyricsDisplay({
                     koreanRomanized={!soramimiSegments && showKoreanRomanization}
                     japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
                     chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                    pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}
                   />
@@ -1268,6 +1301,7 @@ export function LyricsDisplay({
                     koreanRomanized={!soramimiSegments && showKoreanRomanization}
                     japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
                     chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                    pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
                     lineStartTimeMs={parseInt(line.startTimeMs, 10)}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}

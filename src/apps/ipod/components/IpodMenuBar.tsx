@@ -422,6 +422,16 @@ export function IpodMenuBar({
               >
                 {t("apps.ipod.menu.pronunciation")}
               </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={romanization?.pronunciationOnly ?? false}
+                onCheckedChange={(checked) =>
+                  setRomanization({ pronunciationOnly: checked })
+                }
+                disabled={!romanization?.enabled}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.pronunciationOnly")}
+              </MenubarCheckboxItem>
               <MenubarSeparator className="h-[2px] bg-black my-1" />
               <MenubarCheckboxItem
                 checked={romanization?.japaneseFurigana ?? true}

@@ -1214,6 +1214,7 @@
         "play": "재생",
         "previous": "이전",
         "pronunciation": "발음",
+        "pronunciationOnly": "발음만",
         "refreshLyrics": "가사 검색...",
         "repeatAll": "모두 반복",
         "repeatOne": "한 곡 반복",

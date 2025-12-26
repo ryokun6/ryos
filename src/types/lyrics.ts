@@ -62,4 +62,6 @@ export interface RomanizationSettings {
   chinese: boolean;
   /** Chinese soramimi (空耳) - misheard lyrics in Chinese characters that phonetically match original (e.g., sorry sorry → 搜哩搜哩) */
   chineseSoramimi: boolean;
+  /** Only pronunciation - replace original text with phonetic content (e.g., 日本 → にほん, 한국 → hanguk) */
+  pronunciationOnly?: boolean;
 }

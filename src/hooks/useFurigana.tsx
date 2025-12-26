@@ -11,6 +11,10 @@ import {
   renderKoreanWithRomanization,
   renderChineseWithPinyin,
   renderKanaWithRomaji,
+  getKoreanPronunciationOnly,
+  getChinesePronunciationOnly,
+  getKanaPronunciationOnly,
+  getFuriganaSegmentsPronunciationOnly,
 } from "@/utils/romanization";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { processFuriganaChunks, processSoramimiChunks, type FuriganaChunkInfo, type SoramimiChunkInfo } from "@/utils/chunkedStream";
@@ -392,12 +396,18 @@ export function useFurigana({
       }
       
       const keyPrefix = `line-${line.startTimeMs}`;
+      const pronunciationOnly = romanization.pronunciationOnly ?? false;
       
       // Chinese soramimi (misheard lyrics) - renders phonetic Chinese over ALL original text
       // This takes priority over all other pronunciation options when enabled
       if (romanization.chineseSoramimi) {
         const soramimiSegments = soramimiMap.get(line.startTimeMs);
         if (soramimiSegments && soramimiSegments.length > 0) {
+          // Pronunciation-only mode: show only the Chinese soramimi readings
+          if (pronunciationOnly) {
+            const pronunciationText = soramimiSegments.map(seg => seg.reading || seg.text).join("");
+            return <span key={keyPrefix}>{pronunciationText}</span>;
+          }
           return (
             <>
               {soramimiSegments.map((segment, index) => {
@@ -428,14 +438,23 @@ export function useFurigana({
       if (!romanization.japaneseFurigana) {
         // Chinese pinyin
         if (romanization.chinese && isChineseText(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getChinesePronunciationOnly(processedText)}</span>;
+          }
           return renderChineseWithPinyin(processedText, keyPrefix);
         }
         // Korean romanization
         if (romanization.korean && hasKoreanText(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getKoreanPronunciationOnly(processedText)}</span>;
+          }
           return renderKoreanWithRomanization(processedText, keyPrefix);
         }
         // Japanese kana to romaji
         if (romanization.japaneseRomaji && hasKanaTextLocal(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getKanaPronunciationOnly(processedText)}</span>;
+          }
           return renderKanaWithRomaji(processedText, keyPrefix);
         }
         return processedText;
@@ -446,18 +465,37 @@ export function useFurigana({
       if (!segments || segments.length === 0) {
         // No furigana available - try other romanization types
         if (romanization.chinese && isChineseText(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getChinesePronunciationOnly(processedText)}</span>;
+          }
           return renderChineseWithPinyin(processedText, keyPrefix);
         }
         if (romanization.korean && hasKoreanText(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getKoreanPronunciationOnly(processedText)}</span>;
+          }
           return renderKoreanWithRomanization(processedText, keyPrefix);
         }
         if (romanization.japaneseRomaji && hasKanaTextLocal(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getKanaPronunciationOnly(processedText)}</span>;
+          }
           return renderKanaWithRomaji(processedText, keyPrefix);
         }
         return processedText;
       }
 
-      // Render furigana segments with all romanization options
+      // Pronunciation-only mode: show only the phonetic readings
+      if (pronunciationOnly) {
+        const options = {
+          koreanRomanization: romanization.korean,
+          japaneseRomaji: romanization.japaneseRomaji,
+          chinesePinyin: romanization.chinese,
+        };
+        return <span key={keyPrefix}>{getFuriganaSegmentsPronunciationOnly(segments, options)}</span>;
+      }
+
+      // Render furigana segments with all romanization options (ruby annotations)
       return (
         <>
           {segments.map((segment, index) => {

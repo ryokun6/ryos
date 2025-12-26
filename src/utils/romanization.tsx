@@ -277,3 +277,162 @@ export function renderTextWithRomanization(
   
   return text;
 }
+
+// ============================================================================
+// Pronunciation-Only Rendering Functions
+// These return only the phonetic content, replacing the original text
+// ============================================================================
+
+/**
+ * Get pronunciation-only text for Korean (romanized form)
+ */
+export function getKoreanPronunciationOnly(text: string): string {
+  let result = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  
+  KOREAN_REGEX.lastIndex = 0;
+  while ((match = KOREAN_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      result += text.slice(lastIndex, match.index);
+    }
+    result += romanizeKorean(match[0]);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    result += text.slice(lastIndex);
+  }
+  
+  return result || text;
+}
+
+/**
+ * Get pronunciation-only text for Chinese (pinyin)
+ */
+export function getChinesePronunciationOnly(text: string): string {
+  // Convert traditional to simplified for accurate pinyin lookup
+  const simplifiedText = traditionalToSimplified(text);
+  
+  // Get pinyin without tone marks for each character
+  const pinyinResult = pinyin(simplifiedText, { type: 'array', toneType: 'none' });
+  const chars = [...text];
+  
+  let result = "";
+  for (let idx = 0; idx < chars.length; idx++) {
+    const char = chars[idx];
+    CHINESE_REGEX.lastIndex = 0;
+    if (CHINESE_REGEX.test(char)) {
+      result += pinyinResult[idx] || char;
+    } else {
+      result += char;
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Get pronunciation-only text for Japanese kana (romaji)
+ */
+export function getKanaPronunciationOnly(text: string): string {
+  let result = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  
+  KANA_REGEX.lastIndex = 0;
+  while ((match = KANA_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      result += text.slice(lastIndex, match.index);
+    }
+    result += toRomaji(match[0]);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    result += text.slice(lastIndex);
+  }
+  
+  return result || text;
+}
+
+/**
+ * Get pronunciation-only text from furigana segments
+ * Returns the reading/pronunciation instead of the original text
+ */
+export function getFuriganaSegmentsPronunciationOnly(
+  segments: FuriganaSegment[],
+  options: RomanizationOptions = {}
+): string {
+  const { koreanRomanization = false, japaneseRomaji = false, chinesePinyin = false } = options;
+  
+  let result = "";
+  
+  for (const segment of segments) {
+    // If segment has a reading (furigana), use that
+    if (segment.reading) {
+      result += japaneseRomaji ? toRomaji(segment.reading) : segment.reading;
+      continue;
+    }
+    
+    // Check for Korean text
+    if (koreanRomanization && hasKoreanText(segment.text)) {
+      result += getKoreanPronunciationOnly(segment.text);
+      continue;
+    }
+    
+    // Check for Chinese text
+    if (chinesePinyin && isChineseText(segment.text)) {
+      result += getChinesePronunciationOnly(segment.text);
+      continue;
+    }
+    
+    // Check for standalone kana
+    if (japaneseRomaji && hasKanaTextLocal(segment.text)) {
+      result += getKanaPronunciationOnly(segment.text);
+      continue;
+    }
+    
+    // Otherwise, keep the original text
+    result += segment.text;
+  }
+  
+  return result;
+}
+
+/**
+ * Render furigana segments as pronunciation-only (plain text replacement)
+ * Returns only the phonetic content without ruby annotations
+ */
+export function renderFuriganaSegmentsPronunciationOnly(
+  segments: FuriganaSegment[],
+  options: RomanizationOptions = {},
+  keyPrefix: string = "pron"
+): React.ReactNode {
+  return <span key={keyPrefix}>{getFuriganaSegmentsPronunciationOnly(segments, options)}</span>;
+}
+
+/**
+ * Get pronunciation-only text based on detected language
+ */
+export function getPronunciationOnlyText(
+  text: string,
+  options: RomanizationOptions
+): string {
+  const { koreanRomanization = false, japaneseRomaji = false, chinesePinyin = false } = options;
+  
+  // Check for Chinese text and get pinyin
+  if (chinesePinyin && isChineseText(text)) {
+    return getChinesePronunciationOnly(text);
+  }
+  
+  // Check for Korean text and get romanization
+  if (koreanRomanization && hasKoreanText(text)) {
+    return getKoreanPronunciationOnly(text);
+  }
+  
+  // Check for Japanese kana and get romaji
+  if (japaneseRomaji && hasKanaTextLocal(text)) {
+    return getKanaPronunciationOnly(text);
+  }
+  
+  return text;
+}

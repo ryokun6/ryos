@@ -1214,6 +1214,7 @@
         "play": "Reproducir",
         "previous": "Anterior",
         "pronunciation": "Pronunciación",
+        "pronunciationOnly": "Solo pronunciación",
         "refreshLyrics": "Buscar letras...",
         "repeatAll": "Repetir todo",
         "repeatOne": "Repetir uno",

@@ -174,6 +174,7 @@ const initialIpodData: IpodData = {
     korean: false,
     chinese: false,
     chineseSoramimi: false,
+    pronunciationOnly: false,
   },
   lyricsTranslationLanguage: LYRICS_TRANSLATION_AUTO,
   currentLyrics: null,
@@ -1256,11 +1257,17 @@ export const useIpodStore = create<IpodState>()(
             korean: oldKoreanDisplay === KoreanDisplay.Romanized || oldKoreanDisplay === "romanized",
             chinese: false,
             chineseSoramimi: false,
+            pronunciationOnly: false,
           };
           
           // Ensure existing romanization settings have chineseSoramimi
           if (state.romanization && state.romanization.chineseSoramimi === undefined) {
             state.romanization.chineseSoramimi = false;
+          }
+          
+          // Ensure existing romanization settings have pronunciationOnly
+          if (state.romanization && state.romanization.pronunciationOnly === undefined) {
+            state.romanization.pronunciationOnly = false;
           }
 
           // Migrate currentIndex to currentSongId (will be null, library will re-initialize)

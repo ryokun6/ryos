@@ -460,6 +460,17 @@ export function FullscreenPlayerControls({
                 >
                   {t("apps.ipod.menu.pronunciation")}
                 </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={romanization.pronunciationOnly ?? false}
+                  onCheckedChange={(checked) => {
+                    onRomanizationChange({ pronunciationOnly: checked });
+                    onInteraction?.();
+                  }}
+                  disabled={!romanization.enabled}
+                  className="text-md h-6 px-3 whitespace-nowrap"
+                >
+                  {t("apps.ipod.menu.pronunciationOnly")}
+                </DropdownMenuCheckboxItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem
                   checked={romanization.japaneseFurigana}
