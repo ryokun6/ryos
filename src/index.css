@@ -452,6 +452,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     margin-top: 0.2em;
   }
 
+  /* Old-school karaoke container needs larger gap between lines due to text-stroke */
+  .lyrics-old-school {
+    gap: clamp(0.5rem, 4cqw, 1.5rem) !important;
+  }
+
   /* Karaoke status text - scales with container */
   .karaoke-status-text {
     font-size: clamp(18px, 5cqmin, 48px);

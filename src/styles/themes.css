@@ -1101,6 +1101,11 @@
   margin-top: 0.2em !important;
 }
 
+/* Old-school karaoke container needs larger gap between lines due to text-stroke */
+:root[data-os-theme="macosx"] .lyrics-old-school {
+  gap: clamp(0.5rem, 4cqw, 1.5rem) !important;
+}
+
 /* Preserve fullscreen lyrics text clamped sizing on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .fullscreen-lyrics-text,
 :root[data-os-theme="macosx"] .karaoke-force-font .fullscreen-lyrics-text {
