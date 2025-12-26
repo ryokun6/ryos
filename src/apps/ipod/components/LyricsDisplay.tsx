@@ -262,6 +262,17 @@ const GLOW_SHADOW = "0 0 6px rgba(255,255,255,0.9), 0 0 6px rgba(0,0,0,0.5), 0 0
 const GLOW_FILTER = "drop-shadow(0 0 6px rgba(255,255,255,0.4))";
 const FEATHER = 15; // Width of the soft edge in percentage
 
+// Old-school karaoke styling (for rounded font)
+// Uses -webkit-text-stroke for clean outlines that scale with text
+const OLD_SCHOOL_OUTLINE_WIDTH = "0.12em";
+const OLD_SCHOOL_BASE_STROKE = `${OLD_SCHOOL_OUTLINE_WIDTH} #000`;
+const OLD_SCHOOL_HIGHLIGHT_STROKE = `${OLD_SCHOOL_OUTLINE_WIDTH} #fff`;
+// Old-school karaoke colors
+const OLD_SCHOOL_BASE_COLOR = "#fff";
+const OLD_SCHOOL_HIGHLIGHT_COLOR = "#0066FF";
+// Horizontal padding for old-school karaoke (scales with text)
+const OLD_SCHOOL_PADDING = "0.2em";
+
 /**
  * CSS-based mask using custom property for GPU-accelerated animation.
  * The gradient is computed in CSS using calc(), avoiding string allocation on every frame.
@@ -282,6 +293,7 @@ function StaticWordRendering({
   chinesePinyin = false,
   lineStartTimeMs,
   onSeekToTime,
+  isOldSchoolKaraoke = false,
 }: {
   wordTimings: LyricWord[];
   processText: (text: string) => string;
@@ -291,6 +303,8 @@ function StaticWordRendering({
   chinesePinyin?: boolean;
   lineStartTimeMs?: number;
   onSeekToTime?: (timeMs: number) => void;
+  /** Use old-school karaoke styling (black outline, white text) */
+  isOldSchoolKaraoke?: boolean;
 }): ReactNode {
   // Pre-compute render items for consistency with animated version
   const renderItems = useMemo(() => {
@@ -354,7 +368,21 @@ function StaticWordRendering({
             className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
             onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.startTimeMs); } : undefined}
           >
-            <span className="opacity-55 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
+            <span 
+              className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : "opacity-55"}`} 
+              style={{ 
+                textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
+                paddingBottom: "0.35em", 
+                marginBottom: "-0.35em",
+                paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
+                paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
+                marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
+                marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
+                color: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_COLOR : undefined,
+                WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_STROKE : undefined,
+                paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
+              } as React.CSSProperties}
+            >
               {item.content}
             </span>
           </span>
@@ -391,6 +419,7 @@ function WordTimingHighlight({
   japaneseRomaji = false,
   chinesePinyin = false,
   onSeekToTime,
+  isOldSchoolKaraoke = false,
 }: {
   wordTimings: LyricWord[];
   lineStartTimeMs: number;
@@ -401,6 +430,8 @@ function WordTimingHighlight({
   japaneseRomaji?: boolean;
   chinesePinyin?: boolean;
   onSeekToTime?: (timeMs: number) => void;
+  /** Use old-school karaoke styling (black outline white text -> white outline blue text) */
+  isOldSchoolKaraoke?: boolean;
 }): ReactNode {
   // Refs for direct DOM manipulation (bypasses React reconciliation)
   const overlayRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -539,28 +570,49 @@ function WordTimingHighlight({
           className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
           onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.word.startTimeMs); } : undefined}
         >
-          <span className="opacity-55 lyrics-word-layer" style={{ textShadow: BASE_SHADOW, paddingBottom: "0.35em", marginBottom: "-0.35em" }}>
+          {/* Base layer: dimmed or old-school white with black outline */}
+          <span 
+            className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : "opacity-55"}`} 
+            style={{ 
+              textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
+              paddingBottom: "0.35em", 
+              marginBottom: "-0.35em",
+              paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
+              paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
+              marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
+              marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
+              color: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_COLOR : undefined,
+              WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_STROKE : undefined,
+              paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
+            } as React.CSSProperties}
+          >
             {item.content}
           </span>
-          {/* Glow wrapper - filter applied here creates glow around masked content */}
+          {/* Highlight layer: glow or old-school blue with white outline */}
           <span
             aria-hidden="true"
             className="lyrics-word-layer"
-            style={{ filter: GLOW_FILTER }}
+            style={{ filter: isOldSchoolKaraoke ? "none" : GLOW_FILTER }}
           >
             {/* Masked text - uses CSS custom property for GPU-accelerated animation */}
             <span
               ref={(el) => { overlayRefs.current[idx] = el; }}
               style={{ 
                 display: "block",
-                color: "rgba(255,255,255,0.9)",
-                textShadow: BASE_SHADOW,
+                color: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "rgba(255,255,255,0.9)",
+                textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW,
+                WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_STROKE : undefined,
+                paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
                 // Use CSS custom property for mask - JS sets --mask-progress (0-1)
                 maskImage: CSS_MASK_GRADIENT,
                 WebkitMaskImage: CSS_MASK_GRADIENT,
                 overflow: "visible",
                 paddingBottom: "0.35em",
                 marginBottom: "-0.35em",
+                paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
+                paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
+                marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
+                marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
               } as React.CSSProperties}
             >
               {item.content}
@@ -576,15 +628,28 @@ const getVariants = (
   position: number,
   isAlternating: boolean,
   isCurrent: boolean,
-  hasWordTiming: boolean = false
+  hasWordTiming: boolean = false,
+  isOldSchoolKaraoke: boolean = false
 ) => {
-  // For lines with word-level timing, glow is handled by the overlay layer
+  // For old-school karaoke, text-stroke is applied via inline styles (not animatable via variants)
+  // For word-timed lines, glow is handled by the overlay layer
   // For other lines, apply glow at the parent level
-  const currentTextShadow = isCurrent && !hasWordTiming ? GLOW_SHADOW : BASE_SHADOW;
+  const getTextShadow = (isCurrentState: boolean) => {
+    if (isOldSchoolKaraoke) {
+      // Old-school uses -webkit-text-stroke, not text-shadow
+      return "none";
+    }
+    // Default: current non-word-timed gets glow, others get base shadow
+    return isCurrentState && !hasWordTiming ? GLOW_SHADOW : BASE_SHADOW;
+  };
   
   // For lines with word timing, use subtle opacity fade for inactive lines
   // For non-word-timed lines, use normal opacity animation
+  // For old-school karaoke, keep full opacity (outlines provide contrast)
   const getAnimateOpacity = () => {
+    // Old-school karaoke: full opacity for all (outlines provide visibility)
+    if (isOldSchoolKaraoke) return 1;
+    
     // Alternating layout: less aggressive dimming
     if (isAlternating) return isCurrent ? 1 : 0.75;
     
@@ -605,7 +670,7 @@ const getVariants = (
   };
 
   // For word-timed lines, start at target opacity to avoid flash on entry
-  const initialOpacity = hasWordTiming ? getAnimateOpacity() : 0;
+  const initialOpacity = hasWordTiming || isOldSchoolKaraoke ? getAnimateOpacity() : 0;
   
   return {
     initial: {
@@ -613,7 +678,7 @@ const getVariants = (
       scale: 0.93,
       filter: "none",
       y: 10,
-      textShadow: BASE_SHADOW,
+      textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW,
     },
     animate: {
       opacity: getAnimateOpacity(),
@@ -624,14 +689,14 @@ const getVariants = (
         : 0.9,
       filter: "none",
       y: 0,
-      textShadow: currentTextShadow,
+      textShadow: getTextShadow(isCurrent),
     },
     exit: {
       opacity: 0,
       scale: 0.9,
       filter: "none",
       y: -10,
-      textShadow: BASE_SHADOW,
+      textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW,
     },
   };
 };
@@ -774,6 +839,9 @@ export function LyricsDisplay({
 
   // For word-level timing, we still need to track Korean romanization state
   const showKoreanRomanization = romanization.enabled && romanization.korean;
+
+  // Detect if old-school karaoke styling should be used (when font is rounded)
+  const isOldSchoolKaraoke = fontClassName.includes("font-lyrics-rounded");
 
   const getTextAlign = (
     align: LyricsAlignment,
@@ -1069,7 +1137,8 @@ export function LyricsDisplay({
             position,
             alignment === LyricsAlignment.Alternating,
             isCurrent,
-            hasWordTimings
+            hasWordTimings,
+            isOldSchoolKaraoke
           );
           // Ensure transitions are extra smooth during offset adjustments
           // For word-timing lines, use subtle fade; word highlights handle the main visual feedback
@@ -1140,6 +1209,16 @@ export function LyricsDisplay({
                             {/* Original lyrics with karaoke highlighting */}
                             <div
                               className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer" : ""}`}
+                              style={
+                                // For old-school karaoke non-word-timed lines, apply stroke and color
+                                isOldSchoolKaraoke && !hasWordTimings
+                                  ? { 
+                                      color: isCurrent ? OLD_SCHOOL_HIGHLIGHT_COLOR : OLD_SCHOOL_BASE_COLOR,
+                                      WebkitTextStroke: isCurrent ? OLD_SCHOOL_HIGHLIGHT_STROKE : OLD_SCHOOL_BASE_STROKE,
+                                      paintOrder: "stroke fill",
+                                    } as React.CSSProperties
+                                  : undefined
+                              }
                               onClick={onSeekToTime && !hasWordTimings ? (e) => { e.stopPropagation(); onSeekToTime(parseInt(line.startTimeMs, 10)); } : undefined}
                             >
                               {shouldUseAnimatedWordTiming ? (
@@ -1157,6 +1236,7 @@ export function LyricsDisplay({
                     japaneseRomaji={romanization.enabled && romanization.japaneseRomaji}
                     chinesePinyin={romanization.enabled && romanization.chinese}
                     onSeekToTime={onSeekToTime}
+                    isOldSchoolKaraoke={isOldSchoolKaraoke}
                   />
                 ) : hasWordTimings ? (
                   <StaticWordRendering
@@ -1172,6 +1252,7 @@ export function LyricsDisplay({
                     chinesePinyin={romanization.enabled && romanization.chinese}
                     lineStartTimeMs={parseInt(line.startTimeMs, 10)}
                     onSeekToTime={onSeekToTime}
+                    isOldSchoolKaraoke={isOldSchoolKaraoke}
                   />
                 ) : (
                   // The hook's renderWithFurigana handles furigana + all romanization types
