@@ -824,10 +824,12 @@ export function LyricsDisplay({
   const linesForFurigana = displayOriginalLines;
 
   // Use external furigana map if provided, otherwise fetch internally
+  // Note: shouldFetchFurigana only controls furigana fetching; soramimi fetching is independent
+  // and always needs lines, so we pass linesForFurigana unconditionally
   const shouldFetchFurigana = !externalFuriganaMap && !!songId;
-  const { renderWithFurigana, furiganaMap: fetchedFuriganaMap } = useFurigana({
+  const { renderWithFurigana, furiganaMap: fetchedFuriganaMap, soramimiMap } = useFurigana({
     songId,
-    lines: shouldFetchFurigana ? linesForFurigana : [],
+    lines: linesForFurigana, // Always pass lines - soramimi needs them even when furigana is pre-fetched
     isShowingOriginal: true, // Always showing original now
     romanization,
     onLoadingChange: shouldFetchFurigana ? onFuriganaLoadingChange : undefined,
@@ -1222,6 +1224,15 @@ export function LyricsDisplay({
                             }}
                           >
                             {/* Original lyrics with karaoke highlighting */}
+                            {/* Determine which annotation segments to use: soramimi takes precedence, then furigana */}
+                            {(() => {
+                              const soramimiSegments = romanization.chineseSoramimi ? soramimiMap.get(line.startTimeMs) : undefined;
+                              const annotationSegments = soramimiSegments ?? (
+                                romanization.enabled && romanization.japaneseFurigana
+                                  ? furiganaMap.get(line.startTimeMs)
+                                  : undefined
+                              );
+                              return (
                             <div
                               className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer lyrics-line-clickable" : ""}`}
                               style={
@@ -1242,14 +1253,10 @@ export function LyricsDisplay({
                     lineStartTimeMs={parseInt(line.startTimeMs, 10)}
                     currentTimeMs={currentTimeMs!}
                     processText={processText}
-                    furiganaSegments={
-                      romanization.enabled && romanization.japaneseFurigana
-                        ? furiganaMap.get(line.startTimeMs)
-                        : undefined
-                    }
-                    koreanRomanized={showKoreanRomanization}
-                    japaneseRomaji={romanization.enabled && romanization.japaneseRomaji}
-                    chinesePinyin={romanization.enabled && romanization.chinese}
+                    furiganaSegments={annotationSegments}
+                    koreanRomanized={!soramimiSegments && showKoreanRomanization}
+                    japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
+                    chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}
                   />
@@ -1257,23 +1264,21 @@ export function LyricsDisplay({
                   <StaticWordRendering
                     wordTimings={line.wordTimings!}
                     processText={processText}
-                    furiganaSegments={
-                      romanization.enabled && romanization.japaneseFurigana
-                        ? furiganaMap.get(line.startTimeMs)
-                        : undefined
-                    }
-                    koreanRomanized={showKoreanRomanization}
-                    japaneseRomaji={romanization.enabled && romanization.japaneseRomaji}
-                    chinesePinyin={romanization.enabled && romanization.chinese}
+                    furiganaSegments={annotationSegments}
+                    koreanRomanized={!soramimiSegments && showKoreanRomanization}
+                    japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
+                    chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
                     lineStartTimeMs={parseInt(line.startTimeMs, 10)}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}
                   />
                 ) : (
-                  // The hook's renderWithFurigana handles furigana + all romanization types
+                  // The hook's renderWithFurigana handles furigana + all romanization types including soramimi
                   renderWithFurigana(line, processedOriginal)
                 )}
               </div>
+                              );
+                            })()}
               {/* Translated subtitle (shown below original when translation is active) */}
               {/* Only show if translation differs from processed original (handles Traditional Chinese conversion) */}
               {/* Uses pre-computed values to avoid calling processText 3x per line */}
