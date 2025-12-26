@@ -20,7 +20,9 @@ const getSystemState = () => {
   const languageStore = useLanguageStore.getState();
 
   const currentVideo = videoStore.getCurrentVideo();
-  const currentTrack = ipodStore.tracks[ipodStore.currentIndex];
+  const currentTrack = ipodStore.currentSongId
+    ? ipodStore.tracks.find((t) => t.id === ipodStore.currentSongId)
+    : ipodStore.tracks[0] ?? null;
 
   // Use new instance-based model
   const openInstances = Object.values(appStore.instances).filter(

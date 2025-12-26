@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -69,7 +69,7 @@ export function IpodMenuBar({
   ];
   const {
     tracks,
-    currentIndex,
+    currentSongId,
     isLoopAll,
     isLoopCurrent,
     isPlaying,
@@ -83,7 +83,7 @@ export function IpodMenuBar({
     romanization,
     lyricsTranslationLanguage,
     // Actions
-    setCurrentIndex,
+    setCurrentSongId,
     setIsPlaying,
     toggleLoopAll,
     toggleLoopCurrent,
@@ -107,7 +107,7 @@ export function IpodMenuBar({
   } = useIpodStoreShallow((s) => ({
     // State
     tracks: s.tracks,
-    currentIndex: s.currentIndex,
+    currentSongId: s.currentSongId,
     isLoopAll: s.loopAll,
     isLoopCurrent: s.loopCurrent,
     isPlaying: s.isPlaying,
@@ -121,7 +121,7 @@ export function IpodMenuBar({
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     // Actions
-    setCurrentIndex: s.setCurrentIndex,
+    setCurrentSongId: s.setCurrentSongId,
     setIsPlaying: s.setIsPlaying,
     toggleLoopAll: s.toggleLoopAll,
     toggleLoopCurrent: s.toggleLoopCurrent,
@@ -150,9 +150,19 @@ export function IpodMenuBar({
   const username = useChatsStore((state) => state.username);
   const isAdmin = username?.toLowerCase() === "ryo";
 
+  // Compute currentIndex from currentSongId
+  const currentIndex = useMemo(() => {
+    if (!currentSongId) return tracks.length > 0 ? 0 : -1;
+    const index = tracks.findIndex((t) => t.id === currentSongId);
+    return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
+  }, [tracks, currentSongId]);
+
   const handlePlayTrack = (index: number) => {
-    setCurrentIndex(index);
-    setIsPlaying(true);
+    const trackId = tracks[index]?.id;
+    if (trackId) {
+      setCurrentSongId(trackId);
+      setIsPlaying(true);
+    }
   };
 
   // Group tracks by artist

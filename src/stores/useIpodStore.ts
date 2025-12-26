@@ -37,7 +37,8 @@ type LibraryState = "uninitialized" | "loaded" | "cleared";
 
 interface IpodData {
   tracks: Track[];
-  currentIndex: number;
+  /** The ID of the currently playing song */
+  currentSongId: string | null;
   loopCurrent: boolean;
   loopAll: boolean;
   isShuffled: boolean;
@@ -151,7 +152,7 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
 
 const initialIpodData: IpodData = {
   tracks: [],
-  currentIndex: 0,
+  currentSongId: null,
   loopCurrent: false,
   loopAll: true,
   isShuffled: true,
@@ -185,8 +186,20 @@ const initialIpodData: IpodData = {
   historyPosition: -1,
 };
 
+/** Helper to get current index from song ID */
+function getIndexFromSongId(tracks: Track[], songId: string | null): number {
+  if (!songId || tracks.length === 0) return -1;
+  const index = tracks.findIndex((t) => t.id === songId);
+  return index >= 0 ? index : -1;
+}
+
 export interface IpodState extends IpodData {
-  setCurrentIndex: (index: number) => void;
+  /** Set the current song by ID */
+  setCurrentSongId: (songId: string | null) => void;
+  /** Get the current track (computed from currentSongId) */
+  getCurrentTrack: () => Track | null;
+  /** Get the current track index (computed from currentSongId) */
+  getCurrentIndex: () => number;
   toggleLoopCurrent: () => void;
   toggleLoopAll: () => void;
   toggleShuffle: () => void;
@@ -254,7 +267,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSource: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 24; // Add unified romanization settings
+const CURRENT_IPOD_STORE_VERSION = 25; // Replace currentIndex with currentSongId
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -265,29 +278,24 @@ function getUnplayedTrackIds(
   return tracks.map((track) => track.id).filter((id) => !playedIds.has(id));
 }
 
-// Helper function to get a random track avoiding recently played songs
-function getRandomTrackAvoidingRecent(
+// Helper function to get a random track ID avoiding recently played songs
+function getRandomTrackIdAvoidingRecent(
   tracks: Track[],
   playbackHistory: string[],
-  currentIndex: number
-): number {
-  if (tracks.length === 0) return -1;
-  if (tracks.length === 1) return 0;
+  currentSongId: string | null
+): string | null {
+  if (tracks.length === 0) return null;
+  if (tracks.length === 1) return tracks[0].id;
 
   // Get unplayed tracks first (tracks that have never been played)
   const unplayedIds = getUnplayedTrackIds(tracks, playbackHistory);
 
   // If we have unplayed tracks, prioritize them
   if (unplayedIds.length > 0) {
-    const availableUnplayed = unplayedIds.filter((id) => {
-      const trackIndex = tracks.findIndex((track) => track.id === id);
-      return trackIndex !== currentIndex;
-    });
+    const availableUnplayed = unplayedIds.filter((id) => id !== currentSongId);
 
     if (availableUnplayed.length > 0) {
-      const randomUnplayedId =
-        availableUnplayed[Math.floor(Math.random() * availableUnplayed.length)];
-      return tracks.findIndex((track) => track.id === randomUnplayedId);
+      return availableUnplayed[Math.floor(Math.random() * availableUnplayed.length)];
     }
   }
 
@@ -298,32 +306,25 @@ function getRandomTrackAvoidingRecent(
   const recentIds = new Set(recentTrackIds);
 
   // Find tracks that haven't been played recently
-  const availableIndices = tracks
-    .map((_, index) => index)
-    .filter((index) => {
-      const trackId = tracks[index].id;
-      return !recentIds.has(trackId) && index !== currentIndex;
-    });
+  const availableIds = tracks
+    .map((track) => track.id)
+    .filter((id) => !recentIds.has(id) && id !== currentSongId);
 
-  if (availableIndices.length > 0) {
-    return availableIndices[
-      Math.floor(Math.random() * availableIndices.length)
-    ];
+  if (availableIds.length > 0) {
+    return availableIds[Math.floor(Math.random() * availableIds.length)];
   }
 
   // If all tracks have been played recently, just pick any track except current
-  const allIndicesExceptCurrent = tracks
-    .map((_, index) => index)
-    .filter((index) => index !== currentIndex);
+  const allIdsExceptCurrent = tracks
+    .map((track) => track.id)
+    .filter((id) => id !== currentSongId);
 
-  if (allIndicesExceptCurrent.length > 0) {
-    return allIndicesExceptCurrent[
-      Math.floor(Math.random() * allIndicesExceptCurrent.length)
-    ];
+  if (allIdsExceptCurrent.length > 0) {
+    return allIdsExceptCurrent[Math.floor(Math.random() * allIdsExceptCurrent.length)];
   }
 
-  // Fallback: return current index if it's the only option
-  return currentIndex;
+  // Fallback: return current song ID if it's the only option
+  return currentSongId;
 }
 
 // Helper function to update playback history
@@ -522,30 +523,31 @@ export const useIpodStore = create<IpodState>()(
     (set, get) => ({
       ...initialIpodData,
       // --- Actions ---
-      setCurrentIndex: (index) =>
+      setCurrentSongId: (songId) =>
         set((state) => {
           // Only update playback history if we're actually changing tracks
-          if (
-            index !== state.currentIndex &&
-            index >= 0 &&
-            index < state.tracks.length
-          ) {
-            const currentTrackId = state.tracks[state.currentIndex]?.id;
-            const newPlaybackHistory = currentTrackId
-              ? updatePlaybackHistory(state.playbackHistory, currentTrackId)
+          if (songId !== state.currentSongId) {
+            const newPlaybackHistory = state.currentSongId
+              ? updatePlaybackHistory(state.playbackHistory, state.currentSongId)
               : state.playbackHistory;
 
             return {
-              currentIndex: index,
+              currentSongId: songId,
               playbackHistory: newPlaybackHistory,
               historyPosition: -1,
             };
           }
-
-          return {
-            currentIndex: index,
-          };
+          return {};
         }),
+      getCurrentTrack: () => {
+        const state = get();
+        if (!state.currentSongId) return state.tracks[0] ?? null;
+        return state.tracks.find((t) => t.id === state.currentSongId) ?? null;
+      },
+      getCurrentIndex: () => {
+        const state = get();
+        return getIndexFromSongId(state.tracks, state.currentSongId);
+      },
       toggleLoopCurrent: () =>
         set((state) => ({ loopCurrent: !state.loopCurrent })),
       toggleLoopAll: () => set((state) => ({ loopAll: !state.loopAll })),
@@ -590,7 +592,7 @@ export const useIpodStore = create<IpodState>()(
       addTrack: (track) =>
         set((state) => ({
           tracks: [track, ...state.tracks],
-          currentIndex: 0,
+          currentSongId: track.id,
           isPlaying: true,
           libraryState: "loaded",
           playbackHistory: [], // Clear playback history when adding new tracks
@@ -599,7 +601,7 @@ export const useIpodStore = create<IpodState>()(
       clearLibrary: () =>
         set({
           tracks: [],
-          currentIndex: -1,
+          currentSongId: null,
           isPlaying: false,
           libraryState: "cleared",
           playbackHistory: [], // Clear playback history when clearing library
@@ -609,7 +611,7 @@ export const useIpodStore = create<IpodState>()(
         const { tracks, version } = await loadDefaultTracks();
         set({
           tracks,
-          currentIndex: tracks.length > 0 ? 0 : -1,
+          currentSongId: tracks[0]?.id ?? null,
           isPlaying: false,
           libraryState: "loaded",
           lastKnownVersion: version,
@@ -620,45 +622,46 @@ export const useIpodStore = create<IpodState>()(
       nextTrack: () =>
         set((state) => {
           if (state.tracks.length === 0)
-            return { currentIndex: -1 };
+            return { currentSongId: null };
 
           // Add current track to history before moving to next
-          const currentTrackId = state.tracks[state.currentIndex]?.id;
           let newPlaybackHistory = state.playbackHistory;
-          if (currentTrackId && !state.loopCurrent) {
+          if (state.currentSongId && !state.loopCurrent) {
             newPlaybackHistory = updatePlaybackHistory(
               state.playbackHistory,
-              currentTrackId
+              state.currentSongId
             );
           }
 
-          let next: number;
+          let nextSongId: string | null;
 
           if (state.loopCurrent) {
             // If looping current track, stay on the same track
-            next = state.currentIndex;
+            nextSongId = state.currentSongId;
           } else if (state.isShuffled) {
             // Shuffle mode: pick a random track avoiding recent ones
-            next = getRandomTrackAvoidingRecent(
+            nextSongId = getRandomTrackIdAvoidingRecent(
               state.tracks,
               newPlaybackHistory,
-              state.currentIndex
+              state.currentSongId
             );
           } else {
             // Sequential mode
-            next = (state.currentIndex + 1) % state.tracks.length;
+            const currentIndex = getIndexFromSongId(state.tracks, state.currentSongId);
+            const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % state.tracks.length;
 
             // If we've reached the end and loop all is off, stop
-            if (!state.loopAll && next === 0) {
+            if (!state.loopAll && nextIndex === 0 && currentIndex !== -1) {
               return {
-                currentIndex: state.tracks.length - 1,
+                currentSongId: state.tracks[state.tracks.length - 1]?.id ?? null,
                 isPlaying: false,
               };
             }
+            nextSongId = state.tracks[nextIndex]?.id ?? null;
           }
 
           return {
-            currentIndex: next,
+            currentSongId: nextSongId,
             isPlaying: true,
             playbackHistory: newPlaybackHistory,
             historyPosition: -1, // Always reset to end when moving forward
@@ -667,44 +670,40 @@ export const useIpodStore = create<IpodState>()(
       previousTrack: () =>
         set((state) => {
           if (state.tracks.length === 0)
-            return { currentIndex: -1 };
+            return { currentSongId: null };
 
-          let prev: number;
+          let prevSongId: string | null;
           let newPlaybackHistory = state.playbackHistory;
 
           if (state.isShuffled && state.playbackHistory.length > 0) {
             // In shuffle mode, go back to the last played track from history
-            const lastTrackId =
-              state.playbackHistory[state.playbackHistory.length - 1];
-            const lastTrackIndex = state.tracks.findIndex(
-              (track) => track.id === lastTrackId
-            );
+            const lastTrackId = state.playbackHistory[state.playbackHistory.length - 1];
+            const lastTrackExists = state.tracks.some((track) => track.id === lastTrackId);
 
-            if (
-              lastTrackIndex !== -1 &&
-              lastTrackIndex !== state.currentIndex
-            ) {
+            if (lastTrackExists && lastTrackId !== state.currentSongId) {
               // Found the previous track in history
-              prev = lastTrackIndex;
+              prevSongId = lastTrackId;
               // Remove it from history since we're going back to it
               newPlaybackHistory = state.playbackHistory.slice(0, -1);
             } else {
               // No valid history, pick a random track
-              prev = getRandomTrackAvoidingRecent(
+              prevSongId = getRandomTrackIdAvoidingRecent(
                 state.tracks,
                 state.playbackHistory,
-                state.currentIndex
+                state.currentSongId
               );
             }
           } else {
             // Sequential mode or no history
-            prev =
-              (state.currentIndex - 1 + state.tracks.length) %
-              state.tracks.length;
+            const currentIndex = getIndexFromSongId(state.tracks, state.currentSongId);
+            const prevIndex = currentIndex <= 0 
+              ? state.tracks.length - 1 
+              : currentIndex - 1;
+            prevSongId = state.tracks[prevIndex]?.id ?? null;
           }
 
           return {
-            currentIndex: prev,
+            currentSongId: prevSongId,
             isPlaying: true,
             playbackHistory: newPlaybackHistory,
             historyPosition: -1,
@@ -720,7 +719,7 @@ export const useIpodStore = create<IpodState>()(
         })),
       clearLyricsCache: () => {
         const state = get();
-        const currentTrack = state.tracks[state.currentIndex];
+        const currentTrack = state.getCurrentTrack();
         
         // Clear server-side cache for translations and furigana
         if (currentTrack?.id) {
@@ -824,7 +823,7 @@ export const useIpodStore = create<IpodState>()(
           }
           set({
             tracks: importedTracks,
-            currentIndex: importedTracks.length > 0 ? 0 : -1,
+            currentSongId: importedTracks[0]?.id ?? null,
             isPlaying: false,
             libraryState: "loaded",
             playbackHistory: [], // Clear playback history when importing library
@@ -846,7 +845,7 @@ export const useIpodStore = create<IpodState>()(
           const { tracks, version } = await loadDefaultTracks();
           set({
             tracks,
-            currentIndex: tracks.length > 0 ? 0 : -1,
+            currentSongId: tracks[0]?.id ?? null,
             libraryState: "loaded",
             lastKnownVersion: version,
             playbackHistory: [], // Clear playback history when initializing library
@@ -911,9 +910,8 @@ export const useIpodStore = create<IpodState>()(
         if (existingTrack) {
           console.log(`[iPod Store] Track ${videoId} already exists in library, skipping metadata fetch`);
           // Set as current track and optionally autoplay
-          const existingIndex = get().tracks.findIndex((track) => track.id === videoId);
           set({
-            currentIndex: existingIndex,
+            currentSongId: videoId,
             isPlaying: autoPlay,
           });
           return existingTrack;
@@ -1154,8 +1152,10 @@ export const useIpodStore = create<IpodState>()(
               lastKnownVersion: serverVersion,
               libraryState: "loaded",
               // If library was empty and we added tracks, set first song as current
-              currentIndex:
-                wasEmpty && finalTracks.length > 0 ? 0 : current.currentIndex,
+              currentSongId:
+                wasEmpty && finalTracks.length > 0 
+                  ? finalTracks[0]?.id ?? null 
+                  : current.currentSongId,
               // Reset playing state if we're setting a new current track
               isPlaying:
                 wasEmpty && finalTracks.length > 0 ? false : current.isPlaying,
@@ -1215,28 +1215,28 @@ export const useIpodStore = create<IpodState>()(
       name: "ryos:ipod", // Unique name for localStorage persistence
       version: CURRENT_IPOD_STORE_VERSION, // Set the current version
       partialize: (state) => ({
-        // Keep tracks and originalOrder here initially for migration
         tracks: state.tracks,
-        currentIndex: state.currentIndex,
+        currentSongId: state.currentSongId,
         loopAll: state.loopAll,
         loopCurrent: state.loopCurrent,
         isShuffled: state.isShuffled,
         theme: state.theme,
         lcdFilterOn: state.lcdFilterOn,
-        showLyrics: state.showLyrics, // Persist lyrics visibility
+        showLyrics: state.showLyrics,
         lyricsAlignment: state.lyricsAlignment,
-        lyricsFont: state.lyricsFont, // Persist lyrics font style
+        lyricsFont: state.lyricsFont,
         chineseVariant: state.chineseVariant,
-        koreanDisplay: state.koreanDisplay, // Kept for backwards compatibility
-        japaneseFurigana: state.japaneseFurigana, // Kept for backwards compatibility
-        romanization: state.romanization, // New unified romanization settings
-        lyricsTranslationLanguage: state.lyricsTranslationLanguage, // Persist translation language preference
+        koreanDisplay: state.koreanDisplay,
+        japaneseFurigana: state.japaneseFurigana,
+        romanization: state.romanization,
+        lyricsTranslationLanguage: state.lyricsTranslationLanguage,
         isFullScreen: state.isFullScreen,
         libraryState: state.libraryState,
         lastKnownVersion: state.lastKnownVersion,
       }),
       migrate: (persistedState, version) => {
-        let state = persistedState as IpodState; // Type assertion
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let state = persistedState as any;
 
         // If the persisted version is older than the current version, update defaults
         if (version < CURRENT_IPOD_STORE_VERSION) {
@@ -1245,64 +1245,56 @@ export const useIpodStore = create<IpodState>()(
           );
           
           // Migrate old romanization settings to new unified format
-          // Cast to string for legacy value comparison (old stores may have string values)
           const oldKoreanDisplay = state.koreanDisplay as string | undefined;
           const oldJapaneseFurigana = state.japaneseFurigana as string | undefined;
           
-          // Create romanization settings from old values
           const romanization: RomanizationSettings = state.romanization ?? {
-            enabled: true, // Default to enabled for backwards compatibility
+            enabled: true,
             japaneseFurigana: oldJapaneseFurigana === JapaneseFurigana.On || oldJapaneseFurigana === "on" || oldJapaneseFurigana === undefined,
-            japaneseRomaji: false, // New feature, default off
+            japaneseRomaji: false,
             korean: oldKoreanDisplay === KoreanDisplay.Romanized || oldKoreanDisplay === "romanized",
-            chinese: false, // New feature, default off
+            chinese: false,
           };
-          
+
+          // Migrate currentIndex to currentSongId (will be null, library will re-initialize)
           state = {
             ...state,
             tracks: [],
-            currentIndex: 0,
+            currentSongId: null, // Reset - library will re-initialize
             isPlaying: false,
-            isShuffled: state.isShuffled, // Keep shuffle preference maybe? Or reset? Let's keep it for now.
-            showLyrics: state.showLyrics ?? true, // Add default for migration
-            lyricsAlignment:
-              state.lyricsAlignment ?? LyricsAlignment.Alternating,
+            isShuffled: state.isShuffled,
+            showLyrics: state.showLyrics ?? true,
+            lyricsAlignment: state.lyricsAlignment ?? LyricsAlignment.Alternating,
             lyricsFont: state.lyricsFont ?? LyricsFont.Rounded,
             chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
             romanization,
-            lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? LYRICS_TRANSLATION_AUTO, // Default to auto (ryOS locale)
-            libraryState: "uninitialized" as LibraryState, // Reset to uninitialized on migration
+            lyricsTranslationLanguage: state.lyricsTranslationLanguage ?? LYRICS_TRANSLATION_AUTO,
+            libraryState: "uninitialized" as LibraryState,
             lastKnownVersion: state.lastKnownVersion ?? 0,
           };
         }
-        // Clean up potentially outdated fields if needed in future migrations
-        // Example: delete state.someOldField;
 
-        // Ensure the returned state matches the latest IpodStoreState structure
-        // Remove fields not present in the latest partialize if necessary
-        const partializedState = {
+        return {
           tracks: state.tracks,
-          currentIndex: state.currentIndex,
+          currentSongId: state.currentSongId,
           loopAll: state.loopAll,
           loopCurrent: state.loopCurrent,
           isShuffled: state.isShuffled,
           theme: state.theme,
           lcdFilterOn: state.lcdFilterOn,
-          showLyrics: state.showLyrics, // Persist lyrics visibility
+          showLyrics: state.showLyrics,
           lyricsAlignment: state.lyricsAlignment,
-          lyricsFont: state.lyricsFont, // Persist lyrics font style
+          lyricsFont: state.lyricsFont,
           chineseVariant: state.chineseVariant,
           koreanDisplay: state.koreanDisplay,
           japaneseFurigana: state.japaneseFurigana,
           romanization: state.romanization ?? initialIpodData.romanization,
-          lyricsTranslationLanguage: state.lyricsTranslationLanguage, // Persist translation language preference
+          lyricsTranslationLanguage: state.lyricsTranslationLanguage,
           isFullScreen: state.isFullScreen,
           libraryState: state.libraryState,
-        };
-
-        return partializedState as IpodState; // Return the potentially migrated state
+        } as IpodState;
       },
       onRehydrateStorage: () => {
         return (state, error) => {

@@ -406,7 +406,7 @@ export function useFileSystem(
   const launchApp = useLaunchApp();
   const {
     tracks: ipodTracks,
-    setCurrentIndex: setIpodIndex,
+    setCurrentSongId: setIpodSongId,
     setIsPlaying: setIpodPlaying,
   } = useIpodStore();
   const {
@@ -597,18 +597,15 @@ export function useFileSystem(
         );
 
         // Display all tracks for this artist
-        displayFiles = artistTracks.map((track) => {
-          const globalIndex = ipodTracks.findIndex((t) => t.id === track.id);
-          return {
-            name: `${track.title}.mp3`,
-            isDirectory: false,
-            path: `/Music/${track.id}`,
-            icon: "/icons/sound.png",
-            appId: "ipod",
-            type: "Music",
-            data: { index: globalIndex },
-          };
-        });
+        displayFiles = artistTracks.map((track) => ({
+          name: `${track.title}.mp3`,
+          isDirectory: false,
+          path: `/Music/${track.id}`,
+          icon: "/icons/sound.png",
+          appId: "ipod",
+          type: "Music",
+          data: { songId: track.id },
+        }));
       } else if (currentPath === "/Videos") {
         // At root videos directory, show artist folders
         const artistSet = new Set<string>();
@@ -1097,10 +1094,9 @@ export function useFileSystem(
               e
             );
           }
-        } else if (file.appId === "ipod" && file.data?.index !== undefined) {
-          // iPod uses data directly from the index we calculated
-          const trackIndex = file.data.index;
-          setIpodIndex(trackIndex);
+        } else if (file.appId === "ipod" && file.data?.songId) {
+          // iPod uses song ID directly
+          setIpodSongId(file.data.songId);
           setIpodPlaying(true);
           launchApp("ipod");
         } else if (file.appId === "videos" && file.data?.videoId) {
@@ -1130,7 +1126,7 @@ export function useFileSystem(
     [
       launchApp,
       navigateToPath,
-      setIpodIndex,
+      setIpodSongId,
       setIpodPlaying,
       setVideoIndex,
       setVideoPlaying,

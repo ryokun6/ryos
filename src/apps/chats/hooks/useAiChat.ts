@@ -289,20 +289,14 @@ const getSystemState = () => {
   const languageStore = useLanguageStore.getState();
 
   const currentVideo = videoStore.getCurrentVideo();
-  const currentTrack =
-    ipodStore.tracks &&
-    ipodStore.currentIndex >= 0 &&
-    ipodStore.currentIndex < ipodStore.tracks.length
-      ? ipodStore.tracks[ipodStore.currentIndex]
-      : null;
+  const currentTrack = ipodStore.currentSongId
+    ? ipodStore.tracks.find((t) => t.id === ipodStore.currentSongId)
+    : ipodStore.tracks[0] ?? null;
   
   // Karaoke uses the shared track library from iPod store
-  const karaokeCurrentTrack =
-    ipodStore.tracks &&
-    karaokeStore.currentIndex >= 0 &&
-    karaokeStore.currentIndex < ipodStore.tracks.length
-      ? ipodStore.tracks[karaokeStore.currentIndex]
-      : null;
+  const karaokeCurrentTrack = karaokeStore.currentSongId
+    ? ipodStore.tracks.find((t) => t.id === karaokeStore.currentSongId)
+    : ipodStore.tracks[0] ?? null;
 
   // Detect user's operating system
   const userOS = detectUserOS();
@@ -960,9 +954,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Play iPod song by ID
                 const songId = path.replace("/Music/", "");
                 const ipodState = useIpodStore.getState();
-                const trackIndex = ipodState.tracks.findIndex((t) => t.id === songId);
+                const track = ipodState.tracks.find((t) => t.id === songId);
 
-                if (trackIndex === -1) {
+                if (!track) {
                   throw new Error(`Song not found: ${songId}`);
                 }
 
@@ -973,10 +967,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   launchApp("ipod");
                 }
 
-                ipodState.setCurrentIndex(trackIndex);
+                ipodState.setCurrentSongId(songId);
                 ipodState.setIsPlaying(true);
 
-                const track = ipodState.tracks[trackIndex];
                 const playingMessage = track.artist
                   ? i18n.t("apps.chats.toolCalls.playingTrackByArtist", { title: track.title, artist: track.artist })
                   : i18n.t("apps.chats.toolCalls.playingTrack", { title: track.title });

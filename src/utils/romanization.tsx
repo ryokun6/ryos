@@ -230,17 +230,17 @@ export function renderFuriganaSegments(
         
         // Check for Korean text when romanization is enabled
         if (koreanRomanization && hasKoreanText(segment.text)) {
-          return renderKoreanWithRomanization(segment.text, `seg-${index}`);
+          return <span key={index}>{renderKoreanWithRomanization(segment.text, `seg-${index}`)}</span>;
         }
         
         // Check for Chinese text when pinyin is enabled
         if (chinesePinyin && isChineseText(segment.text)) {
-          return renderChineseWithPinyin(segment.text, `seg-${index}`);
+          return <span key={index}>{renderChineseWithPinyin(segment.text, `seg-${index}`)}</span>;
         }
         
         // Check for standalone kana when romaji is enabled
         if (japaneseRomaji && hasKanaTextLocal(segment.text)) {
-          return renderKanaWithRomaji(segment.text, `seg-${index}`);
+          return <span key={index}>{renderKanaWithRomaji(segment.text, `seg-${index}`)}</span>;
         }
         
         return <span key={index}>{segment.text}</span>;

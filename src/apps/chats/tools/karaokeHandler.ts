@@ -246,7 +246,9 @@ const handlePlaybackState = (
   const updatedKaraoke = useKaraokeStore.getState();
   const nowPlaying = updatedKaraoke.isPlaying;
   const ipodTracks = useIpodStore.getState().tracks;
-  const track = ipodTracks[updatedKaraoke.currentIndex];
+  const track = updatedKaraoke.currentSongId
+    ? ipodTracks.find((t) => t.id === updatedKaraoke.currentSongId)
+    : ipodTracks[0];
 
   let playbackState: string;
   if (track) {
@@ -338,8 +340,8 @@ const handlePlayKnown = (
   const track = tracks[randomIndex];
   const trackDescForLog = formatTrackDescription(track.title, track.artist);
 
-  const { setCurrentIndex, setIsPlaying } = useKaraokeStore.getState();
-  setCurrentIndex(randomIndex);
+  const { setCurrentSongId, setIsPlaying } = useKaraokeStore.getState();
+  setCurrentSongId(track?.id ?? null);
 
   // On iOS, don't auto-play
   if (isIOS) {
@@ -409,9 +411,9 @@ const handleAddAndPlay = async (
     const addedTrack = await useIpodStore.getState().addTrackFromVideoId(id, false);
 
     if (addedTrack) {
-      // Set karaoke to play the newly added track (added at index 0)
-      const { setCurrentIndex, setIsPlaying } = useKaraokeStore.getState();
-      setCurrentIndex(0);
+      // Set karaoke to play the newly added track
+      const { setCurrentSongId, setIsPlaying } = useKaraokeStore.getState();
+      setCurrentSongId(addedTrack.id);
 
       // On iOS, don't auto-play
       if (!isIOS) {
@@ -509,7 +511,9 @@ const handleNavigation = (
 
   const updatedKaraoke = useKaraokeStore.getState();
   const ipodTracks = useIpodStore.getState().tracks;
-  const track = ipodTracks[updatedKaraoke.currentIndex];
+  const track = updatedKaraoke.currentSongId
+    ? ipodTracks.find((t) => t.id === updatedKaraoke.currentSongId)
+    : ipodTracks[0];
 
   if (track) {
     const desc = formatTrackDescription(track.title, track.artist);

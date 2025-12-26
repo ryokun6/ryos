@@ -103,12 +103,9 @@ const getSystemState = () => {
   const textEditStore = useTextEditStore.getState();
 
   const currentVideo = videoStore.getCurrentVideo();
-  const currentTrack =
-    ipodStore.tracks &&
-    ipodStore.currentIndex >= 0 &&
-    ipodStore.currentIndex < ipodStore.tracks.length
-      ? ipodStore.tracks[ipodStore.currentIndex]
-      : null;
+  const currentTrack = ipodStore.currentSongId
+    ? ipodStore.tracks.find((t) => t.id === ipodStore.currentSongId)
+    : ipodStore.tracks[0] ?? null;
 
   // Detect user's operating system
   const userOS = detectUserOS();

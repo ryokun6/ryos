@@ -61,7 +61,7 @@ export function IpodAppComponent({
   // Store state
   const {
     tracks,
-    currentIndex,
+    currentSongId,
     loopCurrent,
     loopAll,
     isShuffled,
@@ -71,7 +71,7 @@ export function IpodAppComponent({
   } = useIpodStore(
     useShallow((s) => ({
       tracks: s.tracks,
-      currentIndex: s.currentIndex,
+      currentSongId: s.currentSongId,
       loopCurrent: s.loopCurrent,
       loopAll: s.loopAll,
       isShuffled: s.isShuffled,
@@ -80,6 +80,13 @@ export function IpodAppComponent({
       backlightOn: s.backlightOn,
     }))
   );
+
+  // Compute currentIndex from currentSongId
+  const currentIndex = useMemo(() => {
+    if (!currentSongId) return tracks.length > 0 ? 0 : -1;
+    const index = tracks.findIndex((t) => t.id === currentSongId);
+    return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
+  }, [tracks, currentSongId]);
 
   const {
     theme,
@@ -95,7 +102,7 @@ export function IpodAppComponent({
     lyricsTranslationLanguage,
     isFullScreen,
     toggleFullScreen,
-    setCurrentIndex,
+    setCurrentSongId,
     toggleLoopAll,
     toggleLoopCurrent,
     toggleShuffle,
@@ -126,7 +133,7 @@ export function IpodAppComponent({
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     isFullScreen: s.isFullScreen,
     toggleFullScreen: s.toggleFullScreen,
-    setCurrentIndex: s.setCurrentIndex,
+    setCurrentSongId: s.setCurrentSongId,
     toggleLoopAll: s.toggleLoopAll,
     toggleLoopCurrent: s.toggleLoopCurrent,
     toggleShuffle: s.toggleShuffle,
@@ -146,7 +153,12 @@ export function IpodAppComponent({
   }));
 
   const lyricOffset = useIpodStore(
-    (s) => s.tracks[s.currentIndex]?.lyricOffset ?? 0
+    (s) => {
+      const track = s.currentSongId 
+        ? s.tracks.find((t) => t.id === s.currentSongId) 
+        : s.tracks[0];
+      return track?.lyricOffset ?? 0;
+    }
   );
 
   const prevIsForeground = useRef(isForeground);
@@ -195,11 +207,11 @@ export function IpodAppComponent({
   // Menu state
   const initialMenuMode = useMemo(() => {
     const storeState = useIpodStore.getState();
-    return !(
-      storeState.tracks.length > 0 &&
-      storeState.currentIndex >= 0 &&
-      storeState.currentIndex < storeState.tracks.length
+    const hasValidTrack = storeState.tracks.length > 0 && (
+      !storeState.currentSongId || 
+      storeState.tracks.some((t) => t.id === storeState.currentSongId)
     );
+    return !hasValidTrack;
   }, []);
 
   const [menuMode, setMenuMode] = useState(initialMenuMode);
@@ -454,7 +466,7 @@ export function IpodAppComponent({
                 menuHistoryBeforeNowPlayingRef.current = updatedHistory;
                 return updatedHistory;
               });
-              setCurrentIndex(index);
+              setCurrentSongId(track.id);
               setIsPlaying(true);
               setMenuDirection("forward");
               setMenuMode(false);
@@ -478,7 +490,7 @@ export function IpodAppComponent({
         action: () => {
           registerActivity();
           setMenuDirection("forward");
-          const artistTracks = tracksByArtist[artist].map(({ track, index }, trackListIndex) => ({
+          const artistTracks = tracksByArtist[artist].map(({ track }, trackListIndex) => ({
             label: track.title,
             action: () => {
               registerActivity();
@@ -494,7 +506,7 @@ export function IpodAppComponent({
                 menuHistoryBeforeNowPlayingRef.current = updatedHistory;
                 return updatedHistory;
               });
-              setCurrentIndex(index);
+              setCurrentSongId(track.id);
               setIsPlaying(true);
               setMenuDirection("forward");
               setMenuMode(false);
@@ -514,7 +526,7 @@ export function IpodAppComponent({
         showChevron: true,
       })),
     ];
-  }, [tracks, registerActivity, setCurrentIndex, setIsPlaying, toggleVideo, isOffline, showOfflineStatus, t]);
+  }, [tracks, registerActivity, setCurrentSongId, setIsPlaying, toggleVideo, isOffline, showOfflineStatus, t]);
 
   const settingsMenuItems = useMemo(() => {
     return [
@@ -661,7 +673,7 @@ export function IpodAppComponent({
             menuHistoryBeforeNowPlayingRef.current = updatedHist;
             return updatedHist;
           });
-          setCurrentIndex(trackIndex);
+          setCurrentSongId(track.id);
           setIsPlaying(true);
           setMenuDirection("forward");
           setMenuMode(false);
@@ -679,39 +691,36 @@ export function IpodAppComponent({
       );
       if (artistTracks.length > 0) {
         // This is an artist submenu, rebuild it
-        return artistTracks.map((track, trackListIndex) => {
-          const originalIndex = tracks.findIndex((tr) => tr.id === track.id);
-          return {
-            label: track.title,
-            action: () => {
-              registerActivity();
-              setMenuHistory((prev) => {
-                const updatedHist = [...prev];
-                if (updatedHist.length > 0) {
-                  updatedHist[updatedHist.length - 1] = {
-                    ...updatedHist[updatedHist.length - 1],
-                    selectedIndex: trackListIndex,
-                  };
-                }
-                menuHistoryBeforeNowPlayingRef.current = updatedHist;
-                return updatedHist;
-              });
-              setCurrentIndex(originalIndex);
-              setIsPlaying(true);
-              setMenuDirection("forward");
-              setMenuMode(false);
-              setCameFromNowPlayingMenuItem(false);
-              if (useIpodStore.getState().showVideo) {
-                toggleVideo();
+        return artistTracks.map((track, trackListIndex) => ({
+          label: track.title,
+          action: () => {
+            registerActivity();
+            setMenuHistory((prev) => {
+              const updatedHist = [...prev];
+              if (updatedHist.length > 0) {
+                updatedHist[updatedHist.length - 1] = {
+                  ...updatedHist[updatedHist.length - 1],
+                  selectedIndex: trackListIndex,
+                };
               }
-            },
-            showChevron: false,
-          };
-        });
+              menuHistoryBeforeNowPlayingRef.current = updatedHist;
+              return updatedHist;
+            });
+            setCurrentSongId(track.id);
+            setIsPlaying(true);
+            setMenuDirection("forward");
+            setMenuMode(false);
+            setCameFromNowPlayingMenuItem(false);
+            if (useIpodStore.getState().showVideo) {
+              toggleVideo();
+            }
+          },
+          showChevron: false,
+        }));
       }
     }
     return null;
-  }, [mainMenuItems, musicMenuItems, settingsMenuItems, tracks, t, registerActivity, isOffline, showOfflineStatus, setCurrentIndex, setIsPlaying, toggleVideo]);
+  }, [mainMenuItems, musicMenuItems, settingsMenuItems, tracks, t, registerActivity, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, toggleVideo]);
 
   // Update menu when items change - update ALL menus in history, not just the current one
   // Also update the saved menu history ref that's used when returning from Now Playing
@@ -790,22 +799,21 @@ export function IpodAppComponent({
   const processVideoId = useCallback(
     async (videoId: string) => {
       const currentTracks = useIpodStore.getState().tracks;
-      const existingTrackIndex = currentTracks.findIndex((track) => track.id === videoId);
+      const existingTrack = currentTracks.find((track) => track.id === videoId);
       const shouldAutoplay = !(isIOS || isSafari);
 
-      if (existingTrackIndex !== -1) {
+      if (existingTrack) {
         toast.info(t("apps.ipod.dialogs.openedSharedTrack"));
         startTrackSwitch();
-        setCurrentIndex(existingTrackIndex);
+        setCurrentSongId(videoId);
         if (shouldAutoplay) setIsPlaying(true);
         setMenuMode(false);
       } else {
         toast.info(t("apps.ipod.dialogs.addingNewTrack"));
         await handleAddTrack(`https://www.youtube.com/watch?v=${videoId}`);
         if (shouldAutoplay && !isOffline) {
-          const newIndex = useIpodStore.getState().currentIndex;
-          const addedTrack = useIpodStore.getState().tracks[newIndex];
-          if (addedTrack?.id === videoId) {
+          const currentSongId = useIpodStore.getState().currentSongId;
+          if (currentSongId === videoId) {
             startTrackSwitch();
             setIsPlaying(true);
           }
@@ -814,7 +822,7 @@ export function IpodAppComponent({
         }
       }
     },
-    [setCurrentIndex, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari, startTrackSwitch]
+    [setCurrentSongId, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari, startTrackSwitch]
   );
 
   // Initial data handling
@@ -997,7 +1005,7 @@ export function IpodAppComponent({
               menuHistoryBeforeNowPlayingRef.current = updatedHist;
               return updatedHist;
             });
-            setCurrentIndex(trackIndex);
+            setCurrentSongId(track.id);
             setIsPlaying(true);
             setMenuDirection("forward");
             setMenuMode(false);
@@ -1017,7 +1025,7 @@ export function IpodAppComponent({
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentIndex, setIsPlaying, t]);
+  }, [playClickSound, vibrate, registerActivity, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, t]);
 
   // Wheel click handler
   const handleWheelClick = useCallback(
@@ -1661,9 +1669,11 @@ export function IpodAppComponent({
               skipOperationRef.current = true;
               startTrackSwitch();
               nextTrack();
-              // Read from iPod store (which has the updated currentIndex)
+              // Read from iPod store (which has the updated currentSongId)
               const state = useIpodStore.getState();
-              const newTrack = state.tracks[state.currentIndex];
+              const newTrack = state.currentSongId 
+                ? state.tracks.find((t) => t.id === state.currentSongId) 
+                : state.tracks[0];
               if (newTrack) {
                 const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
                 showStatus(`⏭ ${newTrack.title}${artistInfo}`);
@@ -1673,9 +1683,11 @@ export function IpodAppComponent({
               skipOperationRef.current = true;
               startTrackSwitch();
               previousTrack();
-              // Read from iPod store (which has the updated currentIndex)
+              // Read from iPod store (which has the updated currentSongId)
               const state = useIpodStore.getState();
-              const newTrack = state.tracks[state.currentIndex];
+              const newTrack = state.currentSongId 
+                ? state.tracks.find((t) => t.id === state.currentSongId) 
+                : state.tracks[0];
               if (newTrack) {
                 const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
                 showStatus(`⏮ ${newTrack.title}${artistInfo}`);
@@ -1817,10 +1829,10 @@ export function IpodAppComponent({
                           } else {
                             skipOperationRef.current = true;
                             startTrackSwitch();
-                            nextTrack();
-                            // Read state synchronously after store update
-                            const state = useIpodStore.getState();
-                            const newTrack = state.tracks[state.currentIndex];
+                          nextTrack();
+                          // Read state synchronously after store update
+                          const state = useIpodStore.getState();
+                          const newTrack = state.getCurrentTrack();
                             if (newTrack) {
                               const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
                               showStatus(`⏭ ${newTrack.title}${artistInfo}`);
@@ -1833,10 +1845,10 @@ export function IpodAppComponent({
                           } else {
                             skipOperationRef.current = true;
                             startTrackSwitch();
-                            previousTrack();
-                            // Read state synchronously after store update
-                            const state = useIpodStore.getState();
-                            const newTrack = state.tracks[state.currentIndex];
+                          previousTrack();
+                          // Read state synchronously after store update
+                          const state = useIpodStore.getState();
+                          const newTrack = state.getCurrentTrack();
                             if (newTrack) {
                               const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
                               showStatus(`⏮ ${newTrack.title}${artistInfo}`);

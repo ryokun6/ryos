@@ -143,7 +143,9 @@ const handlePlaybackState = (
   );
   const updatedIpod = useIpodStore.getState();
   const nowPlaying = updatedIpod.isPlaying;
-  const track = updatedIpod.tracks[updatedIpod.currentIndex];
+  const track = updatedIpod.currentSongId 
+    ? updatedIpod.tracks.find((t) => t.id === updatedIpod.currentSongId)
+    : updatedIpod.tracks[0];
 
   let playbackState: string;
   if (track) {
@@ -228,10 +230,9 @@ const handlePlayKnown = (
   const randomIndexFromArray =
     finalCandidateIndices[Math.floor(Math.random() * finalCandidateIndices.length)];
 
-  const { setCurrentIndex, setIsPlaying } = useIpodStore.getState();
-  setCurrentIndex(randomIndexFromArray);
-
   const track = tracks[randomIndexFromArray];
+  const { setCurrentSongId, setIsPlaying } = useIpodStore.getState();
+  setCurrentSongId(track?.id ?? null);
   const trackDescForLog = formatTrackDescription(track.title, track.artist);
 
   // On iOS, don't auto-play - just select the track
@@ -380,7 +381,9 @@ const handleNavigation = (
   const stateChanges = applyIpodSettings(enableVideo, enableTranslation, enableFullscreen);
 
   const updatedIpod = useIpodStore.getState();
-  const track = updatedIpod.tracks[updatedIpod.currentIndex];
+  const track = updatedIpod.currentSongId 
+    ? updatedIpod.tracks.find((t) => t.id === updatedIpod.currentSongId)
+    : updatedIpod.tracks[0];
 
   if (track) {
     const desc = formatTrackDescription(track.title, track.artist);

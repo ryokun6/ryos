@@ -2,22 +2,42 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useIpodStore, Track } from "./useIpodStore";
 
+/** Helper to get current index from song ID */
+function getIndexFromSongId(tracks: Track[], songId: string | null): number {
+  if (!songId || tracks.length === 0) return -1;
+  const index = tracks.findIndex((t) => t.id === songId);
+  return index >= 0 ? index : -1;
+}
+
+/** Get a random song ID avoiding the current song */
+function getRandomSongId(tracks: Track[], currentSongId: string | null): string | null {
+  if (tracks.length === 0) return null;
+  if (tracks.length === 1) return tracks[0].id;
+  
+  const availableIds = tracks.map((t) => t.id).filter((id) => id !== currentSongId);
+  if (availableIds.length === 0) return currentSongId;
+  return availableIds[Math.floor(Math.random() * availableIds.length)];
+}
+
 interface KaraokeData {
-  currentIndex: number;
+  /** The ID of the currently playing song */
+  currentSongId: string | null;
   isPlaying: boolean;
   loopCurrent: boolean;
   loopAll: boolean;
   isShuffled: boolean;
-  shuffleOrder: number[];
+  /** Playback history for shuffle mode (song IDs) */
+  playbackHistory: string[];
   isFullScreen: boolean;
 }
 
 export interface KaraokeState extends KaraokeData {
   // Getters
   getCurrentTrack: () => Track | null;
+  getCurrentIndex: () => number;
   
   // Actions
-  setCurrentIndex: (index: number) => void;
+  setCurrentSongId: (songId: string | null) => void;
   togglePlay: () => void;
   setIsPlaying: (playing: boolean) => void;
   toggleLoopCurrent: () => void;
@@ -30,27 +50,16 @@ export interface KaraokeState extends KaraokeData {
 }
 
 const initialKaraokeData: KaraokeData = {
-  currentIndex: 0,
+  currentSongId: null,
   isPlaying: false,
   loopCurrent: false,
   loopAll: true,
   isShuffled: false,
-  shuffleOrder: [],
+  playbackHistory: [],
   isFullScreen: false,
 };
 
-const CURRENT_KARAOKE_STORE_VERSION = 1;
-
-// Helper function to generate shuffle order
-const generateShuffleOrder = (length: number): number[] => {
-  const order = [...Array(length).keys()];
-  // Fisher-Yates shuffle
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-  return order;
-};
+const CURRENT_KARAOKE_STORE_VERSION = 2; // Updated for currentSongId
 
 export const useKaraokeStore = create<KaraokeState>()(
   persist(
@@ -59,15 +68,20 @@ export const useKaraokeStore = create<KaraokeState>()(
 
       // Getter to get current track from iPod library
       getCurrentTrack: () => {
-        const { currentIndex } = get();
+        const { currentSongId } = get();
         const tracks = useIpodStore.getState().tracks;
-        if (currentIndex >= 0 && currentIndex < tracks.length) {
-          return tracks[currentIndex];
-        }
-        return null;
+        if (!currentSongId) return tracks[0] ?? null;
+        return tracks.find((t) => t.id === currentSongId) ?? null;
       },
 
-      setCurrentIndex: (index) => set({ currentIndex: index }),
+      // Getter to get current index (computed from currentSongId)
+      getCurrentIndex: () => {
+        const { currentSongId } = get();
+        const tracks = useIpodStore.getState().tracks;
+        return getIndexFromSongId(tracks, currentSongId);
+      },
+
+      setCurrentSongId: (songId) => set({ currentSongId: songId }),
 
       togglePlay: () => {
         // Prevent playback when offline
@@ -90,74 +104,84 @@ export const useKaraokeStore = create<KaraokeState>()(
       toggleLoopAll: () => set((state) => ({ loopAll: !state.loopAll })),
 
       toggleShuffle: () =>
-        set((state) => {
-          const newShuffleState = !state.isShuffled;
-          const tracks = useIpodStore.getState().tracks;
-          return {
-            isShuffled: newShuffleState,
-            shuffleOrder: newShuffleState ? generateShuffleOrder(tracks.length) : [],
-          };
-        }),
+        set((state) => ({
+          isShuffled: !state.isShuffled,
+          playbackHistory: !state.isShuffled ? [] : state.playbackHistory,
+        })),
 
       nextTrack: () =>
         set((state) => {
           const tracks = useIpodStore.getState().tracks;
-          if (tracks.length === 0) return { currentIndex: -1 };
+          if (tracks.length === 0) return { currentSongId: null };
 
-          let next: number;
+          let nextSongId: string | null;
+          let newPlaybackHistory = state.playbackHistory;
 
           if (state.loopCurrent) {
             // Stay on current track
-            next = state.currentIndex;
-          } else if (state.isShuffled && state.shuffleOrder.length > 0) {
-            // Shuffle mode
-            const currentShuffleIndex = state.shuffleOrder.indexOf(state.currentIndex);
-            const nextShuffleIndex = (currentShuffleIndex + 1) % state.shuffleOrder.length;
-            next = state.shuffleOrder[nextShuffleIndex];
+            nextSongId = state.currentSongId;
+          } else if (state.isShuffled) {
+            // Shuffle mode - add current to history and pick random
+            if (state.currentSongId) {
+              newPlaybackHistory = [...state.playbackHistory, state.currentSongId].slice(-50);
+            }
+            nextSongId = getRandomSongId(tracks, state.currentSongId);
           } else {
             // Sequential mode
-            next = state.currentIndex + 1;
-            if (next >= tracks.length) {
+            const currentIndex = getIndexFromSongId(tracks, state.currentSongId);
+            const nextIndex = currentIndex === -1 ? 0 : currentIndex + 1;
+            
+            if (nextIndex >= tracks.length) {
               if (state.loopAll) {
-                next = 0;
+                nextSongId = tracks[0]?.id ?? null;
               } else {
                 // Stop at end
-                return { currentIndex: tracks.length - 1, isPlaying: false };
+                return { 
+                  currentSongId: tracks[tracks.length - 1]?.id ?? null, 
+                  isPlaying: false 
+                };
               }
+            } else {
+              nextSongId = tracks[nextIndex]?.id ?? null;
             }
           }
 
-          return { currentIndex: next, isPlaying: true };
+          return { 
+            currentSongId: nextSongId, 
+            isPlaying: true,
+            playbackHistory: newPlaybackHistory,
+          };
         }),
 
       previousTrack: () =>
         set((state) => {
           const tracks = useIpodStore.getState().tracks;
-          if (tracks.length === 0) return { currentIndex: -1 };
+          if (tracks.length === 0) return { currentSongId: null };
 
-          let prev: number;
+          let prevSongId: string | null;
+          let newPlaybackHistory = state.playbackHistory;
 
-          if (state.isShuffled && state.shuffleOrder.length > 0) {
-            // Shuffle mode - go back in shuffle order
-            const currentShuffleIndex = state.shuffleOrder.indexOf(state.currentIndex);
-            const prevShuffleIndex =
-              currentShuffleIndex === 0
-                ? state.shuffleOrder.length - 1
-                : currentShuffleIndex - 1;
-            prev = state.shuffleOrder[prevShuffleIndex];
+          if (state.isShuffled && state.playbackHistory.length > 0) {
+            // Shuffle mode - go back in history
+            const lastSongId = state.playbackHistory[state.playbackHistory.length - 1];
+            if (lastSongId && tracks.some((t) => t.id === lastSongId)) {
+              prevSongId = lastSongId;
+              newPlaybackHistory = state.playbackHistory.slice(0, -1);
+            } else {
+              prevSongId = getRandomSongId(tracks, state.currentSongId);
+            }
           } else {
             // Sequential mode
-            prev = state.currentIndex - 1;
-            if (prev < 0) {
-              if (state.loopAll) {
-                prev = tracks.length - 1;
-              } else {
-                prev = 0;
-              }
-            }
+            const currentIndex = getIndexFromSongId(tracks, state.currentSongId);
+            const prevIndex = currentIndex <= 0 ? tracks.length - 1 : currentIndex - 1;
+            prevSongId = tracks[prevIndex]?.id ?? null;
           }
 
-          return { currentIndex: prev, isPlaying: true };
+          return { 
+            currentSongId: prevSongId, 
+            isPlaying: true,
+            playbackHistory: newPlaybackHistory,
+          };
         }),
 
       toggleFullScreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
@@ -168,23 +192,25 @@ export const useKaraokeStore = create<KaraokeState>()(
       name: "ryos:karaoke",
       version: CURRENT_KARAOKE_STORE_VERSION,
       partialize: (state) => ({
-        currentIndex: state.currentIndex,
+        currentSongId: state.currentSongId,
         loopCurrent: state.loopCurrent,
         loopAll: state.loopAll,
         isShuffled: state.isShuffled,
         isFullScreen: state.isFullScreen,
-        // Don't persist isPlaying or shuffleOrder
+        // Don't persist isPlaying or playbackHistory
       }),
       migrate: (persistedState, version) => {
-        const state = persistedState as KaraokeState;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const state = persistedState as any;
         if (version < CURRENT_KARAOKE_STORE_VERSION) {
           console.log(
             `Migrating Karaoke store from version ${version} to ${CURRENT_KARAOKE_STORE_VERSION}`
           );
           return {
             ...state,
+            currentSongId: null, // Reset - will pick first track
             isPlaying: false,
-            shuffleOrder: [],
+            playbackHistory: [],
           };
         }
         return state;

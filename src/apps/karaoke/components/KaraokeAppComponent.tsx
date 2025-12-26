@@ -115,13 +115,13 @@ export function KaraokeAppComponent({
 
   // Independent playback state from Karaoke store (not shared with iPod)
   const {
-    currentIndex,
+    currentSongId,
     isPlaying,
     loopCurrent,
     loopAll,
     isShuffled,
     isFullScreen,
-    setCurrentIndex,
+    setCurrentSongId,
     togglePlay,
     setIsPlaying,
     toggleLoopCurrent,
@@ -133,13 +133,13 @@ export function KaraokeAppComponent({
     setFullScreen,
   } = useKaraokeStore(
     useShallow((s) => ({
-      currentIndex: s.currentIndex,
+      currentSongId: s.currentSongId,
       isPlaying: s.isPlaying,
       loopCurrent: s.loopCurrent,
       loopAll: s.loopAll,
       isShuffled: s.isShuffled,
       isFullScreen: s.isFullScreen,
-      setCurrentIndex: s.setCurrentIndex,
+      setCurrentSongId: s.setCurrentSongId,
       togglePlay: s.togglePlay,
       setIsPlaying: s.setIsPlaying,
       toggleLoopCurrent: s.toggleLoopCurrent,
@@ -151,6 +151,13 @@ export function KaraokeAppComponent({
       setFullScreen: s.setFullScreen,
     }))
   );
+
+  // Compute currentIndex from currentSongId
+  const currentIndex = useMemo(() => {
+    if (!currentSongId) return tracks.length > 0 ? 0 : -1;
+    const index = tracks.findIndex((t) => t.id === currentSongId);
+    return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
+  }, [tracks, currentSongId]);
 
 
   // Dialog state
@@ -647,29 +654,29 @@ export function KaraokeAppComponent({
       const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
       if (addedTrack) {
         showStatus(t("apps.ipod.status.added"));
-        // New tracks are added at the beginning of the array, so set index to 0
+        // New tracks are added at the beginning, set current to the new track
         startTrackSwitch();
-        setCurrentIndex(0);
+        setCurrentSongId(addedTrack.id);
         if (autoplay) setIsPlaying(true);
       } else {
         throw new Error("Failed to add track");
       }
     },
-    [showStatus, t, setCurrentIndex, setIsPlaying, startTrackSwitch]
+    [showStatus, t, setCurrentSongId, setIsPlaying, startTrackSwitch]
   );
 
   // Process video ID from shared link (add if not in library, then play)
   const processVideoId = useCallback(
     async (videoId: string) => {
       const currentTracks = useIpodStore.getState().tracks;
-      const existingTrackIndex = currentTracks.findIndex((track) => track.id === videoId);
+      const existingTrack = currentTracks.find((track) => track.id === videoId);
       // Don't autoplay on iOS/Safari due to autoplay restrictions
       const shouldAutoplay = !(isIOS || isSafari);
 
-      if (existingTrackIndex !== -1) {
+      if (existingTrack) {
         toast.info(t("apps.ipod.dialogs.openedSharedTrack"));
         startTrackSwitch();
-        setCurrentIndex(existingTrackIndex);
+        setCurrentSongId(videoId);
         if (shouldAutoplay) setIsPlaying(true);
       } else {
         toast.info(t("apps.ipod.dialogs.addingNewTrack"));
@@ -679,7 +686,7 @@ export function KaraokeAppComponent({
         }
       }
     },
-    [setCurrentIndex, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari, startTrackSwitch]
+    [setCurrentSongId, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari, startTrackSwitch]
   );
 
   // Share song handler
@@ -755,10 +762,13 @@ export function KaraokeAppComponent({
 
   // Play track handler for Library menu
   const handlePlayTrack = useCallback((index: number) => {
-    startTrackSwitch();
-    setCurrentIndex(index);
-    setIsPlaying(true);
-  }, [startTrackSwitch]);
+    const trackId = tracks[index]?.id;
+    if (trackId) {
+      startTrackSwitch();
+      setCurrentSongId(trackId);
+      setIsPlaying(true);
+    }
+  }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
 
   // Keyboard controls
   useEffect(() => {
@@ -819,11 +829,11 @@ export function KaraokeAppComponent({
           });
       }, 100);
       lastProcessedInitialDataRef.current = initialData;
-    } else if (isWindowOpen && tracks.length > 0 && currentIndex >= tracks.length) {
-      // Reset to first track if current index is out of bounds
-      setCurrentIndex(0);
+    } else if (isWindowOpen && tracks.length > 0 && currentSongId && !tracks.some((t) => t.id === currentSongId)) {
+      // Reset to first track if current song no longer exists in library
+      setCurrentSongId(tracks[0]?.id ?? null);
     }
-  }, [isWindowOpen, initialData, processVideoId, clearInstanceInitialData, instanceId, tracks.length, currentIndex]);
+  }, [isWindowOpen, initialData, processVideoId, clearInstanceInitialData, instanceId, tracks, currentSongId, setCurrentSongId]);
 
   // Handle updateApp event for when app is already open and receives new video
   useEffect(() => {
@@ -1195,23 +1205,21 @@ export function KaraokeAppComponent({
         <FullScreenPortal
           onClose={toggleFullScreen}
           togglePlay={togglePlay}
-          nextTrack={() => {
-            nextTrack();
-            // Read from Karaoke store (which has the updated currentIndex) and iPod store (which has tracks)
-            const karaokeState = useKaraokeStore.getState();
-            const ipodState = useIpodStore.getState();
-            const newTrack = ipodState.tracks[karaokeState.currentIndex];
+        nextTrack={() => {
+          nextTrack();
+          // Read from Karaoke store (which has the updated currentSongId)
+          const karaokeState = useKaraokeStore.getState();
+          const newTrack = karaokeState.getCurrentTrack();
             if (newTrack) {
               const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
               showStatus(`⏭ ${newTrack.title}${artistInfo}`);
             }
           }}
-          previousTrack={() => {
-            previousTrack();
-            // Read from Karaoke store (which has the updated currentIndex) and iPod store (which has tracks)
-            const karaokeState = useKaraokeStore.getState();
-            const ipodState = useIpodStore.getState();
-            const newTrack = ipodState.tracks[karaokeState.currentIndex];
+        previousTrack={() => {
+          previousTrack();
+          // Read from Karaoke store (which has the updated currentSongId)
+          const karaokeState = useKaraokeStore.getState();
+          const newTrack = karaokeState.getCurrentTrack();
             if (newTrack) {
               const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
               showStatus(`⏮ ${newTrack.title}${artistInfo}`);
