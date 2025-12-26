@@ -1086,7 +1086,7 @@ export default async function handler(req: Request) {
           return errorResponse("Invalid request body");
         }
 
-        const { clearTranslations: shouldClearTranslations, clearFurigana: shouldClearFurigana } = parsed.data;
+        const { clearTranslations: shouldClearTranslations, clearFurigana: shouldClearFurigana, clearSoramimi: shouldClearSoramimi } = parsed.data;
 
         // Get song to check what needs clearing
         const song = await getSong(redis, songId, {
@@ -1094,6 +1094,7 @@ export default async function handler(req: Request) {
           includeLyrics: true,
           includeTranslations: true,
           includeFurigana: true,
+          includeSoramimi: true,
         });
 
         if (!song) {
@@ -1152,6 +1153,31 @@ export default async function handler(req: Request) {
           }
           
           cleared.push("furigana");
+        }
+
+        // Clear soramimi if requested
+        if (shouldClearSoramimi) {
+          // Clear consolidated soramimi
+          if (song.soramimi && song.soramimi.length > 0) {
+            await saveSong(redis, { id: songId, soramimi: [] }, { preserveSoramimi: false });
+          }
+          
+          // Clear soramimi chunk caches
+          try {
+            for (let i = 0; i < totalChunks; i++) {
+              const chunkKey = lyricsHash
+                ? `song:${songId}:soramimi:chunk:${i}:${lyricsHash}`
+                : `song:${songId}:soramimi:chunk:${i}`;
+              await redis.del(chunkKey);
+            }
+            if (totalChunks > 0) {
+              logInfo(requestId, `Deleted ${totalChunks} soramimi chunk caches`);
+            }
+          } catch (e) {
+            logError(requestId, "Failed to delete soramimi chunk caches", e);
+          }
+          
+          cleared.push("soramimi");
         }
 
         logInfo(requestId, `Cleared cached data: ${cleared.length > 0 ? cleared.join(", ") : "nothing to clear"}`);
@@ -1223,13 +1249,14 @@ export default async function handler(req: Request) {
 
       // Update song
       const isUpdate = !!existingSong;
-      const { lyricsSource, clearTranslations, clearFurigana, clearLyrics, isShare, ...restData } = parsed.data;
+      const { lyricsSource, clearTranslations, clearFurigana, clearSoramimi, clearLyrics, isShare, ...restData } = parsed.data;
       
       // Determine what to preserve vs clear
       const preserveOptions = {
         preserveLyrics: !clearLyrics,
         preserveTranslations: !clearTranslations,
         preserveFurigana: !clearFurigana,
+        preserveSoramimi: !clearSoramimi,
       };
 
       // Determine createdBy
@@ -1249,12 +1276,15 @@ export default async function handler(req: Request) {
         createdBy,
       };
 
-      // If clearing translations or furigana, explicitly set them to undefined
+      // If clearing translations, furigana, soramimi, or lyrics, explicitly set them to undefined
       if (clearTranslations) {
         updateData.translations = undefined;
       }
       if (clearFurigana) {
         updateData.furigana = undefined;
+      }
+      if (clearSoramimi) {
+        updateData.soramimi = undefined;
       }
       if (clearLyrics) {
         updateData.lyrics = undefined;

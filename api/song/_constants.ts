@@ -61,6 +61,7 @@ export const UpdateSongSchema = z.object({
   // Options to clear cached data when lyrics source changes
   clearTranslations: z.boolean().optional(),
   clearFurigana: z.boolean().optional(),
+  clearSoramimi: z.boolean().optional(),
   clearLyrics: z.boolean().optional(),
   // Flag to indicate this is a share action (sets createdBy)
   isShare: z.boolean().optional(),
@@ -140,11 +141,12 @@ export const SaveSoramimiSchema = z.object({
   }))).max(500),
 });
 
-// Schema for clearing cached translations and furigana
+// Schema for clearing cached translations, furigana, and soramimi
 export const ClearCachedDataSchema = z.object({
   action: z.literal("clear-cached-data"),
   clearTranslations: z.boolean().optional(),
   clearFurigana: z.boolean().optional(),
+  clearSoramimi: z.boolean().optional(),
 });
 
 // Schema for unsharing a song (clearing createdBy)
