@@ -189,7 +189,6 @@ export function IpodAppComponent({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
-  const [isFullScreenFetchingFurigana, setIsFullScreenFetchingFurigana] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
 
   // Playback state
@@ -1331,12 +1330,11 @@ export function IpodAppComponent({
 
   // Fetch furigana for lyrics and store in shared state
   // Use pre-fetched info from lyrics request to skip extra API call
-  const { furiganaMap, soramimiMap } = useFurigana({
+  const { furiganaMap, soramimiMap, isFetching: isFetchingFurigana } = useFurigana({
     songId: currentTrack?.id ?? "",
     lines: fullScreenLyricsControls.originalLines,
     isShowingOriginal: true,
     romanization,
-    onLoadingChange: setIsFullScreenFetchingFurigana,
     prefetchedInfo: fullScreenLyricsControls.furiganaInfo,
     prefetchedSoramimiInfo: fullScreenLyricsControls.soramimiInfo,
   });
@@ -1634,6 +1632,8 @@ export function IpodAppComponent({
               registerActivity={registerActivity}
               isFullScreen={isFullScreen}
               lyricsControls={fullScreenLyricsControls}
+              furiganaMap={furiganaMap}
+              soramimiMap={soramimiMap}
               onNextTrack={() => {
                 if (isOffline) {
                   showOfflineStatus();
@@ -1747,7 +1747,7 @@ export function IpodAppComponent({
             fullScreenPlayerRef={fullScreenPlayerRef}
             isLoadingLyrics={fullScreenLyricsControls.isLoading}
             isProcessingLyrics={fullScreenLyricsControls.isTranslating}
-            isFetchingFurigana={isFullScreenFetchingFurigana}
+            isFetchingFurigana={isFetchingFurigana}
           >
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
@@ -1808,7 +1808,6 @@ export function IpodAppComponent({
                   {showLyrics && tracks[currentIndex] && (
                     <div className="absolute inset-0 z-20" data-lyrics>
                       <LyricsDisplay
-                        songId={tracks[currentIndex]?.id ?? ""}
                         lines={fullScreenLyricsControls.lines}
                         originalLines={fullScreenLyricsControls.originalLines}
                         currentLine={fullScreenLyricsControls.currentLine}

@@ -12,11 +12,12 @@ import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Converter } from "opencc-js";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { useFurigana, FuriganaSegment } from "@/hooks/useFurigana";
 import { useShallow } from "zustand/react/shallow";
+import { toRomaji } from "wanakana";
 import {
   isChineseText,
   hasKanaTextLocal,
+  hasKoreanText,
   KOREAN_REGEX,
   renderFuriganaSegments,
   renderKoreanWithRomanization,
@@ -26,12 +27,11 @@ import {
   getKoreanPronunciationOnly,
   getChinesePronunciationOnly,
   getKanaPronunciationOnly,
+  type FuriganaSegment,
 } from "@/utils/romanization";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
 interface LyricsDisplayProps {
-  /** Song ID (YouTube video ID) - required for internal furigana fetching if furiganaMap not provided */
-  songId?: string;
   lines: LyricLine[];
   /** Original untranslated lyrics (used for furigana) */
   originalLines?: LyricLine[];
@@ -72,11 +72,9 @@ interface LyricsDisplayProps {
   fontClassName?: string;
   /** Optional inline styles for the outer container (e.g., dynamic gap) */
   containerStyle?: CSSProperties;
-  /** Callback when furigana loading state changes */
-  onFuriganaLoadingChange?: (isLoading: boolean) => void;
-  /** Pre-fetched furigana map (if provided, skips internal fetching) */
+  /** Furigana map from parent (Map of startTimeMs -> FuriganaSegment[]) */
   furiganaMap?: Map<string, FuriganaSegment[]>;
-  /** Pre-fetched soramimi map (if provided, uses external map for progressive updates) */
+  /** Soramimi map from parent (Map of startTimeMs -> FuriganaSegment[]) */
   soramimiMap?: Map<string, FuriganaSegment[]>;
   /** Current playback time in milliseconds (for word-level highlighting) */
   currentTimeMs?: number;
@@ -750,7 +748,6 @@ const getVariants = (
 };
 
 export function LyricsDisplay({
-  songId = "",
   lines,
   originalLines,
   currentLine,
@@ -773,9 +770,8 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
-  onFuriganaLoadingChange,
-  furiganaMap: externalFuriganaMap,
-  soramimiMap: externalSoramimiMap,
+  furiganaMap = new Map(),
+  soramimiMap = new Map(),
   currentTimeMs,
   onSeekToTime,
 }: LyricsDisplayProps) {
@@ -855,24 +851,157 @@ export function LyricsDisplay({
     return { translationMap: map, translationByIndex: byIndex };
   }, [hasTranslation, lines]);
 
-  // Use original lines for furigana fetching (furigana only applies to original Japanese text)
-  const linesForFurigana = displayOriginalLines;
+  // Render function for lyrics with annotations (furigana, soramimi, romanization)
+  // All data comes from parent via props - no internal fetching
+  const renderWithFurigana = useCallback(
+    (line: LyricLine, processedText: string): ReactNode => {
+      // Master toggle - if romanization is disabled, return plain text
+      if (!romanization.enabled) {
+        return processedText;
+      }
+      
+      const keyPrefix = `line-${line.startTimeMs}`;
+      const pronunciationOnly = romanization.pronunciationOnly ?? false;
+      
+      // Chinese soramimi (misheard lyrics) - renders phonetic Chinese over ALL original text
+      // This takes priority over all other pronunciation options when enabled
+      if (romanization.chineseSoramimi) {
+        const soramimiSegments = soramimiMap.get(line.startTimeMs);
+        if (soramimiSegments && soramimiSegments.length > 0) {
+          // Pronunciation-only mode: show only the Chinese soramimi readings
+          if (pronunciationOnly) {
+            const pronunciationText = soramimiSegments.map(seg => seg.reading || seg.text).join("");
+            return <span key={keyPrefix}>{pronunciationText}</span>;
+          }
+          return (
+            <>
+              {soramimiSegments.map((segment, index) => {
+                // If there's a reading (the Chinese soramimi), display as ruby
+                if (segment.reading) {
+                  return (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
+                    <ruby key={index} className="lyrics-furigana lyrics-soramimi">
+                      {segment.text}
+                      <rp>(</rp>
+                      <rt className="lyrics-furigana-rt lyrics-soramimi-rt">{segment.reading}</rt>
+                      <rp>)</rp>
+                    </ruby>
+                  );
+                }
+                // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
+                return <span key={index}>{segment.text}</span>;
+              })}
+            </>
+          );
+        }
+        // If soramimi is enabled but no data yet, show plain text (don't fall through to other methods)
+        return processedText;
+      }
+      
+      // If furigana is disabled, try other romanization types
+      if (!romanization.japaneseFurigana) {
+        // Chinese pinyin
+        if (romanization.chinese && isChineseText(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getChinesePronunciationOnly(processedText)}</span>;
+          }
+          return renderChineseWithPinyin(processedText, keyPrefix);
+        }
+        // Korean romanization
+        if (romanization.korean && hasKoreanText(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getKoreanPronunciationOnly(processedText)}</span>;
+          }
+          return renderKoreanWithRomanization(processedText, keyPrefix);
+        }
+        // Japanese kana to romaji
+        if (romanization.japaneseRomaji && hasKanaTextLocal(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getKanaPronunciationOnly(processedText)}</span>;
+          }
+          return renderKanaWithRomaji(processedText, keyPrefix);
+        }
+        return processedText;
+      }
 
-  // Use external furigana map if provided, otherwise fetch internally
-  // Note: shouldFetchFurigana only controls furigana fetching; soramimi fetching is independent
-  // and always needs lines, so we pass linesForFurigana unconditionally
-  const shouldFetchFurigana = !externalFuriganaMap && !!songId;
-  const { renderWithFurigana, furiganaMap: fetchedFuriganaMap, soramimiMap: fetchedSoramimiMap } = useFurigana({
-    songId,
-    lines: linesForFurigana, // Always pass lines - soramimi needs them even when furigana is pre-fetched
-    isShowingOriginal: true, // Always showing original now
-    romanization,
-    onLoadingChange: shouldFetchFurigana ? onFuriganaLoadingChange : undefined,
-  });
-  
-  // Use external map if provided, otherwise use fetched
-  const furiganaMap = externalFuriganaMap ?? fetchedFuriganaMap;
-  const soramimiMap = externalSoramimiMap ?? fetchedSoramimiMap;
+      // Get furigana segments for this line
+      const segments = furiganaMap.get(line.startTimeMs);
+      if (!segments || segments.length === 0) {
+        // No furigana available - try other romanization types
+        if (romanization.chinese && isChineseText(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getChinesePronunciationOnly(processedText)}</span>;
+          }
+          return renderChineseWithPinyin(processedText, keyPrefix);
+        }
+        if (romanization.korean && hasKoreanText(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getKoreanPronunciationOnly(processedText)}</span>;
+          }
+          return renderKoreanWithRomanization(processedText, keyPrefix);
+        }
+        if (romanization.japaneseRomaji && hasKanaTextLocal(processedText)) {
+          if (pronunciationOnly) {
+            return <span key={keyPrefix}>{getKanaPronunciationOnly(processedText)}</span>;
+          }
+          return renderKanaWithRomaji(processedText, keyPrefix);
+        }
+        return processedText;
+      }
+
+      // Pronunciation-only mode: show only the phonetic readings
+      if (pronunciationOnly) {
+        const options = {
+          koreanRomanization: romanization.korean,
+          japaneseRomaji: romanization.japaneseRomaji,
+          chinesePinyin: romanization.chinese,
+        };
+        return <span key={keyPrefix}>{getFuriganaSegmentsPronunciationOnly(segments, options)}</span>;
+      }
+
+      // Render furigana segments with all romanization options (ruby annotations)
+      return (
+        <>
+          {segments.map((segment, index) => {
+            // Handle Japanese furigana (hiragana reading over kanji)
+            if (segment.reading) {
+              const displayReading = romanization.japaneseRomaji 
+                ? toRomaji(segment.reading)
+                : segment.reading;
+              return (
+                // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
+                <ruby key={index} className="lyrics-furigana">
+                  {segment.text}
+                  <rp>(</rp>
+                  <rt className="lyrics-furigana-rt">{displayReading}</rt>
+                  <rp>)</rp>
+                </ruby>
+              );
+            }
+            
+            // Korean romanization for mixed content
+            if (romanization.korean && hasKoreanText(segment.text)) {
+              return renderKoreanWithRomanization(segment.text, `seg-${index}`);
+            }
+            
+            // Chinese pinyin for mixed content
+            if (romanization.chinese && isChineseText(segment.text)) {
+              return renderChineseWithPinyin(segment.text, `seg-${index}`);
+            }
+            
+            // Standalone kana to romaji
+            if (romanization.japaneseRomaji && hasKanaTextLocal(segment.text)) {
+              return renderKanaWithRomaji(segment.text, `seg-${index}`);
+            }
+            
+            // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
+            return <span key={index}>{segment.text}</span>;
+          })}
+        </>
+      );
+    },
+    [romanization, furiganaMap, soramimiMap]
+  );
 
   // Memoize processText to prevent WordTimingHighlight renderItems from recomputing on every parent render
   const processText = useCallback(

@@ -4,6 +4,7 @@ import type { Track } from "@/stores/useIpodStore";
 import type { LyricsAlignment, LyricsFont, ChineseVariant, KoreanDisplay, JapaneseFurigana, RomanizationSettings } from "@/types/lyrics";
 import type ReactPlayer from "react-player";
 import type { useLyrics } from "@/hooks/useLyrics";
+import type { FuriganaSegment } from "@/utils/romanization";
 
 // Wheel interaction types
 export type WheelArea = "top" | "right" | "bottom" | "left" | "center";
@@ -115,6 +116,10 @@ export interface IpodScreenProps {
   lyricsControls: ReturnType<typeof useLyrics>;
   onNextTrack?: () => void;
   onPreviousTrack?: () => void;
+  /** Furigana map from parent (Map of startTimeMs -> FuriganaSegment[]) */
+  furiganaMap?: Map<string, FuriganaSegment[]>;
+  /** Soramimi map from parent (Map of startTimeMs -> FuriganaSegment[]) */
+  soramimiMap?: Map<string, FuriganaSegment[]>;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery

@@ -967,7 +967,6 @@ export function KaraokeAppComponent({
               <div className="absolute inset-0 bg-black/50 pointer-events-none" />
               <div className="absolute inset-0 pointer-events-none karaoke-force-font">
               <LyricsDisplay
-                        songId={currentTrack?.id ?? ""}
                         lines={lyricsControls.lines}
                         originalLines={lyricsControls.originalLines}
                         currentLine={lyricsControls.currentLine}
@@ -1330,7 +1329,6 @@ export function KaraokeAppComponent({
                   {showLyrics && currentTrack && (
                     <div className="absolute inset-0 z-20" data-lyrics>
                       <LyricsDisplay
-                        songId={currentTrack?.id ?? ""}
                         lines={lyricsControls.lines}
                         originalLines={lyricsControls.originalLines}
                         currentLine={lyricsControls.currentLine}

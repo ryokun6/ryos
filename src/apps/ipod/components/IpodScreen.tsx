@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -68,6 +68,8 @@ export function IpodScreen({
   lyricsControls,
   onNextTrack,
   onPreviousTrack,
+  furiganaMap,
+  soramimiMap,
 }: IpodScreenProps) {
   const { t } = useTranslation();
 
@@ -82,9 +84,6 @@ export function IpodScreen({
   const menuScrollRef = useRef<HTMLDivElement>(null);
   const menuItemsRef = useRef<(HTMLDivElement | null)[]>([]);
   const needScrollRef = useRef(false);
-  
-  // State for furigana loading
-  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
 
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
@@ -307,7 +306,7 @@ export function IpodScreen({
 
             {/* Activity Indicator */}
             <AnimatePresence>
-              {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana) && (
+              {(lyricsControls.isLoading || lyricsControls.isTranslating) && (
                 <motion.div
                   className="absolute top-4 right-4 z-40 pointer-events-none"
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -325,7 +324,6 @@ export function IpodScreen({
 
             {/* Lyrics Overlay */}
             <LyricsDisplay
-              songId={currentTrack?.id ?? ""}
               lines={lyricsControls.lines}
               originalLines={lyricsControls.originalLines}
               currentLine={lyricsControls.currentLine}
@@ -350,7 +348,8 @@ export function IpodScreen({
               }}
               onSwipeUp={onNextTrack}
               onSwipeDown={onPreviousTrack}
-              onFuriganaLoadingChange={setIsFetchingFurigana}
+              furiganaMap={furiganaMap}
+              soramimiMap={soramimiMap}
               currentTimeMs={(elapsedTime + lyricOffset / 1000) * 1000}
             />
           </div>
