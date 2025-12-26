@@ -266,7 +266,7 @@ export function KaraokeAppComponent({
 
   // Fetch furigana for lyrics (shared between main and fullscreen displays)
   // Use pre-fetched info from lyrics request to skip extra API call
-  const { furiganaMap } = useFurigana({
+  const { furiganaMap, soramimiMap } = useFurigana({
     songId: currentTrack?.id ?? "",
     lines: lyricsControls.originalLines,
     isShowingOriginal: true,
@@ -1010,6 +1010,7 @@ export function KaraokeAppComponent({
                         interactive={true}
                         bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-12"}
                         furiganaMap={furiganaMap}
+                        soramimiMap={soramimiMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
                       />
@@ -1388,6 +1389,7 @@ export function KaraokeAppComponent({
                         interactive={true}
                         bottomPaddingClass={controlsVisible ? "pb-16" : "pb-6"}
                         furiganaMap={furiganaMap}
+                        soramimiMap={soramimiMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
                       />

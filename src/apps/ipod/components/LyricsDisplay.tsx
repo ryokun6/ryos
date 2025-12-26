@@ -76,6 +76,8 @@ interface LyricsDisplayProps {
   onFuriganaLoadingChange?: (isLoading: boolean) => void;
   /** Pre-fetched furigana map (if provided, skips internal fetching) */
   furiganaMap?: Map<string, FuriganaSegment[]>;
+  /** Pre-fetched soramimi map (if provided, uses external map for progressive updates) */
+  soramimiMap?: Map<string, FuriganaSegment[]>;
   /** Current playback time in milliseconds (for word-level highlighting) */
   currentTimeMs?: number;
   /** Callback to seek to a specific time in ms */
@@ -773,6 +775,7 @@ export function LyricsDisplay({
   containerStyle,
   onFuriganaLoadingChange,
   furiganaMap: externalFuriganaMap,
+  soramimiMap: externalSoramimiMap,
   currentTimeMs,
   onSeekToTime,
 }: LyricsDisplayProps) {
@@ -859,7 +862,7 @@ export function LyricsDisplay({
   // Note: shouldFetchFurigana only controls furigana fetching; soramimi fetching is independent
   // and always needs lines, so we pass linesForFurigana unconditionally
   const shouldFetchFurigana = !externalFuriganaMap && !!songId;
-  const { renderWithFurigana, furiganaMap: fetchedFuriganaMap, soramimiMap } = useFurigana({
+  const { renderWithFurigana, furiganaMap: fetchedFuriganaMap, soramimiMap: fetchedSoramimiMap } = useFurigana({
     songId,
     lines: linesForFurigana, // Always pass lines - soramimi needs them even when furigana is pre-fetched
     isShowingOriginal: true, // Always showing original now
@@ -869,6 +872,7 @@ export function LyricsDisplay({
   
   // Use external map if provided, otherwise use fetched
   const furiganaMap = externalFuriganaMap ?? fetchedFuriganaMap;
+  const soramimiMap = externalSoramimiMap ?? fetchedSoramimiMap;
 
   // Memoize processText to prevent WordTimingHighlight renderItems from recomputing on every parent render
   const processText = useCallback(

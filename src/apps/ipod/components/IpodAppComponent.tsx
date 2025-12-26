@@ -1330,7 +1330,7 @@ export function IpodAppComponent({
 
   // Fetch furigana for lyrics and store in shared state
   // Use pre-fetched info from lyrics request to skip extra API call
-  const { furiganaMap } = useFurigana({
+  const { furiganaMap, soramimiMap } = useFurigana({
     songId: currentTrack?.id ?? "",
     lines: fullScreenLyricsControls.originalLines,
     isShowingOriginal: true,
@@ -1869,6 +1869,7 @@ export function IpodAppComponent({
                         interactive={true}
                         bottomPaddingClass={controlsVisible ? "pb-16" : "pb-6"}
                         furiganaMap={furiganaMap}
+                        soramimiMap={soramimiMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
                       />
