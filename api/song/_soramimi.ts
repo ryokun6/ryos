@@ -255,10 +255,6 @@ export async function generateSoramimiForChunk(
   // Use plain text (newline-separated) for efficiency
   const textsToProcess = lines.map((line) => line.words).join("\n");
 
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'_soramimi.ts:generateSoramimiForChunk:entry',message:'Starting soramimi generation',data:{inputLineCount:lines.length,inputPreview:lines.slice(0,3).map(l=>l.words.slice(0,50)),textLength:textsToProcess.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-  // #endregion
-
   // Create abort controller with timeout
   const abortController = new AbortController();
   const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
@@ -276,18 +272,11 @@ export async function generateSoramimiForChunk(
     
     clearTimeout(timeoutId);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'_soramimi.ts:generateSoramimiForChunk:aiResponse',message:'AI response received',data:{responseLength:responseText.length,responsePreview:responseText.slice(0,200),responseLineCount:responseText.trim().split('\n').length,expectedLineCount:lines.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H5'})}).catch(()=>{});
-    // #endregion
-
     // Parse the ruby markup response
     const annotatedLines = responseText.trim().split("\n").map(line => parseRubyMarkup(line.trim()));
 
     if (annotatedLines.length !== lines.length) {
       logInfo(requestId, `Warning: Soramimi response length mismatch - expected ${lines.length}, got ${annotatedLines.length}`);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'_soramimi.ts:generateSoramimiForChunk:MISMATCH',message:'LINE COUNT MISMATCH DETECTED',data:{expected:lines.length,got:annotatedLines.length,diff:lines.length-annotatedLines.length,inputLines:lines.map(l=>l.words),outputLines:responseText.trim().split('\n')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
     }
 
     // Build result with alignment to ensure segments match original text
@@ -298,28 +287,14 @@ export async function generateSoramimiForChunk(
       // Align segments to original text (handles spacing mismatches)
       const segments = alignSegmentsToOriginal(rawSegments, original);
       
-      // #region agent log
-      const reconstructed = segments.map(s => s.text).join('');
-      if (reconstructed !== original && index < 5) {
-        fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'_soramimi.ts:generateSoramimiForChunk:segmentMismatch',message:'Segment text mismatch after alignment',data:{lineIndex:index,original:original,reconstructed:reconstructed,rawSegments:rawSegments.map(s=>({t:s.text,r:s.reading})),alignedSegments:segments.map(s=>({t:s.text,r:s.reading}))},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-      }
-      // #endregion
-      
       return segments;
     });
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'_soramimi.ts:generateSoramimiForChunk:exit',message:'Soramimi generation complete',data:{resultLineCount:result.length,inputLineCount:lines.length,sampleSegments:result.slice(0,2).map(segs=>segs.map(s=>({t:s.text,r:s.reading})))},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2'})}).catch(()=>{});
-    // #endregion
 
     return result;
   } catch (error) {
     clearTimeout(timeoutId);
     const isTimeout = error instanceof Error && error.name === "AbortError";
     logError(requestId, `Soramimi chunk failed${isTimeout ? " (timeout)" : ""}, returning plain text segments as fallback`, error);
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f0156624-08c2-4062-9750-1fcc7ac4b867',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'_soramimi.ts:generateSoramimiForChunk:error',message:'Soramimi generation failed',data:{error:error instanceof Error ? error.message : String(error),isTimeout,inputLineCount:lines.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
-    // #endregion
     return lines.map((line) => [{ text: line.words }]);
   }
 }
