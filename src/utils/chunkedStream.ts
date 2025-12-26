@@ -44,6 +44,10 @@ export interface SoramimiChunkInfo {
   cached: boolean;
   /** Cached soramimi data (only present if cached=true) */
   data?: Array<Array<{ text: string; reading?: string }>>;
+  /** Whether soramimi was skipped (e.g., for Chinese lyrics) */
+  skipped?: boolean;
+  /** Reason for skipping */
+  skipReason?: string;
 }
 
 interface TranslateChunkResponse {
@@ -68,6 +72,8 @@ interface SoramimiChunkResponse {
   startIndex: number;
   soramimi: Array<Array<{ text: string; reading?: string }>>;
   cached: boolean;
+  skipped?: boolean;
+  skipReason?: string;
 }
 
 // =============================================================================
@@ -477,6 +483,11 @@ export async function processSoramimiChunks(
     if (prefetchedInfo.cached && prefetchedInfo.data) {
       cachedData = prefetchedInfo.data;
     }
+    // Handle skipped case (e.g., Chinese lyrics)
+    if (prefetchedInfo.skipped) {
+      onProgress?.({ completedChunks: 0, totalChunks: 0, percentage: 100 });
+      return []; // Return empty array for skipped content
+    }
   } else {
     // Fetch chunk info (makes extra API call but includes chunk 0 inline)
     // Use longer timeout since AI generates chunk 0 inline
@@ -497,6 +508,13 @@ export async function processSoramimiChunks(
     }
 
     const chunkInfo = await res.json();
+    
+    // Handle skipped case (e.g., Chinese lyrics)
+    if (chunkInfo.skipped) {
+      onProgress?.({ completedChunks: 0, totalChunks: 0, percentage: 100 });
+      return []; // Return empty array for skipped content
+    }
+    
     totalLines = chunkInfo.totalLines;
     totalChunks = chunkInfo.totalChunks;
     if (chunkInfo.cached && chunkInfo.soramimi) {
@@ -567,6 +585,19 @@ export async function processSoramimiChunks(
       }
 
       const result = (await res.json()) as SoramimiChunkResponse;
+
+      // Handle skipped chunk (e.g., Chinese lyrics detected mid-stream)
+      if (result.skipped) {
+        // Mark as complete but don't add data
+        completedChunkSet.add(chunkIndex);
+        completedChunks++;
+        onProgress?.({
+          completedChunks,
+          totalChunks,
+          percentage: Math.round((completedChunks / totalChunks) * 100),
+        });
+        return;
+      }
 
       if (typeof result.startIndex !== "number" || result.startIndex < 0) {
         throw new Error(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}`);

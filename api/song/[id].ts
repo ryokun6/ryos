@@ -1169,6 +1169,50 @@ function containsKanji(text: string): boolean {
   return /[\u4E00-\u9FFF]/.test(text);
 }
 
+/**
+ * Check if text contains Japanese kana (Hiragana or Katakana)
+ */
+function containsKana(text: string): boolean {
+  return /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
+}
+
+/**
+ * Check if text is Chinese (has CJK ideographs but no Japanese kana)
+ * This distinguishes Chinese from Japanese (which has both Kanji and Kana)
+ */
+function isChineseText(text: string): boolean {
+  return containsKanji(text) && !containsKana(text);
+}
+
+/**
+ * Check if lyrics are mostly Chinese text
+ * Returns true if majority of lines with CJK characters are Chinese (not Japanese)
+ * Used to skip soramimi generation for Chinese lyrics (空耳 doesn't make sense for Chinese)
+ */
+function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
+  if (!lines || lines.length === 0) return false;
+  
+  // Count lines with CJK that are Chinese vs Japanese
+  let chineseLineCount = 0;
+  let cjkLineCount = 0;
+  
+  for (const line of lines) {
+    const text = line.words;
+    if (!containsKanji(text)) continue; // Skip lines without CJK
+    
+    cjkLineCount++;
+    if (isChineseText(text)) {
+      chineseLineCount++;
+    }
+  }
+  
+  // If no CJK lines at all, not Chinese
+  if (cjkLineCount === 0) return false;
+  
+  // Consider "mostly Chinese" if >70% of CJK lines are Chinese
+  return chineseLineCount / cjkLineCount > 0.7;
+}
+
 const FURIGANA_SYSTEM_PROMPT = `You are an expert in Japanese language. You will be given a JSON array of Japanese text strings (song lyrics).
 Your task is to add furigana (reading annotations) to kanji characters in each line.
 
@@ -1694,6 +1738,19 @@ export default async function handler(req: Request) {
         const totalLines = song.lyrics.parsedLines.length;
         const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
+        // For soramimi: skip if lyrics are mostly Chinese (空耳 doesn't make sense for Chinese lyrics)
+        if (operation === "soramimi" && lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
+          logInfo(requestId, "Skipping soramimi generation - lyrics are mostly Chinese");
+          return jsonResponse({
+            totalLines,
+            totalChunks: 0,
+            chunkSize: CHUNK_SIZE,
+            cached: false,
+            skipped: true,
+            skipReason: "chinese_lyrics",
+          });
+        }
+
         // Check if already cached (must have actual data, not just empty arrays/objects)
         // Skip cache check if force=true (user wants to regenerate)
         let cached = false;
@@ -2025,6 +2082,20 @@ export default async function handler(req: Request) {
             song.artist
           );
           await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
+        }
+
+        // Skip soramimi for Chinese lyrics (空耳 doesn't make sense for Chinese lyrics)
+        if (lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
+          logInfo(requestId, "Skipping soramimi chunk - lyrics are mostly Chinese");
+          return jsonResponse({
+            chunkIndex,
+            totalChunks: 0,
+            startIndex: 0,
+            soramimi: [],
+            cached: false,
+            skipped: true,
+            skipReason: "chinese_lyrics",
+          });
         }
 
         const totalLines = song.lyrics.parsedLines.length;
