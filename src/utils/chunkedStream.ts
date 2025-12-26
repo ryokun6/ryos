@@ -141,6 +141,12 @@ export async function processTranslationChunks(
     ? Array.from({ length: totalChunks - 1 }, (_, i) => i + 1)
     : Array.from({ length: totalChunks }, (_, i) => i);
   
+  // Track which chunks have been successfully processed
+  const completedChunkSet = new Set<number>();
+  if (chunkInfo.initialChunk?.translations) {
+    completedChunkSet.add(0);
+  }
+
   await processWithConcurrency(
     chunkIndices,
     async (chunkIndex) => {
@@ -173,8 +179,7 @@ export async function processTranslationChunks(
       
       // Validate startIndex is a valid non-negative number
       if (typeof result.startIndex !== 'number' || result.startIndex < 0 || !Number.isFinite(result.startIndex)) {
-        console.warn(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}, skipping`);
-        return;
+        throw new Error(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}`);
       }
       
       // Store translations in correct positions with bounds checking
@@ -187,6 +192,7 @@ export async function processTranslationChunks(
         }
       });
 
+      completedChunkSet.add(chunkIndex);
       completedChunks++;
       onProgress?.({
         completedChunks,
@@ -198,7 +204,38 @@ export async function processTranslationChunks(
     MAX_CONCURRENT_CHUNKS
   );
 
-  // Server auto-consolidates on the last chunk, no need to save here
+  // Validate all chunks completed before saving
+  if (completedChunkSet.size !== totalChunks) {
+    const missing = Array.from({ length: totalChunks }, (_, i) => i)
+      .filter(i => !completedChunkSet.has(i));
+    throw new Error(`Translation incomplete: missing chunks ${missing.join(', ')}`);
+  }
+
+  // Save consolidated translation to server (client-driven consolidation)
+  // This is race-condition-free since we know all chunks are complete
+  if (!signal?.aborted) {
+    try {
+      const saveRes = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save-translation",
+          language,
+          translations: allTranslations,
+        }),
+        signal,
+        timeout: 30000,
+      });
+
+      if (!saveRes.ok) {
+        console.warn(`Failed to save consolidated translation: ${saveRes.status}`);
+      }
+    } catch (e) {
+      // Log but don't throw - the client has the translations locally
+      console.warn("Failed to save consolidated translation:", e);
+    }
+  }
+
   return allTranslations;
 }
 
@@ -227,8 +264,12 @@ export async function processFuriganaChunks(
   }
 
   const { totalChunks, totalLines } = chunkInfo;
-  const allFurigana: Array<Array<{ text: string; reading?: string }>> = new Array(totalLines);
+  // Initialize with empty arrays to avoid undefined holes
+  const allFurigana: Array<Array<{ text: string; reading?: string }>> = new Array(totalLines).fill(null).map(() => []);
   let completedChunks = 0;
+
+  // Track which chunks have been successfully processed
+  const completedChunkSet = new Set<number>();
 
   // Use the pre-processed chunk 0 from the server if present
   if (chunkInfo.initialChunk?.furigana) {
@@ -239,6 +280,7 @@ export async function processFuriganaChunks(
         allFurigana[targetIndex] = segments;
       }
     });
+    completedChunkSet.add(0);
     completedChunks++;
     onProgress?.({ completedChunks, totalChunks, percentage: Math.round((completedChunks / totalChunks) * 100) });
     onChunk?.(0, startIndex, furigana);
@@ -280,8 +322,7 @@ export async function processFuriganaChunks(
       
       // Validate startIndex is a valid non-negative number
       if (typeof result.startIndex !== 'number' || result.startIndex < 0 || !Number.isFinite(result.startIndex)) {
-        console.warn(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}, skipping`);
-        return;
+        throw new Error(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}`);
       }
       
       // Store furigana in correct positions with bounds checking
@@ -294,6 +335,7 @@ export async function processFuriganaChunks(
         }
       });
 
+      completedChunkSet.add(chunkIndex);
       completedChunks++;
       onProgress?.({
         completedChunks,
@@ -305,7 +347,37 @@ export async function processFuriganaChunks(
     MAX_CONCURRENT_CHUNKS
   );
 
-  // Server auto-consolidates on the last chunk, no need to save here
+  // Validate all chunks completed before saving
+  if (completedChunkSet.size !== totalChunks) {
+    const missing = Array.from({ length: totalChunks }, (_, i) => i)
+      .filter(i => !completedChunkSet.has(i));
+    throw new Error(`Furigana incomplete: missing chunks ${missing.join(', ')}`);
+  }
+
+  // Save consolidated furigana to server (client-driven consolidation)
+  // This is race-condition-free since we know all chunks are complete
+  if (!signal?.aborted) {
+    try {
+      const saveRes = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save-furigana",
+          furigana: allFurigana,
+        }),
+        signal,
+        timeout: 30000,
+      });
+
+      if (!saveRes.ok) {
+        console.warn(`Failed to save consolidated furigana: ${saveRes.status}`);
+      }
+    } catch (e) {
+      // Log but don't throw - the client has the furigana locally
+      console.warn("Failed to save consolidated furigana:", e);
+    }
+  }
+
   return allFurigana;
 }
 

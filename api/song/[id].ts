@@ -681,7 +681,7 @@ interface LyricLine {
 const SKIP_PREFIXES = [
   "作词", "作曲", "编曲", "制作", "发行", "出品", "监制", "策划", "统筹",
   "录音", "混音", "母带", "和声", "合声", "合声编写", "版权", "吉他", "贝斯", "鼓", "键盘",
-  "企划", "词：", "詞：", "曲", "男：", "女：", "合：", "OP", "SP", "TME享有",
+  "企划", "词：", "詞：", "词曲：", "詞曲：", "曲", "男：", "女：", "合：", "OP", "SP", "TME享有",
   "Produced", "Composed", "Arranged", "Mixed", "Lyrics", "Keyboard",
   "Guitar", "Bass", "Drum", "Vocal", "Original Publisher", "Sub-publisher",
   "Electric Piano", "Synth by", "Recorded by", "Mixed by", "Mastered by",
@@ -1530,27 +1530,6 @@ export default async function handler(req: Request) {
             const cachedChunk = await redis.get(chunkCacheKey) as string[] | null;
             if (cachedChunk) {
               logInfo(requestId, `Translate chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
-              
-              // Auto-consolidate on last chunk even if cached (in case previous consolidation failed)
-              if (chunkIndex === totalChunks - 1) {
-                const allTranslations: string[] = [];
-                for (let i = 0; i < totalChunks; i++) {
-                  const cachedChunkKeyForConsolidation = lyricsHash
-                    ? `song:${songId}:translate:${language}:chunk:${i}:${lyricsHash}`
-                    : `song:${songId}:translate:${language}:chunk:${i}`;
-                  const chunk = i === chunkIndex ? cachedChunk : await redis.get(cachedChunkKeyForConsolidation) as string[] | null;
-                  if (chunk) {
-                    allTranslations.push(...chunk);
-                  }
-                }
-                // Build LRC and save
-                const translatedLrc = song.lyrics!.parsedLines!
-                  .map((line, idx) => `${msToLrcTime(line.startTimeMs)}${allTranslations[idx] || line.words}`)
-                  .join("\n");
-                await saveTranslation(redis, songId, language, translatedLrc);
-                logInfo(requestId, `Auto-consolidated translation from cache (${language}, ${allTranslations.length} lines)`);
-              }
-              
               return jsonResponse({
                 chunkIndex,
                 totalChunks,
@@ -1578,31 +1557,6 @@ export default async function handler(req: Request) {
           await redis.set(chunkCacheKey, translations, { ex: 60 * 60 * 24 * 30 });
         } catch (e) {
           logError(requestId, "Chunk cache write failed", e);
-        }
-
-        // Auto-consolidate on last chunk: fetch all cached chunks and save to song document
-        if (chunkIndex === totalChunks - 1) {
-          const allTranslations: string[] = [];
-          for (let i = 0; i < totalChunks; i++) {
-            const cachedChunkKey = lyricsHash
-              ? `song:${songId}:translate:${language}:chunk:${i}:${lyricsHash}`
-              : `song:${songId}:translate:${language}:chunk:${i}`;
-            if (i === chunkIndex) {
-              // Current chunk - use translations we just generated
-              allTranslations.push(...translations);
-            } else {
-              const cachedChunk = await redis.get(cachedChunkKey) as string[] | null;
-              if (cachedChunk) {
-                allTranslations.push(...cachedChunk);
-              }
-            }
-          }
-          // Build LRC and save
-          const translatedLrc = song.lyrics!.parsedLines!
-            .map((line, idx) => `${msToLrcTime(line.startTimeMs)}${allTranslations[idx] || line.words}`)
-            .join("\n");
-          await saveTranslation(redis, songId, language, translatedLrc);
-          logInfo(requestId, `Auto-consolidated translation (${language}, ${allTranslations.length} lines)`);
         }
 
         logInfo(requestId, `Translate chunk ${chunkIndex + 1}/${totalChunks} - completed`);
@@ -1668,24 +1622,6 @@ export default async function handler(req: Request) {
             const cachedChunk = await redis.get(chunkCacheKey) as FuriganaSegment[][] | null;
             if (cachedChunk) {
               logInfo(requestId, `Furigana chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
-              
-              // Auto-consolidate on last chunk even if cached (in case previous consolidation failed)
-              if (chunkIndex === totalChunks - 1) {
-                const allFurigana: FuriganaSegment[][] = [];
-                for (let i = 0; i < totalChunks; i++) {
-                  const cachedChunkKeyForConsolidation = lyricsHash
-                    ? `song:${songId}:furigana:chunk:${i}:${lyricsHash}`
-                    : `song:${songId}:furigana:chunk:${i}`;
-                  const chunk = i === chunkIndex ? cachedChunk : await redis.get(cachedChunkKeyForConsolidation) as FuriganaSegment[][] | null;
-                  if (chunk) {
-                    allFurigana.push(...chunk);
-                  }
-                }
-                // Save consolidated furigana
-                await saveFurigana(redis, songId, allFurigana);
-                logInfo(requestId, `Auto-consolidated furigana from cache (${allFurigana.length} lines)`);
-              }
-              
               return jsonResponse({
                 chunkIndex,
                 totalChunks,
@@ -1713,28 +1649,6 @@ export default async function handler(req: Request) {
           await redis.set(chunkCacheKey, furigana, { ex: 60 * 60 * 24 * 30 });
         } catch (e) {
           logError(requestId, "Chunk cache write failed", e);
-        }
-
-        // Auto-consolidate on last chunk: fetch all cached chunks and save to song document
-        if (chunkIndex === totalChunks - 1) {
-          const allFurigana: FuriganaSegment[][] = [];
-          for (let i = 0; i < totalChunks; i++) {
-            const cachedChunkKey = lyricsHash
-              ? `song:${songId}:furigana:chunk:${i}:${lyricsHash}`
-              : `song:${songId}:furigana:chunk:${i}`;
-            if (i === chunkIndex) {
-              // Current chunk - use furigana we just generated
-              allFurigana.push(...furigana);
-            } else {
-              const cachedChunk = await redis.get(cachedChunkKey) as FuriganaSegment[][] | null;
-              if (cachedChunk) {
-                allFurigana.push(...cachedChunk);
-              }
-            }
-          }
-          // Save consolidated furigana
-          await saveFurigana(redis, songId, allFurigana);
-          logInfo(requestId, `Auto-consolidated furigana (${allFurigana.length} lines)`);
         }
 
         logInfo(requestId, `Furigana chunk ${chunkIndex + 1}/${totalChunks} - completed`);
