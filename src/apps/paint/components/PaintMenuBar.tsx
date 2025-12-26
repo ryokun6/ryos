@@ -642,14 +642,14 @@ export function PaintMenuBar({
 }: PaintMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const currentTheme = useThemeStore((state) => state.current);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const appId = "paint";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  if (!isWindowOpen) return null;
-
-  const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  if (!isWindowOpen) return null;
 
   // Translation maps
   const categoryKeyMap: Record<string, string> = {

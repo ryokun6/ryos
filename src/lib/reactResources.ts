@@ -14,9 +14,9 @@ type FetchResource = {
 const STYLE_RESOURCES = ["/fonts/fonts.css"];
 
 const FONT_RESOURCES: FontResource[] = [
-  { href: "/fonts/ChicagoKare-Regular.woff", type: "font/woff", priority: "high" },
+  { href: "/fonts/ChicagoKare-Regular.woff2", type: "font/woff2", priority: "high" },
   { href: "/fonts/fusion-pixel-12px-proportional-ja.woff2", type: "font/woff2" },
-  { href: "/fonts/geneva-12.ttf", type: "font/ttf", priority: "high" },
+  { href: "/fonts/geneva-12.woff2", type: "font/woff2", priority: "high" },
   { href: "/fonts/Mondwest-Regular.woff2", type: "font/woff2" },
 ];
 

@@ -61,8 +61,8 @@ interface IconButtonProps {
   isLoading?: boolean;
   // Drag-and-drop props for reordering
   draggable?: boolean;
-  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
-  onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragStart?: React.DragEventHandler<HTMLElement>;
+  onDragEnd?: React.DragEventHandler<HTMLElement>;
   isDragging?: boolean;
   isDraggedOutside?: boolean;
   // Scaled size prop
@@ -354,11 +354,11 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
           onMouseEnter={onHover}
           onMouseLeave={onLeave}
           draggable={draggable}
-          onDragStart={onDragStart as any}
-          onDragEnd={onDragEnd as any}
-          onDragOver={onDragOver as any}
-          onDrop={onDrop as any}
-          onDragLeave={onDragLeave as any}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          onDragLeave={onDragLeave}
           {...longPressHandlers}
           className="relative flex items-end justify-center w-full h-full"
           style={{

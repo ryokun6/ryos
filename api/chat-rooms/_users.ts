@@ -5,7 +5,6 @@
 import {
   redis,
   getUser,
-  setUser,
   createUserIfNotExists,
   getCurrentTimestamp,
 } from "./_redis.js";
@@ -30,7 +29,7 @@ import {
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
 } from "../_utils/auth.js";
-import type { User, CreateUserData, UserResponse } from "./_types.js";
+import type { User, CreateUserData } from "./_types.js";
 import { createErrorResponse } from "./_helpers.js";
 
 // ============================================================================
@@ -45,8 +44,6 @@ export async function ensureUserExists(
   username: string,
   requestId: string
 ): Promise<User> {
-  const userKey = `${CHAT_USERS_PREFIX}${username}`;
-
   // Check for profanity first
   if (isProfaneUsername(username)) {
     logInfo(
@@ -206,7 +203,6 @@ export async function handleCreateUser(
 
   logInfo(requestId, `Creating user: ${username} with password`);
   try {
-    const userKey = `${CHAT_USERS_PREFIX}${username}`;
     const user: User = {
       username,
       lastActive: getCurrentTimestamp(),

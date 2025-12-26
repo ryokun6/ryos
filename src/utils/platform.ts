@@ -57,7 +57,7 @@ export function isTauriWindows(): boolean {
   // Chromium detection: check for window.chrome object
   // On Windows, Tauri uses Chromium which has window.chrome
   // On Mac, Tauri uses WebKit which doesn't have window.chrome
-  const hasChrome = "chrome" in window && (window as any).chrome !== undefined;
+  const hasChrome = "chrome" in window && (window as { chrome?: unknown }).chrome !== undefined;
   
   // If Chromium (has window.chrome), it's Windows
   // If WebKit (no window.chrome), it's Mac

@@ -1391,7 +1391,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
               } else {
                 await getCurrentWindow().startDragging();
               }
-            } catch {}
+            } catch {
+              // Ignore errors - Tauri window APIs may not be available in browser
+            }
           }}
         />
       )}

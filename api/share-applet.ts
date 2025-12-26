@@ -42,8 +42,6 @@ const SaveAppletRequestSchema = z.object({
   shareId: z.string().optional(), // Optional: if provided, update existing applet
 });
 
-type SaveAppletRequest = z.infer<typeof SaveAppletRequestSchema>;
-
 /**
  * Main handler
  */
@@ -198,8 +196,8 @@ export default async function handler(req: Request) {
           typeof appletData === "string"
             ? JSON.parse(appletData)
             : appletData;
-      } catch (parseError) {
-        console.error("Error parsing applet data:", parseError);
+      } catch (e) {
+        console.error("Error parsing applet data:", e);
         return new Response(
           JSON.stringify({ error: "Invalid applet data" }),
           {
@@ -248,7 +246,7 @@ export default async function handler(req: Request) {
       let body;
       try {
         body = await req.json();
-      } catch (parseError) {
+      } catch {
         return new Response(
           JSON.stringify({ error: "Invalid JSON in request body" }),
           {
@@ -316,7 +314,7 @@ export default async function handler(req: Request) {
               // Author doesn't match or no author, create new share
               id = generateId();
             }
-          } catch (parseError) {
+          } catch {
             // If we can't parse, we can't verify author - generate new ID for security
             id = generateId();
           }
@@ -508,7 +506,7 @@ export default async function handler(req: Request) {
       let body;
       try {
         body = await req.json();
-      } catch (parseError) {
+      } catch {
         return new Response(
           JSON.stringify({ error: "Invalid JSON in request body" }),
           {

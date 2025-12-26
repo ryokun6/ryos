@@ -1092,9 +1092,8 @@ export const useFilesStore = create<FilesStoreState>()(
           );
 
           // Process all apps in registry except Finder and Control Panels
-          // @ts-ignore - iterating over values of appRegistry
           const apps = Object.values(appRegistry).filter(
-            (app: any) => app.id !== "finder" && app.id !== "control-panels"
+            (app: { id: string }) => app.id !== "finder" && app.id !== "control-panels"
           );
 
           // Collect all shortcuts to create in a single batch update

@@ -15,7 +15,7 @@
 @supports not (font: -apple-system-body) {
   @font-face {
     font-family: "SerenityOS-Emoji";
-    src: url("/fonts/SerenityOS-Emoji.ttf") format("truetype");
+    src: url("/fonts/SerenityOS-Emoji.woff2") format("woff2");
     font-weight: normal;
     font-style: normal;
     font-display: swap;

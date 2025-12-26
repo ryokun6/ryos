@@ -11,11 +11,11 @@ const ICONS_ROOT = "public/icons";
 // Auto-detect theme directories under public/icons (any subdirectory)
 async function detectThemeDirs(): Promise<string[]> {
   try {
-    const entries = await readdir(ICONS_ROOT, { withFileTypes: true } as any);
+    const entries = await readdir(ICONS_ROOT, { withFileTypes: true });
     return entries
-      .filter((e: any) => e.isDirectory())
-      .map((e: any) => e.name)
-      .filter((name: string) => !name.startsWith("."))
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .filter((name) => !name.startsWith("."))
       .sort();
   } catch (e) {
     console.warn(

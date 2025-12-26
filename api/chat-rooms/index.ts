@@ -67,7 +67,6 @@ import {
 import {
   cleanupExpiredPresence,
   getDetailedRooms,
-  refreshRoomUserCount,
 } from "./_presence.js";
 
 // ============================================================================
@@ -207,7 +206,7 @@ export async function GET(request: Request): Promise<Response> {
           );
           break;
         }
-        response = await handleGetRoomUsers(roomId, requestId);
+        response = await handleGetRoomUsers(roomId);
         break;
       }
 
@@ -402,16 +401,6 @@ export async function POST(request: Request): Promise<Response> {
     // Declare authentication variables
     let username: string | null = null;
     let token: string | null = null;
-
-    // Actions that don't require authentication
-    const publicActions = [
-      "createUser",
-      "joinRoom",
-      "leaveRoom",
-      "switchRoom",
-      "refreshToken",
-      "authenticateWithPassword",
-    ];
 
     // Protected actions
     const protectedActions = [

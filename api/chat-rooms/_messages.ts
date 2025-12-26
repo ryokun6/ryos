@@ -16,10 +16,8 @@ import {
   getCurrentTimestamp,
   setUser,
   getAllRoomIds,
-  deleteAllMessages as deleteAllMessagesFromRedis,
 } from "./_redis.js";
 import {
-  CHAT_ROOM_PREFIX,
   CHAT_MESSAGES_PREFIX,
   CHAT_BURST_PREFIX,
   CHAT_BURST_SHORT_WINDOW_SECONDS,
@@ -43,7 +41,7 @@ import {
 import { validateAuth } from "../_utils/auth.js";
 import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./_users.js";
-import type { Message, SendMessageData, GenerateRyoReplyData, BulkMessagesResult } from "./_types.js";
+import type { Message, SendMessageData, GenerateRyoReplyData } from "./_types.js";
 import { ROOM_ID_REGEX } from "../_utils/validation.js";
 
 // ============================================================================

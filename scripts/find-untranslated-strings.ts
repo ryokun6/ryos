@@ -42,7 +42,7 @@ async function findFiles(dir: string, extensions: string[] = [".tsx", ".ts"]): P
         files.push(fullPath);
       }
     }
-  } catch (error) {
+  } catch {
     // Ignore permission errors
   }
   return files;

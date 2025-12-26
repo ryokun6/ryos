@@ -39,7 +39,6 @@ import {
   saveFurigana,
   saveSoramimi,
   canModifySong,
-  type SongDocument,
   type LyricsSource,
   type LyricsContent,
   type FuriganaSegment,
@@ -208,7 +207,6 @@ export const maxDuration = 120;
 // =============================================================================
 
 const CHUNK_SIZE = 15;
-const MAX_PARALLEL_CHUNKS = 5;
 
 const kugouHeaders: HeadersInit = {
   "User-Agent":
@@ -449,7 +447,8 @@ function sanitizeInput(str: string): string {
   // \u202A-\u202E: bidirectional text controls
   // \u2061-\u2064: invisible operators
   // \u206A-\u206F: deprecated formatting characters
-  return str.replace(/[\u200B-\u200D\uFEFF\u2060\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B-\u180E\u2000-\u200F\u202A-\u202E\u2061-\u2064\u206A-\u206F]/g, "").trim();
+  // eslint-disable-next-line no-misleading-character-class -- intentionally matching zero-width and invisible Unicode characters
+  return str.replace(/[\u200B\u200C\u200D\uFEFF\u2060\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B\u180C\u180D\u180E\u2000-\u200F\u202A-\u202E\u2061-\u2064\u206A-\u206F]/g, "").trim();
 }
 
 /**
@@ -562,7 +561,7 @@ function parseYouTubeTitleSimple(rawTitle: string, channelName?: string): { titl
 
   // Clean common video markers
   let cleaned = rawTitle
-    .replace(/\s*[\[\(【「『]?\s*(official\s*)?(music\s*)?(video|mv|m\/v|audio|lyric|lyrics|visualizer|live)\s*[\]\)】」』]?\s*/gi, " ")
+    .replace(/\s*[[(【「『]?\s*(official\s*)?(music\s*)?(video|mv|m\/v|audio|lyric|lyrics|visualizer|live)\s*[\])】」』]?\s*/gi, " ")
     .replace(/\s*【[^】]*】\s*/g, " ")
     .replace(/\s*\[[^\]]*\]\s*/g, " ")
     .trim();
@@ -1088,49 +1087,6 @@ Do not include timestamps or any other formatting in your output strings; just t
   }
 }
 
-/**
- * Translate lyrics from pre-parsed lines
- * This ensures translation uses the same lines as the client
- */
-async function translateFromParsedLines(
-  parsedLines: ParsedLyricLine[],
-  targetLanguage: string,
-  requestId: string
-): Promise<string> {
-  if (parsedLines.length === 0) return "";
-
-  // Convert to LyricLine format for chunk processing
-  const lines: LyricLine[] = parsedLines.map(line => ({
-    words: line.words,
-    startTimeMs: line.startTimeMs,
-  }));
-
-  // Process in chunks
-  const chunks: LyricLine[][] = [];
-  for (let i = 0; i < lines.length; i += CHUNK_SIZE) {
-    chunks.push(lines.slice(i, i + CHUNK_SIZE));
-  }
-
-  const allTranslations: string[] = [];
-
-  // Process chunks with limited concurrency
-  for (let i = 0; i < chunks.length; i += MAX_PARALLEL_CHUNKS) {
-    const batch = chunks.slice(i, i + MAX_PARALLEL_CHUNKS);
-    const results = await Promise.all(
-      batch.map((chunk) => translateChunk(chunk, targetLanguage, requestId))
-    );
-    for (const result of results) {
-      allTranslations.push(...result);
-    }
-    logInfo(requestId, `Translated chunks ${i + 1}-${Math.min(i + MAX_PARALLEL_CHUNKS, chunks.length)}/${chunks.length}`);
-  }
-
-  // Build translated LRC
-  return lines
-    .map((line, index) => `${msToLrcTime(line.startTimeMs)}${allTranslations[index] || line.words}`)
-    .join("\n");
-}
-
 // =============================================================================
 // Soramimi Functions (Chinese Misheard Lyrics / 空耳)
 // =============================================================================
@@ -1140,9 +1096,8 @@ const SORAMIMI_SYSTEM_PROMPT = `You are an expert in phonetic transcription to C
 Given lyric lines in any language, create Chinese character readings that phonetically mimic the original sounds when read aloud in Mandarin Chinese. This is known as "空耳" (soramimi/mondegreen) - misheard lyrics.
 
 Famous examples:
-- "sorry sorry" → "搜哩搜哩" (sōu lǐ sōu lǐ)
-- "It goes down, down baby" → "一個送到北邊" (yī gè sòng dào běi biān)
-- "리듬에 온몸을" → "紅燈沒？綠燈沒？" (hóng dēng méi? lǜ dēng méi?)
+- "sorry sorry" → "搜哩搜哩" (sōu lǐ sōu lǐ) - 4 syllables → 4 syllables
+- "리듬에 온몸을" → "紅燈沒？綠燈沒？" (hóng dēng méi? lǜ dēng méi?) - Korean: 6 syllables → 6 syllables
 - "맡기고 소리쳐 oh" → "parking 個休旅車 oh" (parking gè xiū lǚ chē oh)
 
 Rules:
@@ -1150,7 +1105,7 @@ Rules:
 2. Use common Chinese characters/words that flow naturally
 3. It's OK to mix in English words or numbers if they fit the sound
 4. Be creative and playful - soramimi is meant to be funny and memorable
-5. Preserve the rhythm and syllable count roughly
+5. Strictly adhere to the original number of syllables - each syllable in the original must correspond to one syllable in the Chinese reading
 6. Use Traditional Chinese characters (繁體字)
 
 IMPORTANT: Split each line into INDIVIDUAL WORD segments, not the entire line!
@@ -1168,37 +1123,6 @@ Example output:
     [{"text": "I'm ", "reading": "愛"}, {"text": "so ", "reading": "搜"}, {"text": "so", "reading": "搜"}, {"text": "rry", "reading": "哩"}]
   ]
 }`;
-
-/**
- * Validate and fix soramimi segments to ensure concatenated text matches original
- * If segments don't match, returns a single segment with the original text
- */
-function validateSoramimiSegments(
-  segments: FuriganaSegment[],
-  originalText: string,
-  requestId: string,
-  lineIndex: number
-): FuriganaSegment[] {
-  if (!segments || segments.length === 0) {
-    return [{ text: originalText }];
-  }
-
-  // Concatenate all text segments
-  const concatenated = segments.map(s => s.text).join("");
-  
-  // Check if it matches the original (ignoring whitespace differences)
-  const normalizedConcatenated = concatenated.replace(/\s+/g, "");
-  const normalizedOriginal = originalText.replace(/\s+/g, "");
-  
-  if (normalizedConcatenated !== normalizedOriginal) {
-    logInfo(requestId, `Soramimi line ${lineIndex} mismatch - segments: "${concatenated}" vs original: "${originalText}". Using fallback.`);
-    // Return a single segment with the original text and try to use the first reading if available
-    const firstReading = segments.find(s => s.reading)?.reading;
-    return [{ text: originalText, reading: firstReading }];
-  }
-  
-  return segments;
-}
 
 async function generateSoramimiForChunk(
   lines: LyricLine[],
@@ -1226,13 +1150,9 @@ async function generateSoramimiForChunk(
       logInfo(requestId, `Warning: Soramimi response length mismatch - expected ${lines.length}, got ${aiResponse.annotatedLines.length}`);
     }
 
-    // Map results back to all lines, validating each one
+    // Map results back to all lines
     return lines.map((line, index) => {
-      const segments = aiResponse.annotatedLines[index];
-      if (!segments) {
-        return [{ text: line.words }];
-      }
-      return validateSoramimiSegments(segments, line.words, requestId, index);
+      return aiResponse.annotatedLines[index] || [{ text: line.words }];
     });
   } catch (error) {
     logError(requestId, `Soramimi chunk failed, returning plain text segments as fallback`, error);
@@ -1244,12 +1164,6 @@ async function generateSoramimiForChunk(
 // =============================================================================
 // Furigana Functions
 // =============================================================================
-
-function isJapaneseText(text: string): boolean {
-  const hasKanji = /[\u4E00-\u9FFF]/.test(text);
-  const hasKana = /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
-  return hasKanji && hasKana;
-}
 
 function containsKanji(text: string): boolean {
   return /[\u4E00-\u9FFF]/.test(text);
@@ -1326,50 +1240,6 @@ async function generateFuriganaForChunk(
     // Return plain text segments without readings as fallback
     return lines.map((line) => [{ text: line.words }]);
   }
-}
-
-/**
- * Generate furigana from pre-parsed lines
- * This ensures furigana uses the same lines as the client
- */
-async function generateFuriganaFromParsedLines(
-  parsedLines: ParsedLyricLine[],
-  requestId: string
-): Promise<FuriganaSegment[][]> {
-  if (parsedLines.length === 0) return [];
-
-  // Convert to LyricLine format for chunk processing
-  const lines: LyricLine[] = parsedLines.map(line => ({
-    words: line.words,
-    startTimeMs: line.startTimeMs,
-  }));
-
-  // Check if any lines are Japanese
-  const hasJapanese = lines.some((line) => isJapaneseText(line.words));
-  if (!hasJapanese) {
-    return lines.map((line) => [{ text: line.words }]);
-  }
-
-  // Process in chunks
-  const chunks: LyricLine[][] = [];
-  for (let i = 0; i < lines.length; i += CHUNK_SIZE) {
-    chunks.push(lines.slice(i, i + CHUNK_SIZE));
-  }
-
-  const allFurigana: FuriganaSegment[][] = [];
-
-  for (let i = 0; i < chunks.length; i += MAX_PARALLEL_CHUNKS) {
-    const batch = chunks.slice(i, i + MAX_PARALLEL_CHUNKS);
-    const results = await Promise.all(
-      batch.map((chunk) => generateFuriganaForChunk(chunk, requestId))
-    );
-    for (const result of results) {
-      allFurigana.push(...result);
-    }
-    logInfo(requestId, `Processed furigana chunks ${i + 1}-${Math.min(i + MAX_PARALLEL_CHUNKS, chunks.length)}/${chunks.length}`);
-  }
-
-  return allFurigana;
 }
 
 // =============================================================================

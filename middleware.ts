@@ -127,7 +127,7 @@ export const config = {
 // Simple title parser - extracts artist and title from common YouTube formats
 function parseYouTubeTitle(rawTitle: string): { title: string; artist: string | null } {
   // Remove common suffixes
-  let cleaned = rawTitle
+  const cleaned = rawTitle
     .replace(/\s*\(Official\s*(Music\s*)?Video\)/gi, "")
     .replace(/\s*\[Official\s*(Music\s*)?Video\]/gi, "")
     .replace(/\s*Official\s*(Music\s*)?Video/gi, "")

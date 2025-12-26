@@ -682,7 +682,9 @@ export function Desktop({
               } else {
                 await getCurrentWindow().startDragging();
               }
-            } catch {}
+            } catch {
+              // Ignore errors - Tauri window APIs may not be available in browser
+            }
           }}
         />
       )}

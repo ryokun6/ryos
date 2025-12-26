@@ -484,7 +484,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
                     scrollToIndex(currentIndex - 1);
                   }
                 }
-              } catch (err) {
+              } catch {
                 // Cross-origin or other error - allow navigation if no scroll
                 if (Math.abs(e.deltaY) > 30) {
                   if (e.deltaY > 0 && currentIndex < applets.length - 1) {
@@ -712,27 +712,27 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
                       : (event as MouseEvent).clientY;
                     
                     // Mark if drag started on toolbar
-                    (card as any).__dragOnToolbar = dragY && (dragY - cardRect.top < 60);
+                    (card as HTMLElement & { __dragOnToolbar?: boolean }).__dragOnToolbar = dragY ? (dragY - cardRect.top < 60) : false;
                   }}
                   onDrag={(event, info) => {
                     if (distance !== 0) return;
                     
                     // Determine primary drag direction
                     const target = event.target as HTMLElement;
-                    const card = target.closest('[data-applet-card]') as HTMLElement;
+                    const card = target.closest('[data-applet-card]') as HTMLElement & { _primaryDragAxis?: 'x' | 'y' };
                     if (card) {
                       const absX = Math.abs(info.offset.x);
                       const absY = Math.abs(info.offset.y);
-                      (card as any)._primaryDragAxis = absX > absY ? 'x' : 'y';
+                      card._primaryDragAxis = absX > absY ? 'x' : 'y';
                     }
                   }}
                   onDragEnd={(event, info) => {
                     if (distance !== 0) return;
                     
                     const target = event.target as HTMLElement;
-                    const card = target.closest('[data-applet-card]') as HTMLElement;
-                    const dragOnToolbar = card && (card as any).__dragOnToolbar;
-                    const primaryAxis = (card as any)?._primaryDragAxis || 'y';
+                    const card = target.closest('[data-applet-card]') as HTMLElement & { __dragOnToolbar?: boolean; _primaryDragAxis?: 'x' | 'y' } | null;
+                    const dragOnToolbar = card?.__dragOnToolbar;
+                    const primaryAxis = card?._primaryDragAxis || 'y';
                     
                     // Handle horizontal swipe (left/right) - both go to next
                     if (primaryAxis === 'x') {
@@ -781,7 +781,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
                               }
                             }
                           }
-                        } catch (err) {
+                        } catch {
                           // Cross-origin - allow navigation
                         }
                       }

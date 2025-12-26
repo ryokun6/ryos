@@ -726,7 +726,7 @@ export function InternetExplorerAppComponent({
                   handleNavigationError(potentialErrorData, url);
                   return;
                 }
-              } catch (parseError) {
+              } catch {
                 // Silently ignore - content looked like JSON but wasn't valid JSON
                 // This is expected for regular HTML pages
               }

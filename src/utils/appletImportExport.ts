@@ -173,7 +173,7 @@ export async function exportAppletAsApp(
   filename?: string
 ): Promise<void> {
   // Get base filename without extension
-  let baseFilename = filename || (appletPath
+  const baseFilename = filename || (appletPath
     ? appletPath
         .split("/")
         .pop()

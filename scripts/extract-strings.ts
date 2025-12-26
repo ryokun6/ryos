@@ -12,7 +12,7 @@
  *   bun run scripts/extract-strings.ts --exclude test     # Exclude directories
  */
 
-import { readdir, readFile, stat } from "fs/promises";
+import { readdir, readFile } from "fs/promises";
 import { join, relative } from "path";
 
 interface ExtractedString {
@@ -372,57 +372,11 @@ async function findTsxFiles(
         files.push(fullPath);
       }
     }
-  } catch (error) {
+  } catch {
     // Ignore permission errors
   }
   
   return files;
-}
-
-/**
- * Generate translation keys from analyses
- */
-async function generateTranslationKeys(
-  analyses: FileAnalysis[]
-): Promise<Record<string, Record<string, string>>> {
-  const translations: Record<string, Record<string, string>> = {
-    common: { menu: {} as Record<string, string>, dialog: {} as Record<string, string> },
-    apps: {},
-  };
-  
-  for (const analysis of analyses) {
-    for (const str of analysis.strings) {
-      if (str.suggestedKey.startsWith("common.")) {
-        const parts = str.suggestedKey.split(".");
-        const category = parts[1]; // menu, dialog, etc.
-        const key = parts.slice(2).join(".");
-        
-        if (!translations.common[category]) {
-          translations.common[category] = {};
-        }
-        (translations.common[category] as Record<string, string>)[key] = str.original;
-      } else if (str.suggestedKey.startsWith("apps.")) {
-        const parts = str.suggestedKey.split(".");
-        const appId = parts[1];
-        const key = parts.slice(2).join(".");
-        
-        if (!translations.apps[appId]) {
-          translations.apps[appId] = {};
-        }
-        
-        // Determine category (menu, dialog, etc.)
-        const category = parts[2] || "general";
-        if (!translations.apps[appId][category]) {
-          translations.apps[appId][category] = {};
-        }
-        
-        const finalKey = parts.slice(3).join(".") || key;
-        (translations.apps[appId][category] as Record<string, string>)[finalKey] = str.original;
-      }
-    }
-  }
-  
-  return translations;
 }
 
 async function main() {
@@ -452,7 +406,7 @@ async function main() {
     try {
       const analysis = await analyzeFile(file);
       analyses.push(analysis);
-    } catch (error) {
+    } catch {
       console.log(`⚠️  Could not read ${relative(process.cwd(), file)}`);
     }
   }
@@ -507,9 +461,6 @@ async function main() {
       console.log();
     }
   }
-  
-  // Generate translation keys
-  const translations = await generateTranslationKeys(untranslated);
   
   // Summary stats
   const totalStrings = untranslated.reduce((sum, a) => sum + a.strings.length, 0);

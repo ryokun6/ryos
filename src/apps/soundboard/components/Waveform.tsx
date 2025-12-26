@@ -70,8 +70,8 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
 
       // Defer heavy waveform decoding to idle time / next tick to avoid blocking mobile Safari UI thread
       const schedule = (cb: () => void) => {
-        if (typeof (window as any).requestIdleCallback === "function") {
-          (window as any).requestIdleCallback(cb, { timeout: 750 });
+        if ("requestIdleCallback" in window) {
+          window.requestIdleCallback(cb, { timeout: 750 });
         } else {
           setTimeout(cb, 0);
         }

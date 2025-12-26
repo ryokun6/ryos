@@ -6,13 +6,9 @@ import {
   redis,
   getRoom,
   setRoom,
-  deleteRoom as deleteRoomFromRedis,
-  roomExists,
   registerRoom,
-  unregisterRoom,
   generateId,
   getCurrentTimestamp,
-  deleteAllMessages,
 } from "./_redis.js";
 import {
   CHAT_ROOM_PREFIX,
@@ -21,7 +17,6 @@ import {
 } from "./_constants.js";
 import {
   setRoomPresence,
-  refreshRoomPresence,
   removeRoomPresence,
   refreshRoomUserCount,
   getActiveUsersAndPrune,
@@ -710,8 +705,7 @@ export async function handleSwitchRoom(
  * Handle get room users request
  */
 export async function handleGetRoomUsers(
-  roomId: string,
-  requestId: string
+  roomId: string
 ): Promise<Response> {
   const users = await getActiveUsersAndPrune(roomId);
   return new Response(JSON.stringify({ users }), {
