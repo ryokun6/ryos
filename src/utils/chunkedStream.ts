@@ -6,12 +6,9 @@
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 
-export interface ChunkInfo {
-  totalLines: number;
-  totalChunks: number;
-  chunkSize: number;
-  cached: boolean;
-}
+// =============================================================================
+// Types
+// =============================================================================
 
 export interface ChunkProgress {
   completedChunks: number;
@@ -19,26 +16,24 @@ export interface ChunkProgress {
   percentage: number;
 }
 
-export interface ChunkResult<T> {
-  chunkIndex: number;
+/** Pre-fetched translation info from initial lyrics fetch */
+export interface TranslationChunkInfo {
+  totalLines: number;
   totalChunks: number;
-  startIndex: number;
-  data: T;
+  chunkSize: number;
   cached: boolean;
+  /** Cached translation LRC (only present if cached=true) */
+  lrc?: string;
 }
 
-interface InitialChunk {
-  chunkIndex: number;
-  startIndex: number;
-  translations?: string[];
-  furigana?: Array<Array<{ text: string; reading?: string }>>;
+/** Pre-fetched furigana info from initial lyrics fetch */
+export interface FuriganaChunkInfo {
+  totalLines: number;
+  totalChunks: number;
+  chunkSize: number;
   cached: boolean;
-}
-
-interface ChunkInfoResponse extends ChunkInfo {
-  translation?: string;
-  furigana?: unknown[][];
-  initialChunk?: InitialChunk;
+  /** Cached furigana data (only present if cached=true) */
+  data?: Array<Array<{ text: string; reading?: string }>>;
 }
 
 interface TranslateChunkResponse {
@@ -57,95 +52,88 @@ interface FuriganaChunkResponse {
   cached: boolean;
 }
 
-const MAX_CONCURRENT_CHUNKS = 2; // Limit concurrent requests to avoid overwhelming the server
+// =============================================================================
+// Constants
+// =============================================================================
+
+const MAX_CONCURRENT_CHUNKS = 2;
 const CHUNK_TIMEOUT = 60000; // 60 seconds per chunk
 
-/**
- * Get chunk info for an operation (translation or furigana)
- * Returns cached result immediately if available
- */
-export async function getChunkInfo(
-  songId: string,
-  operation: "translate" | "furigana",
-  language?: string,
-  signal?: AbortSignal,
-  force?: boolean
-): Promise<ChunkInfoResponse> {
-  const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "get-chunk-info",
-      operation,
-      ...(language ? { language } : {}),
-      ...(force ? { force } : {}),
-    }),
-    signal,
-    timeout: 15000,
-  });
+// =============================================================================
+// Translation Processing
+// =============================================================================
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText || `Failed to get chunk info (status ${res.status})`);
-  }
-
-  return res.json();
+export interface ProcessTranslationOptions {
+  force?: boolean;
+  signal?: AbortSignal;
+  onProgress?: (progress: ChunkProgress) => void;
+  onChunk?: (chunkIndex: number, startIndex: number, translations: string[]) => void;
+  /** Pre-fetched chunk info from initial lyrics request (skips extra API call) */
+  prefetchedInfo?: TranslationChunkInfo;
 }
 
 /**
- * Process translation chunks with streaming progress
+ * Process translation chunks with streaming progress.
+ * If prefetchedInfo is provided, skips the initial get-chunk-info call.
  */
 export async function processTranslationChunks(
   songId: string,
   language: string,
-  options: {
-    force?: boolean;
-    signal?: AbortSignal;
-    onProgress?: (progress: ChunkProgress) => void;
-    onChunk?: (chunkIndex: number, startIndex: number, translations: string[]) => void;
-  } = {}
+  options: ProcessTranslationOptions = {}
 ): Promise<string[]> {
-  const { force, signal, onProgress, onChunk } = options;
-  
-  // First get chunk info (and check for cached result)
-  // Pass force to skip consolidated cache check on server
-  const chunkInfo = await getChunkInfo(songId, "translate", language, signal, force);
+  const { force, signal, onProgress, onChunk, prefetchedInfo } = options;
+
+  // Use prefetched info or fetch it
+  let totalLines: number;
+  let totalChunks: number;
+  let cachedLrc: string | undefined;
+
+  if (prefetchedInfo) {
+    // Use pre-fetched info from initial lyrics request
+    totalLines = prefetchedInfo.totalLines;
+    totalChunks = prefetchedInfo.totalChunks;
+    if (prefetchedInfo.cached && prefetchedInfo.lrc) {
+      cachedLrc = prefetchedInfo.lrc;
+    }
+  } else {
+    // Fetch chunk info (legacy path - makes extra API call)
+    const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "get-chunk-info",
+        operation: "translate",
+        language,
+        force,
+      }),
+      signal,
+      timeout: 15000,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to get chunk info (status ${res.status})`);
+    }
+
+    const chunkInfo = await res.json();
+    totalLines = chunkInfo.totalLines;
+    totalChunks = chunkInfo.totalChunks;
+    if (chunkInfo.cached && chunkInfo.translation) {
+      cachedLrc = chunkInfo.translation;
+    }
+  }
 
   // If fully cached, return immediately
-  if (chunkInfo.cached && chunkInfo.translation) {
-    onProgress?.({ completedChunks: chunkInfo.totalChunks, totalChunks: chunkInfo.totalChunks, percentage: 100 });
-    // Parse the cached LRC back to translations array
-    return parseLrcToTranslations(chunkInfo.translation);
+  if (cachedLrc) {
+    onProgress?.({ completedChunks: totalChunks, totalChunks, percentage: 100 });
+    return parseLrcToTranslations(cachedLrc);
   }
 
-  const { totalChunks } = chunkInfo;
-  const allTranslations: string[] = new Array(chunkInfo.totalLines).fill("");
+  // Process chunks
+  const allTranslations: string[] = new Array(totalLines).fill("");
+  const completedChunkSet = new Set<number>();
   let completedChunks = 0;
 
-  // Use the pre-processed chunk 0 from the server if present
-  if (chunkInfo.initialChunk?.translations) {
-    const { startIndex, translations } = chunkInfo.initialChunk;
-    translations.forEach((text, i) => {
-      const targetIndex = startIndex + i;
-      if (targetIndex < allTranslations.length) {
-        allTranslations[targetIndex] = text;
-      }
-    });
-    completedChunks++;
-    onProgress?.({ completedChunks, totalChunks, percentage: Math.round((completedChunks / totalChunks) * 100) });
-    onChunk?.(0, startIndex, translations);
-  }
-
-  // Process remaining chunks (skip chunk 0 if we already have it)
-  const chunkIndices = chunkInfo.initialChunk?.translations
-    ? Array.from({ length: totalChunks - 1 }, (_, i) => i + 1)
-    : Array.from({ length: totalChunks }, (_, i) => i);
-  
-  // Track which chunks have been successfully processed
-  const completedChunkSet = new Set<number>();
-  if (chunkInfo.initialChunk?.translations) {
-    completedChunkSet.add(0);
-  }
+  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
 
   await processWithConcurrency(
     chunkIndices,
@@ -163,7 +151,6 @@ export async function processTranslationChunks(
         }),
         signal,
         timeout: CHUNK_TIMEOUT,
-        // Retry on transient failures with exponential backoff
         retry: {
           maxAttempts: 3,
           initialDelayMs: 2000,
@@ -175,20 +162,16 @@ export async function processTranslationChunks(
         throw new Error(`Chunk ${chunkIndex} failed (status ${res.status})`);
       }
 
-      const result = await res.json() as TranslateChunkResponse;
-      
-      // Validate startIndex is a valid non-negative number
-      if (typeof result.startIndex !== 'number' || result.startIndex < 0 || !Number.isFinite(result.startIndex)) {
+      const result = (await res.json()) as TranslateChunkResponse;
+
+      if (typeof result.startIndex !== "number" || result.startIndex < 0) {
         throw new Error(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}`);
       }
-      
-      // Store translations in correct positions with bounds checking
+
       result.translations.forEach((text, i) => {
         const targetIndex = result.startIndex + i;
         if (targetIndex < allTranslations.length) {
           allTranslations[targetIndex] = text;
-        } else {
-          console.warn(`Translation bounds exceeded: index ${targetIndex} >= array length ${allTranslations.length} (chunk ${chunkIndex})`);
         }
       });
 
@@ -204,18 +187,16 @@ export async function processTranslationChunks(
     MAX_CONCURRENT_CHUNKS
   );
 
-  // Validate all chunks completed before saving
+  // Validate all chunks completed
   if (completedChunkSet.size !== totalChunks) {
-    const missing = Array.from({ length: totalChunks }, (_, i) => i)
-      .filter(i => !completedChunkSet.has(i));
-    throw new Error(`Translation incomplete: missing chunks ${missing.join(', ')}`);
+    const missing = chunkIndices.filter((i) => !completedChunkSet.has(i));
+    throw new Error(`Translation incomplete: missing chunks ${missing.join(", ")}`);
   }
 
-  // Save consolidated translation to server (client-driven consolidation)
-  // This is race-condition-free since we know all chunks are complete
+  // Save consolidated translation
   if (!signal?.aborted) {
     try {
-      const saveRes = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+      await abortableFetch(getApiUrl(`/api/song/${songId}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -226,12 +207,7 @@ export async function processTranslationChunks(
         signal,
         timeout: 30000,
       });
-
-      if (!saveRes.ok) {
-        console.warn(`Failed to save consolidated translation: ${saveRes.status}`);
-      }
     } catch (e) {
-      // Log but don't throw - the client has the translations locally
       console.warn("Failed to save consolidated translation:", e);
     }
   }
@@ -239,58 +215,80 @@ export async function processTranslationChunks(
   return allTranslations;
 }
 
+// =============================================================================
+// Furigana Processing
+// =============================================================================
+
+export interface ProcessFuriganaOptions {
+  force?: boolean;
+  signal?: AbortSignal;
+  onProgress?: (progress: ChunkProgress) => void;
+  onChunk?: (chunkIndex: number, startIndex: number, furigana: Array<Array<{ text: string; reading?: string }>>) => void;
+  /** Pre-fetched chunk info from initial lyrics request (skips extra API call) */
+  prefetchedInfo?: FuriganaChunkInfo;
+}
+
 /**
- * Process furigana chunks with streaming progress
+ * Process furigana chunks with streaming progress.
+ * If prefetchedInfo is provided, skips the initial get-chunk-info call.
  */
 export async function processFuriganaChunks(
   songId: string,
-  options: {
-    force?: boolean;
-    signal?: AbortSignal;
-    onProgress?: (progress: ChunkProgress) => void;
-    onChunk?: (chunkIndex: number, startIndex: number, furigana: Array<Array<{ text: string; reading?: string }>>) => void;
-  } = {}
+  options: ProcessFuriganaOptions = {}
 ): Promise<Array<Array<{ text: string; reading?: string }>>> {
-  const { force, signal, onProgress, onChunk } = options;
+  const { force, signal, onProgress, onChunk, prefetchedInfo } = options;
 
-  // First get chunk info (and check for cached result)
-  // Pass force to skip consolidated cache check on server
-  const chunkInfo = await getChunkInfo(songId, "furigana", undefined, signal, force);
+  // Use prefetched info or fetch it
+  let totalLines: number;
+  let totalChunks: number;
+  let cachedData: Array<Array<{ text: string; reading?: string }>> | undefined;
+
+  if (prefetchedInfo) {
+    // Use pre-fetched info from initial lyrics request
+    totalLines = prefetchedInfo.totalLines;
+    totalChunks = prefetchedInfo.totalChunks;
+    if (prefetchedInfo.cached && prefetchedInfo.data) {
+      cachedData = prefetchedInfo.data;
+    }
+  } else {
+    // Fetch chunk info (legacy path - makes extra API call)
+    const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "get-chunk-info",
+        operation: "furigana",
+        force,
+      }),
+      signal,
+      timeout: 15000,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to get chunk info (status ${res.status})`);
+    }
+
+    const chunkInfo = await res.json();
+    totalLines = chunkInfo.totalLines;
+    totalChunks = chunkInfo.totalChunks;
+    if (chunkInfo.cached && chunkInfo.furigana) {
+      cachedData = chunkInfo.furigana;
+    }
+  }
 
   // If fully cached, return immediately
-  if (chunkInfo.cached && chunkInfo.furigana) {
-    onProgress?.({ completedChunks: chunkInfo.totalChunks, totalChunks: chunkInfo.totalChunks, percentage: 100 });
-    return chunkInfo.furigana as Array<Array<{ text: string; reading?: string }>>;
+  if (cachedData) {
+    onProgress?.({ completedChunks: totalChunks, totalChunks, percentage: 100 });
+    return cachedData;
   }
 
-  const { totalChunks, totalLines } = chunkInfo;
-  // Initialize with empty arrays to avoid undefined holes
+  // Process chunks
   const allFurigana: Array<Array<{ text: string; reading?: string }>> = new Array(totalLines).fill(null).map(() => []);
+  const completedChunkSet = new Set<number>();
   let completedChunks = 0;
 
-  // Track which chunks have been successfully processed
-  const completedChunkSet = new Set<number>();
+  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
 
-  // Use the pre-processed chunk 0 from the server if present
-  if (chunkInfo.initialChunk?.furigana) {
-    const { startIndex, furigana } = chunkInfo.initialChunk;
-    furigana.forEach((segments, i) => {
-      const targetIndex = startIndex + i;
-      if (targetIndex < allFurigana.length) {
-        allFurigana[targetIndex] = segments;
-      }
-    });
-    completedChunkSet.add(0);
-    completedChunks++;
-    onProgress?.({ completedChunks, totalChunks, percentage: Math.round((completedChunks / totalChunks) * 100) });
-    onChunk?.(0, startIndex, furigana);
-  }
-
-  // Process remaining chunks (skip chunk 0 if we already have it)
-  const chunkIndices = chunkInfo.initialChunk?.furigana
-    ? Array.from({ length: totalChunks - 1 }, (_, i) => i + 1)
-    : Array.from({ length: totalChunks }, (_, i) => i);
-  
   await processWithConcurrency(
     chunkIndices,
     async (chunkIndex) => {
@@ -306,7 +304,6 @@ export async function processFuriganaChunks(
         }),
         signal,
         timeout: CHUNK_TIMEOUT,
-        // Retry on transient failures with exponential backoff
         retry: {
           maxAttempts: 3,
           initialDelayMs: 2000,
@@ -318,20 +315,16 @@ export async function processFuriganaChunks(
         throw new Error(`Chunk ${chunkIndex} failed (status ${res.status})`);
       }
 
-      const result = await res.json() as FuriganaChunkResponse;
-      
-      // Validate startIndex is a valid non-negative number
-      if (typeof result.startIndex !== 'number' || result.startIndex < 0 || !Number.isFinite(result.startIndex)) {
+      const result = (await res.json()) as FuriganaChunkResponse;
+
+      if (typeof result.startIndex !== "number" || result.startIndex < 0) {
         throw new Error(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}`);
       }
-      
-      // Store furigana in correct positions with bounds checking
+
       result.furigana.forEach((segments, i) => {
         const targetIndex = result.startIndex + i;
         if (targetIndex < allFurigana.length) {
           allFurigana[targetIndex] = segments;
-        } else {
-          console.warn(`Furigana bounds exceeded: index ${targetIndex} >= array length ${allFurigana.length} (chunk ${chunkIndex})`);
         }
       });
 
@@ -347,18 +340,16 @@ export async function processFuriganaChunks(
     MAX_CONCURRENT_CHUNKS
   );
 
-  // Validate all chunks completed before saving
+  // Validate all chunks completed
   if (completedChunkSet.size !== totalChunks) {
-    const missing = Array.from({ length: totalChunks }, (_, i) => i)
-      .filter(i => !completedChunkSet.has(i));
-    throw new Error(`Furigana incomplete: missing chunks ${missing.join(', ')}`);
+    const missing = chunkIndices.filter((i) => !completedChunkSet.has(i));
+    throw new Error(`Furigana incomplete: missing chunks ${missing.join(", ")}`);
   }
 
-  // Save consolidated furigana to server (client-driven consolidation)
-  // This is race-condition-free since we know all chunks are complete
+  // Save consolidated furigana
   if (!signal?.aborted) {
     try {
-      const saveRes = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+      await abortableFetch(getApiUrl(`/api/song/${songId}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -368,12 +359,7 @@ export async function processFuriganaChunks(
         signal,
         timeout: 30000,
       });
-
-      if (!saveRes.ok) {
-        console.warn(`Failed to save consolidated furigana: ${saveRes.status}`);
-      }
     } catch (e) {
-      // Log but don't throw - the client has the furigana locally
       console.warn("Failed to save consolidated furigana:", e);
     }
   }
@@ -381,9 +367,10 @@ export async function processFuriganaChunks(
   return allFurigana;
 }
 
-/**
- * Process items with limited concurrency
- */
+// =============================================================================
+// Utilities
+// =============================================================================
+
 async function processWithConcurrency<T>(
   items: T[],
   processor: (item: T) => Promise<void>,
@@ -393,31 +380,29 @@ async function processWithConcurrency<T>(
   const active: Promise<void>[] = [];
 
   while (queue.length > 0 || active.length > 0) {
-    // Start new tasks up to maxConcurrent
     while (active.length < maxConcurrent && queue.length > 0) {
       const item = queue.shift()!;
-      const promise = processor(item).then(() => {
-        const index = active.indexOf(promise);
-        if (index > -1) active.splice(index, 1);
-      }).catch((err) => {
-        const index = active.indexOf(promise);
-        if (index > -1) active.splice(index, 1);
-        throw err;
-      });
+      const promise = processor(item)
+        .then(() => {
+          const index = active.indexOf(promise);
+          if (index > -1) active.splice(index, 1);
+        })
+        .catch((err) => {
+          const index = active.indexOf(promise);
+          if (index > -1) active.splice(index, 1);
+          throw err;
+        });
       active.push(promise);
     }
 
-    // Wait for at least one to complete
     if (active.length > 0) {
       await Promise.race(active);
     }
   }
 }
 
-/**
- * Parse LRC format back to array of translation strings
- */
-function parseLrcToTranslations(lrc: string): string[] {
+/** Parse LRC format back to array of translation strings */
+export function parseLrcToTranslations(lrc: string): string[] {
   const lines: string[] = [];
   const lineRegex = /^\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)$/;
 

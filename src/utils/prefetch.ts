@@ -27,6 +27,17 @@ const MANIFEST_KEY = 'ryos-manifest-timestamp';
 const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
 let updateCheckIntervalId: ReturnType<typeof setInterval> | null = null;
 
+// HMR cleanup - clear interval when module is replaced
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    if (updateCheckIntervalId) {
+      clearInterval(updateCheckIntervalId);
+      updateCheckIntervalId = null;
+      console.log('[Prefetch] HMR cleanup: cleared update check interval');
+    }
+  });
+}
+
 // Flag to prevent concurrent operations
 let isUpdateInProgress = false;
 

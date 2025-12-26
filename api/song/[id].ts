@@ -113,6 +113,9 @@ const FetchLyricsSchema = z.object({
   // Allow client to pass title/artist for auto-search when song not in Redis yet
   title: z.string().max(500).optional(),
   artist: z.string().max(500).optional(),
+  // Optional: include translation/furigana info in same request to reduce round-trips
+  translateTo: z.string().max(10).optional(),
+  includeFurigana: z.boolean().optional(),
 });
 
 const SearchLyricsSchema = z.object({
@@ -1268,11 +1271,17 @@ export default async function handler(req: Request) {
         // Client can pass title/artist directly (useful when song not in Redis yet)
         const clientTitle = parsed.data.title;
         const clientArtist = parsed.data.artist;
+        
+        // Optional: include translation/furigana info to reduce round-trips
+        const translateTo = parsed.data.translateTo;
+        const includeFurigana = parsed.data.includeFurigana;
 
-        // Get existing song
+        // Get existing song (include translations/furigana if requested)
         const song = await getSong(redis, songId, {
           includeMetadata: true,
           includeLyrics: true,
+          includeTranslations: translateTo ? [translateTo] : undefined,
+          includeFurigana: includeFurigana,
         });
 
         // Use provided source or existing source
@@ -1283,14 +1292,44 @@ export default async function handler(req: Request) {
         // If we have cached lyrics and not forcing, return them
         if (!force && song?.lyrics?.lrc) {
           logInfo(requestId, `Response: 200 OK - Returning cached lyrics`, {
-            hasLrc: !!song.lyrics.lrc,
-            hasKrc: !!song.lyrics.krc,
-            hasCover: !!song.lyrics.cover,
+            parsedLinesCount: song.lyrics.parsedLines?.length ?? 0,
           });
-          return jsonResponse({
-            lyrics: song.lyrics,
+          
+          // Build response with optional translation/furigana info
+          const response: Record<string, unknown> = {
+            lyrics: { parsedLines: song.lyrics.parsedLines },
             cached: true,
-          });
+          };
+          
+          // Include translation info if requested
+          if (translateTo && song.lyrics.parsedLines) {
+            const totalLines = song.lyrics.parsedLines.length;
+            const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+            const hasTranslation = !!(song.translations?.[translateTo]);
+            response.translation = {
+              totalLines,
+              totalChunks,
+              chunkSize: CHUNK_SIZE,
+              cached: hasTranslation,
+              ...(hasTranslation ? { lrc: song.translations![translateTo] } : {}),
+            };
+          }
+          
+          // Include furigana info if requested
+          if (includeFurigana && song.lyrics.parsedLines) {
+            const totalLines = song.lyrics.parsedLines.length;
+            const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+            const hasFurigana = !!(song.furigana && song.furigana.length > 0);
+            response.furigana = {
+              totalLines,
+              totalChunks,
+              chunkSize: CHUNK_SIZE,
+              cached: hasFurigana,
+              ...(hasFurigana ? { data: song.furigana } : {}),
+            };
+          }
+          
+          return jsonResponse(response);
         }
 
         // Determine title/artist for auto-search
@@ -1356,7 +1395,7 @@ export default async function handler(req: Request) {
           parsedLines,
         };
 
-        // Save to song document
+        // Save to song document (full lyrics with lrc/krc for internal use)
         const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource);
         logInfo(requestId, `Lyrics saved to song document`, { 
           songId,
@@ -1364,8 +1403,39 @@ export default async function handler(req: Request) {
           parsedLinesCount: parsedLines.length,
         });
 
-        logInfo(requestId, `Response: 200 OK - Lyrics fetched`, { hasKrc: !!lyrics.krc, hasCover: !!lyrics.cover, parsedLinesCount: parsedLines.length });
-        return jsonResponse({ lyrics, cached: false });
+        logInfo(requestId, `Response: 200 OK - Lyrics fetched`, { parsedLinesCount: parsedLines.length });
+        
+        // Build response with optional translation/furigana chunk info
+        const response: Record<string, unknown> = {
+          lyrics: { parsedLines },
+          cached: false,
+        };
+        
+        // Include translation chunk info if requested (not cached since lyrics are fresh)
+        if (translateTo) {
+          const totalLines = parsedLines.length;
+          const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+          response.translation = {
+            totalLines,
+            totalChunks,
+            chunkSize: CHUNK_SIZE,
+            cached: false,
+          };
+        }
+        
+        // Include furigana chunk info if requested (not cached since lyrics are fresh)
+        if (includeFurigana) {
+          const totalLines = parsedLines.length;
+          const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+          response.furigana = {
+            totalLines,
+            totalChunks,
+            chunkSize: CHUNK_SIZE,
+            cached: false,
+          };
+        }
+        
+        return jsonResponse(response);
       }
 
       // =======================================================================

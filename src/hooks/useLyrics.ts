@@ -4,21 +4,26 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { isOffline } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { processTranslationChunks } from "@/utils/chunkedStream";
+import {
+  processTranslationChunks,
+  parseLrcToTranslations,
+  type TranslationChunkInfo,
+  type FuriganaChunkInfo,
+} from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
+// =============================================================================
+// Types
+// =============================================================================
+
 interface UseLyricsParams {
-  /** Song ID (YouTube video ID) - required for unified endpoint */
   songId: string;
-  /** Song title (used for parsing) */
   title?: string;
-  /** Song artist (used for parsing) */
   artist?: string;
-  /** Current playback time in seconds */
   currentTime: number;
-  /** Target language for translation (e.g., "en", "es", "ja"). If null or undefined, no translation. */
   translateTo?: string | null;
-  /** Override selected match for lyrics fetching */
+  /** Include furigana info in initial fetch (for Japanese romanization) */
+  includeFurigana?: boolean;
   selectedMatch?: {
     hash: string;
     albumId: string | number;
@@ -30,57 +35,50 @@ interface UseLyricsParams {
 
 interface LyricsState {
   lines: LyricLine[];
-  /** Original untranslated lyrics (for furigana) */
   originalLines: LyricLine[];
   currentLine: number;
-  isLoading: boolean; // True when fetching original LRC
-  isTranslating: boolean; // True when translating lyrics
-  /** Translation progress (0-100) when streaming */
+  isLoading: boolean;
+  isTranslating: boolean;
   translationProgress?: number;
   error?: string;
   updateCurrentTimeManually: (newTimeInSeconds: number) => void;
+  /** Pre-fetched furigana info (pass to useFurigana to skip extra API call) */
+  furiganaInfo?: FuriganaChunkInfo;
 }
 
-/**
- * Response from unified song endpoint for lyrics
- */
+interface ParsedLine {
+  startTimeMs: string;
+  words: string;
+  wordTimings?: Array<{
+    text: string;
+    startTimeMs: number;
+    durationMs: number;
+  }>;
+}
+
 interface UnifiedLyricsResponse {
   lyrics?: {
-    /** Raw LRC (kept for backwards compat, not used by client) */
-    lrc?: string;
-    /** Raw KRC (kept for backwards compat, not used by client) */
-    krc?: string;
-    /** Cover image URL */
-    cover?: string;
-    /** Pre-parsed lines from server - primary source for client */
-    parsedLines: Array<{
-      startTimeMs: string;
-      words: string;
-      wordTimings?: Array<{
-        text: string;
-        startTimeMs: number;
-        durationMs: number;
-      }>;
-    }>;
+    parsedLines: ParsedLine[];
   };
   cached?: boolean;
+  translation?: TranslationChunkInfo;
+  furigana?: FuriganaChunkInfo;
 }
 
-/**
- * Fetch timed lyrics (LRC) for a given song, optionally translate them,
- * and keep track of which line is currently active based on playback time.
- * Returns the parsed lyric lines and the index of the current line.
- * 
- * Uses the unified /api/song/{id} endpoint for all operations.
- */
+// =============================================================================
+// Hook
+// =============================================================================
+
 export function useLyrics({
   songId,
   title = "",
   artist = "",
   currentTime,
   translateTo,
+  includeFurigana,
   selectedMatch,
 }: UseLyricsParams): LyricsState {
+  // State
   const [originalLines, setOriginalLines] = useState<LyricLine[]>([]);
   const [translatedLines, setTranslatedLines] = useState<LyricLine[] | null>(null);
   const [currentLine, setCurrentLine] = useState(-1);
@@ -88,84 +86,75 @@ export function useLyrics({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationProgress, setTranslationProgress] = useState<number | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const [furiganaInfo, setFuriganaInfo] = useState<FuriganaChunkInfo | undefined>();
 
+  // Refs for tracking state across renders
   const cachedKeyRef = useRef<string | null>(null);
   const lastTimeRef = useRef<number>(currentTime);
-  // Track current songId for race condition prevention
   const currentSongIdRef = useRef(songId);
   currentSongIdRef.current = songId;
-  // Track refresh trigger from the iPod store to force re-fetching
+
+  // Store triggers
   const refetchTrigger = useIpodStore((s) => s.lyricsRefetchTrigger);
   const lastRefetchTriggerRef = useRef<number>(0);
-  // Track cache bust trigger for forcing cache bypass (including translation)
   const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
   const lastCacheBustTriggerRef = useRef<number>(0);
 
-  // Effect for fetching original lyrics
+  // Ref to store translation info from initial fetch
+  const translationInfoRef = useRef<TranslationChunkInfo | undefined>(undefined);
+
+  // ==========================================================================
+  // Effect: Fetch lyrics (and optionally translation/furigana info)
+  // ==========================================================================
   useEffect(() => {
-    // Capture songId at effect start for stale request detection
     const effectSongId = songId;
 
-    // Early return if no songId
     if (!effectSongId) {
       setOriginalLines([]);
       setTranslatedLines(null);
       setCurrentLine(-1);
       setIsFetchingOriginal(false);
       setError(undefined);
+      setFuriganaInfo(undefined);
       cachedKeyRef.current = null;
+      translationInfoRef.current = undefined;
       return;
     }
 
-    // Check if offline before fetching
     if (isOffline()) {
       setError("iPod requires an internet connection");
       return;
     }
 
-    // Include selectedMatch hash in cache key to ensure different versions are cached separately
     const selectedMatchKey = selectedMatch?.hash || "";
     const cacheKey = `song:${effectSongId}:${selectedMatchKey}`;
-    
-    // Force refresh only when user explicitly triggers via refreshLyrics()
     const isForced = lastRefetchTriggerRef.current !== refetchTrigger;
-    
-    // Skip fetch if we have cached data and no force refresh requested
+
     if (!isForced && cacheKey === cachedKeyRef.current) {
       lastRefetchTriggerRef.current = refetchTrigger;
       return;
     }
 
-    // We're going to fetch - now clear the state
+    // Clear state before fetching
     setOriginalLines([]);
     setTranslatedLines(null);
     setCurrentLine(-1);
     setIsFetchingOriginal(true);
     setIsTranslating(false);
     setError(undefined);
+    setFuriganaInfo(undefined);
+    translationInfoRef.current = undefined;
 
     const controller = new AbortController();
 
-    // Build request body for unified endpoint
-    const requestBody: {
-      action: "fetch-lyrics";
-      lyricsSource?: {
-        hash: string;
-        albumId: string | number;
-        title: string;
-        artist: string;
-        album?: string;
-      };
-      force?: boolean;
-      // Pass title/artist for auto-search when song not in Redis yet
-      title?: string;
-      artist?: string;
-    } = {
+    // Build request - include translateTo and includeFurigana to reduce round-trips
+    const requestBody: Record<string, unknown> = {
       action: "fetch-lyrics",
       force: isForced,
-      // Always pass title/artist so server can auto-search even if song not in Redis
       title: title || undefined,
       artist: artist || undefined,
+      translateTo: translateTo || undefined,
+      includeFurigana: includeFurigana || undefined,
     };
 
     if (selectedMatch) {
@@ -187,7 +176,6 @@ export function useLyrics({
     })
       .then(async (res) => {
         if (controller.signal.aborted) return null;
-        // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return null;
         if (!res.ok) {
           if (res.status === 404) return null;
@@ -197,23 +185,10 @@ export function useLyrics({
       })
       .then((json) => {
         if (controller.signal.aborted) return;
-        // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
-        if (!json || !json.lyrics) throw new Error("No lyrics found");
+        if (!json?.lyrics?.parsedLines?.length) throw new Error("No lyrics found");
 
-        const parsedLines = json.lyrics.parsedLines;
-        
-        if (!parsedLines || parsedLines.length === 0) {
-          throw new Error("No lyrics found");
-        }
-
-        console.log("[useLyrics] Received lyrics response:", {
-          parsedLinesCount: parsedLines.length,
-          cached: json.cached,
-        });
-
-        // Use server-provided pre-parsed lines
-        const parsed: LyricLine[] = parsedLines.map((line: { startTimeMs: string; words: string; wordTimings?: { text: string; startTimeMs: number; durationMs: number }[] }) => ({
+        const parsed: LyricLine[] = json.lyrics.parsedLines.map((line) => ({
           startTimeMs: line.startTimeMs,
           words: line.words,
           wordTimings: line.wordTimings,
@@ -222,10 +197,19 @@ export function useLyrics({
         setOriginalLines(parsed);
         cachedKeyRef.current = cacheKey;
         useIpodStore.setState({ currentLyrics: { lines: parsed } });
+
+        // Store translation info for the translation effect to use
+        if (json.translation) {
+          translationInfoRef.current = json.translation;
+        }
+
+        // Store furigana info for useFurigana to use
+        if (json.furigana) {
+          setFuriganaInfo(json.furigana);
+        }
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
         handleLyricsError(err, setError, setOriginalLines, setCurrentLine);
       })
@@ -236,14 +220,13 @@ export function useLyrics({
         }
       });
 
-    return () => {
-      controller.abort();
-    };
-  }, [songId, title, artist, refetchTrigger, selectedMatch]);
+    return () => controller.abort();
+  }, [songId, title, artist, refetchTrigger, selectedMatch, translateTo, includeFurigana]);
 
-  // Effect for translating lyrics using chunked streaming
+  // ==========================================================================
+  // Effect: Translate lyrics
+  // ==========================================================================
   useEffect(() => {
-    // Capture songId at effect start for stale request detection
     const effectSongId = songId;
 
     if (!effectSongId || !translateTo || originalLines.length === 0) {
@@ -253,21 +236,31 @@ export function useLyrics({
       return;
     }
 
-    // If original fetch is still in progress, wait for it.
     if (isFetchingOriginal) {
       setIsTranslating(false);
       return;
     }
 
-    // Check if offline before translating
     if (isOffline()) {
       setIsTranslating(false);
       setError("iPod requires an internet connection");
       return;
     }
 
-    // Check if this is a force cache clear request
     const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
+    const prefetchedInfo = translationInfoRef.current;
+
+    // If we have cached translation from initial fetch, use it immediately
+    if (prefetchedInfo?.cached && prefetchedInfo.lrc && !isForceRequest) {
+      const translations = parseLrcToTranslations(prefetchedInfo.lrc);
+      const translatedLines: LyricLine[] = originalLines.map((line, index) => ({
+        ...line,
+        words: translations[index] || line.words,
+      }));
+      setTranslatedLines(translatedLines);
+      setIsTranslating(false);
+      return;
+    }
 
     setIsTranslating(true);
     setTranslationProgress(0);
@@ -275,33 +268,25 @@ export function useLyrics({
 
     const controller = new AbortController();
 
-    // Use chunked streaming for translation to avoid edge function timeouts
     processTranslationChunks(effectSongId, translateTo, {
       force: isForceRequest,
       signal: controller.signal,
+      // Pass pre-fetched info to skip get-chunk-info call
+      prefetchedInfo: !isForceRequest ? prefetchedInfo : undefined,
       onProgress: (progress) => {
-        if (!controller.signal.aborted) {
-          // Check for stale request
-          if (effectSongId !== currentSongIdRef.current) return;
+        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setTranslationProgress(progress.percentage);
         }
       },
       onChunk: (_chunkIndex, startIndex, translations) => {
-        // Progressive update: merge new chunk translations into current state
-        if (!controller.signal.aborted) {
-          // Check for stale request
-          if (effectSongId !== currentSongIdRef.current) return;
+        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setTranslatedLines((prev) => {
-            // Create new array based on original lines if no previous state
             const base = prev || originalLines.map((line) => ({ ...line }));
             const updated = [...base];
             translations.forEach((text, i) => {
               const lineIndex = startIndex + i;
               if (lineIndex < updated.length) {
-                updated[lineIndex] = {
-                  ...updated[lineIndex],
-                  words: text,
-                };
+                updated[lineIndex] = { ...updated[lineIndex], words: text };
               }
             });
             return updated;
@@ -311,20 +296,17 @@ export function useLyrics({
     })
       .then((allTranslations) => {
         if (controller.signal.aborted) return;
-        // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
 
-        // Final update with all translations
-        const finalTranslatedLines: LyricLine[] = originalLines.map((line, index) => ({
+        const finalLines: LyricLine[] = originalLines.map((line, index) => ({
           ...line,
           words: allTranslations[index] || line.words,
         }));
-        setTranslatedLines(finalTranslatedLines);
+        setTranslatedLines(finalLines);
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
         handleTranslationError(err, setError, setTranslatedLines);
       })
@@ -336,35 +318,29 @@ export function useLyrics({
         }
       });
 
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [songId, originalLines, translateTo, isFetchingOriginal, lyricsCacheBustTrigger]);
 
+  // ==========================================================================
+  // Current line tracking
+  // ==========================================================================
   const displayLines = translatedLines || originalLines;
 
-  // Pre-parse timestamps once when displayLines change (O(n) once, not on every search)
   const parsedTimestamps = useMemo(
     () => parseLyricTimestamps(displayLines),
     [displayLines]
   );
 
-  // Function to calculate the current line based on a given time using binary search O(log n)
   const calculateCurrentLine = useCallback(
-    (timeInSeconds: number) => {
-      const timeMs = timeInSeconds * 1000;
-      return findCurrentLineIndex(parsedTimestamps, timeMs);
-    },
+    (timeInSeconds: number) => findCurrentLineIndex(parsedTimestamps, timeInSeconds * 1000),
     [parsedTimestamps]
   );
 
-  // Update current line based on displayed lines and current time
   useEffect(() => {
     lastTimeRef.current = currentTime;
     setCurrentLine(calculateCurrentLine(currentTime));
   }, [currentTime, calculateCurrentLine]);
 
-  // Function to manually update the current time
   const updateCurrentTimeManually = useCallback(
     (newTimeInSeconds: number) => {
       lastTimeRef.current = newTimeInSeconds;
@@ -382,33 +358,31 @@ export function useLyrics({
     translationProgress,
     error,
     updateCurrentTimeManually,
+    furiganaInfo,
   };
 }
 
-// Helper functions for error handling
+// =============================================================================
+// Helpers
+// =============================================================================
+
 function handleLyricsError(
   err: unknown,
   setError: (e: string | undefined) => void,
   setOriginalLines: (lines: LyricLine[]) => void,
   setCurrentLine: (line: number) => void
 ) {
-  console.error("[useLyrics] Error during lyrics fetch/parse:", err);
+  console.error("[useLyrics] Error:", err);
   if (err instanceof DOMException && err.name === "AbortError") {
     setError("Lyrics search timed out.");
   } else {
-    const errorMessage = err instanceof Error ? err.message : "Unknown error fetching lyrics";
-    const isNoLyricsError = 
-      errorMessage.includes("500") || 
-      errorMessage.includes("404") ||
-      errorMessage.includes("Internal Server Error") ||
-      errorMessage.includes("No lyrics") || 
-      errorMessage.includes("not found") ||
-      errorMessage.includes("No valid lyrics");
-    if (isNoLyricsError) {
-      setError("No lyrics available");
-    } else {
-      setError(errorMessage);
-    }
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    const isNoLyricsError =
+      msg.includes("500") ||
+      msg.includes("404") ||
+      msg.includes("No lyrics") ||
+      msg.includes("not found");
+    setError(isNoLyricsError ? "No lyrics available" : msg);
   }
   setOriginalLines([]);
   setCurrentLine(-1);
@@ -420,11 +394,11 @@ function handleTranslationError(
   setError: (e: string | undefined) => void,
   setTranslatedLines: (lines: LyricLine[] | null) => void
 ) {
-  console.error("useLyrics translation error", err);
+  console.error("[useLyrics] Translation error:", err);
   if (err instanceof DOMException && err.name === "AbortError") {
-    setError("Lyrics translation timed out.");
+    setError("Translation timed out.");
   } else {
-    setError(err instanceof Error ? err.message : "Unknown error during translation");
+    setError(err instanceof Error ? err.message : "Unknown translation error");
   }
   setTranslatedLines(null);
 }

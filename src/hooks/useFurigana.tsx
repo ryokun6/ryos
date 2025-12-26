@@ -13,7 +13,7 @@ import {
   renderKanaWithRomaji,
 } from "@/utils/romanization";
 import type { FuriganaSegment } from "@/utils/romanization";
-import { processFuriganaChunks } from "@/utils/chunkedStream";
+import { processFuriganaChunks, type FuriganaChunkInfo } from "@/utils/chunkedStream";
 
 // Re-export FuriganaSegment for consumers
 export type { FuriganaSegment };
@@ -29,6 +29,8 @@ interface UseFuriganaParams {
   romanization: RomanizationSettings;
   /** Callback when loading state changes */
   onLoadingChange?: (isLoading: boolean) => void;
+  /** Pre-fetched furigana info from initial lyrics request (skips extra API call) */
+  prefetchedInfo?: FuriganaChunkInfo;
 }
 
 interface UseFuriganaReturn {
@@ -61,6 +63,7 @@ export function useFurigana({
   isShowingOriginal,
   romanization,
   onLoadingChange,
+  prefetchedInfo,
 }: UseFuriganaParams): UseFuriganaReturn {
   const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
   const [isFetching, setIsFetching] = useState(false);
@@ -152,6 +155,20 @@ export function useFurigana({
       return;
     }
 
+    // If we have cached furigana from initial fetch, use it immediately
+    if (prefetchedInfo?.cached && prefetchedInfo.data && !isForceRequest) {
+      const finalMap = new Map<string, FuriganaSegment[]>();
+      prefetchedInfo.data.forEach((segments, index) => {
+        if (index < lines.length && segments) {
+          finalMap.set(lines[index].startTimeMs, segments);
+        }
+      });
+      setFuriganaMap(finalMap);
+      furiganaCacheKeyRef.current = cacheKey;
+      setIsFetching(false);
+      return;
+    }
+
     // Start loading
     setIsFetching(true);
     setProgress(0);
@@ -160,25 +177,23 @@ export function useFurigana({
     const controller = new AbortController();
 
     // Use chunked streaming for furigana to avoid edge function timeouts
-    // Use a mutable map that we update progressively, then copy for state updates
     const progressiveMap = new Map<string, FuriganaSegment[]>();
     
     processFuriganaChunks(effectSongId, {
       force: isForceRequest,
       signal: controller.signal,
+      // Pass pre-fetched info to skip get-chunk-info call
+      prefetchedInfo: !isForceRequest ? prefetchedInfo : undefined,
       onProgress: (chunkProgress) => {
         if (!controller.signal.aborted) {
-          // Check for stale request
           if (effectSongId !== currentSongIdRef.current) return;
           setProgress(chunkProgress.percentage);
         }
       },
       onChunk: (_chunkIndex, startIndex, furigana) => {
         if (controller.signal.aborted) return;
-        // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
         
-        // Update the progressive map with new segments
         furigana.forEach((segments, i) => {
           const lineIndex = startIndex + i;
           if (lineIndex < lines.length && segments) {
@@ -186,7 +201,6 @@ export function useFurigana({
           }
         });
         
-        // Trigger re-render with a shallow copy of the updated map
         setFuriganaMap(new Map(progressiveMap));
       },
     })
@@ -232,7 +246,7 @@ export function useFurigana({
       setProgress(undefined);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
-  }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger]);
+  }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
 
   // Unified render function that handles all romanization types
   const renderWithFurigana = useCallback(

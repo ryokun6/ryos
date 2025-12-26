@@ -21,7 +21,16 @@ export default defineConfig({
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
     cors: { origin: ["*"] },
     watch: {
-      ignored: ["**/.terminals/**, dist/**, .vercel/**, src-tauri/**, api/**"],
+      // Each pattern must be a separate array element for proper matching
+      ignored: [
+        "**/.terminals/**",
+        "**/dist/**",
+        "**/.vercel/**",
+        "**/src-tauri/**",
+        "**/api/**",
+        "**/public/**", // 500+ static files don't need HMR watching
+        "**/node_modules/**",
+      ],
     },
     warmup: {
       clientFiles: [

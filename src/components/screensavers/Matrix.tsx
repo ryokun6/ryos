@@ -81,18 +81,21 @@ export function Matrix() {
       draw();
     }, 50);
 
-    window.addEventListener("resize", () => {
+    const handleResize = () => {
       resize();
       // Recalculate columns
       const newColumns = Math.floor(canvas.width / fontSize);
       while (drops.length < newColumns) {
         drops.push(Math.random() * -100);
       }
-    });
+    };
+
+    window.addEventListener("resize", handleResize);
 
     return () => {
       clearInterval(intervalId);
       cancelAnimationFrame(animationId);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 

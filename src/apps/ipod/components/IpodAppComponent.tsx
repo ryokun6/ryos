@@ -1288,6 +1288,7 @@ export function IpodAppComponent({
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
+    includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
   });
 
   // Track last song ID we showed a lyrics error toast for to avoid duplicates
@@ -1328,12 +1329,14 @@ export function IpodAppComponent({
   }, [fullScreenLyricsControls.error, currentTrack?.id, t]);
 
   // Fetch furigana for lyrics and store in shared state
+  // Use pre-fetched info from lyrics request to skip extra API call
   const { furiganaMap } = useFurigana({
     songId: currentTrack?.id ?? "",
     lines: fullScreenLyricsControls.originalLines,
     isShowingOriginal: true,
     romanization,
     onLoadingChange: setIsFullScreenFetchingFurigana,
+    prefetchedInfo: fullScreenLyricsControls.furiganaInfo,
   });
 
   // Convert furiganaMap to Record for storage - only when content actually changes

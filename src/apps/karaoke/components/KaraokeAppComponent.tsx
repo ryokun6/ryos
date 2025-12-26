@@ -224,6 +224,7 @@ export function KaraokeAppComponent({
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
+    includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
   });
 
   // Track last song ID we showed a lyrics error toast for to avoid duplicates
@@ -264,12 +265,14 @@ export function KaraokeAppComponent({
   }, [lyricsControls.error, currentTrack?.id, t]);
 
   // Fetch furigana for lyrics (shared between main and fullscreen displays)
+  // Use pre-fetched info from lyrics request to skip extra API call
   const { furiganaMap } = useFurigana({
     songId: currentTrack?.id ?? "",
     lines: lyricsControls.originalLines,
     isShowingOriginal: true,
     romanization,
     onLoadingChange: setIsFetchingFurigana,
+    prefetchedInfo: lyricsControls.furiganaInfo,
   });
 
   // Translation languages with translated labels

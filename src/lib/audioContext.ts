@@ -65,13 +65,44 @@ export const resumeAudioContext = async (): Promise<void> => {
 
 // Attach global listeners once (when this module is imported) so that the
 // context is auto-resumed when the tab regains focus or visibility.
-if (typeof document !== "undefined" && typeof window !== "undefined") {
-  const handleVisibility = () => {
-    if (document.visibilityState === "visible") {
-      void resumeAudioContext();
+let visibilityHandler: (() => void) | null = null;
+let focusHandler: (() => void) | null = null;
+
+function setupAudioContextListeners() {
+  if (typeof document !== "undefined" && typeof window !== "undefined") {
+    // Clean up any existing listeners first (for HMR)
+    if (visibilityHandler) {
+      document.removeEventListener("visibilitychange", visibilityHandler);
     }
-  };
-  const handleFocus = () => void resumeAudioContext();
-  document.addEventListener("visibilitychange", handleVisibility);
-  window.addEventListener("focus", handleFocus);
+    if (focusHandler) {
+      window.removeEventListener("focus", focusHandler);
+    }
+
+    visibilityHandler = () => {
+      if (document.visibilityState === "visible") {
+        void resumeAudioContext();
+      }
+    };
+    focusHandler = () => void resumeAudioContext();
+    
+    document.addEventListener("visibilitychange", visibilityHandler);
+    window.addEventListener("focus", focusHandler);
+  }
+}
+
+setupAudioContextListeners();
+
+// HMR cleanup - remove listeners when module is replaced
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    if (visibilityHandler) {
+      document.removeEventListener("visibilitychange", visibilityHandler);
+      visibilityHandler = null;
+    }
+    if (focusHandler) {
+      window.removeEventListener("focus", focusHandler);
+      focusHandler = null;
+    }
+    console.debug("[audioContext] HMR cleanup: removed listeners");
+  });
 }

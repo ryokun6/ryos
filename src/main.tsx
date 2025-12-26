@@ -17,7 +17,7 @@ primeReactResources();
 // ============================================================================
 // CHUNK LOAD ERROR HANDLING - Reload when old assets 404 after deployment
 // ============================================================================
-window.addEventListener("vite:preloadError", (event) => {
+const handlePreloadError = (event: Event) => {
   console.warn("[ryOS] Chunk load failed:", event);
   
   // Don't reload if offline - it won't help and will cause a flash loop
@@ -41,7 +41,16 @@ window.addEventListener("vite:preloadError", (event) => {
   sessionStorage.setItem(reloadKey, String(now));
   console.log("[ryOS] Reloading for fresh assets...");
   window.location.reload();
-});
+};
+
+window.addEventListener("vite:preloadError", handlePreloadError);
+
+// HMR cleanup - prevent listener stacking during development
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    window.removeEventListener("vite:preloadError", handlePreloadError);
+  });
+}
 
 // ============================================================================
 // PRELOADING - Start fetching JSON data early (non-blocking)
