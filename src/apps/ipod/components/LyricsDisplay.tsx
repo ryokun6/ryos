@@ -1222,7 +1222,7 @@ export function LyricsDisplay({
                           >
                             {/* Original lyrics with karaoke highlighting */}
                             <div
-                              className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer" : ""}`}
+                              className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer lyrics-line-clickable" : ""}`}
                               style={
                                 // For old-school karaoke non-word-timed lines, apply stroke and color
                                 isOldSchoolKaraoke && !hasWordTimings

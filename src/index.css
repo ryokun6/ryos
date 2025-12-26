@@ -1017,6 +1017,12 @@ ruby.lyrics-furigana {
 /* Uses inline-grid to stack dimmed/highlighted layers */
 /* white-space: pre-wrap preserves trailing spaces while allowing text to wrap at container boundaries */
 /* Base padding accommodates glow and descenders; furigana-specific padding applied conditionally via :has() */
+/* Disable visionOS eye-tracking highlight for lyrics click targets */
+.lyrics-word-highlight,
+.lyrics-line-clickable {
+  -webkit-tap-highlight-color: transparent;
+}
+
 .lyrics-word-highlight {
   display: inline-grid;
   vertical-align: baseline;
