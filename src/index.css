@@ -1067,6 +1067,7 @@ rt.lyrics-furigana-rt,
   overflow: visible;
   /* Move furigana up a bit */
   transform: translateY(-0.1em);
+  padding-top: 1em;
 }
 
 
