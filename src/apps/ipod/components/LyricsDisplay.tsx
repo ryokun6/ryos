@@ -261,17 +261,20 @@ const GLOW_SHADOW = "0 0 6px rgba(255,255,255,0.9), 0 0 6px rgba(0,0,0,0.5), 0 0
 // Drop shadow filter for word-timed glow (applied to container, not clipped by mask)
 const GLOW_FILTER = "drop-shadow(0 0 6px rgba(255,255,255,0.4))";
 const FEATHER = 15; // Width of the soft edge in percentage
+const OLD_SCHOOL_FEATHER = 3; // Sharper edge for old-school karaoke
 
 // Old-school karaoke styling (for rounded font)
 // Uses -webkit-text-stroke for clean outlines that scale with text
 const OLD_SCHOOL_OUTLINE_WIDTH = "0.12em";
-const OLD_SCHOOL_BASE_STROKE = `${OLD_SCHOOL_OUTLINE_WIDTH} #000`;
+const OLD_SCHOOL_BASE_STROKE = `${OLD_SCHOOL_OUTLINE_WIDTH} rgba(0,0,0,0.7)`;
 const OLD_SCHOOL_HIGHLIGHT_STROKE = `${OLD_SCHOOL_OUTLINE_WIDTH} #fff`;
 // Old-school karaoke colors
 const OLD_SCHOOL_BASE_COLOR = "#fff";
 const OLD_SCHOOL_HIGHLIGHT_COLOR = "#0066FF";
-// Horizontal padding for old-school karaoke (scales with text)
+// Padding for old-school karaoke (scales with text)
 const OLD_SCHOOL_PADDING = "0.2em";
+// Extra top padding to accommodate furigana + stroke
+const OLD_SCHOOL_PADDING_TOP = "0.8em";
 
 /**
  * CSS-based mask using custom property for GPU-accelerated animation.
@@ -279,6 +282,8 @@ const OLD_SCHOOL_PADDING = "0.2em";
  * --mask-progress is a value from 0 to 1 set via JS.
  */
 const CSS_MASK_GRADIENT = `linear-gradient(to right, black calc(var(--mask-progress, 0) * ${100 + FEATHER}% - ${FEATHER}%), transparent calc(var(--mask-progress, 0) * ${100 + FEATHER}%))`;
+// Sharper mask for old-school karaoke
+const CSS_MASK_GRADIENT_OLD_SCHOOL = `linear-gradient(to right, black calc(var(--mask-progress, 0) * ${100 + OLD_SCHOOL_FEATHER}% - ${OLD_SCHOOL_FEATHER}%), transparent calc(var(--mask-progress, 0) * ${100 + OLD_SCHOOL_FEATHER}%))`;
 
 /**
  * Static word rendering without animation (for inactive lines with word timings)
@@ -372,12 +377,14 @@ function StaticWordRendering({
               className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : "opacity-55"}`} 
               style={{ 
                 textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
+                paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
+                marginTop: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_TOP}` : undefined,
                 paddingBottom: "0.35em", 
                 marginBottom: "-0.35em",
                 paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
-                marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
-                marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
+                marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
+                marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
                 color: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_COLOR : undefined,
                 WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_STROKE : undefined,
                 paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
@@ -575,12 +582,14 @@ function WordTimingHighlight({
             className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : "opacity-55"}`} 
             style={{ 
               textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
+              paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
+              marginTop: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_TOP}` : undefined,
               paddingBottom: "0.35em", 
               marginBottom: "-0.35em",
               paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
               paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
-              marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
-              marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
+              marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
+              marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
               color: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_COLOR : undefined,
               WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_STROKE : undefined,
               paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
@@ -604,15 +613,18 @@ function WordTimingHighlight({
                 WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_STROKE : undefined,
                 paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
                 // Use CSS custom property for mask - JS sets --mask-progress (0-1)
-                maskImage: CSS_MASK_GRADIENT,
-                WebkitMaskImage: CSS_MASK_GRADIENT,
+                // Old-school uses sharper edge, default uses soft feather
+                maskImage: isOldSchoolKaraoke ? CSS_MASK_GRADIENT_OLD_SCHOOL : CSS_MASK_GRADIENT,
+                WebkitMaskImage: isOldSchoolKaraoke ? CSS_MASK_GRADIENT_OLD_SCHOOL : CSS_MASK_GRADIENT,
                 overflow: "visible",
+                paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
+                marginTop: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_TOP}` : undefined,
                 paddingBottom: "0.35em",
                 marginBottom: "-0.35em",
                 paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
-                marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
-                marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING.replace('-', '')}` : undefined,
+                marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
+                marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
               } as React.CSSProperties}
             >
               {item.content}
