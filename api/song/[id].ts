@@ -51,8 +51,100 @@ export const config = {
   runtime: "edge",
 };
 
-// Simplified Chinese to Traditional Chinese converter for Kugou metadata
+// Simplified Chinese to Traditional Chinese converter for Kugou metadata and lyrics
 const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
+
+/**
+ * Check if a language code represents Chinese (Traditional)
+ * This is used to determine if we can use KRC source directly instead of AI translation
+ */
+function isChineseTraditional(language: string): boolean {
+  const lower = language.toLowerCase();
+  return (
+    lower === "zh-tw" ||
+    lower === "zh-hant" ||
+    lower === "chinese traditional" ||
+    lower === "traditional chinese" ||
+    lower === "繁體中文"
+  );
+}
+
+/**
+ * KRC language field structure (base64-encoded JSON)
+ */
+interface KrcLanguageContent {
+  content: Array<{
+    lyricContent: string[][];
+    type: number; // 0 = romaji/pinyin, 1 = Chinese translation
+    language: number;
+  }>;
+  version: number;
+}
+
+/**
+ * Extract Chinese translation from KRC language field
+ * The KRC format embeds translations in a base64-encoded JSON in the [language:...] tag
+ * type=1 is the Chinese (Simplified) translation
+ */
+function extractChineseFromKrcLanguage(krc: string): string[] | null {
+  // Find the [language:...] line
+  const languageMatch = krc.match(/^\[language:([^\]]+)\]/m);
+  if (!languageMatch) return null;
+
+  try {
+    // Decode base64
+    const decoded = atob(languageMatch[1]);
+    const langData: KrcLanguageContent = JSON.parse(decoded);
+
+    // Find the Chinese translation (type=1)
+    const chineseContent = langData.content.find((c) => c.type === 1);
+    if (!chineseContent?.lyricContent) return null;
+
+    // Each line is an array of word segments, join them
+    return chineseContent.lyricContent.map((segments) => segments.join("").trim());
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build a Traditional Chinese LRC from KRC embedded translation
+ * Returns null if KRC doesn't have embedded Chinese translation
+ */
+function buildChineseTranslationFromKrc(
+  lyrics: LyricsContent,
+  title?: string,
+  artist?: string
+): string | null {
+  if (!lyrics.krc) return null;
+
+  // Try to extract Chinese from the embedded language field first
+  const embeddedChinese = extractChineseFromKrcLanguage(lyrics.krc);
+  
+  if (embeddedChinese && embeddedChinese.length > 0) {
+    // Parse KRC to get timestamps (we need the timing info)
+    const parsedLines = parseKrcToLines(lyrics.krc, title, artist);
+    if (parsedLines.length === 0) return null;
+
+    // The embedded translation may have different line count due to metadata lines
+    // We need to align them - skip empty lines at the start of embedded translation
+    let embeddedIdx = 0;
+    while (embeddedIdx < embeddedChinese.length && !embeddedChinese[embeddedIdx]) {
+      embeddedIdx++;
+    }
+
+    // Build LRC with Traditional Chinese
+    return parsedLines
+      .map((line, idx) => {
+        const chineseLine = embeddedChinese[embeddedIdx + idx] || "";
+        const traditionalText = chineseLine ? simplifiedToTraditional(chineseLine) : line.words;
+        return `${msToLrcTime(line.startTimeMs)}${traditionalText}`;
+      })
+      .join("\n");
+  }
+
+  return null;
+}
 
 // Extended timeout for AI processing
 export const maxDuration = 120;
@@ -1305,13 +1397,31 @@ export default async function handler(req: Request) {
           if (translateTo && song.lyrics.parsedLines) {
             const totalLines = song.lyrics.parsedLines.length;
             const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
-            const hasTranslation = !!(song.translations?.[translateTo]);
+            let hasTranslation = !!(song.translations?.[translateTo]);
+            let translationLrc = hasTranslation ? song.translations![translateTo] : undefined;
+            
+            // For Chinese Traditional: use KRC source directly if available (skip AI)
+            if (!hasTranslation && isChineseTraditional(translateTo) && song.lyrics.krc) {
+              const krcDerivedLrc = buildChineseTranslationFromKrc(
+                song.lyrics,
+                song.lyricsSource?.title || song.title,
+                song.lyricsSource?.artist || song.artist
+              );
+              if (krcDerivedLrc) {
+                hasTranslation = true;
+                translationLrc = krcDerivedLrc;
+                logInfo(requestId, "Using KRC-derived Traditional Chinese translation (skipping AI)");
+                // Save this translation for future requests
+                await saveTranslation(redis, songId, translateTo, krcDerivedLrc);
+              }
+            }
+            
             response.translation = {
               totalLines,
               totalChunks,
               chunkSize: CHUNK_SIZE,
               cached: hasTranslation,
-              ...(hasTranslation ? { lrc: song.translations![translateTo] } : {}),
+              ...(translationLrc ? { lrc: translationLrc } : {}),
             };
           }
           
@@ -1411,15 +1521,35 @@ export default async function handler(req: Request) {
           cached: false,
         };
         
-        // Include translation chunk info if requested (not cached since lyrics are fresh)
+        // Include translation chunk info if requested
         if (translateTo) {
           const totalLines = parsedLines.length;
           const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+          let hasTranslation = false;
+          let translationLrc: string | undefined;
+          
+          // For Chinese Traditional: use KRC source directly if available (skip AI)
+          if (isChineseTraditional(translateTo) && lyrics.krc) {
+            const krcDerivedLrc = buildChineseTranslationFromKrc(
+              lyrics,
+              lyricsSource.title,
+              lyricsSource.artist
+            );
+            if (krcDerivedLrc) {
+              hasTranslation = true;
+              translationLrc = krcDerivedLrc;
+              logInfo(requestId, "Using KRC-derived Traditional Chinese translation for fresh lyrics (skipping AI)");
+              // Save this translation for future requests
+              await saveTranslation(redis, songId, translateTo, krcDerivedLrc);
+            }
+          }
+          
           response.translation = {
             totalLines,
             totalChunks,
             chunkSize: CHUNK_SIZE,
-            cached: false,
+            cached: hasTranslation,
+            ...(translationLrc ? { lrc: translationLrc } : {}),
           };
         }
         
@@ -1477,11 +1607,29 @@ export default async function handler(req: Request) {
         // Check if already cached (must have actual data, not just empty arrays/objects)
         // Skip cache check if force=true (user wants to regenerate)
         let cached = false;
+        let krcDerivedTranslation: string | undefined;
+        
         if (!force) {
           if (operation === "translate" && language && song.translations?.[language]) {
             cached = true;
           } else if (operation === "furigana" && song.furigana && song.furigana.length > 0) {
             cached = true;
+          }
+        }
+        
+        // For Chinese Traditional: use KRC source directly if available (skip AI)
+        if (!cached && operation === "translate" && language && isChineseTraditional(language) && song.lyrics?.krc) {
+          const krcDerivedLrc = buildChineseTranslationFromKrc(
+            song.lyrics,
+            song.lyricsSource?.title || song.title,
+            song.lyricsSource?.artist || song.artist
+          );
+          if (krcDerivedLrc) {
+            cached = true;
+            krcDerivedTranslation = krcDerivedLrc;
+            logInfo(requestId, "Using KRC-derived Traditional Chinese translation in chunk-info (skipping AI)");
+            // Save this translation for future requests
+            await saveTranslation(redis, songId, language, krcDerivedLrc);
           }
         }
 
@@ -1536,8 +1684,8 @@ export default async function handler(req: Request) {
           chunkSize: CHUNK_SIZE,
           cached,
           // If cached, return the full result
-          ...(cached && operation === "translate" && language && song.translations?.[language]
-            ? { translation: song.translations[language] }
+          ...(cached && operation === "translate" && language && (krcDerivedTranslation || song.translations?.[language])
+            ? { translation: krcDerivedTranslation || song.translations![language] }
             : {}),
           ...(cached && operation === "furigana" && song.furigana && song.furigana.length > 0 
             ? { furigana: song.furigana } 
@@ -1613,14 +1761,23 @@ export default async function handler(req: Request) {
           }
         }
 
-        // Convert to LyricLine format and translate
+        // Convert to LyricLine format
         const lines: LyricLine[] = chunkLines.map(line => ({
           words: line.words,
           startTimeMs: line.startTimeMs,
         }));
 
-        logInfo(requestId, `Translating chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
-        const translations = await translateChunk(lines, language, requestId);
+        let translations: string[];
+        
+        // For Chinese Traditional: use KRC source directly if available (skip AI)
+        if (isChineseTraditional(language) && song.lyrics?.krc) {
+          logInfo(requestId, `Using KRC-derived Traditional Chinese for chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
+          // Convert each line's text from Simplified to Traditional Chinese
+          translations = lines.map(line => simplifiedToTraditional(line.words));
+        } else {
+          logInfo(requestId, `Translating chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
+          translations = await translateChunk(lines, language, requestId);
+        }
 
         // Cache the chunk result (30 days)
         try {
