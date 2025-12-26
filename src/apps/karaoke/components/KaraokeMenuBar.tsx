@@ -469,6 +469,16 @@ export function KaraokeMenuBar({
               >
                 {t("apps.ipod.menu.chinesePinyin")}
               </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={romanization?.chineseSoramimi ?? false}
+                onCheckedChange={(checked) =>
+                  setRomanization({ chineseSoramimi: checked })
+                }
+                disabled={!romanization?.enabled}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.chineseSoramimi")}
+              </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
 

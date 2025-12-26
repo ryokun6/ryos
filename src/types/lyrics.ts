@@ -60,4 +60,6 @@ export interface RomanizationSettings {
   korean: boolean;
   /** Chinese pinyin - Latin with tones over hanzi (e.g., 中国 → zhōngguó) */
   chinese: boolean;
+  /** Chinese soramimi (空耳) - misheard lyrics in Chinese characters that phonetically match original (e.g., sorry sorry → 搜哩搜哩) */
+  chineseSoramimi: boolean;
 }

@@ -36,6 +36,16 @@ export interface FuriganaChunkInfo {
   data?: Array<Array<{ text: string; reading?: string }>>;
 }
 
+/** Pre-fetched soramimi info from initial lyrics fetch */
+export interface SoramimiChunkInfo {
+  totalLines: number;
+  totalChunks: number;
+  chunkSize: number;
+  cached: boolean;
+  /** Cached soramimi data (only present if cached=true) */
+  data?: Array<Array<{ text: string; reading?: string }>>;
+}
+
 interface TranslateChunkResponse {
   chunkIndex: number;
   totalChunks: number;
@@ -49,6 +59,14 @@ interface FuriganaChunkResponse {
   totalChunks: number;
   startIndex: number;
   furigana: Array<Array<{ text: string; reading?: string }>>;
+  cached: boolean;
+}
+
+interface SoramimiChunkResponse {
+  chunkIndex: number;
+  totalChunks: number;
+  startIndex: number;
+  soramimi: Array<Array<{ text: string; reading?: string }>>;
   cached: boolean;
 }
 
@@ -365,6 +383,158 @@ export async function processFuriganaChunks(
   }
 
   return allFurigana;
+}
+
+// =============================================================================
+// Soramimi Processing
+// =============================================================================
+
+export interface ProcessSoramimiOptions {
+  force?: boolean;
+  signal?: AbortSignal;
+  onProgress?: (progress: ChunkProgress) => void;
+  onChunk?: (chunkIndex: number, startIndex: number, soramimi: Array<Array<{ text: string; reading?: string }>>) => void;
+  /** Pre-fetched chunk info from initial lyrics request (skips extra API call) */
+  prefetchedInfo?: SoramimiChunkInfo;
+}
+
+/**
+ * Process soramimi chunks with streaming progress.
+ * If prefetchedInfo is provided, skips the initial get-chunk-info call.
+ */
+export async function processSoramimiChunks(
+  songId: string,
+  options: ProcessSoramimiOptions = {}
+): Promise<Array<Array<{ text: string; reading?: string }>>> {
+  const { force, signal, onProgress, onChunk, prefetchedInfo } = options;
+
+  // Use prefetched info or fetch it
+  let totalLines: number;
+  let totalChunks: number;
+  let cachedData: Array<Array<{ text: string; reading?: string }>> | undefined;
+
+  if (prefetchedInfo) {
+    // Use pre-fetched info from initial lyrics request
+    totalLines = prefetchedInfo.totalLines;
+    totalChunks = prefetchedInfo.totalChunks;
+    if (prefetchedInfo.cached && prefetchedInfo.data) {
+      cachedData = prefetchedInfo.data;
+    }
+  } else {
+    // Fetch chunk info (legacy path - makes extra API call)
+    const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "get-chunk-info",
+        operation: "soramimi",
+        force,
+      }),
+      signal,
+      timeout: 15000,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to get chunk info (status ${res.status})`);
+    }
+
+    const chunkInfo = await res.json();
+    totalLines = chunkInfo.totalLines;
+    totalChunks = chunkInfo.totalChunks;
+    if (chunkInfo.cached && chunkInfo.soramimi) {
+      cachedData = chunkInfo.soramimi;
+    }
+  }
+
+  // If fully cached, return immediately
+  if (cachedData) {
+    onProgress?.({ completedChunks: totalChunks, totalChunks, percentage: 100 });
+    return cachedData;
+  }
+
+  // Process chunks
+  const allSoramimi: Array<Array<{ text: string; reading?: string }>> = new Array(totalLines).fill(null).map(() => []);
+  const completedChunkSet = new Set<number>();
+  let completedChunks = 0;
+
+  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
+
+  await processWithConcurrency(
+    chunkIndices,
+    async (chunkIndex) => {
+      if (signal?.aborted) return;
+
+      const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "soramimi-chunk",
+          chunkIndex,
+          force,
+        }),
+        signal,
+        timeout: CHUNK_TIMEOUT,
+        retry: {
+          maxAttempts: 3,
+          initialDelayMs: 2000,
+          backoffMultiplier: 2,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Chunk ${chunkIndex} failed (status ${res.status})`);
+      }
+
+      const result = (await res.json()) as SoramimiChunkResponse;
+
+      if (typeof result.startIndex !== "number" || result.startIndex < 0) {
+        throw new Error(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}`);
+      }
+
+      result.soramimi.forEach((segments, i) => {
+        const targetIndex = result.startIndex + i;
+        if (targetIndex < allSoramimi.length) {
+          allSoramimi[targetIndex] = segments;
+        }
+      });
+
+      completedChunkSet.add(chunkIndex);
+      completedChunks++;
+      onProgress?.({
+        completedChunks,
+        totalChunks,
+        percentage: Math.round((completedChunks / totalChunks) * 100),
+      });
+      onChunk?.(result.chunkIndex, result.startIndex, result.soramimi);
+    },
+    MAX_CONCURRENT_CHUNKS
+  );
+
+  // Validate all chunks completed
+  if (completedChunkSet.size !== totalChunks) {
+    const missing = chunkIndices.filter((i) => !completedChunkSet.has(i));
+    throw new Error(`Soramimi incomplete: missing chunks ${missing.join(", ")}`);
+  }
+
+  // Save consolidated soramimi
+  if (!signal?.aborted) {
+    try {
+      await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save-soramimi",
+          soramimi: allSoramimi,
+        }),
+        signal,
+        timeout: 30000,
+      });
+    } catch (e) {
+      console.warn("Failed to save consolidated soramimi:", e);
+    }
+  }
+
+  return allSoramimi;
 }
 
 // =============================================================================

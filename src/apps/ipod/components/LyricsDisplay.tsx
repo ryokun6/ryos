@@ -779,6 +779,7 @@ export function LyricsDisplay({
       japaneseRomaji: false,
       korean: koreanDisplay === KoreanDisplay.Romanized,
       chinese: false,
+      chineseSoramimi: false,
     };
   }, [storeRomanization, japaneseFurigana, koreanDisplay]);
 

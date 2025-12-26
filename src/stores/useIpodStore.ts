@@ -173,6 +173,7 @@ const initialIpodData: IpodData = {
     japaneseRomaji: false,
     korean: false,
     chinese: false,
+    chineseSoramimi: false,
   },
   lyricsTranslationLanguage: LYRICS_TRANSLATION_AUTO,
   currentLyrics: null,
@@ -267,7 +268,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSource: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 25; // Replace currentIndex with currentSongId
+const CURRENT_IPOD_STORE_VERSION = 26; // Add chineseSoramimi to romanization settings
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -1254,7 +1255,13 @@ export const useIpodStore = create<IpodState>()(
             japaneseRomaji: false,
             korean: oldKoreanDisplay === KoreanDisplay.Romanized || oldKoreanDisplay === "romanized",
             chinese: false,
+            chineseSoramimi: false,
           };
+          
+          // Ensure existing romanization settings have chineseSoramimi
+          if (state.romanization && state.romanization.chineseSoramimi === undefined) {
+            state.romanization.chineseSoramimi = false;
+          }
 
           // Migrate currentIndex to currentSongId (will be null, library will re-initialize)
           state = {

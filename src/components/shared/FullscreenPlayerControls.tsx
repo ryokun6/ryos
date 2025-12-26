@@ -509,6 +509,17 @@ export function FullscreenPlayerControls({
                 >
                   {t("apps.ipod.menu.chinesePinyin")}
                 </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={romanization.chineseSoramimi ?? false}
+                  onCheckedChange={(checked) => {
+                    onRomanizationChange({ chineseSoramimi: checked });
+                    onInteraction?.();
+                  }}
+                  disabled={!romanization.enabled}
+                  className="text-md h-6 px-3 whitespace-nowrap"
+                >
+                  {t("apps.ipod.menu.chineseSoramimi")}
+                </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}

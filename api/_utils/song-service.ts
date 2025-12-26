@@ -85,6 +85,9 @@ export interface SongDocument {
   // Furigana annotations (one array per lyric line)
   furigana?: FuriganaSegment[][];
 
+  // Soramimi annotations - Chinese misheard lyrics (空耳)
+  soramimi?: FuriganaSegment[][];
+
   // Metadata
   createdBy?: string;
   createdAt: number;
@@ -100,6 +103,7 @@ export interface GetSongOptions {
   includeLyrics?: boolean;
   includeTranslations?: boolean | string[]; // true = all, string[] = specific languages
   includeFurigana?: boolean;
+  includeSoramimi?: boolean;
 }
 
 /**
@@ -112,6 +116,8 @@ export interface SaveSongOptions {
   preserveTranslations?: boolean;
   /** Preserve existing furigana if not provided */
   preserveFurigana?: boolean;
+  /** Preserve existing soramimi if not provided */
+  preserveSoramimi?: boolean;
 }
 
 // =============================================================================
@@ -212,6 +218,10 @@ export async function getSong(
     result.furigana = song.furigana;
   }
 
+  if (options.includeSoramimi && song.soramimi) {
+    result.soramimi = song.soramimi;
+  }
+
   if (includeTranslations && song.translations) {
     if (includeTranslations === true) {
       result.translations = song.translations;
@@ -277,7 +287,7 @@ export async function saveSong(
   options: SaveSongOptions = {},
   existingSong?: SongDocument | null
 ): Promise<SongDocument> {
-  const { preserveLyrics = false, preserveTranslations = false, preserveFurigana = false } = options;
+  const { preserveLyrics = false, preserveTranslations = false, preserveFurigana = false, preserveSoramimi = false } = options;
   const songKey = getSongKey(song.id);
   const now = Date.now();
 
@@ -303,6 +313,7 @@ export async function saveSong(
       ? { ...existing?.translations, ...song.translations }
       : (song.translations ?? existing?.translations),
     furigana: preserveFurigana ? (existing?.furigana ?? song.furigana) : (song.furigana ?? existing?.furigana),
+    soramimi: preserveSoramimi ? (existing?.soramimi ?? song.soramimi) : (song.soramimi ?? existing?.soramimi),
     createdBy: createdByValue,
     createdAt: existing?.createdAt ?? song.createdAt ?? now,
     updatedAt: now,
@@ -426,6 +437,10 @@ export async function listSongs(
       filtered.furigana = song.furigana;
     }
 
+    if (getOptions.includeSoramimi && song.soramimi) {
+      filtered.soramimi = song.soramimi;
+    }
+
     if (getOptions.includeTranslations && song.translations) {
       if (getOptions.includeTranslations === true) {
         filtered.translations = song.translations;
@@ -525,12 +540,37 @@ export async function saveFurigana(
     includeLyrics: true,
     includeTranslations: true,
     includeFurigana: true,
+    includeSoramimi: true,
   });
   if (!existing) return null;
 
   return saveSong(redis, {
     ...existing,
     furigana,
+  }, {}, existing);
+}
+
+/**
+ * Save soramimi annotations for a song
+ * Requires the song to exist (call after saveLyrics)
+ */
+export async function saveSoramimi(
+  redis: Redis,
+  id: string,
+  soramimi: FuriganaSegment[][]
+): Promise<SongDocument | null> {
+  const existing = await getSong(redis, id, { 
+    includeMetadata: true,
+    includeLyrics: true,
+    includeTranslations: true,
+    includeFurigana: true,
+    includeSoramimi: true,
+  });
+  if (!existing) return null;
+
+  return saveSong(redis, {
+    ...existing,
+    soramimi,
   }, {}, existing);
 }
 

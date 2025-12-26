@@ -13,7 +13,7 @@ import {
   renderKanaWithRomaji,
 } from "@/utils/romanization";
 import type { FuriganaSegment } from "@/utils/romanization";
-import { processFuriganaChunks, type FuriganaChunkInfo } from "@/utils/chunkedStream";
+import { processFuriganaChunks, processSoramimiChunks, type FuriganaChunkInfo, type SoramimiChunkInfo } from "@/utils/chunkedStream";
 
 // Re-export FuriganaSegment for consumers
 export type { FuriganaSegment };
@@ -31,11 +31,15 @@ interface UseFuriganaParams {
   onLoadingChange?: (isLoading: boolean) => void;
   /** Pre-fetched furigana info from initial lyrics request (skips extra API call) */
   prefetchedInfo?: FuriganaChunkInfo;
+  /** Pre-fetched soramimi info from initial lyrics request (skips extra API call) */
+  prefetchedSoramimiInfo?: SoramimiChunkInfo;
 }
 
 interface UseFuriganaReturn {
   /** Map of startTimeMs -> FuriganaSegment[] */
   furiganaMap: Map<string, FuriganaSegment[]>;
+  /** Map of startTimeMs -> SoramimiSegment[] (Chinese misheard lyrics) */
+  soramimiMap: Map<string, FuriganaSegment[]>;
   /** Whether currently fetching */
   isFetching: boolean;
   /** Progress percentage (0-100) when streaming */
@@ -64,12 +68,15 @@ export function useFurigana({
   romanization,
   onLoadingChange,
   prefetchedInfo,
+  prefetchedSoramimiInfo,
 }: UseFuriganaParams): UseFuriganaReturn {
   const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
+  const [soramimiMap, setSoramimiMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
   const [isFetching, setIsFetching] = useState(false);
   const [progress, setProgress] = useState<number | undefined>();
   const [error, setError] = useState<string>();
   const furiganaCacheKeyRef = useRef<string>("");
+  const soramimiCacheKeyRef = useRef<string>("");
   // Track current songId for race condition prevention
   const currentSongIdRef = useRef(songId);
   currentSongIdRef.current = songId;
@@ -93,11 +100,13 @@ export function useFurigana({
     return `song:${songId}:` + lines.map((l) => `${l.startTimeMs}:${l.words.slice(0, 20)}`).join("|");
   }, [songId, lines]);
 
-  // Effect to immediately clear furigana when cache bust trigger changes
+  // Effect to immediately clear furigana and soramimi when cache bust trigger changes
   useEffect(() => {
     if (lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger) {
       setFuriganaMap(new Map());
+      setSoramimiMap(new Map());
       furiganaCacheKeyRef.current = "";
+      soramimiCacheKeyRef.current = "";
       setError(undefined);
     }
   }, [lyricsCacheBustTrigger]);
@@ -248,6 +257,132 @@ export function useFurigana({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
 
+  // Check conditions for soramimi fetching
+  const shouldFetchSoramimi = romanization.enabled && romanization.chineseSoramimi;
+
+  // Fetch soramimi for lyrics when enabled using chunked streaming
+  // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
+  useEffect(() => {
+    // Capture songId at effect start for stale request detection
+    const effectSongId = songId;
+
+    // If completely disabled, no songId, or no lines, clear everything
+    if (!effectSongId || !shouldFetchSoramimi || !hasLines) {
+      if (soramimiCacheKeyRef.current !== "") {
+        setSoramimiMap(new Map());
+        soramimiCacheKeyRef.current = "";
+      }
+      return;
+    }
+
+    // If not showing original, don't fetch new data but keep existing soramimi cached
+    if (!isShowingOriginal) {
+      return;
+    }
+
+    // Check if offline
+    if (isOffline()) {
+      return;
+    }
+
+    // Check if this is a force cache clear request
+    const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
+    
+    // Skip if we already have this data and it's not a force request
+    if (!isForceRequest && cacheKey === soramimiCacheKeyRef.current) {
+      return;
+    }
+
+    // If we have cached soramimi from initial fetch, use it immediately
+    if (prefetchedSoramimiInfo?.cached && prefetchedSoramimiInfo.data && !isForceRequest) {
+      const finalMap = new Map<string, FuriganaSegment[]>();
+      prefetchedSoramimiInfo.data.forEach((segments, index) => {
+        if (index < lines.length && segments) {
+          finalMap.set(lines[index].startTimeMs, segments);
+        }
+      });
+      setSoramimiMap(finalMap);
+      soramimiCacheKeyRef.current = cacheKey;
+      return;
+    }
+
+    // Start loading
+    setIsFetching(true);
+    setProgress(0);
+    setError(undefined);
+    
+    const controller = new AbortController();
+
+    // Use chunked streaming for soramimi to avoid edge function timeouts
+    const progressiveMap = new Map<string, FuriganaSegment[]>();
+    
+    processSoramimiChunks(effectSongId, {
+      force: isForceRequest,
+      signal: controller.signal,
+      // Pass pre-fetched info to skip get-chunk-info call
+      prefetchedInfo: !isForceRequest ? prefetchedSoramimiInfo : undefined,
+      onProgress: (chunkProgress) => {
+        if (!controller.signal.aborted) {
+          if (effectSongId !== currentSongIdRef.current) return;
+          setProgress(chunkProgress.percentage);
+        }
+      },
+      onChunk: (_chunkIndex, startIndex, soramimi) => {
+        if (controller.signal.aborted) return;
+        if (effectSongId !== currentSongIdRef.current) return;
+        
+        soramimi.forEach((segments, i) => {
+          const lineIndex = startIndex + i;
+          if (lineIndex < lines.length && segments) {
+            progressiveMap.set(lines[lineIndex].startTimeMs, segments);
+          }
+        });
+        
+        setSoramimiMap(new Map(progressiveMap));
+      },
+    })
+      .then((allSoramimi) => {
+        if (controller.signal.aborted) return;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return;
+
+        // Final update to ensure we have everything
+        const finalMap = new Map<string, FuriganaSegment[]>();
+        allSoramimi.forEach((segments, index) => {
+          if (index < lines.length && segments) {
+            finalMap.set(lines[index].startTimeMs, segments);
+          }
+        });
+
+        setSoramimiMap(finalMap);
+        soramimiCacheKeyRef.current = cacheKey;
+        lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        // Check for stale request
+        if (effectSongId !== currentSongIdRef.current) return;
+        
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
+
+        console.error("Failed to fetch soramimi:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch soramimi");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
+          setIsFetching(false);
+          setProgress(undefined);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
+  }, [songId, cacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedSoramimiInfo]);
+
   // Unified render function that handles all romanization types
   const renderWithFurigana = useCallback(
     (line: LyricLine, processedText: string): React.ReactNode => {
@@ -257,6 +392,34 @@ export function useFurigana({
       }
       
       const keyPrefix = `line-${line.startTimeMs}`;
+      
+      // Chinese soramimi (misheard lyrics) - renders phonetic Chinese over original text
+      if (romanization.chineseSoramimi) {
+        const soramimiSegments = soramimiMap.get(line.startTimeMs);
+        if (soramimiSegments && soramimiSegments.length > 0) {
+          return (
+            <>
+              {soramimiSegments.map((segment, index) => {
+                // If there's a reading (the Chinese soramimi), display as ruby
+                if (segment.reading) {
+                  return (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
+                    <ruby key={index} className="lyrics-furigana lyrics-soramimi">
+                      {segment.text}
+                      <rp>(</rp>
+                      <rt className="lyrics-furigana-rt lyrics-soramimi-rt">{segment.reading}</rt>
+                      <rp>)</rp>
+                    </ruby>
+                  );
+                }
+                // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
+                return <span key={index}>{segment.text}</span>;
+              })}
+            </>
+          );
+        }
+        // If soramimi is enabled but no data yet, fall through to other methods
+      }
       
       // If furigana is disabled, try other romanization types
       if (!romanization.japaneseFurigana) {
@@ -332,11 +495,12 @@ export function useFurigana({
         </>
       );
     },
-    [romanization, isShowingOriginal, furiganaMap]
+    [romanization, isShowingOriginal, furiganaMap, soramimiMap]
   );
 
   return {
     furiganaMap,
+    soramimiMap,
     isFetching,
     progress,
     error,

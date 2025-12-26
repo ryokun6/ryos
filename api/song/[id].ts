@@ -37,6 +37,7 @@ import {
   saveLyrics,
   saveTranslation,
   saveFurigana,
+  saveSoramimi,
   canModifySong,
   type SongDocument,
   type LyricsSource,
@@ -284,10 +285,17 @@ const FuriganaChunkSchema = z.object({
   force: z.boolean().optional(),
 });
 
+const SoramimiChunkSchema = z.object({
+  action: z.literal("soramimi-chunk"),
+  chunkIndex: z.number().int().min(0).max(1000),
+  totalChunks: z.number().int().min(0).max(1000).optional(),
+  force: z.boolean().optional(),
+});
+
 // Schema for getting chunk info (how many chunks total)
 const GetChunkInfoSchema = z.object({
   action: z.literal("get-chunk-info"),
-  operation: z.enum(["translate", "furigana"]),
+  operation: z.enum(["translate", "furigana", "soramimi"]),
   language: z.string().max(10).optional(), // Required for translate
   force: z.boolean().optional(), // Skip consolidated cache if true
 });
@@ -303,6 +311,15 @@ const SaveTranslationSchema = z.object({
 const SaveFuriganaSchema = z.object({
   action: z.literal("save-furigana"),
   furigana: z.array(z.array(z.object({
+    text: z.string(),
+    reading: z.string().optional(),
+  }))).max(500),
+});
+
+// Schema for saving consolidated soramimi after chunked processing
+const SaveSoramimiSchema = z.object({
+  action: z.literal("save-soramimi"),
+  soramimi: z.array(z.array(z.object({
     text: z.string(),
     reading: z.string().optional(),
   }))).max(500),
@@ -332,6 +349,16 @@ const FuriganaSegmentSchema = z.object({
 
 const AiFuriganaResponseSchema = z.object({
   annotatedLines: z.array(z.array(FuriganaSegmentSchema)),
+});
+
+// Soramimi schema (Chinese misheard lyrics)
+const SoramimiSegmentSchema = z.object({
+  text: z.string(),
+  reading: z.string().optional(), // The Chinese characters that sound like the original
+});
+
+const AiSoramimiResponseSchema = z.object({
+  annotatedLines: z.array(z.array(SoramimiSegmentSchema)),
 });
 
 // =============================================================================
@@ -1104,6 +1131,79 @@ async function translateFromParsedLines(
 }
 
 // =============================================================================
+// Soramimi Functions (Chinese Misheard Lyrics / 空耳)
+// =============================================================================
+
+const SORAMIMI_SYSTEM_PROMPT = `You are an expert in phonetic transcription to Chinese characters (空耳/soramimi).
+
+Given lyric lines in any language, create Chinese character readings that phonetically mimic the original sounds when read aloud in Mandarin Chinese. This is known as "空耳" (soramimi/mondegreen) - misheard lyrics.
+
+Famous examples:
+- "sorry sorry" → "搜哩搜哩" (sōu lǐ sōu lǐ)
+- "It goes down, down baby" → "一個送到北邊" (yī gè sòng dào běi biān)
+- "리듬에 온몸을" → "紅燈沒？綠燈沒？" (hóng dēng méi? lǜ dēng méi?)
+- "맡기고 소리쳐 oh" → "parking 個休旅車 oh" (parking gè xiū lǚ chē oh)
+
+Rules:
+1. Focus on phonetic similarity - the Chinese should SOUND like the original when spoken
+2. Use common Chinese characters/words that flow naturally
+3. It's OK to mix in English words or numbers if they fit the sound
+4. Be creative and playful - soramimi is meant to be funny and memorable
+5. Preserve the rhythm and syllable count roughly
+6. Use Traditional Chinese characters (繁體字)
+
+For each line, return an array of segments:
+- Each segment has "text" (the original text portion) and optionally "reading" (the Chinese soramimi)
+- If a portion has no good soramimi match, omit the "reading" field
+- Group syllables logically to create coherent Chinese phrases
+
+Example input: ["Sorry, sorry", "I'm so sorry"]
+Example output:
+{
+  "annotatedLines": [
+    [{"text": "Sorry, sorry", "reading": "搜哩 搜哩"}],
+    [{"text": "I'm so sorry", "reading": "愛慕 搜 搜哩"}]
+  ]
+}`;
+
+async function generateSoramimiForChunk(
+  lines: LyricLine[],
+  requestId: string
+): Promise<FuriganaSegment[][]> {
+  if (lines.length === 0) {
+    return [];
+  }
+
+  const textsToProcess = lines.map((line) => line.words);
+
+  try {
+    const { object: aiResponse } = await generateObject({
+      model: google("gemini-2.5-flash"),
+      schema: AiSoramimiResponseSchema,
+      messages: [
+        { role: "system", content: SORAMIMI_SYSTEM_PROMPT },
+        { role: "user", content: JSON.stringify(textsToProcess) },
+      ],
+      temperature: 0.7, // Higher temperature for more creative results
+    });
+
+    // Validate array length matches
+    if (aiResponse.annotatedLines.length !== lines.length) {
+      logInfo(requestId, `Warning: Soramimi response length mismatch - expected ${lines.length}, got ${aiResponse.annotatedLines.length}`);
+    }
+
+    // Map results back to all lines
+    return lines.map((line, index) => {
+      return aiResponse.annotatedLines[index] || [{ text: line.words }];
+    });
+  } catch (error) {
+    logError(requestId, `Soramimi chunk failed, returning plain text segments as fallback`, error);
+    // Return plain text segments without readings as fallback
+    return lines.map((line) => [{ text: line.words }]);
+  }
+}
+
+// =============================================================================
 // Furigana Functions
 // =============================================================================
 
@@ -1638,6 +1738,7 @@ export default async function handler(req: Request) {
           includeLyrics: true,
           includeTranslations: language ? [language] : undefined,
           includeFurigana: operation === "furigana",
+          includeSoramimi: operation === "soramimi",
         });
 
         if (!song?.lyrics?.lrc) {
@@ -1667,6 +1768,8 @@ export default async function handler(req: Request) {
             cached = true;
           } else if (operation === "furigana" && song.furigana && song.furigana.length > 0) {
             cached = true;
+          } else if (operation === "soramimi" && song.soramimi && song.soramimi.length > 0) {
+            cached = true;
           }
         }
         
@@ -1692,6 +1795,7 @@ export default async function handler(req: Request) {
           startIndex: number;
           translations?: string[];
           furigana?: FuriganaSegment[][];
+          soramimi?: FuriganaSegment[][];
           cached: boolean;
         } | undefined;
 
@@ -1726,6 +1830,18 @@ export default async function handler(req: Request) {
 
             initialChunk = { chunkIndex: 0, startIndex: 0, furigana, cached: false };
             logInfo(requestId, `Chunk info: ${operation} - processed chunk 0 inline`, { totalLines, totalChunks });
+          } else if (operation === "soramimi") {
+            const lines: LyricLine[] = chunkLines.map(line => ({ words: line.words, startTimeMs: line.startTimeMs }));
+            const soramimi = await generateSoramimiForChunk(lines, requestId);
+
+            const lyricsHash = song.lyricsSource?.hash;
+            const chunkCacheKey = lyricsHash
+              ? `song:${songId}:soramimi:chunk:0:${lyricsHash}`
+              : `song:${songId}:soramimi:chunk:0`;
+            await redis.set(chunkCacheKey, soramimi, { ex: 60 * 60 * 24 * 30 });
+
+            initialChunk = { chunkIndex: 0, startIndex: 0, soramimi, cached: false };
+            logInfo(requestId, `Chunk info: ${operation} - processed chunk 0 inline`, { totalLines, totalChunks });
           }
         } else {
           logInfo(requestId, `Chunk info: ${operation}`, { totalLines, totalChunks, cached });
@@ -1742,6 +1858,9 @@ export default async function handler(req: Request) {
             : {}),
           ...(cached && operation === "furigana" && song.furigana && song.furigana.length > 0 
             ? { furigana: song.furigana } 
+            : {}),
+          ...(cached && operation === "soramimi" && song.soramimi && song.soramimi.length > 0 
+            ? { soramimi: song.soramimi } 
             : {}),
           // Include first chunk if not cached (eliminates one round-trip)
           ...(initialChunk ? { initialChunk } : {}),
@@ -1942,6 +2061,98 @@ export default async function handler(req: Request) {
       }
 
       // =======================================================================
+      // Handle soramimi-chunk action - processes a single chunk of Chinese misheard lyrics
+      // =======================================================================
+      if (action === "soramimi-chunk") {
+        const parsed = SoramimiChunkSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { chunkIndex, force } = parsed.data;
+
+        // Get song with lyrics
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+        });
+
+        if (!song?.lyrics?.lrc) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Ensure parsedLines exist
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          song.lyrics.parsedLines = parseLyricsContent(
+            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+            song.title,
+            song.artist
+          );
+          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
+        }
+
+        const totalLines = song.lyrics.parsedLines.length;
+        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+
+        if (chunkIndex < 0 || chunkIndex >= totalChunks) {
+          return errorResponse(`Invalid chunk index: ${chunkIndex}. Valid range: 0-${totalChunks - 1}`);
+        }
+
+        // Extract chunk
+        const startIndex = chunkIndex * CHUNK_SIZE;
+        const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
+        const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
+
+        // Check chunk cache (include lyrics hash to invalidate when source changes)
+        const lyricsHash = song.lyricsSource?.hash;
+        const chunkCacheKey = lyricsHash
+          ? `song:${songId}:soramimi:chunk:${chunkIndex}:${lyricsHash}`
+          : `song:${songId}:soramimi:chunk:${chunkIndex}`;
+        if (!force) {
+          try {
+            const cachedChunk = await redis.get(chunkCacheKey) as FuriganaSegment[][] | null;
+            if (cachedChunk) {
+              logInfo(requestId, `Soramimi chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
+              return jsonResponse({
+                chunkIndex,
+                totalChunks,
+                startIndex,
+                soramimi: cachedChunk,
+                cached: true,
+              });
+            }
+          } catch (e) {
+            logError(requestId, "Chunk cache lookup failed", e);
+          }
+        }
+
+        // Convert to LyricLine format and generate soramimi
+        const lines: LyricLine[] = chunkLines.map(line => ({
+          words: line.words,
+          startTimeMs: line.startTimeMs,
+        }));
+
+        logInfo(requestId, `Generating soramimi chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
+        const soramimi = await generateSoramimiForChunk(lines, requestId);
+
+        // Cache the chunk result (30 days)
+        try {
+          await redis.set(chunkCacheKey, soramimi, { ex: 60 * 60 * 24 * 30 });
+        } catch (e) {
+          logError(requestId, "Chunk cache write failed", e);
+        }
+
+        logInfo(requestId, `Soramimi chunk ${chunkIndex + 1}/${totalChunks} - completed`);
+        return jsonResponse({
+          chunkIndex,
+          totalChunks,
+          startIndex,
+          soramimi,
+          cached: false,
+        });
+      }
+
+      // =======================================================================
       // Handle save-translation action - saves consolidated translation to song
       // This is called by the client after all chunks have been processed
       // =======================================================================
@@ -2012,6 +2223,40 @@ export default async function handler(req: Request) {
 
         logInfo(requestId, `Saved consolidated furigana (${furigana.length} lines)`);
         return jsonResponse({ success: true, lineCount: furigana.length });
+      }
+
+      // =======================================================================
+      // Handle save-soramimi action - saves consolidated soramimi to song
+      // This is called by the client after all chunks have been processed
+      // =======================================================================
+      if (action === "save-soramimi") {
+        const parsed = SaveSoramimiSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { soramimi } = parsed.data;
+
+        // Get song to verify it exists and has lyrics
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+        });
+
+        if (!song?.lyrics?.parsedLines) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Verify the soramimi array matches the parsed lines
+        if (soramimi.length !== song.lyrics.parsedLines.length) {
+          return errorResponse(`Soramimi count mismatch: ${soramimi.length} vs ${song.lyrics.parsedLines.length} lines`);
+        }
+
+        // Save to song document
+        await saveSoramimi(redis, songId, soramimi as FuriganaSegment[][]);
+
+        logInfo(requestId, `Saved consolidated soramimi (${soramimi.length} lines)`);
+        return jsonResponse({ success: true, lineCount: soramimi.length });
       }
 
       // =======================================================================
