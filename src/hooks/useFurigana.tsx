@@ -393,7 +393,8 @@ export function useFurigana({
       
       const keyPrefix = `line-${line.startTimeMs}`;
       
-      // Chinese soramimi (misheard lyrics) - renders phonetic Chinese over original text
+      // Chinese soramimi (misheard lyrics) - renders phonetic Chinese over ALL original text
+      // This takes priority over all other pronunciation options when enabled
       if (romanization.chineseSoramimi) {
         const soramimiSegments = soramimiMap.get(line.startTimeMs);
         if (soramimiSegments && soramimiSegments.length > 0) {
@@ -418,7 +419,9 @@ export function useFurigana({
             </>
           );
         }
-        // If soramimi is enabled but no data yet, fall through to other methods
+        // If soramimi is enabled but no data yet, show plain text (don't fall through to other methods)
+        // This ensures soramimi is the exclusive annotation when enabled
+        return processedText;
       }
       
       // If furigana is disabled, try other romanization types
