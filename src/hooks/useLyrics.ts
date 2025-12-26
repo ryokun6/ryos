@@ -100,8 +100,8 @@ export function useLyrics({
   const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
   const lastCacheBustTriggerRef = useRef<number>(0);
 
-  // Ref to store translation info from initial fetch
-  const translationInfoRef = useRef<TranslationChunkInfo | undefined>(undefined);
+  // Ref to store translation info from initial fetch (with language to ensure we only use matching translations)
+  const translationInfoRef = useRef<{ info: TranslationChunkInfo; language: string } | undefined>(undefined);
 
   // ==========================================================================
   // Effect: Fetch lyrics (and optionally translation/furigana info)
@@ -198,9 +198,9 @@ export function useLyrics({
         cachedKeyRef.current = cacheKey;
         useIpodStore.setState({ currentLyrics: { lines: parsed } });
 
-        // Store translation info for the translation effect to use
-        if (json.translation) {
-          translationInfoRef.current = json.translation;
+        // Store translation info for the translation effect to use (with language to ensure correct matching)
+        if (json.translation && translateTo) {
+          translationInfoRef.current = { info: json.translation, language: translateTo };
         }
 
         // Store furigana info for useFurigana to use
@@ -248,9 +248,11 @@ export function useLyrics({
     }
 
     const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
-    const prefetchedInfo = translationInfoRef.current;
+    const prefetchedData = translationInfoRef.current;
+    // Only use prefetched info if it's for the same language we're requesting
+    const prefetchedInfo = prefetchedData?.language === translateTo ? prefetchedData.info : undefined;
 
-    // If we have cached translation from initial fetch, use it immediately
+    // If we have cached translation from initial fetch for the same language, use it immediately
     if (prefetchedInfo?.cached && prefetchedInfo.lrc && !isForceRequest) {
       const translations = parseLrcToTranslations(prefetchedInfo.lrc);
       const translatedLines: LyricLine[] = originalLines.map((line, index) => ({
