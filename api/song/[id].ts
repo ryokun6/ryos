@@ -1152,17 +1152,19 @@ Rules:
 5. Preserve the rhythm and syllable count roughly
 6. Use Traditional Chinese characters (繁體字)
 
-For each line, return an array of segments:
-- Each segment has "text" (the original text portion) and optionally "reading" (the Chinese soramimi)
-- If a portion has no good soramimi match, omit the "reading" field
-- Group syllables logically to create coherent Chinese phrases
+IMPORTANT: Split each line into INDIVIDUAL WORD segments, not the entire line!
+For each line, return an array of segments where:
+- Each segment has "text" (a single word or small phrase from the original) and "reading" (its Chinese soramimi)
+- Split by spaces/words so each word gets its own reading
+- The concatenation of all "text" fields should equal the original line
+- Include spaces/punctuation in the text segments to preserve the original
 
 Example input: ["Sorry, sorry", "I'm so sorry"]
 Example output:
 {
   "annotatedLines": [
-    [{"text": "Sorry, sorry", "reading": "搜哩 搜哩"}],
-    [{"text": "I'm so sorry", "reading": "愛慕 搜 搜哩"}]
+    [{"text": "So", "reading": "搜"}, {"text": "rry, ", "reading": "哩"}, {"text": "so", "reading": "搜"}, {"text": "rry", "reading": "哩"}],
+    [{"text": "I'm ", "reading": "愛"}, {"text": "so ", "reading": "搜"}, {"text": "so", "reading": "搜"}, {"text": "rry", "reading": "哩"}]
   ]
 }`;
 
