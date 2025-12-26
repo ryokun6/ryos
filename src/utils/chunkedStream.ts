@@ -74,7 +74,7 @@ interface SoramimiChunkResponse {
 // Constants
 // =============================================================================
 
-const MAX_CONCURRENT_CHUNKS = 3; // Increased for better parallelism
+const MAX_CONCURRENT_CHUNKS = 5; // Increased for better parallelism
 const CHUNK_TIMEOUT = 60000; // 60 seconds per chunk
 
 // =============================================================================
