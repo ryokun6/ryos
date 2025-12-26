@@ -5,8 +5,7 @@
  */
 
 import { google } from "@ai-sdk/google";
-import { generateObject } from "ai";
-import { AiSoramimiResponseSchema } from "./_constants.js";
+import { generateText } from "ai";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
@@ -14,34 +13,67 @@ import type { FuriganaSegment } from "../_utils/song-service.js";
 // Soramimi Generation
 // =============================================================================
 
-const SORAMIMI_SYSTEM_PROMPT = `You are an expert in phonetic transcription to Chinese characters (空耳/soramimi).
+const SORAMIMI_SYSTEM_PROMPT = `Create Chinese phonetic readings (空耳/soramimi) using ruby markup format: {text|中文}
 
-Given lyric lines (one per line), create Chinese character readings that phonetically mimic the original sounds when read aloud in Mandarin Chinese.
+Format: {original|讀音} - original text first, then Chinese reading after pipe
+- Chinese should SOUND like the original in Mandarin
+- Use Traditional Chinese characters (繁體字)
+- Split by syllables, each gets reading
 
-Famous examples:
-- "sorry sorry" → "搜哩搜哩"
-- "리듬에 온몸을" → "紅燈沒？綠燈沒？"
+One line output per input line.
 
-Rules:
-1. Focus on phonetic similarity - the Chinese should SOUND like the original
-2. Use common Chinese characters that flow naturally
-3. OK to mix English/numbers if they fit the sound
-4. Be creative and playful
-5. Match syllable count where possible
-6. Use Traditional Chinese characters (繁體字)
-
-For each line, return an array of segments with "text" (original word) and "reading" (Chinese soramimi).
-Split by words so each gets its own reading. Concatenated "text" fields must equal original line.
-
-Example input:
+Example:
+Input:
 Sorry, sorry
 I'm so sorry
 
-Example output:
-{"annotatedLines":[[{"text":"So","reading":"搜"},{"text":"rry, ","reading":"哩"},{"text":"so","reading":"搜"},{"text":"rry","reading":"哩"}],[{"text":"I'm ","reading":"愛"},{"text":"so ","reading":"搜"},{"text":"so","reading":"搜"},{"text":"rry","reading":"哩"}]]}`;
+Output:
+{Sor|搜}{ry,|哩} {sor|搜}{ry|哩}
+{I'm|愛} {so|搜} {sor|搜}{ry|哩}`;
 
 // AI generation timeout (30 seconds)
 const AI_TIMEOUT_MS = 30000;
+
+/**
+ * Parse ruby markup format (e.g., "{Sor|搜}{ry|哩}") into FuriganaSegment array
+ */
+function parseRubyMarkup(line: string): FuriganaSegment[] {
+  const segments: FuriganaSegment[] = [];
+  
+  // Match {text|reading} patterns and plain text between them
+  const regex = /\{([^|}]+)\|([^}]+)\}/g;
+  let match;
+  let lastIndex = 0;
+  
+  while ((match = regex.exec(line)) !== null) {
+    // Add any plain text before this match
+    if (match.index > lastIndex) {
+      const textBefore = line.slice(lastIndex, match.index);
+      if (textBefore) {
+        segments.push({ text: textBefore });
+      }
+    }
+    
+    const text = match[1];
+    const reading = match[2];
+    
+    if (text) {
+      segments.push({ text, reading });
+    }
+    
+    lastIndex = regex.lastIndex;
+  }
+  
+  // Handle any remaining text
+  if (lastIndex < line.length) {
+    const remaining = line.slice(lastIndex);
+    if (remaining) {
+      segments.push({ text: remaining });
+    }
+  }
+  
+  return segments.length > 0 ? segments : [{ text: line }];
+}
 
 /**
  * Generate soramimi for a chunk of lyrics
@@ -54,7 +86,7 @@ export async function generateSoramimiForChunk(
     return [];
   }
 
-  // Use plain text (newline-separated) instead of JSON for efficiency
+  // Use plain text (newline-separated) for efficiency
   const textsToProcess = lines.map((line) => line.words).join("\n");
 
   // Create abort controller with timeout
@@ -62,9 +94,8 @@ export async function generateSoramimiForChunk(
   const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
   try {
-    const { object: aiResponse } = await generateObject({
+    const { text: responseText } = await generateText({
       model: google("gemini-2.5-flash"),
-      schema: AiSoramimiResponseSchema,
       messages: [
         { role: "system", content: SORAMIMI_SYSTEM_PROMPT },
         { role: "user", content: textsToProcess },
@@ -75,12 +106,15 @@ export async function generateSoramimiForChunk(
     
     clearTimeout(timeoutId);
 
-    if (aiResponse.annotatedLines.length !== lines.length) {
-      logInfo(requestId, `Warning: Soramimi response length mismatch - expected ${lines.length}, got ${aiResponse.annotatedLines.length}`);
+    // Parse the ruby markup response
+    const annotatedLines = responseText.trim().split("\n").map(line => parseRubyMarkup(line.trim()));
+
+    if (annotatedLines.length !== lines.length) {
+      logInfo(requestId, `Warning: Soramimi response length mismatch - expected ${lines.length}, got ${annotatedLines.length}`);
     }
 
     return lines.map((line, index) => {
-      return aiResponse.annotatedLines[index] || [{ text: line.words }];
+      return annotatedLines[index] || [{ text: line.words }];
     });
   } catch (error) {
     clearTimeout(timeoutId);

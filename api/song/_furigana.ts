@@ -5,8 +5,7 @@
  */
 
 import { google } from "@ai-sdk/google";
-import { generateObject } from "ai";
-import { AiFuriganaResponseSchema } from "./_constants.js";
+import { generateText } from "ai";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
@@ -54,25 +53,66 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
 // Furigana Generation
 // =============================================================================
 
-const FURIGANA_SYSTEM_PROMPT = `Add furigana (reading annotations) to kanji in Japanese lyrics (one line per input line).
+const FURIGANA_SYSTEM_PROMPT = `Add furigana to kanji using ruby markup format: {text|reading}
 
-For each line, return segments with "text" (original portion) and optional "reading" (hiragana for kanji only).
+Format: {漢字|ふりがな} - text first, then reading after pipe
+- Plain text without reading stays as-is
+- Separate okurigana: {走|はし}る (NOT {走る|はしる})
 
-CRITICAL: Separate kanji from trailing hiragana (okurigana)
-- "text" with "reading" must contain ONLY kanji
-- Okurigana goes in separate segment WITHOUT reading
+One line output per input line.
 
-Example input:
+Example:
+Input:
 夜空の星
 私は走る
 
-Example output:
-{"annotatedLines":[[{"text":"夜空","reading":"よぞら"},{"text":"の"},{"text":"星","reading":"ほし"}],[{"text":"私","reading":"わたし"},{"text":"は"},{"text":"走","reading":"はし"},{"text":"る"}]]}
-
-Rules: Only add readings to kanji. Use standard hiragana readings.`;
+Output:
+{夜空|よぞら}の{星|ほし}
+{私|わたし}は{走|はし}る`;
 
 // AI generation timeout (30 seconds)
 const AI_TIMEOUT_MS = 30000;
+
+/**
+ * Parse ruby markup format (e.g., "{夜空|よぞら}の{星|ほし}") into FuriganaSegment array
+ */
+function parseRubyMarkup(line: string): FuriganaSegment[] {
+  const segments: FuriganaSegment[] = [];
+  
+  // Match {text|reading} patterns and plain text between them
+  const regex = /\{([^|}]+)\|([^}]+)\}/g;
+  let match;
+  let lastIndex = 0;
+  
+  while ((match = regex.exec(line)) !== null) {
+    // Add any plain text before this match
+    if (match.index > lastIndex) {
+      const textBefore = line.slice(lastIndex, match.index);
+      if (textBefore) {
+        segments.push({ text: textBefore });
+      }
+    }
+    
+    const text = match[1];
+    const reading = match[2];
+    
+    if (text) {
+      segments.push({ text, reading });
+    }
+    
+    lastIndex = regex.lastIndex;
+  }
+  
+  // Handle any remaining text after the last match
+  if (lastIndex < line.length) {
+    const remaining = line.slice(lastIndex);
+    if (remaining) {
+      segments.push({ text: remaining });
+    }
+  }
+  
+  return segments.length > 0 ? segments : [{ text: line }];
+}
 
 /**
  * Generate furigana for a chunk of lyrics
@@ -87,7 +127,7 @@ export async function generateFuriganaForChunk(
     return lines.map((line) => [{ text: line.words }]);
   }
 
-  // Use plain text (newline-separated) instead of JSON for efficiency
+  // Use plain text (newline-separated) for efficiency
   const textsToProcess = linesNeedingFurigana.map((line) => line.words).join("\n");
 
   // Create abort controller with timeout
@@ -95,9 +135,8 @@ export async function generateFuriganaForChunk(
   const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
   try {
-    const { object: aiResponse } = await generateObject({
+    const { text: responseText } = await generateText({
       model: google("gemini-2.5-flash"),
-      schema: AiFuriganaResponseSchema,
       messages: [
         { role: "system", content: FURIGANA_SYSTEM_PROMPT },
         { role: "user", content: textsToProcess },
@@ -108,14 +147,17 @@ export async function generateFuriganaForChunk(
     
     clearTimeout(timeoutId);
 
-    if (aiResponse.annotatedLines.length !== linesNeedingFurigana.length) {
-      logInfo(requestId, `Warning: Furigana response length mismatch - expected ${linesNeedingFurigana.length}, got ${aiResponse.annotatedLines.length}`);
+    // Parse the ruby markup response
+    const annotatedLines = responseText.trim().split("\n").map(line => parseRubyMarkup(line.trim()));
+
+    if (annotatedLines.length !== linesNeedingFurigana.length) {
+      logInfo(requestId, `Warning: Furigana response length mismatch - expected ${linesNeedingFurigana.length}, got ${annotatedLines.length}`);
     }
 
     let furiganaIndex = 0;
     return lines.map((line) => {
       if (containsKanji(line.words)) {
-        return aiResponse.annotatedLines[furiganaIndex++] || [{ text: line.words }];
+        return annotatedLines[furiganaIndex++] || [{ text: line.words }];
       }
       return [{ text: line.words }];
     });
