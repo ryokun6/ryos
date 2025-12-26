@@ -274,7 +274,9 @@ const OLD_SCHOOL_HIGHLIGHT_COLOR = "#0066FF";
 // Padding for old-school karaoke (scales with text)
 const OLD_SCHOOL_PADDING = "0.2em";
 // Extra top padding to accommodate furigana + stroke
-const OLD_SCHOOL_PADDING_TOP = "0.8em";
+const OLD_SCHOOL_PADDING_TOP = "0.4em";
+// Bottom padding for old-school (less than default since no glow)
+const OLD_SCHOOL_PADDING_BOTTOM = "0.2em";
 
 /**
  * CSS-based mask using custom property for GPU-accelerated animation.
@@ -379,8 +381,8 @@ function StaticWordRendering({
                 textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
                 paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
                 marginTop: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_TOP}` : undefined,
-                paddingBottom: "0.35em", 
-                marginBottom: "-0.35em",
+                paddingBottom: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_BOTTOM : "0.35em", 
+                marginBottom: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_BOTTOM}` : "-0.35em",
                 paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
@@ -584,8 +586,8 @@ function WordTimingHighlight({
               textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
               paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
               marginTop: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_TOP}` : undefined,
-              paddingBottom: "0.35em", 
-              marginBottom: "-0.35em",
+              paddingBottom: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_BOTTOM : "0.35em", 
+              marginBottom: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_BOTTOM}` : "-0.35em",
               paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
               paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
               marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
@@ -619,8 +621,8 @@ function WordTimingHighlight({
                 overflow: "visible",
                 paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
                 marginTop: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_TOP}` : undefined,
-                paddingBottom: "0.35em",
-                marginBottom: "-0.35em",
+                paddingBottom: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_BOTTOM : "0.35em",
+                marginBottom: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING_BOTTOM}` : "-0.35em",
                 paddingLeft: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,

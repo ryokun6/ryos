@@ -1029,11 +1029,13 @@ ruby.lyrics-furigana {
 /* Extra top padding when furigana (ruby elements) are present to prevent overlap */
 .lyrics-word-highlight:has(ruby) {
   padding-top: 0.35em;
+  margin-top: -0.35em;
 }
 
 /* Old-school karaoke (rounded font) needs more top padding for stroke + furigana */
 .font-lyrics-rounded .lyrics-word-highlight:has(ruby) {
   padding-top: 0.45em;
+  margin-top: -0.45em;
 }
 
 /* Layer positioning - both layers share the same grid cell (1/1) */
