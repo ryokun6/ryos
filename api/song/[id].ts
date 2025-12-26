@@ -208,7 +208,7 @@ export const maxDuration = 120;
 // =============================================================================
 
 const CHUNK_SIZE = 15;
-const MAX_PARALLEL_CHUNKS = 3;
+const MAX_PARALLEL_CHUNKS = 5;
 
 const kugouHeaders: HeadersInit = {
   "User-Agent":
@@ -1140,8 +1140,9 @@ const SORAMIMI_SYSTEM_PROMPT = `You are an expert in phonetic transcription to C
 Given lyric lines in any language, create Chinese character readings that phonetically mimic the original sounds when read aloud in Mandarin Chinese. This is known as "空耳" (soramimi/mondegreen) - misheard lyrics.
 
 Famous examples:
-- "sorry sorry" → "搜哩搜哩" (sōu lǐ sōu lǐ) - 4 syllables → 4 syllables
-- "리듬에 온몸을" → "紅燈沒？綠燈沒？" (hóng dēng méi? lǜ dēng méi?) - Korean: 6 syllables → 6 syllables
+- "sorry sorry" → "搜哩搜哩" (sōu lǐ sōu lǐ)
+- "It goes down, down baby" → "一個送到北邊" (yī gè sòng dào běi biān)
+- "리듬에 온몸을" → "紅燈沒？綠燈沒？" (hóng dēng méi? lǜ dēng méi?)
 - "맡기고 소리쳐 oh" → "parking 個休旅車 oh" (parking gè xiū lǚ chē oh)
 
 Rules:
@@ -1149,7 +1150,7 @@ Rules:
 2. Use common Chinese characters/words that flow naturally
 3. It's OK to mix in English words or numbers if they fit the sound
 4. Be creative and playful - soramimi is meant to be funny and memorable
-5. Strictly adhere to the original number of syllables - each syllable in the original must correspond to one syllable in the Chinese reading
+5. Preserve the rhythm and syllable count roughly
 6. Use Traditional Chinese characters (繁體字)
 
 IMPORTANT: Split each line into INDIVIDUAL WORD segments, not the entire line!
@@ -1167,6 +1168,37 @@ Example output:
     [{"text": "I'm ", "reading": "愛"}, {"text": "so ", "reading": "搜"}, {"text": "so", "reading": "搜"}, {"text": "rry", "reading": "哩"}]
   ]
 }`;
+
+/**
+ * Validate and fix soramimi segments to ensure concatenated text matches original
+ * If segments don't match, returns a single segment with the original text
+ */
+function validateSoramimiSegments(
+  segments: FuriganaSegment[],
+  originalText: string,
+  requestId: string,
+  lineIndex: number
+): FuriganaSegment[] {
+  if (!segments || segments.length === 0) {
+    return [{ text: originalText }];
+  }
+
+  // Concatenate all text segments
+  const concatenated = segments.map(s => s.text).join("");
+  
+  // Check if it matches the original (ignoring whitespace differences)
+  const normalizedConcatenated = concatenated.replace(/\s+/g, "");
+  const normalizedOriginal = originalText.replace(/\s+/g, "");
+  
+  if (normalizedConcatenated !== normalizedOriginal) {
+    logInfo(requestId, `Soramimi line ${lineIndex} mismatch - segments: "${concatenated}" vs original: "${originalText}". Using fallback.`);
+    // Return a single segment with the original text and try to use the first reading if available
+    const firstReading = segments.find(s => s.reading)?.reading;
+    return [{ text: originalText, reading: firstReading }];
+  }
+  
+  return segments;
+}
 
 async function generateSoramimiForChunk(
   lines: LyricLine[],
@@ -1194,9 +1226,13 @@ async function generateSoramimiForChunk(
       logInfo(requestId, `Warning: Soramimi response length mismatch - expected ${lines.length}, got ${aiResponse.annotatedLines.length}`);
     }
 
-    // Map results back to all lines
+    // Map results back to all lines, validating each one
     return lines.map((line, index) => {
-      return aiResponse.annotatedLines[index] || [{ text: line.words }];
+      const segments = aiResponse.annotatedLines[index];
+      if (!segments) {
+        return [{ text: line.words }];
+      }
+      return validateSoramimiSegments(segments, line.words, requestId, index);
     });
   } catch (error) {
     logError(requestId, `Soramimi chunk failed, returning plain text segments as fallback`, error);
