@@ -69,10 +69,7 @@ export default defineConfig({
         "favicon.ico",
         "apple-touch-icon.png",
         "icons/*.png",
-        "fonts/*.woff",
         "fonts/*.woff2",
-        "fonts/*.otf",
-        "fonts/*.ttf",
       ],
       manifest: {
         name: "ryOS",
@@ -293,7 +290,7 @@ export default defineConfig({
         globPatterns: [
           "index.html",
           "**/*.css",
-          "fonts/*.{woff,woff2,otf,ttf}",
+          "fonts/*.woff2",
           "icons/manifest.json",
         ],
         // Exclude large data files from precaching (they'll be cached at runtime)

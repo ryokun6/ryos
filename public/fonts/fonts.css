@@ -2,7 +2,7 @@
 
 @font-face {
   font-family: "ChicagoKare";
-  src: url("/fonts/ChicagoKare-Regular.woff") format("woff");
+  src: url("/fonts/ChicagoKare-Regular.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -19,7 +19,7 @@
 @supports not (font: -apple-system-body) {
   @font-face {
     font-family: "SerenityOS-Emoji";
-    src: url("/fonts/SerenityOS-Emoji.ttf") format("truetype");
+    src: url("/fonts/SerenityOS-Emoji.woff2") format("woff2");
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -28,7 +28,7 @@
 
 @font-face {
   font-family: "Geneva-12";
-  src: url("/fonts/geneva-12.ttf") format("truetype");
+  src: url("/fonts/geneva-12.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -36,7 +36,7 @@
 
 @font-face {
   font-family: "AppleGaramond";
-  src: url("/fonts/AppleGaramond-Light.ttf") format("truetype");
+  src: url("/fonts/AppleGaramond-Light.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -44,7 +44,7 @@
 
 @font-face {
   font-family: "Monaco";
-  src: url("/fonts/monacottf.otf") format("opentype");
+  src: url("/fonts/monacottf.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -85,7 +85,7 @@
 
 @font-face {
   font-family: "Jacquard";
-  src: url("/fonts/Jacquard12-Regular.ttf") format("truetype");
+  src: url("/fonts/Jacquard12-Regular.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -109,7 +109,7 @@
 
 @font-face {
   font-family: "LucidaGrande";
-  src: url("/fonts/LucidaGrande.ttf") format("truetype");
+  src: url("/fonts/LucidaGrande.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -117,7 +117,7 @@
 
 @font-face {
   font-family: "LucidaGrande";
-  src: url("/fonts/LucidaGrande-Bold.ttf") format("truetype");
+  src: url("/fonts/LucidaGrande-Bold.woff2") format("woff2");
   font-weight: bold;
   font-style: normal;
   font-display: swap;
@@ -125,7 +125,31 @@
 
 @font-face {
   font-family: "VAGRounded";
-  src: url("/fonts/VAGRoundedStd-Bold.ttf") format("truetype");
+  src: url("/fonts/VAGRoundedStd-Bold.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pixelated MS Sans Serif";
+  src: url("/fonts/ms_sans_serif.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pixelated MS Sans Serif";
+  src: url("/fonts/ms_sans_serif_bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PerfectDOS";
+  src: url("/fonts/PerfectDOSVGA437Win.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;

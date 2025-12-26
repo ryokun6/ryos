@@ -24,7 +24,7 @@
 
 @font-face {
   font-family: "Geneva-9";
-  src: url("/fonts/geneva-9.ttf") format("truetype");
+  src: url("/fonts/geneva-9.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
