@@ -1140,9 +1140,8 @@ const SORAMIMI_SYSTEM_PROMPT = `You are an expert in phonetic transcription to C
 Given lyric lines in any language, create Chinese character readings that phonetically mimic the original sounds when read aloud in Mandarin Chinese. This is known as "空耳" (soramimi/mondegreen) - misheard lyrics.
 
 Famous examples:
-- "sorry sorry" → "搜哩搜哩" (sōu lǐ sōu lǐ)
-- "It goes down, down baby" → "一個送到北邊" (yī gè sòng dào běi biān)
-- "리듬에 온몸을" → "紅燈沒？綠燈沒？" (hóng dēng méi? lǜ dēng méi?)
+- "sorry sorry" → "搜哩搜哩" (sōu lǐ sōu lǐ) - 4 syllables → 4 syllables
+- "리듬에 온몸을" → "紅燈沒？綠燈沒？" (hóng dēng méi? lǜ dēng méi?) - Korean: 6 syllables → 6 syllables
 - "맡기고 소리쳐 oh" → "parking 個休旅車 oh" (parking gè xiū lǚ chē oh)
 
 Rules:
@@ -1150,7 +1149,7 @@ Rules:
 2. Use common Chinese characters/words that flow naturally
 3. It's OK to mix in English words or numbers if they fit the sound
 4. Be creative and playful - soramimi is meant to be funny and memorable
-5. Preserve the rhythm and syllable count roughly
+5. Strictly adhere to the original number of syllables - each syllable in the original must correspond to one syllable in the Chinese reading
 6. Use Traditional Chinese characters (繁體字)
 
 IMPORTANT: Split each line into INDIVIDUAL WORD segments, not the entire line!
