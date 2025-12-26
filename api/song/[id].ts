@@ -259,9 +259,10 @@ const FetchLyricsSchema = z.object({
   // Allow client to pass title/artist for auto-search when song not in Redis yet
   title: z.string().max(500).optional(),
   artist: z.string().max(500).optional(),
-  // Optional: include translation/furigana info in same request to reduce round-trips
+  // Optional: include translation/furigana/soramimi info in same request to reduce round-trips
   translateTo: z.string().max(10).optional(),
   includeFurigana: z.boolean().optional(),
+  includeSoramimi: z.boolean().optional(),
 });
 
 const SearchLyricsSchema = z.object({
@@ -1519,16 +1520,18 @@ export default async function handler(req: Request) {
         const clientTitle = parsed.data.title;
         const clientArtist = parsed.data.artist;
         
-        // Optional: include translation/furigana info to reduce round-trips
+        // Optional: include translation/furigana/soramimi info to reduce round-trips
         const translateTo = parsed.data.translateTo;
         const includeFurigana = parsed.data.includeFurigana;
+        const includeSoramimi = parsed.data.includeSoramimi;
 
-        // Get existing song (include translations/furigana if requested)
+        // Get existing song (include translations/furigana/soramimi if requested)
         const song = await getSong(redis, songId, {
           includeMetadata: true,
           includeLyrics: true,
           includeTranslations: translateTo ? [translateTo] : undefined,
           includeFurigana: includeFurigana,
+          includeSoramimi: includeSoramimi,
         });
 
         // Use provided source or existing source
@@ -1591,6 +1594,20 @@ export default async function handler(req: Request) {
               chunkSize: CHUNK_SIZE,
               cached: hasFurigana,
               ...(hasFurigana ? { data: song.furigana } : {}),
+            };
+          }
+          
+          // Include soramimi info if requested
+          if (includeSoramimi && song.lyrics.parsedLines) {
+            const totalLines = song.lyrics.parsedLines.length;
+            const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+            const hasSoramimi = !!(song.soramimi && song.soramimi.length > 0);
+            response.soramimi = {
+              totalLines,
+              totalChunks,
+              chunkSize: CHUNK_SIZE,
+              cached: hasSoramimi,
+              ...(hasSoramimi ? { data: song.soramimi } : {}),
             };
           }
           
@@ -1713,6 +1730,18 @@ export default async function handler(req: Request) {
           const totalLines = parsedLines.length;
           const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
           response.furigana = {
+            totalLines,
+            totalChunks,
+            chunkSize: CHUNK_SIZE,
+            cached: false,
+          };
+        }
+        
+        // Include soramimi chunk info if requested (not cached since lyrics are fresh)
+        if (includeSoramimi) {
+          const totalLines = parsedLines.length;
+          const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+          response.soramimi = {
             totalLines,
             totalChunks,
             chunkSize: CHUNK_SIZE,

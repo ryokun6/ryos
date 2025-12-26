@@ -9,6 +9,7 @@ import {
   parseLrcToTranslations,
   type TranslationChunkInfo,
   type FuriganaChunkInfo,
+  type SoramimiChunkInfo,
 } from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
@@ -24,6 +25,8 @@ interface UseLyricsParams {
   translateTo?: string | null;
   /** Include furigana info in initial fetch (for Japanese romanization) */
   includeFurigana?: boolean;
+  /** Include soramimi info in initial fetch (for Chinese misheard lyrics) */
+  includeSoramimi?: boolean;
   selectedMatch?: {
     hash: string;
     albumId: string | number;
@@ -44,6 +47,8 @@ interface LyricsState {
   updateCurrentTimeManually: (newTimeInSeconds: number) => void;
   /** Pre-fetched furigana info (pass to useFurigana to skip extra API call) */
   furiganaInfo?: FuriganaChunkInfo;
+  /** Pre-fetched soramimi info (pass to useFurigana to skip extra API call) */
+  soramimiInfo?: SoramimiChunkInfo;
 }
 
 interface ParsedLine {
@@ -63,6 +68,7 @@ interface UnifiedLyricsResponse {
   cached?: boolean;
   translation?: TranslationChunkInfo;
   furigana?: FuriganaChunkInfo;
+  soramimi?: SoramimiChunkInfo;
 }
 
 // =============================================================================
@@ -76,6 +82,7 @@ export function useLyrics({
   currentTime,
   translateTo,
   includeFurigana,
+  includeSoramimi,
   selectedMatch,
 }: UseLyricsParams): LyricsState {
   // State
@@ -87,6 +94,7 @@ export function useLyrics({
   const [translationProgress, setTranslationProgress] = useState<number | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [furiganaInfo, setFuriganaInfo] = useState<FuriganaChunkInfo | undefined>();
+  const [soramimiInfo, setSoramimiInfo] = useState<SoramimiChunkInfo | undefined>();
 
   // Refs for tracking state across renders
   const cachedKeyRef = useRef<string | null>(null);
@@ -116,6 +124,7 @@ export function useLyrics({
       setIsFetchingOriginal(false);
       setError(undefined);
       setFuriganaInfo(undefined);
+      setSoramimiInfo(undefined);
       cachedKeyRef.current = null;
       translationInfoRef.current = undefined;
       return;
@@ -143,11 +152,12 @@ export function useLyrics({
     setIsTranslating(false);
     setError(undefined);
     setFuriganaInfo(undefined);
+    setSoramimiInfo(undefined);
     translationInfoRef.current = undefined;
 
     const controller = new AbortController();
 
-    // Build request - include translateTo and includeFurigana to reduce round-trips
+    // Build request - include translateTo, includeFurigana, includeSoramimi to reduce round-trips
     const requestBody: Record<string, unknown> = {
       action: "fetch-lyrics",
       force: isForced,
@@ -155,6 +165,7 @@ export function useLyrics({
       artist: artist || undefined,
       translateTo: translateTo || undefined,
       includeFurigana: includeFurigana || undefined,
+      includeSoramimi: includeSoramimi || undefined,
     };
 
     if (selectedMatch) {
@@ -207,6 +218,11 @@ export function useLyrics({
         if (json.furigana) {
           setFuriganaInfo(json.furigana);
         }
+        
+        // Store soramimi info for useFurigana to use
+        if (json.soramimi) {
+          setSoramimiInfo(json.soramimi);
+        }
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
@@ -221,7 +237,7 @@ export function useLyrics({
       });
 
     return () => controller.abort();
-  }, [songId, title, artist, refetchTrigger, selectedMatch, translateTo, includeFurigana]);
+  }, [songId, title, artist, refetchTrigger, selectedMatch, translateTo, includeFurigana, includeSoramimi]);
 
   // ==========================================================================
   // Effect: Translate lyrics
@@ -361,6 +377,7 @@ export function useLyrics({
     error,
     updateCurrentTimeManually,
     furiganaInfo,
+    soramimiInfo,
   };
 }
 

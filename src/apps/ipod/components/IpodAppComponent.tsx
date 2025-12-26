@@ -1289,6 +1289,7 @@ export function IpodAppComponent({
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
+    includeSoramimi: romanization.chineseSoramimi, // Fetch soramimi info if enabled
   });
 
   // Track last song ID we showed a lyrics error toast for to avoid duplicates
@@ -1337,6 +1338,7 @@ export function IpodAppComponent({
     romanization,
     onLoadingChange: setIsFullScreenFetchingFurigana,
     prefetchedInfo: fullScreenLyricsControls.furiganaInfo,
+    prefetchedSoramimiInfo: fullScreenLyricsControls.soramimiInfo,
   });
 
   // Convert furiganaMap to Record for storage - only when content actually changes

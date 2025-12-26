@@ -225,6 +225,7 @@ export function KaraokeAppComponent({
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
+    includeSoramimi: romanization.chineseSoramimi, // Fetch soramimi info if enabled
   });
 
   // Track last song ID we showed a lyrics error toast for to avoid duplicates
@@ -273,6 +274,7 @@ export function KaraokeAppComponent({
     romanization,
     onLoadingChange: setIsFetchingFurigana,
     prefetchedInfo: lyricsControls.furiganaInfo,
+    prefetchedSoramimiInfo: lyricsControls.soramimiInfo,
   });
 
   // Translation languages with translated labels
