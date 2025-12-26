@@ -54,34 +54,25 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
 // Furigana Generation
 // =============================================================================
 
-const FURIGANA_SYSTEM_PROMPT = `You are an expert in Japanese language. You will be given a JSON array of Japanese text strings (song lyrics).
-Your task is to add furigana (reading annotations) to kanji characters in each line.
+const FURIGANA_SYSTEM_PROMPT = `Add furigana (reading annotations) to kanji in Japanese lyrics (one line per input line).
 
-For each line, return an array of segments where:
-- Each segment has a "text" field containing the original text portion
-- Segments with kanji should have a "reading" field with the hiragana reading
-- Segments without kanji (hiragana, katakana, punctuation, spaces) should NOT have a reading field
+For each line, return segments with "text" (original portion) and optional "reading" (hiragana for kanji only).
 
 CRITICAL: Separate kanji from trailing hiragana (okurigana)
-- The "text" field with a "reading" must contain ONLY kanji characters
-- Trailing hiragana (okurigana) must be in a SEPARATE segment WITHOUT a reading
-- The reading should cover ONLY the kanji, not include the okurigana
+- "text" with "reading" must contain ONLY kanji
+- Okurigana goes in separate segment WITHOUT reading
 
-Example input: ["夜空の星", "私は走る"]
+Example input:
+夜空の星
+私は走る
+
 Example output:
-{
-  "annotatedLines": [
-    [{"text": "夜空", "reading": "よぞら"}, {"text": "の"}, {"text": "星", "reading": "ほし"}],
-    [{"text": "私", "reading": "わたし"}, {"text": "は"}, {"text": "走", "reading": "はし"}, {"text": "る"}]
-  ]
-}
+{"annotatedLines":[[{"text":"夜空","reading":"よぞら"},{"text":"の"},{"text":"星","reading":"ほし"}],[{"text":"私","reading":"わたし"},{"text":"は"},{"text":"走","reading":"はし"},{"text":"る"}]]}
 
-Important rules:
-- Only add readings to kanji characters
-- ALWAYS separate trailing hiragana (okurigana) into their own segments without readings
-- Keep the original text exactly as provided
-- Use standard hiragana readings
-- For song lyrics, use common/natural readings`;
+Rules: Only add readings to kanji. Use standard hiragana readings.`;
+
+// AI generation timeout (30 seconds)
+const AI_TIMEOUT_MS = 30000;
 
 /**
  * Generate furigana for a chunk of lyrics
@@ -96,7 +87,12 @@ export async function generateFuriganaForChunk(
     return lines.map((line) => [{ text: line.words }]);
   }
 
-  const textsToProcess = linesNeedingFurigana.map((line) => line.words);
+  // Use plain text (newline-separated) instead of JSON for efficiency
+  const textsToProcess = linesNeedingFurigana.map((line) => line.words).join("\n");
+
+  // Create abort controller with timeout
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
   try {
     const { object: aiResponse } = await generateObject({
@@ -104,10 +100,13 @@ export async function generateFuriganaForChunk(
       schema: AiFuriganaResponseSchema,
       messages: [
         { role: "system", content: FURIGANA_SYSTEM_PROMPT },
-        { role: "user", content: JSON.stringify(textsToProcess) },
+        { role: "user", content: textsToProcess },
       ],
       temperature: 0.1,
+      abortSignal: abortController.signal,
     });
+    
+    clearTimeout(timeoutId);
 
     if (aiResponse.annotatedLines.length !== linesNeedingFurigana.length) {
       logInfo(requestId, `Warning: Furigana response length mismatch - expected ${linesNeedingFurigana.length}, got ${aiResponse.annotatedLines.length}`);
@@ -121,7 +120,9 @@ export async function generateFuriganaForChunk(
       return [{ text: line.words }];
     });
   } catch (error) {
-    logError(requestId, `Furigana chunk failed, returning plain text segments as fallback`, error);
+    clearTimeout(timeoutId);
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    logError(requestId, `Furigana chunk failed${isTimeout ? " (timeout)" : ""}, returning plain text segments as fallback`, error);
     return lines.map((line) => [{ text: line.words }]);
   }
 }

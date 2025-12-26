@@ -1005,6 +1005,23 @@ export default async function handler(req: Request) {
         // Save to song document
         await saveTranslation(redis, songId, language, translatedLrc);
 
+        // Clean up chunk caches now that consolidated data is saved
+        const lyricsHash = song.lyricsSource?.hash;
+        const totalChunks = Math.ceil(song.lyrics.parsedLines.length / CHUNK_SIZE);
+        try {
+          for (let i = 0; i < totalChunks; i++) {
+            const chunkKey = lyricsHash
+              ? `song:${songId}:translate:${language}:chunk:${i}:${lyricsHash}`
+              : `song:${songId}:translate:${language}:chunk:${i}`;
+            await redis.del(chunkKey);
+          }
+          if (totalChunks > 0) {
+            logInfo(requestId, `Cleaned up ${totalChunks} translation chunk caches`);
+          }
+        } catch (e) {
+          logError(requestId, "Failed to clean up translation chunk caches", e);
+        }
+
         logInfo(requestId, `Saved consolidated translation (${language}, ${translations.length} lines)`);
         return jsonResponse({ success: true, language, lineCount: translations.length });
       }
@@ -1039,6 +1056,23 @@ export default async function handler(req: Request) {
         // Save to song document
         await saveFurigana(redis, songId, furigana as FuriganaSegment[][]);
 
+        // Clean up chunk caches now that consolidated data is saved
+        const lyricsHash = song.lyricsSource?.hash;
+        const totalChunks = Math.ceil(song.lyrics.parsedLines.length / CHUNK_SIZE);
+        try {
+          for (let i = 0; i < totalChunks; i++) {
+            const chunkKey = lyricsHash
+              ? `song:${songId}:furigana:chunk:${i}:${lyricsHash}`
+              : `song:${songId}:furigana:chunk:${i}`;
+            await redis.del(chunkKey);
+          }
+          if (totalChunks > 0) {
+            logInfo(requestId, `Cleaned up ${totalChunks} furigana chunk caches`);
+          }
+        } catch (e) {
+          logError(requestId, "Failed to clean up furigana chunk caches", e);
+        }
+
         logInfo(requestId, `Saved consolidated furigana (${furigana.length} lines)`);
         return jsonResponse({ success: true, lineCount: furigana.length });
       }
@@ -1072,6 +1106,23 @@ export default async function handler(req: Request) {
 
         // Save to song document
         await saveSoramimi(redis, songId, soramimi as FuriganaSegment[][]);
+
+        // Clean up chunk caches now that consolidated data is saved
+        const lyricsHash = song.lyricsSource?.hash;
+        const totalChunks = Math.ceil(song.lyrics.parsedLines.length / CHUNK_SIZE);
+        try {
+          for (let i = 0; i < totalChunks; i++) {
+            const chunkKey = lyricsHash
+              ? `song:${songId}:soramimi:chunk:${i}:${lyricsHash}`
+              : `song:${songId}:soramimi:chunk:${i}`;
+            await redis.del(chunkKey);
+          }
+          if (totalChunks > 0) {
+            logInfo(requestId, `Cleaned up ${totalChunks} soramimi chunk caches`);
+          }
+        } catch (e) {
+          logError(requestId, "Failed to clean up soramimi chunk caches", e);
+        }
 
         logInfo(requestId, `Saved consolidated soramimi (${soramimi.length} lines)`);
         return jsonResponse({ success: true, lineCount: soramimi.length });

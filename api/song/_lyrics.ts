@@ -347,6 +347,9 @@ function msToLrcTimeInternal(msStr: string): string {
 // Translation
 // =============================================================================
 
+// AI generation timeout (30 seconds)
+const AI_TIMEOUT_MS = 30000;
+
 /**
  * Translate a chunk of lyrics using AI
  */
@@ -355,13 +358,17 @@ export async function translateChunk(
   targetLanguage: string,
   requestId: string
 ): Promise<string[]> {
-  const systemPrompt = `You are an expert lyrics translator. You will be given a JSON array of lyric line objects, where each object has a "words" field (the text to translate) and a "startTimeMs" field (a timestamp).
-Your task is to translate the "words" for each line into ${targetLanguage}.
-Respond ONLY with a valid JSON object containing a single key "translatedTexts". The value of "translatedTexts" MUST be an array of strings.
-This array should contain only the translated versions of the "words" from the input, in the exact same order as they appeared in the input array.
-If the lyrics are already in ${targetLanguage}, return the original "words" text exactly as-is without any modifications.
-If a line is purely instrumental or cannot be translated (e.g., "---"), return its original "words" text.
-Do not include timestamps or any other formatting in your output strings; just the raw translated text for each line. Do not use , . ! ? : ; punctuation at the end of lines. Preserve the artistic intent and natural rhythm of the lyrics.`;
+  const systemPrompt = `Translate lyrics to ${targetLanguage} (one line per input line).
+Return translations in same order. If already in ${targetLanguage}, return as-is.
+For instrumental lines (e.g., "---"), return original. No punctuation at end of lines.
+Preserve artistic intent and rhythm.`;
+
+  // Use plain text (newline-separated) instead of JSON for efficiency
+  const textsToProcess = chunk.map((line) => line.words).join("\n");
+
+  // Create abort controller with timeout
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
   try {
     const { object: aiResponse } = await generateObject({
@@ -369,10 +376,13 @@ Do not include timestamps or any other formatting in your output strings; just t
       schema: AiTranslatedTextsSchema,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: JSON.stringify(chunk.map((line) => ({ words: line.words }))) },
+        { role: "user", content: textsToProcess },
       ],
       temperature: 0.3,
+      abortSignal: abortController.signal,
     });
+    
+    clearTimeout(timeoutId);
 
     if (aiResponse.translatedTexts.length !== chunk.length) {
       logInfo(requestId, `Warning: Translation response length mismatch - expected ${chunk.length}, got ${aiResponse.translatedTexts.length}`);
@@ -380,7 +390,9 @@ Do not include timestamps or any other formatting in your output strings; just t
 
     return chunk.map((line, index) => aiResponse.translatedTexts[index] || line.words);
   } catch (error) {
-    logError(requestId, `Translation chunk failed, returning original text as fallback`, error);
+    clearTimeout(timeoutId);
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    logError(requestId, `Translation chunk failed${isTimeout ? " (timeout)" : ""}, returning original text as fallback`, error);
     return chunk.map((line) => line.words);
   }
 }
