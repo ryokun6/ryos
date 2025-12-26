@@ -226,16 +226,6 @@ export function KaraokeAppComponent({
     selectedMatch: selectedMatchForLyrics,
   });
 
-  // Full screen lyrics hook (separate instance for independent time tracking)
-  const fullScreenLyricsControls = useLyrics({
-    songId: currentTrack?.id ?? "",
-    title: currentTrack?.title ?? "",
-    artist: currentTrack?.artist ?? "",
-    currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
-    translateTo: effectiveTranslationLanguage,
-    selectedMatch: selectedMatchForLyrics,
-  });
-
   // Track last song ID we showed a lyrics error toast for to avoid duplicates
   const lastLyricsErrorToastSongRef = useRef<string | null>(null);
 
@@ -1273,8 +1263,8 @@ export function KaraokeAppComponent({
             ) : undefined
           }
           fullScreenPlayerRef={fullScreenPlayerRef}
-          isLoadingLyrics={fullScreenLyricsControls.isLoading}
-          isProcessingLyrics={fullScreenLyricsControls.isTranslating}
+          isLoadingLyrics={lyricsControls.isLoading}
+          isProcessingLyrics={lyricsControls.isTranslating}
           isFetchingFurigana={isFetchingFurigana}
         >
           {({ controlsVisible }) => (
@@ -1335,11 +1325,11 @@ export function KaraokeAppComponent({
                     <div className="absolute inset-0 z-20" data-lyrics>
                       <LyricsDisplay
                         songId={currentTrack?.id ?? ""}
-                        lines={fullScreenLyricsControls.lines}
-                        originalLines={fullScreenLyricsControls.originalLines}
-                        currentLine={fullScreenLyricsControls.currentLine}
-                        isLoading={fullScreenLyricsControls.isLoading}
-                        error={fullScreenLyricsControls.error}
+                        lines={lyricsControls.lines}
+                        originalLines={lyricsControls.originalLines}
+                        currentLine={lyricsControls.currentLine}
+                        isLoading={lyricsControls.isLoading}
+                        error={lyricsControls.error}
                         visible={true}
                         videoVisible={true}
                         alignment={lyricsAlignment}
@@ -1352,7 +1342,7 @@ export function KaraokeAppComponent({
                           const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
                           const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
                           showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-                          fullScreenLyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+                          lyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
                         }}
                         onSwipeUp={() => {
                           if (isOffline) {
@@ -1384,7 +1374,7 @@ export function KaraokeAppComponent({
                             }, 150);
                           }
                         }}
-                        isTranslating={fullScreenLyricsControls.isTranslating}
+                        isTranslating={lyricsControls.isTranslating}
                         textSizeClass="fullscreen-lyrics-text"
                         gapClass="gap-0"
                         containerStyle={{
