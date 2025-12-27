@@ -142,6 +142,9 @@ export function useFurigana({
   // Check conditions outside effect to avoid running effect body when not needed
   const shouldFetchFurigana = romanization.enabled && romanization.japaneseFurigana;
   const hasLines = lines.length > 0;
+  
+  // Track the last songId we had data for - only clear cache when song actually changes
+  const lastFuriganaSongIdRef = useRef<string>("");
 
   // Fetch furigana for original lines when enabled using chunked streaming
   // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchFurigana captures romanization settings
@@ -149,17 +152,23 @@ export function useFurigana({
     // Capture songId at effect start for stale request detection
     const effectSongId = songId;
 
-    // If completely disabled, no songId, or no lines, clear everything
+    // If completely disabled, no songId, or no lines, handle cleanup
     if (!effectSongId || !shouldFetchFurigana || !hasLines) {
-      if (furiganaCacheKeyRef.current !== "") {
+      // Only clear cache if songId actually changed (not just temporarily empty lines during re-fetch)
+      const songChanged = effectSongId !== lastFuriganaSongIdRef.current;
+      if (songChanged && furiganaCacheKeyRef.current !== "") {
         setFuriganaMap(new Map());
         furiganaCacheKeyRef.current = "";
+        lastFuriganaSongIdRef.current = effectSongId || "";
         setIsFetchingFurigana(false);
         setProgress(undefined);
         setError(undefined);
       }
       return;
     }
+    
+    // Update last songId when we have data
+    lastFuriganaSongIdRef.current = effectSongId;
 
     // If not showing original, don't fetch new data but keep existing furigana cached
     if (!isShowingOriginal) {
@@ -287,6 +296,9 @@ export function useFurigana({
 
   // Check conditions for soramimi fetching
   const shouldFetchSoramimi = romanization.enabled && romanization.chineseSoramimi;
+  
+  // Track the last songId we had data for - only clear cache when song actually changes
+  const lastSoramimiSongIdRef = useRef<string>("");
 
   // Fetch soramimi for lyrics when enabled using chunked streaming
   // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
@@ -294,14 +306,20 @@ export function useFurigana({
     // Capture songId at effect start for stale request detection
     const effectSongId = songId;
 
-    // If completely disabled, no songId, or no lines, clear everything
+    // If completely disabled, no songId, or no lines, handle cleanup
     if (!effectSongId || !shouldFetchSoramimi || !hasLines) {
-      if (soramimiCacheKeyRef.current !== "") {
+      // Only clear cache if songId actually changed (not just temporarily empty lines during re-fetch)
+      const songChanged = effectSongId !== lastSoramimiSongIdRef.current;
+      if (songChanged && soramimiCacheKeyRef.current !== "") {
         setSoramimiMap(new Map());
         soramimiCacheKeyRef.current = "";
+        lastSoramimiSongIdRef.current = effectSongId || "";
       }
       return;
     }
+    
+    // Update last songId when we have data
+    lastSoramimiSongIdRef.current = effectSongId;
 
     // If not showing original, don't fetch new data but keep existing soramimi cached
     if (!isShowingOriginal) {
