@@ -139,33 +139,33 @@ function isEnglishLine(text: string): boolean {
 // Soramimi Generation
 // =============================================================================
 
-const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Traditional Chinese (繁體字) phonetic readings that sound like the original when read aloud, while forming poetic Chinese phrases.
+const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Traditional Chinese (繁體字) phonetic readings that sound like the original AND form beautiful, meaningful Chinese phrases.
 
 FORMAT: {original|chinese} for Japanese/Korean, plain English stays unwrapped
 
 GROUPING (Critical!):
 - Group by natural phrase boundaries (2-4 segments per line)
-- Keep verb phrases together: {見ていた|咪貼衣她} not {見|咪}{て|貼}{い|衣}{た|她}
-- Keep particles with their words: {君を|親密我} or {夢の|魚沒諾}
-- Korean words as units: {사랑해|撒浪嘿}
+- Keep verb phrases together: {見ていた|密貼伊她} not {見|密}{て|貼}{い|伊}{た|她}
+- Keep particles with their words: {君を|寄迷我} or {夢の|欲沒諾}
+- Korean words as units: {사랑해|思浪海}
 
-PHONETIC EXAMPLES (Chinese reading must SOUND like Japanese/Korean):
-- 君を (ki-mi-wo) → 親密我 (qīn-mì-wǒ) ✓ sounds similar
-- 夢を (yu-me-wo) → 魚沒我 (yú-méi-wǒ) ✓ sounds similar  
-- 見ていた (mi-te-i-ta) → 咪貼衣她 (mī-tiē-yī-tā) ✓ sounds similar
-- 愛してる (a-i-shi-te-ru) → 哀伊詩特魯 (āi-yī-shī-tè-lǔ) ✓ sounds similar
-- 사랑해 (sa-rang-hae) → 撒浪嘿 (sā-làng-hēi) ✓ sounds similar
-- 桜 (sa-ku-ra) → 撒哭啦 (sā-kū-la) ✓ sounds similar
-
-POETIC BONUS - when possible, make readings form meaningful phrases:
-- 親密我 = "be intimate with me" (sounds like kimiwo)
-- 哀伊詩特魯 = "sorrowful poetic journey" (sounds like aishiteru)
+PHONETIC + POETIC EXAMPLES (must sound similar AND mean something beautiful):
+- 君を (ki-mi-wo) → 寄迷我 (jì-mí-wǒ) = "lost in thoughts of me" ♡ echoes "you"
+- 夢を (yu-me-wo) → 欲沒我 (yù-mò-wǒ) = "desire drowns me" ♡ echoes "dream"
+- 見ていた (mi-te-i-ta) → 密貼伊她 (mì-tiē-yī-tā) = "closely cling to her" ♡ echoes "watching"
+- 愛してる (a-i-shi-te-ru) → 愛詩特露 (ài-shī-tè-lù) = "love poem, special dew" ♡ starts with 愛!
+- 사랑해 (sa-rang-hae) → 思浪海 (sī-làng-hǎi) = "longing for waves and sea" ♡ romantic
+- 桜 (sa-ku-ra) → 撒枯落 (sā-kū-luò) = "scatter, wither, fall" ♡ cherry blossoms falling!
+- 涙 (na-mi-da) → 那迷答 (nà-mí-dá) = "that puzzling answer" ♡ tears are confusing
+- 心 (ko-ko-ro) → 可可柔 (kě-kě-róu) = "so so gentle" ♡ soft heart
+- 空 (so-ra) → 嗖啦 (sōu-la) = "whoosh" ♡ wind in the sky
 
 RULES:
 1. EVERY Japanese/Korean character needs a Chinese reading
 2. Only Chinese characters in readings (never ひらがな/カタカナ)
 3. Match syllable count and sounds
 4. No added punctuation (，。！)
+5. PRIORITIZE meaningful readings that echo the original meaning!
 
 Example:
 Input:
@@ -175,10 +175,10 @@ Input:
 4: 사랑해요
 
 Output:
-1: {夢を|魚沒}{見ていた|咪貼衣她}
+1: {夢を|欲沒}{見ていた|密貼伊她}
 2: I love you
-3: {君を|親密我}love{してる|詩特魯}
-4: {사랑|撒浪}{해요|嘿喲}`;
+3: {君を|寄迷我}love{してる|詩特露}
+4: {사랑|思浪}{해요|海喲}`;
 
 // AI generation timeout (55 seconds - slightly less than Vercel's 60s edge function limit
 // to allow graceful fallback response before the function is killed)
