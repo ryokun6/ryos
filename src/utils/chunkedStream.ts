@@ -55,7 +55,6 @@ interface TranslateChunkResponse {
   totalChunks: number;
   startIndex: number;
   translations: string[];
-  cached: boolean;
 }
 
 interface FuriganaChunkResponse {
@@ -63,7 +62,6 @@ interface FuriganaChunkResponse {
   totalChunks: number;
   startIndex: number;
   furigana: Array<Array<{ text: string; reading?: string }>>;
-  cached: boolean;
 }
 
 interface SoramimiChunkResponse {
@@ -71,7 +69,6 @@ interface SoramimiChunkResponse {
   totalChunks: number;
   startIndex: number;
   soramimi: Array<Array<{ text: string; reading?: string }>>;
-  cached: boolean;
   skipped?: boolean;
   skipReason?: string;
 }
@@ -170,7 +167,6 @@ export async function processTranslationChunks(
           action: "translate-chunk",
           language,
           chunkIndex,
-          force,
         }),
         signal,
         timeout: CHUNK_TIMEOUT,
@@ -320,7 +316,6 @@ export async function processFuriganaChunks(
         body: JSON.stringify({
           action: "furigana-chunk",
           chunkIndex,
-          force,
         }),
         signal,
         timeout: CHUNK_TIMEOUT,
@@ -482,7 +477,6 @@ export async function processSoramimiChunks(
         body: JSON.stringify({
           action: "soramimi-chunk",
           chunkIndex,
-          force,
         }),
         signal,
         timeout: CHUNK_TIMEOUT,
