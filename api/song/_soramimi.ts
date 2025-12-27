@@ -69,10 +69,43 @@ function extractReadings(text: string): string[] {
   return readings;
 }
 
-/** Build segments: distribute readings to CJK chars, keep English as-is */
+/** 
+ * Build segments by distributing readings to CJK characters.
+ * Each CJK char gets one reading. Kanji with multi-syllable readings
+ * (like 何→那你) get the combined reading as one annotation.
+ */
 function buildSegments(original: string, readings: string[]): FuriganaSegment[] {
-  const result: FuriganaSegment[] = [];
+  if (readings.length === 0) {
+    // No readings - return original as plain segments
+    return [{ text: original }];
+  }
+
+  // Count CJK chars to distribute readings
+  let cjkCount = 0;
+  for (const char of original) {
+    if (needsReading(char)) cjkCount++;
+  }
+
+  if (cjkCount === 0) {
+    return [{ text: original }];
+  }
+
+  // Distribute readings across CJK chars
+  // If more readings than chars, group extras with earlier chars (handles kanji)
+  const readingsPerChar: string[] = [];
+  const baseCount = Math.floor(readings.length / cjkCount);
+  const extras = readings.length % cjkCount;
+  
   let readingIdx = 0;
+  for (let c = 0; c < cjkCount; c++) {
+    const count = baseCount + (c < extras ? 1 : 0);
+    readingsPerChar.push(readings.slice(readingIdx, readingIdx + count).join(''));
+    readingIdx += count;
+  }
+
+  // Build result segments
+  const result: FuriganaSegment[] = [];
+  let charIdx = 0;
   let i = 0;
 
   while (i < original.length) {
@@ -87,11 +120,10 @@ function buildSegments(original: string, readings: string[]): FuriganaSegment[] 
       continue;
     }
 
-    // CJK character - assign reading
+    // CJK character - assign distributed reading
     if (needsReading(char)) {
-      const reading = readings[readingIdx % Math.max(readings.length, 1)];
-      result.push({ text: char, reading: reading || undefined });
-      if (readings.length > 0) readingIdx++;
+      const reading = readingsPerChar[charIdx++] || undefined;
+      result.push({ text: char, reading });
       i++;
       continue;
     }
