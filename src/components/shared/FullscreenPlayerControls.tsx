@@ -119,9 +119,12 @@ export function FullscreenPlayerControls({
     return null;
   }, [currentLyrics]);
 
-  // Get pronunciation button glyph based on lyrics language
+  // Get pronunciation button glyph based on lyrics language and soramimi state
   const getPronunciationGlyph = () => {
-    if (lyricsLanguage === "ja" || lyricsLanguage === "zh") return "空";
+    if (lyricsLanguage === "ja" || lyricsLanguage === "zh") {
+      // Show 空 when soramimi is enabled, otherwise show 漢
+      return romanization?.chineseSoramimi ? "空" : "漢";
+    }
     if (lyricsLanguage === "ko") return "가";
     return "文";
   };
