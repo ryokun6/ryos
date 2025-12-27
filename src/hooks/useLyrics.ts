@@ -5,7 +5,7 @@ import { isOffline } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import {
-  processTranslationChunks,
+  processTranslationSSE,
   parseLrcToTranslations,
   type TranslationChunkInfo,
   type FuriganaChunkInfo,
@@ -286,7 +286,7 @@ export function useLyrics({
 
     const controller = new AbortController();
 
-    processTranslationChunks(effectSongId, translateTo, {
+    processTranslationSSE(effectSongId, translateTo, {
       force: isForceRequest,
       signal: controller.signal,
       // Pass pre-fetched info to skip get-chunk-info call

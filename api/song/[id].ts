@@ -46,14 +46,9 @@ import {
   UpdateSongSchema,
   FetchLyricsSchema,
   SearchLyricsSchema,
-  TranslateChunkSchema,
-  FuriganaChunkSchema,
-  SoramimiChunkSchema,
+  TranslateStreamSchema,
+  FuriganaStreamSchema,
   SoramimiStreamSchema,
-  GetChunkInfoSchema,
-  SaveTranslationSchema,
-  SaveFuriganaSchema,
-  SaveSoramimiSchema,
   ClearCachedDataSchema,
   UnshareSongSchema,
 } from "./_constants.js";
@@ -516,23 +511,22 @@ export default async function handler(req: Request) {
       }
 
       // =======================================================================
-      // Handle get-chunk-info action - returns chunk metadata for client
+      // Handle translate-stream action - SSE streaming with server-side caching
+      // Server translates all chunks and saves to Redis even if client disconnects
       // =======================================================================
-      if (action === "get-chunk-info") {
-        const parsed = GetChunkInfoSchema.safeParse(body);
+      if (action === "translate-stream") {
+        const parsed = TranslateStreamSchema.safeParse(body);
         if (!parsed.success) {
           return errorResponse("Invalid request body");
         }
 
-        const { operation, language, force } = parsed.data;
+        const { language, force } = parsed.data;
 
-        // Get song with lyrics
+        // Get song with lyrics and existing translation
         const song = await getSong(redis, songId, {
           includeMetadata: true,
           includeLyrics: true,
-          includeTranslations: language ? [language] : undefined,
-          includeFurigana: operation === "furigana",
-          includeSoramimi: operation === "soramimi",
+          includeTranslations: [language],
         });
 
         if (!song?.lyrics?.lrc) {
@@ -550,160 +544,203 @@ export default async function handler(req: Request) {
         }
 
         const totalLines = song.lyrics.parsedLines.length;
-        // Use smaller chunk size for soramimi due to complex creative prompt
-        const effectiveChunkSize = operation === "soramimi" ? SORAMIMI_CHUNK_SIZE : CHUNK_SIZE;
-        const totalChunks = Math.ceil(totalLines / effectiveChunkSize);
+        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
-        // For soramimi: skip if lyrics are mostly Chinese (空耳 doesn't make sense for Chinese lyrics)
-        if (operation === "soramimi" && lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
-          logInfo(requestId, "Skipping soramimi generation - lyrics are mostly Chinese");
-          return jsonResponse({
-            totalLines,
-            totalChunks: 0,
-            chunkSize: effectiveChunkSize,
-            cached: false,
-            skipped: true,
-            skipReason: "chinese_lyrics",
+        // Check if already cached (and not forcing regeneration)
+        if (!force && song.translations?.[language]) {
+          logInfo(requestId, "Returning cached translation via SSE");
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: "cached",
+                translation: song.translations![language],
+              })}\n\n`));
+              controller.close();
+            },
+          });
+          return new Response(stream, {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              "Connection": "keep-alive",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
           });
         }
 
-        // Check if already cached (must have actual data, not just empty arrays/objects)
-        // Skip cache check if force=true (user wants to regenerate)
-        let cached = false;
-        let krcDerivedTranslation: string | undefined;
-        
-        if (!force) {
-          if (operation === "translate" && language && song.translations?.[language]) {
-            cached = true;
-          } else if (operation === "furigana" && song.furigana && song.furigana.length > 0) {
-            cached = true;
-          } else if (operation === "soramimi" && song.soramimi && song.soramimi.length > 0) {
-            cached = true;
-          }
-        }
-        
         // For Chinese Traditional: use KRC source directly if available (skip AI)
-        if (!cached && operation === "translate" && language && isChineseTraditional(language) && song.lyrics?.krc) {
+        if (isChineseTraditional(language) && song.lyrics?.krc) {
           const krcDerivedLrc = buildChineseTranslationFromKrc(
             song.lyrics,
             song.lyricsSource?.title || song.title,
             song.lyricsSource?.artist || song.artist
           );
           if (krcDerivedLrc) {
-            cached = true;
-            krcDerivedTranslation = krcDerivedLrc;
-            logInfo(requestId, "Using KRC-derived Traditional Chinese translation in chunk-info (skipping AI)");
-            // Save this translation for future requests
             await saveTranslation(redis, songId, language, krcDerivedLrc);
+            logInfo(requestId, "Using KRC-derived Traditional Chinese translation (skipping AI)");
+            const encoder = new TextEncoder();
+            const stream = new ReadableStream({
+              start(controller) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: "cached",
+                  translation: krcDerivedLrc,
+                })}\n\n`));
+                controller.close();
+              },
+            });
+            return new Response(stream, {
+              headers: {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": effectiveOrigin!,
+              },
+            });
           }
         }
 
-        // Log chunk info (no inline processing - let client fetch all chunks in parallel)
-        logInfo(requestId, `Chunk info: ${operation}`, { totalLines, totalChunks, chunkSize: effectiveChunkSize, cached });
+        logInfo(requestId, `Starting translate SSE stream`, { totalLines, totalChunks, language });
 
-        return jsonResponse({
-          totalLines,
-          totalChunks,
-          chunkSize: effectiveChunkSize,
-          cached,
-          // If cached, return the full result
-          ...(cached && operation === "translate" && language && (krcDerivedTranslation || song.translations?.[language])
-            ? { translation: krcDerivedTranslation || song.translations![language] }
-            : {}),
-          ...(cached && operation === "furigana" && song.furigana && song.furigana.length > 0 
-            ? { furigana: song.furigana } 
-            : {}),
-          ...(cached && operation === "soramimi" && song.soramimi && song.soramimi.length > 0 
-            ? { soramimi: song.soramimi } 
-            : {}),
-        });
-      }
-
-      // =======================================================================
-      // Handle translate-chunk action - processes a single chunk
-      // =======================================================================
-      if (action === "translate-chunk") {
-        const parsed = TranslateChunkSchema.safeParse(body);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        const { language, chunkIndex } = parsed.data;
-
-        // Get song with lyrics
-        const song = await getSong(redis, songId, {
-          includeMetadata: true,
-          includeLyrics: true,
-        });
-
-        if (!song?.lyrics?.lrc) {
-          return errorResponse("Song has no lyrics to translate", 404);
-        }
-
-        // Ensure parsedLines exist
-        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
-          song.lyrics.parsedLines = parseLyricsContent(
-            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-            song.title,
-            song.artist
-          );
-          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
-        }
-
-        const totalLines = song.lyrics.parsedLines.length;
-        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
-
-        if (chunkIndex < 0 || chunkIndex >= totalChunks) {
-          return errorResponse(`Invalid chunk index: ${chunkIndex}. Valid range: 0-${totalChunks - 1}`);
-        }
-
-        // Extract chunk
-        const startIndex = chunkIndex * CHUNK_SIZE;
-        const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
-        const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
-
-        // Convert to LyricLine format
-        const lines: LyricLine[] = chunkLines.map(line => ({
-          words: line.words,
-          startTimeMs: line.startTimeMs,
-        }));
-
-        let translations: string[];
+        // Create SSE stream
+        const encoder = new TextEncoder();
+        let streamClosed = false;
         
-        // For Chinese Traditional: use KRC source directly if available (skip AI)
-        if (isChineseTraditional(language) && song.lyrics?.krc) {
-          logInfo(requestId, `Using KRC-derived Traditional Chinese for chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
-          // Convert each line's text from Simplified to Traditional Chinese
-          translations = lines.map(line => simplifiedToTraditional(line.words));
-        } else {
-          logInfo(requestId, `Translating chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
-          translations = await translateChunk(lines, language, requestId);
-        }
+        const stream = new ReadableStream({
+          async start(controller) {
+            const allTranslations: string[] = new Array(totalLines).fill("");
+            let successCount = 0;
+            let failCount = 0;
 
-        logInfo(requestId, `Translate chunk ${chunkIndex + 1}/${totalChunks} - completed`);
-        return jsonResponse({
-          chunkIndex,
-          totalChunks,
-          startIndex,
-          translations,
+            const sendEvent = (data: unknown) => {
+              if (streamClosed) return;
+              try {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+              } catch {
+                streamClosed = true;
+              }
+            };
+
+            sendEvent({
+              type: "start",
+              totalChunks,
+              totalLines,
+              chunkSize: CHUNK_SIZE,
+            });
+
+            // Process chunks sequentially
+            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+              const startIndex = chunkIndex * CHUNK_SIZE;
+              const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
+              const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
+
+              const lines: LyricLine[] = chunkLines.map(line => ({
+                words: line.words,
+                startTimeMs: line.startTimeMs,
+              }));
+
+              try {
+                logInfo(requestId, `SSE: Translating chunk ${chunkIndex + 1}/${totalChunks}`);
+                const translations = await translateChunk(lines, language, requestId);
+
+                translations.forEach((text, i) => {
+                  const targetIndex = startIndex + i;
+                  if (targetIndex < allTranslations.length) {
+                    allTranslations[targetIndex] = text;
+                  }
+                });
+
+                successCount++;
+
+                sendEvent({
+                  type: "chunk",
+                  chunkIndex,
+                  startIndex,
+                  translations,
+                  progress: Math.round(((chunkIndex + 1) / totalChunks) * 100),
+                });
+
+                logInfo(requestId, `SSE: Translate chunk ${chunkIndex + 1}/${totalChunks} done`);
+              } catch (err) {
+                failCount++;
+                logError(requestId, `SSE: Translate chunk ${chunkIndex} failed`, err);
+                
+                // Use original text as fallback
+                lines.forEach((line, i) => {
+                  const targetIndex = startIndex + i;
+                  if (targetIndex < allTranslations.length) {
+                    allTranslations[targetIndex] = line.words;
+                  }
+                });
+
+                sendEvent({
+                  type: "chunk_error",
+                  chunkIndex,
+                  startIndex,
+                  error: err instanceof Error ? err.message : "Unknown error",
+                  progress: Math.round(((chunkIndex + 1) / totalChunks) * 100),
+                });
+              }
+            }
+
+            // Save to Redis
+            const allSuccess = failCount === 0;
+            if (allSuccess) {
+              try {
+                const translatedLrc = song.lyrics!.parsedLines!
+                  .map((line, index) => `${msToLrcTime(line.startTimeMs)}${allTranslations[index] || line.words}`)
+                  .join("\n");
+                await saveTranslation(redis, songId, language, translatedLrc);
+                logInfo(requestId, `SSE: Saved translation to cache (${totalLines} lines)`);
+              } catch (err) {
+                logError(requestId, "SSE: Failed to save translation", err);
+              }
+            }
+
+            sendEvent({
+              type: "complete",
+              totalChunks,
+              successCount,
+              failCount,
+              cached: allSuccess,
+              translations: allTranslations,
+            });
+
+            logInfo(requestId, `SSE: Translate stream complete`, { successCount, failCount, cached: allSuccess });
+            
+            if (!streamClosed) {
+              controller.close();
+            }
+          },
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
+          },
         });
       }
 
       // =======================================================================
-      // Handle furigana-chunk action - processes a single chunk
+      // Handle furigana-stream action - SSE streaming with server-side caching
+      // Server generates all chunks and saves to Redis even if client disconnects
       // =======================================================================
-      if (action === "furigana-chunk") {
-        const parsed = FuriganaChunkSchema.safeParse(body);
+      if (action === "furigana-stream") {
+        const parsed = FuriganaStreamSchema.safeParse(body);
         if (!parsed.success) {
           return errorResponse("Invalid request body");
         }
 
-        const { chunkIndex } = parsed.data;
+        const { force } = parsed.data;
 
-        // Get song with lyrics
+        // Get song with lyrics and existing furigana
         const song = await getSong(redis, songId, {
           includeMetadata: true,
           includeLyrics: true,
+          includeFurigana: true,
         });
 
         if (!song?.lyrics?.lrc) {
@@ -723,105 +760,140 @@ export default async function handler(req: Request) {
         const totalLines = song.lyrics.parsedLines.length;
         const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
-        if (chunkIndex < 0 || chunkIndex >= totalChunks) {
-          return errorResponse(`Invalid chunk index: ${chunkIndex}. Valid range: 0-${totalChunks - 1}`);
-        }
-
-        // Extract chunk
-        const startIndex = chunkIndex * CHUNK_SIZE;
-        const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
-        const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
-
-        // Convert to LyricLine format and generate furigana
-        const lines: LyricLine[] = chunkLines.map(line => ({
-          words: line.words,
-          startTimeMs: line.startTimeMs,
-        }));
-
-        logInfo(requestId, `Generating furigana chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
-        const furigana = await generateFuriganaForChunk(lines, requestId);
-
-        logInfo(requestId, `Furigana chunk ${chunkIndex + 1}/${totalChunks} - completed`);
-        return jsonResponse({
-          chunkIndex,
-          totalChunks,
-          startIndex,
-          furigana,
-        });
-      }
-
-      // =======================================================================
-      // Handle soramimi-chunk action - processes a single chunk of Chinese misheard lyrics
-      // =======================================================================
-      if (action === "soramimi-chunk") {
-        const parsed = SoramimiChunkSchema.safeParse(body);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        const { chunkIndex } = parsed.data;
-
-        // Get song with lyrics
-        const song = await getSong(redis, songId, {
-          includeMetadata: true,
-          includeLyrics: true,
-        });
-
-        if (!song?.lyrics?.lrc) {
-          return errorResponse("Song has no lyrics", 404);
-        }
-
-        // Ensure parsedLines exist
-        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
-          song.lyrics.parsedLines = parseLyricsContent(
-            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-            song.title,
-            song.artist
-          );
-          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
-        }
-
-        // Skip soramimi for Chinese lyrics (空耳 doesn't make sense for Chinese lyrics)
-        if (lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
-          logInfo(requestId, "Skipping soramimi chunk - lyrics are mostly Chinese");
-          return jsonResponse({
-            chunkIndex,
-            totalChunks: 0,
-            startIndex: 0,
-            soramimi: [],
-            skipped: true,
-            skipReason: "chinese_lyrics",
+        // Check if already cached
+        if (!force && song.furigana && song.furigana.length > 0) {
+          logInfo(requestId, "Returning cached furigana via SSE");
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: "cached",
+                furigana: song.furigana,
+              })}\n\n`));
+              controller.close();
+            },
+          });
+          return new Response(stream, {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              "Connection": "keep-alive",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
           });
         }
 
-        const totalLines = song.lyrics.parsedLines.length;
-        // Use smaller chunk size for soramimi due to complex creative prompt
-        const totalChunks = Math.ceil(totalLines / SORAMIMI_CHUNK_SIZE);
+        logInfo(requestId, `Starting furigana SSE stream`, { totalLines, totalChunks });
 
-        if (chunkIndex < 0 || chunkIndex >= totalChunks) {
-          return errorResponse(`Invalid chunk index: ${chunkIndex}. Valid range: 0-${totalChunks - 1}`);
-        }
+        // Create SSE stream
+        const encoder = new TextEncoder();
+        let streamClosed = false;
+        
+        const stream = new ReadableStream({
+          async start(controller) {
+            const allFurigana: Array<Array<{ text: string; reading?: string }>> = 
+              new Array(totalLines).fill(null).map(() => []);
+            let successCount = 0;
+            let failCount = 0;
 
-        // Extract chunk using smaller soramimi chunk size
-        const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
-        const endIndex = Math.min(startIndex + SORAMIMI_CHUNK_SIZE, totalLines);
-        const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
+            const sendEvent = (data: unknown) => {
+              if (streamClosed) return;
+              try {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+              } catch {
+                streamClosed = true;
+              }
+            };
 
-        // Convert to LyricLine format and generate soramimi
-        const lines: LyricLine[] = chunkLines.map(line => ({
-          words: line.words,
-          startTimeMs: line.startTimeMs,
-        }));
+            sendEvent({
+              type: "start",
+              totalChunks,
+              totalLines,
+              chunkSize: CHUNK_SIZE,
+            });
 
-        logInfo(requestId, `Generating soramimi chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
-        const { segments: soramimi } = await generateSoramimiForChunk(lines, requestId);
+            // Process chunks sequentially
+            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+              const startIndex = chunkIndex * CHUNK_SIZE;
+              const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
+              const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
 
-        logInfo(requestId, `Soramimi chunk ${chunkIndex + 1}/${totalChunks} - completed`);
-        return jsonResponse({
-          chunkIndex,
-          totalChunks,
-          startIndex,
-          soramimi,
+              const lines: LyricLine[] = chunkLines.map(line => ({
+                words: line.words,
+                startTimeMs: line.startTimeMs,
+              }));
+
+              try {
+                logInfo(requestId, `SSE: Generating furigana chunk ${chunkIndex + 1}/${totalChunks}`);
+                const furigana = await generateFuriganaForChunk(lines, requestId);
+
+                furigana.forEach((segments, i) => {
+                  const targetIndex = startIndex + i;
+                  if (targetIndex < allFurigana.length) {
+                    allFurigana[targetIndex] = segments;
+                  }
+                });
+
+                successCount++;
+
+                sendEvent({
+                  type: "chunk",
+                  chunkIndex,
+                  startIndex,
+                  furigana,
+                  progress: Math.round(((chunkIndex + 1) / totalChunks) * 100),
+                });
+
+                logInfo(requestId, `SSE: Furigana chunk ${chunkIndex + 1}/${totalChunks} done`);
+              } catch (err) {
+                failCount++;
+                logError(requestId, `SSE: Furigana chunk ${chunkIndex} failed`, err);
+
+                sendEvent({
+                  type: "chunk_error",
+                  chunkIndex,
+                  startIndex,
+                  error: err instanceof Error ? err.message : "Unknown error",
+                  progress: Math.round(((chunkIndex + 1) / totalChunks) * 100),
+                });
+              }
+            }
+
+            // Save to Redis
+            const allSuccess = failCount === 0;
+            if (allSuccess) {
+              try {
+                await saveFurigana(redis, songId, allFurigana);
+                logInfo(requestId, `SSE: Saved furigana to cache (${totalLines} lines)`);
+              } catch (err) {
+                logError(requestId, "SSE: Failed to save furigana", err);
+              }
+            }
+
+            sendEvent({
+              type: "complete",
+              totalChunks,
+              successCount,
+              failCount,
+              cached: allSuccess,
+              furigana: allFurigana,
+            });
+
+            logInfo(requestId, `SSE: Furigana stream complete`, { successCount, failCount, cached: allSuccess });
+            
+            if (!streamClosed) {
+              controller.close();
+            }
+          },
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
+          },
         });
       }
 
@@ -1018,113 +1090,6 @@ export default async function handler(req: Request) {
             "Access-Control-Allow-Origin": effectiveOrigin!,
           },
         });
-      }
-
-      // =======================================================================
-      // Handle save-translation action - saves consolidated translation to song
-      // This is called by the client after all chunks have been processed
-      // =======================================================================
-      if (action === "save-translation") {
-        const parsed = SaveTranslationSchema.safeParse(body);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        const { language, translations } = parsed.data;
-
-        // Get song with lyrics to build the LRC
-        const song = await getSong(redis, songId, {
-          includeMetadata: true,
-          includeLyrics: true,
-        });
-
-        if (!song?.lyrics?.parsedLines) {
-          return errorResponse("Song has no lyrics", 404);
-        }
-
-        // Verify the translations array matches the parsed lines
-        if (translations.length !== song.lyrics.parsedLines.length) {
-          return errorResponse(`Translation count mismatch: ${translations.length} vs ${song.lyrics.parsedLines.length} lines`);
-        }
-
-        // Build translated LRC from the parsed lines and translations
-        const translatedLrc = song.lyrics.parsedLines
-          .map((line, index) => `${msToLrcTime(line.startTimeMs)}${translations[index] || line.words}`)
-          .join("\n");
-
-        // Save to song document
-        await saveTranslation(redis, songId, language, translatedLrc);
-
-        logInfo(requestId, `Saved consolidated translation (${language}, ${translations.length} lines)`);
-        return jsonResponse({ success: true, language, lineCount: translations.length });
-      }
-
-      // =======================================================================
-      // Handle save-furigana action - saves consolidated furigana to song
-      // This is called by the client after all chunks have been processed
-      // =======================================================================
-      if (action === "save-furigana") {
-        const parsed = SaveFuriganaSchema.safeParse(body);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        const { furigana } = parsed.data;
-
-        // Get song to verify it exists and has lyrics
-        const song = await getSong(redis, songId, {
-          includeMetadata: true,
-          includeLyrics: true,
-        });
-
-        if (!song?.lyrics?.parsedLines) {
-          return errorResponse("Song has no lyrics", 404);
-        }
-
-        // Verify the furigana array matches the parsed lines
-        if (furigana.length !== song.lyrics.parsedLines.length) {
-          return errorResponse(`Furigana count mismatch: ${furigana.length} vs ${song.lyrics.parsedLines.length} lines`);
-        }
-
-        // Save to song document
-        await saveFurigana(redis, songId, furigana as FuriganaSegment[][]);
-
-        logInfo(requestId, `Saved consolidated furigana (${furigana.length} lines)`);
-        return jsonResponse({ success: true, lineCount: furigana.length });
-      }
-
-      // =======================================================================
-      // Handle save-soramimi action - saves consolidated soramimi to song
-      // This is called by the client after all chunks have been processed
-      // =======================================================================
-      if (action === "save-soramimi") {
-        const parsed = SaveSoramimiSchema.safeParse(body);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        const { soramimi } = parsed.data;
-
-        // Get song to verify it exists and has lyrics
-        const song = await getSong(redis, songId, {
-          includeMetadata: true,
-          includeLyrics: true,
-        });
-
-        if (!song?.lyrics?.parsedLines) {
-          return errorResponse("Song has no lyrics", 404);
-        }
-
-        // Verify the soramimi array matches the parsed lines
-        if (soramimi.length !== song.lyrics.parsedLines.length) {
-          return errorResponse(`Soramimi count mismatch: ${soramimi.length} vs ${song.lyrics.parsedLines.length} lines`);
-        }
-
-        // Save to song document
-        await saveSoramimi(redis, songId, soramimi as FuriganaSegment[][]);
-
-        logInfo(requestId, `Saved consolidated soramimi (${soramimi.length} lines)`);
-        return jsonResponse({ success: true, lineCount: soramimi.length });
       }
 
       // =======================================================================

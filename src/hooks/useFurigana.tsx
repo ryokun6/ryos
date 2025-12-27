@@ -18,7 +18,7 @@ import {
   getFuriganaSegmentsPronunciationOnly,
 } from "@/utils/romanization";
 import type { FuriganaSegment } from "@/utils/romanization";
-import { processFuriganaChunks, processSoramimiSSE, type FuriganaChunkInfo, type SoramimiChunkInfo } from "@/utils/chunkedStream";
+import { processFuriganaSSE, processSoramimiSSE, type FuriganaChunkInfo, type SoramimiChunkInfo } from "@/utils/chunkedStream";
 
 // Re-export FuriganaSegment for consumers
 export type { FuriganaSegment };
@@ -225,7 +225,7 @@ export function useFurigana({
     // Use chunked streaming for furigana to avoid edge function timeouts
     const progressiveMap = new Map<string, FuriganaSegment[]>();
     
-    processFuriganaChunks(effectSongId, {
+    processFuriganaSSE(effectSongId, {
       force: isForceRequest,
       signal: controller.signal,
       // Pass pre-fetched info to skip get-chunk-info call

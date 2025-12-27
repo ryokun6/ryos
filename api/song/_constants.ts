@@ -89,66 +89,27 @@ export const SearchLyricsSchema = z.object({
   query: z.string().max(500).optional(),
 });
 
-// Chunked processing schemas - for avoiding edge function timeouts
-export const TranslateChunkSchema = z.object({
-  action: z.literal("translate-chunk"),
+// =============================================================================
+// SSE Streaming Schemas - Server processes all chunks and saves result
+// =============================================================================
+
+// SSE streaming translation - server processes all chunks and saves result
+export const TranslateStreamSchema = z.object({
+  action: z.literal("translate-stream"),
   language: z.string().max(10),
-  chunkIndex: z.number().int().min(0).max(1000),
-  totalChunks: z.number().int().min(0).max(1000).optional(),
   force: z.boolean().optional(),
 });
 
-export const FuriganaChunkSchema = z.object({
-  action: z.literal("furigana-chunk"),
-  chunkIndex: z.number().int().min(0).max(1000),
-  totalChunks: z.number().int().min(0).max(1000).optional(),
+// SSE streaming furigana - server processes all chunks and saves result
+export const FuriganaStreamSchema = z.object({
+  action: z.literal("furigana-stream"),
   force: z.boolean().optional(),
 });
 
-export const SoramimiChunkSchema = z.object({
-  action: z.literal("soramimi-chunk"),
-  chunkIndex: z.number().int().min(0).max(1000),
-  totalChunks: z.number().int().min(0).max(1000).optional(),
-  force: z.boolean().optional(),
-});
-
-// SSE streaming soramimi generation - server processes all chunks and saves result
+// SSE streaming soramimi - server processes all chunks and saves result
 export const SoramimiStreamSchema = z.object({
   action: z.literal("soramimi-stream"),
   force: z.boolean().optional(),
-});
-
-// Schema for getting chunk info (how many chunks total)
-export const GetChunkInfoSchema = z.object({
-  action: z.literal("get-chunk-info"),
-  operation: z.enum(["translate", "furigana", "soramimi"]),
-  language: z.string().max(10).optional(),
-  force: z.boolean().optional(),
-});
-
-// Schema for saving consolidated translation after chunked processing
-export const SaveTranslationSchema = z.object({
-  action: z.literal("save-translation"),
-  language: z.string().max(10),
-  translations: z.array(z.string()).max(500),
-});
-
-// Schema for saving consolidated furigana after chunked processing
-export const SaveFuriganaSchema = z.object({
-  action: z.literal("save-furigana"),
-  furigana: z.array(z.array(z.object({
-    text: z.string(),
-    reading: z.string().optional(),
-  }))).max(500),
-});
-
-// Schema for saving consolidated soramimi after chunked processing
-export const SaveSoramimiSchema = z.object({
-  action: z.literal("save-soramimi"),
-  soramimi: z.array(z.array(z.object({
-    text: z.string(),
-    reading: z.string().optional(),
-  }))).max(500),
 });
 
 // Schema for clearing cached translations, furigana, and soramimi
