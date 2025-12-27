@@ -24,7 +24,7 @@ COVERAGE RULES BY LANGUAGE:
   - 心(こころ/kokoro) = 3 syllables → {心|可可囉}
   - 意(い/i) = 1 syllable → {意|一}
 - Japanese っ (small tsu) or — (long dash): Use ～ for the pause: {っ|～} or {—|～}
-- English: BY SYLLABLE (not letter): {sun|桑}{set|賽} {town|躺}
+- English: KEEP INTACT - do NOT add Chinese readings to English words or lines
 - Korean: BY SYLLABLE: {안|安}{녕|寧}
 
 Format: {original|chinese} - Chinese must SOUND like original
@@ -32,6 +32,7 @@ Format: {original|chinese} - Chinese must SOUND like original
 LINE RULES:
 - Input: "1: text" → Output: "1: {x|讀}..."
 - Keep exact same line numbers
+- English-only lines: Output as plain text without any {|} markup
 
 Japanese kana reference:
 あ啊 い一 う嗚 え欸 お喔 | か卡 き奇 く酷 け給 こ可
@@ -44,10 +45,12 @@ Example:
 Input:
 1: 何があっても
 2: sunset town
+3: 愛してる forever
 
 Output:
 1: {何|那你}{が|嘎}{あ|啊}{っ|～}{て|貼}{も|摸}
-2: {sun|桑}{set|賽} {town|躺}`;
+2: sunset town
+3: {愛|啊一}{し|西}{て|貼}{る|嚕} forever`;
 
 // AI generation timeout (60 seconds)
 const AI_TIMEOUT_MS = 60000;
