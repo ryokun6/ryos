@@ -1066,9 +1066,6 @@ export default async function handler(req: Request) {
                 failedChunks.length = 0; // Clear the array
                 
                 for (const chunkIndex of chunksToRetry) {
-                  // Small delay between retries
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                  
                   const success = await processChunk(chunkIndex, true);
                   if (success) {
                     successCount++;
