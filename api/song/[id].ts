@@ -33,10 +33,12 @@ import {
   saveTranslation,
   saveFurigana,
   saveSoramimi,
+  updateSoramimiLines,
   canModifySong,
   type LyricsSource,
   type LyricsContent,
   type FuriganaSegment,
+  type SoramimiMeta,
 } from "../_utils/song-service.js";
 
 // Import from split modules
@@ -49,6 +51,7 @@ import {
   TranslateStreamSchema,
   FuriganaStreamSchema,
   SoramimiStreamSchema,
+  SoramimiResumeSchema,
   ClearCachedDataSchema,
   UnshareSongSchema,
 } from "./_constants.js";
@@ -359,12 +362,20 @@ export default async function handler(req: Request) {
             const totalLines = song.lyrics.parsedLines.length;
             const totalChunks = Math.ceil(totalLines / SORAMIMI_CHUNK_SIZE);
             const hasSoramimi = !!(song.soramimi && song.soramimi.length > 0);
+            // Check if there are failed lines that need resume
+            const failedLines = song.soramimiMeta?.failedLines || [];
+            const isPartial = failedLines.length > 0;
             response.soramimi = {
               totalLines,
               totalChunks,
               chunkSize: SORAMIMI_CHUNK_SIZE,
               cached: hasSoramimi,
               ...(hasSoramimi ? { data: song.soramimi } : {}),
+              // Include metadata about partial results
+              ...(isPartial ? { 
+                isPartial: true, 
+                failedLines,
+              } : {}),
             };
           }
           
@@ -1195,6 +1206,16 @@ export default async function handler(req: Request) {
             // Final fail count
             failCount = failedChunks.length;
 
+            // Compute which individual lines failed (from failed chunks)
+            const failedLineIndices: number[] = [];
+            for (const chunkIndex of failedChunks) {
+              const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
+              const endIndex = Math.min(startIndex + SORAMIMI_CHUNK_SIZE, totalLines);
+              for (let i = startIndex; i < endIndex; i++) {
+                failedLineIndices.push(i);
+              }
+            }
+
             // Send error events for any chunks that still failed after retries
             for (const chunkIndex of failedChunks) {
               const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
@@ -1208,11 +1229,19 @@ export default async function handler(req: Request) {
             }
 
             // Save to Redis - save partial results if we have at least 50% success
+            // Also save metadata about which lines failed so client can resume
             const hasEnoughData = successCount >= totalChunks * 0.5;
+            const soramimiMeta: SoramimiMeta = {
+              failedLines: failedLineIndices,
+              totalLines,
+              lastAttemptAt: Date.now(),
+              isComplete: failedLineIndices.length === 0,
+            };
+            
             if (hasEnoughData) {
               try {
-                await saveSoramimi(redis, songId, allSoramimi);
-                logInfo(requestId, `SSE: Saved soramimi to cache (${totalLines} lines, ${failCount} chunks failed)`);
+                await saveSoramimi(redis, songId, allSoramimi, soramimiMeta);
+                logInfo(requestId, `SSE: Saved soramimi to cache (${totalLines} lines, ${failedLineIndices.length} lines failed)`);
               } catch (err) {
                 logError(requestId, "SSE: Failed to save soramimi", err);
               }
@@ -1220,7 +1249,7 @@ export default async function handler(req: Request) {
               logInfo(requestId, `SSE: Not caching soramimi - only ${successCount}/${totalChunks} chunks succeeded (need 50%)`);
             }
 
-            // Send complete event
+            // Send complete event with failed line info for client to resume
             sendEvent({
               type: "complete",
               totalChunks,
@@ -1229,9 +1258,11 @@ export default async function handler(req: Request) {
               cached: hasEnoughData, // True if we saved (at least 50% success)
               partialSuccess: failCount > 0, // Indicates some failures occurred
               soramimi: allSoramimi,
+              // Include failed line indices so client can request resume
+              ...(failedLineIndices.length > 0 ? { failedLines: failedLineIndices } : {}),
             });
 
-            logInfo(requestId, `SSE: Stream complete`, { successCount, failCount, cached: hasEnoughData });
+            logInfo(requestId, `SSE: Stream complete`, { successCount, failCount, failedLines: failedLineIndices.length, cached: hasEnoughData });
             
             if (!streamClosed) {
               controller.close();
@@ -1240,6 +1271,243 @@ export default async function handler(req: Request) {
           cancel(reason) {
             streamClosed = true;
             logInfo(requestId, "SSE: Client disconnected, stopping soramimi", { reason: String(reason) });
+          }
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
+          },
+        });
+      }
+
+      // =======================================================================
+      // Handle soramimi-resume action - regenerate specific failed lines
+      // =======================================================================
+      if (action === "soramimi-resume") {
+        const parsed = SoramimiResumeSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { lineIndices } = parsed.data;
+        
+        if (lineIndices.length === 0) {
+          return errorResponse("No line indices provided");
+        }
+
+        // Get song with lyrics and existing soramimi
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+          includeSoramimi: true,
+        });
+
+        if (!song?.lyrics?.lrc) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Ensure parsedLines exist
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          return errorResponse("Song has no parsed lyrics", 404);
+        }
+
+        // Skip soramimi for Chinese lyrics
+        if (lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
+          logInfo(requestId, "Skipping soramimi resume - lyrics are mostly Chinese");
+          return jsonResponse({
+            skipped: true,
+            skipReason: "chinese_lyrics",
+          });
+        }
+
+        // Validate line indices
+        const totalLines = song.lyrics.parsedLines.length;
+        const validLineIndices = lineIndices.filter(idx => idx >= 0 && idx < totalLines);
+        
+        if (validLineIndices.length === 0) {
+          return errorResponse("All provided line indices are invalid");
+        }
+
+        // Group line indices into chunks (using SORAMIMI_CHUNK_SIZE)
+        // Create virtual chunks that contain only the lines we need to regenerate
+        type ChunkToProcess = { chunkIndex: number; lineIndices: number[]; startIndex: number };
+        const chunksToProcess: ChunkToProcess[] = [];
+        
+        // Group consecutive line indices into chunks
+        const sortedIndices = [...validLineIndices].sort((a, b) => a - b);
+        let currentChunk: number[] = [];
+        let currentChunkStart = -1;
+        
+        for (const lineIdx of sortedIndices) {
+          const naturalChunkIndex = Math.floor(lineIdx / SORAMIMI_CHUNK_SIZE);
+          const chunkStart = naturalChunkIndex * SORAMIMI_CHUNK_SIZE;
+          
+          if (currentChunkStart !== chunkStart) {
+            // Start a new chunk
+            if (currentChunk.length > 0) {
+              chunksToProcess.push({
+                chunkIndex: Math.floor(currentChunkStart / SORAMIMI_CHUNK_SIZE),
+                lineIndices: currentChunk,
+                startIndex: currentChunkStart,
+              });
+            }
+            currentChunk = [lineIdx];
+            currentChunkStart = chunkStart;
+          } else {
+            currentChunk.push(lineIdx);
+          }
+        }
+        
+        // Don't forget the last chunk
+        if (currentChunk.length > 0) {
+          chunksToProcess.push({
+            chunkIndex: Math.floor(currentChunkStart / SORAMIMI_CHUNK_SIZE),
+            lineIndices: currentChunk,
+            startIndex: currentChunkStart,
+          });
+        }
+
+        logInfo(requestId, `Starting soramimi resume SSE stream`, { 
+          requestedLines: validLineIndices.length,
+          chunksToProcess: chunksToProcess.length,
+        });
+
+        // Create SSE stream
+        const encoder = new TextEncoder();
+        let streamClosed = false;
+        
+        const stream = new ReadableStream({
+          async start(controller) {
+            const completedLineUpdates: { lineIndex: number; segments: FuriganaSegment[] }[] = [];
+            const completedLineIndices: number[] = [];
+            let successCount = 0;
+            let failCount = 0;
+
+            const sendEvent = (data: unknown) => {
+              if (streamClosed) return;
+              try {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+              } catch {
+                streamClosed = true;
+              }
+            };
+
+            sendEvent({
+              type: "start",
+              totalChunks: chunksToProcess.length,
+              totalLines: validLineIndices.length,
+              chunkSize: SORAMIMI_CHUNK_SIZE,
+              isResume: true,
+            });
+
+            // Process each chunk sequentially (for resume, be conservative)
+            for (let i = 0; i < chunksToProcess.length; i++) {
+              if (streamClosed) break;
+
+              const chunk = chunksToProcess[i];
+              
+              // Get the lines for this chunk (only the lines we need to regenerate)
+              const chunkLines = chunk.lineIndices.map(idx => ({
+                words: song.lyrics!.parsedLines![idx].words,
+                startTimeMs: song.lyrics!.parsedLines![idx].startTimeMs,
+              }));
+
+              try {
+                logInfo(requestId, `SSE Resume: Generating chunk ${i + 1}/${chunksToProcess.length} (${chunk.lineIndices.length} lines)`);
+                const { segments, success } = await generateSoramimiForChunk(chunkLines, requestId);
+
+                if (success) {
+                  // Map segments back to their original line indices
+                  segments.forEach((seg, segIdx) => {
+                    const originalLineIdx = chunk.lineIndices[segIdx];
+                    completedLineUpdates.push({
+                      lineIndex: originalLineIdx,
+                      segments: seg,
+                    });
+                    completedLineIndices.push(originalLineIdx);
+                  });
+
+                  // Send progress with the regenerated segments mapped to original indices
+                  const soramimiByLine: Record<number, FuriganaSegment[]> = {};
+                  segments.forEach((seg, segIdx) => {
+                    soramimiByLine[chunk.lineIndices[segIdx]] = seg;
+                  });
+
+                  sendEvent({
+                    type: "chunk",
+                    chunkIndex: i,
+                    lineIndices: chunk.lineIndices,
+                    soramimi: soramimiByLine,
+                    progress: Math.round(((i + 1) / chunksToProcess.length) * 100),
+                  });
+
+                  successCount++;
+                  logInfo(requestId, `SSE Resume: Chunk ${i + 1}/${chunksToProcess.length} done`);
+                } else {
+                  // AI returned fallback
+                  failCount++;
+                  sendEvent({
+                    type: "chunk_error",
+                    chunkIndex: i,
+                    lineIndices: chunk.lineIndices,
+                    error: "AI generation returned fallback",
+                    progress: Math.round(((i + 1) / chunksToProcess.length) * 100),
+                  });
+                  logInfo(requestId, `SSE Resume: Chunk ${i + 1}/${chunksToProcess.length} returned fallback`);
+                }
+              } catch (err) {
+                failCount++;
+                logError(requestId, `SSE Resume: Chunk ${i} failed`, err);
+                sendEvent({
+                  type: "chunk_error",
+                  chunkIndex: i,
+                  lineIndices: chunk.lineIndices,
+                  error: err instanceof Error ? err.message : "Unknown error",
+                  progress: Math.round(((i + 1) / chunksToProcess.length) * 100),
+                });
+              }
+            }
+
+            // Update cache with completed lines
+            if (completedLineUpdates.length > 0) {
+              try {
+                await updateSoramimiLines(redis, songId, completedLineUpdates, completedLineIndices);
+                logInfo(requestId, `SSE Resume: Updated ${completedLineUpdates.length} lines in cache`);
+              } catch (err) {
+                logError(requestId, "SSE Resume: Failed to update cache", err);
+              }
+            }
+
+            // Compute remaining failed lines
+            const stillFailedLines = validLineIndices.filter(idx => !completedLineIndices.includes(idx));
+
+            sendEvent({
+              type: "complete",
+              totalChunks: chunksToProcess.length,
+              successCount,
+              failCount,
+              completedLines: completedLineIndices,
+              ...(stillFailedLines.length > 0 ? { failedLines: stillFailedLines } : {}),
+            });
+
+            logInfo(requestId, `SSE Resume: Complete`, { 
+              successCount, 
+              failCount, 
+              completedLines: completedLineIndices.length,
+              stillFailed: stillFailedLines.length,
+            });
+            
+            if (!streamClosed) {
+              controller.close();
+            }
+          },
+          cancel(reason) {
+            streamClosed = true;
+            logInfo(requestId, "SSE Resume: Client disconnected", { reason: String(reason) });
           }
         });
 

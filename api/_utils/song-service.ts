@@ -64,6 +64,20 @@ export interface FuriganaSegment {
 }
 
 /**
+ * Soramimi metadata for tracking partial results
+ */
+export interface SoramimiMeta {
+  /** Line indices that failed and need regeneration */
+  failedLines: number[];
+  /** Total number of lines in the soramimi data */
+  totalLines: number;
+  /** Timestamp when last generation was attempted */
+  lastAttemptAt: number;
+  /** Whether all lines have been successfully generated */
+  isComplete: boolean;
+}
+
+/**
  * Unified song document stored in Redis
  */
 export interface SongDocument {
@@ -87,6 +101,9 @@ export interface SongDocument {
 
   // Soramimi annotations - Chinese misheard lyrics (空耳)
   soramimi?: FuriganaSegment[][];
+  
+  // Soramimi metadata for tracking partial results
+  soramimiMeta?: SoramimiMeta;
 
   // Metadata
   createdBy?: string;
@@ -118,6 +135,8 @@ export interface SaveSongOptions {
   preserveFurigana?: boolean;
   /** Preserve existing soramimi if not provided */
   preserveSoramimi?: boolean;
+  /** Preserve existing soramimi metadata if not provided */
+  preserveSoramimiMeta?: boolean;
 }
 
 // =============================================================================
@@ -220,6 +239,10 @@ export async function getSong(
 
   if (options.includeSoramimi && song.soramimi) {
     result.soramimi = song.soramimi;
+    // Include soramimi metadata when soramimi is requested
+    if (song.soramimiMeta) {
+      result.soramimiMeta = song.soramimiMeta;
+    }
   }
 
   if (includeTranslations && song.translations) {
@@ -287,7 +310,7 @@ export async function saveSong(
   options: SaveSongOptions = {},
   existingSong?: SongDocument | null
 ): Promise<SongDocument> {
-  const { preserveLyrics = false, preserveTranslations = false, preserveFurigana = false, preserveSoramimi = false } = options;
+  const { preserveLyrics = false, preserveTranslations = false, preserveFurigana = false, preserveSoramimi = false, preserveSoramimiMeta = false } = options;
   const songKey = getSongKey(song.id);
   const now = Date.now();
 
@@ -314,6 +337,7 @@ export async function saveSong(
       : (song.translations ?? existing?.translations),
     furigana: preserveFurigana ? (existing?.furigana ?? song.furigana) : (song.furigana ?? existing?.furigana),
     soramimi: preserveSoramimi ? (existing?.soramimi ?? song.soramimi) : (song.soramimi ?? existing?.soramimi),
+    soramimiMeta: preserveSoramimiMeta ? (existing?.soramimiMeta ?? song.soramimiMeta) : (song.soramimiMeta ?? existing?.soramimiMeta),
     createdBy: createdByValue,
     createdAt: existing?.createdAt ?? song.createdAt ?? now,
     updatedAt: now,
@@ -553,11 +577,13 @@ export async function saveFurigana(
 /**
  * Save soramimi annotations for a song
  * Requires the song to exist (call after saveLyrics)
+ * @param soramimiMeta - Optional metadata tracking failed lines
  */
 export async function saveSoramimi(
   redis: Redis,
   id: string,
-  soramimi: FuriganaSegment[][]
+  soramimi: FuriganaSegment[][],
+  soramimiMeta?: SoramimiMeta
 ): Promise<SongDocument | null> {
   const existing = await getSong(redis, id, { 
     includeMetadata: true,
@@ -571,6 +597,55 @@ export async function saveSoramimi(
   return saveSong(redis, {
     ...existing,
     soramimi,
+    soramimiMeta,
+  }, {}, existing);
+}
+
+/**
+ * Update specific lines in existing soramimi data
+ * Used for resuming partial results
+ */
+export async function updateSoramimiLines(
+  redis: Redis,
+  id: string,
+  updates: { lineIndex: number; segments: FuriganaSegment[] }[],
+  completedLineIndices: number[]
+): Promise<SongDocument | null> {
+  const existing = await getSong(redis, id, { 
+    includeMetadata: true,
+    includeLyrics: true,
+    includeTranslations: true,
+    includeFurigana: true,
+    includeSoramimi: true,
+  });
+  if (!existing || !existing.soramimi) return null;
+
+  // Apply updates to existing soramimi
+  const updatedSoramimi = [...existing.soramimi];
+  for (const update of updates) {
+    if (update.lineIndex >= 0 && update.lineIndex < updatedSoramimi.length) {
+      updatedSoramimi[update.lineIndex] = update.segments;
+    }
+  }
+
+  // Update metadata - remove completed lines from failedLines
+  let updatedMeta = existing.soramimiMeta;
+  if (updatedMeta && completedLineIndices.length > 0) {
+    const remainingFailed = updatedMeta.failedLines.filter(
+      idx => !completedLineIndices.includes(idx)
+    );
+    updatedMeta = {
+      ...updatedMeta,
+      failedLines: remainingFailed,
+      isComplete: remainingFailed.length === 0,
+      lastAttemptAt: Date.now(),
+    };
+  }
+
+  return saveSong(redis, {
+    ...existing,
+    soramimi: updatedSoramimi,
+    soramimiMeta: updatedMeta,
   }, {}, existing);
 }
 
