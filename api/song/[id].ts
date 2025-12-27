@@ -887,7 +887,7 @@ export default async function handler(req: Request) {
           }
         }
 
-        // Convert to LyricLine format and generate soramimi
+        // Convert to LyricLine format for soramimi generation
         const lines: LyricLine[] = chunkLines.map(line => ({
           words: line.words,
           startTimeMs: line.startTimeMs,
