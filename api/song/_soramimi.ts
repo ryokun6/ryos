@@ -145,20 +145,26 @@ FORMAT: {original|chinese} for Japanese/Korean, plain English stays unwrapped
 
 GROUPING (Critical!):
 - Group by natural phrase boundaries (2-4 segments per line)
-- Keep verb phrases together: {見ていた|迷戀她} not {見|迷}{て|戀}{い|她}{た|...}
-- Keep particles with their words: {君を|親我} or {夢の|夢諾}
+- Keep verb phrases together: {見ていた|咪貼衣她} not {見|咪}{て|貼}{い|衣}{た|她}
+- Keep particles with their words: {君を|親密我} or {夢の|魚沒諾}
 - Korean words as units: {사랑해|撒浪嘿}
 
-POETIC APPROACH - make Chinese readings form coherent meaning:
-- 夢を見ていた (yume wo miteita) → {夢を|玉美}{見ていた|迷戀她} = "jade beauty, infatuated with her"
-- 桜が降りてくる → {桜が|撒哭啦}{降りて|哦里貼}{くる|哭嚕} = "scatter tears, oh inside, crying"
-- 愛してる → {愛し|哀思}{てる|特魯} = "sorrowful longing" (phonetically ai-si-te-ru)
-- 君の名前を → {君の|親諾}{名前を|你媽唉我} = echoes "your name"
+PHONETIC EXAMPLES (Chinese reading must SOUND like Japanese/Korean):
+- 君を (ki-mi-wo) → 親密我 (qīn-mì-wǒ) ✓ sounds similar
+- 夢を (yu-me-wo) → 魚沒我 (yú-méi-wǒ) ✓ sounds similar  
+- 見ていた (mi-te-i-ta) → 咪貼衣她 (mī-tiē-yī-tā) ✓ sounds similar
+- 愛してる (a-i-shi-te-ru) → 哀伊詩特魯 (āi-yī-shī-tè-lǔ) ✓ sounds similar
+- 사랑해 (sa-rang-hae) → 撒浪嘿 (sā-làng-hēi) ✓ sounds similar
+- 桜 (sa-ku-ra) → 撒哭啦 (sā-kū-la) ✓ sounds similar
+
+POETIC BONUS - when possible, make readings form meaningful phrases:
+- 親密我 = "be intimate with me" (sounds like kimiwo)
+- 哀伊詩特魯 = "sorrowful poetic journey" (sounds like aishiteru)
 
 RULES:
 1. EVERY Japanese/Korean character needs a Chinese reading
 2. Only Chinese characters in readings (never ひらがな/カタカナ)
-3. Match syllable count approximately
+3. Match syllable count and sounds
 4. No added punctuation (，。！)
 
 Example:
@@ -169,9 +175,9 @@ Input:
 4: 사랑해요
 
 Output:
-1: {夢を|玉美}{見ていた|迷戀她}
+1: {夢を|魚沒}{見ていた|咪貼衣她}
 2: I love you
-3: {君を|親我}love{してる|詩特魯}
+3: {君を|親密我}love{してる|詩特魯}
 4: {사랑|撒浪}{해요|嘿喲}`;
 
 // AI generation timeout (55 seconds - slightly less than Vercel's 60s edge function limit
