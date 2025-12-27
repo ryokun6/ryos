@@ -10,44 +10,115 @@ import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
 // =============================================================================
+// English Detection
+// =============================================================================
+
+/**
+ * Check if a string is primarily English/Latin text
+ * Returns true if the string contains mostly ASCII letters, numbers, and common punctuation
+ * with no CJK characters (Chinese, Japanese, Korean)
+ */
+function isEnglishLine(text: string): boolean {
+  if (!text || !text.trim()) return true;
+  
+  const trimmed = text.trim();
+  
+  // Check for CJK characters (Chinese, Japanese Kanji, Korean Hangul)
+  // Also check for Japanese Hiragana and Katakana
+  const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(trimmed);
+  
+  if (hasCJK) {
+    return false;
+  }
+  
+  // If no CJK characters, it's considered English/Latin text
+  return true;
+}
+
+// =============================================================================
 // Soramimi Generation
 // =============================================================================
 
 const SORAMIMI_SYSTEM_PROMPT = `Create Chinese 空耳 (soramimi) phonetic readings. Use Traditional Chinese (繁體字).
 
-COVERAGE RULES BY LANGUAGE:
-- Japanese kana: EACH kana = 1 Chinese char: {な|那}{に|你}{げ|給}
-- Japanese kanji: BY SYLLABLE COUNT of the reading, NOT by kanji count:
-  - 何(なに/nani) = 2 syllables → {何|那你}
-  - 人(ひと/hito) = 2 syllables → {人|嘻頭}
-  - 愛(あい/ai) = 2 syllables → {愛|啊一}
-  - 心(こころ/kokoro) = 3 syllables → {心|可可囉}
-  - 意(い/i) = 1 syllable → {意|一}
-- Japanese っ (small tsu) or — (long dash): Use ～ for the pause: {っ|～} or {—|～}
-- English: BY SYLLABLE (not letter): {sun|桑}{set|賽} {town|躺}
-- Korean: BY SYLLABLE: {안|安}{녕|寧}
+CRITICAL: KEEP ENGLISH WORDS INTACT
+- English words should be output exactly as-is WITHOUT any Chinese reading
+- Only add Chinese readings for Japanese kana, Japanese kanji, and Korean characters
+- Format for English: just the word itself, no braces: "hello" → hello
+- Format for non-English: {original|chinese}
 
-Format: {original|chinese} - Chinese must SOUND like original
+IMPORTANT: Use MEANINGFUL Chinese words when possible!
+- Prefer real Chinese words/phrases over random phonetic characters
+- Choose characters that sound similar AND have related or interesting meanings
+- Use common, recognizable vocabulary
+
+COVERAGE RULES BY LANGUAGE:
+- Japanese kana: EACH kana = 1 Chinese char (prefer meaningful chars):
+  {な|娜}{に|妮}{げ|給} or {な|那}{に|你}{げ|鬼}
+- Japanese kanji: BY SYLLABLE COUNT of the reading, use meaningful words:
+  - 愛(あい/ai) "love" = 2 syllables → {愛|哀} (哀 āi = sorrow, poetic!)
+  - 夢(ゆめ/yume) "dream" = 2 syllables → {夢|玉美} (玉美 = jade beauty)
+  - 雪(ゆき/yuki) "snow" = 2 syllables → {雪|遇奇} (遇奇 = encounter wonder)
+  - 君(きみ/kimi) "you" = 2 syllables → {君|奇蜜} (奇蜜 = sweet miracle)
+  - 心(こころ/kokoro) "heart" = 3 syllables → {心|叩叩肉} (knocking flesh/heart)
+  - 花(はな/hana) "flower" = 2 syllables → {花|哈娜} (哈娜 = a lovely name)
+  - 空(そら/sora) "sky" = 2 syllables → {空|搜啦}
+  - 歌(うた/uta) "song" = 2 syllables → {歌|嗚她} (cry for her)
+- Japanese っ (small tsu) or — (long dash): Use ～ for the pause: {っ|～} or {—|～}
+- English: KEEP AS-IS, no Chinese reading: "love" → love, "hello" → hello
+- Korean: BY SYLLABLE, prefer meaningful matches:
+  - 안녕(annyeong) "peace/hello" → {안|安}{녕|寧} (安寧 = peace, SAME meaning!)
+  - 사랑(sarang) "love" → {사|撒}{랑|浪} (撒浪 = scatter waves)
+  - 감사(gamsa) "thanks" → {감|甘}{사|謝} (甘謝 = sweet thanks)
+  - 행복(haengbok) "happiness" → {행|幸}{복|福} (幸福 = happiness, SAME meaning!)
+  - 영원히(yeongwonhi) "forever" → {영|永}{원|遠}{히|嘻} (永遠 = forever!)
+  - 시간(sigan) "time" → {시|時}{간|間} (時間 = time, SAME meaning!)
+  - 세상(sesang) "world" → {세|世}{상|上} (世上 = world, SAME meaning!)
+  - 기억(gieok) "memory" → {기|奇}{억|憶} (奇憶 = wonder + remember)
+  - 마음(maeum) "heart" → {마|媽}{음|音} (媽音 = mother's sound)
+  - 노래(norae) "song" → {노|諾}{래|來} (諾來 = promise comes)
+  - 하늘(haneul) "sky" → {하|哈}{늘|呢}
+  - 눈물(nunmul) "tears" → {눈|嫩}{물|木}
+  - 미안(mian) "sorry" → {미|迷}{안|安}
+  - 좋아해(joahae) "I like you" → {좋|就}{아|啊}{해|嗨}
+
+Format: {original|chinese} for non-English, plain text for English
 
 LINE RULES:
-- Input: "1: text" → Output: "1: {x|讀}..."
+- Input: "1: text" → Output: "1: {x|讀}..." or "1: english words"
 - Keep exact same line numbers
+- For mixed lines: {日本語|讀音} English words {日本語|讀音}
 
-Japanese kana reference:
-あ啊 い一 う嗚 え欸 お喔 | か卡 き奇 く酷 け給 こ可
-さ撒 し西 す素 せ些 そ搜 | た他 ち吃 つ此 て貼 と頭
-な那 に你 ぬ奴 ね內 の諾 | は哈 ひ嘻 ふ夫 へ嘿 ほ火
+Japanese kana reference (basic phonetic mapping):
+あ阿 い衣 う屋 え欸 お喔 | か咖 き奇 く酷 け給 こ可
+さ撒 し詩 す蘇 せ些 そ搜 | た她 ち吃 つ此 て貼 と頭
+な娜 に妮 ぬ奴 ね內 の諾 | は哈 ひ嘻 ふ夫 へ嘿 ほ火
 ま媽 み咪 む木 め沒 も摸 | ら啦 り里 る嚕 れ咧 ろ囉
 わ哇 を喔 ん嗯 っ～ —～
 
+Korean syllable reference (common mappings):
+아阿 어喔 오喔 우屋 으嗯 이衣 | 가咖 거哥 고高 구姑 기奇
+나娜 너呢 노諾 누奴 니妮 | 다她 더德 도都 두肚 디低
+마媽 머摸 모摸 무木 미咪 | 바爸 버波 보寶 부夫 비比
+사撒 서些 소搜 수蘇 시詩 | 자渣 저這 조就 주朱 지知
+하哈 허賀 호火 후乎 히嘻 | 라啦 러樂 로囉 루嚕 리里
+
 Example:
 Input:
-1: 何があっても
-2: sunset town
+1: 夢を見ていた
+2: I love you
+3: 君をloveしてる
+4: 안녕하세요
+5: 사랑해 영원히
+6: 행복한 시간
 
 Output:
-1: {何|那你}{が|嘎}{あ|啊}{っ|～}{て|貼}{も|摸}
-2: {sun|桑}{set|賽} {town|躺}`;
+1: {夢|玉美}{を|喔}{見|咪}{て|貼}{い|衣}{た|她}
+2: I love you
+3: {君|奇蜜}{を|喔}love{し|詩}{て|貼}{る|嚕}
+4: {안|安}{녕|寧}{하|哈}{세|些}{요|喲}
+5: {사|撒}{랑|浪}{해|嗨} {영|永}{원|遠}{히|嘻}
+6: {행|幸}{복|福}{한|漢} {시|時}{간|間}`;
 
 // AI generation timeout (60 seconds)
 const AI_TIMEOUT_MS = 60000;
@@ -269,6 +340,8 @@ export interface SoramimiResult {
 /**
  * Generate soramimi for a chunk of lyrics
  * Returns { segments, success } where success=false means fallback was used (don't cache)
+ * 
+ * English lines are kept intact without any Chinese phonetic readings.
  */
 export async function generateSoramimiForChunk(
   lines: LyricLine[],
@@ -278,15 +351,41 @@ export async function generateSoramimiForChunk(
     return { segments: [], success: true };
   }
 
-  // Use numbered lines to help AI maintain line count
-  const textsToProcess = lines.map((line, idx) => `${idx + 1}: ${line.words}`).join("\n");
+  // Separate English lines from non-English lines
+  // English lines will be returned as-is without soramimi processing
+  const lineInfo = lines.map((line, originalIndex) => ({
+    line,
+    originalIndex,
+    isEnglish: isEnglishLine(line.words),
+  }));
+
+  const nonEnglishLines = lineInfo.filter(info => !info.isEnglish);
+  const englishCount = lineInfo.filter(info => info.isEnglish).length;
+
+  logInfo(requestId, `Soramimi processing`, { 
+    totalLines: lines.length, 
+    englishLines: englishCount, 
+    nonEnglishLines: nonEnglishLines.length 
+  });
+
+  // If all lines are English, return them as plain text
+  if (nonEnglishLines.length === 0) {
+    logInfo(requestId, `All lines are English, skipping soramimi AI generation`);
+    return { 
+      segments: lines.map((line) => [{ text: line.words }]),
+      success: true 
+    };
+  }
+
+  // Use numbered lines to help AI maintain line count (only for non-English lines)
+  const textsToProcess = nonEnglishLines.map((info, idx) => `${idx + 1}: ${info.line.words}`).join("\n");
 
   // Create abort controller with timeout
   const abortController = new AbortController();
   const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
   const startTime = Date.now();
-  logInfo(requestId, `Soramimi AI generation starting`, { linesCount: lines.length, timeoutMs: AI_TIMEOUT_MS });
+  logInfo(requestId, `Soramimi AI generation starting`, { linesCount: nonEnglishLines.length, timeoutMs: AI_TIMEOUT_MS });
 
   try {
     const { text: responseText } = await generateText({
@@ -306,7 +405,7 @@ export async function generateSoramimiForChunk(
     // Parse the ruby markup response with line number matching
     const responseLines = responseText.trim().split("\n");
     
-    // Build a map of line number -> parsed content
+    // Build a map of line number -> parsed content (for non-English lines only)
     const lineContentMap = new Map<number, FuriganaSegment[]>();
     for (const responseLine of responseLines) {
       const trimmed = responseLine.trim();
@@ -326,24 +425,37 @@ export async function generateSoramimiForChunk(
       }
     }
 
-    const matchedCount = Math.min(lineContentMap.size, lines.length);
-    if (matchedCount < lines.length) {
-      logInfo(requestId, `Warning: Soramimi response line mismatch - expected ${lines.length}, matched ${matchedCount}`, { 
-        expectedLines: lines.length, 
+    const matchedCount = Math.min(lineContentMap.size, nonEnglishLines.length);
+    if (matchedCount < nonEnglishLines.length) {
+      logInfo(requestId, `Warning: Soramimi response line mismatch - expected ${nonEnglishLines.length}, matched ${matchedCount}`, { 
+        expectedLines: nonEnglishLines.length, 
         responseLines: responseLines.length,
         matchedLines: matchedCount,
         willUseFallbackForMissing: true 
       });
     }
 
-    // Build result with alignment to ensure segments match original text
-    const segments = lines.map((line, index) => {
-      const lineNum = index + 1;
-      const rawSegments = lineContentMap.get(lineNum) || [{ text: line.words }];
-      const original = line.words;
+    // Build a map from non-English line index (1-based) to parsed segments
+    const nonEnglishResultMap = new Map<number, FuriganaSegment[]>();
+    for (let i = 0; i < nonEnglishLines.length; i++) {
+      const lineNum = i + 1;
+      const info = nonEnglishLines[i];
+      const rawSegments = lineContentMap.get(lineNum) || [{ text: info.line.words }];
+      const original = info.line.words;
       
       // Align segments to original text (handles spacing mismatches)
-      return alignSegmentsToOriginal(rawSegments, original);
+      nonEnglishResultMap.set(info.originalIndex, alignSegmentsToOriginal(rawSegments, original));
+    }
+
+    // Build final result, inserting English lines as plain text
+    const segments = lineInfo.map((info) => {
+      if (info.isEnglish) {
+        // English line: return as plain text without readings
+        return [{ text: info.line.words }];
+      } else {
+        // Non-English line: use the parsed soramimi result
+        return nonEnglishResultMap.get(info.originalIndex) || [{ text: info.line.words }];
+      }
     });
 
     return { segments, success: true };
