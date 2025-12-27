@@ -997,8 +997,12 @@ export default async function handler(req: Request) {
               chunkSize: SORAMIMI_CHUNK_SIZE,
             });
 
-            // Process chunks sequentially to avoid overloading AI
-            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+            // Track failed chunks for retry
+            const failedChunks: number[] = [];
+            const MAX_RETRIES = 2;
+
+            // Helper function to process a single chunk
+            const processChunk = async (chunkIndex: number, isRetry = false): Promise<boolean> => {
               const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
               const endIndex = Math.min(startIndex + SORAMIMI_CHUNK_SIZE, totalLines);
               const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
@@ -1009,49 +1013,93 @@ export default async function handler(req: Request) {
               }));
 
               try {
-                logInfo(requestId, `SSE: Generating chunk ${chunkIndex + 1}/${totalChunks}`);
+                logInfo(requestId, `SSE: ${isRetry ? "Retrying" : "Generating"} chunk ${chunkIndex + 1}/${totalChunks}`);
                 const { segments, success } = await generateSoramimiForChunk(lines, requestId);
 
-                // Store results
-                segments.forEach((seg, i) => {
-                  const targetIndex = startIndex + i;
-                  if (targetIndex < allSoramimi.length) {
-                    allSoramimi[targetIndex] = seg;
-                  }
-                });
-
+                // Only store results if AI generation succeeded (not fallback)
                 if (success) {
-                  successCount++;
+                  segments.forEach((seg, i) => {
+                    const targetIndex = startIndex + i;
+                    if (targetIndex < allSoramimi.length) {
+                      allSoramimi[targetIndex] = seg;
+                    }
+                  });
+
+                  // Send progress event with chunk data
+                  sendEvent({
+                    type: "chunk",
+                    chunkIndex,
+                    startIndex,
+                    soramimi: segments,
+                    progress: Math.round(((successCount + 1) / totalChunks) * 100),
+                  });
+
+                  logInfo(requestId, `SSE: Chunk ${chunkIndex + 1}/${totalChunks} done`);
+                  return true;
                 } else {
-                  failCount++;
+                  // AI returned fallback (timeout) - mark as failed for retry
+                  logInfo(requestId, `SSE: Chunk ${chunkIndex + 1}/${totalChunks} returned fallback, will retry`);
+                  return false;
                 }
-
-                // Send progress event with chunk data
-                sendEvent({
-                  type: "chunk",
-                  chunkIndex,
-                  startIndex,
-                  soramimi: segments,
-                  progress: Math.round(((chunkIndex + 1) / totalChunks) * 100),
-                });
-
-                logInfo(requestId, `SSE: Chunk ${chunkIndex + 1}/${totalChunks} done`);
               } catch (err) {
-                failCount++;
                 logError(requestId, `SSE: Chunk ${chunkIndex} failed`, err);
-                
-                // Send error event but continue processing
-                sendEvent({
-                  type: "chunk_error",
-                  chunkIndex,
-                  startIndex,
-                  error: err instanceof Error ? err.message : "Unknown error",
-                  progress: Math.round(((chunkIndex + 1) / totalChunks) * 100),
-                });
+                return false;
+              }
+            };
+
+            // First pass: process all chunks
+            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+              const success = await processChunk(chunkIndex);
+              if (success) {
+                successCount++;
+              } else {
+                failedChunks.push(chunkIndex);
               }
             }
 
-            // Save to Redis (even if client disconnected - this is the key feature!)
+            // Retry failed chunks
+            if (failedChunks.length > 0) {
+              logInfo(requestId, `SSE: Retrying ${failedChunks.length} failed chunks`);
+              
+              for (let retry = 0; retry < MAX_RETRIES && failedChunks.length > 0; retry++) {
+                const chunksToRetry = [...failedChunks];
+                failedChunks.length = 0; // Clear the array
+                
+                for (const chunkIndex of chunksToRetry) {
+                  // Small delay between retries
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  
+                  const success = await processChunk(chunkIndex, true);
+                  if (success) {
+                    successCount++;
+                    logInfo(requestId, `SSE: Retry succeeded for chunk ${chunkIndex + 1}`);
+                  } else {
+                    failedChunks.push(chunkIndex);
+                  }
+                }
+
+                if (failedChunks.length > 0) {
+                  logInfo(requestId, `SSE: ${failedChunks.length} chunks still failed after retry ${retry + 1}`);
+                }
+              }
+            }
+
+            // Final fail count
+            failCount = failedChunks.length;
+
+            // Send error events for any chunks that still failed after retries
+            for (const chunkIndex of failedChunks) {
+              const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
+              sendEvent({
+                type: "chunk_error",
+                chunkIndex,
+                startIndex,
+                error: "Failed after retries",
+                progress: 100,
+              });
+            }
+
+            // Save to Redis only if ALL chunks succeeded
             const allSuccess = failCount === 0;
             if (allSuccess) {
               try {
@@ -1061,7 +1109,7 @@ export default async function handler(req: Request) {
                 logError(requestId, "SSE: Failed to save soramimi", err);
               }
             } else {
-              logInfo(requestId, `SSE: Not caching due to ${failCount} failed chunks`);
+              logInfo(requestId, `SSE: Not caching - ${failCount} chunks failed after ${MAX_RETRIES} retries`);
             }
 
             // Send complete event
