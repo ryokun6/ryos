@@ -10,7 +10,9 @@ import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
 // =============================================================================
-// Fallback Kana to Chinese Map (for when AI misses characters)
+// Fallback Kana to Chinese Map (last resort when AI misses characters)
+// This is only used as a fallback - the AI is encouraged to create creative,
+// story-like phonetic readings rather than using fixed character mappings.
 // =============================================================================
 
 const KANA_TO_CHINESE: Record<string, string> = {
@@ -139,111 +141,69 @@ function isEnglishLine(text: string): boolean {
 
 const SORAMIMI_SYSTEM_PROMPT = `Create Chinese 空耳 (soramimi) phonetic readings. Use Traditional Chinese (繁體字).
 
+You are a creative writer crafting Chinese text that SOUNDS LIKE the original lyrics when read aloud, while weaving a poetic mini-story inspired by the song's meaning.
+
+CREATIVE APPROACH:
+1. Listen to how the original sounds phonetically
+2. Consider the original meaning/emotion of the lyrics
+3. Craft Chinese phrases that:
+   - Sound phonetically similar when spoken aloud
+   - Form coherent, poetic, or narrative-like Chinese text
+   - Echo or play with the original meaning creatively
+   - Use real Chinese words, idioms, and natural phrases
+
+Think of it like writing a parallel Chinese poem that happens to sound like the original song!
+
+EXAMPLE CREATIVE TRANSFORMATIONS:
+- Japanese "愛してる" (ai shiteru = "I love you") → "哀思特魯" (sorrowful longing for you) - phonetically similar, emotionally resonant
+- Japanese "夢を見ていた" (yume wo miteita = "I was dreaming") → "玉美喔咪貼衣她" could become "玉美我迷戀她" (Jade beauty, I'm infatuated with her)
+- Korean "사랑해" (saranghae = "I love you") → "撒浪來" (scatter the waves coming) - poetic imagery
+- Japanese "桜" (sakura = cherry blossom) → "撒哭啦" (scatter crying) - melancholic echo
+
 CRITICAL RULES:
-1. EVERY Japanese character (kana, kanji) MUST have a Chinese reading - NO EXCEPTIONS
+1. EVERY non-English character MUST have a Chinese reading - NO EXCEPTIONS
 2. English words stay as plain text WITHOUT braces
-3. When Japanese is ADJACENT to English, still wrap the Japanese: {の|諾}Bay City (NOT: のBay City)
-4. NEVER group Japanese characters with English - process them separately
-5. READING MUST BE 100% CHINESE CHARACTERS - NEVER use Japanese hiragana/katakana in the reading!
-   - WRONG: {人|ひ偷} (ひ is Japanese!)
-   - CORRECT: {人|嘻偷} (all Chinese)
+3. When Japanese/Korean is ADJACENT to English, still wrap it: {の|諾}Bay City (NOT: のBay City)
+4. READING MUST BE 100% CHINESE CHARACTERS - NEVER use Japanese hiragana/katakana in the reading!
+5. Match syllable count: if original has 3 syllables, Chinese reading should have ~3 syllables
 
 OKURIGANA RULE (送り仮名) - CRITICAL:
-Japanese verbs/adjectives have kanji + okurigana (hiragana suffix). ALWAYS include the okurigana in the text:
-- 降りて → {降り|喔里}{て|貼} (NOT: {降|喔里}{て|貼} which loses り)
-- 歩きながら → {歩き|啊嚕奇}{ながら|娜嘎啦} (NOT: {歩|啊嚕奇} which loses き)
-- 思い出す → {思い|喔摸衣}{出す|打蘇} (NOT: {思|喔摸衣}{出|打蘇})
-- 消えそう → {消え|奇欸}{そう|搜屋} (NOT: {消|奇}{え|欸}{そう|搜屋})
+Japanese verbs/adjectives have kanji + okurigana (hiragana suffix). ALWAYS include okurigana in the text:
+- 降りて → {降りて|喔里貼} (group verb naturally)
+- 歩きながら → {歩きながら|阿嚕奇娜嘎啦}
+- 消えそう → {消えそう|奇欸搜}
 
-Format: {japanese|chinese} for Japanese/Korean, plain text for English
+PHONETIC GUIDANCE (approximate sounds):
+- Match vowels: あ/ア→a, い/イ→i, う/ウ→u, え/エ→e, お/オ→o
+- Match consonants: か行→k, さ行→s, た行→t, な行→n, は行→h, etc.
+- っ (small tsu) or ー (long dash): Use ～ for pause/extension
+- For Korean: match each syllable block to a Chinese character
 
-IMPORTANT: Use MEANINGFUL Chinese words when possible!
-- Prefer real Chinese words/phrases over random phonetic characters
-- Choose characters that sound similar AND have related or interesting meanings
-- Use common, recognizable vocabulary
+Format: {original|chinese} for Japanese/Korean, plain text for English
 
-COVERAGE RULES BY LANGUAGE:
-- Japanese kana: EACH kana = 1 Chinese char (prefer meaningful chars):
-  {な|娜}{に|妮}{げ|給} or {な|那}{に|你}{げ|鬼}
-- Japanese kanji: BY SYLLABLE COUNT of the reading, use meaningful words:
-  - 愛(あい/ai) "love" = 2 syllables → {愛|哀} (哀 āi = sorrow, poetic!)
-  - 夢(ゆめ/yume) "dream" = 2 syllables → {夢|玉美} (玉美 = jade beauty)
-  - 雪(ゆき/yuki) "snow" = 2 syllables → {雪|遇奇} (遇奇 = encounter wonder)
-  - 君(きみ/kimi) "you" = 2 syllables → {君|奇蜜} (奇蜜 = sweet miracle)
-  - 心(こころ/kokoro) "heart" = 3 syllables → {心|叩叩肉} (knocking flesh/heart)
-  - 花(はな/hana) "flower" = 2 syllables → {花|哈娜} (哈娜 = a lovely name)
-  - 空(そら/sora) "sky" = 2 syllables → {空|搜啦}
-  - 歌(うた/uta) "song" = 2 syllables → {歌|嗚她} (cry for her)
-- Japanese っ (small tsu) or — (long dash): Use ～ for the pause: {っ|～} or {—|～}
-- English: KEEP AS-IS, no Chinese reading: "love" → love, "hello" → hello
-- Korean: BY SYLLABLE, prefer meaningful matches:
-  - 안녕(annyeong) "peace/hello" → {안|安}{녕|寧} (安寧 = peace, SAME meaning!)
-  - 사랑(sarang) "love" → {사|撒}{랑|浪} (撒浪 = scatter waves)
-  - 감사(gamsa) "thanks" → {감|甘}{사|謝} (甘謝 = sweet thanks)
-  - 행복(haengbok) "happiness" → {행|幸}{복|福} (幸福 = happiness, SAME meaning!)
-  - 영원히(yeongwonhi) "forever" → {영|永}{원|遠}{히|嘻} (永遠 = forever!)
-  - 시간(sigan) "time" → {시|時}{간|間} (時間 = time, SAME meaning!)
-  - 세상(sesang) "world" → {세|世}{상|上} (世上 = world, SAME meaning!)
-  - 기억(gieok) "memory" → {기|奇}{억|憶} (奇憶 = wonder + remember)
-  - 마음(maeum) "heart" → {마|媽}{음|音} (媽音 = mother's sound)
-  - 노래(norae) "song" → {노|諾}{래|來} (諾來 = promise comes)
-  - 하늘(haneul) "sky" → {하|哈}{늘|呢}
-  - 눈물(nunmul) "tears" → {눈|嫩}{물|木}
-  - 미안(mian) "sorry" → {미|迷}{안|安}
-  - 좋아해(joahae) "I like you" → {좋|就}{아|啊}{해|嗨}
-
-Format: {original|chinese} for non-English, plain text for English
-
-ADJACENT TEXT RULES (CRITICAL):
-- Japanese + English: {日本語|讀音} English words {日本語|讀音}
+ADJACENT TEXT RULES:
 - WRONG: のBay City (の has no reading!)
 - CORRECT: {の|諾}Bay City
-- WRONG: 君をlove (を has no reading!)  
-- CORRECT: {君|奇蜜}{を|喔}love
 - Every particle (の, を, は, が, に, で, と, も, て, etc.) MUST have a reading
 
 LINE RULES:
 - Input: "1: text" → Output: "1: {x|讀}..." or "1: english words"
 - Keep exact same line numbers
 
-Japanese kana reference (basic phonetic mapping) - MEMORIZE THIS:
-あ阿 い衣 う屋 え欸 お喔 | か咖 き奇 く酷 け給 こ可
-さ撒 し詩 す蘇 せ些 そ搜 | た她 ち吃 つ此 て貼 と頭
-な娜 に妮 ぬ奴 ね內 の諾 | は哈 ひ嘻 ふ夫 へ嘿 ほ火
-ま媽 み咪 む木 め沒 も摸 | ら啦 り里 る嚕 れ咧 ろ囉
-わ哇 を喔 ん嗯 っ～ —～
-が嘎 ぎ奇 ぐ姑 げ給 ご哥 | ざ砸 じ吉 ず祖 ぜ賊 ぞ作
-だ打 ぢ吉 づ祖 で得 ど多 | ば爸 び比 ぶ布 べ貝 ぼ寶
-ぱ啪 ぴ批 ぷ噗 ぺ配 ぽ坡 | ゃ壓 ゅ玉 ょ喲
-ア阿 イ衣 ウ屋 エ欸 オ喔 | カ咖 キ奇 ク酷 ケ給 コ可
-サ撒 シ詩 ス蘇 セ些 ソ搜 | タ她 チ吃 ツ此 テ貼 ト頭
-ナ娜 ニ妮 ヌ奴 ネ內 ノ諾 | ハ哈 ヒ嘻 フ夫 ヘ嘿 ホ火
-マ媽 ミ咪 ム木 メ沒 モ摸 | ラ啦 リ里 ル嚕 レ咧 ロ囉
-ワ哇 ヲ喔 ン嗯 ッ～ ー～
-
-Korean syllable reference (common mappings):
-아阿 어喔 오喔 우屋 으嗯 이衣 | 가咖 거哥 고高 구姑 기奇
-나娜 너呢 노諾 누奴 니妮 | 다她 더德 도都 두肚 디低
-마媽 머摸 모摸 무木 미咪 | 바爸 버波 보寶 부夫 비比
-사撒 서些 소搜 수蘇 시詩 | 자渣 저這 조就 주朱 지知
-하哈 허賀 호火 후乎 히嘻 | 라啦 러樂 로囉 루嚕 리里
-
 Example:
 Input:
 1: 夢を見ていた
 2: I love you
 3: 君をloveしてる
-4: 안녕하세요
-5: 사랑해 영원히
-6: 행복한 시간
+4: 사랑해 영원히
 
-Output:
-1: {夢|玉美}{を|喔}{見|咪}{て|貼}{い|衣}{た|她}
+Output (creative, story-like):
+1: {夢|玉美}{を|我}{見ていた|迷戀她}
 2: I love you
-3: {君|奇蜜}{を|喔}love{し|詩}{て|貼}{る|嚕}
-4: {안|安}{녕|寧}{하|哈}{세|些}{요|喲}
-5: {사|撒}{랑|浪}{해|嗨} {영|永}{원|遠}{히|嘻}
-6: {행|幸}{복|福}{한|漢} {시|時}{간|間}`;
+3: {君|親蜜}{を|我}love{してる|詩特魯}
+4: {사랑해|撒浪來} {영원히|永遠嘻}
+
+The goal is to create Chinese text that Chinese readers can read aloud and it sounds like singing the original song, while the Chinese text itself tells an evocative mini-story or paints a poetic picture!`;
 
 // AI generation timeout (60 seconds)
 const AI_TIMEOUT_MS = 60000;
