@@ -23,7 +23,7 @@ COVERAGE RULES BY LANGUAGE:
   - 愛(あい/ai) = 2 syllables → {愛|啊一}
   - 心(こころ/kokoro) = 3 syllables → {心|可可囉}
   - 意(い/i) = 1 syllable → {意|一}
-- Japanese っ (small tsu): Use a SPACE for the pause, do not output any character
+- Japanese っ (small tsu) or — (long dash): Use ～ for the pause: {っ|～} or {—|～}
 - English: BY SYLLABLE (not letter): {sun|桑}{set|賽} {town|躺}
 - Korean: BY SYLLABLE: {안|安}{녕|寧}
 
@@ -38,7 +38,7 @@ Japanese kana reference:
 さ撒 し西 す素 せ些 そ搜 | た他 ち吃 つ此 て貼 と頭
 な那 に你 ぬ奴 ね內 の諾 | は哈 ひ嘻 ふ夫 へ嘿 ほ火
 ま媽 み咪 む木 め沒 も摸 | ら啦 り里 る嚕 れ咧 ろ囉
-わ哇 を喔 ん嗯 っ(pause: use space)
+わ哇 を喔 ん嗯 っ～ —～
 
 Example:
 Input:
@@ -46,7 +46,7 @@ Input:
 2: sunset town
 
 Output:
-1: {何|那你}{が|嘎}{あ|啊} {て|貼}{も|摸}
+1: {何|那你}{が|嘎}{あ|啊}{っ|～}{て|貼}{も|摸}
 2: {sun|桑}{set|賽} {town|躺}`;
 
 // AI generation timeout (60 seconds)
