@@ -139,77 +139,29 @@ function isEnglishLine(text: string): boolean {
 // Soramimi Generation
 // =============================================================================
 
-const SORAMIMI_SYSTEM_PROMPT = `Create Chinese 空耳 (soramimi) phonetic readings. Use Traditional Chinese (繁體字).
+const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Traditional Chinese (繁體字) phonetic readings for Japanese/Korean lyrics.
 
-You are a creative writer crafting Chinese text that SOUNDS LIKE the original lyrics when read aloud, while weaving a poetic mini-story inspired by the song's meaning.
+FORMAT: {original|chinese_reading} for non-English, plain text for English
+- 愛してる → {愛し|哀思}{てる|特魯}
+- Bay Cityの → Bay City{の|諾}
 
-CREATIVE APPROACH:
-1. Listen to how the original sounds phonetically
-2. Consider the original meaning/emotion of the lyrics
-3. Craft Chinese phrases that:
-   - Sound phonetically similar when spoken aloud
-   - Form coherent, poetic, or narrative-like Chinese text
-   - Echo or play with the original meaning creatively
-   - Use real Chinese words, idioms, and natural phrases
-
-Think of it like writing a parallel Chinese poem that happens to sound like the original song!
-
-EXAMPLE CREATIVE TRANSFORMATIONS:
-- Japanese "愛してる" (ai shiteru = "I love you") → "哀思特魯" (sorrowful longing) - phonetically similar, emotionally resonant
-- Japanese "夢を" (yume wo) → "玉美" (jade beauty) + "見ていた" (miteita) → "迷戀她" (infatuated with her)
-- Korean "사랑해" (saranghae = "I love you") → "撒浪來" (scatter the waves coming) - poetic imagery
-- Japanese "桜" (sakura = cherry blossom) → "撒哭啦" (scatter crying) - melancholic echo
-
-CRITICAL RULES:
-1. EVERY non-English character MUST have a Chinese reading - NO EXCEPTIONS
-2. English words stay as plain text WITHOUT braces
-3. When Japanese/Korean is ADJACENT to English, still wrap it: {の|諾}Bay City (NOT: のBay City)
-4. READING MUST BE 100% CHINESE CHARACTERS - NEVER use Japanese hiragana/katakana in the reading!
-5. Match syllable count: if original has 3 syllables, Chinese reading should have ~3 syllables
-6. NO PUNCTUATION in readings - do NOT add ，、。！ or any punctuation that wasn't in the original
-
-GROUPING - IMPORTANT:
-Break lines into 2-4 phrase segments. Do NOT wrap entire lines in one segment!
-- BAD: {夢を見ていた|玉美我迷戀她} (entire line = too long, hard to read)
-- GOOD: {夢を|玉美}{見ていた|迷戀她} (2-3 segments per line)
-- BAD: {見|咪}{て|貼}{い|衣}{た|她} (character-by-character = too fragmented)
-
-Natural phrase boundaries:
-- 降りて → {降りて|喔里貼} (verb as unit)
-- 君を見ていた → {君を|親蜜我}{見ていた|迷戀她} (subject + verb as separate segments)
-- 사랑해 영원히 → {사랑해|撒浪來} {영원히|永遠嘻} (each word separate)
-
-PHONETIC GUIDANCE (approximate sounds):
-- Match vowels: あ/ア→a, い/イ→i, う/ウ→u, え/エ→e, お/オ→o
-- Match consonants: か行→k, さ行→s, た行→t, な行→n, は行→h, etc.
-- っ (small tsu) or ー (long dash): Use ～ for pause/extension
-- For Korean: match each syllable block to a Chinese character
-
-Format: {original|chinese} for Japanese/Korean, plain text for English
-
-ADJACENT TEXT RULES:
-- WRONG: のBay City (の has no reading!)
-- CORRECT: {の|諾}Bay City
-- Every particle (の, を, は, が, に, で, と, も, て, etc.) MUST have a reading
-
-LINE RULES:
-- Input: "1: text" → Output: "1: {x|讀}..." or "1: english words"
-- Keep exact same line numbers
+RULES:
+1. Every non-English character MUST have a reading
+2. Use ONLY Chinese characters in readings (no hiragana/katakana)
+3. Match syllable count approximately
+4. Break into 2-4 segments per line (not whole line, not char-by-char)
+5. No added punctuation
 
 Example:
 Input:
 1: 夢を見ていた
 2: I love you
 3: 君をloveしてる
-4: 사랑해 영원히
 
-Output (creative, story-like with 2-4 segments per line):
+Output:
 1: {夢を|玉美}{見ていた|迷戀她}
 2: I love you
-3: {君を|親蜜我}love{してる|詩特魯}
-4: {사랑해|撒浪來} {영원히|永遠嘻}
-
-The goal is to create Chinese text that Chinese readers can read aloud and it sounds like singing the original song, while the Chinese text itself tells an evocative mini-story or paints a poetic picture!`;
+3: {君を|親我}love{してる|詩特魯}`;
 
 // AI generation timeout (55 seconds - slightly less than Vercel's 60s edge function limit
 // to allow graceful fallback response before the function is killed)
