@@ -64,18 +64,22 @@ export interface FuriganaSegment {
 }
 
 /**
- * Soramimi metadata for tracking partial results
+ * Generic metadata for tracking partial results in chunk-based processing.
+ * Used for translations, furigana, and soramimi.
  */
-export interface SoramimiMeta {
+export interface ChunkProcessingMeta {
   /** Line indices that failed and need regeneration */
   failedLines: number[];
-  /** Total number of lines in the soramimi data */
+  /** Total number of lines in the data */
   totalLines: number;
   /** Timestamp when last generation was attempted */
   lastAttemptAt: number;
   /** Whether all lines have been successfully generated */
   isComplete: boolean;
 }
+
+/** @deprecated Use ChunkProcessingMeta instead */
+export type SoramimiMeta = ChunkProcessingMeta;
 
 /**
  * Unified song document stored in Redis
@@ -95,15 +99,21 @@ export interface SongDocument {
 
   // Translations keyed by language code
   translations?: Record<string, string>;
+  
+  // Translation metadata for tracking partial results (keyed by language code)
+  translationsMeta?: Record<string, ChunkProcessingMeta>;
 
   // Furigana annotations (one array per lyric line)
   furigana?: FuriganaSegment[][];
+  
+  // Furigana metadata for tracking partial results
+  furiganaMeta?: ChunkProcessingMeta;
 
   // Soramimi annotations - Chinese misheard lyrics (空耳)
   soramimi?: FuriganaSegment[][];
   
   // Soramimi metadata for tracking partial results
-  soramimiMeta?: SoramimiMeta;
+  soramimiMeta?: ChunkProcessingMeta;
 
   // Metadata
   createdBy?: string;
@@ -131,8 +141,12 @@ export interface SaveSongOptions {
   preserveLyrics?: boolean;
   /** Preserve existing translations if not provided */
   preserveTranslations?: boolean;
+  /** Preserve existing translations metadata if not provided */
+  preserveTranslationsMeta?: boolean;
   /** Preserve existing furigana if not provided */
   preserveFurigana?: boolean;
+  /** Preserve existing furigana metadata if not provided */
+  preserveFuriganaMeta?: boolean;
   /** Preserve existing soramimi if not provided */
   preserveSoramimi?: boolean;
   /** Preserve existing soramimi metadata if not provided */
@@ -235,6 +249,10 @@ export async function getSong(
 
   if (includeFurigana && song.furigana) {
     result.furigana = song.furigana;
+    // Include furigana metadata when furigana is requested
+    if (song.furiganaMeta) {
+      result.furiganaMeta = song.furiganaMeta;
+    }
   }
 
   if (options.includeSoramimi && song.soramimi) {
@@ -248,11 +266,24 @@ export async function getSong(
   if (includeTranslations && song.translations) {
     if (includeTranslations === true) {
       result.translations = song.translations;
+      // Include all translation metadata
+      if (song.translationsMeta) {
+        result.translationsMeta = song.translationsMeta;
+      }
     } else if (Array.isArray(includeTranslations)) {
       result.translations = {};
       for (const lang of includeTranslations) {
         if (song.translations[lang]) {
           result.translations[lang] = song.translations[lang];
+        }
+      }
+      // Include metadata for requested languages
+      if (song.translationsMeta) {
+        result.translationsMeta = {};
+        for (const lang of includeTranslations) {
+          if (song.translationsMeta[lang]) {
+            result.translationsMeta[lang] = song.translationsMeta[lang];
+          }
         }
       }
     }
@@ -310,7 +341,15 @@ export async function saveSong(
   options: SaveSongOptions = {},
   existingSong?: SongDocument | null
 ): Promise<SongDocument> {
-  const { preserveLyrics = false, preserveTranslations = false, preserveFurigana = false, preserveSoramimi = false, preserveSoramimiMeta = false } = options;
+  const { 
+    preserveLyrics = false, 
+    preserveTranslations = false, 
+    preserveTranslationsMeta = false,
+    preserveFurigana = false, 
+    preserveFuriganaMeta = false,
+    preserveSoramimi = false, 
+    preserveSoramimiMeta = false,
+  } = options;
   const songKey = getSongKey(song.id);
   const now = Date.now();
 
@@ -335,7 +374,11 @@ export async function saveSong(
     translations: preserveTranslations
       ? { ...existing?.translations, ...song.translations }
       : (song.translations ?? existing?.translations),
+    translationsMeta: preserveTranslationsMeta
+      ? { ...existing?.translationsMeta, ...song.translationsMeta }
+      : (song.translationsMeta ?? existing?.translationsMeta),
     furigana: preserveFurigana ? (existing?.furigana ?? song.furigana) : (song.furigana ?? existing?.furigana),
+    furiganaMeta: preserveFuriganaMeta ? (existing?.furiganaMeta ?? song.furiganaMeta) : (song.furiganaMeta ?? existing?.furiganaMeta),
     soramimi: preserveSoramimi ? (existing?.soramimi ?? song.soramimi) : (song.soramimi ?? existing?.soramimi),
     soramimiMeta: preserveSoramimiMeta ? (existing?.soramimiMeta ?? song.soramimiMeta) : (song.soramimiMeta ?? existing?.soramimiMeta),
     createdBy: createdByValue,
@@ -527,12 +570,14 @@ export async function saveLyrics(
 /**
  * Save a translation for a song
  * Requires the song to exist (call after saveLyrics)
+ * @param meta - Optional metadata tracking failed lines
  */
 export async function saveTranslation(
   redis: Redis,
   id: string,
   language: string,
-  translatedLrc: string
+  translatedLrc: string,
+  meta?: ChunkProcessingMeta
 ): Promise<SongDocument | null> {
   const existing = await getSong(redis, id, { 
     includeMetadata: true,
@@ -543,21 +588,112 @@ export async function saveTranslation(
   if (!existing) return null;
 
   const translations = { ...existing.translations, [language]: translatedLrc };
+  const translationsMeta = meta 
+    ? { ...existing.translationsMeta, [language]: meta }
+    : existing.translationsMeta;
 
   return saveSong(redis, {
     ...existing,
     translations,
+    translationsMeta,
   }, {}, existing);
+}
+
+/**
+ * Update specific lines in an existing translation
+ * Used for resuming partial results
+ */
+export async function updateTranslationLines(
+  redis: Redis,
+  id: string,
+  language: string,
+  updates: { lineIndex: number; text: string }[],
+  completedLineIndices: number[],
+  parsedLines: { startTimeMs: string; words: string }[]
+): Promise<SongDocument | null> {
+  const existing = await getSong(redis, id, { 
+    includeMetadata: true,
+    includeLyrics: true,
+    includeTranslations: true,
+    includeFurigana: true,
+    includeSoramimi: true,
+  });
+  if (!existing || !existing.translations?.[language]) return null;
+
+  // Parse existing LRC to get translations array
+  const existingLrc = existing.translations[language];
+  const existingTranslations = parseLrcToArray(existingLrc);
+
+  // Apply updates
+  for (const update of updates) {
+    if (update.lineIndex >= 0 && update.lineIndex < existingTranslations.length) {
+      existingTranslations[update.lineIndex] = update.text;
+    }
+  }
+
+  // Rebuild LRC
+  const updatedLrc = parsedLines
+    .map((line, index) => `${msToLrcTime(line.startTimeMs)}${existingTranslations[index] || line.words}`)
+    .join("\n");
+
+  // Update metadata - remove completed lines from failedLines
+  let updatedMeta = existing.translationsMeta?.[language];
+  if (updatedMeta && completedLineIndices.length > 0) {
+    const remainingFailed = updatedMeta.failedLines.filter(
+      idx => !completedLineIndices.includes(idx)
+    );
+    updatedMeta = {
+      ...updatedMeta,
+      failedLines: remainingFailed,
+      isComplete: remainingFailed.length === 0,
+      lastAttemptAt: Date.now(),
+    };
+  }
+
+  const translations = { ...existing.translations, [language]: updatedLrc };
+  const translationsMeta = updatedMeta 
+    ? { ...existing.translationsMeta, [language]: updatedMeta }
+    : existing.translationsMeta;
+
+  return saveSong(redis, {
+    ...existing,
+    translations,
+    translationsMeta,
+  }, {}, existing);
+}
+
+/** Helper to parse LRC to array of translation strings */
+function parseLrcToArray(lrc: string): string[] {
+  const lines: string[] = [];
+  const lineRegex = /^\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)$/;
+  for (const line of lrc.split("\n")) {
+    const match = line.trim().match(lineRegex);
+    if (match) {
+      lines.push(match[4].trim());
+    }
+  }
+  return lines;
+}
+
+/** Helper to convert ms timestamp to LRC time format */
+function msToLrcTime(msString: string): string {
+  const ms = parseInt(msString, 10);
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  const centiseconds = Math.floor((ms % 1000) / 10);
+  return `[${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${centiseconds.toString().padStart(2, "0")}]`;
 }
 
 /**
  * Save furigana annotations for a song
  * Requires the song to exist (call after saveLyrics)
+ * @param meta - Optional metadata tracking failed lines
  */
 export async function saveFurigana(
   redis: Redis,
   id: string,
-  furigana: FuriganaSegment[][]
+  furigana: FuriganaSegment[][],
+  meta?: ChunkProcessingMeta
 ): Promise<SongDocument | null> {
   const existing = await getSong(redis, id, { 
     includeMetadata: true,
@@ -571,6 +707,55 @@ export async function saveFurigana(
   return saveSong(redis, {
     ...existing,
     furigana,
+    furiganaMeta: meta,
+  }, {}, existing);
+}
+
+/**
+ * Update specific lines in existing furigana data
+ * Used for resuming partial results
+ */
+export async function updateFuriganaLines(
+  redis: Redis,
+  id: string,
+  updates: { lineIndex: number; segments: FuriganaSegment[] }[],
+  completedLineIndices: number[]
+): Promise<SongDocument | null> {
+  const existing = await getSong(redis, id, { 
+    includeMetadata: true,
+    includeLyrics: true,
+    includeTranslations: true,
+    includeFurigana: true,
+    includeSoramimi: true,
+  });
+  if (!existing || !existing.furigana) return null;
+
+  // Apply updates to existing furigana
+  const updatedFurigana = [...existing.furigana];
+  for (const update of updates) {
+    if (update.lineIndex >= 0 && update.lineIndex < updatedFurigana.length) {
+      updatedFurigana[update.lineIndex] = update.segments;
+    }
+  }
+
+  // Update metadata - remove completed lines from failedLines
+  let updatedMeta = existing.furiganaMeta;
+  if (updatedMeta && completedLineIndices.length > 0) {
+    const remainingFailed = updatedMeta.failedLines.filter(
+      idx => !completedLineIndices.includes(idx)
+    );
+    updatedMeta = {
+      ...updatedMeta,
+      failedLines: remainingFailed,
+      isComplete: remainingFailed.length === 0,
+      lastAttemptAt: Date.now(),
+    };
+  }
+
+  return saveSong(redis, {
+    ...existing,
+    furigana: updatedFurigana,
+    furiganaMeta: updatedMeta,
   }, {}, existing);
 }
 

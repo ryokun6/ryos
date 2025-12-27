@@ -20,10 +20,12 @@ import {
 import type { FuriganaSegment } from "@/utils/romanization";
 import { 
   processFuriganaSSE, 
+  resumeFuriganaSSE,
   processSoramimiSSE, 
   resumeSoramimiSSE,
   type FuriganaChunkInfo, 
   type SoramimiChunkInfo,
+  type FuriganaResult,
   type SoramimiResult,
 } from "@/utils/chunkedStream";
 
@@ -58,6 +60,8 @@ interface UseFuriganaReturn {
   isFetchingFurigana: boolean;
   /** Whether currently fetching soramimi specifically */
   isFetchingSoramimi: boolean;
+  /** Whether currently resuming failed furigana lines */
+  isResumingFurigana: boolean;
   /** Whether currently resuming failed soramimi lines */
   isResumingSoramimi: boolean;
   /** Progress percentage (0-100) when streaming */
@@ -92,11 +96,13 @@ export function useFurigana({
   const [soramimiMap, setSoramimiMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
   const [isFetchingSoramimi, setIsFetchingSoramimi] = useState(false);
+  const [isResumingFurigana, setIsResumingFurigana] = useState(false);
   const [isResumingSoramimi, setIsResumingSoramimi] = useState(false);
   const [progress, setProgress] = useState<number | undefined>();
   const [error, setError] = useState<string>();
   
   // Track failed lines for resume
+  const [failedFuriganaLines, setFailedFuriganaLines] = useState<number[]>([]);
   const [failedSoramimiLines, setFailedSoramimiLines] = useState<number[]>([]);
   
   // Combined fetching state for backwards compatibility
@@ -225,6 +231,13 @@ export function useFurigana({
       setFuriganaMap(finalMap);
       furiganaCacheKeyRef.current = cacheKey;
       setIsFetchingFurigana(false);
+      
+      // Check if there are failed lines that need resume
+      if (prefetchedInfo.isPartial && prefetchedInfo.failedLines && prefetchedInfo.failedLines.length > 0) {
+        setFailedFuriganaLines(prefetchedInfo.failedLines);
+      } else {
+        setFailedFuriganaLines([]);
+      }
       return;
     }
 
@@ -280,14 +293,14 @@ export function useFurigana({
         setFuriganaMap(new Map(progressiveMap));
       },
     })
-      .then((allFurigana) => {
+      .then((result: FuriganaResult) => {
         if (controller.signal.aborted) return;
         // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
 
         // Final update to ensure we have everything
         const finalMap = new Map<string, FuriganaSegment[]>();
-        allFurigana.forEach((segments, index) => {
+        result.data.forEach((segments, index) => {
           if (index < lines.length && segments) {
             finalMap.set(lines[index].startTimeMs, segments);
           }
@@ -296,6 +309,13 @@ export function useFurigana({
         setFuriganaMap(finalMap);
         furiganaCacheKeyRef.current = cacheKey;
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        
+        // Track failed lines for resume
+        if (result.isPartial && result.failedLines.length > 0) {
+          setFailedFuriganaLines(result.failedLines);
+        } else {
+          setFailedFuriganaLines([]);
+        }
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -332,6 +352,85 @@ export function useFurigana({
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
+
+  // Auto-resume failed furigana lines
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only trigger when failedFuriganaLines changes
+  useEffect(() => {
+    // Skip if no failed lines, not enabled, or already fetching/resuming
+    if (
+      failedFuriganaLines.length === 0 ||
+      !shouldFetchFurigana ||
+      !songId ||
+      !isShowingOriginal ||
+      isFetchingFurigana ||
+      isResumingFurigana ||
+      isOffline()
+    ) {
+      return;
+    }
+
+    // Capture current values for async operations
+    const effectSongId = songId;
+    const linesToResume = [...failedFuriganaLines];
+    
+    setIsResumingFurigana(true);
+    setProgress(0);
+    
+    const controller = new AbortController();
+    
+    resumeFuriganaSSE(effectSongId, linesToResume, {
+      signal: controller.signal,
+      onProgress: (chunkProgress) => {
+        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
+          setProgress(chunkProgress.percentage);
+        }
+      },
+      onLineUpdate: (lineIndex, segments) => {
+        if (controller.signal.aborted || effectSongId !== currentSongIdRef.current) return;
+        
+        // Update the furigana map progressively
+        if (lineIndex < lines.length) {
+          setFuriganaMap(prev => {
+            const newMap = new Map(prev);
+            newMap.set(lines[lineIndex].startTimeMs, segments);
+            return newMap;
+          });
+        }
+      },
+    })
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (effectSongId !== currentSongIdRef.current) return;
+        
+        // Update failed lines with remaining failures
+        if (result.stillFailedLines.length > 0) {
+          console.warn(`Furigana resume: ${result.stillFailedLines.length} lines still failed after resume`);
+        }
+        
+        // Clear failed lines since we've attempted resume
+        setFailedFuriganaLines([]);
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        if (effectSongId !== currentSongIdRef.current) return;
+        
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
+        
+        console.error("Failed to resume furigana:", err);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
+          setIsResumingFurigana(false);
+          setProgress(undefined);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [failedFuriganaLines, shouldFetchFurigana, songId, isShowingOriginal, isFetchingFurigana, isResumingFurigana, lines]);
 
   // Check conditions for soramimi fetching
   const shouldFetchSoramimi = romanization.enabled && romanization.chineseSoramimi;
@@ -752,6 +851,7 @@ export function useFurigana({
     isFetching,
     isFetchingFurigana,
     isFetchingSoramimi,
+    isResumingFurigana,
     isResumingSoramimi,
     progress,
     error,

@@ -119,6 +119,21 @@ export const SoramimiResumeSchema = z.object({
   lineIndices: z.array(z.number().min(0)),
 });
 
+// SSE streaming translation resume - regenerate specific failed lines
+export const TranslateResumeSchema = z.object({
+  action: z.literal("translate-resume"),
+  language: z.string().max(10),
+  /** Line indices to regenerate (will be grouped into chunks) */
+  lineIndices: z.array(z.number().min(0)),
+});
+
+// SSE streaming furigana resume - regenerate specific failed lines
+export const FuriganaResumeSchema = z.object({
+  action: z.literal("furigana-resume"),
+  /** Line indices to regenerate (will be grouped into chunks) */
+  lineIndices: z.array(z.number().min(0)),
+});
+
 // Schema for clearing cached translations, furigana, and soramimi
 export const ClearCachedDataSchema = z.object({
   action: z.literal("clear-cached-data"),

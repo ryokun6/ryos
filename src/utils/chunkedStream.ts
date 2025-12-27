@@ -31,6 +31,10 @@ export interface TranslationChunkInfo {
   cached: boolean;
   /** Cached translation LRC (only present if cached=true) */
   lrc?: string;
+  /** Whether the cached data is partial (some lines failed) */
+  isPartial?: boolean;
+  /** Line indices that failed and need resume */
+  failedLines?: number[];
 }
 
 /** Pre-fetched furigana info from initial lyrics fetch */
@@ -41,6 +45,10 @@ export interface FuriganaChunkInfo {
   cached: boolean;
   /** Cached furigana data (only present if cached=true) */
   data?: Array<Array<{ text: string; reading?: string }>>;
+  /** Whether the cached data is partial (some lines failed) */
+  isPartial?: boolean;
+  /** Line indices that failed and need resume */
+  failedLines?: number[];
 }
 
 /** Pre-fetched soramimi info from initial lyrics fetch */
@@ -96,6 +104,8 @@ interface TranslationCompleteEvent {
   failCount: number;
   cached: boolean;
   translations: string[];
+  /** Line indices that failed (for client to trigger resume) */
+  failedLines?: number[];
 }
 
 interface TranslationCachedEvent {
@@ -121,6 +131,8 @@ interface FuriganaCompleteEvent {
   failCount: number;
   cached: boolean;
   furigana: Array<Array<{ text: string; reading?: string }>>;
+  /** Line indices that failed (for client to trigger resume) */
+  failedLines?: number[];
 }
 
 interface FuriganaCachedEvent {
@@ -210,15 +222,26 @@ export interface ProcessTranslationOptions {
   prefetchedInfo?: TranslationChunkInfo;
 }
 
+/** Result of translation processing */
+export interface TranslationResult {
+  /** The translations array */
+  data: string[];
+  /** Whether the result is partial (some lines failed) */
+  isPartial: boolean;
+  /** Line indices that failed and need resume */
+  failedLines: number[];
+}
+
 /**
  * Process translation using Server-Sent Events (SSE).
  * The server processes all chunks and saves to cache, even if client disconnects.
+ * Returns both the data and info about any failed lines that need resume.
  */
 export async function processTranslationSSE(
   songId: string,
   language: string,
   options: ProcessTranslationOptions = {}
-): Promise<string[]> {
+): Promise<TranslationResult> {
   const { force, signal, onProgress, onChunk, prefetchedInfo } = options;
 
   // If we have cached data from prefetch and not forcing, use it
@@ -228,7 +251,12 @@ export async function processTranslationSSE(
     } catch (callbackErr) {
       console.warn("SSE: Callback error:", callbackErr);
     }
-    return parseLrcToTranslations(prefetchedInfo.lrc);
+    const failedLines = prefetchedInfo.failedLines || [];
+    return {
+      data: parseLrcToTranslations(prefetchedInfo.lrc),
+      isPartial: prefetchedInfo.isPartial || failedLines.length > 0,
+      failedLines,
+    };
   }
 
   const controller = new AbortController();
@@ -271,7 +299,7 @@ export async function processTranslationSSE(
         buffer = "";
         let totalChunks = 0;
         let completedChunks = 0;
-        let finalTranslations: string[] | null = null;
+        let finalResult: TranslationResult | null = null;
 
         const processLine = (line: string) => {
           if (!line.startsWith("data: ")) return;
@@ -318,7 +346,11 @@ export async function processTranslationSSE(
                 break;
 
               case "cached":
-                finalTranslations = parseLrcToTranslations(data.translation);
+                finalResult = { 
+                  data: parseLrcToTranslations(data.translation),
+                  isPartial: false,
+                  failedLines: [],
+                };
                 try {
                   onProgress?.({ completedChunks: 1, totalChunks: 1, percentage: 100 });
                 } catch (callbackErr) {
@@ -327,7 +359,11 @@ export async function processTranslationSSE(
                 break;
 
               case "complete":
-                finalTranslations = data.translations;
+                finalResult = {
+                  data: data.translations,
+                  isPartial: (data.failedLines?.length ?? 0) > 0,
+                  failedLines: data.failedLines || [],
+                };
                 try {
                   onProgress?.({
                     completedChunks: data.totalChunks,
@@ -372,8 +408,8 @@ export async function processTranslationSSE(
           }
         }
 
-        if (finalTranslations) {
-          return finalTranslations;
+        if (finalResult) {
+          return finalResult;
         } else {
           throw new Error("SSE stream ended without complete event");
         }
@@ -413,14 +449,25 @@ export interface ProcessFuriganaOptions {
   prefetchedInfo?: FuriganaChunkInfo;
 }
 
+/** Result of furigana processing */
+export interface FuriganaResult {
+  /** The furigana data */
+  data: Array<Array<{ text: string; reading?: string }>>;
+  /** Whether the result is partial (some lines failed) */
+  isPartial: boolean;
+  /** Line indices that failed and need resume */
+  failedLines: number[];
+}
+
 /**
  * Process furigana using Server-Sent Events (SSE).
  * The server processes all chunks and saves to cache, even if client disconnects.
+ * Returns both the data and info about any failed lines that need resume.
  */
 export async function processFuriganaSSE(
   songId: string,
   options: ProcessFuriganaOptions = {}
-): Promise<Array<Array<{ text: string; reading?: string }>>> {
+): Promise<FuriganaResult> {
   const { force, signal, onProgress, onChunk, prefetchedInfo } = options;
 
   // If we have cached data from prefetch and not forcing, use it
@@ -430,7 +477,12 @@ export async function processFuriganaSSE(
     } catch (callbackErr) {
       console.warn("SSE: Callback error:", callbackErr);
     }
-    return prefetchedInfo.data;
+    const failedLines = prefetchedInfo.failedLines || [];
+    return {
+      data: prefetchedInfo.data,
+      isPartial: prefetchedInfo.isPartial || failedLines.length > 0,
+      failedLines,
+    };
   }
 
   const controller = new AbortController();
@@ -472,7 +524,7 @@ export async function processFuriganaSSE(
         buffer = "";
         let totalChunks = 0;
         let completedChunks = 0;
-        let finalFurigana: Array<Array<{ text: string; reading?: string }>> | null = null;
+        let finalResult: FuriganaResult | null = null;
 
         const processLine = (line: string) => {
           if (!line.startsWith("data: ")) return;
@@ -519,7 +571,7 @@ export async function processFuriganaSSE(
                 break;
 
               case "cached":
-                finalFurigana = data.furigana;
+                finalResult = { data: data.furigana, isPartial: false, failedLines: [] };
                 try {
                   onProgress?.({ completedChunks: 1, totalChunks: 1, percentage: 100 });
                 } catch (callbackErr) {
@@ -528,7 +580,11 @@ export async function processFuriganaSSE(
                 break;
 
               case "complete":
-                finalFurigana = data.furigana;
+                finalResult = {
+                  data: data.furigana,
+                  isPartial: (data.failedLines?.length ?? 0) > 0,
+                  failedLines: data.failedLines || [],
+                };
                 try {
                   onProgress?.({
                     completedChunks: data.totalChunks,
@@ -573,8 +629,8 @@ export async function processFuriganaSSE(
           }
         }
 
-        if (finalFurigana) {
-          return finalFurigana;
+        if (finalResult) {
+          return finalResult;
         } else {
           throw new Error("SSE stream ended without complete event");
         }
@@ -598,6 +654,484 @@ export async function processFuriganaSSE(
   }
 
   // This should never be reached due to the throw in the loop
+  throw new Error("SSE request failed after all retries");
+}
+
+// =============================================================================
+// Furigana Resume SSE Processing
+// =============================================================================
+
+export interface ResumeFuriganaOptions {
+  signal?: AbortSignal;
+  onProgress?: (progress: ChunkProgress) => void;
+  /** Called when individual lines are regenerated */
+  onLineUpdate?: (lineIndex: number, segments: Array<{ text: string; reading?: string }>) => void;
+}
+
+/** Result of furigana resume */
+export interface FuriganaResumeResult {
+  /** Lines that were successfully regenerated, keyed by line index */
+  completedLines: Map<number, Array<{ text: string; reading?: string }>>;
+  /** Line indices that still failed */
+  stillFailedLines: number[];
+}
+
+// Furigana Resume SSE event types
+interface FuriganaResumeStartEvent {
+  type: "start";
+  totalChunks: number;
+  totalLines: number;
+  chunkSize: number;
+  isResume: boolean;
+}
+
+interface FuriganaResumeChunkEvent {
+  type: "chunk";
+  chunkIndex: number;
+  lineIndices: number[];
+  furigana: Record<number, Array<{ text: string; reading?: string }>>;
+  progress: number;
+}
+
+interface FuriganaResumeChunkErrorEvent {
+  type: "chunk_error";
+  chunkIndex: number;
+  lineIndices: number[];
+  error: string;
+  progress: number;
+}
+
+interface FuriganaResumeCompleteEvent {
+  type: "complete";
+  totalChunks: number;
+  successCount: number;
+  failCount: number;
+  completedLines: number[];
+  failedLines?: number[];
+}
+
+type FuriganaResumeSSEEvent = FuriganaResumeStartEvent | FuriganaResumeChunkEvent | FuriganaResumeCompleteEvent | FuriganaResumeChunkErrorEvent;
+
+/**
+ * Resume furigana generation for specific failed lines.
+ * The server regenerates only the requested lines and updates the cache.
+ */
+export async function resumeFuriganaSSE(
+  songId: string,
+  failedLineIndices: number[],
+  options: ResumeFuriganaOptions = {}
+): Promise<FuriganaResumeResult> {
+  const { signal, onProgress, onLineUpdate } = options;
+
+  if (failedLineIndices.length === 0) {
+    return { completedLines: new Map(), stillFailedLines: [] };
+  }
+
+  const controller = new AbortController();
+  if (signal) {
+    signal.addEventListener("abort", () => controller.abort());
+  }
+
+  let buffer = "";
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(getApiUrl(`/api/song/${songId}`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "furigana-resume",
+          lineIndices: failedLineIndices,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`SSE request failed: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+        const json = await response.json();
+        throw new Error(json.error || "Unknown error");
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      try {
+        const decoder = new TextDecoder();
+        buffer = "";
+        let totalChunks = 0;
+        let completedChunks = 0;
+        const completedLines = new Map<number, Array<{ text: string; reading?: string }>>();
+        let stillFailedLines: number[] = [];
+        let isComplete = false;
+
+        const processLine = (line: string) => {
+          if (!line.startsWith("data: ")) return;
+          
+          try {
+            const data = JSON.parse(line.slice(6)) as FuriganaResumeSSEEvent;
+
+            switch (data.type) {
+              case "start":
+                totalChunks = data.totalChunks;
+                try {
+                  onProgress?.({ completedChunks: 0, totalChunks, percentage: 0 });
+                } catch (callbackErr) {
+                  console.warn("SSE Resume: Callback error:", callbackErr);
+                }
+                break;
+
+              case "chunk":
+                completedChunks++;
+                for (const [lineIdxStr, segments] of Object.entries(data.furigana)) {
+                  const lineIdx = parseInt(lineIdxStr, 10);
+                  completedLines.set(lineIdx, segments);
+                  try {
+                    onLineUpdate?.(lineIdx, segments);
+                  } catch (callbackErr) {
+                    console.warn("SSE Resume: Callback error:", callbackErr);
+                  }
+                }
+                try {
+                  onProgress?.({
+                    completedChunks,
+                    totalChunks,
+                    percentage: data.progress,
+                  });
+                } catch (callbackErr) {
+                  console.warn("SSE Resume: Callback error:", callbackErr);
+                }
+                break;
+
+              case "chunk_error":
+                completedChunks++;
+                try {
+                  onProgress?.({
+                    completedChunks,
+                    totalChunks,
+                    percentage: data.progress,
+                  });
+                } catch (callbackErr) {
+                  console.warn("SSE Resume: Callback error:", callbackErr);
+                }
+                console.warn(`SSE Resume: Furigana chunk ${data.chunkIndex} failed:`, data.error);
+                break;
+
+              case "complete":
+                stillFailedLines = data.failedLines || [];
+                isComplete = true;
+                try {
+                  onProgress?.({
+                    completedChunks: data.totalChunks,
+                    totalChunks: data.totalChunks,
+                    percentage: 100,
+                  });
+                } catch (callbackErr) {
+                  console.warn("SSE Resume: Callback error:", callbackErr);
+                }
+                break;
+            }
+          } catch (e) {
+            console.warn("SSE Resume: Failed to parse event:", line, e);
+          }
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            if (buffer.trim()) {
+              for (const line of buffer.split("\n")) {
+                processLine(line.trim());
+              }
+            }
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          
+          if (buffer.length > MAX_BUFFER_SIZE) {
+            reader.cancel();
+            throw new Error("SSE buffer exceeded maximum size");
+          }
+          
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          
+          for (const line of lines) {
+            processLine(line.trim());
+          }
+        }
+
+        if (isComplete) {
+          return { completedLines, stillFailedLines };
+        } else {
+          throw new Error("SSE stream ended without complete event");
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (err) {
+      buffer = "";
+      
+      if (err instanceof Error && err.name === "AbortError") {
+        throw err;
+      }
+      if (attempt === MAX_RETRIES) {
+        console.error("Furigana Resume SSE error:", err);
+        throw err;
+      }
+      const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
+      console.warn(`SSE Resume: Retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+
+  throw new Error("SSE request failed after all retries");
+}
+
+// =============================================================================
+// Translation Resume SSE Processing
+// =============================================================================
+
+export interface ResumeTranslationOptions {
+  signal?: AbortSignal;
+  onProgress?: (progress: ChunkProgress) => void;
+  /** Called when individual lines are regenerated */
+  onLineUpdate?: (lineIndex: number, text: string) => void;
+}
+
+/** Result of translation resume */
+export interface TranslationResumeResult {
+  /** Lines that were successfully regenerated, keyed by line index */
+  completedLines: Map<number, string>;
+  /** Line indices that still failed */
+  stillFailedLines: number[];
+}
+
+// Translation Resume SSE event types
+interface TranslationResumeStartEvent {
+  type: "start";
+  totalChunks: number;
+  totalLines: number;
+  chunkSize: number;
+  isResume: boolean;
+}
+
+interface TranslationResumeChunkEvent {
+  type: "chunk";
+  chunkIndex: number;
+  lineIndices: number[];
+  translations: Record<number, string>;
+  progress: number;
+}
+
+interface TranslationResumeChunkErrorEvent {
+  type: "chunk_error";
+  chunkIndex: number;
+  lineIndices: number[];
+  error: string;
+  progress: number;
+}
+
+interface TranslationResumeCompleteEvent {
+  type: "complete";
+  totalChunks: number;
+  successCount: number;
+  failCount: number;
+  completedLines: number[];
+  failedLines?: number[];
+}
+
+type TranslationResumeSSEEvent = TranslationResumeStartEvent | TranslationResumeChunkEvent | TranslationResumeCompleteEvent | TranslationResumeChunkErrorEvent;
+
+/**
+ * Resume translation generation for specific failed lines.
+ * The server regenerates only the requested lines and updates the cache.
+ */
+export async function resumeTranslationSSE(
+  songId: string,
+  language: string,
+  failedLineIndices: number[],
+  options: ResumeTranslationOptions = {}
+): Promise<TranslationResumeResult> {
+  const { signal, onProgress, onLineUpdate } = options;
+
+  if (failedLineIndices.length === 0) {
+    return { completedLines: new Map(), stillFailedLines: [] };
+  }
+
+  const controller = new AbortController();
+  if (signal) {
+    signal.addEventListener("abort", () => controller.abort());
+  }
+
+  let buffer = "";
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(getApiUrl(`/api/song/${songId}`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "translate-resume",
+          language,
+          lineIndices: failedLineIndices,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`SSE request failed: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+        const json = await response.json();
+        throw new Error(json.error || "Unknown error");
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      try {
+        const decoder = new TextDecoder();
+        buffer = "";
+        let totalChunks = 0;
+        let completedChunks = 0;
+        const completedLines = new Map<number, string>();
+        let stillFailedLines: number[] = [];
+        let isComplete = false;
+
+        const processLine = (line: string) => {
+          if (!line.startsWith("data: ")) return;
+          
+          try {
+            const data = JSON.parse(line.slice(6)) as TranslationResumeSSEEvent;
+
+            switch (data.type) {
+              case "start":
+                totalChunks = data.totalChunks;
+                try {
+                  onProgress?.({ completedChunks: 0, totalChunks, percentage: 0 });
+                } catch (callbackErr) {
+                  console.warn("SSE Resume: Callback error:", callbackErr);
+                }
+                break;
+
+              case "chunk":
+                completedChunks++;
+                for (const [lineIdxStr, text] of Object.entries(data.translations)) {
+                  const lineIdx = parseInt(lineIdxStr, 10);
+                  completedLines.set(lineIdx, text);
+                  try {
+                    onLineUpdate?.(lineIdx, text);
+                  } catch (callbackErr) {
+                    console.warn("SSE Resume: Callback error:", callbackErr);
+                  }
+                }
+                try {
+                  onProgress?.({
+                    completedChunks,
+                    totalChunks,
+                    percentage: data.progress,
+                  });
+                } catch (callbackErr) {
+                  console.warn("SSE Resume: Callback error:", callbackErr);
+                }
+                break;
+
+              case "chunk_error":
+                completedChunks++;
+                try {
+                  onProgress?.({
+                    completedChunks,
+                    totalChunks,
+                    percentage: data.progress,
+                  });
+                } catch (callbackErr) {
+                  console.warn("SSE Resume: Callback error:", callbackErr);
+                }
+                console.warn(`SSE Resume: Translation chunk ${data.chunkIndex} failed:`, data.error);
+                break;
+
+              case "complete":
+                stillFailedLines = data.failedLines || [];
+                isComplete = true;
+                try {
+                  onProgress?.({
+                    completedChunks: data.totalChunks,
+                    totalChunks: data.totalChunks,
+                    percentage: 100,
+                  });
+                } catch (callbackErr) {
+                  console.warn("SSE Resume: Callback error:", callbackErr);
+                }
+                break;
+            }
+          } catch (e) {
+            console.warn("SSE Resume: Failed to parse event:", line, e);
+          }
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            if (buffer.trim()) {
+              for (const line of buffer.split("\n")) {
+                processLine(line.trim());
+              }
+            }
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          
+          if (buffer.length > MAX_BUFFER_SIZE) {
+            reader.cancel();
+            throw new Error("SSE buffer exceeded maximum size");
+          }
+          
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          
+          for (const line of lines) {
+            processLine(line.trim());
+          }
+        }
+
+        if (isComplete) {
+          return { completedLines, stillFailedLines };
+        } else {
+          throw new Error("SSE stream ended without complete event");
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (err) {
+      buffer = "";
+      
+      if (err instanceof Error && err.name === "AbortError") {
+        throw err;
+      }
+      if (attempt === MAX_RETRIES) {
+        console.error("Translation Resume SSE error:", err);
+        throw err;
+      }
+      const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
+      console.warn(`SSE Resume: Retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+
   throw new Error("SSE request failed after all retries");
 }
 

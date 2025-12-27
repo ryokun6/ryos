@@ -10,6 +10,7 @@ import {
   type TranslationChunkInfo,
   type FuriganaChunkInfo,
   type SoramimiChunkInfo,
+  type TranslationResult,
 } from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
@@ -312,16 +313,21 @@ export function useLyrics({
         }
       },
     })
-      .then((allTranslations) => {
+      .then((result: TranslationResult) => {
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
 
         const finalLines: LyricLine[] = originalLines.map((line, index) => ({
           ...line,
-          words: allTranslations[index] || line.words,
+          words: result.data[index] || line.words,
         }));
         setTranslatedLines(finalLines);
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        
+        // Log if there were failed lines (translations use fallback text, so less critical)
+        if (result.isPartial && result.failedLines.length > 0) {
+          console.warn(`Translation had ${result.failedLines.length} lines using fallback text`);
+        }
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
