@@ -130,10 +130,10 @@ export function FullscreenPlayerControls({
   const getPronunciationRuby = () => {
     if (lyricsLanguage === "ja") {
       // Show romaji if enabled, otherwise show furigana
-      return romanization?.japaneseRomaji ? "sora" : "そら";
+      return romanization?.japaneseRomaji ? "kan" : "かん";
     }
     if (lyricsLanguage === "ko") return "ga";
-    if (lyricsLanguage === "zh") return "sora";
+    if (lyricsLanguage === "zh") return "kan";
     return "Aa";
   };
 
