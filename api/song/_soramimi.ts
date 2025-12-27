@@ -167,11 +167,15 @@ CRITICAL RULES:
 4. READING MUST BE 100% CHINESE CHARACTERS - NEVER use Japanese hiragana/katakana in the reading!
 5. Match syllable count: if original has 3 syllables, Chinese reading should have ~3 syllables
 
-OKURIGANA RULE (送り仮名) - CRITICAL:
-Japanese verbs/adjectives have kanji + okurigana (hiragana suffix). ALWAYS include okurigana in the text:
-- 降りて → {降りて|喔里貼} (group verb naturally)
-- 歩きながら → {歩きながら|阿嚕奇娜嘎啦}
-- 消えそう → {消えそう|奇欸搜}
+GROUPING - IMPORTANT:
+Group characters naturally into meaningful phrases! Do NOT wrap each character individually.
+- GOOD: {見ていた|迷戀她} (whole phrase = meaningful Chinese)
+- GOOD: {夢を見て|玉美我迷} (natural phrase grouping)
+- BAD: {見|咪}{て|貼}{い|衣}{た|她} (character-by-character = meaningless)
+Group kanji+okurigana together, group particles with adjacent words when it creates better Chinese:
+- 降りて → {降りて|喔里貼} (verb as unit)
+- 君を → {君を|親蜜我} or {君|親蜜}{を|我} (either works)
+- 사랑해 → {사랑해|撒浪來} (whole word)
 
 PHONETIC GUIDANCE (approximate sounds):
 - Match vowels: あ/ア→a, い/イ→i, う/ウ→u, え/エ→e, お/オ→o
@@ -197,10 +201,10 @@ Input:
 3: 君をloveしてる
 4: 사랑해 영원히
 
-Output (creative, story-like):
-1: {夢|玉美}{を|我}{見ていた|迷戀她}
+Output (creative, story-like with natural grouping):
+1: {夢を見ていた|玉美我迷戀她}
 2: I love you
-3: {君|親蜜}{を|我}love{してる|詩特魯}
+3: {君を|親蜜我}love{してる|詩特魯}
 4: {사랑해|撒浪來} {영원히|永遠嘻}
 
 The goal is to create Chinese text that Chinese readers can read aloud and it sounds like singing the original song, while the Chinese text itself tells an evocative mini-story or paints a poetic picture!`;
