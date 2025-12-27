@@ -10,10 +10,42 @@ import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
 // =============================================================================
+// English Detection
+// =============================================================================
+
+/**
+ * Check if a string is primarily English/Latin text
+ * Returns true if the string contains mostly ASCII letters, numbers, and common punctuation
+ * with no CJK characters (Chinese, Japanese, Korean)
+ */
+function isEnglishLine(text: string): boolean {
+  if (!text || !text.trim()) return true;
+  
+  const trimmed = text.trim();
+  
+  // Check for CJK characters (Chinese, Japanese Kanji, Korean Hangul)
+  // Also check for Japanese Hiragana and Katakana
+  const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(trimmed);
+  
+  if (hasCJK) {
+    return false;
+  }
+  
+  // If no CJK characters, it's considered English/Latin text
+  return true;
+}
+
+// =============================================================================
 // Soramimi Generation
 // =============================================================================
 
 const SORAMIMI_SYSTEM_PROMPT = `Create Chinese 空耳 (soramimi) phonetic readings. Use Traditional Chinese (繁體字).
+
+CRITICAL: KEEP ENGLISH WORDS INTACT
+- English words should be output exactly as-is WITHOUT any Chinese reading
+- Only add Chinese readings for Japanese kana, Japanese kanji, and Korean characters
+- Format for English: just the word itself, no braces: "hello" → hello
+- Format for non-English: {original|chinese}
 
 COVERAGE RULES BY LANGUAGE:
 - Japanese kana: EACH kana = 1 Chinese char: {な|那}{に|你}{げ|給}
@@ -24,14 +56,15 @@ COVERAGE RULES BY LANGUAGE:
   - 心(こころ/kokoro) = 3 syllables → {心|可可囉}
   - 意(い/i) = 1 syllable → {意|一}
 - Japanese っ (small tsu) or — (long dash): Use ～ for the pause: {っ|～} or {—|～}
-- English: BY SYLLABLE (not letter): {sun|桑}{set|賽} {town|躺}
+- English: KEEP AS-IS, no Chinese reading: "love" → love, "hello" → hello
 - Korean: BY SYLLABLE: {안|安}{녕|寧}
 
-Format: {original|chinese} - Chinese must SOUND like original
+Format: {original|chinese} for non-English, plain text for English
 
 LINE RULES:
-- Input: "1: text" → Output: "1: {x|讀}..."
+- Input: "1: text" → Output: "1: {x|讀}..." or "1: english words"
 - Keep exact same line numbers
+- For mixed lines: {日本語|讀音} English words {日本語|讀音}
 
 Japanese kana reference:
 あ啊 い一 う嗚 え欸 お喔 | か卡 き奇 く酷 け給 こ可
@@ -43,11 +76,13 @@ Japanese kana reference:
 Example:
 Input:
 1: 何があっても
-2: sunset town
+2: I love you
+3: 君をloveしてる
 
 Output:
 1: {何|那你}{が|嘎}{あ|啊}{っ|～}{て|貼}{も|摸}
-2: {sun|桑}{set|賽} {town|躺}`;
+2: I love you
+3: {君|奇咪}{を|喔}love{し|西}{て|貼}{る|嚕}`;
 
 // AI generation timeout (60 seconds)
 const AI_TIMEOUT_MS = 60000;
@@ -269,6 +304,8 @@ export interface SoramimiResult {
 /**
  * Generate soramimi for a chunk of lyrics
  * Returns { segments, success } where success=false means fallback was used (don't cache)
+ * 
+ * English lines are kept intact without any Chinese phonetic readings.
  */
 export async function generateSoramimiForChunk(
   lines: LyricLine[],
@@ -278,15 +315,41 @@ export async function generateSoramimiForChunk(
     return { segments: [], success: true };
   }
 
-  // Use numbered lines to help AI maintain line count
-  const textsToProcess = lines.map((line, idx) => `${idx + 1}: ${line.words}`).join("\n");
+  // Separate English lines from non-English lines
+  // English lines will be returned as-is without soramimi processing
+  const lineInfo = lines.map((line, originalIndex) => ({
+    line,
+    originalIndex,
+    isEnglish: isEnglishLine(line.words),
+  }));
+
+  const nonEnglishLines = lineInfo.filter(info => !info.isEnglish);
+  const englishCount = lineInfo.filter(info => info.isEnglish).length;
+
+  logInfo(requestId, `Soramimi processing`, { 
+    totalLines: lines.length, 
+    englishLines: englishCount, 
+    nonEnglishLines: nonEnglishLines.length 
+  });
+
+  // If all lines are English, return them as plain text
+  if (nonEnglishLines.length === 0) {
+    logInfo(requestId, `All lines are English, skipping soramimi AI generation`);
+    return { 
+      segments: lines.map((line) => [{ text: line.words }]),
+      success: true 
+    };
+  }
+
+  // Use numbered lines to help AI maintain line count (only for non-English lines)
+  const textsToProcess = nonEnglishLines.map((info, idx) => `${idx + 1}: ${info.line.words}`).join("\n");
 
   // Create abort controller with timeout
   const abortController = new AbortController();
   const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
   const startTime = Date.now();
-  logInfo(requestId, `Soramimi AI generation starting`, { linesCount: lines.length, timeoutMs: AI_TIMEOUT_MS });
+  logInfo(requestId, `Soramimi AI generation starting`, { linesCount: nonEnglishLines.length, timeoutMs: AI_TIMEOUT_MS });
 
   try {
     const { text: responseText } = await generateText({
@@ -306,7 +369,7 @@ export async function generateSoramimiForChunk(
     // Parse the ruby markup response with line number matching
     const responseLines = responseText.trim().split("\n");
     
-    // Build a map of line number -> parsed content
+    // Build a map of line number -> parsed content (for non-English lines only)
     const lineContentMap = new Map<number, FuriganaSegment[]>();
     for (const responseLine of responseLines) {
       const trimmed = responseLine.trim();
@@ -326,24 +389,37 @@ export async function generateSoramimiForChunk(
       }
     }
 
-    const matchedCount = Math.min(lineContentMap.size, lines.length);
-    if (matchedCount < lines.length) {
-      logInfo(requestId, `Warning: Soramimi response line mismatch - expected ${lines.length}, matched ${matchedCount}`, { 
-        expectedLines: lines.length, 
+    const matchedCount = Math.min(lineContentMap.size, nonEnglishLines.length);
+    if (matchedCount < nonEnglishLines.length) {
+      logInfo(requestId, `Warning: Soramimi response line mismatch - expected ${nonEnglishLines.length}, matched ${matchedCount}`, { 
+        expectedLines: nonEnglishLines.length, 
         responseLines: responseLines.length,
         matchedLines: matchedCount,
         willUseFallbackForMissing: true 
       });
     }
 
-    // Build result with alignment to ensure segments match original text
-    const segments = lines.map((line, index) => {
-      const lineNum = index + 1;
-      const rawSegments = lineContentMap.get(lineNum) || [{ text: line.words }];
-      const original = line.words;
+    // Build a map from non-English line index (1-based) to parsed segments
+    const nonEnglishResultMap = new Map<number, FuriganaSegment[]>();
+    for (let i = 0; i < nonEnglishLines.length; i++) {
+      const lineNum = i + 1;
+      const info = nonEnglishLines[i];
+      const rawSegments = lineContentMap.get(lineNum) || [{ text: info.line.words }];
+      const original = info.line.words;
       
       // Align segments to original text (handles spacing mismatches)
-      return alignSegmentsToOriginal(rawSegments, original);
+      nonEnglishResultMap.set(info.originalIndex, alignSegmentsToOriginal(rawSegments, original));
+    }
+
+    // Build final result, inserting English lines as plain text
+    const segments = lineInfo.map((info) => {
+      if (info.isEnglish) {
+        // English line: return as plain text without readings
+        return [{ text: info.line.words }];
+      } else {
+        // Non-English line: use the parsed soramimi result
+        return nonEnglishResultMap.get(info.originalIndex) || [{ text: info.line.words }];
+      }
     });
 
     return { segments, success: true };
