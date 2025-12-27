@@ -44,8 +44,12 @@ interface UseFuriganaReturn {
   furiganaMap: Map<string, FuriganaSegment[]>;
   /** Map of startTimeMs -> SoramimiSegment[] (Chinese misheard lyrics) */
   soramimiMap: Map<string, FuriganaSegment[]>;
-  /** Whether currently fetching */
+  /** Whether currently fetching (furigana OR soramimi) */
   isFetching: boolean;
+  /** Whether currently fetching furigana specifically */
+  isFetchingFurigana: boolean;
+  /** Whether currently fetching soramimi specifically */
+  isFetchingSoramimi: boolean;
   /** Progress percentage (0-100) when streaming */
   progress?: number;
   /** Error message if any */
@@ -76,9 +80,13 @@ export function useFurigana({
 }: UseFuriganaParams): UseFuriganaReturn {
   const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
   const [soramimiMap, setSoramimiMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
-  const [isFetching, setIsFetching] = useState(false);
+  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
+  const [isFetchingSoramimi, setIsFetchingSoramimi] = useState(false);
   const [progress, setProgress] = useState<number | undefined>();
   const [error, setError] = useState<string>();
+  
+  // Combined fetching state for backwards compatibility
+  const isFetching = isFetchingFurigana || isFetchingSoramimi;
   const furiganaCacheKeyRef = useRef<string>("");
   const soramimiCacheKeyRef = useRef<string>("");
   // Track current songId for race condition prevention
@@ -144,7 +152,7 @@ export function useFurigana({
       if (furiganaCacheKeyRef.current !== "") {
         setFuriganaMap(new Map());
         furiganaCacheKeyRef.current = "";
-        setIsFetching(false);
+        setIsFetchingFurigana(false);
         setProgress(undefined);
         setError(undefined);
       }
@@ -153,7 +161,7 @@ export function useFurigana({
 
     // If not showing original, don't fetch new data but keep existing furigana cached
     if (!isShowingOriginal) {
-      setIsFetching(false);
+      setIsFetchingFurigana(false);
       return;
     }
 
@@ -161,7 +169,7 @@ export function useFurigana({
     const hasJapanese = lines.some((line) => isJapaneseText(line.words));
     if (!hasJapanese) {
       setFuriganaMap(new Map());
-      setIsFetching(false);
+      setIsFetchingFurigana(false);
       setProgress(undefined);
       setError(undefined);
       return;
@@ -170,7 +178,7 @@ export function useFurigana({
     // Check if offline
     if (isOffline()) {
       setError("iPod requires an internet connection");
-      setIsFetching(false);
+      setIsFetchingFurigana(false);
       return;
     }
 
@@ -192,12 +200,12 @@ export function useFurigana({
       });
       setFuriganaMap(finalMap);
       furiganaCacheKeyRef.current = cacheKey;
-      setIsFetching(false);
+      setIsFetchingFurigana(false);
       return;
     }
 
     // Start loading
-    setIsFetching(true);
+    setIsFetchingFurigana(true);
     setProgress(0);
     setError(undefined);
     
@@ -262,14 +270,14 @@ export function useFurigana({
       })
       .finally(() => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
-          setIsFetching(false);
+          setIsFetchingFurigana(false);
           setProgress(undefined);
         }
       });
 
     return () => {
       controller.abort();
-      setIsFetching(false);
+      setIsFetchingFurigana(false);
       setProgress(undefined);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
@@ -339,7 +347,7 @@ export function useFurigana({
     const requestId = `${effectSongId}-${lyricsCacheBustTrigger}-${Date.now()}`;
     
     // Start loading
-    setIsFetching(true);
+    setIsFetchingSoramimi(true);
     setProgress(0);
     setError(undefined);
     
@@ -412,7 +420,7 @@ export function useFurigana({
         }
         
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
-          setIsFetching(false);
+          setIsFetchingSoramimi(false);
           setProgress(undefined);
         }
       });
@@ -424,6 +432,7 @@ export function useFurigana({
       if (isThisRequest) {
         controller.abort();
         soramimiForceRequestRef.current = null;
+        setIsFetchingSoramimi(false);
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
@@ -585,6 +594,8 @@ export function useFurigana({
     furiganaMap,
     soramimiMap,
     isFetching,
+    isFetchingFurigana,
+    isFetchingSoramimi,
     progress,
     error,
     renderWithFurigana,

@@ -16,8 +16,14 @@ import type { FuriganaSegment } from "../_utils/song-service.js";
 const SORAMIMI_SYSTEM_PROMPT = `Create Chinese 空耳 (soramimi) phonetic readings. Use Traditional Chinese (繁體字).
 
 COVERAGE RULES BY LANGUAGE:
-- Japanese kana: EACH kana = 1 reading: {な|那}{に|你}{げ|給}
-- Japanese kanji: EACH kanji = 1 reading: {意|意}{味|咪}  
+- Japanese kana: EACH kana = 1 Chinese char: {な|那}{に|你}{げ|給}
+- Japanese kanji: BY SYLLABLE COUNT of the reading, NOT by kanji count:
+  - 何(なに/nani) = 2 syllables → {何|那你}
+  - 人(ひと/hito) = 2 syllables → {人|嘻頭}
+  - 愛(あい/ai) = 2 syllables → {愛|啊一}
+  - 心(こころ/kokoro) = 3 syllables → {心|可可囉}
+  - 意(い/i) = 1 syllable → {意|一}
+- Japanese っ (small tsu): Use a SPACE for the pause, do not output any character
 - English: BY SYLLABLE (not letter): {sun|桑}{set|賽} {town|躺}
 - Korean: BY SYLLABLE: {안|安}{녕|寧}
 
@@ -32,15 +38,15 @@ Japanese kana reference:
 さ撒 し西 す素 せ些 そ搜 | た他 ち吃 つ此 て貼 と頭
 な那 に你 ぬ奴 ね內 の諾 | は哈 ひ嘻 ふ夫 へ嘿 ほ火
 ま媽 み咪 む木 め沒 も摸 | ら啦 り里 る嚕 れ咧 ろ囉
-わ哇 を喔 ん嗯 っ(double next)
+わ哇 を喔 ん嗯 っ(pause: use space)
 
 Example:
 Input:
-1: あの人で
+1: 何があっても
 2: sunset town
 
 Output:
-1: {あ|啊}{の|諾}{人|仁}{で|得}
+1: {何|那你}{が|嘎}{あ|啊} {て|貼}{も|摸}
 2: {sun|桑}{set|賽} {town|躺}`;
 
 // AI generation timeout (60 seconds)
