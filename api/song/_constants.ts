@@ -12,7 +12,7 @@ export const CHUNK_SIZE = 15;
 
 // Soramimi uses a smaller chunk size because the creative prompt is more complex
 // and takes longer to process than translation/furigana
-export const SORAMIMI_CHUNK_SIZE = 8;
+export const SORAMIMI_CHUNK_SIZE = 5;
 
 export const kugouHeaders: HeadersInit = {
   "User-Agent":
