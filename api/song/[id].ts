@@ -49,6 +49,7 @@ import {
   TranslateChunkSchema,
   FuriganaChunkSchema,
   SoramimiChunkSchema,
+  SoramimiStreamSchema,
   GetChunkInfoSchema,
   SaveTranslationSchema,
   SaveFuriganaSchema,
@@ -821,6 +822,201 @@ export default async function handler(req: Request) {
           totalChunks,
           startIndex,
           soramimi,
+        });
+      }
+
+      // =======================================================================
+      // Handle soramimi-stream action - SSE streaming with server-side caching
+      // Server generates all chunks and saves to Redis even if client disconnects
+      // =======================================================================
+      if (action === "soramimi-stream") {
+        const parsed = SoramimiStreamSchema.safeParse(body);
+        if (!parsed.success) {
+          return errorResponse("Invalid request body");
+        }
+
+        const { force } = parsed.data;
+
+        // Get song with lyrics and existing soramimi
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+          includeSoramimi: true,
+        });
+
+        if (!song?.lyrics?.lrc) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Ensure parsedLines exist
+        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
+          song.lyrics.parsedLines = parseLyricsContent(
+            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+            song.title,
+            song.artist
+          );
+          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
+        }
+
+        // Skip soramimi for Chinese lyrics
+        if (lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
+          logInfo(requestId, "Skipping soramimi stream - lyrics are mostly Chinese");
+          return jsonResponse({
+            skipped: true,
+            skipReason: "chinese_lyrics",
+          });
+        }
+
+        // Check if already cached (and not forcing regeneration)
+        if (!force && song.soramimi && song.soramimi.length > 0) {
+          logInfo(requestId, "Returning cached soramimi via SSE");
+          // Return cached data as a single complete event
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: "cached",
+                soramimi: song.soramimi,
+              })}\n\n`));
+              controller.close();
+            },
+          });
+          return new Response(stream, {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              "Connection": "keep-alive",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          });
+        }
+
+        const totalLines = song.lyrics.parsedLines.length;
+        const totalChunks = Math.ceil(totalLines / SORAMIMI_CHUNK_SIZE);
+
+        logInfo(requestId, `Starting soramimi SSE stream`, { totalLines, totalChunks });
+
+        // Create SSE stream
+        const encoder = new TextEncoder();
+        let streamClosed = false;
+        
+        const stream = new ReadableStream({
+          async start(controller) {
+            const allSoramimi: Array<Array<{ text: string; reading?: string }>> = 
+              new Array(totalLines).fill(null).map(() => []);
+            let successCount = 0;
+            let failCount = 0;
+
+            // Helper to send SSE event (ignore errors if stream closed)
+            const sendEvent = (data: unknown) => {
+              if (streamClosed) return;
+              try {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+              } catch {
+                streamClosed = true;
+              }
+            };
+
+            // Send initial progress
+            sendEvent({
+              type: "start",
+              totalChunks,
+              totalLines,
+              chunkSize: SORAMIMI_CHUNK_SIZE,
+            });
+
+            // Process chunks sequentially to avoid overloading AI
+            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+              const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
+              const endIndex = Math.min(startIndex + SORAMIMI_CHUNK_SIZE, totalLines);
+              const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
+
+              const lines: LyricLine[] = chunkLines.map(line => ({
+                words: line.words,
+                startTimeMs: line.startTimeMs,
+              }));
+
+              try {
+                logInfo(requestId, `SSE: Generating chunk ${chunkIndex + 1}/${totalChunks}`);
+                const { segments, success } = await generateSoramimiForChunk(lines, requestId);
+
+                // Store results
+                segments.forEach((seg, i) => {
+                  const targetIndex = startIndex + i;
+                  if (targetIndex < allSoramimi.length) {
+                    allSoramimi[targetIndex] = seg;
+                  }
+                });
+
+                if (success) {
+                  successCount++;
+                } else {
+                  failCount++;
+                }
+
+                // Send progress event with chunk data
+                sendEvent({
+                  type: "chunk",
+                  chunkIndex,
+                  startIndex,
+                  soramimi: segments,
+                  progress: Math.round(((chunkIndex + 1) / totalChunks) * 100),
+                });
+
+                logInfo(requestId, `SSE: Chunk ${chunkIndex + 1}/${totalChunks} done`);
+              } catch (err) {
+                failCount++;
+                logError(requestId, `SSE: Chunk ${chunkIndex} failed`, err);
+                
+                // Send error event but continue processing
+                sendEvent({
+                  type: "chunk_error",
+                  chunkIndex,
+                  startIndex,
+                  error: err instanceof Error ? err.message : "Unknown error",
+                  progress: Math.round(((chunkIndex + 1) / totalChunks) * 100),
+                });
+              }
+            }
+
+            // Save to Redis (even if client disconnected - this is the key feature!)
+            const allSuccess = failCount === 0;
+            if (allSuccess) {
+              try {
+                await saveSoramimi(redis, songId, allSoramimi);
+                logInfo(requestId, `SSE: Saved soramimi to cache (${totalLines} lines)`);
+              } catch (err) {
+                logError(requestId, "SSE: Failed to save soramimi", err);
+              }
+            } else {
+              logInfo(requestId, `SSE: Not caching due to ${failCount} failed chunks`);
+            }
+
+            // Send complete event
+            sendEvent({
+              type: "complete",
+              totalChunks,
+              successCount,
+              failCount,
+              cached: allSuccess,
+              soramimi: allSoramimi,
+            });
+
+            logInfo(requestId, `SSE: Stream complete`, { successCount, failCount, cached: allSuccess });
+            
+            if (!streamClosed) {
+              controller.close();
+            }
+          },
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": effectiveOrigin!,
+          },
         });
       }
 

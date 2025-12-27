@@ -112,6 +112,12 @@ export const SoramimiChunkSchema = z.object({
   force: z.boolean().optional(),
 });
 
+// SSE streaming soramimi generation - server processes all chunks and saves result
+export const SoramimiStreamSchema = z.object({
+  action: z.literal("soramimi-stream"),
+  force: z.boolean().optional(),
+});
+
 // Schema for getting chunk info (how many chunks total)
 export const GetChunkInfoSchema = z.object({
   action: z.literal("get-chunk-info"),
