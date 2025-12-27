@@ -623,7 +623,7 @@ export default async function handler(req: Request) {
           return errorResponse("Invalid request body");
         }
 
-        const { language, chunkIndex, force } = parsed.data;
+        const { language, chunkIndex } = parsed.data;
 
         // Get song with lyrics
         const song = await getSong(redis, songId, {
@@ -657,29 +657,6 @@ export default async function handler(req: Request) {
         const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
         const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
 
-        // Check chunk cache (include lyrics hash to invalidate when source changes)
-        const lyricsHash = song.lyricsSource?.hash;
-        const chunkCacheKey = lyricsHash
-          ? `song:${songId}:translate:${language}:chunk:${chunkIndex}:${lyricsHash}`
-          : `song:${songId}:translate:${language}:chunk:${chunkIndex}`;
-        if (!force) {
-          try {
-            const cachedChunk = await redis.get(chunkCacheKey) as string[] | null;
-            if (cachedChunk) {
-              logInfo(requestId, `Translate chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
-              return jsonResponse({
-                chunkIndex,
-                totalChunks,
-                startIndex,
-                translations: cachedChunk,
-                cached: true,
-              });
-            }
-          } catch (e) {
-            logError(requestId, "Chunk cache lookup failed", e);
-          }
-        }
-
         // Convert to LyricLine format
         const lines: LyricLine[] = chunkLines.map(line => ({
           words: line.words,
@@ -698,20 +675,12 @@ export default async function handler(req: Request) {
           translations = await translateChunk(lines, language, requestId);
         }
 
-        // Cache the chunk result (30 days)
-        try {
-          await redis.set(chunkCacheKey, translations, { ex: 60 * 60 * 24 * 30 });
-        } catch (e) {
-          logError(requestId, "Chunk cache write failed", e);
-        }
-
         logInfo(requestId, `Translate chunk ${chunkIndex + 1}/${totalChunks} - completed`);
         return jsonResponse({
           chunkIndex,
           totalChunks,
           startIndex,
           translations,
-          cached: false,
         });
       }
 
@@ -724,7 +693,7 @@ export default async function handler(req: Request) {
           return errorResponse("Invalid request body");
         }
 
-        const { chunkIndex, force } = parsed.data;
+        const { chunkIndex } = parsed.data;
 
         // Get song with lyrics
         const song = await getSong(redis, songId, {
@@ -758,29 +727,6 @@ export default async function handler(req: Request) {
         const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
         const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
 
-        // Check chunk cache (include lyrics hash to invalidate when source changes)
-        const lyricsHash = song.lyricsSource?.hash;
-        const chunkCacheKey = lyricsHash
-          ? `song:${songId}:furigana:chunk:${chunkIndex}:${lyricsHash}`
-          : `song:${songId}:furigana:chunk:${chunkIndex}`;
-        if (!force) {
-          try {
-            const cachedChunk = await redis.get(chunkCacheKey) as FuriganaSegment[][] | null;
-            if (cachedChunk) {
-              logInfo(requestId, `Furigana chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
-              return jsonResponse({
-                chunkIndex,
-                totalChunks,
-                startIndex,
-                furigana: cachedChunk,
-                cached: true,
-              });
-            }
-          } catch (e) {
-            logError(requestId, "Chunk cache lookup failed", e);
-          }
-        }
-
         // Convert to LyricLine format and generate furigana
         const lines: LyricLine[] = chunkLines.map(line => ({
           words: line.words,
@@ -790,20 +736,12 @@ export default async function handler(req: Request) {
         logInfo(requestId, `Generating furigana chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
         const furigana = await generateFuriganaForChunk(lines, requestId);
 
-        // Cache the chunk result (30 days)
-        try {
-          await redis.set(chunkCacheKey, furigana, { ex: 60 * 60 * 24 * 30 });
-        } catch (e) {
-          logError(requestId, "Chunk cache write failed", e);
-        }
-
         logInfo(requestId, `Furigana chunk ${chunkIndex + 1}/${totalChunks} - completed`);
         return jsonResponse({
           chunkIndex,
           totalChunks,
           startIndex,
           furigana,
-          cached: false,
         });
       }
 
@@ -816,7 +754,7 @@ export default async function handler(req: Request) {
           return errorResponse("Invalid request body");
         }
 
-        const { chunkIndex, force } = parsed.data;
+        const { chunkIndex } = parsed.data;
 
         // Get song with lyrics
         const song = await getSong(redis, songId, {
@@ -846,7 +784,6 @@ export default async function handler(req: Request) {
             totalChunks: 0,
             startIndex: 0,
             soramimi: [],
-            cached: false,
             skipped: true,
             skipReason: "chinese_lyrics",
           });
@@ -864,29 +801,6 @@ export default async function handler(req: Request) {
         const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
         const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
 
-        // Check chunk cache (include lyrics hash to invalidate when source changes)
-        const lyricsHash = song.lyricsSource?.hash;
-        const chunkCacheKey = lyricsHash
-          ? `song:${songId}:soramimi:chunk:${chunkIndex}:${lyricsHash}`
-          : `song:${songId}:soramimi:chunk:${chunkIndex}`;
-        if (!force) {
-          try {
-            const cachedChunk = await redis.get(chunkCacheKey) as FuriganaSegment[][] | null;
-            if (cachedChunk) {
-              logInfo(requestId, `Soramimi chunk ${chunkIndex + 1}/${totalChunks} - cache HIT`);
-              return jsonResponse({
-                chunkIndex,
-                totalChunks,
-                startIndex,
-                soramimi: cachedChunk,
-                cached: true,
-              });
-            }
-          } catch (e) {
-            logError(requestId, "Chunk cache lookup failed", e);
-          }
-        }
-
         // Convert to LyricLine format and generate soramimi
         const lines: LyricLine[] = chunkLines.map(line => ({
           words: line.words,
@@ -894,18 +808,7 @@ export default async function handler(req: Request) {
         }));
 
         logInfo(requestId, `Generating soramimi chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
-        const { segments: soramimi, success } = await generateSoramimiForChunk(lines, requestId);
-
-        // Only cache if AI generation succeeded (not fallback data)
-        if (success) {
-          try {
-            await redis.set(chunkCacheKey, soramimi, { ex: 60 * 60 * 24 * 30 });
-          } catch (e) {
-            logError(requestId, "Chunk cache write failed", e);
-          }
-        } else {
-          logInfo(requestId, `Skipping cache for chunk ${chunkIndex + 1}/${totalChunks} - AI generation failed/timed out`);
-        }
+        const { segments: soramimi } = await generateSoramimiForChunk(lines, requestId);
 
         logInfo(requestId, `Soramimi chunk ${chunkIndex + 1}/${totalChunks} - completed`);
         return jsonResponse({
@@ -913,7 +816,6 @@ export default async function handler(req: Request) {
           totalChunks,
           startIndex,
           soramimi,
-          cached: false,
         });
       }
 
@@ -952,23 +854,6 @@ export default async function handler(req: Request) {
         // Save to song document
         await saveTranslation(redis, songId, language, translatedLrc);
 
-        // Clean up chunk caches now that consolidated data is saved
-        const lyricsHash = song.lyricsSource?.hash;
-        const totalChunks = Math.ceil(song.lyrics.parsedLines.length / CHUNK_SIZE);
-        try {
-          for (let i = 0; i < totalChunks; i++) {
-            const chunkKey = lyricsHash
-              ? `song:${songId}:translate:${language}:chunk:${i}:${lyricsHash}`
-              : `song:${songId}:translate:${language}:chunk:${i}`;
-            await redis.del(chunkKey);
-          }
-          if (totalChunks > 0) {
-            logInfo(requestId, `Cleaned up ${totalChunks} translation chunk caches`);
-          }
-        } catch (e) {
-          logError(requestId, "Failed to clean up translation chunk caches", e);
-        }
-
         logInfo(requestId, `Saved consolidated translation (${language}, ${translations.length} lines)`);
         return jsonResponse({ success: true, language, lineCount: translations.length });
       }
@@ -1002,23 +887,6 @@ export default async function handler(req: Request) {
 
         // Save to song document
         await saveFurigana(redis, songId, furigana as FuriganaSegment[][]);
-
-        // Clean up chunk caches now that consolidated data is saved
-        const lyricsHash = song.lyricsSource?.hash;
-        const totalChunks = Math.ceil(song.lyrics.parsedLines.length / CHUNK_SIZE);
-        try {
-          for (let i = 0; i < totalChunks; i++) {
-            const chunkKey = lyricsHash
-              ? `song:${songId}:furigana:chunk:${i}:${lyricsHash}`
-              : `song:${songId}:furigana:chunk:${i}`;
-            await redis.del(chunkKey);
-          }
-          if (totalChunks > 0) {
-            logInfo(requestId, `Cleaned up ${totalChunks} furigana chunk caches`);
-          }
-        } catch (e) {
-          logError(requestId, "Failed to clean up furigana chunk caches", e);
-        }
 
         logInfo(requestId, `Saved consolidated furigana (${furigana.length} lines)`);
         return jsonResponse({ success: true, lineCount: furigana.length });
@@ -1054,23 +922,6 @@ export default async function handler(req: Request) {
         // Save to song document
         await saveSoramimi(redis, songId, soramimi as FuriganaSegment[][]);
 
-        // Clean up chunk caches now that consolidated data is saved
-        const lyricsHash = song.lyricsSource?.hash;
-        const totalChunks = Math.ceil(song.lyrics.parsedLines.length / CHUNK_SIZE);
-        try {
-          for (let i = 0; i < totalChunks; i++) {
-            const chunkKey = lyricsHash
-              ? `song:${songId}:soramimi:chunk:${i}:${lyricsHash}`
-              : `song:${songId}:soramimi:chunk:${i}`;
-            await redis.del(chunkKey);
-          }
-          if (totalChunks > 0) {
-            logInfo(requestId, `Cleaned up ${totalChunks} soramimi chunk caches`);
-          }
-        } catch (e) {
-          logError(requestId, "Failed to clean up soramimi chunk caches", e);
-        }
-
         logInfo(requestId, `Saved consolidated soramimi (${soramimi.length} lines)`);
         return jsonResponse({ success: true, lineCount: soramimi.length });
       }
@@ -1100,81 +951,28 @@ export default async function handler(req: Request) {
         }
 
         const cleared: string[] = [];
-        const lyricsHash = song.lyricsSource?.hash;
-        const totalLines = song.lyrics?.parsedLines?.length || 0;
-        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
         // Clear translations if requested
         if (shouldClearTranslations) {
-          // Clear consolidated translations
           if (song.translations && Object.keys(song.translations).length > 0) {
             await saveSong(redis, { id: songId, translations: {} }, { preserveTranslations: false });
           }
-          
-          // Clear chunk caches for all languages
-          try {
-            const pattern = lyricsHash
-              ? `song:${songId}:translate:*:chunk:*:${lyricsHash}`
-              : `song:${songId}:translate:*:chunk:*`;
-            const keys = await redis.keys(pattern);
-            if (keys.length > 0) {
-              await redis.del(...keys);
-              logInfo(requestId, `Deleted ${keys.length} translation chunk caches`);
-            }
-          } catch (e) {
-            logError(requestId, "Failed to delete translation chunk caches", e);
-          }
-          
           cleared.push("translations");
         }
 
         // Clear furigana if requested
         if (shouldClearFurigana) {
-          // Clear consolidated furigana
           if (song.furigana && song.furigana.length > 0) {
             await saveSong(redis, { id: songId, furigana: [] }, { preserveFurigana: false });
           }
-          
-          // Clear furigana chunk caches
-          try {
-            for (let i = 0; i < totalChunks; i++) {
-              const chunkKey = lyricsHash
-                ? `song:${songId}:furigana:chunk:${i}:${lyricsHash}`
-                : `song:${songId}:furigana:chunk:${i}`;
-              await redis.del(chunkKey);
-            }
-            if (totalChunks > 0) {
-              logInfo(requestId, `Deleted ${totalChunks} furigana chunk caches`);
-            }
-          } catch (e) {
-            logError(requestId, "Failed to delete furigana chunk caches", e);
-          }
-          
           cleared.push("furigana");
         }
 
         // Clear soramimi if requested
         if (shouldClearSoramimi) {
-          // Clear consolidated soramimi
           if (song.soramimi && song.soramimi.length > 0) {
             await saveSong(redis, { id: songId, soramimi: [] }, { preserveSoramimi: false });
           }
-          
-          // Clear soramimi chunk caches
-          try {
-            for (let i = 0; i < totalChunks; i++) {
-              const chunkKey = lyricsHash
-                ? `song:${songId}:soramimi:chunk:${i}:${lyricsHash}`
-                : `song:${songId}:soramimi:chunk:${i}`;
-              await redis.del(chunkKey);
-            }
-            if (totalChunks > 0) {
-              logInfo(requestId, `Deleted ${totalChunks} soramimi chunk caches`);
-            }
-          } catch (e) {
-            logError(requestId, "Failed to delete soramimi chunk caches", e);
-          }
-          
           cleared.push("soramimi");
         }
 
