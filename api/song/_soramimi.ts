@@ -155,8 +155,8 @@ CREATIVE APPROACH:
 Think of it like writing a parallel Chinese poem that happens to sound like the original song!
 
 EXAMPLE CREATIVE TRANSFORMATIONS:
-- Japanese "愛してる" (ai shiteru = "I love you") → "哀思特魯" (sorrowful longing for you) - phonetically similar, emotionally resonant
-- Japanese "夢を見ていた" (yume wo miteita = "I was dreaming") → "玉美喔咪貼衣她" could become "玉美我迷戀她" (Jade beauty, I'm infatuated with her)
+- Japanese "愛してる" (ai shiteru = "I love you") → "哀思特魯" (sorrowful longing) - phonetically similar, emotionally resonant
+- Japanese "夢を" (yume wo) → "玉美" (jade beauty) + "見ていた" (miteita) → "迷戀她" (infatuated with her)
 - Korean "사랑해" (saranghae = "I love you") → "撒浪來" (scatter the waves coming) - poetic imagery
 - Japanese "桜" (sakura = cherry blossom) → "撒哭啦" (scatter crying) - melancholic echo
 
@@ -166,16 +166,18 @@ CRITICAL RULES:
 3. When Japanese/Korean is ADJACENT to English, still wrap it: {の|諾}Bay City (NOT: のBay City)
 4. READING MUST BE 100% CHINESE CHARACTERS - NEVER use Japanese hiragana/katakana in the reading!
 5. Match syllable count: if original has 3 syllables, Chinese reading should have ~3 syllables
+6. NO PUNCTUATION in readings - do NOT add ，、。！ or any punctuation that wasn't in the original
 
 GROUPING - IMPORTANT:
-Group characters naturally into meaningful phrases! Do NOT wrap each character individually.
-- GOOD: {見ていた|迷戀她} (whole phrase = meaningful Chinese)
-- GOOD: {夢を見て|玉美我迷} (natural phrase grouping)
-- BAD: {見|咪}{て|貼}{い|衣}{た|她} (character-by-character = meaningless)
-Group kanji+okurigana together, group particles with adjacent words when it creates better Chinese:
+Break lines into 2-4 phrase segments. Do NOT wrap entire lines in one segment!
+- BAD: {夢を見ていた|玉美我迷戀她} (entire line = too long, hard to read)
+- GOOD: {夢を|玉美}{見ていた|迷戀她} (2-3 segments per line)
+- BAD: {見|咪}{て|貼}{い|衣}{た|她} (character-by-character = too fragmented)
+
+Natural phrase boundaries:
 - 降りて → {降りて|喔里貼} (verb as unit)
-- 君を → {君を|親蜜我} or {君|親蜜}{を|我} (either works)
-- 사랑해 → {사랑해|撒浪來} (whole word)
+- 君を見ていた → {君を|親蜜我}{見ていた|迷戀她} (subject + verb as separate segments)
+- 사랑해 영원히 → {사랑해|撒浪來} {영원히|永遠嘻} (each word separate)
 
 PHONETIC GUIDANCE (approximate sounds):
 - Match vowels: あ/ア→a, い/イ→i, う/ウ→u, え/エ→e, お/オ→o
@@ -201,8 +203,8 @@ Input:
 3: 君をloveしてる
 4: 사랑해 영원히
 
-Output (creative, story-like with natural grouping):
-1: {夢を見ていた|玉美我迷戀她}
+Output (creative, story-like with 2-4 segments per line):
+1: {夢を|玉美}{見ていた|迷戀她}
 2: I love you
 3: {君を|親蜜我}love{してる|詩特魯}
 4: {사랑해|撒浪來} {영원히|永遠嘻}
