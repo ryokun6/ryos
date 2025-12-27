@@ -139,34 +139,40 @@ function isEnglishLine(text: string): boolean {
 // Soramimi Generation
 // =============================================================================
 
-const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Traditional Chinese (繁體字) that SOUNDS like the original lyrics while telling a coherent story.
+const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Traditional Chinese (繁體字) phonetic readings that sound like the original when read aloud, while forming poetic Chinese phrases.
 
-GOAL: Chinese text that when read aloud sounds like singing the original, AND forms meaningful Chinese phrases that echo the song's emotion.
+FORMAT: {original|chinese} for Japanese/Korean, plain English stays unwrapped
 
-FORMAT: {original|chinese} for non-English, plain text for English
+GROUPING (Critical!):
+- Group by natural phrase boundaries (2-4 segments per line)
+- Keep verb phrases together: {見ていた|迷戀她} not {見|迷}{て|戀}{い|她}{た|...}
+- Keep particles with their words: {君を|親我} or {夢の|夢諾}
+- Korean words as units: {사랑해|撒浪嘿}
 
-APPROACH:
-- Match phonetics: 愛してる (ai shiteru) → 哀思特魯 (sorrowful longing)
-- Echo meaning: 夢を見ていた (dreaming) → 玉美迷戀她 (jade beauty, infatuated with her)
-- Tell a story: connected phrases, not random characters
+POETIC APPROACH - make Chinese readings form coherent meaning:
+- 夢を見ていた (yume wo miteita) → {夢を|玉美}{見ていた|迷戀她} = "jade beauty, infatuated with her"
+- 桜が降りてくる → {桜が|撒哭啦}{降りて|哦里貼}{くる|哭嚕} = "scatter tears, oh inside, crying"
+- 愛してる → {愛し|哀思}{てる|特魯} = "sorrowful longing" (phonetically ai-si-te-ru)
+- 君の名前を → {君の|親諾}{名前を|你媽唉我} = echoes "your name"
 
 RULES:
-1. Every non-English character MUST have a reading
-2. Use ONLY Chinese characters (no hiragana/katakana in readings)
-3. Match syllable count approximately  
-4. Break into 2-4 segments per line
-5. No added punctuation
+1. EVERY Japanese/Korean character needs a Chinese reading
+2. Only Chinese characters in readings (never ひらがな/カタカナ)
+3. Match syllable count approximately
+4. No added punctuation (，。！)
 
 Example:
 Input:
 1: 夢を見ていた
-2: I love you
+2: I love you  
 3: 君をloveしてる
+4: 사랑해요
 
 Output:
 1: {夢を|玉美}{見ていた|迷戀她}
 2: I love you
-3: {君を|親我}love{してる|詩特魯}`;
+3: {君を|親我}love{してる|詩特魯}
+4: {사랑|撒浪}{해요|嘿喲}`;
 
 // AI generation timeout (55 seconds - slightly less than Vercel's 60s edge function limit
 // to allow graceful fallback response before the function is killed)
