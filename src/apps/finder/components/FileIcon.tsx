@@ -1,5 +1,6 @@
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { isTouchDevice } from "@/utils/device";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -36,6 +37,7 @@ export function FileIcon({
   className,
   context = "desktop",
 }: FileIconProps) {
+  const { t } = useTranslation();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp";
@@ -226,7 +228,7 @@ export function FileIcon({
     return (
       <ThemedIcon
         name={iconPath}
-        alt={isDirectory ? "Directory" : "File"}
+        alt={isDirectory ? t("apps.finder.fileTypes.directory") : t("apps.finder.fileTypes.file")}
         className={`no-touch-callout object-contain ${sizes.image} ${
           isDirectory && isDropTarget ? "invert" : ""
         }`}

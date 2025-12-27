@@ -3,6 +3,7 @@ import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { isOffline } from "@/utils/offline";
 import { toRomaji } from "wanakana";
+import i18n from "@/lib/i18n";
 import {
   hasKoreanText,
   isChineseText,
@@ -267,7 +268,7 @@ export function useFurigana({
         }
 
         console.error("Failed to fetch furigana:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch furigana");
+        setError(err instanceof Error ? err.message : i18n.t("common.errors.failedToFetchFurigana"));
       })
       .finally(() => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
@@ -412,7 +413,7 @@ export function useFurigana({
         }
 
         console.error("Failed to fetch soramimi:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch soramimi");
+        setError(err instanceof Error ? err.message : i18n.t("common.errors.failedToFetchSoramimi"));
       })
       .finally(() => {
         // Clear force request ref when this request completes

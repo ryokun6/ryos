@@ -16,6 +16,7 @@
         "editSongDescription": "Inserisci il nuovo valore"
       },
       "errors": {
+        "failedToAddToLibrary": "Impossibile aggiungere alla libreria",
         "failedToBanUser": "Impossibile bannare l'utente",
         "failedToDeleteMessage": "Impossibile eliminare il messaggio",
         "failedToDeleteRoom": "Impossibile eliminare la stanza",
@@ -31,8 +32,7 @@
         "failedToUpdateSong": "Impossibile aggiornare il brano",
         "importFailed": "Importazione non riuscita",
         "invalidImportFormat": "Formato file non valido",
-        "songNotInLibrary": "Brano non nella libreria",
-        "failedToAddToLibrary": "Impossibile aggiungere alla libreria"
+        "songNotInLibrary": "Brano non nella libreria"
       },
       "help": {
         "adminAccess": {
@@ -60,12 +60,12 @@
         "showSidebar": "Mostra barra laterale"
       },
       "messages": {
+        "addingToLibrary": "Aggiunta alla libreria...",
         "dataRefreshed": "Dati aggiornati",
         "importSuccess": "Importati {{imported}} nuovi, aggiornati {{updated}} ({{total}} totali)",
         "messageDeleted": "Messaggio eliminato",
         "playingInIpod": "In riproduzione su iPod",
         "playingInKaraoke": "In riproduzione in Karaoke",
-        "addingToLibrary": "Aggiunta alla libreria...",
         "roomDeleted": "Stanza eliminata",
         "songDeleted": "Brano eliminato",
         "songUpdated": "Brano aggiornato",
@@ -779,7 +779,9 @@
       "fileTypes": {
         "application": "Applicazione",
         "bmpImage": "Immagine BMP",
+        "directory": "Cartella",
         "document": "Documento",
+        "file": "File",
         "folder": "Cartella",
         "gifImage": "Immagine GIF",
         "htmlApplet": "Applet HTML",
@@ -1176,9 +1178,11 @@
         "select": "Seleziona"
       },
       "lyrics": {
+        "noLyricsAvailable": "Nessun testo disponibile",
         "noLyricsFound": "Testi non trovati",
+        "search": "Cerca",
         "searchForLyrics": "Cerca i testi manualmente",
-        "search": "Cerca"
+        "unableToLoad": "Impossibile caricare il testo"
       },
       "menu": {
         "aboutIpod": "Informazioni su iPod",
@@ -1342,8 +1346,8 @@
       },
       "lyrics": {
         "noLyricsFound": "Testi non trovati",
-        "searchForLyrics": "Cerca i testi manualmente",
-        "search": "Cerca"
+        "search": "Cerca",
+        "searchForLyrics": "Cerca i testi manualmente"
       },
       "menu": {
         "aboutKaraoke": "Informazioni su Karaoke",
@@ -2156,6 +2160,10 @@
       "turnMagnificationOff": "Disattiva ingrandimento",
       "turnMagnificationOn": "Attiva ingrandimento"
     },
+    "errors": {
+      "failedToFetchFurigana": "Impossibile recuperare furigana",
+      "failedToFetchSoramimi": "Impossibile recuperare soramimi"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet senza titolo",
       "codePreviewTitle": "Anteprima codice ryOS",
@@ -2175,6 +2183,17 @@
       "toastSaved": "Applet salvata correttamente",
       "toggleCode": "Alterna codice",
       "toggleSplitView": "Alterna vista divisa"
+    },
+    "keys": {
+      "enter": "Invio"
+    },
+    "loading": {
+      "openingAppletStore": "Apertura Applet Store...",
+      "openingSharedApplet": "Apertura applet condivisa...",
+      "openingSharedIELink": "Apertura link di Internet Explorer condiviso...",
+      "openingSharedIpodTrack": "Apertura traccia iPod condivisa...",
+      "openingSharedKaraokeTrack": "Apertura traccia Karaoke condivisa...",
+      "openingSharedVideo": "Apertura video condiviso..."
     },
     "menu": {
       "applications": "Applicazioni",
@@ -2205,6 +2224,12 @@
       "ryosProfessional": "Professional",
       "start": "Avvio"
     },
+    "swipeInstructions": {
+      "description": "Scorri a sinistra o a destra per spostarti tra le finestre aperte",
+      "next": "Avanti",
+      "previous": "Indietro",
+      "title": "Scorri per cambiare finestra"
+    },
     "system": {
       "debugBootScreenTest": "Test schermata di avvio debug...",
       "formatFileSystem": "Formatta file system",
@@ -2233,6 +2258,11 @@
       "updatingIcons": "Aggiornamento icone",
       "updatingSounds": "Aggiornamento suoni",
       "updatingSystemFiles": "Aggiornamento file di sistema"
+    },
+    "window": {
+      "close": "Chiudi",
+      "maximize": "Ingrandisci",
+      "minimize": "Riduci a icona"
     }
   },
   "components": {

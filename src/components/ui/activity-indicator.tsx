@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface ActivityIndicatorProps {
   /** Size of the indicator - matches common icon sizes */
@@ -25,6 +26,7 @@ export function ActivityIndicator({
   color,
   className,
 }: ActivityIndicatorProps) {
+  const { t } = useTranslation();
   const numericSize = typeof size === "number" ? size : sizeMap[size];
   const barCount = 8;
   const animationDuration = 0.8; // seconds - total cycle time
@@ -41,7 +43,7 @@ export function ActivityIndicator({
         height: numericSize,
       }}
       role="status"
-      aria-label="Loading"
+      aria-label={t("common.loading.default")}
     >
       <svg
         viewBox="0 0 24 24"
@@ -75,7 +77,7 @@ export function ActivityIndicator({
           );
         })}
       </svg>
-      <span className="sr-only">Loading...</span>
+      <span className="sr-only">{t("common.loading.default")}</span>
 
       <style>{`
         @keyframes activity-indicator-spin {

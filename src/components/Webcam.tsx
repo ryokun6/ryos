@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { CameraOff } from "lucide-react";
 import { runFilter, mapCssFilterStringToUniforms } from "@/lib/webglFilterRunner";
 import fragSrc from "@/lib/shaders/basicFilter.frag?raw";
@@ -24,6 +25,7 @@ export function Webcam({
   stream: controlledStream,
   autoStart = true,
 }: WebcamProps) {
+  const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -278,7 +280,7 @@ export function Webcam({
       }
     } catch (err) {
       console.error("Camera error:", err);
-      setError(err instanceof Error ? err.message : "Failed to access camera");
+      setError(err instanceof Error ? err.message : t("common.errors.failedToAccessCamera"));
       activeDeviceIdRef.current = null;
       startedInternallyRef.current = false;
     }

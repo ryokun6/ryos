@@ -1,5 +1,12 @@
 {
   "common": {
+    "loading": {
+      "default": "Loading..."
+    },
+    "window": {
+      "minimizeDisabled": "Minimize (disabled)",
+      "maximizeDisabled": "Maximize (disabled)"
+    },
     "menu": {
       "file": "File",
       "edit": "Edit",
@@ -77,6 +84,9 @@
         }
       }
     },
+    "errors": {
+      "failedToAccessCamera": "Failed to access camera"
+    },
     "system": {
       "systemRestoring": "System Restoring...",
       "resettingSystem": "Resetting System...",
@@ -112,6 +122,15 @@
       "turnHidingOff": "Turn Hiding Off",
       "turnMagnificationOn": "Turn Magnification On",
       "turnMagnificationOff": "Turn Magnification Off"
+    },
+    "window": {
+      "minimize": "Minimize",
+      "maximize": "Maximize",
+      "close": "Close"
+    },
+    "keys": {
+      "escape": "Escape",
+      "enter": "Enter"
     },
     "startMenu": {
       "start": "Start",
@@ -163,6 +182,10 @@
       "logOut": "Log Out",
       "logOutDescription": "Are you sure you want to log out? You will be signed out of your account."
     },
+    "errors": {
+      "failedToFetchFurigana": "Failed to fetch furigana",
+      "failedToFetchSoramimi": "Failed to fetch soramimi"
+    },
     "htmlPreview": {
       "toastSaved": "Applet saved successfully",
       "toastSaveFailed": "Failed to save applet",
@@ -182,6 +205,23 @@
       "exitFullscreen": "Exit fullscreen",
       "codePreviewTitle": "ryOS Code Preview",
       "codePreviewTitleFullscreen": "ryOS Code Preview Fullscreen"
+    },
+    "swipeInstructions": {
+      "title": "Swipe to Switch Windows",
+      "previous": "Previous",
+      "next": "Next",
+      "description": "Swipe left or right to navigate between open windows"
+    },
+    "loading": {
+      "openingAppletStore": "Opening Applet Store...",
+      "openingSharedIELink": "Opening shared Internet Explorer link...",
+      "openingSharedApplet": "Opening shared applet...",
+      "openingSharedIpodTrack": "Opening shared iPod track...",
+      "openingSharedKaraokeTrack": "Opening shared Karaoke track...",
+      "openingSharedVideo": "Opening shared video..."
+    },
+    "keys": {
+      "enter": "Enter"
     }
   },
   "apps": {
@@ -240,6 +280,8 @@
         "finder": "Finder"
       },
       "fileTypes": {
+        "directory": "Directory",
+        "file": "File",
         "folder": "Folder",
         "mp3Audio": "MP3 Audio",
         "quicktimeMovie": "QuickTime Movie",
@@ -1494,7 +1536,9 @@
       "lyrics": {
         "noLyricsFound": "No lyrics found",
         "searchForLyrics": "Search for lyrics manually",
-        "search": "Search"
+        "search": "Search",
+        "unableToLoad": "Unable to load lyrics",
+        "noLyricsAvailable": "No lyrics available"
       }
     },
     "karaoke": {

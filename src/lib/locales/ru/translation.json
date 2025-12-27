@@ -16,6 +16,7 @@
         "editSongDescription": "Введите новое значение"
       },
       "errors": {
+        "failedToAddToLibrary": "Не удалось добавить в библиотеку",
         "failedToBanUser": "Не удалось заблокировать пользователя",
         "failedToDeleteMessage": "Не удалось удалить сообщение",
         "failedToDeleteRoom": "Не удалось удалить комнату",
@@ -31,8 +32,7 @@
         "failedToUpdateSong": "Не удалось обновить песню",
         "importFailed": "Импорт не удался",
         "invalidImportFormat": "Неверный формат файла",
-        "songNotInLibrary": "Песни нет в библиотеке",
-        "failedToAddToLibrary": "Не удалось добавить в библиотеку"
+        "songNotInLibrary": "Песни нет в библиотеке"
       },
       "help": {
         "adminAccess": {
@@ -60,12 +60,12 @@
         "showSidebar": "Показать боковую панель"
       },
       "messages": {
+        "addingToLibrary": "Добавление в библиотеку...",
         "dataRefreshed": "Данные обновлены",
         "importSuccess": "Импортировано {{imported}} новых, обновлено {{updated}} (всего {{total}})",
         "messageDeleted": "Сообщение удалено",
         "playingInIpod": "Воспроизводится на iPod",
         "playingInKaraoke": "Воспроизводится в Караоке",
-        "addingToLibrary": "Добавление в библиотеку...",
         "roomDeleted": "Комната удалена",
         "songDeleted": "Песня удалена",
         "songUpdated": "Песня обновлена",
@@ -779,7 +779,9 @@
       "fileTypes": {
         "application": "Приложение",
         "bmpImage": "Изображение BMP",
+        "directory": "Каталог",
         "document": "Документ",
+        "file": "Файл",
         "folder": "Папка",
         "gifImage": "Изображение GIF",
         "htmlApplet": "Апплет HTML",
@@ -1176,9 +1178,11 @@
         "select": "Выбрать"
       },
       "lyrics": {
+        "noLyricsAvailable": "Текст песни недоступен",
         "noLyricsFound": "Текст не найден",
+        "search": "Поиск",
         "searchForLyrics": "Искать текст вручную",
-        "search": "Поиск"
+        "unableToLoad": "Не удалось загрузить текст песни"
       },
       "menu": {
         "aboutIpod": "Об iPod",
@@ -1342,8 +1346,8 @@
       },
       "lyrics": {
         "noLyricsFound": "Текст не найден",
-        "searchForLyrics": "Искать текст вручную",
-        "search": "Поиск"
+        "search": "Поиск",
+        "searchForLyrics": "Искать текст вручную"
       },
       "menu": {
         "aboutKaraoke": "О караоке",
@@ -2156,6 +2160,10 @@
       "turnMagnificationOff": "Выключить увеличение",
       "turnMagnificationOn": "Включить увеличение"
     },
+    "errors": {
+      "failedToFetchFurigana": "Не удалось получить фуригану",
+      "failedToFetchSoramimi": "Не удалось получить сорамими"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "Безымянный апплет",
       "codePreviewTitle": "Предварительный просмотр кода ryOS",
@@ -2175,6 +2183,17 @@
       "toastSaved": "Апплет успешно сохранен",
       "toggleCode": "Переключить код",
       "toggleSplitView": "Переключить разделенный вид"
+    },
+    "keys": {
+      "enter": "Ввод"
+    },
+    "loading": {
+      "openingAppletStore": "Открытие Applet Store...",
+      "openingSharedApplet": "Открытие общего апплета...",
+      "openingSharedIELink": "Открытие общей ссылки Internet Explorer...",
+      "openingSharedIpodTrack": "Открытие общего трека iPod...",
+      "openingSharedKaraokeTrack": "Открытие общего трека караоке...",
+      "openingSharedVideo": "Открытие общего видео..."
     },
     "menu": {
       "applications": "Программы",
@@ -2205,6 +2224,12 @@
       "ryosProfessional": "Professional",
       "start": "Пуск"
     },
+    "swipeInstructions": {
+      "description": "Проведите влево или вправо, чтобы перемещаться между открытыми окнами",
+      "next": "Далее",
+      "previous": "Назад",
+      "title": "Проведите для переключения окон"
+    },
     "system": {
       "debugBootScreenTest": "Тест экрана загрузки (отладка)...",
       "formatFileSystem": "Форматировать файловую систему",
@@ -2233,6 +2258,11 @@
       "updatingIcons": "Обновление значков",
       "updatingSounds": "Обновление звуков",
       "updatingSystemFiles": "Обновление системных файлов"
+    },
+    "window": {
+      "close": "Закрыть",
+      "maximize": "Развернуть",
+      "minimize": "Свернуть"
     }
   },
   "components": {

@@ -16,6 +16,7 @@
         "editSongDescription": "Introduzca el nuevo valor"
       },
       "errors": {
+        "failedToAddToLibrary": "Error al añadir a la biblioteca",
         "failedToBanUser": "Error al banear al usuario",
         "failedToDeleteMessage": "Error al eliminar mensaje",
         "failedToDeleteRoom": "Error al eliminar sala",
@@ -31,8 +32,7 @@
         "failedToUpdateSong": "No se pudo actualizar la canción",
         "importFailed": "Importación fallida",
         "invalidImportFormat": "Formato de archivo no válido",
-        "songNotInLibrary": "Canción no en la biblioteca",
-        "failedToAddToLibrary": "Error al añadir a la biblioteca"
+        "songNotInLibrary": "Canción no en la biblioteca"
       },
       "help": {
         "adminAccess": {
@@ -60,12 +60,12 @@
         "showSidebar": "Mostrar barra lateral"
       },
       "messages": {
+        "addingToLibrary": "Añadiendo a la biblioteca...",
         "dataRefreshed": "Datos actualizados",
         "importSuccess": "Importadas {{imported}} nuevas, actualizadas {{updated}} ({{total}} en total)",
         "messageDeleted": "Mensaje eliminado",
         "playingInIpod": "Reproduciendo en iPod",
         "playingInKaraoke": "Reproduciendo en Karaoke",
-        "addingToLibrary": "Añadiendo a la biblioteca...",
         "roomDeleted": "Sala eliminada",
         "songDeleted": "Canción eliminada",
         "songUpdated": "Canción actualizada",
@@ -779,7 +779,9 @@
       "fileTypes": {
         "application": "Aplicación",
         "bmpImage": "Imagen BMP",
+        "directory": "Directorio",
         "document": "Documento",
+        "file": "Archivo",
         "folder": "Carpeta",
         "gifImage": "Imagen GIF",
         "htmlApplet": "Applet HTML",
@@ -1176,9 +1178,11 @@
         "select": "Seleccionar"
       },
       "lyrics": {
+        "noLyricsAvailable": "No hay letras disponibles",
         "noLyricsFound": "No se encontraron letras",
+        "search": "Buscar",
         "searchForLyrics": "Buscar letras manualmente",
-        "search": "Buscar"
+        "unableToLoad": "No se pueden cargar las letras"
       },
       "menu": {
         "aboutIpod": "Acerca del iPod",
@@ -1342,8 +1346,8 @@
       },
       "lyrics": {
         "noLyricsFound": "No se encontraron letras",
-        "searchForLyrics": "Buscar letras manualmente",
-        "search": "Buscar"
+        "search": "Buscar",
+        "searchForLyrics": "Buscar letras manualmente"
       },
       "menu": {
         "aboutKaraoke": "Acerca de Karaoke",
@@ -2156,6 +2160,10 @@
       "turnMagnificationOff": "Desactivar ampliación",
       "turnMagnificationOn": "Activar ampliación"
     },
+    "errors": {
+      "failedToFetchFurigana": "Error al obtener furigana",
+      "failedToFetchSoramimi": "Error al obtener soramimi"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet sin título",
       "codePreviewTitle": "Vista previa de código de ryOS",
@@ -2175,6 +2183,17 @@
       "toastSaved": "Applet guardado correctamente",
       "toggleCode": "Alternar código",
       "toggleSplitView": "Alternar vista dividida"
+    },
+    "keys": {
+      "enter": "Entrar"
+    },
+    "loading": {
+      "openingAppletStore": "Abriendo Applet Store...",
+      "openingSharedApplet": "Abriendo applet compartido...",
+      "openingSharedIELink": "Abriendo enlace de Internet Explorer compartido...",
+      "openingSharedIpodTrack": "Abriendo pista de iPod compartida...",
+      "openingSharedKaraokeTrack": "Abriendo pista de Karaoke compartida...",
+      "openingSharedVideo": "Abriendo video compartido..."
     },
     "menu": {
       "applications": "Aplicaciones",
@@ -2205,6 +2224,12 @@
       "ryosProfessional": "Professional",
       "start": "Inicio"
     },
+    "swipeInstructions": {
+      "description": "Desliza a la izquierda o a la derecha para navegar entre ventanas abiertas",
+      "next": "Siguiente",
+      "previous": "Anterior",
+      "title": "Desliza para cambiar de ventanas"
+    },
     "system": {
       "debugBootScreenTest": "Prueba de pantalla de arranque de depuración...",
       "formatFileSystem": "Formatear sistema de archivos",
@@ -2233,6 +2258,11 @@
       "updatingIcons": "Actualizando iconos",
       "updatingSounds": "Actualizando sonidos",
       "updatingSystemFiles": "Actualizando archivos del sistema"
+    },
+    "window": {
+      "close": "Cerrar",
+      "maximize": "Maximizar",
+      "minimize": "Minimizar"
     }
   },
   "components": {

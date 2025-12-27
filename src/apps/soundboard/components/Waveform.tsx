@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useRef } from "react";
 import type { MutableRefObject } from "react";
 import { createWaveform } from "@/utils/audio";
 import type WaveSurfer from "wavesurfer.js";
+import { useTranslation } from "react-i18next";
 
 interface WaveformProps {
   className?: string;
@@ -12,6 +13,7 @@ interface WaveformProps {
 
 export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
   ({ className = "", audioData, onWaveformCreate, isPlaying = false }, ref) => {
+    const { t } = useTranslation();
     const waveformRef = useRef<WaveSurfer | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -62,7 +64,7 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
         } catch (error) {
           console.error("Failed to initialize waveform:", error);
           if (isMounted && currentContainer) {
-            currentContainer.innerHTML = "Error loading waveform";
+            currentContainer.innerHTML = t("apps.soundboard.waveform.errorLoading");
           }
           cleanup(); // Ensure cleanup on error
         }
@@ -97,6 +99,7 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
           }
         }}
         className={`w-full h-12 flex-shrink-0 overflow-hidden ${className}`}
+        aria-label={t("apps.soundboard.waveform.label")}
       />
     );
   }

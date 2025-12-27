@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { SoundSlot as SoundSlotType } from "@/types/types";
 import { Trash2 } from "lucide-react";
 import { Waveform } from "./Waveform";
+import { useTranslation } from "react-i18next";
 
 interface SoundSlotProps {
   slot: SoundSlotType;
@@ -26,6 +27,7 @@ export function SoundSlot({
   showWaveform,
   showEmoji,
 }: SoundSlotProps) {
+  const { t } = useTranslation();
   // Force-enable waveforms on iOS Safari
   const isMobileSafari =
     typeof navigator !== "undefined" &&
@@ -120,16 +122,16 @@ export function SoundSlot({
             title={
               slot.audioData && !isRecording
                 ? slot.title
-                  ? "Edit title"
-                  : "Add title"
+                  ? t("apps.soundboard.slot.editTitle")
+                  : t("apps.soundboard.slot.addTitle")
                 : ""
             }
           >
             {isRecording
-              ? "Recording..."
+              ? t("apps.soundboard.slot.recording")
               : slot.title || (
                   <span className="invisible group-hover:visible opacity-60 hover:opacity-100">
-                    {slot.audioData ? "Title" : "Record"}
+                    {slot.audioData ? "Title" : t("apps.soundboard.slot.record")}
                   </span>
                 )}
           </span>

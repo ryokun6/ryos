@@ -19,6 +19,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { calculateExposeGrid, getExposeTransform } from "./exposeUtils";
+import { useTranslation } from "react-i18next";
 
 interface WindowFrameProps {
   children: React.ReactNode;
@@ -64,6 +65,7 @@ export function WindowFrame({
   menuBar, // Add menuBar to destructured props
   keepMountedWhenMinimized = false,
 }: WindowFrameProps) {
+  const { t } = useTranslation();
   const config = getWindowConfig(appId);
   const defaultConstraints = {
     minWidth: config.minSize?.width,
@@ -1228,7 +1230,7 @@ export function WindowFrame({
               </div>
               <div className="title-bar-controls" data-titlebar-controls>
                 <button
-                  aria-label="Minimize"
+                  aria-label={t("common.window.minimize")}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleMinimize();
@@ -1237,7 +1239,7 @@ export function WindowFrame({
                   onTouchStart={(e) => e.stopPropagation()}
                 />
                 <button
-                  aria-label="Maximize"
+                  aria-label={t("common.window.maximize")}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleFullMaximize(e);
@@ -1246,7 +1248,7 @@ export function WindowFrame({
                   onTouchStart={(e) => e.stopPropagation()}
                 />
                 <button
-                  aria-label="Close"
+                  aria-label={t("common.window.close")}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleClose();
@@ -1341,21 +1343,21 @@ export function WindowFrame({
                   onClick={handleClose}
                   isForeground={isForeground}
                   debugMode={debugMode}
-                  ariaLabel="Close"
+                  ariaLabel={t("common.window.close")}
                 />
                 <TrafficLightButton
                   color="yellow"
                   onClick={handleMinimize}
                   isForeground={isForeground}
                   debugMode={debugMode}
-                  ariaLabel="Minimize"
+                  ariaLabel={t("common.window.minimize")}
                 />
                 <TrafficLightButton
                   color="green"
                   onClick={handleFullMaximize}
                   isForeground={isForeground}
                   debugMode={debugMode}
-                  ariaLabel="Maximize"
+                  ariaLabel={t("common.window.maximize")}
                 />
               </div>
 

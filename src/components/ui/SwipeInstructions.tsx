@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -8,6 +9,7 @@ interface SwipeInstructionsProps {
 }
 
 export function SwipeInstructions({ className }: SwipeInstructionsProps) {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const isMobile = useIsMobile();
@@ -51,7 +53,7 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
       )}
     >
       <div className="flex justify-between items-start">
-        <h3 className="font-bold text-lg">Swipe to Switch Windows</h3>
+        <h3 className="font-bold text-lg">{t("common.swipeInstructions.title")}</h3>
         <button
           onClick={handleDismiss}
           className="bg-transparent p-1 rounded-full hover:bg-gray-100"
@@ -80,7 +82,7 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
               />
             </svg>
           </div>
-          <span className="mt-2 text-sm">Previous</span>
+          <span className="mt-2 text-sm">{t("common.swipeInstructions.previous")}</span>
         </div>
 
         <div className="flex flex-col items-center">
@@ -102,12 +104,12 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
               />
             </svg>
           </div>
-          <span className="mt-2 text-sm">Next</span>
+          <span className="mt-2 text-sm">{t("common.swipeInstructions.next")}</span>
         </div>
       </div>
 
       <p className="text-xs text-gray-500 mt-2 text-center">
-        Swipe left or right to navigate between open windows
+        {t("common.swipeInstructions.description")}
       </p>
     </div>
   );

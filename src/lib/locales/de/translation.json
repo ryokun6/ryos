@@ -16,6 +16,7 @@
         "editSongDescription": "Neuen Wert eingeben"
       },
       "errors": {
+        "failedToAddToLibrary": "Hinzufügen zur Bibliothek fehlgeschlagen",
         "failedToBanUser": "Nutzer konnte nicht gesperrt werden",
         "failedToDeleteMessage": "Nachricht konnte nicht gelöscht werden",
         "failedToDeleteRoom": "Raum konnte nicht gelöscht werden",
@@ -31,8 +32,7 @@
         "failedToUpdateSong": "Aktualisieren des Liedes fehlgeschlagen",
         "importFailed": "Import fehlgeschlagen",
         "invalidImportFormat": "Ungültiges Dateiformat",
-        "songNotInLibrary": "Song nicht in Mediathek",
-        "failedToAddToLibrary": "Hinzufügen zur Bibliothek fehlgeschlagen"
+        "songNotInLibrary": "Song nicht in Mediathek"
       },
       "help": {
         "adminAccess": {
@@ -60,12 +60,12 @@
         "showSidebar": "Seitenleiste anzeigen"
       },
       "messages": {
+        "addingToLibrary": "Wird zur Bibliothek hinzugefügt...",
         "dataRefreshed": "Daten aktualisiert",
         "importSuccess": "{{imported}} neu, {{updated}} aktualisiert (insgesamt {{total}})",
         "messageDeleted": "Nachricht gelöscht",
         "playingInIpod": "Wird auf iPod wiedergegeben",
         "playingInKaraoke": "Wird im Karaoke wiedergegeben",
-        "addingToLibrary": "Wird zur Bibliothek hinzugefügt...",
         "roomDeleted": "Raum gelöscht",
         "songDeleted": "Lied gelöscht",
         "songUpdated": "Lied aktualisiert",
@@ -779,7 +779,9 @@
       "fileTypes": {
         "application": "Anwendung",
         "bmpImage": "BMP-Bild",
+        "directory": "Verzeichnis",
         "document": "Dokument",
+        "file": "Datei",
         "folder": "Ordner",
         "gifImage": "GIF-Bild",
         "htmlApplet": "HTML-Applet",
@@ -1176,9 +1178,11 @@
         "select": "Auswählen"
       },
       "lyrics": {
+        "noLyricsAvailable": "Keine Liedtexte verfügbar",
         "noLyricsFound": "Keine Liedtexte gefunden",
+        "search": "Suchen",
         "searchForLyrics": "Liedtexte manuell suchen",
-        "search": "Suchen"
+        "unableToLoad": "Liedtexte konnten nicht geladen werden"
       },
       "menu": {
         "aboutIpod": "Über iPod",
@@ -1342,8 +1346,8 @@
       },
       "lyrics": {
         "noLyricsFound": "Keine Liedtexte gefunden",
-        "searchForLyrics": "Liedtexte manuell suchen",
-        "search": "Suchen"
+        "search": "Suchen",
+        "searchForLyrics": "Liedtexte manuell suchen"
       },
       "menu": {
         "aboutKaraoke": "Über Karaoke",
@@ -2156,6 +2160,10 @@
       "turnMagnificationOff": "Vergrößerung deaktivieren",
       "turnMagnificationOn": "Vergrößerung aktivieren"
     },
+    "errors": {
+      "failedToFetchFurigana": "Abrufen von Furigana fehlgeschlagen",
+      "failedToFetchSoramimi": "Abrufen von Soramimi fehlgeschlagen"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "Unbenanntes Applet",
       "codePreviewTitle": "ryOS Code-Vorschau",
@@ -2175,6 +2183,17 @@
       "toastSaved": "Applet erfolgreich gespeichert",
       "toggleCode": "Code umschalten",
       "toggleSplitView": "Geteilte Ansicht umschalten"
+    },
+    "keys": {
+      "enter": "Bestätigen"
+    },
+    "loading": {
+      "openingAppletStore": "Applet Store wird geöffnet...",
+      "openingSharedApplet": "Freigegebenes Applet wird geöffnet...",
+      "openingSharedIELink": "Freigegebener Internet Explorer-Link wird geöffnet...",
+      "openingSharedIpodTrack": "Freigegebener iPod-Titel wird geöffnet...",
+      "openingSharedKaraokeTrack": "Freigegebener Karaoke-Titel wird geöffnet...",
+      "openingSharedVideo": "Freigegebenes Video wird geöffnet..."
     },
     "menu": {
       "aboutFinder": "Über Finder",
@@ -2220,6 +2239,12 @@
       "ryosProfessional": "Professional",
       "start": "Start"
     },
+    "swipeInstructions": {
+      "description": "Zum Navigieren zwischen geöffneten Fenstern nach links oder rechts wischen",
+      "next": "Weiter",
+      "previous": "Zurück",
+      "title": "Zum Fensterwechsel wischen"
+    },
     "system": {
       "debugBootScreenTest": "Debug-Startbildschirmtest...",
       "formatFileSystem": "Dateisystem formatieren",
@@ -2248,6 +2273,11 @@
       "updatingIcons": "Symbole werden aktualisiert",
       "updatingSounds": "Töne werden aktualisiert",
       "updatingSystemFiles": "Systemdateien werden aktualisiert"
+    },
+    "window": {
+      "close": "Schließen",
+      "maximize": "Maximieren",
+      "minimize": "Minimieren"
     }
   },
   "components": {

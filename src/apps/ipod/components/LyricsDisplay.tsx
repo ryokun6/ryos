@@ -8,6 +8,7 @@ import {
   RomanizationSettings,
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Converter } from "opencc-js";
@@ -117,6 +118,7 @@ const ErrorState = ({
   textSizeClass?: string;
   fontClassName?: string;
 }) => {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -138,7 +140,7 @@ const ErrorState = ({
           className={`absolute inset-x-0 top-0 left-0 right-0 bottom-0 pointer-events-none flex items-end justify-center z-40 ${bottomPaddingClass}`}
         >
           <div className={`text-white/70 ${textSizeClass} ${fontClassName}`}>
-            {error || "Unable to load lyrics"}
+            {error || t("apps.ipod.lyrics.unableToLoad")}
           </div>
         </motion.div>
       )}
@@ -775,6 +777,8 @@ export function LyricsDisplay({
   currentTimeMs,
   onSeekToTime,
 }: LyricsDisplayProps) {
+  const { t } = useTranslation();
+
   // Read display settings from store (can be overridden by props)
   const {
     lyricsAlignment: storeAlignment,
@@ -1271,7 +1275,7 @@ export function LyricsDisplay({
   if (!displayOriginalLines.length && !isLoading && !isTranslating)
     return (
       <ErrorState
-        error="No lyrics available"
+        error={t("apps.ipod.lyrics.noLyricsAvailable")}
         bottomPaddingClass={bottomPaddingClass}
         textSizeClass={textSizeClass}
         fontClassName={fontClassName}

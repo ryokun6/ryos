@@ -15,6 +15,7 @@ import {
   getExposeCellCenter,
   getExposeScale,
 } from "./exposeUtils";
+import { useTranslation } from "react-i18next";
 
 interface ExposeViewProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ interface ExposeViewProps {
 }
 
 export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
+  const { t } = useTranslation();
   const {
     instances,
     setExposeMode,
@@ -84,7 +86,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
         return fileName.replace(/\.(html|app)$/i, "");
       };
 
-      const label = path ? getFileName(path) : "Applet Store";
+      const label = path ? getFileName(path) : t("common.dock.appletStore");
 
       // Check if the file icon is an emoji (not a file path)
       const fileIcon = file?.icon;

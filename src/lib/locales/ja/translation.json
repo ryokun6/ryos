@@ -16,6 +16,7 @@
         "editSongDescription": "新しい値を入力"
       },
       "errors": {
+        "failedToAddToLibrary": "ライブラリへの追加に失敗しました",
         "failedToBanUser": "ユーザーのBANに失敗しました",
         "failedToDeleteMessage": "メッセージの削除に失敗しました。",
         "failedToDeleteRoom": "ルームの削除に失敗しました。",
@@ -31,8 +32,7 @@
         "failedToUpdateSong": "曲の更新に失敗しました",
         "importFailed": "インポートに失敗しました",
         "invalidImportFormat": "無効なファイル形式",
-        "songNotInLibrary": "ライブラリに曲がありません",
-        "failedToAddToLibrary": "ライブラリへの追加に失敗しました"
+        "songNotInLibrary": "ライブラリに曲がありません"
       },
       "help": {
         "adminAccess": {
@@ -60,12 +60,12 @@
         "showSidebar": "サイドバーを表示"
       },
       "messages": {
+        "addingToLibrary": "ライブラリに追加中...",
         "dataRefreshed": "データが更新されました",
         "importSuccess": "新規 {{imported}} 件、更新 {{updated}} 件 (合計 {{total}} 件)",
         "messageDeleted": "メッセージが削除されました",
         "playingInIpod": "iPodで再生中",
         "playingInKaraoke": "カラオケで再生中",
-        "addingToLibrary": "ライブラリに追加中...",
         "roomDeleted": "ルームが削除されました",
         "songDeleted": "曲を削除しました",
         "songUpdated": "曲を更新しました",
@@ -779,7 +779,9 @@
       "fileTypes": {
         "application": "アプリケーション",
         "bmpImage": "BMP 画像",
+        "directory": "ディレクトリ",
         "document": "ドキュメント",
+        "file": "ファイル",
         "folder": "フォルダ",
         "gifImage": "GIF 画像",
         "htmlApplet": "HTMLアプレット",
@@ -1176,9 +1178,11 @@
         "select": "選択"
       },
       "lyrics": {
+        "noLyricsAvailable": "歌詞はありません",
         "noLyricsFound": "歌詞が見つかりません",
+        "search": "検索",
         "searchForLyrics": "歌詞を手動で検索",
-        "search": "検索"
+        "unableToLoad": "歌詞を読み込めません"
       },
       "menu": {
         "aboutIpod": "iPodについて",
@@ -1342,8 +1346,8 @@
       },
       "lyrics": {
         "noLyricsFound": "歌詞が見つかりません",
-        "searchForLyrics": "歌詞を手動で検索",
-        "search": "検索"
+        "search": "検索",
+        "searchForLyrics": "歌詞を手動で検索"
       },
       "menu": {
         "aboutKaraoke": "カラオケについて",
@@ -2156,6 +2160,10 @@
       "turnMagnificationOff": "拡大をオフ",
       "turnMagnificationOn": "拡大をオン"
     },
+    "errors": {
+      "failedToFetchFurigana": "フリガナの取得に失敗しました",
+      "failedToFetchSoramimi": "ソラミミの取得に失敗しました"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "無題のアプレット",
       "codePreviewTitle": "ryOSコードプレビュー",
@@ -2175,6 +2183,17 @@
       "toastSaved": "アプレットを保存しました",
       "toggleCode": "コードの切り替え",
       "toggleSplitView": "分割表示の切り替え"
+    },
+    "keys": {
+      "enter": "確定"
+    },
+    "loading": {
+      "openingAppletStore": "アプレットストアを開いています...",
+      "openingSharedApplet": "共有アプレットを開いています...",
+      "openingSharedIELink": "共有Internet Explorerリンクを開いています...",
+      "openingSharedIpodTrack": "共有iPodトラックを開いています...",
+      "openingSharedKaraokeTrack": "共有カラオケトラックを開いています...",
+      "openingSharedVideo": "共有ビデオを開いています..."
     },
     "menu": {
       "aboutFinder": "Finderについて",
@@ -2220,6 +2239,12 @@
       "ryosProfessional": "プロフェッショナル",
       "start": "スタート"
     },
+    "swipeInstructions": {
+      "description": "開いているウィンドウ間を移動するには左右にスワイプ",
+      "next": "次へ",
+      "previous": "前へ",
+      "title": "スワイプしてウィンドウを切り替える"
+    },
     "system": {
       "debugBootScreenTest": "デバッグ起動画面テスト...",
       "formatFileSystem": "ファイルシステムをフォーマット",
@@ -2248,6 +2273,11 @@
       "updatingIcons": "アイコン更新中",
       "updatingSounds": "サウンド更新中",
       "updatingSystemFiles": "システムファイル更新中"
+    },
+    "window": {
+      "close": "閉じる",
+      "maximize": "最大化",
+      "minimize": "最小化"
     }
   },
   "components": {

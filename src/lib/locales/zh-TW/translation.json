@@ -16,6 +16,7 @@
         "editSongDescription": "輸入新值"
       },
       "errors": {
+        "failedToAddToLibrary": "加入資料庫失敗",
         "failedToBanUser": "無法封鎖使用者",
         "failedToDeleteMessage": "無法刪除訊息",
         "failedToDeleteRoom": "無法刪除聊天室",
@@ -31,8 +32,7 @@
         "failedToUpdateSong": "更新歌曲失敗",
         "importFailed": "匯入失敗",
         "invalidImportFormat": "無效的檔案格式",
-        "songNotInLibrary": "歌曲不在資料庫中",
-        "failedToAddToLibrary": "加入資料庫失敗"
+        "songNotInLibrary": "歌曲不在資料庫中"
       },
       "help": {
         "adminAccess": {
@@ -60,12 +60,12 @@
         "showSidebar": "顯示側邊欄"
       },
       "messages": {
+        "addingToLibrary": "正在加入資料庫...",
         "dataRefreshed": "資料已重新整理",
         "importSuccess": "新增 {{imported}} 首，更新 {{updated}} 首 (共 {{total}} 首)",
         "messageDeleted": "訊息已刪除",
         "playingInIpod": "正在 iPod 中播放",
         "playingInKaraoke": "正在卡拉 OK 中播放",
-        "addingToLibrary": "正在加入資料庫...",
         "roomDeleted": "聊天室已刪除",
         "songDeleted": "歌曲已刪除",
         "songUpdated": "歌曲已更新",
@@ -779,7 +779,9 @@
       "fileTypes": {
         "application": "應用程式",
         "bmpImage": "BMP 影像",
+        "directory": "目錄",
         "document": "檔案",
+        "file": "檔案",
         "folder": "檔案夾",
         "gifImage": "GIF 影像",
         "htmlApplet": "HTML 小程式",
@@ -1176,9 +1178,11 @@
         "select": "選取"
       },
       "lyrics": {
+        "noLyricsAvailable": "沒有歌詞",
         "noLyricsFound": "找不到歌詞",
+        "search": "搜尋",
         "searchForLyrics": "手動搜尋歌詞",
-        "search": "搜尋"
+        "unableToLoad": "無法載入歌詞"
       },
       "menu": {
         "aboutIpod": "關於 iPod",
@@ -1342,8 +1346,8 @@
       },
       "lyrics": {
         "noLyricsFound": "找不到歌詞",
-        "searchForLyrics": "手動搜尋歌詞",
-        "search": "搜尋"
+        "search": "搜尋",
+        "searchForLyrics": "手動搜尋歌詞"
       },
       "menu": {
         "aboutKaraoke": "關於卡拉OK",
@@ -2156,6 +2160,10 @@
       "turnMagnificationOff": "關閉放大效果",
       "turnMagnificationOn": "開啟放大效果"
     },
+    "errors": {
+      "failedToFetchFurigana": "無法取得假名",
+      "failedToFetchSoramimi": "無法取得空耳"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "未命名 Applet",
       "codePreviewTitle": "ryOS 程式碼預覽",
@@ -2175,6 +2183,17 @@
       "toastSaved": "Applet 儲存成功",
       "toggleCode": "切換程式碼",
       "toggleSplitView": "切換分割視圖"
+    },
+    "keys": {
+      "enter": "確定"
+    },
+    "loading": {
+      "openingAppletStore": "正在開啟小程式商店...",
+      "openingSharedApplet": "正在開啟共享小程式...",
+      "openingSharedIELink": "正在開啟共享 Internet Explorer 連結...",
+      "openingSharedIpodTrack": "正在開啟共享 iPod 曲目...",
+      "openingSharedKaraokeTrack": "正在開啟共享卡拉OK曲目...",
+      "openingSharedVideo": "正在開啟共享影片..."
     },
     "menu": {
       "aboutFinder": "關於 Finder",
@@ -2220,6 +2239,12 @@
       "ryosProfessional": "專業版",
       "start": "開始"
     },
+    "swipeInstructions": {
+      "description": "向左或向右滑動以在開啟的視窗之間導覽",
+      "next": "下一個",
+      "previous": "上一個",
+      "title": "滑動以切換視窗"
+    },
     "system": {
       "debugBootScreenTest": "偵錯開機畫面測試...",
       "formatFileSystem": "格式化檔案系統",
@@ -2248,6 +2273,11 @@
       "updatingIcons": "正在更新圖示",
       "updatingSounds": "正在更新音效",
       "updatingSystemFiles": "正在更新系統檔案"
+    },
+    "window": {
+      "close": "關閉",
+      "maximize": "最大化",
+      "minimize": "最小化"
     }
   },
   "components": {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { AnyApp, AppState } from "./types";
 import { AppContext } from "@/contexts/AppContext";
 import { MenuBar } from "@/components/layout/MenuBar";
@@ -20,6 +21,8 @@ interface AppManagerProps {
 const BASE_Z_INDEX = 1;
 
 export function AppManager({ apps }: AppManagerProps) {
+  const { t } = useTranslation();
+
   // Instance-based state
   const {
     instances,
@@ -129,7 +132,7 @@ export function AppManager({ apps }: AppManagerProps) {
       console.log("[AppManager] Checking path:", path); // Keep this log for debugging
 
       const launchAppletViewer = () => {
-        toast.info("Opening Applet Store...");
+        toast.info(t("common.loading.openingAppletStore"));
 
         setTimeout(() => {
           const event = new CustomEvent("launchApp", {
@@ -147,7 +150,7 @@ export function AppManager({ apps }: AppManagerProps) {
         if (shareCode) {
           // Handle shared Internet Explorer URL - Pass code directly
           console.log("[AppManager] Detected IE share code:", shareCode);
-          toast.info("Opening shared Internet Explorer link...");
+          toast.info(t("common.loading.openingSharedIELink"));
 
           // Use setTimeout to ensure the event listener is ready
           setTimeout(() => {
@@ -172,7 +175,7 @@ export function AppManager({ apps }: AppManagerProps) {
         if (shareCode) {
           // Handle shared Applet Viewer URL - Pass code directly
           console.log("[AppManager] Detected applet share code:", shareCode);
-          toast.info("Opening shared applet...");
+          toast.info(t("common.loading.openingSharedApplet"));
 
           // Use setTimeout to ensure the event listener is ready
           setTimeout(() => {
@@ -205,7 +208,7 @@ export function AppManager({ apps }: AppManagerProps) {
         const videoId = path.substring("/ipod/".length);
         if (videoId) {
           console.log("[AppManager] Detected iPod videoId:", videoId);
-          toast.info("Opening shared iPod track...");
+          toast.info(t("common.loading.openingSharedIpodTrack"));
           setTimeout(() => {
             const event = new CustomEvent("launchApp", {
               detail: {
@@ -224,7 +227,7 @@ export function AppManager({ apps }: AppManagerProps) {
         const videoId = path.substring("/karaoke/".length);
         if (videoId) {
           console.log("[AppManager] Detected Karaoke videoId:", videoId);
-          toast.info("Opening shared Karaoke track...");
+          toast.info(t("common.loading.openingSharedKaraokeTrack"));
           setTimeout(() => {
             const event = new CustomEvent("launchApp", {
               detail: {
@@ -243,7 +246,7 @@ export function AppManager({ apps }: AppManagerProps) {
         const videoId = path.substring("/videos/".length);
         if (videoId) {
           console.log("[AppManager] Detected Videos videoId:", videoId);
-          toast.info("Opening shared video...");
+          toast.info(t("common.loading.openingSharedVideo"));
           setTimeout(() => {
             const event = new CustomEvent("launchApp", {
               detail: {

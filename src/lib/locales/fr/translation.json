@@ -16,6 +16,7 @@
         "editSongDescription": "Saisir la nouvelle valeur"
       },
       "errors": {
+        "failedToAddToLibrary": "Échec de l'ajout à la bibliothèque",
         "failedToBanUser": "Échec du bannissement de l'utilisateur",
         "failedToDeleteMessage": "Échec de la suppression du message",
         "failedToDeleteRoom": "Échec de la suppression du salon",
@@ -31,8 +32,7 @@
         "failedToUpdateSong": "Impossible de mettre à jour le morceau",
         "importFailed": "Échec de l'importation",
         "invalidImportFormat": "Format de fichier non valide",
-        "songNotInLibrary": "Chanson absente de la bibliothèque",
-        "failedToAddToLibrary": "Échec de l'ajout à la bibliothèque"
+        "songNotInLibrary": "Chanson absente de la bibliothèque"
       },
       "help": {
         "adminAccess": {
@@ -60,12 +60,12 @@
         "showSidebar": "Afficher la barre latérale"
       },
       "messages": {
+        "addingToLibrary": "Ajout à la bibliothèque...",
         "dataRefreshed": "Données actualisées",
         "importSuccess": "Importés : {{imported}} nouveaux, mis à jour : {{updated}} ({{total}} au total)",
         "messageDeleted": "Message supprimé",
         "playingInIpod": "Lecture sur iPod",
         "playingInKaraoke": "Lecture Karaoké",
-        "addingToLibrary": "Ajout à la bibliothèque...",
         "roomDeleted": "Salon supprimé",
         "songDeleted": "Morceau supprimé",
         "songUpdated": "Morceau mis à jour",
@@ -779,7 +779,9 @@
       "fileTypes": {
         "application": "Application",
         "bmpImage": "Image BMP",
+        "directory": "Dossier",
         "document": "Document",
+        "file": "Fichier",
         "folder": "Dossier",
         "gifImage": "Image GIF",
         "htmlApplet": "Applet HTML",
@@ -1176,9 +1178,11 @@
         "select": "Sélectionner"
       },
       "lyrics": {
+        "noLyricsAvailable": "Aucune parole disponible",
         "noLyricsFound": "Paroles introuvables",
+        "search": "Rechercher",
         "searchForLyrics": "Rechercher les paroles manuellement",
-        "search": "Rechercher"
+        "unableToLoad": "Impossible de charger les paroles"
       },
       "menu": {
         "aboutIpod": "À propos de l'iPod",
@@ -1342,8 +1346,8 @@
       },
       "lyrics": {
         "noLyricsFound": "Paroles introuvables",
-        "searchForLyrics": "Rechercher les paroles manuellement",
-        "search": "Rechercher"
+        "search": "Rechercher",
+        "searchForLyrics": "Rechercher les paroles manuellement"
       },
       "menu": {
         "aboutKaraoke": "À propos de Karaoké",
@@ -2156,6 +2160,10 @@
       "turnMagnificationOff": "Désactiver l'agrandissement",
       "turnMagnificationOn": "Activer l'agrandissement"
     },
+    "errors": {
+      "failedToFetchFurigana": "Impossible de récupérer le furigana",
+      "failedToFetchSoramimi": "Impossible de récupérer le soramimi"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet sans titre",
       "codePreviewTitle": "Aperçu du code ryOS",
@@ -2175,6 +2183,17 @@
       "toastSaved": "Applet enregistrée avec succès",
       "toggleCode": "Basculer le code",
       "toggleSplitView": "Basculer l'affichage fractionné"
+    },
+    "keys": {
+      "enter": "Entrer"
+    },
+    "loading": {
+      "openingAppletStore": "Ouverture de l'Applet Store...",
+      "openingSharedApplet": "Ouverture de l'applet partagée...",
+      "openingSharedIELink": "Ouverture du lien Internet Explorer partagé...",
+      "openingSharedIpodTrack": "Ouverture de la piste iPod partagée...",
+      "openingSharedKaraokeTrack": "Ouverture de la piste karaoké partagée...",
+      "openingSharedVideo": "Ouverture de la vidéo partagée..."
     },
     "menu": {
       "aboutFinder": "À propos de Finder",
@@ -2220,6 +2239,12 @@
       "ryosProfessional": "Professional",
       "start": "Démarrer"
     },
+    "swipeInstructions": {
+      "description": "Balayez vers la gauche ou la droite pour naviguer entre les fenêtres ouvertes",
+      "next": "Suivant",
+      "previous": "Précédent",
+      "title": "Balayez pour changer de fenêtre"
+    },
     "system": {
       "debugBootScreenTest": "Test de l'écran de démarrage de débogage...",
       "formatFileSystem": "Formatter le système de fichiers",
@@ -2248,6 +2273,11 @@
       "updatingIcons": "Mise à jour des icônes",
       "updatingSounds": "Mise à jour des sons",
       "updatingSystemFiles": "Mise à jour des fichiers système"
+    },
+    "window": {
+      "close": "Fermer",
+      "maximize": "Agrandir",
+      "minimize": "Réduire"
     }
   },
   "components": {

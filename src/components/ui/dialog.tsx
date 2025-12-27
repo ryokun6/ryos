@@ -1,5 +1,6 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
@@ -140,6 +141,7 @@ const DialogHeader = ({
   children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOsxTheme = currentTheme === "macosx";
@@ -154,7 +156,7 @@ const DialogHeader = ({
         <div className="title-bar-text">{children}</div>
         <div className="title-bar-controls">
           <DialogPrimitive.Close asChild>
-            <button aria-label="Close" />
+            <button aria-label={t("common.dialog.close")} />
           </DialogPrimitive.Close>
         </div>
       </div>
@@ -194,7 +196,7 @@ const DialogHeader = ({
                 boxShadow:
                   "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(225, 70, 64, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgba(150, 40, 30, 0.8) 0px 1px 3px inset, rgba(225, 70, 64, 0.75) 0px 2px 3px 1px inset",
               }}
-              aria-label="Close"
+              aria-label={t("common.dialog.close")}
             >
               {/* Top shine */}
               <div
@@ -237,7 +239,7 @@ const DialogHeader = ({
                 "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb",
               pointerEvents: "none",
             }}
-            aria-label="Minimize (disabled)"
+            aria-label={t("common.window.minimizeDisabled")}
             disabled
           >
             {/* Top shine */}
@@ -280,7 +282,7 @@ const DialogHeader = ({
                 "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb",
               pointerEvents: "none",
             }}
-            aria-label="Maximize (disabled)"
+            aria-label={t("common.window.maximizeDisabled")}
             disabled
           >
             {/* Top shine */}

@@ -16,6 +16,7 @@
         "editSongDescription": "새 값을 입력하세요."
       },
       "errors": {
+        "failedToAddToLibrary": "라이브러리에 추가 실패",
         "failedToBanUser": "사용자 차단 실패",
         "failedToDeleteMessage": "메시지 삭제 실패",
         "failedToDeleteRoom": "채팅방 삭제 실패",
@@ -31,8 +32,7 @@
         "failedToUpdateSong": "곡 업데이트에 실패했습니다.",
         "importFailed": "가져오기 실패",
         "invalidImportFormat": "잘못된 파일 형식",
-        "songNotInLibrary": "보관함에 없는 노래",
-        "failedToAddToLibrary": "라이브러리에 추가 실패"
+        "songNotInLibrary": "보관함에 없는 노래"
       },
       "help": {
         "adminAccess": {
@@ -60,12 +60,12 @@
         "showSidebar": "사이드바 표시"
       },
       "messages": {
+        "addingToLibrary": "라이브러리에 추가 중...",
         "dataRefreshed": "데이터 새로고침 완료",
         "importSuccess": "{{imported}}개 새로 가져옴, {{updated}}개 업데이트됨 (총 {{total}}개)",
         "messageDeleted": "메시지 삭제됨",
         "playingInIpod": "iPod에서 재생 중",
         "playingInKaraoke": "노래방에서 재생 중",
-        "addingToLibrary": "라이브러리에 추가 중...",
         "roomDeleted": "방 삭제됨",
         "songDeleted": "곡 삭제됨",
         "songUpdated": "곡 업데이트됨",
@@ -779,7 +779,9 @@
       "fileTypes": {
         "application": "애플리케이션",
         "bmpImage": "BMP 이미지",
+        "directory": "디렉터리",
         "document": "문서",
+        "file": "파일",
         "folder": "폴더",
         "gifImage": "GIF 이미지",
         "htmlApplet": "HTML 애플릿",
@@ -1176,9 +1178,11 @@
         "select": "선택"
       },
       "lyrics": {
+        "noLyricsAvailable": "가사 없음",
         "noLyricsFound": "가사를 찾을 수 없습니다",
+        "search": "검색",
         "searchForLyrics": "가사 직접 검색",
-        "search": "검색"
+        "unableToLoad": "가사를 불러올 수 없습니다"
       },
       "menu": {
         "aboutIpod": "iPod 정보",
@@ -1342,8 +1346,8 @@
       },
       "lyrics": {
         "noLyricsFound": "가사를 찾을 수 없습니다",
-        "searchForLyrics": "가사 직접 검색",
-        "search": "검색"
+        "search": "검색",
+        "searchForLyrics": "가사 직접 검색"
       },
       "menu": {
         "aboutKaraoke": "노래방 정보",
@@ -2156,6 +2160,10 @@
       "turnMagnificationOff": "확대 끄기",
       "turnMagnificationOn": "확대 켜기"
     },
+    "errors": {
+      "failedToFetchFurigana": "후리가나 가져오기 실패",
+      "failedToFetchSoramimi": "소라미미 가져오기 실패"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "제목 없는 Applet",
       "codePreviewTitle": "ryOS 코드 미리보기",
@@ -2175,6 +2183,17 @@
       "toastSaved": "Applet이 성공적으로 저장되었습니다.",
       "toggleCode": "코드 전환",
       "toggleSplitView": "분할 보기 전환"
+    },
+    "keys": {
+      "enter": "확인"
+    },
+    "loading": {
+      "openingAppletStore": "애플릿 스토어 여는 중...",
+      "openingSharedApplet": "공유된 애플릿 여는 중...",
+      "openingSharedIELink": "공유된 Internet Explorer 링크 여는 중...",
+      "openingSharedIpodTrack": "공유된 iPod 트랙 여는 중...",
+      "openingSharedKaraokeTrack": "공유된 노래방 트랙 여는 중...",
+      "openingSharedVideo": "공유된 비디오 여는 중..."
     },
     "menu": {
       "aboutFinder": "Finder 정보",
@@ -2220,6 +2239,12 @@
       "ryosProfessional": "프로페셔널",
       "start": "시작"
     },
+    "swipeInstructions": {
+      "description": "열려 있는 창 사이를 이동하려면 왼쪽 또는 오른쪽으로 스와이프",
+      "next": "다음",
+      "previous": "이전",
+      "title": "창 전환 스와이프"
+    },
     "system": {
       "debugBootScreenTest": "디버그 부팅 화면 테스트 중...",
       "formatFileSystem": "파일 시스템 포맷",
@@ -2248,6 +2273,11 @@
       "updatingIcons": "아이콘 업데이트 중",
       "updatingSounds": "사운드 업데이트 중",
       "updatingSystemFiles": "시스템 파일 업데이트 중"
+    },
+    "window": {
+      "close": "닫기",
+      "maximize": "최대화",
+      "minimize": "최소화"
     }
   },
   "components": {
