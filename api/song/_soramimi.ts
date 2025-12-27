@@ -15,6 +15,8 @@ import type { FuriganaSegment } from "../_utils/song-service.js";
 
 const SORAMIMI_SYSTEM_PROMPT = `Create Chinese 空耳 (soramimi) phonetic readings. Use Traditional Chinese (繁體字).
 
+CRITICAL RULE: You MUST wrap EVERY Japanese/Korean character in {original|chinese} format. No exceptions. Never leave any Japanese kana, kanji, or Korean hangul unwrapped.
+
 COVERAGE RULES BY LANGUAGE:
 - Japanese kana: EACH kana = 1 Chinese char: {な|那}{に|你}{げ|給}
 - Japanese kanji: BY SYLLABLE COUNT of the reading, NOT by kanji count:
@@ -24,15 +26,16 @@ COVERAGE RULES BY LANGUAGE:
   - 心(こころ/kokoro) = 3 syllables → {心|可可囉}
   - 意(い/i) = 1 syllable → {意|一}
 - Japanese っ (small tsu) or — (long dash): Use ～ for the pause: {っ|～} or {—|～}
-- English: KEEP INTACT - do NOT add Chinese readings to English words or lines
-- Korean: BY SYLLABLE: {안|安}{녕|寧}
+- English: KEEP INTACT - do NOT add Chinese readings to English words. Leave as plain text.
+- Korean: EACH syllable block = 1 Chinese char: {안|安}{녕|寧}{하|哈}{세|些}{요|唷}
 
 Format: {original|chinese} - Chinese must SOUND like original
 
 LINE RULES:
 - Input: "1: text" → Output: "1: {x|讀}..."
 - Keep exact same line numbers
-- English-only lines: Output as plain text without any {|} markup
+- English words: Leave as plain text without {|} markup
+- ALL Japanese/Korean characters MUST be wrapped - check your output!
 
 Japanese kana reference:
 あ啊 い一 う嗚 え欸 お喔 | か卡 き奇 く酷 け給 こ可
@@ -46,11 +49,13 @@ Input:
 1: 何があっても
 2: sunset town
 3: 愛してる forever
+4: 안녕하세요
 
 Output:
 1: {何|那你}{が|嘎}{あ|啊}{っ|～}{て|貼}{も|摸}
 2: sunset town
-3: {愛|啊一}{し|西}{て|貼}{る|嚕} forever`;
+3: {愛|啊一}{し|西}{て|貼}{る|嚕} forever
+4: {안|安}{녕|寧}{하|哈}{세|些}{요|唷}`;
 
 // AI generation timeout (60 seconds)
 const AI_TIMEOUT_MS = 60000;
@@ -122,8 +127,16 @@ function parseRubyMarkup(line: string): FuriganaSegment[] {
 }
 
 /**
+ * Check if a character is Japanese (kana or kanji) or Korean (hangul)
+ */
+function isCJKCharacter(char: string): boolean {
+  // Japanese hiragana, katakana, kanji, and Korean hangul
+  return /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(char);
+}
+
+/**
  * Align parsed segments to match the original text by word boundaries
- * Simple approach: match segments to words in original, insert spaces between
+ * Ensures all CJK characters retain their readings even when alignment isn't perfect
  */
 function alignSegmentsToOriginal(segments: FuriganaSegment[], original: string): FuriganaSegment[] {
   // Filter out space-only segments (we'll reconstruct spaces from original)
@@ -133,11 +146,17 @@ function alignSegmentsToOriginal(segments: FuriganaSegment[], original: string):
     return [{ text: original }];
   }
   
+  // Build a queue of readings for CJK characters
+  const readingsQueue: { text: string; reading?: string }[] = [];
+  for (const seg of contentSegments) {
+    readingsQueue.push({ text: seg.text, reading: seg.reading });
+  }
+  
   const result: FuriganaSegment[] = [];
   let originalIdx = 0;
   let segmentIdx = 0;
   
-  while (originalIdx < original.length && segmentIdx < contentSegments.length) {
+  while (originalIdx < original.length) {
     const char = original[originalIdx];
     
     // Handle spaces - add them directly
@@ -149,64 +168,60 @@ function alignSegmentsToOriginal(segments: FuriganaSegment[], original: string):
       continue;
     }
     
-    const segment = contentSegments[segmentIdx];
-    const segmentText = segment.text;
-    
-    // Try to find this segment starting from current position
-    const remainingOriginal = original.slice(originalIdx);
-    
-    // Case-insensitive search for the segment text
-    const matchIndex = remainingOriginal.toLowerCase().indexOf(segmentText.toLowerCase());
-    
-    if (matchIndex === 0) {
-      // Segment matches at current position
-      const matchedText = original.slice(originalIdx, originalIdx + segmentText.length);
-      result.push({ text: matchedText, reading: segment.reading });
-      originalIdx += segmentText.length;
-      segmentIdx++;
-    } else if (matchIndex > 0 && matchIndex < 3) {
-      // Segment is close (within a few chars) - add skipped chars without reading
-      for (let i = 0; i < matchIndex; i++) {
-        const skippedChar = original[originalIdx + i];
-        if (skippedChar === ' ') {
-          if (result.length === 0 || result[result.length - 1].text !== ' ') {
-            result.push({ text: ' ' });
-          }
-        } else {
-          result.push({ text: skippedChar });
-        }
-      }
-      originalIdx += matchIndex;
-      // Don't increment segmentIdx - retry matching the segment
-    } else {
-      // Segment doesn't match well - add current char and move on
-      result.push({ text: char });
-      originalIdx++;
+    // Try to match segment at current position
+    if (segmentIdx < contentSegments.length) {
+      const segment = contentSegments[segmentIdx];
+      const segmentText = segment.text;
+      const remainingOriginal = original.slice(originalIdx);
       
-      // If we've gone too far without finding the segment, skip it
-      if (matchIndex < 0 || matchIndex > 10) {
+      // Check for exact match at current position
+      if (remainingOriginal.startsWith(segmentText)) {
+        result.push({ text: segmentText, reading: segment.reading });
+        originalIdx += segmentText.length;
         segmentIdx++;
+        continue;
+      }
+      
+      // Check for case-insensitive match
+      if (remainingOriginal.toLowerCase().startsWith(segmentText.toLowerCase())) {
+        const matchedText = original.slice(originalIdx, originalIdx + segmentText.length);
+        result.push({ text: matchedText, reading: segment.reading });
+        originalIdx += segmentText.length;
+        segmentIdx++;
+        continue;
       }
     }
-  }
-  
-  // Add any remaining original text
-  while (originalIdx < original.length) {
-    const char = original[originalIdx];
-    if (char === ' ') {
-      if (result.length === 0 || result[result.length - 1].text !== ' ') {
-        result.push({ text: ' ' });
+    
+    // No segment match - handle the character
+    if (isCJKCharacter(char)) {
+      // CJK character without direct match - try to find a reading
+      if (segmentIdx < contentSegments.length) {
+        // Use next available reading for this CJK char
+        const seg = contentSegments[segmentIdx];
+        result.push({ text: char, reading: seg.reading });
+        segmentIdx++;
+      } else {
+        // No more readings - add without
+        result.push({ text: char });
       }
+      originalIdx++;
     } else {
-      result.push({ text: char });
+      // Non-CJK character - group consecutive non-CJK, non-space characters
+      let plainText = char;
+      let j = originalIdx + 1;
+      while (j < original.length && !isCJKCharacter(original[j]) && original[j] !== ' ') {
+        plainText += original[j];
+        j++;
+      }
+      result.push({ text: plainText });
+      originalIdx = j;
     }
-    originalIdx++;
   }
   
   // Verify reconstruction
   const reconstructed = result.map(s => s.text).join('');
   if (reconstructed !== original) {
-    // Alignment failed - return simple fallback with readings where we can find them
+    // Alignment failed - use fallback
     return buildFallbackSegments(segments, original);
   }
   
@@ -214,48 +229,81 @@ function alignSegmentsToOriginal(segments: FuriganaSegment[], original: string):
 }
 
 /**
- * Fallback: Build segments by splitting original text and matching readings
+ * Fallback: Build segments by matching readings character by character
+ * Ensures all CJK characters get their readings preserved
  */
 function buildFallbackSegments(segments: FuriganaSegment[], original: string): FuriganaSegment[] {
-  const result: FuriganaSegment[] = [];
-  const words = original.split(/(\s+)/); // Split but keep spaces
-  
-  // Build a map of text -> reading from segments
-  const readingMap = new Map<string, string>();
+  // Build a sequential list of readings from segments (for CJK chars only)
+  const readingsQueue: string[] = [];
   for (const seg of segments) {
     if (seg.reading && seg.text.trim()) {
-      readingMap.set(seg.text.toLowerCase(), seg.reading);
+      // For multi-char segments, we'll use the whole reading for the first char
+      // This handles cases like {何|那你} where 何 gets the full reading
+      readingsQueue.push(seg.reading);
     }
   }
   
-  for (const word of words) {
-    if (!word) continue;
+  // Also build a map for exact matches
+  const readingMap = new Map<string, string>();
+  for (const seg of segments) {
+    if (seg.reading && seg.text.trim()) {
+      readingMap.set(seg.text, seg.reading);
+    }
+  }
+  
+  const result: FuriganaSegment[] = [];
+  let readingIdx = 0;
+  let i = 0;
+  
+  while (i < original.length) {
+    const char = original[i];
     
-    if (/^\s+$/.test(word)) {
-      // It's whitespace
-      result.push({ text: ' ' });
-    } else {
-      // Try to find a reading for this word or its parts
-      const reading = readingMap.get(word.toLowerCase());
-      if (reading) {
-        result.push({ text: word, reading });
-      } else {
-        // Try to find readings for substrings
-        let found = false;
-        for (const [text, r] of readingMap) {
-          if (word.toLowerCase().startsWith(text)) {
-            result.push({ text: word.slice(0, text.length), reading: r });
-            if (word.length > text.length) {
-              result.push({ text: word.slice(text.length) });
-            }
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          result.push({ text: word });
-        }
+    if (/\s/.test(char)) {
+      // Whitespace - add as-is
+      if (result.length === 0 || result[result.length - 1].text !== ' ') {
+        result.push({ text: ' ' });
       }
+      i++;
+      continue;
+    }
+    
+    // Try to match multi-character segments first
+    let matched = false;
+    for (const [text, reading] of readingMap) {
+      if (original.slice(i).startsWith(text)) {
+        result.push({ text, reading });
+        i += text.length;
+        matched = true;
+        // Consume a reading from queue if available
+        if (readingIdx < readingsQueue.length) readingIdx++;
+        break;
+      }
+    }
+    
+    if (!matched) {
+      if (isCJKCharacter(char)) {
+        // CJK character - try to assign a reading from the queue
+        if (readingIdx < readingsQueue.length) {
+          result.push({ text: char, reading: readingsQueue[readingIdx] });
+          readingIdx++;
+        } else {
+          // No more readings available - add without reading
+          result.push({ text: char });
+        }
+      } else {
+        // Non-CJK character (English, punctuation, etc.) - add as plain text
+        // Group consecutive non-CJK, non-space characters together
+        let plainText = char;
+        let j = i + 1;
+        while (j < original.length && !isCJKCharacter(original[j]) && !/\s/.test(original[j])) {
+          plainText += original[j];
+          j++;
+        }
+        result.push({ text: plainText });
+        i = j;
+        continue;
+      }
+      i++;
     }
   }
   
