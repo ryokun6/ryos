@@ -121,9 +121,9 @@ export function FullscreenPlayerControls({
 
   // Get pronunciation button glyph based on lyrics language
   const getPronunciationGlyph = () => {
-    if (lyricsLanguage === "ja") return "字";
+    if (lyricsLanguage === "ja") return "漢";
     if (lyricsLanguage === "ko") return "가";
-    if (lyricsLanguage === "zh") return "字";
+    if (lyricsLanguage === "zh") return "漢";
     return "文";
   };
 
@@ -131,10 +131,10 @@ export function FullscreenPlayerControls({
   const getPronunciationRuby = () => {
     if (lyricsLanguage === "ja") {
       // Show romaji if enabled, otherwise show furigana
-      return romanization?.japaneseRomaji ? "ji" : "じ";
+      return romanization?.japaneseRomaji ? "han" : "かん";
     }
     if (lyricsLanguage === "ko") return "ga";
-    if (lyricsLanguage === "zh") return "zì";
+    if (lyricsLanguage === "zh") return "hàn";
     return "Aa";
   };
 
