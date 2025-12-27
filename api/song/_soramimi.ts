@@ -7,7 +7,12 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
-import type { FuriganaSegment } from "../_utils/song-service.js";
+import type { FuriganaSegment, WordTiming } from "../_utils/song-service.js";
+
+/** Extended lyric line with optional word timing */
+export interface LyricLineWithTiming extends LyricLine {
+  wordTimings?: WordTiming[];
+}
 
 // =============================================================================
 // Soramimi Generation
@@ -36,6 +41,13 @@ LINE RULES:
 - Keep exact same line numbers
 - English words: Leave as plain text without {|} markup
 - ALL Japanese/Korean characters MUST be wrapped - check your output!
+
+WORD TIMING FORMAT (when input uses [w1][w2]... markers):
+- Input uses [w1], [w2], etc. to mark word/syllable boundaries from karaoke timing
+- You MUST preserve these markers in your output at the EXACT same positions
+- Process each [wN] segment independently - the markers define timing boundaries
+- Example input:  "1: [w1]何[w2]が[w3]あっ[w4]て[w5]も"
+- Example output: "1: [w1]{何|那你}[w2]{が|嘎}[w3]{あ|啊}{っ|～}[w4]{て|貼}[w5]{も|摸}"
 
 Japanese kana reference:
 あ啊 い一 う嗚 え欸 お喔 | か卡 き奇 く酷 け給 こ可
@@ -318,19 +330,105 @@ export interface SoramimiResult {
 }
 
 /**
+ * Format a line with word timing markers for AI input
+ * Returns the formatted string and whether markers were used
+ */
+function formatLineWithTimingMarkers(line: LyricLineWithTiming): { text: string; hasMarkers: boolean } {
+  if (!line.wordTimings || line.wordTimings.length === 0) {
+    return { text: line.words, hasMarkers: false };
+  }
+  
+  // Add [w1], [w2], etc. markers before each word
+  const parts = line.wordTimings.map((wt, idx) => `[w${idx + 1}]${wt.text}`);
+  return { text: parts.join(''), hasMarkers: true };
+}
+
+/**
+ * Parse AI output that may contain word timing markers
+ * Returns segments grouped by word marker, or flat segments if no markers
+ */
+function parseOutputWithTimingMarkers(
+  content: string, 
+  wordCount: number
+): FuriganaSegment[][] | null {
+  // Check if output contains word markers
+  if (!content.includes('[w1]')) {
+    return null; // No markers, use regular parsing
+  }
+  
+  // Split by word markers and parse each segment
+  const wordSegments: FuriganaSegment[][] = [];
+  
+  for (let i = 1; i <= wordCount; i++) {
+    const markerStart = `[w${i}]`;
+    const markerEnd = `[w${i + 1}]`;
+    
+    const startIdx = content.indexOf(markerStart);
+    if (startIdx === -1) {
+      // Marker not found - add empty segment
+      wordSegments.push([]);
+      continue;
+    }
+    
+    const contentStart = startIdx + markerStart.length;
+    let contentEnd: number;
+    
+    if (i < wordCount) {
+      const endIdx = content.indexOf(markerEnd, contentStart);
+      contentEnd = endIdx !== -1 ? endIdx : content.length;
+    } else {
+      contentEnd = content.length;
+    }
+    
+    const wordContent = content.slice(contentStart, contentEnd);
+    const segments = parseRubyMarkup(wordContent);
+    wordSegments.push(segments);
+  }
+  
+  return wordSegments;
+}
+
+/**
+ * Flatten word-grouped segments back to a single segment array
+ * Preserves the word boundary structure for proper timing alignment
+ */
+function flattenWordSegments(wordSegments: FuriganaSegment[][]): FuriganaSegment[] {
+  const result: FuriganaSegment[] = [];
+  for (const segments of wordSegments) {
+    result.push(...segments);
+  }
+  return result;
+}
+
+/**
  * Generate soramimi for a chunk of lyrics
  * Returns { segments, success } where success=false means fallback was used (don't cache)
  */
 export async function generateSoramimiForChunk(
-  lines: LyricLine[],
+  lines: LyricLineWithTiming[],
   requestId: string
 ): Promise<SoramimiResult> {
   if (lines.length === 0) {
     return { segments: [], success: true };
   }
 
-  // Use numbered lines to help AI maintain line count
-  const textsToProcess = lines.map((line, idx) => `${idx + 1}: ${line.words}`).join("\n");
+  // Format lines with word timing markers if available
+  const formattedLines = lines.map((line, idx) => {
+    const { text } = formatLineWithTimingMarkers(line);
+    return `${idx + 1}: ${text}`;
+  });
+  const textsToProcess = formattedLines.join("\n");
+  
+  // Track which lines have word timings for parsing
+  const lineWordCounts = lines.map(line => line.wordTimings?.length || 0);
+  const hasAnyTimings = lineWordCounts.some(count => count > 0);
+  
+  if (hasAnyTimings) {
+    logInfo(requestId, `Using word timing markers for soramimi`, { 
+      linesWithTimings: lineWordCounts.filter(c => c > 0).length,
+      totalWords: lineWordCounts.reduce((a, b) => a + b, 0)
+    });
+  }
 
   // Create abort controller with timeout
   const abortController = new AbortController();
@@ -357,8 +455,8 @@ export async function generateSoramimiForChunk(
     // Parse the ruby markup response with line number matching
     const responseLines = responseText.trim().split("\n");
     
-    // Build a map of line number -> parsed content
-    const lineContentMap = new Map<number, FuriganaSegment[]>();
+    // Build a map of line number -> raw content (before parsing)
+    const lineRawContentMap = new Map<number, string>();
     for (const responseLine of responseLines) {
       const trimmed = responseLine.trim();
       if (!trimmed) continue;
@@ -368,16 +466,15 @@ export async function generateSoramimiForChunk(
       if (lineNumMatch) {
         const lineNum = parseInt(lineNumMatch[1], 10);
         const content = lineNumMatch[2];
-        lineContentMap.set(lineNum, parseRubyMarkup(content));
+        lineRawContentMap.set(lineNum, content);
       } else {
         // No line number - try to use sequential position
-        // This handles cases where AI doesn't include line numbers
-        const nextExpectedLine = lineContentMap.size + 1;
-        lineContentMap.set(nextExpectedLine, parseRubyMarkup(trimmed));
+        const nextExpectedLine = lineRawContentMap.size + 1;
+        lineRawContentMap.set(nextExpectedLine, trimmed);
       }
     }
 
-    const matchedCount = Math.min(lineContentMap.size, lines.length);
+    const matchedCount = Math.min(lineRawContentMap.size, lines.length);
     if (matchedCount < lines.length) {
       logInfo(requestId, `Warning: Soramimi response line mismatch - expected ${lines.length}, matched ${matchedCount}`, { 
         expectedLines: lines.length, 
@@ -390,11 +487,29 @@ export async function generateSoramimiForChunk(
     // Build result with alignment to ensure segments match original text
     const segments = lines.map((line, index) => {
       const lineNum = index + 1;
-      const rawSegments = lineContentMap.get(lineNum) || [{ text: line.words }];
-      const original = line.words;
+      const rawContent = lineRawContentMap.get(lineNum);
       
-      // Align segments to original text (handles spacing mismatches)
-      return alignSegmentsToOriginal(rawSegments, original);
+      if (!rawContent) {
+        return [{ text: line.words }];
+      }
+      
+      const wordCount = lineWordCounts[index];
+      
+      // Try to parse with word timing markers if this line had them
+      if (wordCount > 0) {
+        const wordSegments = parseOutputWithTimingMarkers(rawContent, wordCount);
+        if (wordSegments) {
+          // Successfully parsed with markers - flatten and return
+          const flatSegments = flattenWordSegments(wordSegments);
+          if (flatSegments.length > 0) {
+            return alignSegmentsToOriginal(flatSegments, line.words);
+          }
+        }
+      }
+      
+      // Fall back to regular parsing (no markers or markers not preserved)
+      const rawSegments = parseRubyMarkup(rawContent);
+      return alignSegmentsToOriginal(rawSegments, line.words);
     });
 
     return { segments, success: true };
