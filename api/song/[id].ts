@@ -1000,9 +1000,10 @@ export default async function handler(req: Request) {
             // Track failed chunks for retry
             const failedChunks: number[] = [];
             const MAX_RETRIES = 2;
+            const MAX_CONCURRENT = 3; // Process up to 3 chunks in parallel
 
             // Helper function to process a single chunk
-            const processChunk = async (chunkIndex: number, isRetry = false): Promise<boolean> => {
+            const processChunk = async (chunkIndex: number, isRetry = false): Promise<{ chunkIndex: number; success: boolean }> => {
               const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
               const endIndex = Math.min(startIndex + SORAMIMI_CHUNK_SIZE, totalLines);
               const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
@@ -1035,39 +1036,57 @@ export default async function handler(req: Request) {
                   });
 
                   logInfo(requestId, `SSE: Chunk ${chunkIndex + 1}/${totalChunks} done`);
-                  return true;
+                  return { chunkIndex, success: true };
                 } else {
                   // AI returned fallback (timeout) - mark as failed for retry
                   logInfo(requestId, `SSE: Chunk ${chunkIndex + 1}/${totalChunks} returned fallback, will retry`);
-                  return false;
+                  return { chunkIndex, success: false };
                 }
               } catch (err) {
                 logError(requestId, `SSE: Chunk ${chunkIndex} failed`, err);
-                return false;
+                return { chunkIndex, success: false };
               }
             };
 
-            // First pass: process all chunks
-            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-              const success = await processChunk(chunkIndex);
-              if (success) {
+            // Process chunks in parallel with concurrency limit
+            const processInParallel = async (chunkIndices: number[], isRetry = false) => {
+              const results: { chunkIndex: number; success: boolean }[] = [];
+              
+              for (let i = 0; i < chunkIndices.length; i += MAX_CONCURRENT) {
+                const batch = chunkIndices.slice(i, i + MAX_CONCURRENT);
+                const batchResults = await Promise.all(
+                  batch.map(idx => processChunk(idx, isRetry))
+                );
+                results.push(...batchResults);
+              }
+              
+              return results;
+            };
+
+            // First pass: process all chunks in parallel
+            const allChunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
+            const firstPassResults = await processInParallel(allChunkIndices);
+            
+            for (const result of firstPassResults) {
+              if (result.success) {
                 successCount++;
               } else {
-                failedChunks.push(chunkIndex);
+                failedChunks.push(result.chunkIndex);
               }
             }
 
-            // Retry failed chunks
+            // Retry failed chunks (sequentially for reliability)
             if (failedChunks.length > 0) {
               logInfo(requestId, `SSE: Retrying ${failedChunks.length} failed chunks`);
               
               for (let retry = 0; retry < MAX_RETRIES && failedChunks.length > 0; retry++) {
                 const chunksToRetry = [...failedChunks];
-                failedChunks.length = 0; // Clear the array
+                failedChunks.length = 0;
                 
+                // Retry sequentially to avoid overloading
                 for (const chunkIndex of chunksToRetry) {
-                  const success = await processChunk(chunkIndex, true);
-                  if (success) {
+                  const result = await processChunk(chunkIndex, true);
+                  if (result.success) {
                     successCount++;
                     logInfo(requestId, `SSE: Retry succeeded for chunk ${chunkIndex + 1}`);
                   } else {
