@@ -139,17 +139,22 @@ function isEnglishLine(text: string): boolean {
 // Soramimi Generation
 // =============================================================================
 
-const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Traditional Chinese (繁體字) phonetic readings for Japanese/Korean lyrics.
+const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Traditional Chinese (繁體字) that SOUNDS like the original lyrics while telling a coherent story.
 
-FORMAT: {original|chinese_reading} for non-English, plain text for English
-- 愛してる → {愛し|哀思}{てる|特魯}
-- Bay Cityの → Bay City{の|諾}
+GOAL: Chinese text that when read aloud sounds like singing the original, AND forms meaningful Chinese phrases that echo the song's emotion.
+
+FORMAT: {original|chinese} for non-English, plain text for English
+
+APPROACH:
+- Match phonetics: 愛してる (ai shiteru) → 哀思特魯 (sorrowful longing)
+- Echo meaning: 夢を見ていた (dreaming) → 玉美迷戀她 (jade beauty, infatuated with her)
+- Tell a story: connected phrases, not random characters
 
 RULES:
 1. Every non-English character MUST have a reading
-2. Use ONLY Chinese characters in readings (no hiragana/katakana)
-3. Match syllable count approximately
-4. Break into 2-4 segments per line (not whole line, not char-by-char)
+2. Use ONLY Chinese characters (no hiragana/katakana in readings)
+3. Match syllable count approximately  
+4. Break into 2-4 segments per line
 5. No added punctuation
 
 Example:
