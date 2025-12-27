@@ -121,14 +121,14 @@ export function FullscreenPlayerControls({
 
   // Get pronunciation button glyph based on active romanization setting
   const getPronunciationGlyph = () => {
-    if (!romanization?.enabled) return "文";
+    if (!romanization?.enabled) return "漢";
     // Priority: soramimi > romaji > furigana > korean > pinyin
     if (romanization.chineseSoramimi) return "空";
     if (romanization.japaneseRomaji) return "Ro";
     if (romanization.japaneseFurigana) return "ふ";
     if (romanization.korean) return "Ko";
     if (romanization.chinese) return "拼";
-    return "文";
+    return "漢";
   };
 
   // No ruby needed - the glyph itself indicates the active mode
