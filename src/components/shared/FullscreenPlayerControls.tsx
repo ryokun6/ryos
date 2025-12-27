@@ -1,16 +1,9 @@
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
 import { Globe, Maximize2, X, Clock } from "lucide-react";
-import { useIpodStore } from "@/stores/useIpodStore";
-import {
-  lyricsHaveJapanese,
-  lyricsHaveKorean,
-  lyricsHaveChinese,
-} from "@/utils/languageDetection";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -107,18 +100,6 @@ export function FullscreenPlayerControls({
 
   const translationBadge = getTranslationBadge(currentTranslationCode);
 
-  // Get current lyrics from store to detect language
-  const currentLyrics = useIpodStore((s) => s.currentLyrics);
-
-  // Detect lyrics language for pronunciation button glyph
-  const lyricsLanguage = useMemo(() => {
-    if (!currentLyrics?.lines) return null;
-    if (lyricsHaveJapanese(currentLyrics.lines)) return "ja";
-    if (lyricsHaveKorean(currentLyrics.lines)) return "ko";
-    if (lyricsHaveChinese(currentLyrics.lines)) return "zh";
-    return null;
-  }, [currentLyrics]);
-
   // Get pronunciation button glyph based on active romanization setting
   const getPronunciationGlyph = () => {
     if (!romanization?.enabled) return "漢";
@@ -130,9 +111,6 @@ export function FullscreenPlayerControls({
     if (romanization.chinese) return "拼";
     return "漢";
   };
-
-  // No ruby needed - the glyph itself indicates the active mode
-  const isRomanizationActiveForLyrics = () => false;
 
   // Get font label based on current locale
   const getFontLabel = () => {
@@ -417,16 +395,7 @@ export function FullscreenPlayerControls({
                 )}
                 title={t("apps.ipod.menu.pronunciation")}
               >
-                {isRomanizationActiveForLyrics() ? (
-                  <ruby className={cn(smallIconSize, "ruby-align-center")} style={{ rubyPosition: "over" }}>
-                    {getPronunciationGlyph()}
-                    <rt style={{ fontSize: variant === "compact" ? "8px" : "9px", opacity: 0.7, paddingBottom: "1px", letterSpacing: "-0.5px", lineHeight: 1, maxHeight: "10px" }}>
-                      {getPronunciationRuby()}
-                    </rt>
-                  </ruby>
-                ) : (
-                  <span className={smallIconSize}>{getPronunciationGlyph()}</span>
-                )}
+                <span className={smallIconSize}>{getPronunciationGlyph()}</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
