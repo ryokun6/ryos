@@ -10,6 +10,104 @@ import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
 // =============================================================================
+// Fallback Kana to Chinese Map (for when AI misses characters)
+// =============================================================================
+
+const KANA_TO_CHINESE: Record<string, string> = {
+  // Hiragana
+  'あ': '阿', 'い': '衣', 'う': '屋', 'え': '欸', 'お': '喔',
+  'か': '咖', 'き': '奇', 'く': '酷', 'け': '給', 'こ': '可',
+  'さ': '撒', 'し': '詩', 'す': '蘇', 'せ': '些', 'そ': '搜',
+  'た': '她', 'ち': '吃', 'つ': '此', 'て': '貼', 'と': '頭',
+  'な': '娜', 'に': '妮', 'ぬ': '奴', 'ね': '內', 'の': '諾',
+  'は': '哈', 'ひ': '嘻', 'ふ': '夫', 'へ': '嘿', 'ほ': '火',
+  'ま': '媽', 'み': '咪', 'む': '木', 'め': '沒', 'も': '摸',
+  'や': '壓', 'ゆ': '玉', 'よ': '喲',
+  'ら': '啦', 'り': '里', 'る': '嚕', 'れ': '咧', 'ろ': '囉',
+  'わ': '哇', 'を': '喔', 'ん': '嗯',
+  'が': '嘎', 'ぎ': '奇', 'ぐ': '姑', 'げ': '給', 'ご': '哥',
+  'ざ': '砸', 'じ': '吉', 'ず': '祖', 'ぜ': '賊', 'ぞ': '作',
+  'だ': '打', 'ぢ': '吉', 'づ': '祖', 'で': '得', 'ど': '多',
+  'ば': '爸', 'び': '比', 'ぶ': '布', 'べ': '貝', 'ぼ': '寶',
+  'ぱ': '啪', 'ぴ': '批', 'ぷ': '噗', 'ぺ': '配', 'ぽ': '坡',
+  'ゃ': '壓', 'ゅ': '玉', 'ょ': '喲',
+  'っ': '～', '—': '～',
+  // Katakana
+  'ア': '阿', 'イ': '衣', 'ウ': '屋', 'エ': '欸', 'オ': '喔',
+  'カ': '咖', 'キ': '奇', 'ク': '酷', 'ケ': '給', 'コ': '可',
+  'サ': '撒', 'シ': '詩', 'ス': '蘇', 'セ': '些', 'ソ': '搜',
+  'タ': '她', 'チ': '吃', 'ツ': '此', 'テ': '貼', 'ト': '頭',
+  'ナ': '娜', 'ニ': '妮', 'ヌ': '奴', 'ネ': '內', 'ノ': '諾',
+  'ハ': '哈', 'ヒ': '嘻', 'フ': '夫', 'ヘ': '嘿', 'ホ': '火',
+  'マ': '媽', 'ミ': '咪', 'ム': '木', 'メ': '沒', 'モ': '摸',
+  'ヤ': '壓', 'ユ': '玉', 'ヨ': '喲',
+  'ラ': '啦', 'リ': '里', 'ル': '嚕', 'レ': '咧', 'ロ': '囉',
+  'ワ': '哇', 'ヲ': '喔', 'ン': '嗯',
+  'ガ': '嘎', 'ギ': '奇', 'グ': '姑', 'ゲ': '給', 'ゴ': '哥',
+  'ザ': '砸', 'ジ': '吉', 'ズ': '祖', 'ゼ': '賊', 'ゾ': '作',
+  'ダ': '打', 'ヂ': '吉', 'ヅ': '祖', 'デ': '得', 'ド': '多',
+  'バ': '爸', 'ビ': '比', 'ブ': '布', 'ベ': '貝', 'ボ': '寶',
+  'パ': '啪', 'ピ': '批', 'プ': '噗', 'ペ': '配', 'ポ': '坡',
+  'ャ': '壓', 'ュ': '玉', 'ョ': '喲',
+  'ッ': '～', 'ー': '～',
+};
+
+/**
+ * Generate fallback Chinese reading for a single Japanese character
+ */
+function getFallbackReading(char: string): string | null {
+  return KANA_TO_CHINESE[char] || null;
+}
+
+/**
+ * Check if a character is Japanese kana (hiragana or katakana)
+ */
+function isJapaneseKana(char: string): boolean {
+  const code = char.charCodeAt(0);
+  // Hiragana: U+3040-U+309F, Katakana: U+30A0-U+30FF
+  return (code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF);
+}
+
+/**
+ * Post-process segments to fill in missing readings for Japanese kana
+ */
+function fillMissingReadings(segments: FuriganaSegment[]): FuriganaSegment[] {
+  return segments.map(segment => {
+    // If segment already has a reading, keep it
+    if (segment.reading) return segment;
+    
+    // If segment text is a single Japanese kana without reading, add fallback
+    const text = segment.text;
+    if (text.length === 1 && isJapaneseKana(text)) {
+      const fallback = getFallbackReading(text);
+      if (fallback) {
+        return { text, reading: fallback };
+      }
+    }
+    
+    // For multi-character segments without readings, try to build reading char by char
+    if (text.length > 1) {
+      let hasJapanese = false;
+      let reading = '';
+      for (const char of text) {
+        if (isJapaneseKana(char)) {
+          hasJapanese = true;
+          const fallback = getFallbackReading(char);
+          reading += fallback || char; // Use fallback or original if no mapping
+        } else {
+          reading += char; // Keep non-kana as-is
+        }
+      }
+      if (hasJapanese && reading !== text) {
+        return { text, reading };
+      }
+    }
+    
+    return segment;
+  });
+}
+
+// =============================================================================
 // English Detection
 // =============================================================================
 
@@ -41,11 +139,23 @@ function isEnglishLine(text: string): boolean {
 
 const SORAMIMI_SYSTEM_PROMPT = `Create Chinese 空耳 (soramimi) phonetic readings. Use Traditional Chinese (繁體字).
 
-CRITICAL: KEEP ENGLISH WORDS INTACT
-- English words should be output exactly as-is WITHOUT any Chinese reading
-- Only add Chinese readings for Japanese kana, Japanese kanji, and Korean characters
-- Format for English: just the word itself, no braces: "hello" → hello
-- Format for non-English: {original|chinese}
+CRITICAL RULES:
+1. EVERY Japanese character (kana, kanji) MUST have a Chinese reading - NO EXCEPTIONS
+2. English words stay as plain text WITHOUT braces
+3. When Japanese is ADJACENT to English, still wrap the Japanese: {の|諾}Bay City (NOT: のBay City)
+4. NEVER group Japanese characters with English - process them separately
+5. READING MUST BE 100% CHINESE CHARACTERS - NEVER use Japanese hiragana/katakana in the reading!
+   - WRONG: {人|ひ偷} (ひ is Japanese!)
+   - CORRECT: {人|嘻偷} (all Chinese)
+
+OKURIGANA RULE (送り仮名) - CRITICAL:
+Japanese verbs/adjectives have kanji + okurigana (hiragana suffix). ALWAYS include the okurigana in the text:
+- 降りて → {降り|喔里}{て|貼} (NOT: {降|喔里}{て|貼} which loses り)
+- 歩きながら → {歩き|啊嚕奇}{ながら|娜嘎啦} (NOT: {歩|啊嚕奇} which loses き)
+- 思い出す → {思い|喔摸衣}{出す|打蘇} (NOT: {思|喔摸衣}{出|打蘇})
+- 消えそう → {消え|奇欸}{そう|搜屋} (NOT: {消|奇}{え|欸}{そう|搜屋})
+
+Format: {japanese|chinese} for Japanese/Korean, plain text for English
 
 IMPORTANT: Use MEANINGFUL Chinese words when possible!
 - Prefer real Chinese words/phrases over random phonetic characters
@@ -84,17 +194,32 @@ COVERAGE RULES BY LANGUAGE:
 
 Format: {original|chinese} for non-English, plain text for English
 
+ADJACENT TEXT RULES (CRITICAL):
+- Japanese + English: {日本語|讀音} English words {日本語|讀音}
+- WRONG: のBay City (の has no reading!)
+- CORRECT: {の|諾}Bay City
+- WRONG: 君をlove (を has no reading!)  
+- CORRECT: {君|奇蜜}{を|喔}love
+- Every particle (の, を, は, が, に, で, と, も, て, etc.) MUST have a reading
+
 LINE RULES:
 - Input: "1: text" → Output: "1: {x|讀}..." or "1: english words"
 - Keep exact same line numbers
-- For mixed lines: {日本語|讀音} English words {日本語|讀音}
 
-Japanese kana reference (basic phonetic mapping):
+Japanese kana reference (basic phonetic mapping) - MEMORIZE THIS:
 あ阿 い衣 う屋 え欸 お喔 | か咖 き奇 く酷 け給 こ可
 さ撒 し詩 す蘇 せ些 そ搜 | た她 ち吃 つ此 て貼 と頭
 な娜 に妮 ぬ奴 ね內 の諾 | は哈 ひ嘻 ふ夫 へ嘿 ほ火
 ま媽 み咪 む木 め沒 も摸 | ら啦 り里 る嚕 れ咧 ろ囉
 わ哇 を喔 ん嗯 っ～ —～
+が嘎 ぎ奇 ぐ姑 げ給 ご哥 | ざ砸 じ吉 ず祖 ぜ賊 ぞ作
+だ打 ぢ吉 づ祖 で得 ど多 | ば爸 び比 ぶ布 べ貝 ぼ寶
+ぱ啪 ぴ批 ぷ噗 ぺ配 ぽ坡 | ゃ壓 ゅ玉 ょ喲
+ア阿 イ衣 ウ屋 エ欸 オ喔 | カ咖 キ奇 ク酷 ケ給 コ可
+サ撒 シ詩 ス蘇 セ些 ソ搜 | タ她 チ吃 ツ此 テ貼 ト頭
+ナ娜 ニ妮 ヌ奴 ネ內 ノ諾 | ハ哈 ヒ嘻 フ夫 ヘ嘿 ホ火
+マ媽 ミ咪 ム木 メ沒 モ摸 | ラ啦 リ里 ル嚕 レ咧 ロ囉
+ワ哇 ヲ喔 ン嗯 ッ～ ー～
 
 Korean syllable reference (common mappings):
 아阿 어喔 오喔 우屋 으嗯 이衣 | 가咖 거哥 고高 구姑 기奇
@@ -444,7 +569,12 @@ export async function generateSoramimiForChunk(
       const original = info.line.words;
       
       // Align segments to original text (handles spacing mismatches)
-      nonEnglishResultMap.set(info.originalIndex, alignSegmentsToOriginal(rawSegments, original));
+      const alignedSegments = alignSegmentsToOriginal(rawSegments, original);
+      
+      // Fill in missing readings for any Japanese characters that AI missed
+      const finalSegments = fillMissingReadings(alignedSegments);
+      
+      nonEnglishResultMap.set(info.originalIndex, finalSegments);
     }
 
     // Build final result, inserting English lines as plain text
