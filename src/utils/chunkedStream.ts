@@ -118,13 +118,9 @@ export async function processTranslationChunks(
     totalLines = prefetchedInfo.totalLines;
     totalChunks = prefetchedInfo.totalChunks;
     cachedLrc = prefetchedInfo.lrc;
-  } else if (prefetchedInfo && !force) {
-    // We have prefetched info but data isn't cached - use the chunk info directly
-    // No need to call get-chunk-info again since we just got this info from the server
-    totalLines = prefetchedInfo.totalLines;
-    totalChunks = prefetchedInfo.totalChunks;
   } else {
-    // No prefetched info - call get-chunk-info to get chunk metadata and check for cached data
+    // Either no prefetched info OR prefetched info shows not cached
+    // Always call get-chunk-info to verify server state (prefetched info might be stale)
     const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -274,13 +270,9 @@ export async function processFuriganaChunks(
     totalLines = prefetchedInfo.totalLines;
     totalChunks = prefetchedInfo.totalChunks;
     cachedData = prefetchedInfo.data;
-  } else if (prefetchedInfo && !force) {
-    // We have prefetched info but data isn't cached - use the chunk info directly
-    // No need to call get-chunk-info again since we just got this info from the server
-    totalLines = prefetchedInfo.totalLines;
-    totalChunks = prefetchedInfo.totalChunks;
   } else {
-    // No prefetched info - call get-chunk-info to get chunk metadata and check for cached data
+    // Either no prefetched info OR prefetched info shows not cached
+    // Always call get-chunk-info to verify server state (prefetched info might be stale)
     const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -431,13 +423,9 @@ export async function processSoramimiChunks(
     // Handle skipped case from prefetch (e.g., Chinese lyrics)
     onProgress?.({ completedChunks: 0, totalChunks: 0, percentage: 100 });
     return []; // Return empty array for skipped content
-  } else if (prefetchedInfo && !force) {
-    // We have prefetched info but data isn't cached - use the chunk info directly
-    // No need to call get-chunk-info again since we just got this info from the server
-    totalLines = prefetchedInfo.totalLines;
-    totalChunks = prefetchedInfo.totalChunks;
   } else {
-    // No prefetched info - call get-chunk-info to get chunk metadata and check for cached data
+    // Either no prefetched info OR prefetched info shows not cached
+    // Always call get-chunk-info to verify server state (prefetched info might be stale)
     const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },

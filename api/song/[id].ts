@@ -698,9 +698,10 @@ export default async function handler(req: Request) {
           translations = await translateChunk(lines, language, requestId);
         }
 
-        // Cache the chunk result (30 days)
+        // Cache the chunk result permanently (no TTL)
+        // Chunk caches are cleaned up after consolidation, so TTL isn't needed
         try {
-          await redis.set(chunkCacheKey, translations, { ex: 60 * 60 * 24 * 30 });
+          await redis.set(chunkCacheKey, translations);
         } catch (e) {
           logError(requestId, "Chunk cache write failed", e);
         }
@@ -790,9 +791,10 @@ export default async function handler(req: Request) {
         logInfo(requestId, `Generating furigana chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
         const furigana = await generateFuriganaForChunk(lines, requestId);
 
-        // Cache the chunk result (30 days)
+        // Cache the chunk result permanently (no TTL)
+        // Chunk caches are cleaned up after consolidation, so TTL isn't needed
         try {
-          await redis.set(chunkCacheKey, furigana, { ex: 60 * 60 * 24 * 30 });
+          await redis.set(chunkCacheKey, furigana);
         } catch (e) {
           logError(requestId, "Chunk cache write failed", e);
         }
@@ -897,9 +899,10 @@ export default async function handler(req: Request) {
         const { segments: soramimi, success } = await generateSoramimiForChunk(lines, requestId);
 
         // Only cache if AI generation succeeded (not fallback data)
+        // Cache permanently (no TTL) - chunk caches are cleaned up after consolidation
         if (success) {
           try {
-            await redis.set(chunkCacheKey, soramimi, { ex: 60 * 60 * 24 * 30 });
+            await redis.set(chunkCacheKey, soramimi);
           } catch (e) {
             logError(requestId, "Chunk cache write failed", e);
           }
