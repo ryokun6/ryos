@@ -593,63 +593,8 @@ export default async function handler(req: Request) {
           }
         }
 
-        // If not cached and has chunks, process chunk 0 inline to eliminate one round-trip
-        let initialChunk: {
-          chunkIndex: number;
-          startIndex: number;
-          translations?: string[];
-          furigana?: FuriganaSegment[][];
-          soramimi?: FuriganaSegment[][];
-          cached: boolean;
-        } | undefined;
-
-        if (!cached && totalChunks > 0) {
-          const startIndex = 0;
-          const endIndex = Math.min(CHUNK_SIZE, totalLines);
-          const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
-
-          if (operation === "translate" && language) {
-            // Convert to LyricLine format and translate
-            const lines: LyricLine[] = chunkLines.map(line => ({ words: line.words, startTimeMs: line.startTimeMs }));
-            const translations = await translateChunk(lines, language, requestId);
-
-            // Cache chunk 0
-            const lyricsHash = song.lyricsSource?.hash;
-            const chunkCacheKey = lyricsHash
-              ? `song:${songId}:translate:${language}:chunk:0:${lyricsHash}`
-              : `song:${songId}:translate:${language}:chunk:0`;
-            await redis.set(chunkCacheKey, translations, { ex: 60 * 60 * 24 * 30 });
-
-            initialChunk = { chunkIndex: 0, startIndex: 0, translations, cached: false };
-            logInfo(requestId, `Chunk info: ${operation} - processed chunk 0 inline`, { totalLines, totalChunks });
-          } else if (operation === "furigana") {
-            const lines: LyricLine[] = chunkLines.map(line => ({ words: line.words, startTimeMs: line.startTimeMs }));
-            const furigana = await generateFuriganaForChunk(lines, requestId);
-
-            const lyricsHash = song.lyricsSource?.hash;
-            const chunkCacheKey = lyricsHash
-              ? `song:${songId}:furigana:chunk:0:${lyricsHash}`
-              : `song:${songId}:furigana:chunk:0`;
-            await redis.set(chunkCacheKey, furigana, { ex: 60 * 60 * 24 * 30 });
-
-            initialChunk = { chunkIndex: 0, startIndex: 0, furigana, cached: false };
-            logInfo(requestId, `Chunk info: ${operation} - processed chunk 0 inline`, { totalLines, totalChunks });
-          } else if (operation === "soramimi") {
-            const lines: LyricLine[] = chunkLines.map(line => ({ words: line.words, startTimeMs: line.startTimeMs }));
-            const soramimi = await generateSoramimiForChunk(lines, requestId);
-
-            const lyricsHash = song.lyricsSource?.hash;
-            const chunkCacheKey = lyricsHash
-              ? `song:${songId}:soramimi:chunk:0:${lyricsHash}`
-              : `song:${songId}:soramimi:chunk:0`;
-            await redis.set(chunkCacheKey, soramimi, { ex: 60 * 60 * 24 * 30 });
-
-            initialChunk = { chunkIndex: 0, startIndex: 0, soramimi, cached: false };
-            logInfo(requestId, `Chunk info: ${operation} - processed chunk 0 inline`, { totalLines, totalChunks });
-          }
-        } else {
-          logInfo(requestId, `Chunk info: ${operation}`, { totalLines, totalChunks, cached });
-        }
+        // Log chunk info (no inline processing - let client fetch all chunks in parallel)
+        logInfo(requestId, `Chunk info: ${operation}`, { totalLines, totalChunks, cached });
 
         return jsonResponse({
           totalLines,
@@ -666,8 +611,6 @@ export default async function handler(req: Request) {
           ...(cached && operation === "soramimi" && song.soramimi && song.soramimi.length > 0 
             ? { soramimi: song.soramimi } 
             : {}),
-          // Include first chunk if not cached (eliminates one round-trip)
-          ...(initialChunk ? { initialChunk } : {}),
         });
       }
 
@@ -951,13 +894,17 @@ export default async function handler(req: Request) {
         }));
 
         logInfo(requestId, `Generating soramimi chunk ${chunkIndex + 1}/${totalChunks} (${lines.length} lines)`);
-        const soramimi = await generateSoramimiForChunk(lines, requestId);
+        const { segments: soramimi, success } = await generateSoramimiForChunk(lines, requestId);
 
-        // Cache the chunk result (30 days)
-        try {
-          await redis.set(chunkCacheKey, soramimi, { ex: 60 * 60 * 24 * 30 });
-        } catch (e) {
-          logError(requestId, "Chunk cache write failed", e);
+        // Only cache if AI generation succeeded (not fallback data)
+        if (success) {
+          try {
+            await redis.set(chunkCacheKey, soramimi, { ex: 60 * 60 * 24 * 30 });
+          } catch (e) {
+            logError(requestId, "Chunk cache write failed", e);
+          }
+        } else {
+          logInfo(requestId, `Skipping cache for chunk ${chunkIndex + 1}/${totalChunks} - AI generation failed/timed out`);
         }
 
         logInfo(requestId, `Soramimi chunk ${chunkIndex + 1}/${totalChunks} - completed`);

@@ -27,7 +27,7 @@ export async function abortableFetch(
   options: AbortableFetchOptions = {}
 ): Promise<Response> {
   const {
-    timeout = 30000,
+    timeout = 60000,
     retry,
     signal: externalSignal,
     ...fetchOptions

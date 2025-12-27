@@ -89,6 +89,11 @@ export function useFurigana({
   const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
   const lastCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
   
+  // Track in-flight force requests to prevent premature abort on effect re-runs
+  // Store both the controller and a unique requestId to distinguish new vs duplicate requests
+  const furiganaForceRequestRef = useRef<{ controller: AbortController; requestId: string } | null>(null);
+  const soramimiForceRequestRef = useRef<{ controller: AbortController; requestId: string } | null>(null);
+  
   // Stable refs for callbacks to avoid effect re-runs
   const onLoadingChangeRef = useRef(onLoadingChange);
   onLoadingChangeRef.current = onLoadingChange;
@@ -104,6 +109,12 @@ export function useFurigana({
     return `song:${songId}:` + lines.map((l) => `${l.startTimeMs}:${l.words.slice(0, 20)}`).join("|");
   }, [songId, lines]);
 
+  // Clear force request refs when songId changes to prevent cross-song pollution
+  useEffect(() => {
+    furiganaForceRequestRef.current = null;
+    soramimiForceRequestRef.current = null;
+  }, [songId]);
+  
   // Effect to immediately clear furigana and soramimi when cache bust trigger changes
   useEffect(() => {
     if (lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger) {
@@ -112,6 +123,9 @@ export function useFurigana({
       furiganaCacheKeyRef.current = "";
       soramimiCacheKeyRef.current = "";
       setError(undefined);
+      // Clear force request refs to prevent stale state blocking new requests
+      furiganaForceRequestRef.current = null;
+      soramimiForceRequestRef.current = null;
     }
   }, [lyricsCacheBustTrigger]);
 
@@ -310,12 +324,29 @@ export function useFurigana({
       return;
     }
 
+    // If there's already a request in flight for this song, skip this effect run
+    // This prevents duplicate requests when React re-runs the effect
+    const existingReq = soramimiForceRequestRef.current;
+    if (existingReq && !existingReq.controller.signal.aborted) {
+      return;
+    }
+    // Clear stale aborted ref so we can start fresh
+    if (existingReq?.controller.signal.aborted) {
+      soramimiForceRequestRef.current = null;
+    }
+    
+    // Generate a unique requestId for this effect run
+    const requestId = `${effectSongId}-${lyricsCacheBustTrigger}-${Date.now()}`;
+    
     // Start loading
     setIsFetching(true);
     setProgress(0);
     setError(undefined);
     
     const controller = new AbortController();
+    
+    // Track this request so we can detect duplicates
+    soramimiForceRequestRef.current = { controller, requestId };
 
     // Use chunked streaming for soramimi to avoid edge function timeouts
     const progressiveMap = new Map<string, FuriganaSegment[]>();
@@ -375,6 +406,11 @@ export function useFurigana({
         setError(err instanceof Error ? err.message : "Failed to fetch soramimi");
       })
       .finally(() => {
+        // Clear force request ref when this request completes
+        if (soramimiForceRequestRef.current?.requestId === requestId) {
+          soramimiForceRequestRef.current = null;
+        }
+        
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsFetching(false);
           setProgress(undefined);
@@ -382,7 +418,13 @@ export function useFurigana({
       });
 
     return () => {
-      controller.abort();
+      // Always abort this request on cleanup
+      // This prevents stale requests with wrong totalChunks from continuing
+      const isThisRequest = soramimiForceRequestRef.current?.requestId === requestId;
+      if (isThisRequest) {
+        controller.abort();
+        soramimiForceRequestRef.current = null;
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
   }, [songId, cacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedSoramimiInfo]);

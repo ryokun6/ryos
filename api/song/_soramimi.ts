@@ -13,26 +13,38 @@ import type { FuriganaSegment } from "../_utils/song-service.js";
 // Soramimi Generation
 // =============================================================================
 
-const SORAMIMI_SYSTEM_PROMPT = `Create Chinese phonetic readings (空耳/soramimi) for lyrics.
+const SORAMIMI_SYSTEM_PROMPT = `Create Chinese 空耳 (soramimi) phonetic readings. Use Traditional Chinese (繁體字).
 
-STRICT FORMAT: {originalText|chineseReading}
-- originalText = exact syllable from input (keep original spelling)
-- chineseReading = Traditional Chinese (繁體字) that sounds similar
-- Use space between words
-- NEVER output bare {reading} without the original text
-- One line output per input line
+COVERAGE RULES BY LANGUAGE:
+- Japanese kana: EACH kana = 1 reading: {な|那}{に|你}{げ|給}
+- Japanese kanji: EACH kanji = 1 reading: {意|意}{味|咪}  
+- English: BY SYLLABLE (not letter): {sun|桑}{set|賽} {town|躺}
+- Korean: BY SYLLABLE: {안|安}{녕|寧}
+
+Format: {original|chinese} - Chinese must SOUND like original
+
+LINE RULES:
+- Input: "1: text" → Output: "1: {x|讀}..."
+- Keep exact same line numbers
+
+Japanese kana reference:
+あ啊 い一 う嗚 え欸 お喔 | か卡 き奇 く酷 け給 こ可
+さ撒 し西 す素 せ些 そ搜 | た他 ち吃 つ此 て貼 と頭
+な那 に你 ぬ奴 ね內 の諾 | は哈 ひ嘻 ふ夫 へ嘿 ほ火
+ま媽 み咪 む木 め沒 も摸 | ら啦 り里 る嚕 れ咧 ろ囉
+わ哇 を喔 ん嗯 っ(double next)
 
 Example:
 Input:
-Sorry sorry
-I'm so sorry
+1: あの人で
+2: sunset town
 
 Output:
-{Sor|搜}{ry|哩} {sor|搜}{ry|哩}
-{I'm|愛} {so|搜} {sor|搜}{ry|哩}`;
+1: {あ|啊}{の|諾}{人|仁}{で|得}
+2: {sun|桑}{set|賽} {town|躺}`;
 
-// AI generation timeout (30 seconds)
-const AI_TIMEOUT_MS = 30000;
+// AI generation timeout (60 seconds)
+const AI_TIMEOUT_MS = 60000;
 
 /**
  * Clean AI output by removing malformed segments like {reading} without text
@@ -241,23 +253,34 @@ function buildFallbackSegments(segments: FuriganaSegment[], original: string): F
   return result.length > 0 ? result : [{ text: original }];
 }
 
+/** Result of soramimi generation */
+export interface SoramimiResult {
+  segments: FuriganaSegment[][];
+  /** True if AI generation succeeded, false if fallback was used */
+  success: boolean;
+}
+
 /**
  * Generate soramimi for a chunk of lyrics
+ * Returns { segments, success } where success=false means fallback was used (don't cache)
  */
 export async function generateSoramimiForChunk(
   lines: LyricLine[],
   requestId: string
-): Promise<FuriganaSegment[][]> {
+): Promise<SoramimiResult> {
   if (lines.length === 0) {
-    return [];
+    return { segments: [], success: true };
   }
 
-  // Use plain text (newline-separated) for efficiency
-  const textsToProcess = lines.map((line) => line.words).join("\n");
+  // Use numbered lines to help AI maintain line count
+  const textsToProcess = lines.map((line, idx) => `${idx + 1}: ${line.words}`).join("\n");
 
   // Create abort controller with timeout
   const abortController = new AbortController();
   const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
+
+  const startTime = Date.now();
+  logInfo(requestId, `Soramimi AI generation starting`, { linesCount: lines.length, timeoutMs: AI_TIMEOUT_MS });
 
   try {
     const { text: responseText } = await generateText({
@@ -271,30 +294,61 @@ export async function generateSoramimiForChunk(
     });
     
     clearTimeout(timeoutId);
+    const durationMs = Date.now() - startTime;
+    logInfo(requestId, `Soramimi AI generation completed`, { durationMs, responseLength: responseText.length });
 
-    // Parse the ruby markup response
-    const annotatedLines = responseText.trim().split("\n").map(line => parseRubyMarkup(line.trim()));
+    // Parse the ruby markup response with line number matching
+    const responseLines = responseText.trim().split("\n");
+    
+    // Build a map of line number -> parsed content
+    const lineContentMap = new Map<number, FuriganaSegment[]>();
+    for (const responseLine of responseLines) {
+      const trimmed = responseLine.trim();
+      if (!trimmed) continue;
+      
+      // Try to extract line number prefix (e.g., "1: content" or "1. content")
+      const lineNumMatch = trimmed.match(/^(\d+)[:.\s]\s*(.*)$/);
+      if (lineNumMatch) {
+        const lineNum = parseInt(lineNumMatch[1], 10);
+        const content = lineNumMatch[2];
+        lineContentMap.set(lineNum, parseRubyMarkup(content));
+      } else {
+        // No line number - try to use sequential position
+        // This handles cases where AI doesn't include line numbers
+        const nextExpectedLine = lineContentMap.size + 1;
+        lineContentMap.set(nextExpectedLine, parseRubyMarkup(trimmed));
+      }
+    }
 
-    if (annotatedLines.length !== lines.length) {
-      logInfo(requestId, `Warning: Soramimi response length mismatch - expected ${lines.length}, got ${annotatedLines.length}`);
+    const matchedCount = Math.min(lineContentMap.size, lines.length);
+    if (matchedCount < lines.length) {
+      logInfo(requestId, `Warning: Soramimi response line mismatch - expected ${lines.length}, matched ${matchedCount}`, { 
+        expectedLines: lines.length, 
+        responseLines: responseLines.length,
+        matchedLines: matchedCount,
+        willUseFallbackForMissing: true 
+      });
     }
 
     // Build result with alignment to ensure segments match original text
-    const result = lines.map((line, index) => {
-      const rawSegments = annotatedLines[index] || [{ text: line.words }];
+    const segments = lines.map((line, index) => {
+      const lineNum = index + 1;
+      const rawSegments = lineContentMap.get(lineNum) || [{ text: line.words }];
       const original = line.words;
       
       // Align segments to original text (handles spacing mismatches)
-      const segments = alignSegmentsToOriginal(rawSegments, original);
-      
-      return segments;
+      return alignSegmentsToOriginal(rawSegments, original);
     });
 
-    return result;
+    return { segments, success: true };
   } catch (error) {
     clearTimeout(timeoutId);
+    const durationMs = Date.now() - startTime;
     const isTimeout = error instanceof Error && error.name === "AbortError";
-    logError(requestId, `Soramimi chunk failed${isTimeout ? " (timeout)" : ""}, returning plain text segments as fallback`, error);
-    return lines.map((line) => [{ text: line.words }]);
+    logError(requestId, `Soramimi chunk failed${isTimeout ? " (timeout)" : ""}, returning plain text segments as fallback`, { error, durationMs, isTimeout });
+    return { 
+      segments: lines.map((line) => [{ text: line.words }]),
+      success: false 
+    };
   }
 }

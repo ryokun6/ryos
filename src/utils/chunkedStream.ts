@@ -112,9 +112,6 @@ export async function processTranslationChunks(
   let totalChunks: number;
   let cachedLrc: string | undefined;
 
-  // Track initial chunk from get-chunk-info response (avoids re-fetching chunk 0)
-  let initialChunkData: { chunkIndex: number; startIndex: number; translations: string[] } | undefined;
-
   if (prefetchedInfo) {
     // Use pre-fetched info from initial lyrics request
     totalLines = prefetchedInfo.totalLines;
@@ -123,8 +120,7 @@ export async function processTranslationChunks(
       cachedLrc = prefetchedInfo.lrc;
     }
   } else {
-    // Fetch chunk info (makes extra API call but includes chunk 0 inline)
-    // Use longer timeout since AI generates chunk 0 inline
+    // Fetch chunk info (metadata only)
     const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -135,7 +131,7 @@ export async function processTranslationChunks(
         force,
       }),
       signal,
-      timeout: CHUNK_TIMEOUT, // Use same timeout as chunk processing (60s)
+      timeout: 30000,
     });
 
     if (!res.ok) {
@@ -148,10 +144,6 @@ export async function processTranslationChunks(
     if (chunkInfo.cached && chunkInfo.translation) {
       cachedLrc = chunkInfo.translation;
     }
-    // Capture initialChunk if present (chunk 0 processed inline)
-    if (chunkInfo.initialChunk?.translations) {
-      initialChunkData = chunkInfo.initialChunk;
-    }
   }
 
   // If fully cached, return immediately
@@ -160,31 +152,11 @@ export async function processTranslationChunks(
     return parseLrcToTranslations(cachedLrc);
   }
 
-  // Process chunks
+  // Process all chunks in parallel
   const allTranslations: string[] = new Array(totalLines).fill("");
-  const completedChunkSet = new Set<number>();
   let completedChunks = 0;
 
-  // If we have initial chunk data, use it immediately
-  if (initialChunkData) {
-    initialChunkData.translations.forEach((text, i) => {
-      const targetIndex = initialChunkData!.startIndex + i;
-      if (targetIndex < allTranslations.length) {
-        allTranslations[targetIndex] = text;
-      }
-    });
-    completedChunkSet.add(initialChunkData.chunkIndex);
-    completedChunks++;
-    onProgress?.({
-      completedChunks,
-      totalChunks,
-      percentage: Math.round((completedChunks / totalChunks) * 100),
-    });
-    onChunk?.(initialChunkData.chunkIndex, initialChunkData.startIndex, initialChunkData.translations);
-  }
-
-  // Only process chunks that haven't been completed yet
-  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i).filter(i => !completedChunkSet.has(i));
+  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
 
   await processWithConcurrency(
     chunkIndices,
@@ -226,7 +198,6 @@ export async function processTranslationChunks(
         }
       });
 
-      completedChunkSet.add(chunkIndex);
       completedChunks++;
       onProgress?.({
         completedChunks,
@@ -239,9 +210,8 @@ export async function processTranslationChunks(
   );
 
   // Validate all chunks completed
-  if (completedChunkSet.size !== totalChunks) {
-    const missing = chunkIndices.filter((i) => !completedChunkSet.has(i));
-    throw new Error(`Translation incomplete: missing chunks ${missing.join(", ")}`);
+  if (completedChunks !== totalChunks) {
+    throw new Error(`Translation incomplete: expected ${totalChunks} chunks, got ${completedChunks}`);
   }
 
   // Save consolidated translation
@@ -256,7 +226,7 @@ export async function processTranslationChunks(
           translations: allTranslations,
         }),
         signal,
-        timeout: 30000,
+        timeout: 60000,
       });
     } catch (e) {
       console.warn("Failed to save consolidated translation:", e);
@@ -294,9 +264,6 @@ export async function processFuriganaChunks(
   let totalChunks: number;
   let cachedData: Array<Array<{ text: string; reading?: string }>> | undefined;
 
-  // Track initial chunk from get-chunk-info response (avoids re-fetching chunk 0)
-  let initialChunkData: { chunkIndex: number; startIndex: number; furigana: Array<Array<{ text: string; reading?: string }>> } | undefined;
-
   if (prefetchedInfo) {
     // Use pre-fetched info from initial lyrics request
     totalLines = prefetchedInfo.totalLines;
@@ -305,8 +272,7 @@ export async function processFuriganaChunks(
       cachedData = prefetchedInfo.data;
     }
   } else {
-    // Fetch chunk info (makes extra API call but includes chunk 0 inline)
-    // Use longer timeout since AI generates chunk 0 inline
+    // Fetch chunk info (metadata only)
     const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -316,7 +282,7 @@ export async function processFuriganaChunks(
         force,
       }),
       signal,
-      timeout: CHUNK_TIMEOUT, // Use same timeout as chunk processing (60s)
+      timeout: 30000,
     });
 
     if (!res.ok) {
@@ -329,10 +295,6 @@ export async function processFuriganaChunks(
     if (chunkInfo.cached && chunkInfo.furigana) {
       cachedData = chunkInfo.furigana;
     }
-    // Capture initialChunk if present (chunk 0 processed inline)
-    if (chunkInfo.initialChunk?.furigana) {
-      initialChunkData = chunkInfo.initialChunk;
-    }
   }
 
   // If fully cached, return immediately
@@ -341,31 +303,11 @@ export async function processFuriganaChunks(
     return cachedData;
   }
 
-  // Process chunks
+  // Process all chunks in parallel
   const allFurigana: Array<Array<{ text: string; reading?: string }>> = new Array(totalLines).fill(null).map(() => []);
-  const completedChunkSet = new Set<number>();
   let completedChunks = 0;
 
-  // If we have initial chunk data, use it immediately
-  if (initialChunkData) {
-    initialChunkData.furigana.forEach((segments, i) => {
-      const targetIndex = initialChunkData!.startIndex + i;
-      if (targetIndex < allFurigana.length) {
-        allFurigana[targetIndex] = segments;
-      }
-    });
-    completedChunkSet.add(initialChunkData.chunkIndex);
-    completedChunks++;
-    onProgress?.({
-      completedChunks,
-      totalChunks,
-      percentage: Math.round((completedChunks / totalChunks) * 100),
-    });
-    onChunk?.(initialChunkData.chunkIndex, initialChunkData.startIndex, initialChunkData.furigana);
-  }
-
-  // Only process chunks that haven't been completed yet
-  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i).filter(i => !completedChunkSet.has(i));
+  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
 
   await processWithConcurrency(
     chunkIndices,
@@ -406,7 +348,6 @@ export async function processFuriganaChunks(
         }
       });
 
-      completedChunkSet.add(chunkIndex);
       completedChunks++;
       onProgress?.({
         completedChunks,
@@ -419,9 +360,8 @@ export async function processFuriganaChunks(
   );
 
   // Validate all chunks completed
-  if (completedChunkSet.size !== totalChunks) {
-    const missing = chunkIndices.filter((i) => !completedChunkSet.has(i));
-    throw new Error(`Furigana incomplete: missing chunks ${missing.join(", ")}`);
+  if (completedChunks !== totalChunks) {
+    throw new Error(`Furigana incomplete: expected ${totalChunks} chunks, got ${completedChunks}`);
   }
 
   // Save consolidated furigana
@@ -435,7 +375,7 @@ export async function processFuriganaChunks(
           furigana: allFurigana,
         }),
         signal,
-        timeout: 30000,
+        timeout: 60000,
       });
     } catch (e) {
       console.warn("Failed to save consolidated furigana:", e);
@@ -473,9 +413,6 @@ export async function processSoramimiChunks(
   let totalChunks: number;
   let cachedData: Array<Array<{ text: string; reading?: string }>> | undefined;
 
-  // Track initial chunk from get-chunk-info response (avoids re-fetching chunk 0)
-  let initialChunkData: { chunkIndex: number; startIndex: number; soramimi: Array<Array<{ text: string; reading?: string }>> } | undefined;
-
   if (prefetchedInfo) {
     // Use pre-fetched info from initial lyrics request
     totalLines = prefetchedInfo.totalLines;
@@ -489,8 +426,7 @@ export async function processSoramimiChunks(
       return []; // Return empty array for skipped content
     }
   } else {
-    // Fetch chunk info (makes extra API call but includes chunk 0 inline)
-    // Use longer timeout since AI generates chunk 0 inline
+    // Fetch chunk info (fast - just returns metadata)
     const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -500,7 +436,7 @@ export async function processSoramimiChunks(
         force,
       }),
       signal,
-      timeout: CHUNK_TIMEOUT, // Use same timeout as chunk processing (60s)
+      timeout: 30000, // Quick metadata fetch (30s should be plenty)
     });
 
     if (!res.ok) {
@@ -520,10 +456,6 @@ export async function processSoramimiChunks(
     if (chunkInfo.cached && chunkInfo.soramimi) {
       cachedData = chunkInfo.soramimi;
     }
-    // Capture initialChunk if present (chunk 0 processed inline)
-    if (chunkInfo.initialChunk?.soramimi) {
-      initialChunkData = chunkInfo.initialChunk;
-    }
   }
 
   // If fully cached, return immediately
@@ -532,31 +464,13 @@ export async function processSoramimiChunks(
     return cachedData;
   }
 
-  // Process chunks
+  // Process all chunks in parallel
   const allSoramimi: Array<Array<{ text: string; reading?: string }>> = new Array(totalLines).fill(null).map(() => []);
   const completedChunkSet = new Set<number>();
   let completedChunks = 0;
 
-  // If we have initial chunk data, use it immediately
-  if (initialChunkData) {
-    initialChunkData.soramimi.forEach((segments, i) => {
-      const targetIndex = initialChunkData!.startIndex + i;
-      if (targetIndex < allSoramimi.length) {
-        allSoramimi[targetIndex] = segments;
-      }
-    });
-    completedChunkSet.add(initialChunkData.chunkIndex);
-    completedChunks++;
-    onProgress?.({
-      completedChunks,
-      totalChunks,
-      percentage: Math.round((completedChunks / totalChunks) * 100),
-    });
-    onChunk?.(initialChunkData.chunkIndex, initialChunkData.startIndex, initialChunkData.soramimi);
-  }
-
-  // Only process chunks that haven't been completed yet
-  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i).filter(i => !completedChunkSet.has(i));
+  // Process ALL chunks (0 through totalChunks-1) in parallel
+  const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
 
   await processWithConcurrency(
     chunkIndices,
@@ -639,7 +553,7 @@ export async function processSoramimiChunks(
           soramimi: allSoramimi,
         }),
         signal,
-        timeout: 30000,
+        timeout: 60000,
       });
     } catch (e) {
       console.warn("Failed to save consolidated soramimi:", e);
