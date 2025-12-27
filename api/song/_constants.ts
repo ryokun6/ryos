@@ -56,7 +56,7 @@ export const UpdateSongSchema = z.object({
   title: z.string().max(500).optional(),
   artist: z.string().max(500).optional(),
   album: z.string().max(500).optional(),
-  lyricOffset: z.number().min(-60000).max(60000).optional(),
+  lyricOffset: z.number().min(-300000).max(300000).optional(),
   lyricsSource: LyricsSourceSchema.optional(),
   // Options to clear cached data when lyrics source changes
   clearTranslations: z.boolean().optional(),
