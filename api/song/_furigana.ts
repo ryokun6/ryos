@@ -110,6 +110,9 @@ Output:
 
 // AI generation timeout (30 seconds)
 const AI_TIMEOUT_MS = 30000;
+// Retry configuration
+const MAX_RETRIES = 2;
+const INITIAL_DELAY_MS = 1000;
 
 /**
  * Parse ruby markup format (e.g., "{夜空|よぞら}の{星|ほし}") into FuriganaSegment array
@@ -168,41 +171,60 @@ export async function generateFuriganaForChunk(
   // Use plain text (newline-separated) for efficiency
   const textsToProcess = linesNeedingFurigana.map((line) => line.words).join("\n");
 
-  // Create abort controller with timeout
-  const abortController = new AbortController();
-  const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // Create abort controller with timeout
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
-  try {
-    const { text: responseText } = await generateText({
-      model: google("gemini-2.5-flash"),
-      messages: [
-        { role: "system", content: FURIGANA_SYSTEM_PROMPT },
-        { role: "user", content: textsToProcess },
-      ],
-      temperature: 0.1,
-      abortSignal: abortController.signal,
-    });
-    
-    clearTimeout(timeoutId);
+    try {
+      const { text: responseText } = await generateText({
+        model: google("gemini-2.5-flash"),
+        messages: [
+          { role: "system", content: FURIGANA_SYSTEM_PROMPT },
+          { role: "user", content: textsToProcess },
+        ],
+        temperature: 0.1,
+        abortSignal: abortController.signal,
+      });
+      
+      clearTimeout(timeoutId);
 
-    // Parse the ruby markup response
-    const annotatedLines = responseText.trim().split("\n").map(line => parseRubyMarkup(line.trim()));
+      // Parse the ruby markup response
+      const annotatedLines = responseText.trim().split("\n").map(line => parseRubyMarkup(line.trim()));
 
-    if (annotatedLines.length !== linesNeedingFurigana.length) {
-      logInfo(requestId, `Warning: Furigana response length mismatch - expected ${linesNeedingFurigana.length}, got ${annotatedLines.length}`);
-    }
-
-    let furiganaIndex = 0;
-    return lines.map((line) => {
-      if (containsKanji(line.words)) {
-        return annotatedLines[furiganaIndex++] || [{ text: line.words }];
+      if (annotatedLines.length !== linesNeedingFurigana.length) {
+        logInfo(requestId, `Warning: Furigana response length mismatch - expected ${linesNeedingFurigana.length}, got ${annotatedLines.length}`);
       }
-      return [{ text: line.words }];
-    });
-  } catch (error) {
-    clearTimeout(timeoutId);
-    const isTimeout = error instanceof Error && error.name === "AbortError";
-    logError(requestId, `Furigana chunk failed${isTimeout ? " (timeout)" : ""}, returning plain text segments as fallback`, error);
-    return lines.map((line) => [{ text: line.words }]);
+
+      let furiganaIndex = 0;
+      return lines.map((line) => {
+        if (containsKanji(line.words)) {
+          return annotatedLines[furiganaIndex++] || [{ text: line.words }];
+        }
+        return [{ text: line.words }];
+      });
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // Don't retry on abort (includes timeout)
+      if (error instanceof Error && error.name === "AbortError") {
+        logError(requestId, "Furigana chunk failed (timeout/abort), returning plain text segments as fallback", error);
+        return lines.map((line) => [{ text: line.words }]);
+      }
+      
+      // If last attempt, return fallback
+      if (attempt === MAX_RETRIES) {
+        logError(requestId, `Furigana chunk failed after ${MAX_RETRIES + 1} attempts, returning plain text segments as fallback`, error);
+        return lines.map((line) => [{ text: line.words }]);
+      }
+      
+      // Wait before retry with exponential backoff
+      const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
+      logInfo(requestId, `Furigana retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
+      await new Promise(r => setTimeout(r, delay));
+    }
   }
+
+  // Fallback (should never reach here, but TypeScript needs it)
+  return lines.map((line) => [{ text: line.words }]);
 }

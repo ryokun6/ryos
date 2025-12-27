@@ -349,6 +349,9 @@ function msToLrcTimeInternal(msStr: string): string {
 
 // AI generation timeout (30 seconds)
 const AI_TIMEOUT_MS = 30000;
+// Retry configuration
+const MAX_RETRIES = 2;
+const INITIAL_DELAY_MS = 1000;
 
 /**
  * Translate a chunk of lyrics using AI
@@ -366,33 +369,52 @@ Preserve artistic intent and rhythm.`;
   // Use plain text (newline-separated) instead of JSON for efficiency
   const textsToProcess = chunk.map((line) => line.words).join("\n");
 
-  // Create abort controller with timeout
-  const abortController = new AbortController();
-  const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // Create abort controller with timeout
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
-  try {
-    const { object: aiResponse } = await generateObject({
-      model: google("gemini-2.5-flash"),
-      schema: AiTranslatedTextsSchema,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: textsToProcess },
-      ],
-      temperature: 0.3,
-      abortSignal: abortController.signal,
-    });
-    
-    clearTimeout(timeoutId);
+    try {
+      const { object: aiResponse } = await generateObject({
+        model: google("gemini-2.5-flash"),
+        schema: AiTranslatedTextsSchema,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: textsToProcess },
+        ],
+        temperature: 0.3,
+        abortSignal: abortController.signal,
+      });
+      
+      clearTimeout(timeoutId);
 
-    if (aiResponse.translatedTexts.length !== chunk.length) {
-      logInfo(requestId, `Warning: Translation response length mismatch - expected ${chunk.length}, got ${aiResponse.translatedTexts.length}`);
+      if (aiResponse.translatedTexts.length !== chunk.length) {
+        logInfo(requestId, `Warning: Translation response length mismatch - expected ${chunk.length}, got ${aiResponse.translatedTexts.length}`);
+      }
+
+      return chunk.map((line, index) => aiResponse.translatedTexts[index] || line.words);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // Don't retry on abort (includes timeout)
+      if (error instanceof Error && error.name === "AbortError") {
+        logError(requestId, "Translation chunk failed (timeout/abort), returning original text as fallback", error);
+        return chunk.map((line) => line.words);
+      }
+      
+      // If last attempt, return fallback
+      if (attempt === MAX_RETRIES) {
+        logError(requestId, `Translation chunk failed after ${MAX_RETRIES + 1} attempts, returning original text as fallback`, error);
+        return chunk.map((line) => line.words);
+      }
+      
+      // Wait before retry with exponential backoff
+      const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
+      logInfo(requestId, `Translation retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
+      await new Promise(r => setTimeout(r, delay));
     }
-
-    return chunk.map((line, index) => aiResponse.translatedTexts[index] || line.words);
-  } catch (error) {
-    clearTimeout(timeoutId);
-    const isTimeout = error instanceof Error && error.name === "AbortError";
-    logError(requestId, `Translation chunk failed${isTimeout ? " (timeout)" : ""}, returning original text as fallback`, error);
-    return chunk.map((line) => line.words);
   }
+
+  // Fallback (should never reach here, but TypeScript needs it)
+  return chunk.map((line) => line.words);
 }

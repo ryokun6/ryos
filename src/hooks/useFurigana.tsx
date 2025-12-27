@@ -215,12 +215,29 @@ export function useFurigana({
       return;
     }
 
+    // If there's already a request in flight for this song, skip this effect run
+    // This prevents duplicate requests when React re-runs the effect
+    const existingReq = furiganaForceRequestRef.current;
+    if (existingReq && !existingReq.controller.signal.aborted) {
+      return;
+    }
+    // Clear stale aborted ref so we can start fresh
+    if (existingReq?.controller.signal.aborted) {
+      furiganaForceRequestRef.current = null;
+    }
+
+    // Generate a unique requestId for this effect run
+    const requestId = `${effectSongId}-${lyricsCacheBustTrigger}-${Date.now()}`;
+
     // Start loading
     setIsFetchingFurigana(true);
     setProgress(0);
     setError(undefined);
     
     const controller = new AbortController();
+
+    // Track this request so we can detect duplicates
+    furiganaForceRequestRef.current = { controller, requestId };
 
     // Use chunked streaming for furigana to avoid edge function timeouts
     const progressiveMap = new Map<string, FuriganaSegment[]>();
@@ -280,6 +297,11 @@ export function useFurigana({
         setError(err instanceof Error ? err.message : i18n.t("common.errors.failedToFetchFurigana"));
       })
       .finally(() => {
+        // Clear force request ref when this request completes
+        if (furiganaForceRequestRef.current?.requestId === requestId) {
+          furiganaForceRequestRef.current = null;
+        }
+
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsFetchingFurigana(false);
           setProgress(undefined);
@@ -287,9 +309,13 @@ export function useFurigana({
       });
 
     return () => {
-      controller.abort();
-      setIsFetchingFurigana(false);
-      setProgress(undefined);
+      // Always abort this request on cleanup
+      const isThisRequest = furiganaForceRequestRef.current?.requestId === requestId;
+      if (isThisRequest) {
+        controller.abort();
+        furiganaForceRequestRef.current = null;
+        setIsFetchingFurigana(false);
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
