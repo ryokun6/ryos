@@ -78,7 +78,8 @@ interface SoramimiChunkResponse {
 // =============================================================================
 
 const MAX_CONCURRENT_CHUNKS = 3;
-const CHUNK_TIMEOUT = 60000; // 60 seconds per chunk
+// Client timeout should be longer than server's 55s AI timeout to allow graceful fallback
+const CHUNK_TIMEOUT = 65000; // 65 seconds per chunk (server times out at 55s)
 
 // =============================================================================
 // Translation Processing
@@ -461,41 +462,66 @@ export async function processSoramimiChunks(
   // Process all chunks in parallel
   const allSoramimi: Array<Array<{ text: string; reading?: string }>> = new Array(totalLines).fill(null).map(() => []);
   const completedChunkSet = new Set<number>();
+  const failedChunks: number[] = [];
   let completedChunks = 0;
 
   // Process ALL chunks (0 through totalChunks-1) in parallel
   const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
+  
+  // We need chunk size to calculate fallback indices - use prefetchedInfo or default
+  const chunkSize = prefetchedInfo?.chunkSize || 8;
 
   await processWithConcurrency(
     chunkIndices,
     async (chunkIndex) => {
       if (signal?.aborted) return;
 
-      const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "soramimi-chunk",
-          chunkIndex,
-        }),
-        signal,
-        timeout: CHUNK_TIMEOUT,
-        retry: {
-          maxAttempts: 3,
-          initialDelayMs: 2000,
-          backoffMultiplier: 2,
-        },
-      });
+      try {
+        const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "soramimi-chunk",
+            chunkIndex,
+          }),
+          signal,
+          timeout: CHUNK_TIMEOUT,
+          retry: {
+            maxAttempts: 2, // Reduced retries since server returns fallback on timeout
+            initialDelayMs: 1000,
+            backoffMultiplier: 2,
+          },
+        });
 
-      if (!res.ok) {
-        throw new Error(`Chunk ${chunkIndex} failed (status ${res.status})`);
-      }
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
 
-      const result = (await res.json()) as SoramimiChunkResponse;
+        const result = (await res.json()) as SoramimiChunkResponse;
 
-      // Handle skipped chunk (e.g., Chinese lyrics detected mid-stream)
-      if (result.skipped) {
-        // Mark as complete but don't add data
+        // Handle skipped chunk (e.g., Chinese lyrics detected mid-stream)
+        if (result.skipped) {
+          completedChunkSet.add(chunkIndex);
+          completedChunks++;
+          onProgress?.({
+            completedChunks,
+            totalChunks,
+            percentage: Math.round((completedChunks / totalChunks) * 100),
+          });
+          return;
+        }
+
+        if (typeof result.startIndex !== "number" || result.startIndex < 0) {
+          throw new Error(`Invalid startIndex ${result.startIndex}`);
+        }
+
+        result.soramimi.forEach((segments, i) => {
+          const targetIndex = result.startIndex + i;
+          if (targetIndex < allSoramimi.length) {
+            allSoramimi[targetIndex] = segments;
+          }
+        });
+
         completedChunkSet.add(chunkIndex);
         completedChunks++;
         onProgress?.({
@@ -503,40 +529,98 @@ export async function processSoramimiChunks(
           totalChunks,
           percentage: Math.round((completedChunks / totalChunks) * 100),
         });
-        return;
-      }
-
-      if (typeof result.startIndex !== "number" || result.startIndex < 0) {
-        throw new Error(`Invalid startIndex ${result.startIndex} in chunk ${chunkIndex}`);
-      }
-
-      result.soramimi.forEach((segments, i) => {
-        const targetIndex = result.startIndex + i;
-        if (targetIndex < allSoramimi.length) {
-          allSoramimi[targetIndex] = segments;
+        onChunk?.(result.chunkIndex, result.startIndex, result.soramimi);
+      } catch (err) {
+        // Don't throw on failed chunks - mark as failed and continue
+        // The server should have returned fallback data, but if client times out
+        // we'll leave the lines empty (they won't have readings)
+        if (err instanceof Error && err.name === "AbortError") {
+          throw err; // Re-throw abort errors
         }
-      });
-
-      completedChunkSet.add(chunkIndex);
-      completedChunks++;
-      onProgress?.({
-        completedChunks,
-        totalChunks,
-        percentage: Math.round((completedChunks / totalChunks) * 100),
-      });
-      onChunk?.(result.chunkIndex, result.startIndex, result.soramimi);
+        
+        console.warn(`Soramimi chunk ${chunkIndex} failed, using fallback:`, err);
+        failedChunks.push(chunkIndex);
+        
+        // Mark chunk as "completed" with empty fallback to allow progress to continue
+        completedChunkSet.add(chunkIndex);
+        completedChunks++;
+        onProgress?.({
+          completedChunks,
+          totalChunks,
+          percentage: Math.round((completedChunks / totalChunks) * 100),
+        });
+        
+        // Emit empty chunk so UI updates (lines without soramimi will show plain text)
+        const startIndex = chunkIndex * chunkSize;
+        const emptyFallback: Array<Array<{ text: string; reading?: string }>> = [];
+        for (let i = 0; i < chunkSize && startIndex + i < totalLines; i++) {
+          emptyFallback.push([]); // Empty segments = plain text fallback
+        }
+        onChunk?.(chunkIndex, startIndex, emptyFallback);
+      }
     },
     MAX_CONCURRENT_CHUNKS
   );
 
-  // Validate all chunks completed
-  if (completedChunkSet.size !== totalChunks) {
-    const missing = chunkIndices.filter((i) => !completedChunkSet.has(i));
-    throw new Error(`Soramimi incomplete: missing chunks ${missing.join(", ")}`);
+  // Retry failed chunks sequentially with longer timeout
+  if (failedChunks.length > 0 && !signal?.aborted) {
+    console.log(`Soramimi: Retrying ${failedChunks.length} failed chunks sequentially...`);
+    
+    for (const chunkIndex of failedChunks) {
+      if (signal?.aborted) break;
+      
+      try {
+        const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "soramimi-chunk",
+            chunkIndex,
+          }),
+          signal,
+          timeout: 90000, // Longer timeout for retries (90s)
+          retry: {
+            maxAttempts: 2,
+            initialDelayMs: 3000,
+            backoffMultiplier: 2,
+          },
+        });
+
+        if (res.ok) {
+          const result = (await res.json()) as SoramimiChunkResponse;
+          
+          if (!result.skipped && typeof result.startIndex === "number" && result.startIndex >= 0) {
+            result.soramimi.forEach((segments, i) => {
+              const targetIndex = result.startIndex + i;
+              if (targetIndex < allSoramimi.length) {
+                allSoramimi[targetIndex] = segments;
+              }
+            });
+            
+            // Remove from failed list on success
+            const idx = failedChunks.indexOf(chunkIndex);
+            if (idx > -1) failedChunks.splice(idx, 1);
+            
+            console.log(`Soramimi: Retry succeeded for chunk ${chunkIndex}`);
+            onChunk?.(result.chunkIndex, result.startIndex, result.soramimi);
+          }
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") break;
+        console.warn(`Soramimi: Retry failed for chunk ${chunkIndex}:`, err);
+      }
+    }
   }
 
-  // Save consolidated soramimi
-  if (!signal?.aborted) {
+  // Log final status
+  const hasFailures = failedChunks.length > 0;
+  if (hasFailures) {
+    console.warn(`Soramimi: ${failedChunks.length}/${totalChunks} chunks still failed after retries`);
+  }
+
+  // Only save consolidated soramimi if ALL chunks succeeded
+  // This ensures we don't cache partial/fallback data
+  if (!signal?.aborted && !hasFailures) {
     try {
       await abortableFetch(getApiUrl(`/api/song/${songId}`), {
         method: "POST",
@@ -551,6 +635,8 @@ export async function processSoramimiChunks(
     } catch (e) {
       console.warn("Failed to save consolidated soramimi:", e);
     }
+  } else if (hasFailures) {
+    console.log("Skipping soramimi save due to failed chunks - will retry on next request");
   }
 
   return allSoramimi;
