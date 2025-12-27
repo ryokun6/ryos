@@ -140,12 +140,17 @@ export function FullscreenPlayerControls({
     return "Aa";
   };
 
-  // Check if soramimi is active - only show ruby annotation when soramimi is on
+  // Check if romanization is active - show ruby when furigana/romaji is on but NOT soramimi
   const isRomanizationActiveForLyrics = () => {
     if (!romanization?.enabled) return false;
-    // For Japanese and Chinese, only show ruby when soramimi is enabled
-    if (lyricsLanguage === "ja" || lyricsLanguage === "zh") {
-      return romanization.chineseSoramimi ?? false;
+    // For Japanese/Chinese: show ruby when furigana/pinyin is on, but NOT when soramimi is on
+    if (lyricsLanguage === "ja") {
+      if (romanization.chineseSoramimi) return false; // Soramimi shows 空 without ruby
+      return romanization.japaneseFurigana || romanization.japaneseRomaji;
+    }
+    if (lyricsLanguage === "zh") {
+      if (romanization.chineseSoramimi) return false; // Soramimi shows 空 without ruby
+      return romanization.chinese;
     }
     if (lyricsLanguage === "ko") return romanization.korean;
     return false;
