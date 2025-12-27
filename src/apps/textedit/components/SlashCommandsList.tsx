@@ -1,5 +1,4 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Editor } from "@tiptap/react";
 
 interface CommandItem {
@@ -21,7 +20,6 @@ export const SlashCommandsList = forwardRef<
   { onKeyDown: (event: KeyboardEvent) => boolean },
   SlashCommandsListProps
 >((props, ref) => {
-  const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const selectItem = (index: number) => {
