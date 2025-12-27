@@ -98,7 +98,8 @@ export interface ProcessTranslationOptions {
 
 /**
  * Process translation chunks with streaming progress.
- * If prefetchedInfo is provided, skips the initial get-chunk-info call.
+ * Always checks for cached consolidated data unless force=true.
+ * If prefetchedInfo has cached data, uses it directly to skip the API call.
  */
 export async function processTranslationChunks(
   songId: string,
@@ -112,15 +113,15 @@ export async function processTranslationChunks(
   let totalChunks: number;
   let cachedLrc: string | undefined;
 
-  if (prefetchedInfo) {
-    // Use pre-fetched info from initial lyrics request
+  // If prefetched info has cached data, use it directly (skip API call)
+  if (prefetchedInfo?.cached && prefetchedInfo.lrc && !force) {
     totalLines = prefetchedInfo.totalLines;
     totalChunks = prefetchedInfo.totalChunks;
-    if (prefetchedInfo.cached && prefetchedInfo.lrc) {
-      cachedLrc = prefetchedInfo.lrc;
-    }
+    cachedLrc = prefetchedInfo.lrc;
   } else {
-    // Fetch chunk info (metadata only)
+    // Always call get-chunk-info to check for cached consolidated data
+    // This ensures we use cached data even if prefetchedInfo.cached was false
+    // (server cache state may have changed since initial fetch)
     const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -251,7 +252,8 @@ export interface ProcessFuriganaOptions {
 
 /**
  * Process furigana chunks with streaming progress.
- * If prefetchedInfo is provided, skips the initial get-chunk-info call.
+ * Always checks for cached consolidated data unless force=true.
+ * If prefetchedInfo has cached data, uses it directly to skip the API call.
  */
 export async function processFuriganaChunks(
   songId: string,
@@ -264,15 +266,15 @@ export async function processFuriganaChunks(
   let totalChunks: number;
   let cachedData: Array<Array<{ text: string; reading?: string }>> | undefined;
 
-  if (prefetchedInfo) {
-    // Use pre-fetched info from initial lyrics request
+  // If prefetched info has cached data, use it directly (skip API call)
+  if (prefetchedInfo?.cached && prefetchedInfo.data && !force) {
     totalLines = prefetchedInfo.totalLines;
     totalChunks = prefetchedInfo.totalChunks;
-    if (prefetchedInfo.cached && prefetchedInfo.data) {
-      cachedData = prefetchedInfo.data;
-    }
+    cachedData = prefetchedInfo.data;
   } else {
-    // Fetch chunk info (metadata only)
+    // Always call get-chunk-info to check for cached consolidated data
+    // This ensures we use cached data even if prefetchedInfo.cached was false
+    // (server cache state may have changed since initial fetch)
     const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -400,7 +402,8 @@ export interface ProcessSoramimiOptions {
 
 /**
  * Process soramimi chunks with streaming progress.
- * If prefetchedInfo is provided, skips the initial get-chunk-info call.
+ * Always checks for cached consolidated data unless force=true.
+ * If prefetchedInfo has cached data, uses it directly to skip the API call.
  */
 export async function processSoramimiChunks(
   songId: string,
@@ -413,20 +416,19 @@ export async function processSoramimiChunks(
   let totalChunks: number;
   let cachedData: Array<Array<{ text: string; reading?: string }>> | undefined;
 
-  if (prefetchedInfo) {
-    // Use pre-fetched info from initial lyrics request
+  // If prefetched info has cached data, use it directly (skip API call)
+  if (prefetchedInfo?.cached && prefetchedInfo.data && !force) {
     totalLines = prefetchedInfo.totalLines;
     totalChunks = prefetchedInfo.totalChunks;
-    if (prefetchedInfo.cached && prefetchedInfo.data) {
-      cachedData = prefetchedInfo.data;
-    }
-    // Handle skipped case (e.g., Chinese lyrics)
-    if (prefetchedInfo.skipped) {
-      onProgress?.({ completedChunks: 0, totalChunks: 0, percentage: 100 });
-      return []; // Return empty array for skipped content
-    }
+    cachedData = prefetchedInfo.data;
+  } else if (prefetchedInfo?.skipped) {
+    // Handle skipped case from prefetch (e.g., Chinese lyrics)
+    onProgress?.({ completedChunks: 0, totalChunks: 0, percentage: 100 });
+    return []; // Return empty array for skipped content
   } else {
-    // Fetch chunk info (fast - just returns metadata)
+    // Always call get-chunk-info to check for cached consolidated data
+    // This ensures we use cached data even if prefetchedInfo.cached was false
+    // (server cache state may have changed since initial fetch)
     const res = await abortableFetch(getApiUrl(`/api/song/${songId}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
