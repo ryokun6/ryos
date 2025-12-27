@@ -119,42 +119,20 @@ export function FullscreenPlayerControls({
     return null;
   }, [currentLyrics]);
 
-  // Get pronunciation button glyph based on lyrics language and soramimi state
+  // Get pronunciation button glyph based on active romanization setting
   const getPronunciationGlyph = () => {
-    if (lyricsLanguage === "ja" || lyricsLanguage === "zh") {
-      // Show 空 when soramimi is enabled, otherwise show 漢
-      return romanization?.chineseSoramimi ? "空" : "漢";
-    }
-    if (lyricsLanguage === "ko") return "가";
+    if (!romanization?.enabled) return "文";
+    // Priority: soramimi > romaji > furigana > korean > pinyin
+    if (romanization.chineseSoramimi) return "空";
+    if (romanization.japaneseRomaji) return "Ro";
+    if (romanization.japaneseFurigana) return "ふ";
+    if (romanization.korean) return "Ko";
+    if (romanization.chinese) return "拼";
     return "文";
   };
 
-  // Get pronunciation button ruby text based on lyrics language
-  const getPronunciationRuby = () => {
-    if (lyricsLanguage === "ja") {
-      // Show romaji if enabled, otherwise show furigana
-      return romanization?.japaneseRomaji ? "kan" : "かん";
-    }
-    if (lyricsLanguage === "ko") return "ga";
-    if (lyricsLanguage === "zh") return "kan";
-    return "Aa";
-  };
-
-  // Check if romanization is active - show ruby when furigana/romaji is on but NOT soramimi
-  const isRomanizationActiveForLyrics = () => {
-    if (!romanization?.enabled) return false;
-    // For Japanese/Chinese: show ruby when furigana/pinyin is on, but NOT when soramimi is on
-    if (lyricsLanguage === "ja") {
-      if (romanization.chineseSoramimi) return false; // Soramimi shows 空 without ruby
-      return romanization.japaneseFurigana || romanization.japaneseRomaji;
-    }
-    if (lyricsLanguage === "zh") {
-      if (romanization.chineseSoramimi) return false; // Soramimi shows 空 without ruby
-      return romanization.chinese;
-    }
-    if (lyricsLanguage === "ko") return romanization.korean;
-    return false;
-  };
+  // No ruby needed - the glyph itself indicates the active mode
+  const isRomanizationActiveForLyrics = () => false;
 
   // Get font label based on current locale
   const getFontLabel = () => {
