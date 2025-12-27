@@ -119,11 +119,13 @@ export function FullscreenPlayerControls({
     return null;
   }, [currentLyrics]);
 
-  // Get pronunciation button glyph based on lyrics language
+  // Get pronunciation button glyph based on lyrics language and soramimi state
   const getPronunciationGlyph = () => {
-    if (lyricsLanguage === "ja") return "漢";
+    // Show 空 when soramimi is enabled, otherwise show 漢
+    if (lyricsLanguage === "ja" || lyricsLanguage === "zh") {
+      return romanization?.chineseSoramimi ? "空" : "漢";
+    }
     if (lyricsLanguage === "ko") return "가";
-    if (lyricsLanguage === "zh") return "漢";
     return "文";
   };
 
@@ -131,20 +133,22 @@ export function FullscreenPlayerControls({
   const getPronunciationRuby = () => {
     if (lyricsLanguage === "ja") {
       // Show romaji if enabled, otherwise show furigana
-      return romanization?.japaneseRomaji ? "han" : "かん";
+      return romanization?.japaneseRomaji ? "sora" : "そら";
     }
     if (lyricsLanguage === "ko") return "ga";
-    if (lyricsLanguage === "zh") return "hàn";
+    if (lyricsLanguage === "zh") return "sora";
     return "Aa";
   };
 
-  // Check if romanization is active for the current lyrics language
+  // Check if soramimi is active - only show ruby annotation when soramimi is on
   const isRomanizationActiveForLyrics = () => {
     if (!romanization?.enabled) return false;
-    if (lyricsLanguage === "ja") return romanization.japaneseFurigana || romanization.japaneseRomaji;
+    // For Japanese and Chinese, only show ruby when soramimi is enabled
+    if (lyricsLanguage === "ja" || lyricsLanguage === "zh") {
+      return romanization.chineseSoramimi ?? false;
+    }
     if (lyricsLanguage === "ko") return romanization.korean;
-    if (lyricsLanguage === "zh") return romanization.chinese;
-    return romanization.enabled; // Default fallback
+    return false;
   };
 
   // Get font label based on current locale
