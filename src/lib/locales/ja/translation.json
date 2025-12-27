@@ -1154,7 +1154,7 @@
           "title": "表示とフルスクリーン"
         },
         "lyricsPronunciation": {
-          "description": "翻訳、ふりがな、ローマ字、ピンイン付きで同期歌詞を表示。",
+          "description": "翻訳、フリガナ、ローマ字、ピンイン付きで同期歌詞を表示。",
           "title": "歌詞・発音"
         },
         "playbackControls": {
@@ -1174,6 +1174,11 @@
         "enter": "Enter",
         "escape": "Escape",
         "select": "選択"
+      },
+      "lyrics": {
+        "noLyricsFound": "歌詞が見つかりません",
+        "searchForLyrics": "歌詞を手動で検索",
+        "search": "検索"
       },
       "menu": {
         "aboutIpod": "iPodについて",
@@ -1198,13 +1203,13 @@
         "fontSansSerif": "ゴシック",
         "fontSerif": "明朝",
         "fullScreen": "全画面表示",
-        "furigana": "ふりがな",
+        "furigana": "フリガナ",
         "importLibrary": "ライブラリを読み込む...",
         "ipodHelp": "iPod ヘルプ",
-        "japaneseFurigana": "日本語ふりがな",
+        "japaneseFurigana": "日本語フリガナ",
         "japaneseRomaji": "日本語ローマ字",
-        "korean": "ローマ字",
-        "koreanRomanization": "韓国語",
+        "korean": "韓国語",
+        "koreanRomanization": "韓国語のローマ字表記",
         "lcdFilter": "LCD フィルター",
         "library": "ライブラリ",
         "lyrics": "歌詞",
@@ -1264,7 +1269,7 @@
         "libraryCleared": "ライブラリをクリアしました",
         "lightOff": "ライトオフ",
         "lightOn": "ライトオン",
-        "loadingFurigana": "振り仮名を読み込み中…",
+        "loadingFurigana": "フリガナを読み込み中…",
         "loadingLyrics": "歌詞を読み込み中…",
         "offset": "オフセット",
         "repeatAll": "全てリピート",
@@ -1319,7 +1324,7 @@
           "title": "キーボードショートカット"
         },
         "stylePronunciation": {
-          "description": "フォント、レイアウト、翻訳を変更し、ふりがな/ローマ字/ピンインを追加。",
+          "description": "フォント、レイアウト、翻訳を変更し、フリガナ/ローマ字/ピンインを追加。",
           "title": "スタイル・発音"
         },
         "syncLyricsTiming": {
@@ -1334,6 +1339,11 @@
           "description": "Ryoに曲の再生、操作、設定変更をチャットで依頼できます。",
           "title": "チャットと連携"
         }
+      },
+      "lyrics": {
+        "noLyricsFound": "歌詞が見つかりません",
+        "searchForLyrics": "歌詞を手動で検索",
+        "search": "検索"
       },
       "menu": {
         "aboutKaraoke": "カラオケについて",

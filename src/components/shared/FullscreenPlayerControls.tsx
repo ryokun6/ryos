@@ -103,11 +103,11 @@ export function FullscreenPlayerControls({
   // Get pronunciation button glyph based on active romanization setting
   const getPronunciationGlyph = () => {
     if (!romanization?.enabled) return "漢";
-    // Priority: soramimi > romaji > furigana > korean > pinyin
+    // Priority: soramimi > romaji > korean > furigana > pinyin
     if (romanization.chineseSoramimi) return "空";
     if (romanization.japaneseRomaji) return "Ro";
-    if (romanization.japaneseFurigana) return "ふ";
     if (romanization.korean) return "Ko";
+    if (romanization.japaneseFurigana) return "ふ";
     if (romanization.chinese) return "拼";
     return "漢";
   };

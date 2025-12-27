@@ -1175,6 +1175,11 @@
         "escape": "Esci",
         "select": "Seleziona"
       },
+      "lyrics": {
+        "noLyricsFound": "Testi non trovati",
+        "searchForLyrics": "Cerca i testi manualmente",
+        "search": "Cerca"
+      },
       "menu": {
         "aboutIpod": "Informazioni su iPod",
         "addSong": "Aggiungi brano...",
@@ -1203,8 +1208,8 @@
         "ipodHelp": "Aiuto iPod",
         "japaneseFurigana": "Giapponese Furigana",
         "japaneseRomaji": "Giapponese Romaji",
-        "korean": "Romanizzazione",
-        "koreanRomanization": "Coreano",
+        "korean": "Coreano",
+        "koreanRomanization": "Romanizzazione coreana",
         "lcdFilter": "Filtro LCD",
         "library": "Libreria",
         "lyrics": "Testo",
@@ -1334,6 +1339,11 @@
           "description": "Chiedi a Ryo di riprodurre brani, controllare la riproduzione o regolare le impostazioni via chat.",
           "title": "Funziona con Chat"
         }
+      },
+      "lyrics": {
+        "noLyricsFound": "Testi non trovati",
+        "searchForLyrics": "Cerca i testi manualmente",
+        "search": "Cerca"
       },
       "menu": {
         "aboutKaraoke": "Informazioni su Karaoke",

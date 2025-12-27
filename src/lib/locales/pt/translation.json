@@ -136,8 +136,8 @@
         "loggedInAs": "Sessão iniciada como {{username}}",
         "messagesCount": "{{count}} mensagem",
         "messagesCount_plural": "{{count}} mensagens",
-        "roomsCount": "{{count}} quarto",
-        "roomsCount_plural": "{{count}} quartos",
+        "roomsCount": "{{count}} sala",
+        "roomsCount_plural": "{{count}} salas",
         "songsCount": "{{count}} músicas",
         "usersCount": "{{count}} usuário",
         "usersCount_plural": "{{count}} usuários"
@@ -1175,6 +1175,11 @@
         "escape": "Escape",
         "select": "Selecionar"
       },
+      "lyrics": {
+        "noLyricsFound": "Letras não encontradas",
+        "searchForLyrics": "Procurar letras manualmente",
+        "search": "Procurar"
+      },
       "menu": {
         "aboutIpod": "Sobre o iPod",
         "addSong": "Adicionar Música...",
@@ -1203,8 +1208,8 @@
         "ipodHelp": "Ajuda do iPod",
         "japaneseFurigana": "Japonês Furigana",
         "japaneseRomaji": "Japonês Romaji",
-        "korean": "Romanização",
-        "koreanRomanization": "Coreano",
+        "korean": "Coreano",
+        "koreanRomanization": "Romanização coreana",
         "lcdFilter": "Filtro LCD",
         "library": "Biblioteca",
         "lyrics": "Letras",
@@ -1334,6 +1339,11 @@
           "description": "Peça ao Ryo para tocar músicas, controlar a reprodução ou ajustar configurações via chat.",
           "title": "Funciona com Chats"
         }
+      },
+      "lyrics": {
+        "noLyricsFound": "Letras não encontradas",
+        "searchForLyrics": "Procurar letras manualmente",
+        "search": "Procurar"
       },
       "menu": {
         "aboutKaraoke": "Sobre o Karaokê",

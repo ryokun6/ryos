@@ -1175,6 +1175,11 @@
         "escape": "Échap",
         "select": "Sélectionner"
       },
+      "lyrics": {
+        "noLyricsFound": "Paroles introuvables",
+        "searchForLyrics": "Rechercher les paroles manuellement",
+        "search": "Rechercher"
+      },
       "menu": {
         "aboutIpod": "À propos de l'iPod",
         "addSong": "Ajouter un morceau...",
@@ -1203,8 +1208,8 @@
         "ipodHelp": "Aide iPod",
         "japaneseFurigana": "Japonais Furigana",
         "japaneseRomaji": "Japonais Romaji",
-        "korean": "Romanisation",
-        "koreanRomanization": "Coréen",
+        "korean": "Coréen",
+        "koreanRomanization": "Romanisation coréenne",
         "lcdFilter": "Filtre LCD",
         "library": "Bibliothèque",
         "lyrics": "Paroles",
@@ -1334,6 +1339,11 @@
           "description": "Demandez à Ryo de jouer des chansons, contrôler la lecture ou ajuster les paramètres par chat.",
           "title": "Fonctionne avec Chats"
         }
+      },
+      "lyrics": {
+        "noLyricsFound": "Paroles introuvables",
+        "searchForLyrics": "Rechercher les paroles manuellement",
+        "search": "Rechercher"
       },
       "menu": {
         "aboutKaraoke": "À propos de Karaoké",

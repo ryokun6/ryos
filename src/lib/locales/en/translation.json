@@ -1280,7 +1280,7 @@
         "clearCache": "Clear Cache",
         "cacheCleared": "Cache cleared",
         "traditionalChinese": "繁體",
-        "korean": "Romanization",
+        "korean": "Korean",
         "furigana": "Furigana",
         "romanization": "Romanization",
         "pronunciation": "Pronunciation",
@@ -1288,7 +1288,7 @@
         "enableRomanization": "Enable Romanization",
         "japaneseFurigana": "Japanese Furigana",
         "japaneseRomaji": "Japanese Romaji",
-        "koreanRomanization": "Korean",
+        "koreanRomanization": "Korean Romanization",
         "chinesePinyin": "Chinese (Pinyin)",
         "chineseSoramimi": "Chinese (Soramimi/Misheard)",
         "multi": "Multi",
@@ -1490,6 +1490,11 @@
           "title": "Display & Fullscreen",
           "description": "Adjust backlight, themes, and switch to fullscreen video."
         }
+      },
+      "lyrics": {
+        "noLyricsFound": "No lyrics found",
+        "searchForLyrics": "Search for lyrics manually",
+        "search": "Search"
       }
     },
     "karaoke": {
@@ -1516,6 +1521,10 @@
           "title": "Add & Search Songs",
           "description": "Search YouTube for songs, or paste a URL to add to your library."
         },
+        "instantTranslations": {
+          "title": "Instant Translations",
+          "description": "Instantly translate lyrics into multiple languages."
+        },
         "syncLyricsTiming": {
           "title": "Sync Lyrics Timing",
           "description": "Use [ ] keys, mouse wheel, or drag up/down to adjust lyrics offset."
@@ -1536,6 +1545,11 @@
           "title": "Keyboard Shortcuts",
           "description": "Space to play/pause, arrow keys to seek and change tracks."
         }
+      },
+      "lyrics": {
+        "noLyricsFound": "No lyrics found",
+        "searchForLyrics": "Search for lyrics manually",
+        "search": "Search"
       }
     },
     "synth": {
