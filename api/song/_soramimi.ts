@@ -209,8 +209,9 @@ Output (creative, story-like with natural grouping):
 
 The goal is to create Chinese text that Chinese readers can read aloud and it sounds like singing the original song, while the Chinese text itself tells an evocative mini-story or paints a poetic picture!`;
 
-// AI generation timeout (60 seconds)
-const AI_TIMEOUT_MS = 60000;
+// AI generation timeout (55 seconds - slightly less than Vercel's 60s edge function limit
+// to allow graceful fallback response before the function is killed)
+const AI_TIMEOUT_MS = 55000;
 
 /**
  * Clean AI output by removing malformed segments like {reading} without text

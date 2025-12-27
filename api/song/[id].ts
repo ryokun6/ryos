@@ -42,6 +42,7 @@ import {
 // Import from split modules
 import {
   CHUNK_SIZE,
+  SORAMIMI_CHUNK_SIZE,
   UpdateSongSchema,
   FetchLyricsSchema,
   SearchLyricsSchema,
@@ -357,15 +358,15 @@ export default async function handler(req: Request) {
             };
           }
           
-          // Include soramimi info if requested
+          // Include soramimi info if requested (uses smaller chunk size due to complex prompt)
           if (includeSoramimi && song.lyrics.parsedLines) {
             const totalLines = song.lyrics.parsedLines.length;
-            const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+            const totalChunks = Math.ceil(totalLines / SORAMIMI_CHUNK_SIZE);
             const hasSoramimi = !!(song.soramimi && song.soramimi.length > 0);
             response.soramimi = {
               totalLines,
               totalChunks,
-              chunkSize: CHUNK_SIZE,
+              chunkSize: SORAMIMI_CHUNK_SIZE,
               cached: hasSoramimi,
               ...(hasSoramimi ? { data: song.soramimi } : {}),
             };
@@ -498,13 +499,14 @@ export default async function handler(req: Request) {
         }
         
         // Include soramimi chunk info if requested (not cached since lyrics are fresh)
+        // Uses smaller chunk size due to complex creative prompt
         if (includeSoramimi) {
           const totalLines = parsedLines.length;
-          const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+          const totalChunks = Math.ceil(totalLines / SORAMIMI_CHUNK_SIZE);
           response.soramimi = {
             totalLines,
             totalChunks,
-            chunkSize: CHUNK_SIZE,
+            chunkSize: SORAMIMI_CHUNK_SIZE,
             cached: false,
           };
         }
@@ -547,7 +549,9 @@ export default async function handler(req: Request) {
         }
 
         const totalLines = song.lyrics.parsedLines.length;
-        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+        // Use smaller chunk size for soramimi due to complex creative prompt
+        const effectiveChunkSize = operation === "soramimi" ? SORAMIMI_CHUNK_SIZE : CHUNK_SIZE;
+        const totalChunks = Math.ceil(totalLines / effectiveChunkSize);
 
         // For soramimi: skip if lyrics are mostly Chinese (空耳 doesn't make sense for Chinese lyrics)
         if (operation === "soramimi" && lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
@@ -555,7 +559,7 @@ export default async function handler(req: Request) {
           return jsonResponse({
             totalLines,
             totalChunks: 0,
-            chunkSize: CHUNK_SIZE,
+            chunkSize: effectiveChunkSize,
             cached: false,
             skipped: true,
             skipReason: "chinese_lyrics",
@@ -594,12 +598,12 @@ export default async function handler(req: Request) {
         }
 
         // Log chunk info (no inline processing - let client fetch all chunks in parallel)
-        logInfo(requestId, `Chunk info: ${operation}`, { totalLines, totalChunks, cached });
+        logInfo(requestId, `Chunk info: ${operation}`, { totalLines, totalChunks, chunkSize: effectiveChunkSize, cached });
 
         return jsonResponse({
           totalLines,
           totalChunks,
-          chunkSize: CHUNK_SIZE,
+          chunkSize: effectiveChunkSize,
           cached,
           // If cached, return the full result
           ...(cached && operation === "translate" && language && (krcDerivedTranslation || song.translations?.[language])
@@ -790,15 +794,16 @@ export default async function handler(req: Request) {
         }
 
         const totalLines = song.lyrics.parsedLines.length;
-        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
+        // Use smaller chunk size for soramimi due to complex creative prompt
+        const totalChunks = Math.ceil(totalLines / SORAMIMI_CHUNK_SIZE);
 
         if (chunkIndex < 0 || chunkIndex >= totalChunks) {
           return errorResponse(`Invalid chunk index: ${chunkIndex}. Valid range: 0-${totalChunks - 1}`);
         }
 
-        // Extract chunk
-        const startIndex = chunkIndex * CHUNK_SIZE;
-        const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
+        // Extract chunk using smaller soramimi chunk size
+        const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
+        const endIndex = Math.min(startIndex + SORAMIMI_CHUNK_SIZE, totalLines);
         const chunkLines = song.lyrics.parsedLines.slice(startIndex, endIndex);
 
         // Convert to LyricLine format and generate soramimi
