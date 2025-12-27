@@ -107,9 +107,10 @@ export function useFurigana({
   onLoadingChangeRef.current = onLoadingChange;
 
   // Notify parent when loading state changes (use ref to avoid effect dependency)
+  // Depends on both individual states since isFetching is derived
   useEffect(() => {
-    onLoadingChangeRef.current?.(isFetching);
-  }, [isFetching]);
+    onLoadingChangeRef.current?.(isFetchingFurigana || isFetchingSoramimi);
+  }, [isFetchingFurigana, isFetchingSoramimi]);
 
   // Compute cache key outside effect - only when lines actually change
   const cacheKey = useMemo(() => {

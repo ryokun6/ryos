@@ -70,6 +70,7 @@ export function IpodScreen({
   onPreviousTrack,
   furiganaMap,
   soramimiMap,
+  isFetchingFurigana,
 }: IpodScreenProps) {
   const { t } = useTranslation();
 
@@ -306,7 +307,7 @@ export function IpodScreen({
 
             {/* Activity Indicator */}
             <AnimatePresence>
-              {(lyricsControls.isLoading || lyricsControls.isTranslating) && (
+              {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana) && (
                 <motion.div
                   className="absolute top-4 right-4 z-40 pointer-events-none"
                   initial={{ opacity: 0, scale: 0.8 }}

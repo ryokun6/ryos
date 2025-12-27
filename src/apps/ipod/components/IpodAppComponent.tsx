@@ -1634,6 +1634,7 @@ export function IpodAppComponent({
               lyricsControls={fullScreenLyricsControls}
               furiganaMap={furiganaMap}
               soramimiMap={soramimiMap}
+              isFetchingFurigana={isFetchingFurigana}
               onNextTrack={() => {
                 if (isOffline) {
                   showOfflineStatus();

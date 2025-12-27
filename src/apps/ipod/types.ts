@@ -120,6 +120,8 @@ export interface IpodScreenProps {
   furiganaMap?: Map<string, FuriganaSegment[]>;
   /** Soramimi map from parent (Map of startTimeMs -> FuriganaSegment[]) */
   soramimiMap?: Map<string, FuriganaSegment[]>;
+  /** Whether fetching furigana/soramimi annotations */
+  isFetchingFurigana?: boolean;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery
