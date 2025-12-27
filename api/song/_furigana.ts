@@ -35,7 +35,7 @@ export function isChineseText(text: string): boolean {
  * Used to skip soramimi generation for Chinese lyrics
  * 
  * This checks the overall character composition of lyrics, not just kanji-containing lines.
- * Korean songs with Chinese credits should NOT be flagged as mostly Chinese.
+ * Korean/English songs with Chinese credits should NOT be flagged as mostly Chinese.
  */
 export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
   if (!lines || lines.length === 0) return false;
@@ -45,10 +45,16 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
   let kanaChars = 0;
   let kanjiChars = 0;
   let totalCjkChars = 0;
+  let totalNonWhitespaceChars = 0;
   
   for (const line of lines) {
     const text = line.words;
     for (const char of text) {
+      // Skip whitespace
+      if (/\s/.test(char)) continue;
+      
+      totalNonWhitespaceChars++;
+      
       if (/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(char)) {
         hangulChars++;
         totalCjkChars++;
@@ -64,6 +70,10 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
   
   // No CJK characters at all - not Chinese
   if (totalCjkChars === 0) return false;
+  
+  // If CJK characters are less than 50% of total text, it's likely credits in an English/other song
+  // Don't flag as Chinese
+  if (totalNonWhitespaceChars > 0 && totalCjkChars / totalNonWhitespaceChars < 0.5) return false;
   
   // If there's significant Korean content (>20% of CJK chars are Hangul), 
   // don't classify as Chinese - it's likely a Korean song with Chinese credits
