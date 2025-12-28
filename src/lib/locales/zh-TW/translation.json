@@ -2066,6 +2066,11 @@
       "virtualMemory": "虛擬記憶體",
       "virtualMemoryOff": "關閉"
     },
+    "activity": {
+      "adding": "新增",
+      "furigana": "振假名",
+      "soramimi": "空耳"
+    },
     "appleMenu": {
       "aboutThisComputer": "關於此電腦"
     },

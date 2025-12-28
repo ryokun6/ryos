@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { ActivityIndicator } from "./activity-indicator";
 import { getActivityLabel, type ActivityInfo } from "@/hooks/useActivityLabel";
+import { useTranslation } from "react-i18next";
 
 export type { ActivityInfo } from "@/hooks/useActivityLabel";
 
@@ -28,7 +29,8 @@ export function ActivityIndicatorWithLabel({
   labelClassName,
   showLabel = true,
 }: ActivityIndicatorWithLabelProps) {
-  const { isActive, label } = getActivityLabel(state);
+  const { t } = useTranslation();
+  const { isActive, label } = getActivityLabel(state, t);
 
   if (!isActive) {
     return null;

@@ -3,6 +3,11 @@
     "loading": {
       "default": "Loading..."
     },
+    "activity": {
+      "adding": "Adding",
+      "soramimi": "Soramimi",
+      "furigana": "Furigana"
+    },
     "window": {
       "minimizeDisabled": "Minimize (disabled)",
       "maximizeDisabled": "Maximize (disabled)"

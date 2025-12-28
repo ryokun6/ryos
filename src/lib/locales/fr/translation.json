@@ -2066,6 +2066,11 @@
       "virtualMemory": "Mémoire virtuelle",
       "virtualMemoryOff": "Désactivé"
     },
+    "activity": {
+      "adding": "Ajout",
+      "furigana": "Furigana",
+      "soramimi": "Soramimi"
+    },
     "appleMenu": {
       "aboutThisComputer": "À propos de cet ordinateur"
     },

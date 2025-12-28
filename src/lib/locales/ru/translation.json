@@ -2066,6 +2066,11 @@
       "virtualMemory": "Виртуальная память",
       "virtualMemoryOff": "Выкл."
     },
+    "activity": {
+      "adding": "Добавление",
+      "furigana": "Фуригана",
+      "soramimi": "Сорамими"
+    },
     "appleMenu": {
       "aboutThisComputer": "Об этом компьютере"
     },

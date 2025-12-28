@@ -37,11 +37,16 @@ export interface ActivityLabelResult {
   label: string | null;
 }
 
+/** Translation function type */
+type TranslationFn = (key: string, options?: Record<string, unknown>) => string;
+
 /**
  * Computes the activity label based on current loading states.
  * Priority: Adding > Translation (with progress) > Soramimi > Furigana > Translation (no progress)
+ * @param info - Activity state information
+ * @param t - Optional translation function for i18n support
  */
-export function getActivityLabel(info: ActivityInfo): ActivityLabelResult {
+export function getActivityLabel(info: ActivityInfo, t?: TranslationFn): ActivityLabelResult {
   const {
     isLoadingLyrics,
     isTranslating,
@@ -60,11 +65,14 @@ export function getActivityLabel(info: ActivityInfo): ActivityLabelResult {
     return { isActive: false, label: null };
   }
 
+  // Helper to translate or return fallback
+  const translate = (key: string, fallback: string) => t ? t(key, { defaultValue: fallback }) : fallback;
+
   let label: string | null = null;
 
   // Simple priority: Adding > Translation > Soramimi > Furigana
   if (isAddingSong) {
-    label = "Adding";
+    label = translate("common.activity.adding", "Adding");
   } else if (isTranslating) {
     const langName = translationLanguage ? (languageNames[translationLanguage] || translationLanguage) : null;
     if (translationProgress !== undefined && translationProgress < 100) {
@@ -73,16 +81,18 @@ export function getActivityLabel(info: ActivityInfo): ActivityLabelResult {
       label = langName;
     }
   } else if (isFetchingSoramimi) {
+    const soramimiLabel = translate("common.activity.soramimi", "Soramimi");
     if (soramimiProgress !== undefined && soramimiProgress < 100) {
-      label = `${Math.round(soramimiProgress)}% Soramimi`;
+      label = `${Math.round(soramimiProgress)}% ${soramimiLabel}`;
     } else {
-      label = "Soramimi";
+      label = soramimiLabel;
     }
   } else if (isFetchingFurigana) {
+    const furiganaLabel = translate("common.activity.furigana", "Furigana");
     if (furiganaProgress !== undefined && furiganaProgress < 100) {
-      label = `${Math.round(furiganaProgress)}% Furigana`;
+      label = `${Math.round(furiganaProgress)}% ${furiganaLabel}`;
     } else {
-      label = "Furigana";
+      label = furiganaLabel;
     }
   }
 

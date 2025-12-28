@@ -2066,6 +2066,11 @@
       "virtualMemory": "가상 메모리",
       "virtualMemoryOff": "끔"
     },
+    "activity": {
+      "adding": "추가 중",
+      "furigana": "후리가나",
+      "soramimi": "소라미미"
+    },
     "appleMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여"
     },

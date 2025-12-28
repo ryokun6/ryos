@@ -2066,6 +2066,11 @@
       "virtualMemory": "仮想メモリ",
       "virtualMemoryOff": "オフ"
     },
+    "activity": {
+      "adding": "追加中",
+      "furigana": "ふりがな",
+      "soramimi": "空耳"
+    },
     "appleMenu": {
       "aboutThisComputer": "このコンピュータについて"
     },
