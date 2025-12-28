@@ -359,7 +359,7 @@ export function getTranslationSystemPrompt(targetLanguage: string): string {
 Output format: Number each line like "1: translation", "2: translation", etc.
 If already in ${targetLanguage}, return as-is.
 For instrumental lines (e.g., "---"), return original.
-No punctuation at end of lines. Preserve artistic intent and rhythm.
+Preserve punctuation from original (like contractions: I'm, don't, it's). Don't add new punctuation at end of lines. Preserve artistic intent and rhythm.
 
 Example output format:
 1: First translated line
@@ -391,7 +391,7 @@ export async function streamTranslation(
 Output format: Number each line like "1: translation", "2: translation", etc.
 If already in ${targetLanguage}, return as-is.
 For instrumental lines (e.g., "---"), return original.
-No punctuation at end of lines. Preserve artistic intent and rhythm.
+Preserve punctuation from original (like contractions: I'm, don't, it's). Don't add new punctuation at end of lines. Preserve artistic intent and rhythm.
 
 Example output format:
 1: First translated line
