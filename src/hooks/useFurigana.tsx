@@ -18,7 +18,14 @@ import {
   getFuriganaSegmentsPronunciationOnly,
 } from "@/utils/romanization";
 import type { FuriganaSegment } from "@/utils/romanization";
-import { processFuriganaSSE, processSoramimiSSE, type FuriganaChunkInfo, type SoramimiChunkInfo } from "@/utils/chunkedStream";
+import { 
+  processFuriganaSSE, 
+  processSoramimiSSE, 
+  type FuriganaChunkInfo, 
+  type SoramimiChunkInfo,
+  type FuriganaResult,
+  type SoramimiResult,
+} from "@/utils/chunkedStream";
 
 // Re-export FuriganaSegment for consumers
 export type { FuriganaSegment };
@@ -51,6 +58,10 @@ interface UseFuriganaReturn {
   isFetchingFurigana: boolean;
   /** Whether currently fetching soramimi specifically */
   isFetchingSoramimi: boolean;
+  /** Whether currently resuming failed furigana lines */
+  isResumingFurigana: boolean;
+  /** Whether currently resuming failed soramimi lines */
+  isResumingSoramimi: boolean;
   /** Progress percentage (0-100) when streaming */
   progress?: number;
   /** Error message if any */
@@ -85,6 +96,11 @@ export function useFurigana({
   const [isFetchingSoramimi, setIsFetchingSoramimi] = useState(false);
   const [progress, setProgress] = useState<number | undefined>();
   const [error, setError] = useState<string>();
+  
+  // Note: Resume is now handled server-side via chunk progress caching
+  // These are kept for interface compatibility but always false
+  const isResumingFurigana = false;
+  const isResumingSoramimi = false;
   
   // Combined fetching state for backwards compatibility
   const isFetching = isFetchingFurigana || isFetchingSoramimi;
@@ -212,6 +228,12 @@ export function useFurigana({
       setFuriganaMap(finalMap);
       furiganaCacheKeyRef.current = cacheKey;
       setIsFetchingFurigana(false);
+      
+      // Note: Partial results are now handled server-side via chunk progress caching
+      // The next request will automatically resume from where it left off
+      if (prefetchedInfo.hasProgress && prefetchedInfo.missingChunks && prefetchedInfo.missingChunks.length > 0) {
+        console.log(`Furigana has ${prefetchedInfo.missingChunks.length} incomplete chunks - will resume on next request`);
+      }
       return;
     }
 
@@ -267,14 +289,14 @@ export function useFurigana({
         setFuriganaMap(new Map(progressiveMap));
       },
     })
-      .then((allFurigana) => {
+      .then((result: FuriganaResult) => {
         if (controller.signal.aborted) return;
         // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
 
         // Final update to ensure we have everything
         const finalMap = new Map<string, FuriganaSegment[]>();
-        allFurigana.forEach((segments, index) => {
+        result.data.forEach((segments, index) => {
           if (index < lines.length && segments) {
             finalMap.set(lines[index].startTimeMs, segments);
           }
@@ -283,6 +305,11 @@ export function useFurigana({
         setFuriganaMap(finalMap);
         furiganaCacheKeyRef.current = cacheKey;
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        
+        // Note: Partial results are now handled server-side via chunk progress caching
+        if (result.isPartial && result.missingChunks.length > 0) {
+          console.log(`Furigana has ${result.missingChunks.length} incomplete chunks - will resume on next request`);
+        }
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -319,6 +346,10 @@ export function useFurigana({
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
+
+  // Note: Resume is now handled server-side via chunk progress caching
+  // When the client reconnects and requests furigana/soramimi, the server
+  // automatically detects any previously cached chunk progress and resumes from there.
 
   // Check conditions for soramimi fetching
   const shouldFetchSoramimi = romanization.enabled && romanization.chineseSoramimi;
@@ -375,6 +406,11 @@ export function useFurigana({
       });
       setSoramimiMap(finalMap);
       soramimiCacheKeyRef.current = cacheKey;
+      
+      // Note: Partial results are now handled server-side via chunk progress caching
+      if (prefetchedSoramimiInfo.hasProgress && prefetchedSoramimiInfo.missingChunks && prefetchedSoramimiInfo.missingChunks.length > 0) {
+        console.log(`Soramimi has ${prefetchedSoramimiInfo.missingChunks.length} incomplete chunks - will resume on next request`);
+      }
       return;
     }
 
@@ -430,14 +466,14 @@ export function useFurigana({
         setSoramimiMap(new Map(progressiveMap));
       },
     })
-      .then((allSoramimi) => {
+      .then((result: SoramimiResult) => {
         if (controller.signal.aborted) return;
         // Check for stale request
         if (effectSongId !== currentSongIdRef.current) return;
 
         // Final update to ensure we have everything
         const finalMap = new Map<string, FuriganaSegment[]>();
-        allSoramimi.forEach((segments, index) => {
+        result.data.forEach((segments, index) => {
           if (index < lines.length && segments) {
             finalMap.set(lines[index].startTimeMs, segments);
           }
@@ -446,6 +482,11 @@ export function useFurigana({
         setSoramimiMap(finalMap);
         soramimiCacheKeyRef.current = cacheKey;
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        
+        // Note: Partial results are now handled server-side via chunk progress caching
+        if (result.isPartial && result.missingChunks.length > 0) {
+          console.log(`Soramimi has ${result.missingChunks.length} incomplete chunks - will resume on next request`);
+        }
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -642,6 +683,8 @@ export function useFurigana({
     isFetching,
     isFetchingFurigana,
     isFetchingSoramimi,
+    isResumingFurigana,
+    isResumingSoramimi,
     progress,
     error,
     renderWithFurigana,

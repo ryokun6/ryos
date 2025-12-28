@@ -133,6 +133,121 @@ export const SONG_SET_KEY = "song:all";
 /** Old key prefix for backwards compatibility */
 export const LEGACY_SONG_METADATA_PREFIX = "song:metadata:";
 
+/** In-progress chunk cache TTL (24 hours) */
+const CHUNK_PROGRESS_TTL_SECONDS = 24 * 60 * 60;
+
+// =============================================================================
+// Chunk Progress Caching (for partial result resilience)
+// =============================================================================
+
+/** Types of chunk-based processing */
+export type ChunkProcessingType = "soramimi" | "furigana" | "translation";
+
+/** Get the Redis key for chunk progress */
+function getChunkProgressKey(songId: string, type: ChunkProcessingType, language?: string): string {
+  if (type === "translation" && language) {
+    return `${SONG_KEY_PREFIX}${songId}:${type}:${language}:progress`;
+  }
+  return `${SONG_KEY_PREFIX}${songId}:${type}:progress`;
+}
+
+/** Progress data stored for each type */
+export interface ChunkProgressData<T> {
+  chunks: Record<number, T>;
+  totalChunks: number;
+  startedAt: number;
+}
+
+/**
+ * Save a single successful chunk to the progress cache.
+ * This is called immediately when a chunk succeeds, before all chunks complete.
+ */
+export async function saveChunkProgress<T>(
+  redis: Redis,
+  songId: string,
+  type: ChunkProcessingType,
+  chunkIndex: number,
+  chunkData: T,
+  totalChunks: number,
+  language?: string
+): Promise<void> {
+  const key = getChunkProgressKey(songId, type, language);
+  
+  // Get existing progress or create new
+  const existing = await redis.get(key);
+  const progress: ChunkProgressData<T> = existing 
+    ? (typeof existing === "string" ? JSON.parse(existing) : existing as ChunkProgressData<T>)
+    : { chunks: {}, totalChunks, startedAt: Date.now() };
+  
+  // Add this chunk
+  progress.chunks[chunkIndex] = chunkData;
+  progress.totalChunks = totalChunks;
+  
+  // Save with TTL
+  await redis.set(key, JSON.stringify(progress), { ex: CHUNK_PROGRESS_TTL_SECONDS });
+}
+
+/**
+ * Get all cached chunk progress for a song.
+ * Returns null if no progress cache exists.
+ */
+export async function getChunkProgress<T>(
+  redis: Redis,
+  songId: string,
+  type: ChunkProcessingType,
+  language?: string
+): Promise<ChunkProgressData<T> | null> {
+  const key = getChunkProgressKey(songId, type, language);
+  const data = await redis.get(key);
+  if (!data) return null;
+  return typeof data === "string" ? JSON.parse(data) : data as ChunkProgressData<T>;
+}
+
+/**
+ * Clear the chunk progress cache (called after successful completion).
+ */
+export async function clearChunkProgress(
+  redis: Redis,
+  songId: string,
+  type: ChunkProcessingType,
+  language?: string
+): Promise<void> {
+  const key = getChunkProgressKey(songId, type, language);
+  await redis.del(key);
+}
+
+/**
+ * Get which chunk indices are missing from the progress cache.
+ */
+export function getMissingChunkIndices<T>(
+  progress: ChunkProgressData<T> | null,
+  totalChunks: number
+): number[] {
+  if (!progress) {
+    // No progress - all chunks are missing
+    return Array.from({ length: totalChunks }, (_, i) => i);
+  }
+  
+  const missing: number[] = [];
+  for (let i = 0; i < totalChunks; i++) {
+    if (!(i in progress.chunks)) {
+      missing.push(i);
+    }
+  }
+  return missing;
+}
+
+/**
+ * Check if all chunks are complete in the progress cache.
+ */
+export function isChunkProgressComplete<T>(
+  progress: ChunkProgressData<T> | null,
+  totalChunks: number
+): boolean {
+  if (!progress) return false;
+  return Object.keys(progress.chunks).length >= totalChunks;
+}
+
 // =============================================================================
 // Utility Functions
 // =============================================================================
@@ -287,7 +402,12 @@ export async function saveSong(
   options: SaveSongOptions = {},
   existingSong?: SongDocument | null
 ): Promise<SongDocument> {
-  const { preserveLyrics = false, preserveTranslations = false, preserveFurigana = false, preserveSoramimi = false } = options;
+  const { 
+    preserveLyrics = false, 
+    preserveTranslations = false, 
+    preserveFurigana = false, 
+    preserveSoramimi = false, 
+  } = options;
   const songKey = getSongKey(song.id);
   const now = Date.now();
 
