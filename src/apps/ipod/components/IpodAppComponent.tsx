@@ -1288,7 +1288,10 @@ export function IpodAppComponent({
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
-    includeSoramimi: romanization.chineseSoramimi, // Fetch soramimi info if enabled
+    // Always include soramimi in request to avoid hydration timing issues
+    // (default setting is false, but user's saved setting might be true after hydration)
+    // The server only returns cached soramimi data, doesn't generate anything here
+    includeSoramimi: true,
   });
 
   // Track last song ID we showed a lyrics error toast for to avoid duplicates
