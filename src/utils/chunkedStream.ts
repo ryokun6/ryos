@@ -456,6 +456,7 @@ export async function processFuriganaSSE(
 
               case "line":
                 completedLines++;
+                console.log(`[SSE Furigana] Received line ${data.lineIndex}, progress: ${data.progress}%`);
                 try {
                   onProgress?.({
                     completedLines,
@@ -679,6 +680,7 @@ export async function processSoramimiSSE(
 
               case "line":
                 completedLines++;
+                console.log(`[SSE Soramimi] Received line ${data.lineIndex}, progress: ${data.progress}%`);
                 try {
                   onProgress?.({
                     completedLines,

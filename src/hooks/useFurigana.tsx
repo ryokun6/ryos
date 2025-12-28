@@ -272,6 +272,7 @@ export function useFurigana({
         if (effectSongId !== currentSongIdRef.current) return;
         
         if (lineIndex < lines.length && segments) {
+          console.log(`[Furigana] Line ${lineIndex} received:`, segments.length, 'segments');
           progressiveMap.set(lines[lineIndex].startTimeMs, segments);
           setFuriganaMap(new Map(progressiveMap));
         }
@@ -430,6 +431,7 @@ export function useFurigana({
         if (effectSongId !== currentSongIdRef.current) return;
         
         if (lineIndex < lines.length && segments) {
+          console.log(`[Soramimi] Line ${lineIndex} received:`, segments.length, 'segments');
           progressiveMap.set(lines[lineIndex].startTimeMs, segments);
           setSoramimiMap(new Map(progressiveMap));
         }
