@@ -146,14 +146,16 @@ export function useLyrics({
     }
 
     // Clear state before fetching
+    // Note: We intentionally do NOT clear furiganaInfo/soramimiInfo here.
+    // They will be updated when the fetch completes with new data from the server.
+    // This prevents useFurigana from making a redundant API call while we're still
+    // fetching lyrics (which will include prefetched furigana/soramimi info).
     setOriginalLines([]);
     setTranslatedLines(null);
     setCurrentLine(-1);
     setIsFetchingOriginal(true);
     setIsTranslating(false);
     setError(undefined);
-    setFuriganaInfo(undefined);
-    setSoramimiInfo(undefined);
     translationInfoRef.current = undefined;
 
     const controller = new AbortController();
@@ -213,22 +215,25 @@ export function useLyrics({
         // Store translation info for the translation effect to use (with language to ensure correct matching)
         if (json.translation && translateTo) {
           translationInfoRef.current = { info: json.translation, language: translateTo };
+        } else {
+          translationInfoRef.current = undefined;
         }
 
-        // Store furigana info for useFurigana to use
-        if (json.furigana) {
-          setFuriganaInfo(json.furigana);
-        }
+        // Store furigana info for useFurigana to use (or clear if not included)
+        // This ensures we don't show stale furigana from a previous song
+        setFuriganaInfo(json.furigana ?? undefined);
         
-        // Store soramimi info for useFurigana to use
-        if (json.soramimi) {
-          setSoramimiInfo(json.soramimi);
-        }
+        // Store soramimi info for useFurigana to use (or clear if not included)
+        // This ensures we don't show stale soramimi from a previous song
+        setSoramimiInfo(json.soramimi ?? undefined);
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
         handleLyricsError(err, setError, setOriginalLines, setCurrentLine);
+        // Clear furigana/soramimi info on error to avoid showing stale data
+        setFuriganaInfo(undefined);
+        setSoramimiInfo(undefined);
       })
       .finally(() => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
