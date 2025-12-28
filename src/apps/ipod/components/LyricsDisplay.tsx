@@ -20,7 +20,6 @@ import {
   hasKanaTextLocal,
   hasKoreanText,
   KOREAN_REGEX,
-  renderFuriganaSegments,
   renderKoreanWithRomanization,
   renderChineseWithPinyin,
   renderKanaWithRomaji,
@@ -150,115 +149,6 @@ const ErrorState = ({
 
 
 
-/**
- * Result of mapping furigana to a word, including timing adjustments
- * When a furigana segment spans multiple words, the first word gets extended timing
- */
-interface WordFuriganaMapping {
-  /** The furigana segments for this word, or null if word was borrowed by a previous word */
-  segments: FuriganaSegment[] | null;
-  /** Extra duration (in ms) to add to this word's animation because it covers borrowed characters */
-  extraDurationMs: number;
-}
-
-/**
- * Map furigana segments to individual words based on character positions
- * When a segment with reading spans multiple words, keeps it intact with the first word
- * Returns an array where each index corresponds to a word's furigana mapping
- * Words whose characters were "borrowed" by a previous segment get null segments to indicate skip
- * Words that borrow from future words get extraDurationMs to extend their animation
- */
-function mapWordsToFurigana(
-  wordTimings: LyricWord[],
-  furiganaSegments: FuriganaSegment[]
-): WordFuriganaMapping[] {
-  const result: WordFuriganaMapping[] = [];
-  
-  let segmentIndex = 0;
-  let charInSegment = 0;
-  // Track how many chars were "borrowed" from future words by a previous segment
-  let charsBorrowedFromFuture = 0;
-  // Track which word index borrowed the chars so we can add extra duration to it
-  let borrowingWordIndex = -1;
-  
-  for (let wordIndex = 0; wordIndex < wordTimings.length; wordIndex++) {
-    const word = wordTimings[wordIndex];
-    
-    // If this word's characters were already rendered by a previous word's furigana
-    if (charsBorrowedFromFuture >= word.text.length) {
-      charsBorrowedFromFuture -= word.text.length;
-      result.push({ segments: null, extraDurationMs: 0 }); // Signal to skip this word entirely
-      
-      // Add this word's duration to the borrowing word's extra duration
-      if (borrowingWordIndex >= 0 && result[borrowingWordIndex]) {
-        result[borrowingWordIndex].extraDurationMs += word.durationMs;
-      }
-      continue;
-    }
-    
-    // Partial borrow - skip some chars but this word still gets some content
-    if (charsBorrowedFromFuture > 0) {
-      // Add proportional duration for the borrowed portion
-      if (borrowingWordIndex >= 0 && result[borrowingWordIndex]) {
-        const borrowedPortion = charsBorrowedFromFuture / word.text.length;
-        result[borrowingWordIndex].extraDurationMs += word.durationMs * borrowedPortion;
-      }
-    }
-    const effectiveWordLength = word.text.length - charsBorrowedFromFuture;
-    charsBorrowedFromFuture = 0;
-    borrowingWordIndex = -1;
-    
-    const wordFurigana: FuriganaSegment[] = [];
-    let wordCharsRemaining = effectiveWordLength;
-    
-    while (wordCharsRemaining > 0 && segmentIndex < furiganaSegments.length) {
-      const segment = furiganaSegments[segmentIndex];
-      const charsAvailableInSegment = segment.text.length - charInSegment;
-      const isStartOfSegment = charInSegment === 0;
-      
-      if (charsAvailableInSegment <= wordCharsRemaining) {
-        // Take the rest of this segment
-        wordFurigana.push({
-          text: segment.text.slice(charInSegment),
-          reading: isStartOfSegment ? segment.reading : undefined,
-        });
-        wordCharsRemaining -= charsAvailableInSegment;
-        segmentIndex++;
-        charInSegment = 0;
-      } else {
-        // Segment is larger than remaining word chars
-        // If this segment has a reading and we're at the start, keep the WHOLE segment
-        // with this word to preserve furigana (don't split kanji compounds)
-        if (isStartOfSegment && segment.reading) {
-          wordFurigana.push({
-            text: segment.text,
-            reading: segment.reading,
-          });
-          // Track how many extra chars we borrowed from future words
-          const extraChars = segment.text.length - wordCharsRemaining;
-          charsBorrowedFromFuture = extraChars;
-          borrowingWordIndex = wordIndex; // This word is the one borrowing
-          // Skip past this entire segment for future words
-          segmentIndex++;
-          charInSegment = 0;
-          wordCharsRemaining = 0;
-        } else {
-          // No reading or we're mid-segment, safe to split
-          wordFurigana.push({
-            text: segment.text.slice(charInSegment, charInSegment + wordCharsRemaining),
-            reading: undefined,
-          });
-          charInSegment += wordCharsRemaining;
-          wordCharsRemaining = 0;
-        }
-      }
-    }
-    
-    result.push({ segments: wordFurigana, extraDurationMs: 0 });
-  }
-  
-  return result;
-}
 
 // Shared shadow constants for word highlighting
 const BASE_SHADOW = "0 0 6px rgba(0,0,0,0.5), 0 0 6px rgba(0,0,0,0.5)";
@@ -292,6 +182,202 @@ const OLD_SCHOOL_PADDING_BOTTOM = "0.2em";
 const CSS_MASK_GRADIENT = `linear-gradient(to right, black calc(var(--mask-progress, 0) * ${100 + FEATHER}% - ${FEATHER}%), transparent calc(var(--mask-progress, 0) * ${100 + FEATHER}%))`;
 // Sharper mask for old-school karaoke
 const CSS_MASK_GRADIENT_OLD_SCHOOL = `linear-gradient(to right, black calc(var(--mask-progress, 0) * ${100 + OLD_SCHOOL_FEATHER}% - ${OLD_SCHOOL_FEATHER}%), transparent calc(var(--mask-progress, 0) * ${100 + OLD_SCHOOL_FEATHER}%))`;
+
+/**
+ * Result of mapping word timings to furigana segments.
+ * When a furigana segment spans multiple word timings, they are combined into one unit.
+ */
+interface FuriganaMappingResult {
+  /** Word indices to render (some may be skipped if combined with previous) */
+  renderItems: Array<{
+    /** Index of the primary word timing */
+    wordIdx: number;
+    /** Combined text from all word timings in this unit */
+    text: string;
+    /** Reading for this unit (if any) */
+    reading?: string;
+    /** Extra duration from combined words (for animation) */
+    extraDurationMs: number;
+    /** Word indices that were combined into this unit (for skip tracking) */
+    combinedWordIndices: number[];
+  }>;
+  /** Set of word indices that should be skipped (combined into another unit) */
+  skipIndices: Set<number>;
+}
+
+/**
+ * Maps word timings to furigana segments using character-position alignment.
+ * Handles cases where AI-generated segment boundaries don't match word timing boundaries.
+ * 
+ * When a furigana segment spans multiple word timings (e.g., {馬鹿|ばか} but words are "馬" and "鹿"),
+ * they are combined into a single render unit so the reading displays correctly over both characters.
+ */
+function mapWordTimingsToFurigana(
+  wordTimings: LyricWord[],
+  furiganaSegments: FuriganaSegment[]
+): FuriganaMappingResult {
+  const renderItems: FuriganaMappingResult["renderItems"] = [];
+  const skipIndices = new Set<number>();
+  
+  if (furiganaSegments.length === 0 || wordTimings.length === 0) {
+    return { renderItems: [], skipIndices };
+  }
+  
+  // Build character-to-segment mapping from furigana
+  interface CharInfo {
+    char: string;
+    segmentIdx: number;
+  }
+  
+  const furiganaChars: CharInfo[] = [];
+  for (let segIdx = 0; segIdx < furiganaSegments.length; segIdx++) {
+    const seg = furiganaSegments[segIdx];
+    for (const char of seg.text) {
+      furiganaChars.push({ char, segmentIdx: segIdx });
+    }
+  }
+  
+  // Build word character list with positions
+  interface WordCharInfo {
+    char: string;
+    wordIdx: number;
+    charIdxInWord: number;
+  }
+  const wordChars: WordCharInfo[] = [];
+  for (let wordIdx = 0; wordIdx < wordTimings.length; wordIdx++) {
+    const trimmed = wordTimings[wordIdx].text.trim();
+    let charIdx = 0;
+    for (const char of trimmed) {
+      wordChars.push({ char, wordIdx, charIdxInWord: charIdx++ });
+    }
+  }
+  
+  // Align characters and track which segment each word-char belongs to
+  const wordCharToSegment: number[] = new Array(wordChars.length).fill(-1);
+  
+  let furiPos = 0;
+  let wordPos = 0;
+  
+  while (furiPos < furiganaChars.length && wordPos < wordChars.length) {
+    const furiChar = furiganaChars[furiPos];
+    const wordChar = wordChars[wordPos];
+    
+    if (furiChar.char === wordChar.char) {
+      wordCharToSegment[wordPos] = furiChar.segmentIdx;
+      furiPos++;
+      wordPos++;
+    } else {
+      // Mismatch - try to recover
+      if (/\s/.test(furiChar.char)) {
+        furiPos++;
+      } else if (/\s/.test(wordChar.char)) {
+        wordPos++;
+      } else {
+        furiPos++;
+        wordPos++;
+      }
+    }
+  }
+  
+  // Group consecutive word timings that belong to the same segment with a reading
+  // Track: for each word, which segment(s) it belongs to
+  const wordToSegments = new Map<number, Set<number>>();
+  let charOffset = 0;
+  for (let wordIdx = 0; wordIdx < wordTimings.length; wordIdx++) {
+    const trimmed = wordTimings[wordIdx].text.trim();
+    const wordLen = [...trimmed].length;
+    const segs = new Set<number>();
+    for (let i = 0; i < wordLen; i++) {
+      const seg = wordCharToSegment[charOffset + i];
+      if (seg >= 0) segs.add(seg);
+    }
+    wordToSegments.set(wordIdx, segs);
+    charOffset += wordLen;
+  }
+  
+  // Find which segments span multiple words and need combining
+  const segmentToWords = new Map<number, number[]>();
+  for (const [wordIdx, segs] of wordToSegments) {
+    for (const segIdx of segs) {
+      if (!segmentToWords.has(segIdx)) {
+        segmentToWords.set(segIdx, []);
+      }
+      segmentToWords.get(segIdx)!.push(wordIdx);
+    }
+  }
+  
+  // Build render items, combining words that share a reading segment
+  const processedWords = new Set<number>();
+  
+  for (let wordIdx = 0; wordIdx < wordTimings.length; wordIdx++) {
+    if (processedWords.has(wordIdx)) continue;
+    
+    const segs = wordToSegments.get(wordIdx) || new Set();
+    
+    // Check if any segment with a reading spans this and other words
+    let combinedWords = [wordIdx];
+    let combinedReading = "";
+    
+    for (const segIdx of segs) {
+      const seg = furiganaSegments[segIdx];
+      if (!seg.reading) continue;
+      
+      const wordsInSeg = segmentToWords.get(segIdx) || [];
+      if (wordsInSeg.length > 1) {
+        // This segment spans multiple words - combine them
+        // Only combine consecutive words
+        const sortedWords = [...wordsInSeg].sort((a, b) => a - b);
+        if (sortedWords[0] === wordIdx) {
+          // This is the first word of a multi-word segment
+          // Check they're consecutive
+          let allConsecutive = true;
+          for (let i = 1; i < sortedWords.length; i++) {
+            if (sortedWords[i] !== sortedWords[i - 1] + 1) {
+              allConsecutive = false;
+              break;
+            }
+          }
+          if (allConsecutive) {
+            combinedWords = sortedWords;
+            combinedReading = seg.reading;
+          }
+        }
+      } else if (wordsInSeg.length === 1) {
+        // Single word owns this segment
+        combinedReading += seg.reading;
+      }
+    }
+    
+    // Mark all combined words as processed
+    for (const idx of combinedWords) {
+      processedWords.add(idx);
+      if (idx !== wordIdx) {
+        skipIndices.add(idx);
+      }
+    }
+    
+    // Build combined text and extra duration
+    let combinedText = "";
+    let extraDurationMs = 0;
+    for (let i = 0; i < combinedWords.length; i++) {
+      const w = wordTimings[combinedWords[i]];
+      combinedText += w.text.trim();
+      if (i > 0) {
+        extraDurationMs += w.durationMs;
+      }
+    }
+    
+    renderItems.push({
+      wordIdx,
+      text: combinedText,
+      reading: combinedReading || undefined,
+      extraDurationMs,
+      combinedWordIndices: combinedWords,
+    });
+  }
+  
+  return { renderItems, skipIndices };
+}
 
 /**
  * Static word rendering without animation (for inactive lines with word timings)
@@ -353,25 +439,45 @@ function StaticWordRendering({
     };
 
     if (furiganaSegments && furiganaSegments.length > 0) {
-      const wordFuriganaList = mapWordsToFurigana(wordTimings, furiganaSegments);
-      const items: { key: string; content: ReactNode; startTimeMs: number }[] = [];
+      // Use character-position alignment to handle boundary mismatches
+      // When a furigana segment spans multiple word timings, they're combined into one unit
+      const { renderItems: mappedItems } = mapWordTimingsToFurigana(wordTimings, furiganaSegments);
       
-      wordTimings.forEach((word, idx) => {
-        const mapping = wordFuriganaList[idx];
-        if (!mapping || mapping.segments === null) return;
+      return mappedItems.map((item) => {
+        const word = wordTimings[item.wordIdx];
+        // Get trailing space from last combined word
+        const lastWordIdx = item.combinedWordIndices[item.combinedWordIndices.length - 1];
+        const lastWord = wordTimings[lastWordIdx];
+        const lastTrimmed = lastWord.text.trim();
+        const trailingSpace = lastWord.text.slice(lastTrimmed.length);
         
-        items.push({
-          key: `${idx}-${word.text}`,
-          content: mapping.segments.length > 0
-            ? (pronunciationOnly 
-                ? getFuriganaSegmentsPronunciationOnly(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin })
-                : renderFuriganaSegments(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin }))
-            : getWordContent(word.text),
+        let content: ReactNode;
+        if (item.reading) {
+          // Has a reading - show combined text with ruby annotation
+          if (pronunciationOnly) {
+            content = <>{item.reading}{trailingSpace}</>;
+          } else {
+            content = (
+              <>
+                <ruby className="lyrics-furigana lyrics-soramimi">
+                  {item.text}
+                  <rt className="lyrics-furigana-rt lyrics-soramimi-rt">{item.reading}</rt>
+                </ruby>
+                {trailingSpace}
+              </>
+            );
+          }
+        } else {
+          // No reading - use original word text as-is
+          content = getWordContent(word.text);
+        }
+        
+        return {
+          key: `${item.wordIdx}-${item.text}`,
+          content,
           startTimeMs: word.startTimeMs,
-        });
+        };
       });
-      
-      return items;
     }
     
     return wordTimings.map((word, idx) => ({
@@ -506,29 +612,47 @@ function WordTimingHighlight({
     };
 
     if (furiganaSegments && furiganaSegments.length > 0) {
-      const wordFuriganaList = mapWordsToFurigana(wordTimings, furiganaSegments);
-      const items: WordRenderItem[] = [];
+      // Use character-position alignment to handle boundary mismatches
+      // When a furigana segment spans multiple word timings, they're combined into one unit
+      const { renderItems: mappedItems } = mapWordTimingsToFurigana(wordTimings, furiganaSegments);
       
-      wordTimings.forEach((word, idx) => {
-        const mapping = wordFuriganaList[idx];
-        // Skip words whose characters were borrowed by a previous word's furigana
-        if (!mapping || mapping.segments === null) return;
+      return mappedItems.map((item) => {
+        const word = wordTimings[item.wordIdx];
+        // Get trailing space from last combined word
+        const lastWordIdx = item.combinedWordIndices[item.combinedWordIndices.length - 1];
+        const lastWord = wordTimings[lastWordIdx];
+        const lastTrimmed = lastWord.text.trim();
+        const trailingSpace = lastWord.text.slice(lastTrimmed.length);
         
-        const content = mapping.segments.length > 0
-          ? (pronunciationOnly 
-              ? getFuriganaSegmentsPronunciationOnly(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin })
-              : renderFuriganaSegments(mapping.segments, { koreanRomanization: koreanRomanized, japaneseRomaji, chinesePinyin }))
-          : getWordContent(word.text);
+        let content: ReactNode;
+        if (item.reading) {
+          // Has a reading - show combined text with ruby annotation
+          if (pronunciationOnly) {
+            content = <>{item.reading}{trailingSpace}</>;
+          } else {
+            // Ruby annotation mode
+            content = (
+              <>
+                <ruby className="lyrics-furigana lyrics-soramimi">
+                  {item.text}
+                  <rt className="lyrics-furigana-rt lyrics-soramimi-rt">{item.reading}</rt>
+                </ruby>
+                {trailingSpace}
+              </>
+            );
+          }
+        } else {
+          // No reading - use original word text as-is (preserves spacing)
+          content = getWordContent(word.text);
+        }
         
-        items.push({
+        return {
           word,
-          extraDurationMs: mapping.extraDurationMs,
+          extraDurationMs: item.extraDurationMs,
           content,
-          key: `${idx}-${word.text}`,
-        });
+          key: `${item.wordIdx}-${item.text}`,
+        };
       });
-      
-      return items;
     }
     
     // No furigana - simple word list with romanization support

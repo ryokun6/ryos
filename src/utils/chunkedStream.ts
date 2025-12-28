@@ -60,89 +60,6 @@ export type FuriganaChunkInfo = FuriganaStreamInfo;
 export type SoramimiChunkInfo = SoramimiStreamInfo;
 
 // =============================================================================
-// SSE Event Types (Line-by-line streaming)
-// =============================================================================
-
-interface SSEStartEvent {
-  type: "start";
-  totalLines: number;
-}
-
-interface SSEErrorEvent {
-  type: "error";
-  error: string;
-}
-
-// Translation SSE events
-interface TranslationLineEvent {
-  type: "line";
-  lineIndex: number;
-  translation: string;
-  progress: number;
-}
-
-interface TranslationCompleteEvent {
-  type: "complete";
-  totalLines: number;
-  successCount: number;
-  translations: string[];
-  success: boolean;
-}
-
-interface TranslationCachedEvent {
-  type: "cached";
-  translation: string; // LRC format
-}
-
-type TranslationSSEEvent = SSEStartEvent | TranslationLineEvent | TranslationCompleteEvent | TranslationCachedEvent | SSEErrorEvent;
-
-// Furigana SSE events
-interface FuriganaLineEvent {
-  type: "line";
-  lineIndex: number;
-  furigana: Array<{ text: string; reading?: string }>;
-  progress: number;
-}
-
-interface FuriganaCompleteEvent {
-  type: "complete";
-  totalLines: number;
-  successCount: number;
-  furigana: Array<Array<{ text: string; reading?: string }>>;
-  success: boolean;
-}
-
-interface FuriganaCachedEvent {
-  type: "cached";
-  furigana: Array<Array<{ text: string; reading?: string }>>;
-}
-
-type FuriganaSSEEvent = SSEStartEvent | FuriganaLineEvent | FuriganaCompleteEvent | FuriganaCachedEvent | SSEErrorEvent;
-
-// Soramimi SSE events
-interface SoramimiLineEvent {
-  type: "line";
-  lineIndex: number;
-  soramimi: Array<{ text: string; reading?: string }>;
-  progress: number;
-}
-
-interface SoramimiCompleteEvent {
-  type: "complete";
-  totalLines: number;
-  successCount: number;
-  soramimi: Array<Array<{ text: string; reading?: string }>>;
-  success: boolean;
-}
-
-interface SoramimiCachedEvent {
-  type: "cached";
-  soramimi: Array<Array<{ text: string; reading?: string }>>;
-}
-
-type SoramimiSSEEvent = SSEStartEvent | SoramimiLineEvent | SoramimiCompleteEvent | SoramimiCachedEvent | SSEErrorEvent;
-
-// =============================================================================
 // Translation SSE Processing (Line-by-line streaming)
 // =============================================================================
 
@@ -233,11 +150,17 @@ export async function processTranslationSSE(
           if (!line.startsWith("data: ")) return;
           
           try {
-            const data = JSON.parse(line.slice(6)) as TranslationSSEEvent;
+            const rawData = JSON.parse(line.slice(6));
+            
+            // Handle both old format (type: "start") and new AI SDK format (type: "data-start")
+            const eventType = rawData.type as string;
+            const isDataEvent = eventType.startsWith("data-");
+            const normalizedType = isDataEvent ? eventType.slice(5) : eventType;
+            const eventData = isDataEvent ? rawData.data : rawData;
 
-            switch (data.type) {
+            switch (normalizedType) {
               case "start":
-                totalLines = data.totalLines;
+                totalLines = eventData.totalLines;
                 try {
                   onProgress?.({ completedLines: 0, totalLines, percentage: 0 });
                 } catch (callbackErr) {
@@ -251,20 +174,20 @@ export async function processTranslationSSE(
                   onProgress?.({
                     completedLines,
                     totalLines,
-                    percentage: data.progress,
+                    percentage: eventData.progress,
                   });
-                  onLine?.(data.lineIndex, data.translation);
+                  onLine?.(eventData.lineIndex, eventData.translation);
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
                 break;
 
               case "error":
-                console.warn("SSE: Translation stream error:", data.error);
+                console.warn("SSE: Translation stream error:", eventData.error || rawData.error);
                 break;
 
               case "cached":
-                const cachedTranslations = parseLrcToTranslations(data.translation);
+                const cachedTranslations = parseLrcToTranslations(eventData.translation);
                 finalResult = { 
                   data: cachedTranslations,
                   success: true,
@@ -278,18 +201,27 @@ export async function processTranslationSSE(
 
               case "complete":
                 finalResult = {
-                  data: data.translations,
-                  success: data.success,
+                  data: eventData.translations,
+                  success: eventData.success,
                 };
                 try {
                   onProgress?.({
-                    completedLines: data.totalLines,
-                    totalLines: data.totalLines,
+                    completedLines: eventData.totalLines,
+                    totalLines: eventData.totalLines,
                     percentage: 100,
                   });
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
+                break;
+                
+              // Ignore AI SDK internal events
+              case "start-step":
+              case "finish-step":
+              case "finish":
+              case "text-start":
+              case "text-delta":
+              case "text-end":
                 break;
             }
           } catch (e) {
@@ -442,11 +374,17 @@ export async function processFuriganaSSE(
           if (!line.startsWith("data: ")) return;
           
           try {
-            const data = JSON.parse(line.slice(6)) as FuriganaSSEEvent;
+            const rawData = JSON.parse(line.slice(6));
+            
+            // Handle both old format (type: "start") and new AI SDK format (type: "data-start")
+            const eventType = rawData.type as string;
+            const isDataEvent = eventType.startsWith("data-");
+            const normalizedType = isDataEvent ? eventType.slice(5) : eventType;
+            const eventData = isDataEvent ? rawData.data : rawData;
 
-            switch (data.type) {
+            switch (normalizedType) {
               case "start":
-                totalLines = data.totalLines;
+                totalLines = eventData.totalLines;
                 try {
                   onProgress?.({ completedLines: 0, totalLines, percentage: 0 });
                 } catch (callbackErr) {
@@ -456,27 +394,26 @@ export async function processFuriganaSSE(
 
               case "line":
                 completedLines++;
-                console.log(`[SSE Furigana] Received line ${data.lineIndex}, progress: ${data.progress}%`);
                 try {
                   onProgress?.({
                     completedLines,
                     totalLines,
-                    percentage: data.progress,
+                    percentage: eventData.progress,
                   });
-                  onLine?.(data.lineIndex, data.furigana);
+                  onLine?.(eventData.lineIndex, eventData.furigana);
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
                 break;
 
               case "error":
-                console.warn("SSE: Furigana stream error:", data.error);
+                console.warn("SSE: Furigana stream error:", eventData.error || rawData.error);
                 break;
 
               case "cached":
-                finalResult = { data: data.furigana, success: true };
+                finalResult = { data: eventData.furigana, success: true };
                 try {
-                  onProgress?.({ completedLines: data.furigana.length, totalLines: data.furigana.length, percentage: 100 });
+                  onProgress?.({ completedLines: eventData.furigana.length, totalLines: eventData.furigana.length, percentage: 100 });
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
@@ -484,18 +421,27 @@ export async function processFuriganaSSE(
 
               case "complete":
                 finalResult = {
-                  data: data.furigana,
-                  success: data.success,
+                  data: eventData.furigana,
+                  success: eventData.success,
                 };
                 try {
                   onProgress?.({
-                    completedLines: data.totalLines,
-                    totalLines: data.totalLines,
+                    completedLines: eventData.totalLines,
+                    totalLines: eventData.totalLines,
                     percentage: 100,
                   });
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
+                break;
+                
+              // Ignore AI SDK internal events
+              case "start-step":
+              case "finish-step":
+              case "finish":
+              case "text-start":
+              case "text-delta":
+              case "text-end":
                 break;
             }
           } catch (e) {
@@ -666,11 +612,19 @@ export async function processSoramimiSSE(
           if (!line.startsWith("data: ")) return;
           
           try {
-            const data = JSON.parse(line.slice(6)) as SoramimiSSEEvent;
+            const rawData = JSON.parse(line.slice(6));
+            
+            // Handle both old format (type: "start") and new AI SDK format (type: "data-start")
+            const eventType = rawData.type as string;
+            
+            // AI SDK data-* events have nested data, extract it
+            const isDataEvent = eventType.startsWith("data-");
+            const normalizedType = isDataEvent ? eventType.slice(5) : eventType; // Remove "data-" prefix
+            const eventData = isDataEvent ? rawData.data : rawData;
 
-            switch (data.type) {
+            switch (normalizedType) {
               case "start":
-                totalLines = data.totalLines;
+                totalLines = eventData.totalLines;
                 try {
                   onProgress?.({ completedLines: 0, totalLines, percentage: 0 });
                 } catch (callbackErr) {
@@ -680,27 +634,26 @@ export async function processSoramimiSSE(
 
               case "line":
                 completedLines++;
-                console.log(`[SSE Soramimi] Received line ${data.lineIndex}, progress: ${data.progress}%`);
                 try {
                   onProgress?.({
                     completedLines,
                     totalLines,
-                    percentage: data.progress,
+                    percentage: eventData.progress,
                   });
-                  onLine?.(data.lineIndex, data.soramimi);
+                  onLine?.(eventData.lineIndex, eventData.soramimi);
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
                 break;
 
               case "error":
-                console.warn("SSE: Soramimi stream error:", data.error);
+                console.warn("SSE: Soramimi stream error:", eventData.error || rawData.error);
                 break;
 
               case "cached":
-                finalSoramimi = { data: data.soramimi, success: true };
+                finalSoramimi = { data: eventData.soramimi, success: true };
                 try {
-                  onProgress?.({ completedLines: data.soramimi.length, totalLines: data.soramimi.length, percentage: 100 });
+                  onProgress?.({ completedLines: eventData.soramimi.length, totalLines: eventData.soramimi.length, percentage: 100 });
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
@@ -708,18 +661,28 @@ export async function processSoramimiSSE(
 
               case "complete":
                 finalSoramimi = { 
-                  data: data.soramimi, 
-                  success: data.success,
+                  data: eventData.soramimi, 
+                  success: eventData.success,
                 };
                 try {
                   onProgress?.({
-                    completedLines: data.totalLines,
-                    totalLines: data.totalLines,
+                    completedLines: eventData.totalLines,
+                    totalLines: eventData.totalLines,
                     percentage: 100,
                   });
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
+                break;
+                
+              // Ignore AI SDK internal events
+              case "start-step":
+              case "finish-step":
+              case "finish":
+              case "text-start":
+              case "text-delta":
+              case "text-end":
+                // These are AI SDK internal events, ignore them
                 break;
             }
           } catch (e) {

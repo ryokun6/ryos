@@ -12,9 +12,16 @@ import { KRC_DECRYPTION_KEY, YOUTUBE_VIDEO_ID_REGEX } from "./_constants.js";
 // Types
 // =============================================================================
 
+export interface WordTiming {
+  text: string;
+  startTimeMs: number;
+  durationMs: number;
+}
+
 export interface LyricLine {
   words: string;
   startTimeMs: string;
+  wordTimings?: WordTiming[];
 }
 
 // =============================================================================

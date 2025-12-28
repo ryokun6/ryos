@@ -139,46 +139,38 @@ function isEnglishLine(text: string): boolean {
 // Soramimi Generation
 // =============================================================================
 
-const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Traditional Chinese (繁體字) phonetic readings that sound like the original AND form beautiful, meaningful Chinese phrases.
+export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese phonetic readings (繁體字) that SOUND like Japanese/Korean lyrics.
 
-FORMAT: {original|chinese} for Japanese/Korean, plain English stays unwrapped
+CRITICAL: NEVER keep original Japanese kanji! Always replace with Chinese chars that sound like the JAPANESE reading!
 
-GROUPING (Critical!):
-- Group by natural phrase boundaries (2-4 segments per line)
-- Keep verb phrases together: {見ていた|密貼伊她} not {見|密}{て|貼}{い|伊}{た|她}
-- Keep particles with their words: {君を|寄迷我} or {夢の|欲沒諾}
-- Korean words as units: {사랑해|思浪海}
+WRONG vs RIGHT examples:
+- 何 read as "nani" → WRONG: {何|何} RIGHT: {何|那你}
+- 私 read as "watashi" → WRONG: {私|我} RIGHT: {私|哇他西}
+- 前 read as "mae" → WRONG: {前|前} RIGHT: {前|麥}
+- 目 read as "me" → WRONG: {目|目} RIGHT: {目|沒}
+- 夢 read as "yume" → WRONG: {夢|夢} RIGHT: {夢|欲沒}
+- 心 read as "kokoro" → WRONG: {心|心} RIGHT: {心|口口落}
+- 愛 read as "ai" → WRONG: {愛|愛} RIGHT: {愛|哀} (can reuse if sounds same!)
 
-PHONETIC + POETIC EXAMPLES (must sound similar AND mean something beautiful):
-- 君を (ki-mi-wo) → 寄迷我 (jì-mí-wǒ) = "lost in thoughts of me" ♡ echoes "you"
-- 夢を (yu-me-wo) → 欲沒我 (yù-mò-wǒ) = "desire drowns me" ♡ echoes "dream"
-- 見ていた (mi-te-i-ta) → 密貼伊她 (mì-tiē-yī-tā) = "closely cling to her" ♡ echoes "watching"
-- 愛してる (a-i-shi-te-ru) → 愛詩特露 (ài-shī-tè-lù) = "love poem, special dew" ♡ starts with 愛!
-- 사랑해 (sa-rang-hae) → 思浪海 (sī-làng-hǎi) = "longing for waves and sea" ♡ romantic
-- 桜 (sa-ku-ra) → 撒枯落 (sā-kū-luò) = "scatter, wither, fall" ♡ cherry blossoms falling!
-- 涙 (na-mi-da) → 那迷答 (nà-mí-dá) = "that puzzling answer" ♡ tears are confusing
-- 心 (ko-ko-ro) → 可可柔 (kě-kě-róu) = "so so gentle" ♡ soft heart
-- 空 (so-ra) → 嗖啦 (sōu-la) = "whoosh" ♡ wind in the sky
+Common Japanese words - ALWAYS transliterate the SOUND:
+- 何もいらない (na-ni-mo-i-ra-na-i) → {何|那你}{も|摸}{いらない|衣啦那衣}
+- 私に (wa-ta-shi-ni) → {私|哇他西}{に|你}
+- 目の前 (me-no-ma-e) → {目|沒}{の|諾}{前|麥}
+- あなた (a-na-ta) → {あなた|阿那他}
+- 誰 (da-re) → {誰|達雷}
+- 君 (ki-mi) → {君|寄迷}
+- 好き (su-ki) → {好き|速奇}
+
+FORMAT: {original|chinese_phonetic} for EVERY Japanese/Korean word. English stays unwrapped.
+
+BONUS: Make readings poetic when possible! 思浪 for 사랑, 海喲 for 해요 - sounds match AND meanings are beautiful!
 
 RULES:
-1. EVERY Japanese/Korean character needs a Chinese reading
-2. Only Chinese characters in readings (never ひらがな/カタカナ)
-3. Match syllable count and sounds
-4. No added punctuation (，。！)
-5. PRIORITIZE meaningful readings that echo the original meaning!
-
-Example:
-Input:
-1: 夢を見ていた
-2: I love you  
-3: 君をloveしてる
-4: 사랑해요
-
-Output:
-1: {夢を|欲沒}{見ていた|密貼伊她}
-2: I love you
-3: {君を|寄迷我}love{してる|詩特露}
-4: {사랑|思浪}{해요|海喲}`;
+1. NEVER output the original kanji as the reading - always transliterate the SOUND
+2. Read kanji by their JAPANESE pronunciation in context (kun/on-yomi as appropriate)
+3. Each syllable needs a Chinese character that sounds similar
+4. Prefer meaningful/poetic Chinese words that match original lyric meaning when sounds match
+5. No Korean/Japanese characters in readings - PURE Chinese only!`;
 
 // AI generation timeout (120 seconds for full song streaming)
 // Increased since streaming keeps connection alive and we process entire song
@@ -198,6 +190,15 @@ function cleanAiOutput(line: string): string {
     }
     return match;
   });
+}
+
+/**
+ * Clean reading to remove non-Chinese characters (Korean Hangul, Japanese kana)
+ * AI sometimes incorrectly includes original text in the reading
+ */
+function cleanReading(reading: string): string {
+  // Remove Korean (Hangul syllables and Jamo) and Japanese (Hiragana and Katakana)
+  return reading.replace(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/g, '');
 }
 
 /**
@@ -230,10 +231,15 @@ function parseRubyMarkup(line: string): FuriganaSegment[] {
     }
     
     const text = match[1];
-    const reading = match[2];
-    
+    const reading = cleanReading(match[2]);
+
     if (text) {
-      segments.push({ text, reading });
+      // Only add reading if it's not empty after cleaning
+      if (reading) {
+        segments.push({ text, reading });
+      } else {
+        segments.push({ text });
+      }
     }
     
     lastIndex = regex.lastIndex;
@@ -457,17 +463,42 @@ export async function streamSoramimi(
   // Use numbered lines to help AI maintain line count (only for non-English lines)
   const textsToProcess = nonEnglishLines.map((info, idx) => `${idx + 1}: ${info.line.words}`).join("\n");
 
-  // Create abort controller with timeout
-  const abortController = new AbortController();
-  const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
-
   const startTime = Date.now();
   logInfo(requestId, `Soramimi AI stream starting`, { linesCount: nonEnglishLines.length, timeoutMs: AI_TIMEOUT_MS });
 
-  let currentLineBuffer = "";
   let completedCount = 0;
+  let currentLineBuffer = "";
+
+  // Helper to process a complete line
+  const processLine = (line: string) => {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) return;
+    
+    // Parse line number format: "1: {annotated|text}"
+    const match = trimmedLine.match(/^(\d+)[:.\s]\s*(.*)$/);
+    if (match) {
+      const nonEnglishLineIndex = parseInt(match[1], 10) - 1;
+      const content = match[2].trim();
+      
+      if (nonEnglishLineIndex >= 0 && nonEnglishLineIndex < nonEnglishLines.length && content) {
+        const info = nonEnglishLines[nonEnglishLineIndex];
+        const originalIndex = info.originalIndex;
+        const original = info.line.words;
+        
+        // Parse and align segments
+        const rawSegments = parseRubyMarkup(content);
+        const alignedSegments = alignSegmentsToOriginal(rawSegments, original);
+        const finalSegments = fillMissingReadings(alignedSegments);
+        
+        results[originalIndex] = finalSegments;
+        completedCount++;
+        onLine(originalIndex, finalSegments);
+      }
+    }
+  };
 
   try {
+    // Use streamText and get the native text stream response
     const result = streamText({
       model: google("gemini-2.5-flash"),
       messages: [
@@ -475,70 +506,49 @@ export async function streamSoramimi(
         { role: "user", content: textsToProcess },
       ],
       temperature: 0.7,
-      abortSignal: abortController.signal,
     });
 
-    // Process streaming text
-    for await (const chunk of result.textStream) {
-      currentLineBuffer += chunk;
+    // Use toTextStreamResponse() to get native AI SDK streaming
+    const textStreamResponse = result.toTextStreamResponse();
+    const reader = textStreamResponse.body!.getReader();
+    const decoder = new TextDecoder();
+    
+    let chunkCount = 0;
+    let firstChunkTime: number | null = null;
+    
+    // Read from the native text stream response
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        break;
+      }
+      
+      const text = decoder.decode(value, { stream: true });
+      
+      if (firstChunkTime === null && text.length > 0) {
+        firstChunkTime = Date.now();
+      }
+      
+      chunkCount++;
+      currentLineBuffer += text;
       
       // Process complete lines (ending with newline)
       let newlineIdx;
       while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
-        const completeLine = currentLineBuffer.slice(0, newlineIdx).trim();
+        const completeLine = currentLineBuffer.slice(0, newlineIdx);
         currentLineBuffer = currentLineBuffer.slice(newlineIdx + 1);
-        
-        if (!completeLine) continue;
-        
-        // Parse line number format: "1: {annotated|text}"
-        const match = completeLine.match(/^(\d+)[:.\s]\s*(.*)$/);
-        if (match) {
-          const nonEnglishLineIndex = parseInt(match[1], 10) - 1; // 1-based to 0-based in non-English lines
-          const content = match[2].trim();
-          
-          if (nonEnglishLineIndex >= 0 && nonEnglishLineIndex < nonEnglishLines.length && content) {
-            const info = nonEnglishLines[nonEnglishLineIndex];
-            const originalIndex = info.originalIndex;
-            const original = info.line.words;
-            
-            // Parse and align segments
-            const rawSegments = parseRubyMarkup(content);
-            const alignedSegments = alignSegmentsToOriginal(rawSegments, original);
-            const finalSegments = fillMissingReadings(alignedSegments);
-            
-            results[originalIndex] = finalSegments;
-            completedCount++;
-            onLine(originalIndex, finalSegments);
-          }
-        }
+        processLine(completeLine);
       }
     }
     
-    // Handle any remaining content (last line might not end with newline)
+    // Process any remaining content in buffer
     if (currentLineBuffer.trim()) {
-      const match = currentLineBuffer.trim().match(/^(\d+)[:.\s]\s*(.*)$/);
-      if (match) {
-        const nonEnglishLineIndex = parseInt(match[1], 10) - 1;
-        const content = match[2].trim();
-        
-        if (nonEnglishLineIndex >= 0 && nonEnglishLineIndex < nonEnglishLines.length && content) {
-          const info = nonEnglishLines[nonEnglishLineIndex];
-          const originalIndex = info.originalIndex;
-          const original = info.line.words;
-          
-          const rawSegments = parseRubyMarkup(content);
-          const alignedSegments = alignSegmentsToOriginal(rawSegments, original);
-          const finalSegments = fillMissingReadings(alignedSegments);
-          
-          results[originalIndex] = finalSegments;
-          completedCount++;
-          onLine(originalIndex, finalSegments);
-        }
-      }
+      processLine(currentLineBuffer);
     }
-    
-    clearTimeout(timeoutId);
-    const durationMs = Date.now() - startTime;
+
+    const totalDurationMs = Date.now() - startTime;
+    logInfo(requestId, `Soramimi AI stream completed`, { totalDurationMs, chunkCount });
     
     // Emit fallback for any non-English lines that weren't processed
     for (const info of nonEnglishLines) {
@@ -551,8 +561,8 @@ export async function streamSoramimi(
       }
     }
     
-    logInfo(requestId, `Soramimi stream completed`, { 
-      durationMs, 
+    logInfo(requestId, `Soramimi processing completed`, { 
+      totalDurationMs, 
       completedNonEnglishLines: completedCount, 
       totalNonEnglishLines: nonEnglishLines.length,
       totalLines: lines.length
@@ -560,11 +570,9 @@ export async function streamSoramimi(
     
     return { segments: results, success: true };
   } catch (error) {
-    clearTimeout(timeoutId);
     const durationMs = Date.now() - startTime;
-    const isTimeout = error instanceof Error && error.name === "AbortError";
     
-    logError(requestId, `Soramimi stream failed${isTimeout ? " (timeout)" : ""}`, { error, durationMs, completedCount });
+    logError(requestId, `Soramimi stream failed`, { error, durationMs, completedCount });
     
     // Emit fallback for remaining non-English lines
     for (const info of nonEnglishLines) {

@@ -5,6 +5,7 @@
  */
 
 import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { Converter } from "opencc-js";
 import { SKIP_PREFIXES, AiTranslatedTextsSchema } from "./_constants.js";
@@ -352,6 +353,20 @@ import { streamText } from "ai";
 // AI generation timeout (90 seconds for full song streaming)
 const AI_TIMEOUT_MS = 90000;
 
+/** Generate the translation system prompt for a target language */
+export function getTranslationSystemPrompt(targetLanguage: string): string {
+  return `Translate lyrics to ${targetLanguage} (one line per input line).
+Output format: Number each line like "1: translation", "2: translation", etc.
+If already in ${targetLanguage}, return as-is.
+For instrumental lines (e.g., "---"), return original.
+No punctuation at end of lines. Preserve artistic intent and rhythm.
+
+Example output format:
+1: First translated line
+2: Second translated line
+3: Third translated line`;
+}
+
 /**
  * Stream translation for all lyrics line-by-line using streamText
  * Emits each line as it's completed via onLine callback
@@ -399,7 +414,7 @@ Example output format:
 
   try {
     const result = streamText({
-      model: google("gemini-2.5-flash"),
+      model: openai("gpt-5.2"),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: textsToProcess },

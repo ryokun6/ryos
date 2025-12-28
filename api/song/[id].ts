@@ -73,16 +73,28 @@ import {
   parseLyricsContent,
   buildChineseTranslationFromKrc,
   streamTranslation,
+  getTranslationSystemPrompt,
 } from "./_lyrics.js";
 
 import {
   lyricsAreMostlyChinese,
   streamFurigana,
+  containsKanji,
+  parseRubyMarkup,
+  FURIGANA_SYSTEM_PROMPT,
 } from "./_furigana.js";
 
 import {
   streamSoramimi,
+  SORAMIMI_SYSTEM_PROMPT,
 } from "./_soramimi.js";
+
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
+} from "ai";
+import { openai } from "@ai-sdk/openai";
 
 // Vercel Edge Function configuration
 export const config = {
@@ -580,115 +592,120 @@ export default async function handler(req: Request) {
 
         const totalLines = song.lyrics.parsedLines.length;
 
-        logInfo(requestId, `Starting translate SSE stream (line-by-line)`, { 
+        logInfo(requestId, `Starting translate SSE stream using createUIMessageStream`, { 
           totalLines, 
           language,
         });
 
-        // Create SSE stream with line-by-line updates
-        const encoder = new TextEncoder();
-        let streamClosed = false;
-        
-        const stream = new ReadableStream({
-          async start(controller) {
-            const allTranslations: string[] = new Array(totalLines).fill("");
-            let completedLines = 0;
+        // Prepare lines for translation
+        const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
+          words: line.words,
+          startTimeMs: line.startTimeMs,
+        }));
 
-            const sendEvent = (data: unknown) => {
-              if (streamClosed) return;
-              try {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-              } catch {
-                streamClosed = true;
-              }
-            };
+        // Build numbered text input for AI
+        const textsToProcess = lines.map((line, i) => `${i + 1}: ${line.words}`).join("\n");
 
-            // Send initial progress
-            sendEvent({
-              type: "start",
-              totalLines,
+        // Use AI SDK's createUIMessageStream for proper streaming
+        const allTranslations: string[] = new Array(totalLines).fill("");
+        let completedLines = 0;
+        let currentLineBuffer = "";
+
+        const uiStream = createUIMessageStream({
+          execute: async ({ writer }) => {
+            // Send start event immediately
+            writer.write({
+              type: "data-start" as const,
+              data: { totalLines, message: "Translation started" },
             });
 
-            // Prepare lines for translation
-            const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
-              words: line.words,
-              startTimeMs: line.startTimeMs,
-            }));
-
-            try {
-              // Use streamTranslation with line callback
-              const result = await streamTranslation(
-                lines,
-                language,
-                requestId,
-                (lineIndex: number, translation: string) => {
-                  if (streamClosed) return;
-                  
+            // Helper to process a complete line from AI output
+            const processLine = (line: string) => {
+              const trimmedLine = line.trim();
+              if (!trimmedLine) return;
+              
+              // Parse line number format: "1: translation text"
+              const match = trimmedLine.match(/^(\d+)[:.\s]\s*(.*)$/);
+              if (match) {
+                const lineIndex = parseInt(match[1], 10) - 1; // 1-based to 0-based
+                const translation = match[2].trim();
+                
+                if (lineIndex >= 0 && lineIndex < totalLines && translation) {
                   allTranslations[lineIndex] = translation;
                   completedLines++;
                   
-                  // Emit line event immediately
-                  sendEvent({
-                    type: "line",
-                    lineIndex,
-                    translation,
-                    progress: Math.round((completedLines / totalLines) * 100),
+                  writer.write({
+                    type: "data-line" as const,
+                    data: { lineIndex, translation, progress: Math.round((completedLines / totalLines) * 100) },
                   });
                 }
-              );
-
-              // Save complete translation to main document
-              if (result.success) {
-                try {
-                  const translatedLrc = song.lyrics!.parsedLines!
-                    .map((line, index) => `${msToLrcTime(line.startTimeMs)}${result.translations[index] || line.words}`)
-                    .join("\n");
-                  await saveTranslation(redis, songId, language, translatedLrc);
-                  logInfo(requestId, `SSE: Translation complete - saved to main document`);
-                } catch (err) {
-                  logError(requestId, "SSE: Failed to save translation", err);
-                }
               }
+            };
 
-              sendEvent({
-                type: "complete",
-                totalLines,
-                successCount: completedLines,
-                translations: result.translations,
-                success: result.success,
-              });
+            // Use streamText with GPT-5.2
+            const result = streamText({
+              model: openai("gpt-5.2"),
+              messages: [
+                { role: "system", content: getTranslationSystemPrompt(language) },
+                { role: "user", content: textsToProcess },
+              ],
+              temperature: 0.3,
+            });
 
-              logInfo(requestId, `SSE: Translate stream complete`, { 
-                completedLines,
-                totalLines,
-                success: result.success,
-              });
-            } catch (err) {
-              logError(requestId, "SSE: Translation stream failed", err);
-              sendEvent({
-                type: "error",
-                error: err instanceof Error ? err.message : "Unknown error",
-              });
+            // Manually iterate textStream to process and emit custom events
+            for await (const textChunk of result.textStream) {
+              currentLineBuffer += textChunk;
+              
+              // Process complete lines
+              let newlineIdx;
+              while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
+                const completeLine = currentLineBuffer.slice(0, newlineIdx);
+                currentLineBuffer = currentLineBuffer.slice(newlineIdx + 1);
+                processLine(completeLine);
+              }
             }
             
-            if (!streamClosed) {
-              controller.close();
+            // Process any remaining buffer
+            if (currentLineBuffer.trim()) {
+              processLine(currentLineBuffer);
             }
+
+            // Fill in any missing translations with original text
+            for (let i = 0; i < totalLines; i++) {
+              if (!allTranslations[i]) {
+                allTranslations[i] = lines[i].words;
+              }
+            }
+
+            // Save to Redis
+            try {
+              const translatedLrc = song.lyrics!.parsedLines!
+                .map((line, index) => `${msToLrcTime(line.startTimeMs)}${allTranslations[index] || line.words}`)
+                .join("\n");
+              await saveTranslation(redis, songId, language, translatedLrc);
+              logInfo(requestId, `Translation saved to Redis`);
+            } catch (err) {
+              logError(requestId, "Failed to save translation", err);
+            }
+
+            // Send complete event
+            writer.write({
+              type: "data-complete" as const,
+              data: { totalLines, successCount: completedLines, translations: allTranslations, success: true },
+            });
           },
-          cancel(reason) {
-            streamClosed = true;
-            logInfo(requestId, "SSE: Client disconnected, stopping translation", { reason: String(reason) });
-          }
         });
 
-        return new Response(stream, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache, no-transform",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
+        // Use createUIMessageStreamResponse for proper streaming
+        const response = createUIMessageStreamResponse({ stream: uiStream });
+        
+        // Add CORS header
+        const headers = new Headers(response.headers);
+        headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
+        
+        return new Response(response.body, {
+          status: response.status,
+          headers,
         });
       }
 
@@ -751,111 +768,158 @@ export default async function handler(req: Request) {
 
         const totalLines = song.lyrics.parsedLines.length;
 
-        logInfo(requestId, `Starting furigana SSE stream (line-by-line)`, { 
+        logInfo(requestId, `Starting furigana SSE stream using createUIMessageStream`, { 
           totalLines,
         });
 
-        // Create SSE stream with line-by-line updates
-        const encoder = new TextEncoder();
-        let streamClosed = false;
-        
-        const stream = new ReadableStream({
-          async start(controller) {
-            const allFurigana: Array<Array<{ text: string; reading?: string }>> = 
-              new Array(totalLines).fill(null).map(() => []);
-            let completedLines = 0;
+        // Prepare lines for furigana
+        const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
+          words: line.words,
+          startTimeMs: line.startTimeMs,
+        }));
 
-            const sendEvent = (data: unknown) => {
-              if (streamClosed) return;
-              try {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-              } catch {
-                streamClosed = true;
+        // Build index mapping: track which lines need furigana (contain kanji)
+        const lineInfo = lines.map((line, originalIndex) => ({
+          line,
+          originalIndex,
+          needsFurigana: containsKanji(line.words),
+        }));
+        const linesNeedingFurigana = lineInfo.filter((info) => info.needsFurigana);
+
+        // Build numbered text input for AI (only kanji lines)
+        const textsToProcess = linesNeedingFurigana.map((info, i) => `${i + 1}: ${info.line.words}`).join("\n");
+
+        // Use AI SDK's createUIMessageStream for proper streaming
+        const allFurigana: Array<Array<{ text: string; reading?: string }>> = 
+          new Array(totalLines).fill(null).map((_, i) => [{ text: lines[i].words }]);
+        let completedLines = 0;
+        let currentLineBuffer = "";
+
+        const uiStream = createUIMessageStream({
+          execute: async ({ writer }) => {
+            // Send start event immediately
+            writer.write({
+              type: "data-start" as const,
+              data: { totalLines, message: "Furigana generation started" },
+            });
+
+            // Emit non-kanji lines immediately (they don't need furigana)
+            for (const info of lineInfo) {
+              if (!info.needsFurigana) {
+                completedLines++;
+                writer.write({
+                  type: "data-line" as const,
+                  data: { lineIndex: info.originalIndex, furigana: [{ text: info.line.words }], progress: Math.round((completedLines / totalLines) * 100) },
+                });
+              }
+            }
+
+            // If no kanji lines, we're done
+            if (linesNeedingFurigana.length === 0) {
+              logInfo(requestId, `No kanji lines, skipping furigana AI generation`);
+              writer.write({
+                type: "data-complete" as const,
+                data: { totalLines, successCount: completedLines, furigana: allFurigana, success: true },
+              });
+              return;
+            }
+
+            // Helper to process a complete line from AI output
+            const processLine = (line: string) => {
+              const trimmedLine = line.trim();
+              if (!trimmedLine) return;
+              
+              // Parse line number format: "1: {annotated|text}"
+              const match = trimmedLine.match(/^(\d+)[:.\s]\s*(.*)$/);
+              if (match) {
+                const kanjiLineIndex = parseInt(match[1], 10) - 1; // 1-based to 0-based in kanji lines
+                const content = match[2].trim();
+                
+                if (kanjiLineIndex >= 0 && kanjiLineIndex < linesNeedingFurigana.length && content) {
+                  const originalIndex = linesNeedingFurigana[kanjiLineIndex].originalIndex;
+                  const segments = parseRubyMarkup(content);
+                  allFurigana[originalIndex] = segments;
+                  completedLines++;
+                  
+                  writer.write({
+                    type: "data-line" as const,
+                    data: { lineIndex: originalIndex, furigana: segments, progress: Math.round((completedLines / totalLines) * 100) },
+                  });
+                }
               }
             };
 
-            // Send initial progress
-            sendEvent({
-              type: "start",
-              totalLines,
+            // Use streamText with GPT-5.2 for furigana (using numbered prompt format)
+            const furiganaSystemPrompt = `Add furigana to kanji using ruby markup format: {text|reading}
+
+Format: {漢字|ふりがな} - text first, then reading after pipe
+- Plain text without reading stays as-is
+- Separate okurigana: {走|はし}る (NOT {走る|はしる})
+
+Output format: Number each line like "1: annotated line", "2: annotated line", etc.
+
+Example:
+Input:
+1: 夜空の星
+2: 私は走る
+
+Output:
+1: {夜空|よぞら}の{星|ほし}
+2: {私|わたし}は{走|はし}る`;
+
+            const result = streamText({
+              model: openai("gpt-5.2"),
+              messages: [
+                { role: "system", content: furiganaSystemPrompt },
+                { role: "user", content: textsToProcess },
+              ],
+              temperature: 0.1,
             });
 
-            // Prepare lines for furigana
-            const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
-              words: line.words,
-              startTimeMs: line.startTimeMs,
-            }));
-
-            try {
-              // Use streamFurigana with line callback
-              const result = await streamFurigana(
-                lines,
-                requestId,
-                (lineIndex: number, segments: FuriganaSegment[]) => {
-                  if (streamClosed) return;
-                  
-                  allFurigana[lineIndex] = segments;
-                  completedLines++;
-                  
-                  // Emit line event immediately
-                  sendEvent({
-                    type: "line",
-                    lineIndex,
-                    furigana: segments,
-                    progress: Math.round((completedLines / totalLines) * 100),
-                  });
-                }
-              );
-
-              // Save complete furigana to main document
-              if (result.success) {
-                try {
-                  await saveFurigana(redis, songId, result.furigana);
-                  logInfo(requestId, `SSE: Furigana complete - saved to main document`);
-                } catch (err) {
-                  logError(requestId, "SSE: Failed to save furigana", err);
-                }
+            // Manually iterate textStream to process and emit custom events
+            for await (const textChunk of result.textStream) {
+              currentLineBuffer += textChunk;
+              
+              // Process complete lines
+              let newlineIdx;
+              while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
+                const completeLine = currentLineBuffer.slice(0, newlineIdx);
+                currentLineBuffer = currentLineBuffer.slice(newlineIdx + 1);
+                processLine(completeLine);
               }
-
-              sendEvent({
-                type: "complete",
-                totalLines,
-                successCount: completedLines,
-                furigana: result.furigana,
-                success: result.success,
-              });
-
-              logInfo(requestId, `SSE: Furigana stream complete`, { 
-                completedLines,
-                totalLines,
-                success: result.success,
-              });
-            } catch (err) {
-              logError(requestId, "SSE: Furigana stream failed", err);
-              sendEvent({
-                type: "error",
-                error: err instanceof Error ? err.message : "Unknown error",
-              });
             }
             
-            if (!streamClosed) {
-              controller.close();
+            // Process any remaining buffer
+            if (currentLineBuffer.trim()) {
+              processLine(currentLineBuffer);
             }
+
+            // Save to Redis
+            try {
+              await saveFurigana(redis, songId, allFurigana);
+              logInfo(requestId, `Furigana saved to Redis`);
+            } catch (err) {
+              logError(requestId, "Failed to save furigana", err);
+            }
+
+            // Send complete event
+            writer.write({
+              type: "data-complete" as const,
+              data: { totalLines, successCount: completedLines, furigana: allFurigana, success: true },
+            });
           },
-          cancel(reason) {
-            streamClosed = true;
-            logInfo(requestId, "SSE: Client disconnected, stopping furigana", { reason: String(reason) });
-          }
         });
 
-        return new Response(stream, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache, no-transform",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
+        // Use createUIMessageStreamResponse for proper streaming
+        const response = createUIMessageStreamResponse({ stream: uiStream });
+        
+        // Add CORS header
+        const headers = new Headers(response.headers);
+        headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
+        
+        return new Response(response.body, {
+          status: response.status,
+          headers,
         });
       }
 
@@ -904,12 +968,37 @@ export default async function handler(req: Request) {
         // Check if already cached in main document (and not forcing regeneration)
         if (!force && song.soramimi && song.soramimi.length > 0) {
           logInfo(requestId, "Returning cached soramimi via SSE");
+          
+          // Helper to check if text contains Korean or Japanese (for cleaning old cached data)
+          const containsKoreanOrJapanese = (text: string): boolean => {
+            return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/.test(text);
+          };
+          
+          // Clean cached data - remove segments with Korean/Japanese text but no reading
+          // Also clean readings that may contain Korean/Japanese
+          const cleanedSoramimi = song.soramimi.map(lineSegments => 
+            lineSegments
+              .map(seg => {
+                if (seg.reading) {
+                  // Clean the reading to remove any Korean/Japanese
+                  const cleanedReading = seg.reading.replace(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/g, '');
+                  return cleanedReading ? { ...seg, reading: cleanedReading } : { text: seg.text };
+                }
+                return seg;
+              })
+              .filter(seg => {
+                // Keep segments that have a reading, OR are plain text without Korean/Japanese
+                if (seg.reading) return true;
+                return !containsKoreanOrJapanese(seg.text);
+              })
+          );
+          
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             start(controller) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({
                 type: "cached",
-                soramimi: song.soramimi,
+                soramimi: cleanedSoramimi,
               })}\n\n`));
               controller.close();
             },
@@ -927,111 +1016,190 @@ export default async function handler(req: Request) {
 
         const totalLines = song.lyrics.parsedLines.length;
 
-        logInfo(requestId, `Starting soramimi SSE stream (line-by-line)`, { 
+        logInfo(requestId, `Starting soramimi SSE stream using createUIMessageStream`, { 
           totalLines,
         });
 
-        // Create SSE stream with line-by-line updates
-        const encoder = new TextEncoder();
-        let streamClosed = false;
-        
-        const stream = new ReadableStream({
-          async start(controller) {
-            const allSoramimi: Array<Array<{ text: string; reading?: string }>> = 
-              new Array(totalLines).fill(null).map(() => []);
-            let completedLines = 0;
+        // Prepare lines for soramimi - identify non-English lines
+        // Include wordTimings for segment alignment
+        const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
+          words: line.words,
+          startTimeMs: line.startTimeMs,
+          wordTimings: line.wordTimings,
+        }));
 
-            const sendEvent = (data: unknown) => {
-              if (streamClosed) return;
-              try {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-              } catch {
-                streamClosed = true;
+        // Build the text prompt for soramimi (same as in _soramimi.ts)
+        const nonEnglishLines: { line: LyricLine; originalIndex: number }[] = [];
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const text = line.words.trim();
+          if (!text) continue;
+          const isEnglish = /^[a-zA-Z0-9\s.,!?'"()\-:;]+$/.test(text);
+          if (!isEnglish) {
+            nonEnglishLines.push({ line, originalIndex: i });
+          }
+        }
+        
+        // Build prompt with word boundaries marked if available
+        const textsToProcess = nonEnglishLines.map((info, idx) => {
+          const wordTimings = info.line.wordTimings;
+          if (wordTimings && wordTimings.length > 0) {
+            // Mark word boundaries with | so AI knows exact segments
+            const wordsMarked = wordTimings.map(w => w.text).join('|');
+            return `${idx + 1}: ${wordsMarked}`;
+          }
+          return `${idx + 1}: ${info.line.words}`;
+        }).join("\n");
+
+        // Use AI SDK's createUIMessageStream for proper streaming
+        const allSoramimi: Array<Array<{ text: string; reading?: string }>> =
+          new Array(totalLines).fill(null).map(() => []);
+        let completedLines = 0;
+        let currentLineBuffer = "";
+
+        const uiStream = createUIMessageStream({
+          execute: async ({ writer }) => {
+            // Send start event immediately
+            writer.write({
+              type: "data-start" as const,
+              data: { totalLines, message: "AI processing started" },
+            });
+
+            // Emit soramimi for English lines immediately (they stay as-is)
+            for (let i = 0; i < lines.length; i++) {
+              const text = lines[i].words.trim();
+              if (!text) {
+                allSoramimi[i] = [{ text: "" }];
+                continue;
+              }
+              const isEnglish = /^[a-zA-Z0-9\s.,!?'"()\-:;]+$/.test(text);
+              if (isEnglish) {
+                allSoramimi[i] = [{ text }];
+                completedLines++;
+                writer.write({
+                  type: "data-line" as const,
+                  data: { lineIndex: i, soramimi: [{ text }], progress: Math.round((completedLines / totalLines) * 100) },
+                });
+              }
+            }
+
+            // Helper to clean reading - remove non-Chinese characters (Korean, Japanese kana)
+            const cleanReading = (reading: string): string => {
+              // Keep only Chinese characters (CJK Unified Ideographs)
+              // Remove Korean (Hangul) and Japanese kana
+              return reading.replace(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/g, '');
+            };
+            
+            // Helper to check if text contains Korean or Japanese
+            const containsKoreanOrJapanese = (text: string): boolean => {
+              return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/.test(text);
+            };
+
+            // Helper to process a complete line from AI output
+            const processLine = (line: string) => {
+              const trimmedLine = line.trim();
+              if (!trimmedLine) return;
+              
+              const match = trimmedLine.match(/^(\d+)[:.\s]\s*(.*)$/);
+              if (match) {
+                const nonEnglishLineIndex = parseInt(match[1], 10) - 1;
+                const content = match[2].trim();
+                
+                if (nonEnglishLineIndex >= 0 && nonEnglishLineIndex < nonEnglishLines.length && content) {
+                  const info = nonEnglishLines[nonEnglishLineIndex];
+                  const originalIndex = info.originalIndex;
+                  
+                  // Simple parsing - just extract segments
+                  const segments: Array<{ text: string; reading?: string }> = [];
+                  const regex = /\{([^|]+)\|([^}]+)\}|([^{]+)/g;
+                  let m;
+                  while ((m = regex.exec(content)) !== null) {
+                    if (m[1] && m[2]) {
+                      // Clean the reading to remove any Korean/Japanese that AI incorrectly included
+                      const cleanedReading = cleanReading(m[2]);
+                      if (cleanedReading) {
+                        segments.push({ text: m[1], reading: cleanedReading });
+                      } else {
+                        // If reading became empty after cleaning, just add text without reading
+                        segments.push({ text: m[1] });
+                      }
+                    } else if (m[3] && m[3].trim()) {
+                      const plainText = m[3].trim();
+                      // Skip plain Korean/Japanese text that AI failed to wrap
+                      // These are duplicates that shouldn't appear
+                      if (!containsKoreanOrJapanese(plainText)) {
+                        segments.push({ text: plainText });
+                      }
+                    }
+                  }
+                  
+                  if (segments.length > 0) {
+                    allSoramimi[originalIndex] = segments;
+                    completedLines++;
+                    
+                    writer.write({
+                      type: "data-line" as const,
+                      data: { lineIndex: originalIndex, soramimi: segments, progress: Math.round((completedLines / totalLines) * 100) },
+                    });
+                  }
+                }
               }
             };
 
-            // Send initial progress
-            sendEvent({
-              type: "start",
-              totalLines,
+            // Use streamText and manually iterate (don't use merge - it bypasses onChunk)
+            const result = streamText({
+              model: openai("gpt-5.2"),
+              messages: [
+                { role: "system", content: SORAMIMI_SYSTEM_PROMPT },
+                { role: "user", content: textsToProcess },
+              ],
+              temperature: 0.7,
             });
 
-            // Prepare lines for soramimi
-            const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
-              words: line.words,
-              startTimeMs: line.startTimeMs,
-            }));
-
-            try {
-              // Use streamSoramimi with line callback
-              const result = await streamSoramimi(
-                lines,
-                requestId,
-                (lineIndex: number, segments: FuriganaSegment[]) => {
-                  if (streamClosed) return;
-                  
-                  allSoramimi[lineIndex] = segments;
-                  completedLines++;
-                  
-                  // Emit line event immediately
-                  sendEvent({
-                    type: "line",
-                    lineIndex,
-                    soramimi: segments,
-                    progress: Math.round((completedLines / totalLines) * 100),
-                  });
-                }
-              );
-
-              // Save complete soramimi to main document
-              if (result.success) {
-                try {
-                  await saveSoramimi(redis, songId, result.segments);
-                  logInfo(requestId, `SSE: Soramimi complete - saved to main document`);
-                } catch (err) {
-                  logError(requestId, "SSE: Failed to save soramimi", err);
-                }
+            // Manually iterate textStream to process and emit custom events
+            for await (const textChunk of result.textStream) {
+              currentLineBuffer += textChunk;
+              
+              // Process complete lines
+              let newlineIdx;
+              while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
+                const completeLine = currentLineBuffer.slice(0, newlineIdx);
+                currentLineBuffer = currentLineBuffer.slice(newlineIdx + 1);
+                processLine(completeLine);
               }
-
-              sendEvent({
-                type: "complete",
-                totalLines,
-                successCount: completedLines,
-                soramimi: result.segments,
-                success: result.success,
-              });
-
-              logInfo(requestId, `SSE: Soramimi stream complete`, { 
-                completedLines,
-                totalLines,
-                success: result.success,
-              });
-            } catch (err) {
-              logError(requestId, "SSE: Soramimi stream failed", err);
-              sendEvent({
-                type: "error",
-                error: err instanceof Error ? err.message : "Unknown error",
-              });
             }
             
-            if (!streamClosed) {
-              controller.close();
+            // Process any remaining buffer
+            if (currentLineBuffer.trim()) {
+              processLine(currentLineBuffer);
             }
+
+            // Save to Redis
+            try {
+              await saveSoramimi(redis, songId, allSoramimi);
+              logInfo(requestId, `Soramimi saved to Redis`);
+            } catch (err) {
+              logError(requestId, "Failed to save soramimi", err);
+            }
+
+            // Send complete event
+            writer.write({
+              type: "data-complete" as const,
+              data: { totalLines, successCount: completedLines, soramimi: allSoramimi, success: true },
+            });
           },
-          cancel(reason) {
-            streamClosed = true;
-            logInfo(requestId, "SSE: Client disconnected, stopping soramimi", { reason: String(reason) });
-          }
         });
 
-        return new Response(stream, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache, no-transform",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
+        // Use createUIMessageStreamResponse for proper streaming
+        const response = createUIMessageStreamResponse({ stream: uiStream });
+        
+        // Add CORS header
+        const headers = new Headers(response.headers);
+        headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
+        
+        return new Response(response.body, {
+          status: response.status,
+          headers,
         });
       }
 

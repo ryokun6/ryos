@@ -4,7 +4,7 @@
  * Handles generating furigana (reading annotations) for Japanese lyrics.
  */
 
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
@@ -91,7 +91,7 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
 // Furigana Generation
 // =============================================================================
 
-const FURIGANA_SYSTEM_PROMPT = `Add furigana to kanji using ruby markup format: {text|reading}
+export const FURIGANA_SYSTEM_PROMPT = `Add furigana to kanji using ruby markup format: {text|reading}
 
 Format: {漢字|ふりがな} - text first, then reading after pipe
 - Plain text without reading stays as-is
@@ -114,7 +114,7 @@ const AI_TIMEOUT_MS = 90000;
 /**
  * Parse ruby markup format (e.g., "{夜空|よぞら}の{星|ほし}") into FuriganaSegment array
  */
-function parseRubyMarkup(line: string): FuriganaSegment[] {
+export function parseRubyMarkup(line: string): FuriganaSegment[] {
   const segments: FuriganaSegment[] = [];
   
   // Match {text|reading} patterns and plain text between them
@@ -229,7 +229,7 @@ Output:
 
   try {
     const result = streamText({
-      model: google("gemini-2.5-flash"),
+      model: openai("gpt-5.2"),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: textsToProcess },
