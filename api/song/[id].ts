@@ -968,9 +968,10 @@ Output:
           await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
         }
 
-        // Skip soramimi for Chinese lyrics
-        if (lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
-          logInfo(requestId, "Skipping soramimi stream - lyrics are mostly Chinese");
+        // Skip Chinese soramimi for Chinese lyrics (no point making Chinese sound like Chinese)
+        // But English soramimi should still work for Chinese lyrics
+        if (targetLanguage === "zh-TW" && lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
+          logInfo(requestId, "Skipping Chinese soramimi stream - lyrics are already Chinese");
           return jsonResponse({
             skipped: true,
             skipReason: "chinese_lyrics",

@@ -284,7 +284,7 @@ BE CREATIVE! A beautiful Chinese phrase that's 80% phonetically accurate is bett
 // English Soramimi Prompts - Phonetic English approximations
 // =============================================================================
 
-export const SORAMIMI_ENGLISH_SYSTEM_PROMPT = `Create English "misheard lyrics" (soramimi) - English words/phrases that SOUND like Japanese/Korean lyrics.
+export const SORAMIMI_ENGLISH_SYSTEM_PROMPT = `Create English "misheard lyrics" (soramimi) - English words/phrases that SOUND like Japanese/Korean/Chinese lyrics.
 
 === WHAT IS ENGLISH SORAMIMI? ===
 
@@ -298,6 +298,9 @@ EXAMPLES:
 - 君の名は (ki-mi-no-na-wa) → "key me no now what"
 - 夢 (yume) → "you may"
 - 涙 (namida) → "nah me da"
+- 我愛你 (wǒ ài nǐ) → "wall I knee"
+- 月亮 (yuè liàng) → "you eh leeyong"
+- 心情 (xīn qíng) → "shin ching"
 
 === RULES ===
 
@@ -309,7 +312,7 @@ EXAMPLES:
 
 === FORMAT ===
 
-1. Format: {original|english_reading} for EVERY Japanese/Korean word
+1. Format: {original|english_reading} for EVERY Japanese/Korean/Chinese word
 2. English words in original text stay unwrapped (unchanged)
 3. Keep spaces in Korean text
 4. Output EVERY non-English word!
@@ -317,7 +320,8 @@ EXAMPLES:
 Example output:
 1: {見つめていたい|meet sue mate a tie}
 2: {ずっと|zoo toe} {一緒に|each show knee}
-3: {사랑|saw wrong} {해요|hey yo}`;
+3: {사랑|saw wrong} {해요|hey yo}
+4: {我愛你|wall I knee}`;
 
 export const SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT = `Create English "misheard lyrics" (soramimi) - English words/phrases that SOUND like Japanese lyrics.
 
