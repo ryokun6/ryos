@@ -103,11 +103,11 @@ export function useLyrics({
   const currentSongIdRef = useRef(songId);
   currentSongIdRef.current = songId;
 
-  // Store triggers
+  // Store triggers - initialize refs to current store values to avoid false "force" on mount
   const refetchTrigger = useIpodStore((s) => s.lyricsRefetchTrigger);
-  const lastRefetchTriggerRef = useRef<number>(0);
+  const lastRefetchTriggerRef = useRef<number>(refetchTrigger);
   const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
-  const lastCacheBustTriggerRef = useRef<number>(0);
+  const lastCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
 
   // Ref to store translation info from initial fetch (with language to ensure we only use matching translations)
   const translationInfoRef = useRef<{ info: TranslationStreamInfo; language: string } | undefined>(undefined);
