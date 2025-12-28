@@ -474,15 +474,32 @@ export function IpodMenuBar({
               >
                 {t("apps.ipod.menu.chinesePinyin")}
               </MenubarCheckboxItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
               <MenubarCheckboxItem
-                checked={romanization?.chineseSoramimi ?? false}
+                checked={romanization?.soramimi && romanization?.soramamiTargetLanguage === "zh-TW"}
                 onCheckedChange={(checked) =>
-                  setRomanization({ chineseSoramimi: checked })
+                  setRomanization({ 
+                    soramimi: checked, 
+                    soramamiTargetLanguage: "zh-TW" 
+                  })
                 }
                 disabled={!romanization?.enabled}
                 className="text-md h-6 px-3"
               >
                 {t("apps.ipod.menu.chineseSoramimi")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={romanization?.soramimi && romanization?.soramamiTargetLanguage === "en"}
+                onCheckedChange={(checked) =>
+                  setRomanization({ 
+                    soramimi: checked, 
+                    soramamiTargetLanguage: "en" 
+                  })
+                }
+                disabled={!romanization?.enabled}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.soramimi")}
               </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>

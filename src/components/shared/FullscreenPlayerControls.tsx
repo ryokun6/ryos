@@ -104,7 +104,8 @@ export function FullscreenPlayerControls({
   const getPronunciationGlyph = () => {
     if (!romanization?.enabled) return "漢";
     // Priority: soramimi > romaji > korean > furigana > pinyin
-    if (romanization.chineseSoramimi) return "空";
+    if (romanization.soramimi && romanization.soramamiTargetLanguage === "zh-TW") return "空";
+    if (romanization.soramimi && romanization.soramamiTargetLanguage === "en") return "So";
     if (romanization.japaneseRomaji) return "Ro";
     if (romanization.korean) return "Ko";
     if (romanization.japaneseFurigana) return "ふ";
@@ -476,16 +477,28 @@ export function FullscreenPlayerControls({
                 >
                   {t("apps.ipod.menu.chinesePinyin")}
                 </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem
-                  checked={romanization.chineseSoramimi ?? false}
+                  checked={romanization.soramimi && romanization.soramamiTargetLanguage === "zh-TW"}
                   onCheckedChange={(checked) => {
-                    onRomanizationChange({ chineseSoramimi: checked });
+                    onRomanizationChange({ soramimi: checked, soramamiTargetLanguage: "zh-TW" });
                     onInteraction?.();
                   }}
                   disabled={!romanization.enabled}
                   className="text-md h-6 px-3 whitespace-nowrap"
                 >
                   {t("apps.ipod.menu.chineseSoramimi")}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={romanization.soramimi && romanization.soramamiTargetLanguage === "en"}
+                  onCheckedChange={(checked) => {
+                    onRomanizationChange({ soramimi: checked, soramamiTargetLanguage: "en" });
+                    onInteraction?.();
+                  }}
+                  disabled={!romanization.enabled}
+                  className="text-md h-6 px-3 whitespace-nowrap"
+                >
+                  {t("apps.ipod.menu.soramimi")}
                 </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>

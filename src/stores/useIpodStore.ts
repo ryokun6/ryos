@@ -173,7 +173,8 @@ const initialIpodData: IpodData = {
     japaneseRomaji: false,
     korean: false,
     chinese: false,
-    chineseSoramimi: false,
+    soramimi: false,
+    soramamiTargetLanguage: "zh-TW",
     pronunciationOnly: false,
   },
   lyricsTranslationLanguage: LYRICS_TRANSLATION_AUTO,
@@ -269,7 +270,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSource: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 26; // Add chineseSoramimi to romanization settings
+const CURRENT_IPOD_STORE_VERSION = 28; // Refactor soramimi to use single toggle + target language
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -1270,13 +1271,27 @@ export const useIpodStore = create<IpodState>()(
             japaneseRomaji: false,
             korean: oldKoreanDisplay === KoreanDisplay.Romanized || oldKoreanDisplay === "romanized",
             chinese: false,
-            chineseSoramimi: false,
+            soramimi: false,
+            soramamiTargetLanguage: "zh-TW",
             pronunciationOnly: false,
           };
           
-          // Ensure existing romanization settings have chineseSoramimi
-          if (state.romanization && state.romanization.chineseSoramimi === undefined) {
-            state.romanization.chineseSoramimi = false;
+          // Migrate old chineseSoramimi/soramimi to new unified soramimi + soramamiTargetLanguage
+          if (state.romanization) {
+            const oldChineseSoramimi = state.romanization.chineseSoramimi;
+            const oldEnglishSoramimi = state.romanization.soramimi;
+            
+            // If either old flag was enabled, enable new soramimi and set appropriate target
+            if (oldChineseSoramimi || oldEnglishSoramimi) {
+              state.romanization.soramimi = true;
+              // Prefer English if it was enabled, otherwise Chinese
+              state.romanization.soramamiTargetLanguage = oldEnglishSoramimi ? "en" : "zh-TW";
+            } else {
+              state.romanization.soramimi = state.romanization.soramimi ?? false;
+              state.romanization.soramamiTargetLanguage = state.romanization.soramamiTargetLanguage ?? "zh-TW";
+            }
+            // Remove old properties
+            delete state.romanization.chineseSoramimi;
           }
           
           // Ensure existing romanization settings have pronunciationOnly

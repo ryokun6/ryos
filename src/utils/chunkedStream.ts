@@ -45,6 +45,8 @@ export interface SoramimiStreamInfo {
   cached: boolean;
   /** Cached soramimi data (only present if cached=true) */
   data?: Array<Array<{ text: string; reading?: string }>>;
+  /** Target language this cached data was generated for */
+  targetLanguage?: "zh-TW" | "en";
   /** Whether soramimi was skipped (e.g., for Chinese lyrics) */
   skipped?: boolean;
   /** Reason for skipping */
@@ -516,13 +518,20 @@ export interface ProcessSoramimiOptions {
   onLine?: (lineIndex: number, soramimi: Array<{ text: string; reading?: string }>) => void;
   /** Pre-fetched info from initial lyrics request */
   prefetchedInfo?: SoramimiStreamInfo;
-  /** 
+  /**
    * Optional furigana data for Japanese songs. 
    * When provided, the API will use this to generate more accurate soramimi
    * by knowing the correct pronunciation of kanji characters.
    * Format: 2D array of segments [{text, reading?}] indexed by line
    */
   furigana?: Array<Array<{ text: string; reading?: string }>>;
+  /**
+   * Target language for soramimi output:
+   * - "zh-TW": Chinese characters (空耳 - traditional style)
+   * - "en": English phonetic approximations (misheard lyrics)
+   * Defaults to "zh-TW" if not specified.
+   */
+  targetLanguage?: "zh-TW" | "en";
 }
 
 /** Result of soramimi processing */
@@ -541,7 +550,7 @@ export async function processSoramimiSSE(
   songId: string,
   options: ProcessSoramimiOptions = {}
 ): Promise<SoramimiResult> {
-  const { force, signal, onProgress, onLine, prefetchedInfo, furigana } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo, furigana, targetLanguage = "zh-TW" } = options;
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
@@ -579,6 +588,7 @@ export async function processSoramimiSSE(
       const requestBody: Record<string, unknown> = {
         action: "soramimi-stream",
         force,
+        targetLanguage,
       };
       
       // Only include furigana if it has actual reading data

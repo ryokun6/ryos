@@ -938,7 +938,8 @@ export function LyricsDisplay({
       japaneseRomaji: false,
       korean: koreanDisplay === KoreanDisplay.Romanized,
       chinese: false,
-      chineseSoramimi: false,
+      soramimi: false,
+      soramamiTargetLanguage: "zh-TW",
     };
   }, [storeRomanization, japaneseFurigana, koreanDisplay]);
 
@@ -991,12 +992,13 @@ export function LyricsDisplay({
       const keyPrefix = `line-${line.startTimeMs}`;
       const pronunciationOnly = romanization.pronunciationOnly ?? false;
       
-      // Chinese soramimi (misheard lyrics) - renders phonetic Chinese over ALL original text
+      // Soramimi (misheard lyrics) - renders phonetic approximations over original text
+      // Chinese soramimi: phonetic Chinese characters, English soramimi: phonetic English
       // This takes priority over all other pronunciation options when enabled
-      if (romanization.chineseSoramimi) {
+      if (romanization.soramimi) {
         const soramimiSegments = soramimiMap.get(line.startTimeMs);
         if (soramimiSegments && soramimiSegments.length > 0) {
-          // Pronunciation-only mode: show only the Chinese soramimi readings
+          // Pronunciation-only mode: show only the soramimi readings
           if (pronunciationOnly) {
             const pronunciationText = soramimiSegments.map(seg => seg.reading || seg.text).join("");
             return <span key={keyPrefix}>{pronunciationText}</span>;
@@ -1004,7 +1006,7 @@ export function LyricsDisplay({
           return (
             <>
               {soramimiSegments.map((segment, index) => {
-                // If there's a reading (the Chinese soramimi), display as ruby
+                // If there's a reading (the soramimi phonetic), display as ruby
                 if (segment.reading) {
                   return (
                     // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
@@ -1519,7 +1521,7 @@ export function LyricsDisplay({
                             {/* Original lyrics with karaoke highlighting */}
                             {/* Determine which annotation segments to use: soramimi takes precedence, then furigana */}
                             {(() => {
-                              const soramimiSegments = romanization.chineseSoramimi ? soramimiMap.get(line.startTimeMs) : undefined;
+                              const soramimiSegments = romanization.soramimi ? soramimiMap.get(line.startTimeMs) : undefined;
                               const annotationSegments = soramimiSegments ?? (
                                 romanization.enabled && romanization.japaneseFurigana
                                   ? furiganaMap.get(line.startTimeMs)

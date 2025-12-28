@@ -76,6 +76,8 @@ export const FetchLyricsSchema = z.object({
   translateTo: z.string().max(10).optional(),
   includeFurigana: z.boolean().optional(),
   includeSoramimi: z.boolean().optional(),
+  // Target language for soramimi: "zh-TW" for Chinese, "en" for English
+  soramimiTargetLanguage: z.enum(["zh-TW", "en"]).optional(),
 });
 
 export const SearchLyricsSchema = z.object({
@@ -105,6 +107,9 @@ export const FuriganaStreamSchema = z.object({
 export const SoramimiStreamSchema = z.object({
   action: z.literal("soramimi-stream"),
   force: z.boolean().optional(),
+  // Target language for soramimi output: "zh-TW" for Chinese characters, "en" for English phonetics
+  // Defaults to "zh-TW" for backwards compatibility
+  targetLanguage: z.enum(["zh-TW", "en"]).optional(),
   // Optional furigana data for Japanese songs - helps AI know correct kanji pronunciation
   // Format: 2D array of segments [{text, reading?}] indexed by line
   furigana: z.array(z.array(z.object({

@@ -60,8 +60,10 @@ export interface RomanizationSettings {
   korean: boolean;
   /** Chinese pinyin - Latin with tones over hanzi (e.g., 中国 → zhōngguó) */
   chinese: boolean;
-  /** Chinese soramimi (空耳) - misheard lyrics in Chinese characters that phonetically match original (e.g., sorry sorry → 搜哩搜哩) */
-  chineseSoramimi: boolean;
+  /** Soramimi (空耳) - misheard lyrics that phonetically approximate the original */
+  soramimi: boolean;
+  /** Target language for soramimi: "zh-TW" for Chinese (搜哩搜哩), "en" for English (meet sue mate a tie) */
+  soramamiTargetLanguage: "zh-TW" | "en";
   /** Only pronunciation - replace original text with phonetic content (e.g., 日本 → にほん, 한국 → hanguk) */
   pronunciationOnly?: boolean;
 }

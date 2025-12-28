@@ -1299,6 +1299,8 @@ export function IpodAppComponent({
     // (default setting is false, but user's saved setting might be true after hydration)
     // The server only returns cached soramimi data, doesn't generate anything here
     includeSoramimi: true,
+    // Pass target language so server returns correct cached soramimi data
+    soramimiTargetLanguage: romanization.soramamiTargetLanguage ?? "zh-TW",
   });
 
   // Track last song ID we showed a lyrics error toast for to avoid duplicates

@@ -85,8 +85,11 @@ export interface SongDocument {
   // Furigana annotations (one array per lyric line)
   furigana?: FuriganaSegment[][];
 
-  // Soramimi annotations - Chinese misheard lyrics (空耳)
+  // Soramimi annotations - misheard lyrics (空耳)
+  // Legacy: single array for Chinese soramimi (backwards compat)
   soramimi?: FuriganaSegment[][];
+  // New: keyed by language ("zh-TW" for Chinese, "en" for English)
+  soramimiByLang?: Record<string, FuriganaSegment[][]>;
 
   // Metadata
   createdBy?: string;
@@ -218,8 +221,13 @@ export async function getSong(
     result.furigana = song.furigana;
   }
 
-  if (options.includeSoramimi && song.soramimi) {
-    result.soramimi = song.soramimi;
+  if (options.includeSoramimi) {
+    if (song.soramimi) {
+      result.soramimi = song.soramimi;
+    }
+    if (song.soramimiByLang) {
+      result.soramimiByLang = song.soramimiByLang;
+    }
   }
 
   if (includeTranslations && song.translations) {
@@ -319,6 +327,9 @@ export async function saveSong(
       : (song.translations ?? existing?.translations),
     furigana: preserveFurigana ? (existing?.furigana ?? song.furigana) : (song.furigana ?? existing?.furigana),
     soramimi: preserveSoramimi ? (existing?.soramimi ?? song.soramimi) : (song.soramimi ?? existing?.soramimi),
+    soramimiByLang: preserveSoramimi 
+      ? { ...existing?.soramimiByLang, ...song.soramimiByLang }
+      : (song.soramimiByLang ?? existing?.soramimiByLang),
     createdBy: createdByValue,
     createdAt: existing?.createdAt ?? song.createdAt ?? now,
     updatedAt: now,
@@ -442,8 +453,13 @@ export async function listSongs(
       filtered.furigana = song.furigana;
     }
 
-    if (getOptions.includeSoramimi && song.soramimi) {
-      filtered.soramimi = song.soramimi;
+    if (getOptions.includeSoramimi) {
+      if (song.soramimi) {
+        filtered.soramimi = song.soramimi;
+      }
+      if (song.soramimiByLang) {
+        filtered.soramimiByLang = song.soramimiByLang;
+      }
     }
 
     if (getOptions.includeTranslations && song.translations) {
@@ -561,11 +577,14 @@ export async function saveFurigana(
 /**
  * Save soramimi annotations for a song
  * Requires the song to exist (call after saveLyrics)
+ * @param language - Target language: "zh-TW" for Chinese, "en" for English. 
+ *                   If not provided, saves to legacy `soramimi` field for backwards compat.
  */
 export async function saveSoramimi(
   redis: Redis,
   id: string,
-  soramimi: FuriganaSegment[][]
+  soramimi: FuriganaSegment[][],
+  language?: "zh-TW" | "en"
 ): Promise<SongDocument | null> {
   const existing = await getSong(redis, id, { 
     includeMetadata: true,
@@ -576,6 +595,19 @@ export async function saveSoramimi(
   });
   if (!existing) return null;
 
+  // If language specified, save to soramimiByLang; otherwise save to legacy field
+  if (language) {
+    const soramimiByLang = {
+      ...existing.soramimiByLang,
+      [language]: soramimi,
+    };
+    return saveSong(redis, {
+      ...existing,
+      soramimiByLang,
+    }, {}, existing);
+  }
+
+  // Legacy: save to soramimi field (backwards compat)
   return saveSong(redis, {
     ...existing,
     soramimi,

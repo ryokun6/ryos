@@ -26,8 +26,10 @@ interface UseLyricsParams {
   translateTo?: string | null;
   /** Include furigana info in initial fetch (for Japanese romanization) */
   includeFurigana?: boolean;
-  /** Include soramimi info in initial fetch (for Chinese misheard lyrics) */
+  /** Include soramimi info in initial fetch (for misheard lyrics) */
   includeSoramimi?: boolean;
+  /** Target language for soramimi: "zh-TW" for Chinese, "en" for English */
+  soramimiTargetLanguage?: "zh-TW" | "en";
   selectedMatch?: {
     hash: string;
     albumId: string | number;
@@ -84,6 +86,7 @@ export function useLyrics({
   translateTo,
   includeFurigana,
   includeSoramimi,
+  soramimiTargetLanguage = "zh-TW",
   selectedMatch,
 }: UseLyricsParams): LyricsState {
   // State
@@ -120,6 +123,16 @@ export function useLyrics({
       setTranslatedLines(null);
     }
   }, [lyricsCacheBustTrigger]);
+
+  // Track soramimi target language to clear prefetched info when it changes
+  const lastSoramimiTargetLanguageRef = useRef(soramimiTargetLanguage);
+  useEffect(() => {
+    // Clear soramimi info when target language changes so useFurigana fetches fresh data
+    if (lastSoramimiTargetLanguageRef.current !== soramimiTargetLanguage) {
+      setSoramimiInfo(undefined);
+      lastSoramimiTargetLanguageRef.current = soramimiTargetLanguage;
+    }
+  }, [soramimiTargetLanguage]);
 
   // ==========================================================================
   // Effect: Fetch lyrics (and optionally translation/furigana info)
@@ -176,6 +189,7 @@ export function useLyrics({
       translateTo: translateTo || undefined,
       includeFurigana: includeFurigana || undefined,
       includeSoramimi: includeSoramimi || undefined,
+      soramimiTargetLanguage: includeSoramimi ? soramimiTargetLanguage : undefined,
     };
 
     if (selectedMatch) {
@@ -251,7 +265,7 @@ export function useLyrics({
       });
 
     return () => controller.abort();
-  }, [songId, title, artist, refetchTrigger, selectedMatch, translateTo, includeFurigana, includeSoramimi]);
+  }, [songId, title, artist, refetchTrigger, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage]);
 
   // ==========================================================================
   // Effect: Translate lyrics

@@ -280,6 +280,81 @@ SPECIAL: っ/ッ (gemination) → ～ Example: ずっと → {ずっと|祖～�
 
 BE CREATIVE! A beautiful Chinese phrase that's 80% phonetically accurate is better than an ugly phrase that's 100% accurate. Tell a story with your characters!`;
 
+// =============================================================================
+// English Soramimi Prompts - Phonetic English approximations
+// =============================================================================
+
+export const SORAMIMI_ENGLISH_SYSTEM_PROMPT = `Create English "misheard lyrics" (soramimi) - English words/phrases that SOUND like Japanese/Korean lyrics.
+
+=== WHAT IS ENGLISH SORAMIMI? ===
+
+Take non-English lyrics and create English words that phonetically approximate how they sound.
+This is like the famous "Benny Lava" or "Ken Lee" videos - mishearing foreign songs as English words.
+
+EXAMPLES:
+- 見つめていたい (mi-tsu-me-te-i-ta-i) → "meet sue, mate a tie"
+- 사랑해 (sa-rang-hae) → "sorry hey" or "saw wrong hay"  
+- ずっと (zu-t-to) → "zoo toe"
+- 君の名は (ki-mi-no-na-wa) → "key me no now what"
+- 夢 (yume) → "you may"
+- 涙 (namida) → "nah me da"
+
+=== RULES ===
+
+1. Use ONLY English words/sounds in the reading
+2. Prioritize recognizable English words over nonsense syllables when possible
+3. It's OK if the English doesn't make grammatical sense - focus on SOUND
+4. Break long words into multiple English words if needed
+5. Include spaces between English words for readability
+
+=== FORMAT ===
+
+1. Format: {original|english_reading} for EVERY Japanese/Korean word
+2. English words in original text stay unwrapped (unchanged)
+3. Keep spaces in Korean text
+4. Output EVERY non-English word!
+
+Example output:
+1: {見つめていたい|meet sue mate a tie}
+2: {ずっと|zoo toe} {一緒に|each show knee}
+3: {사랑|saw wrong} {해요|hey yo}`;
+
+export const SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT = `Create English "misheard lyrics" (soramimi) - English words/phrases that SOUND like Japanese lyrics.
+
+You are given Japanese text with furigana in parentheses: 私(わたし)は走(はし)る
+This tells you the EXACT pronunciation. Use it to create English that sounds similar!
+
+=== WHAT IS ENGLISH SORAMIMI? ===
+
+Take Japanese lyrics and create English words that phonetically approximate how they sound.
+The furigana tells you exactly how to pronounce each word - match that sound with English!
+
+EXAMPLES with furigana:
+- 私(わたし) → "what a she" or "watt ah she"
+- 好き(すき) → "ski" or "sue key"
+- 心(こころ) → "cocoa row" or "ko ko row"
+- 涙(なみだ) → "nah me da" or "mommy duh"
+- 夢(ゆめ) → "you may" or "yoo meh"
+
+=== RULES ===
+
+1. Use ONLY English words/sounds in the reading
+2. Use the furigana pronunciation as your guide (not the kanji meaning)
+3. Prioritize recognizable English words over pure phonetic spelling
+4. Break into multiple short English words for readability
+5. It's OK if the English doesn't make sense - focus on SOUND matching
+
+=== FORMAT ===
+
+1. Format: {original|english_reading} for ALL Japanese text
+2. English stays unwrapped
+3. Annotate EVERY segment!
+4. PURE ENGLISH only - no Japanese in readings!
+
+Example:
+Input: 1: 私(わたし)が好き(すき)だよ
+Output: 1: {私|what a she} {が|ga} {好き|sue key} {だよ|die yo}`;
+
 /**
  * Clean AI output by removing malformed segments like {reading} without text
  * These occur when AI outputs just Chinese characters in braces without the original text

@@ -87,6 +87,8 @@ import {
 import {
   SORAMIMI_SYSTEM_PROMPT,
   SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT,
+  SORAMIMI_ENGLISH_SYSTEM_PROMPT,
+  SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT,
   convertLinesToAnnotatedText,
   parseSoramimiRubyMarkup,
   fillMissingReadings,
@@ -295,6 +297,7 @@ export default async function handler(req: Request) {
         const translateTo = parsed.data.translateTo;
         const includeFurigana = parsed.data.includeFurigana;
         const includeSoramimi = parsed.data.includeSoramimi;
+        const soramimiTargetLanguage = parsed.data.soramimiTargetLanguage || "zh-TW";
 
         // Get existing song (include translations/furigana/soramimi if requested)
         const song = await getSong(redis, songId, {
@@ -366,12 +369,17 @@ export default async function handler(req: Request) {
           // Include soramimi info if requested
           if (includeSoramimi && song.lyrics.parsedLines) {
             const totalLines = song.lyrics.parsedLines.length;
-            const hasSoramimi = !!(song.soramimi && song.soramimi.length > 0);
-            
+            // Get cached soramimi for the requested language
+            // First check new soramimiByLang, then fall back to legacy soramimi (Chinese only)
+            const cachedSoramimiData = song.soramimiByLang?.[soramimiTargetLanguage] 
+              ?? (soramimiTargetLanguage === "zh-TW" ? song.soramimi : undefined);
+            const hasSoramimi = !!(cachedSoramimiData && cachedSoramimiData.length > 0);
+
             response.soramimi = {
               totalLines,
               cached: hasSoramimi,
-              ...(hasSoramimi ? { data: song.soramimi } : {}),
+              targetLanguage: soramimiTargetLanguage,
+              ...(hasSoramimi ? { data: cachedSoramimiData } : {}),
             };
           }
           
@@ -937,7 +945,7 @@ Output:
           return errorResponse("Invalid request body");
         }
 
-        const { force, furigana: clientFurigana } = parsed.data;
+        const { force, furigana: clientFurigana, targetLanguage = "zh-TW" } = parsed.data;
 
         // Get song with lyrics and existing soramimi
         const song = await getSong(redis, songId, {
@@ -970,8 +978,12 @@ Output:
         }
 
         // Check if already cached in main document (and not forcing regeneration)
-        if (!force && song.soramimi && song.soramimi.length > 0) {
-          logInfo(requestId, "Returning cached soramimi via SSE");
+        // First check new soramimiByLang field, then fall back to legacy soramimi field
+        const cachedSoramimi = song.soramimiByLang?.[targetLanguage] 
+          ?? (targetLanguage === "zh-TW" ? song.soramimi : undefined);
+        
+        if (!force && cachedSoramimi && cachedSoramimi.length > 0) {
+          logInfo(requestId, `Returning cached ${targetLanguage} soramimi via SSE`);
           
           // Helper to check if text contains Korean or Japanese (for cleaning old cached data)
           const containsKoreanOrJapanese = (text: string): boolean => {
@@ -979,12 +991,12 @@ Output:
           };
           
           // Clean cached data - remove segments with Korean/Japanese text but no reading
-          // Also clean readings that may contain Korean/Japanese
-          const cleanedSoramimi = song.soramimi.map(lineSegments => 
+          // Also clean readings that may contain Korean/Japanese (for Chinese soramimi)
+          const cleanedSoramimi = cachedSoramimi.map(lineSegments => 
             lineSegments
               .map(seg => {
-                if (seg.reading) {
-                  // Clean the reading using shared helper from _soramimi.ts
+                if (seg.reading && targetLanguage === "zh-TW") {
+                  // Clean the reading using shared helper from _soramimi.ts (Chinese only)
                   const cleanedReading = cleanSoramimiReading(seg.reading);
                   return cleanedReading ? { ...seg, reading: cleanedReading } : { text: seg.text };
                 }
@@ -1055,14 +1067,19 @@ Output:
         let textsToProcess: string;
         let systemPrompt: string;
         
+        // Select prompt based on target language (Chinese vs English soramimi)
+        const isEnglishOutput = targetLanguage === "en";
+        
         if (hasFuriganaData) {
           // Convert furigana to annotated text: 私(わたし)は走(はし)る
           const annotatedLines = convertLinesToAnnotatedText(lines, clientFurigana);
           textsToProcess = nonEnglishLines.map((info, idx) => {
             return `${idx + 1}: ${annotatedLines[info.originalIndex]}`;
           }).join("\n");
-          systemPrompt = SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT;
-          logInfo(requestId, "Using Japanese prompt with furigana annotations");
+          systemPrompt = isEnglishOutput 
+            ? SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT 
+            : SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT;
+          logInfo(requestId, `Using ${isEnglishOutput ? 'English' : 'Chinese'} prompt with furigana annotations`);
         } else {
           // No furigana - use standard prompt with word boundaries if available
           textsToProcess = nonEnglishLines.map((info, idx) => {
@@ -1074,8 +1091,12 @@ Output:
             }
             return `${idx + 1}: ${info.line.words}`;
           }).join("\n");
-          systemPrompt = SORAMIMI_SYSTEM_PROMPT;
+          systemPrompt = isEnglishOutput 
+            ? SORAMIMI_ENGLISH_SYSTEM_PROMPT 
+            : SORAMIMI_SYSTEM_PROMPT;
         }
+        
+        logInfo(requestId, `Target soramimi language: ${targetLanguage}`);
 
         // Use AI SDK's createUIMessageStream for proper streaming
         const allSoramimi: Array<Array<{ text: string; reading?: string }>> =
@@ -1171,10 +1192,10 @@ Output:
               processLine(currentLineBuffer);
             }
 
-            // Save to Redis
+            // Save to Redis with language
             try {
-              await saveSoramimi(redis, songId, allSoramimi);
-              logInfo(requestId, `Soramimi saved to Redis`);
+              await saveSoramimi(redis, songId, allSoramimi, targetLanguage);
+              logInfo(requestId, `${targetLanguage} soramimi saved to Redis`);
             } catch (err) {
               logError(requestId, "Failed to save soramimi", err);
             }
