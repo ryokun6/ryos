@@ -20,9 +20,7 @@ import {
 import type { FuriganaSegment } from "@/utils/romanization";
 import { 
   processFuriganaSSE, 
-  resumeFuriganaSSE,
   processSoramimiSSE, 
-  resumeSoramimiSSE,
   type FuriganaChunkInfo, 
   type SoramimiChunkInfo,
   type FuriganaResult,
@@ -96,14 +94,13 @@ export function useFurigana({
   const [soramimiMap, setSoramimiMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
   const [isFetchingSoramimi, setIsFetchingSoramimi] = useState(false);
-  const [isResumingFurigana, setIsResumingFurigana] = useState(false);
-  const [isResumingSoramimi, setIsResumingSoramimi] = useState(false);
   const [progress, setProgress] = useState<number | undefined>();
   const [error, setError] = useState<string>();
   
-  // Track failed lines for resume
-  const [failedFuriganaLines, setFailedFuriganaLines] = useState<number[]>([]);
-  const [failedSoramimiLines, setFailedSoramimiLines] = useState<number[]>([]);
+  // Note: Resume is now handled server-side via chunk progress caching
+  // These are kept for interface compatibility but always false
+  const isResumingFurigana = false;
+  const isResumingSoramimi = false;
   
   // Combined fetching state for backwards compatibility
   const isFetching = isFetchingFurigana || isFetchingSoramimi;
@@ -232,11 +229,10 @@ export function useFurigana({
       furiganaCacheKeyRef.current = cacheKey;
       setIsFetchingFurigana(false);
       
-      // Check if there are failed lines that need resume
+      // Note: Partial results are now handled server-side via chunk progress caching
+      // The next request will automatically resume from where it left off
       if (prefetchedInfo.isPartial && prefetchedInfo.failedLines && prefetchedInfo.failedLines.length > 0) {
-        setFailedFuriganaLines(prefetchedInfo.failedLines);
-      } else {
-        setFailedFuriganaLines([]);
+        console.log(`Furigana has ${prefetchedInfo.failedLines.length} incomplete lines - will resume on next request`);
       }
       return;
     }
@@ -310,11 +306,9 @@ export function useFurigana({
         furiganaCacheKeyRef.current = cacheKey;
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
         
-        // Track failed lines for resume
+        // Note: Partial results are now handled server-side via chunk progress caching
         if (result.isPartial && result.failedLines.length > 0) {
-          setFailedFuriganaLines(result.failedLines);
-        } else {
-          setFailedFuriganaLines([]);
+          console.log(`Furigana has ${result.failedLines.length} incomplete lines - will resume on next request`);
         }
       })
       .catch((err) => {
@@ -353,84 +347,9 @@ export function useFurigana({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
 
-  // Auto-resume failed furigana lines
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only trigger when failedFuriganaLines changes
-  useEffect(() => {
-    // Skip if no failed lines, not enabled, or already fetching/resuming
-    if (
-      failedFuriganaLines.length === 0 ||
-      !shouldFetchFurigana ||
-      !songId ||
-      !isShowingOriginal ||
-      isFetchingFurigana ||
-      isResumingFurigana ||
-      isOffline()
-    ) {
-      return;
-    }
-
-    // Capture current values for async operations
-    const effectSongId = songId;
-    const linesToResume = [...failedFuriganaLines];
-    
-    setIsResumingFurigana(true);
-    setProgress(0);
-    
-    const controller = new AbortController();
-    
-    resumeFuriganaSSE(effectSongId, linesToResume, {
-      signal: controller.signal,
-      onProgress: (chunkProgress) => {
-        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
-          setProgress(chunkProgress.percentage);
-        }
-      },
-      onLineUpdate: (lineIndex, segments) => {
-        if (controller.signal.aborted || effectSongId !== currentSongIdRef.current) return;
-        
-        // Update the furigana map progressively
-        if (lineIndex < lines.length) {
-          setFuriganaMap(prev => {
-            const newMap = new Map(prev);
-            newMap.set(lines[lineIndex].startTimeMs, segments);
-            return newMap;
-          });
-        }
-      },
-    })
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        if (effectSongId !== currentSongIdRef.current) return;
-        
-        // Update failed lines with remaining failures
-        if (result.stillFailedLines.length > 0) {
-          console.warn(`Furigana resume: ${result.stillFailedLines.length} lines still failed after resume`);
-        }
-        
-        // Clear failed lines since we've attempted resume
-        setFailedFuriganaLines([]);
-      })
-      .catch((err) => {
-        if (controller.signal.aborted) return;
-        if (effectSongId !== currentSongIdRef.current) return;
-        
-        if (err instanceof Error && err.name === "AbortError") {
-          return;
-        }
-        
-        console.error("Failed to resume furigana:", err);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
-          setIsResumingFurigana(false);
-          setProgress(undefined);
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, [failedFuriganaLines, shouldFetchFurigana, songId, isShowingOriginal, isFetchingFurigana, isResumingFurigana, lines]);
+  // Note: Resume is now handled server-side via chunk progress caching
+  // When the client reconnects and requests furigana/soramimi, the server
+  // automatically detects any previously cached chunk progress and resumes from there.
 
   // Check conditions for soramimi fetching
   const shouldFetchSoramimi = romanization.enabled && romanization.chineseSoramimi;
@@ -488,11 +407,9 @@ export function useFurigana({
       setSoramimiMap(finalMap);
       soramimiCacheKeyRef.current = cacheKey;
       
-      // Check if there are failed lines that need resume
+      // Note: Partial results are now handled server-side via chunk progress caching
       if (prefetchedSoramimiInfo.isPartial && prefetchedSoramimiInfo.failedLines && prefetchedSoramimiInfo.failedLines.length > 0) {
-        setFailedSoramimiLines(prefetchedSoramimiInfo.failedLines);
-      } else {
-        setFailedSoramimiLines([]);
+        console.log(`Soramimi has ${prefetchedSoramimiInfo.failedLines.length} incomplete lines - will resume on next request`);
       }
       return;
     }
@@ -566,11 +483,9 @@ export function useFurigana({
         soramimiCacheKeyRef.current = cacheKey;
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
         
-        // Track failed lines for resume
+        // Note: Partial results are now handled server-side via chunk progress caching
         if (result.isPartial && result.failedLines.length > 0) {
-          setFailedSoramimiLines(result.failedLines);
-        } else {
-          setFailedSoramimiLines([]);
+          console.log(`Soramimi has ${result.failedLines.length} incomplete lines - will resume on next request`);
         }
       })
       .catch((err) => {
@@ -609,89 +524,6 @@ export function useFurigana({
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
   }, [songId, cacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedSoramimiInfo]);
-
-  // Auto-resume failed soramimi lines
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only trigger when failedSoramimiLines changes
-  useEffect(() => {
-    // Skip if no failed lines, not enabled, or already fetching/resuming
-    if (
-      failedSoramimiLines.length === 0 ||
-      !shouldFetchSoramimi ||
-      !songId ||
-      !isShowingOriginal ||
-      isFetchingSoramimi ||
-      isResumingSoramimi ||
-      isOffline()
-    ) {
-      return;
-    }
-
-    // Capture current values for async operations
-    const effectSongId = songId;
-    const linesToResume = [...failedSoramimiLines];
-    
-    setIsResumingSoramimi(true);
-    setProgress(0);
-    
-    const controller = new AbortController();
-    
-    resumeSoramimiSSE(effectSongId, linesToResume, {
-      signal: controller.signal,
-      onProgress: (chunkProgress) => {
-        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
-          setProgress(chunkProgress.percentage);
-        }
-      },
-      onLineUpdate: (lineIndex, segments) => {
-        if (controller.signal.aborted || effectSongId !== currentSongIdRef.current) return;
-        
-        // Update the soramimi map progressively
-        if (lineIndex < lines.length) {
-          setSoramimiMap(prev => {
-            const newMap = new Map(prev);
-            newMap.set(lines[lineIndex].startTimeMs, segments);
-            return newMap;
-          });
-        }
-      },
-    })
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        if (effectSongId !== currentSongIdRef.current) return;
-        
-        // Update failed lines with remaining failures
-        if (result.stillFailedLines.length > 0) {
-          // Some lines still failed - could retry again later
-          // For now, just log it - we don't want infinite retries
-          console.warn(`Soramimi resume: ${result.stillFailedLines.length} lines still failed after resume`);
-        }
-        
-        // Clear failed lines since we've attempted resume
-        setFailedSoramimiLines([]);
-      })
-      .catch((err) => {
-        if (controller.signal.aborted) return;
-        if (effectSongId !== currentSongIdRef.current) return;
-        
-        if (err instanceof Error && err.name === "AbortError") {
-          return;
-        }
-        
-        console.error("Failed to resume soramimi:", err);
-        // Don't show error to user for resume failures - the partial data is still usable
-      })
-      .finally(() => {
-        if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
-          setIsResumingSoramimi(false);
-          setProgress(undefined);
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  // Only trigger when failed lines list changes
-  }, [failedSoramimiLines, shouldFetchSoramimi, songId, isShowingOriginal, isFetchingSoramimi, isResumingSoramimi, lines]);
 
   // Unified render function that handles all romanization types
   const renderWithFurigana = useCallback(
