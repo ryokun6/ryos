@@ -269,24 +269,20 @@ export function useFurigana({
       signal: controller.signal,
       // Pass pre-fetched info to skip get-chunk-info call
       prefetchedInfo: !isForceRequest ? prefetchedInfo : undefined,
-      onProgress: (chunkProgress) => {
+      onProgress: (progress) => {
         if (!controller.signal.aborted) {
           if (effectSongId !== currentSongIdRef.current) return;
-          setProgress(chunkProgress.percentage);
+          setProgress(progress.percentage);
         }
       },
-      onChunk: (_chunkIndex, startIndex, furigana) => {
+      onLine: (lineIndex, segments) => {
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
         
-        furigana.forEach((segments, i) => {
-          const lineIndex = startIndex + i;
-          if (lineIndex < lines.length && segments) {
-            progressiveMap.set(lines[lineIndex].startTimeMs, segments);
-          }
-        });
-        
-        setFuriganaMap(new Map(progressiveMap));
+        if (lineIndex < lines.length && segments) {
+          progressiveMap.set(lines[lineIndex].startTimeMs, segments);
+          setFuriganaMap(new Map(progressiveMap));
+        }
       },
     })
       .then((result: FuriganaResult) => {
@@ -446,24 +442,20 @@ export function useFurigana({
       signal: controller.signal,
       // Pass pre-fetched info to skip get-chunk-info call
       prefetchedInfo: !isForceRequest ? prefetchedSoramimiInfo : undefined,
-      onProgress: (chunkProgress) => {
+      onProgress: (progress) => {
         if (!controller.signal.aborted) {
           if (effectSongId !== currentSongIdRef.current) return;
-          setProgress(chunkProgress.percentage);
+          setProgress(progress.percentage);
         }
       },
-      onChunk: (_chunkIndex, startIndex, soramimi) => {
+      onLine: (lineIndex, segments) => {
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
         
-        soramimi.forEach((segments, i) => {
-          const lineIndex = startIndex + i;
-          if (lineIndex < lines.length && segments) {
-            progressiveMap.set(lines[lineIndex].startTimeMs, segments);
-          }
-        });
-        
-        setSoramimiMap(new Map(progressiveMap));
+        if (lineIndex < lines.length && segments) {
+          progressiveMap.set(lines[lineIndex].startTimeMs, segments);
+          setSoramimiMap(new Map(progressiveMap));
+        }
       },
     })
       .then((result: SoramimiResult) => {

@@ -297,17 +297,14 @@ export function useLyrics({
           setTranslationProgress(progress.percentage);
         }
       },
-      onChunk: (_chunkIndex, startIndex, translations) => {
+      onLine: (lineIndex, translation) => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setTranslatedLines((prev) => {
             const base = prev || originalLines.map((line) => ({ ...line }));
             const updated = [...base];
-            translations.forEach((text, i) => {
-              const lineIndex = startIndex + i;
-              if (lineIndex < updated.length) {
-                updated[lineIndex] = { ...updated[lineIndex], words: text };
-              }
-            });
+            if (lineIndex < updated.length) {
+              updated[lineIndex] = { ...updated[lineIndex], words: translation };
+            }
             return updated;
           });
         }
