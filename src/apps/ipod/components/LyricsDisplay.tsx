@@ -454,14 +454,16 @@ function StaticWordRendering({
         let content: ReactNode;
         if (item.reading) {
           // Has a reading - show combined text with ruby annotation
+          // Convert to romaji if japaneseRomaji is enabled
+          const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
           if (pronunciationOnly) {
-            content = <>{item.reading}{trailingSpace}</>;
+            content = <>{displayReading}{trailingSpace}</>;
           } else {
             content = (
               <>
                 <ruby className="lyrics-furigana lyrics-soramimi">
                   {item.text}
-                  <rt className="lyrics-furigana-rt lyrics-soramimi-rt">{item.reading}</rt>
+                  <rt className="lyrics-furigana-rt lyrics-soramimi-rt">{displayReading}</rt>
                 </ruby>
                 {trailingSpace}
               </>
@@ -627,15 +629,17 @@ function WordTimingHighlight({
         let content: ReactNode;
         if (item.reading) {
           // Has a reading - show combined text with ruby annotation
+          // Convert to romaji if japaneseRomaji is enabled
+          const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
           if (pronunciationOnly) {
-            content = <>{item.reading}{trailingSpace}</>;
+            content = <>{displayReading}{trailingSpace}</>;
           } else {
             // Ruby annotation mode
             content = (
               <>
                 <ruby className="lyrics-furigana lyrics-soramimi">
                   {item.text}
-                  <rt className="lyrics-furigana-rt lyrics-soramimi-rt">{item.reading}</rt>
+                  <rt className="lyrics-furigana-rt lyrics-soramimi-rt">{displayReading}</rt>
                 </ruby>
                 {trailingSpace}
               </>
