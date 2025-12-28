@@ -1085,7 +1085,6 @@ export function KaraokeAppComponent({
                     soramimiProgress,
                     isAddingSong,
                   }}
-                  className="karaoke-activity-indicator"
                 />
               </motion.div>
             )}
