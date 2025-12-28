@@ -1,30 +1,13 @@
 import { cn } from "@/lib/utils";
 import { ActivityIndicator } from "./activity-indicator";
+import { getActivityLabel, type ActivityInfo } from "@/hooks/useActivityLabel";
 
-export interface ActivityState {
-  /** Whether currently loading lyrics */
-  isLoadingLyrics?: boolean;
-  /** Whether currently translating lyrics */
-  isTranslating?: boolean;
-  /** Translation progress percentage (0-100) */
-  translationProgress?: number;
-  /** Translation target language code (e.g., "en", "ja") */
-  translationLanguage?: string | null;
-  /** Whether currently fetching furigana */
-  isFetchingFurigana?: boolean;
-  /** Furigana progress percentage (0-100) */
-  furiganaProgress?: number;
-  /** Whether currently fetching soramimi */
-  isFetchingSoramimi?: boolean;
-  /** Soramimi progress percentage (0-100) */
-  soramimiProgress?: number;
-  /** Whether currently adding a song (searching or adding) */
-  isAddingSong?: boolean;
-}
+// Re-export ActivityInfo as ActivityState for backwards compatibility
+export type { ActivityInfo as ActivityState } from "@/hooks/useActivityLabel";
 
 interface ActivityIndicatorWithLabelProps {
   /** Activity state object containing all loading states */
-  state: ActivityState;
+  state: ActivityInfo;
   /** Size of the indicator */
   size?: "xs" | "sm" | "md" | "lg" | number;
   /** Additional CSS classes for the container */
@@ -34,21 +17,6 @@ interface ActivityIndicatorWithLabelProps {
   /** Whether to show the label text (default: true) */
   showLabel?: boolean;
 }
-
-// Map language codes to display names
-const languageNames: Record<string, string> = {
-  en: "English",
-  ja: "日本語",
-  ko: "한국어",
-  "zh-CN": "中文",
-  "zh-TW": "中文",
-  es: "Español",
-  fr: "Français",
-  de: "Deutsch",
-  it: "Italiano",
-  pt: "Português",
-  ru: "Русский",
-};
 
 /**
  * Activity indicator with an optional label showing what's being processed
@@ -61,44 +29,8 @@ export function ActivityIndicatorWithLabel({
   labelClassName,
   showLabel = true,
 }: ActivityIndicatorWithLabelProps) {
-  const {
-    isLoadingLyrics,
-    isTranslating,
-    translationProgress,
-    translationLanguage,
-    isFetchingFurigana,
-    furiganaProgress,
-    isFetchingSoramimi,
-    soramimiProgress,
-    isAddingSong,
-  } = state;
+  const { isActive, label } = getActivityLabel(state);
 
-  // Determine what to show based on active state
-  // Priority: Adding > any with progress > any without progress
-  // Format: "XX% Label" (e.g., "45% Furigana")
-  let label: string | null = null;
-  
-  if (isAddingSong) {
-    label = "Adding";
-  } else if (isTranslating && translationProgress !== undefined && translationProgress < 100) {
-    // Translation with progress takes priority (most user-visible operation)
-    const langName = translationLanguage ? (languageNames[translationLanguage] || translationLanguage) : "";
-    label = langName ? `${Math.round(translationProgress)}% ${langName}` : `${Math.round(translationProgress)}%`;
-  } else if (isFetchingSoramimi && soramimiProgress !== undefined && soramimiProgress < 100) {
-    label = `${Math.round(soramimiProgress)}% Soramimi`;
-  } else if (isFetchingFurigana && furiganaProgress !== undefined && furiganaProgress < 100) {
-    label = `${Math.round(furiganaProgress)}% Furigana`;
-  } else if (isTranslating) {
-    const langName = translationLanguage ? (languageNames[translationLanguage] || translationLanguage) : "";
-    label = langName || null;
-  } else if (isFetchingSoramimi) {
-    label = "Soramimi";
-  } else if (isFetchingFurigana) {
-    label = "Furigana";
-  }
-
-  // Don't render if nothing is happening
-  const isActive = isLoadingLyrics || isTranslating || isFetchingFurigana || isFetchingSoramimi || isAddingSong;
   if (!isActive) {
     return null;
   }

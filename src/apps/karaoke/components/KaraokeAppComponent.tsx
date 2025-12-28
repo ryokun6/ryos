@@ -29,7 +29,7 @@ import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
+import { ActivityIndicatorWithLabel, type ActivityState } from "@/components/ui/activity-indicator-with-label";
 import { TRANSLATION_LANGUAGES } from "@/apps/ipod/constants";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
@@ -166,7 +166,6 @@ export function KaraokeAppComponent({
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isPronunciationMenuOpen, setIsPronunciationMenuOpen] = useState(false);
   const anyMenuOpen = isLangMenuOpen || isPronunciationMenuOpen;
-  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
   
   // New dialogs for iPod menu features
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
@@ -283,10 +282,38 @@ export function KaraokeAppComponent({
     lines: lyricsControls.originalLines,
     isShowingOriginal: true,
     romanization,
-    onLoadingChange: setIsFetchingFurigana,
     prefetchedInfo: lyricsControls.furiganaInfo,
     prefetchedSoramimiInfo: lyricsControls.soramimiInfo,
   });
+
+  // Consolidated activity state for loading indicators
+  const activityState: ActivityState = useMemo(() => ({
+    isLoadingLyrics: lyricsControls.isLoading,
+    isTranslating: lyricsControls.isTranslating,
+    translationProgress: lyricsControls.translationProgress,
+    translationLanguage: effectiveTranslationLanguage,
+    isFetchingFurigana: isFetchingFuriganaFromHook,
+    furiganaProgress,
+    isFetchingSoramimi,
+    soramimiProgress,
+    isAddingSong,
+  }), [
+    lyricsControls.isLoading,
+    lyricsControls.isTranslating,
+    lyricsControls.translationProgress,
+    effectiveTranslationLanguage,
+    isFetchingFuriganaFromHook,
+    furiganaProgress,
+    isFetchingSoramimi,
+    soramimiProgress,
+    isAddingSong,
+  ]);
+  
+  const isAnyActivityActive = activityState.isLoadingLyrics || 
+    activityState.isTranslating || 
+    activityState.isFetchingFurigana || 
+    activityState.isFetchingSoramimi || 
+    activityState.isAddingSong;
 
   // Translation languages with translated labels
   const translationLanguages = useMemo(
@@ -1064,7 +1091,7 @@ export function KaraokeAppComponent({
 
           {/* Activity indicator - scales with container size */}
           <AnimatePresence>
-            {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana || isFetchingSoramimi || isAddingSong) && (
+            {isAnyActivityActive && (
               <motion.div
                 className="absolute top-8 right-6 z-40 pointer-events-none flex justify-end"
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -1074,17 +1101,7 @@ export function KaraokeAppComponent({
               >
                 <ActivityIndicatorWithLabel
                   size={32}
-                  state={{
-                    isLoadingLyrics: lyricsControls.isLoading,
-                    isTranslating: lyricsControls.isTranslating,
-                    translationProgress: lyricsControls.translationProgress,
-                    translationLanguage: effectiveTranslationLanguage,
-                    isFetchingFurigana: isFetchingFuriganaFromHook,
-                    furiganaProgress,
-                    isFetchingSoramimi,
-                    soramimiProgress,
-                    isAddingSong,
-                  }}
+                  state={activityState}
                 />
               </motion.div>
             )}
@@ -1294,15 +1311,7 @@ export function KaraokeAppComponent({
             ) : undefined
           }
           fullScreenPlayerRef={fullScreenPlayerRef}
-          isLoadingLyrics={lyricsControls.isLoading}
-          isProcessingLyrics={lyricsControls.isTranslating}
-          isFetchingFurigana={isFetchingFuriganaFromHook}
-          isFetchingSoramimi={isFetchingSoramimi}
-          isAddingSong={isAddingSong}
-          translationProgress={lyricsControls.translationProgress}
-          translationLanguage={effectiveTranslationLanguage}
-          furiganaProgress={furiganaProgress}
-          soramimiProgress={soramimiProgress}
+          activityState={activityState}
         >
           {({ controlsVisible }) => (
             <div className="flex flex-col w-full h-full">

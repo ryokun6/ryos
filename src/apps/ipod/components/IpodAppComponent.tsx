@@ -40,6 +40,7 @@ import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { BACKLIGHT_TIMEOUT_MS, SEEK_AMOUNT_SECONDS } from "../constants";
 import type { WheelArea, RotationDirection } from "../types";
+import type { ActivityInfo } from "@/hooks/useActivityLabel";
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -1355,6 +1356,29 @@ export function IpodAppComponent({
     prefetchedSoramimiInfo: fullScreenLyricsControls.soramimiInfo,
   });
 
+  // Consolidated activity state for loading indicators
+  const activityState: ActivityInfo = useMemo(() => ({
+    isLoadingLyrics: fullScreenLyricsControls.isLoading,
+    isTranslating: fullScreenLyricsControls.isTranslating,
+    translationProgress: fullScreenLyricsControls.translationProgress,
+    translationLanguage: effectiveTranslationLanguage,
+    isFetchingFurigana,
+    furiganaProgress,
+    isFetchingSoramimi,
+    soramimiProgress,
+    isAddingSong,
+  }), [
+    fullScreenLyricsControls.isLoading,
+    fullScreenLyricsControls.isTranslating,
+    fullScreenLyricsControls.translationProgress,
+    effectiveTranslationLanguage,
+    isFetchingFurigana,
+    furiganaProgress,
+    isFetchingSoramimi,
+    soramimiProgress,
+    isAddingSong,
+  ]);
+
   // Convert furiganaMap to Record for storage - only when content actually changes
   const furiganaRecord = useMemo(() => {
     if (furiganaMap.size === 0) return null;
@@ -1650,13 +1674,7 @@ export function IpodAppComponent({
               lyricsControls={fullScreenLyricsControls}
               furiganaMap={furiganaMap}
               soramimiMap={soramimiMap}
-              isFetchingFurigana={isFetchingFurigana}
-              isFetchingSoramimi={isFetchingSoramimi}
-              isAddingSong={isAddingSong}
-              translationProgress={fullScreenLyricsControls.translationProgress}
-              translationLanguage={effectiveTranslationLanguage}
-              furiganaProgress={furiganaProgress}
-              soramimiProgress={soramimiProgress}
+              activityState={activityState}
               onNextTrack={() => {
                 if (isOffline) {
                   showOfflineStatus();
@@ -1768,15 +1786,7 @@ export function IpodAppComponent({
               ) : undefined
             }
             fullScreenPlayerRef={fullScreenPlayerRef}
-            isLoadingLyrics={fullScreenLyricsControls.isLoading}
-            isProcessingLyrics={fullScreenLyricsControls.isTranslating}
-            isFetchingFurigana={isFetchingFurigana}
-            isFetchingSoramimi={isFetchingSoramimi}
-            isAddingSong={isAddingSong}
-            translationProgress={fullScreenLyricsControls.translationProgress}
-            translationLanguage={effectiveTranslationLanguage}
-            furiganaProgress={furiganaProgress}
-            soramimiProgress={soramimiProgress}
+            activityState={activityState}
           >
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">

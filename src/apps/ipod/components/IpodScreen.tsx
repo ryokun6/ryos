@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ import {
   StatusDisplay,
 } from "./screen";
 import type { IpodScreenProps } from "../types";
+import type { ActivityInfo } from "@/hooks/useActivityLabel";
 
 // Animation variants for menu transitions
 const menuVariants = {
@@ -70,15 +71,47 @@ export function IpodScreen({
   onPreviousTrack,
   furiganaMap,
   soramimiMap,
-  isFetchingFurigana,
-  isFetchingSoramimi,
-  isAddingSong,
-  translationProgress,
-  translationLanguage,
-  furiganaProgress,
-  soramimiProgress,
+  activityState,
+  // Legacy props (backwards compatibility - prefer activityState)
+  isFetchingFurigana: isFetchingFuriganaLegacy,
+  isFetchingSoramimi: isFetchingSoramimiLegacy,
+  isAddingSong: isAddingSongLegacy,
+  translationProgress: translationProgressLegacy,
+  translationLanguage: translationLanguageLegacy,
+  furiganaProgress: furiganaProgressLegacy,
+  soramimiProgress: soramimiProgressLegacy,
 }: IpodScreenProps) {
   const { t } = useTranslation();
+  
+  // Merge activity state from either the new prop or legacy props
+  const resolvedActivityState: ActivityInfo = useMemo(() => ({
+    isLoadingLyrics: activityState?.isLoadingLyrics ?? lyricsControls.isLoading,
+    isTranslating: activityState?.isTranslating ?? lyricsControls.isTranslating,
+    translationProgress: activityState?.translationProgress ?? translationProgressLegacy,
+    translationLanguage: activityState?.translationLanguage ?? translationLanguageLegacy,
+    isFetchingFurigana: activityState?.isFetchingFurigana ?? isFetchingFuriganaLegacy,
+    furiganaProgress: activityState?.furiganaProgress ?? furiganaProgressLegacy,
+    isFetchingSoramimi: activityState?.isFetchingSoramimi ?? isFetchingSoramimiLegacy,
+    soramimiProgress: activityState?.soramimiProgress ?? soramimiProgressLegacy,
+    isAddingSong: activityState?.isAddingSong ?? isAddingSongLegacy,
+  }), [
+    activityState,
+    lyricsControls.isLoading,
+    lyricsControls.isTranslating,
+    translationProgressLegacy,
+    translationLanguageLegacy,
+    isFetchingFuriganaLegacy,
+    furiganaProgressLegacy,
+    isFetchingSoramimiLegacy,
+    soramimiProgressLegacy,
+    isAddingSongLegacy,
+  ]);
+  
+  const isAnyActivityActive = resolvedActivityState.isLoadingLyrics || 
+    resolvedActivityState.isTranslating || 
+    resolvedActivityState.isFetchingFurigana || 
+    resolvedActivityState.isFetchingSoramimi || 
+    resolvedActivityState.isAddingSong;
 
   // Current menu title
   const currentMenuTitle = menuMode
@@ -313,7 +346,7 @@ export function IpodScreen({
 
             {/* Activity Indicator */}
             <AnimatePresence>
-              {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana || isFetchingSoramimi || isAddingSong) && (
+              {isAnyActivityActive && (
                 <motion.div
                   className="absolute top-4 right-4 z-40 pointer-events-none"
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -323,17 +356,7 @@ export function IpodScreen({
                 >
                   <ActivityIndicatorWithLabel
                     size="md"
-                    state={{
-                      isLoadingLyrics: lyricsControls.isLoading,
-                      isTranslating: lyricsControls.isTranslating,
-                      translationProgress,
-                      translationLanguage,
-                      isFetchingFurigana,
-                      furiganaProgress,
-                      isFetchingSoramimi,
-                      soramimiProgress,
-                      isAddingSong,
-                    }}
+                    state={resolvedActivityState}
                     labelClassName="text-[10px]"
                   />
                 </motion.div>

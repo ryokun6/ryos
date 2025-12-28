@@ -5,6 +5,7 @@ import type { LyricsAlignment, LyricsFont, ChineseVariant, KoreanDisplay, Japane
 import type ReactPlayer from "react-player";
 import type { useLyrics } from "@/hooks/useLyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
+import type { ActivityInfo } from "@/hooks/useActivityLabel";
 
 // Wheel interaction types
 export type WheelArea = "top" | "right" | "bottom" | "left" | "center";
@@ -69,16 +70,26 @@ export interface FullScreenPortalProps {
   syncModeContent?: React.ReactNode;
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
-  // Lyrics loading state
+  /** Consolidated activity state for loading indicators */
+  activityState?: ActivityInfo;
+  // Legacy props for backwards compatibility (deprecated - use activityState instead)
+  /** @deprecated Use activityState.isLoadingLyrics */
   isLoadingLyrics?: boolean;
+  /** @deprecated Use activityState.isTranslating */
   isProcessingLyrics?: boolean;
+  /** @deprecated Use activityState.isFetchingFurigana */
   isFetchingFurigana?: boolean;
+  /** @deprecated Use activityState.isFetchingSoramimi */
   isFetchingSoramimi?: boolean;
+  /** @deprecated Use activityState.isAddingSong */
   isAddingSong?: boolean;
-  // Progress info
+  /** @deprecated Use activityState.translationProgress */
   translationProgress?: number;
+  /** @deprecated Use activityState.translationLanguage */
   translationLanguage?: string | null;
+  /** @deprecated Use activityState.furiganaProgress */
   furiganaProgress?: number;
+  /** @deprecated Use activityState.soramimiProgress */
   soramimiProgress?: number;
 }
 
@@ -127,19 +138,22 @@ export interface IpodScreenProps {
   furiganaMap?: Map<string, FuriganaSegment[]>;
   /** Soramimi map from parent (Map of startTimeMs -> FuriganaSegment[]) */
   soramimiMap?: Map<string, FuriganaSegment[]>;
-  /** Whether fetching furigana/soramimi annotations */
+  /** Consolidated activity state for loading indicators */
+  activityState?: ActivityInfo;
+  // Legacy props for backwards compatibility (deprecated - use activityState instead)
+  /** @deprecated Use activityState.isFetchingFurigana */
   isFetchingFurigana?: boolean;
-  /** Whether fetching soramimi annotations */
+  /** @deprecated Use activityState.isFetchingSoramimi */
   isFetchingSoramimi?: boolean;
-  /** Whether adding a new song */
+  /** @deprecated Use activityState.isAddingSong */
   isAddingSong?: boolean;
-  /** Translation progress percentage (0-100) */
+  /** @deprecated Use activityState.translationProgress */
   translationProgress?: number;
-  /** Translation target language code */
+  /** @deprecated Use activityState.translationLanguage */
   translationLanguage?: string | null;
-  /** Furigana progress percentage (0-100) */
+  /** @deprecated Use activityState.furiganaProgress */
   furiganaProgress?: number;
-  /** Soramimi progress percentage (0-100) */
+  /** @deprecated Use activityState.soramimiProgress */
   soramimiProgress?: number;
 }
 
