@@ -75,17 +75,18 @@ export function ActivityIndicatorWithLabel({
 
   // Determine what to show based on active state
   // Priority: Adding > Soramimi > Furigana > Translation > Loading
+  // Format: "XX% Label" (e.g., "45% Furigana")
   let label: string | null = null;
   
   if (isAddingSong) {
     label = "Adding";
   } else if (isFetchingSoramimi && soramimiProgress !== undefined && soramimiProgress < 100) {
-    label = `Soramimi ${Math.round(soramimiProgress)}%`;
+    label = `${Math.round(soramimiProgress)}% Soramimi`;
   } else if (isFetchingFurigana && furiganaProgress !== undefined && furiganaProgress < 100) {
-    label = `Furigana ${Math.round(furiganaProgress)}%`;
+    label = `${Math.round(furiganaProgress)}% Furigana`;
   } else if (isTranslating && translationProgress !== undefined && translationProgress < 100) {
     const langName = translationLanguage ? (languageNames[translationLanguage] || translationLanguage) : "";
-    label = langName ? `${langName} ${Math.round(translationProgress)}%` : `${Math.round(translationProgress)}%`;
+    label = langName ? `${Math.round(translationProgress)}% ${langName}` : `${Math.round(translationProgress)}%`;
   } else if (isFetchingSoramimi) {
     label = "Soramimi";
   } else if (isFetchingFurigana) {
