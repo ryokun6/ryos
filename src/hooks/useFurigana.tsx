@@ -116,7 +116,9 @@ export function useFurigana({
   
   // Track cache bust trigger for clearing caches
   const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
-  const lastCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
+  // Separate refs for furigana and soramimi to prevent one completing first from skipping the other's force-refresh
+  const lastFuriganaCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
+  const lastSoramimiCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
   
   // Track in-flight force requests to prevent premature abort on effect re-runs
   // Store both the controller and a unique requestId to distinguish new vs duplicate requests
@@ -147,7 +149,8 @@ export function useFurigana({
   
   // Effect to immediately clear furigana and soramimi when cache bust trigger changes
   useEffect(() => {
-    if (lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger) {
+    if (lastFuriganaCacheBustTriggerRef.current !== lyricsCacheBustTrigger || 
+        lastSoramimiCacheBustTriggerRef.current !== lyricsCacheBustTrigger) {
       setFuriganaMap(new Map());
       setSoramimiMap(new Map());
       furiganaCacheKeyRef.current = "";
@@ -156,6 +159,7 @@ export function useFurigana({
       // Clear force request refs to prevent stale state blocking new requests
       furiganaForceRequestRef.current = null;
       soramimiForceRequestRef.current = null;
+      // Note: Don't update the cache bust refs here - let each effect update its own ref on completion
     }
   }, [lyricsCacheBustTrigger]);
 
@@ -200,6 +204,7 @@ export function useFurigana({
     const hasJapanese = lines.some((line) => isJapaneseText(line.words));
     if (!hasJapanese) {
       setFuriganaMap(new Map());
+      furiganaCacheKeyRef.current = "";  // Clear cache key to prevent stale cache detection
       setIsFetchingFurigana(false);
       setProgress(undefined);
       setError(undefined);
@@ -214,7 +219,7 @@ export function useFurigana({
     }
 
     // Check if this is a force cache clear request
-    const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
+    const isForceRequest = lastFuriganaCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
     
     // Skip if we already have this data and it's not a force request
     if (!isForceRequest && cacheKey === furiganaCacheKeyRef.current) {
@@ -300,7 +305,7 @@ export function useFurigana({
 
         setFuriganaMap(finalMap);
         furiganaCacheKeyRef.current = cacheKey;
-        lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        lastFuriganaCacheBustTriggerRef.current = lyricsCacheBustTrigger;
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -402,7 +407,7 @@ export function useFurigana({
     }
 
     // Check if this is a force cache clear request
-    const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
+    const isForceRequest = lastSoramimiCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
     
     // Skip if we already have this data and it's not a force request
     if (!isForceRequest && cacheKey === soramimiCacheKeyRef.current) {
@@ -508,7 +513,7 @@ export function useFurigana({
 
         setSoramimiMap(finalMap);
         soramimiCacheKeyRef.current = cacheKey;
-        lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        lastSoramimiCacheBustTriggerRef.current = lyricsCacheBustTrigger;
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
