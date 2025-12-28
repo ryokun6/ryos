@@ -243,7 +243,7 @@ export default async function handler(req: Request) {
           const existing = existingMap.get(songData.id);
 
           // Convert legacy lyricsSearch to lyricsSource
-          let lyricsSource: LyricsSource | undefined = songData.lyricsSource;
+          let lyricsSource: LyricsSource | undefined = songData.lyricsSource as LyricsSource | undefined;
           if (!lyricsSource && songData.lyricsSearch?.selection) {
             lyricsSource = songData.lyricsSearch.selection as LyricsSource;
           }
