@@ -351,21 +351,16 @@ export function useFurigana({
   
   // For Japanese songs, check if furigana is ready (needed for accurate soramimi)
   // For non-Japanese songs (Korean, etc.), we can start soramimi immediately
-  const furiganaReadyForSoramimi = !isJapanese || (!isFetchingFurigana && furiganaMap.size > 0);
+  // Memoized to avoid recalculating on every render
+  const furiganaReadyForSoramimi = useMemo(
+    () => !isJapanese || (!isFetchingFurigana && furiganaMap.size > 0),
+    [isJapanese, isFetchingFurigana, furiganaMap]
+  );
   
-  // Convert furigana map to array format for API
-  // This is used to pass furigana readings to the soramimi API for Japanese songs
-  const furiganaArrayForSoramimi = useMemo(() => {
-    if (!isJapanese || furiganaMap.size === 0) return undefined;
-    
-    // Convert Map<startTimeMs, segments> to Array indexed by line
-    const result: Array<Array<{ text: string; reading?: string }>> = [];
-    for (let i = 0; i < lines.length; i++) {
-      const segments = furiganaMap.get(lines[i].startTimeMs);
-      result.push(segments || [{ text: lines[i].words }]);
-    }
-    return result;
-  }, [isJapanese, furiganaMap, lines]);
+  // Keep a ref to furiganaMap so we can access it in the effect without adding it as a dependency
+  // This prevents the soramimi effect from re-running during furigana streaming
+  const furiganaMapRef = useRef(furiganaMap);
+  furiganaMapRef.current = furiganaMap;
 
   // Fetch soramimi for lyrics when enabled using line-by-line streaming
   // For Japanese songs, waits for furigana to complete first so we can pass readings to the AI
@@ -454,9 +449,23 @@ export function useFurigana({
     // Use line-by-line streaming for soramimi
     const progressiveMap = new Map<string, FuriganaSegment[]>();
     
-    // Log if we're passing furigana for Japanese songs
-    if (isJapanese && furiganaArrayForSoramimi) {
-      console.log('[Soramimi] Starting with furigana data for Japanese song');
+    // For Japanese songs, convert furigana map to array format for the API
+    // Computed here (not in useMemo) to avoid re-running this effect during furigana streaming
+    let furiganaForApi: Array<Array<{ text: string; reading?: string }>> | undefined;
+    if (isJapanese && furiganaMapRef.current.size > 0) {
+      const currentLines = linesRef.current;
+      furiganaForApi = [];
+      for (let i = 0; i < currentLines.length; i++) {
+        const segments = furiganaMapRef.current.get(currentLines[i].startTimeMs);
+        furiganaForApi.push(segments || [{ text: currentLines[i].words }]);
+      }
+      // Only include if there's actual reading data
+      const hasReadings = furiganaForApi.some(line => line.some(seg => seg.reading));
+      if (!hasReadings) {
+        furiganaForApi = undefined;
+      } else {
+        console.log('[Soramimi] Starting with furigana data for Japanese song');
+      }
     }
     
     processSoramimiSSE(effectSongId, {
@@ -464,7 +473,7 @@ export function useFurigana({
       signal: controller.signal,
       prefetchedInfo: !isForceRequest ? prefetchedSoramimiInfo : undefined,
       // Pass furigana data for Japanese songs so AI knows kanji pronunciation
-      furigana: furiganaArrayForSoramimi,
+      furigana: furiganaForApi,
       onProgress: (progress) => {
         if (!controller.signal.aborted) {
           if (effectSongId !== currentSongIdRef.current) return;
@@ -534,8 +543,8 @@ export function useFurigana({
         setIsFetchingSoramimi(false);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchSoramimi captures romanization settings, furiganaReadyForSoramimi handles furigana sequencing
-  }, [songId, cacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedSoramimiInfo, isJapanese, furiganaReadyForSoramimi, furiganaArrayForSoramimi]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchSoramimi captures romanization settings, furiganaReadyForSoramimi handles furigana sequencing, furiganaMapRef accessed via ref to avoid re-runs during streaming
+  }, [songId, cacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedSoramimiInfo, isJapanese, furiganaReadyForSoramimi]);
 
   // Unified render function that handles all romanization types
   const renderWithFurigana = useCallback(
