@@ -75,7 +75,7 @@ export function ActivityIndicatorWithLabel({
   let label: string | null = null;
   
   if (isAddingSong) {
-    label = "Adding...";
+    label = "Adding";
   } else if (isFetchingSoramimi && soramimiProgress !== undefined && soramimiProgress < 100) {
     label = `Soramimi ${Math.round(soramimiProgress)}%`;
   } else if (isFetchingFurigana && furiganaProgress !== undefined && furiganaProgress < 100) {
