@@ -12,6 +12,7 @@ import { getApiUrl } from "@/utils/platform";
 const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
+export const READ_TIMEOUT_MS = 30000; // 30 second read timeout per chunk
 
 // =============================================================================
 // Types
@@ -106,7 +107,7 @@ export async function processTranslationSSE(
 
   const controller = new AbortController();
   if (signal) {
-    signal.addEventListener("abort", () => controller.abort());
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
 
   let buffer = "";
@@ -331,7 +332,7 @@ export async function processFuriganaSSE(
 
   const controller = new AbortController();
   if (signal) {
-    signal.addEventListener("abort", () => controller.abort());
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
 
   let buffer = "";
@@ -568,7 +569,7 @@ export async function processSoramimiSSE(
 
   const controller = new AbortController();
   if (signal) {
-    signal.addEventListener("abort", () => controller.abort());
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
 
   let buffer = "";
