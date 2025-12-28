@@ -191,6 +191,8 @@ Korean: Each syllable needs a Chinese character that sounds similar:
 - 보 → 波, 고 → 哥, 싶 → 西, 어 → 坡/噢
 - 나 → 那/奶, 를 → 路, 마 → 媽, 음 → 嗯
 
+SPECIAL: っ/ッ (small tsu, pause/gemination) → use ～ NOT 促! Example: ずっと → {ずっと|祖～頭}
+
 BONUS: Make readings poetic when sounds match meanings! 思浪 for 사랑 (love) is beautiful!`;
 
 // AI generation timeout (120 seconds for full song streaming)
