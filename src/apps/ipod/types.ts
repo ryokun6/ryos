@@ -5,6 +5,7 @@ import type { LyricsAlignment, LyricsFont, ChineseVariant, KoreanDisplay, Japane
 import type ReactPlayer from "react-player";
 import type { useLyrics } from "@/hooks/useLyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
+import type { ActivityInfo } from "@/hooks/useActivityLabel";
 
 // Wheel interaction types
 export type WheelArea = "top" | "right" | "bottom" | "left" | "center";
@@ -69,10 +70,8 @@ export interface FullScreenPortalProps {
   syncModeContent?: React.ReactNode;
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
-  // Lyrics loading state
-  isLoadingLyrics?: boolean;
-  isProcessingLyrics?: boolean;
-  isFetchingFurigana?: boolean;
+  /** Activity state for loading indicators */
+  activityState: ActivityInfo;
 }
 
 // IpodScreen props
@@ -120,8 +119,8 @@ export interface IpodScreenProps {
   furiganaMap?: Map<string, FuriganaSegment[]>;
   /** Soramimi map from parent (Map of startTimeMs -> FuriganaSegment[]) */
   soramimiMap?: Map<string, FuriganaSegment[]>;
-  /** Whether fetching furigana/soramimi annotations */
-  isFetchingFurigana?: boolean;
+  /** Activity state for loading indicators */
+  activityState: ActivityInfo;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery

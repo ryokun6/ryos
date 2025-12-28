@@ -63,8 +63,12 @@ interface UseFuriganaReturn {
   isResumingFurigana: boolean;
   /** Whether currently resuming failed soramimi lines */
   isResumingSoramimi: boolean;
-  /** Progress percentage (0-100) when streaming */
+  /** Progress percentage (0-100) when streaming (combined/legacy) */
   progress?: number;
+  /** Furigana progress percentage (0-100) */
+  furiganaProgress?: number;
+  /** Soramimi progress percentage (0-100) */
+  soramimiProgress?: number;
   /** Error message if any */
   error?: string;
   /** Render helper that wraps text with ruby elements (including all romanization types) */
@@ -96,6 +100,8 @@ export function useFurigana({
   const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
   const [isFetchingSoramimi, setIsFetchingSoramimi] = useState(false);
   const [progress, setProgress] = useState<number | undefined>();
+  const [furiganaProgress, setFuriganaProgress] = useState<number | undefined>();
+  const [soramimiProgress, setSoramimiProgress] = useState<number | undefined>();
   const [error, setError] = useState<string>();
   
   // These are kept for interface compatibility but always false
@@ -257,6 +263,7 @@ export function useFurigana({
     // Start loading
     setIsFetchingFurigana(true);
     setProgress(0);
+    setFuriganaProgress(0);
     setError(undefined);
     
     const controller = new AbortController();
@@ -275,6 +282,7 @@ export function useFurigana({
         if (!controller.signal.aborted) {
           if (effectSongId !== currentSongIdRef.current) return;
           setProgress(progress.percentage);
+          setFuriganaProgress(progress.percentage);
         }
       },
       onLine: (lineIndex, segments) => {
@@ -328,6 +336,7 @@ export function useFurigana({
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsFetchingFurigana(false);
           setProgress(undefined);
+          setFuriganaProgress(undefined);
         }
       });
 
@@ -338,6 +347,7 @@ export function useFurigana({
         controller.abort();
         furiganaForceRequestRef.current = null;
         setIsFetchingFurigana(false);
+        setFuriganaProgress(undefined);
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
@@ -444,6 +454,7 @@ export function useFurigana({
     // Start loading
     setIsFetchingSoramimi(true);
     setProgress(0);
+    setSoramimiProgress(0);
     setError(undefined);
     
     const controller = new AbortController();
@@ -483,6 +494,7 @@ export function useFurigana({
         if (!controller.signal.aborted) {
           if (effectSongId !== currentSongIdRef.current) return;
           setProgress(progress.percentage);
+          setSoramimiProgress(progress.percentage);
         }
       },
       onLine: (lineIndex, segments) => {
@@ -536,6 +548,7 @@ export function useFurigana({
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsFetchingSoramimi(false);
           setProgress(undefined);
+          setSoramimiProgress(undefined);
         }
       });
 
@@ -546,6 +559,7 @@ export function useFurigana({
         controller.abort();
         soramimiForceRequestRef.current = null;
         setIsFetchingSoramimi(false);
+        setSoramimiProgress(undefined);
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchSoramimi captures romanization settings, furiganaReadyForSoramimi handles furigana sequencing, furiganaMapRef accessed via ref to avoid re-runs during streaming
@@ -712,6 +726,8 @@ export function useFurigana({
     isResumingFurigana,
     isResumingSoramimi,
     progress,
+    furiganaProgress,
+    soramimiProgress,
     error,
     renderWithFurigana,
   };

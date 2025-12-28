@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
@@ -40,10 +40,14 @@ export function FullScreenPortal({
   isSyncModeOpen,
   syncModeContent,
   fullScreenPlayerRef,
-  isLoadingLyrics,
-  isProcessingLyrics,
-  isFetchingFurigana,
+  activityState,
 }: FullScreenPortalProps) {
+  const isAnyActivityActive = activityState.isLoadingLyrics || 
+    activityState.isTranslating || 
+    activityState.isFetchingFurigana || 
+    activityState.isFetchingSoramimi || 
+    activityState.isAddingSong;
+
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -451,7 +455,7 @@ export function FullScreenPortal({
 
       {/* Activity Indicator */}
       <AnimatePresence>
-        {(isLoadingLyrics || isProcessingLyrics || isFetchingFurigana) && (
+        {isAnyActivityActive && (
           <motion.div
             className="absolute z-40 pointer-events-none"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -464,9 +468,9 @@ export function FullScreenPortal({
                 "calc(max(env(safe-area-inset-right), 0.75rem) + clamp(1rem, 6dvw, 4rem))",
             }}
           >
-            <ActivityIndicator
-              size="lg"
-              className="w-[min(6vw,6vh)] h-[min(6vw,6vh)] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+            <ActivityIndicatorWithLabel
+              size={32}
+              state={activityState}
             />
           </motion.div>
         )}

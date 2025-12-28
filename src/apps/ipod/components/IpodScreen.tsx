@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
-import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { useTranslation } from "react-i18next";
 import {
   BatteryIndicator,
@@ -70,9 +70,15 @@ export function IpodScreen({
   onPreviousTrack,
   furiganaMap,
   soramimiMap,
-  isFetchingFurigana,
+  activityState,
 }: IpodScreenProps) {
   const { t } = useTranslation();
+  
+  const isAnyActivityActive = activityState.isLoadingLyrics || 
+    activityState.isTranslating || 
+    activityState.isFetchingFurigana || 
+    activityState.isFetchingSoramimi || 
+    activityState.isAddingSong;
 
   // Current menu title
   const currentMenuTitle = menuMode
@@ -307,7 +313,7 @@ export function IpodScreen({
 
             {/* Activity Indicator */}
             <AnimatePresence>
-              {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana) && (
+              {isAnyActivityActive && (
                 <motion.div
                   className="absolute top-4 right-4 z-40 pointer-events-none"
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -315,9 +321,9 @@ export function IpodScreen({
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <ActivityIndicator
+                  <ActivityIndicatorWithLabel
                     size="md"
-                    className="w-5 h-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                    state={activityState}
                   />
                 </motion.div>
               )}

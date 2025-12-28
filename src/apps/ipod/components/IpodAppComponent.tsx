@@ -40,6 +40,7 @@ import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { BACKLIGHT_TIMEOUT_MS, SEEK_AMOUNT_SECONDS } from "../constants";
 import type { WheelArea, RotationDirection } from "../types";
+import type { ActivityInfo } from "@/hooks/useActivityLabel";
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -190,6 +191,7 @@ export function IpodAppComponent({
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
+  const [isAddingSong, setIsAddingSong] = useState(false);
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -783,13 +785,18 @@ export function IpodAppComponent({
   // Track handling
   const handleAddTrack = useCallback(
     async (url: string) => {
-      const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
-      if (addedTrack) {
-        showStatus(t("apps.ipod.status.added"));
-        // Start track switch guard since addTrackFromVideoId sets currentIndex to 0 and isPlaying to true
-        startTrackSwitch();
-      } else {
-        throw new Error("Failed to add track");
+      setIsAddingSong(true);
+      try {
+        const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
+        if (addedTrack) {
+          showStatus(t("apps.ipod.status.added"));
+          // Start track switch guard since addTrackFromVideoId sets currentIndex to 0 and isPlaying to true
+          startTrackSwitch();
+        } else {
+          throw new Error("Failed to add track");
+        }
+      } finally {
+        setIsAddingSong(false);
       }
     },
     [showStatus, t, startTrackSwitch]
@@ -1333,7 +1340,14 @@ export function IpodAppComponent({
 
   // Fetch furigana for lyrics and store in shared state
   // Use pre-fetched info from lyrics request to skip extra API call
-  const { furiganaMap, soramimiMap, isFetching: isFetchingFurigana } = useFurigana({
+  const { 
+    furiganaMap, 
+    soramimiMap, 
+    isFetchingFurigana,
+    isFetchingSoramimi,
+    furiganaProgress,
+    soramimiProgress,
+  } = useFurigana({
     songId: currentTrack?.id ?? "",
     lines: fullScreenLyricsControls.originalLines,
     isShowingOriginal: true,
@@ -1341,6 +1355,29 @@ export function IpodAppComponent({
     prefetchedInfo: fullScreenLyricsControls.furiganaInfo,
     prefetchedSoramimiInfo: fullScreenLyricsControls.soramimiInfo,
   });
+
+  // Consolidated activity state for loading indicators
+  const activityState: ActivityInfo = useMemo(() => ({
+    isLoadingLyrics: fullScreenLyricsControls.isLoading,
+    isTranslating: fullScreenLyricsControls.isTranslating,
+    translationProgress: fullScreenLyricsControls.translationProgress,
+    translationLanguage: effectiveTranslationLanguage,
+    isFetchingFurigana,
+    furiganaProgress,
+    isFetchingSoramimi,
+    soramimiProgress,
+    isAddingSong,
+  }), [
+    fullScreenLyricsControls.isLoading,
+    fullScreenLyricsControls.isTranslating,
+    fullScreenLyricsControls.translationProgress,
+    effectiveTranslationLanguage,
+    isFetchingFurigana,
+    furiganaProgress,
+    isFetchingSoramimi,
+    soramimiProgress,
+    isAddingSong,
+  ]);
 
   // Convert furiganaMap to Record for storage - only when content actually changes
   const furiganaRecord = useMemo(() => {
@@ -1637,7 +1674,7 @@ export function IpodAppComponent({
               lyricsControls={fullScreenLyricsControls}
               furiganaMap={furiganaMap}
               soramimiMap={soramimiMap}
-              isFetchingFurigana={isFetchingFurigana}
+              activityState={activityState}
               onNextTrack={() => {
                 if (isOffline) {
                   showOfflineStatus();
@@ -1749,9 +1786,7 @@ export function IpodAppComponent({
               ) : undefined
             }
             fullScreenPlayerRef={fullScreenPlayerRef}
-            isLoadingLyrics={fullScreenLyricsControls.isLoading}
-            isProcessingLyrics={fullScreenLyricsControls.isTranslating}
-            isFetchingFurigana={isFetchingFurigana}
+            activityState={activityState}
           >
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
