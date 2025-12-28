@@ -469,7 +469,7 @@ export function FullScreenPortal({
             }}
           >
             <ActivityIndicatorWithLabel
-              size="lg"
+              size={32}
               state={activityState}
             />
           </motion.div>
