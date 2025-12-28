@@ -490,6 +490,12 @@ async function saveLyricsSourceToServer(
       },
       body: JSON.stringify({
         lyricsSource: lyricsSource || undefined,
+        // Update song metadata from lyricsSource (KuGou has more accurate metadata)
+        ...(lyricsSource && {
+          title: lyricsSource.title,
+          artist: lyricsSource.artist,
+          album: lyricsSource.album,
+        }),
         // Clear translations and furigana since lyrics changed
         clearTranslations: true,
         clearFurigana: true,
@@ -1189,6 +1195,12 @@ export const useIpodStore = create<IpodState>()(
               ? {
                   ...track,
                   lyricsSource: lyricsSource || undefined,
+                  // Update track metadata from lyricsSource (KuGou has more accurate metadata)
+                  ...(lyricsSource && {
+                    title: lyricsSource.title,
+                    artist: lyricsSource.artist,
+                    album: lyricsSource.album || track.album,
+                  }),
                 }
               : track
           );

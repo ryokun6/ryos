@@ -20,6 +20,14 @@ import type { LyricsSource, LyricsContent } from "../_utils/song-service.js";
 // Simplified Chinese to Traditional Chinese converter
 const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
 
+/**
+ * Normalize artist separator from Chinese comma to " & "
+ * KuGou uses "、" to separate multiple artists (e.g., "周杰倫、蔡依林")
+ */
+function normalizeArtistSeparator(artist: string): string {
+  return artist.replace(/、/g, " & ");
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -116,9 +124,10 @@ export async function searchKugou(
   const infoList: KugouSongInfo[] = searchJson?.data?.info ?? [];
 
   // Convert Kugou metadata from Simplified to Traditional Chinese
+  // Also normalize artist separator from Chinese comma "、" to " & "
   const scoredResults = infoList.map((song) => ({
     title: simplifiedToTraditional(song.songname),
-    artist: simplifiedToTraditional(song.singername),
+    artist: normalizeArtistSeparator(simplifiedToTraditional(song.singername)),
     album: song.album_name ? simplifiedToTraditional(song.album_name) : undefined,
     hash: song.hash,
     albumId: song.album_id,
