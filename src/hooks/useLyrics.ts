@@ -145,17 +145,15 @@ export function useLyrics({
       return;
     }
 
-    // Clear state before fetching
-    // Note: We intentionally do NOT clear furiganaInfo/soramimiInfo here.
-    // They will be updated when the fetch completes with new data from the server.
-    // This prevents useFurigana from making a redundant API call while we're still
-    // fetching lyrics (which will include prefetched furigana/soramimi info).
+    // Clear ALL state before fetching to prevent stale data from previous song
     setOriginalLines([]);
     setTranslatedLines(null);
     setCurrentLine(-1);
     setIsFetchingOriginal(true);
     setIsTranslating(false);
     setError(undefined);
+    setFuriganaInfo(undefined);
+    setSoramimiInfo(undefined);
     translationInfoRef.current = undefined;
 
     const controller = new AbortController();
