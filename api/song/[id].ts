@@ -85,10 +85,12 @@ import {
 } from "./_furigana.js";
 
 import {
-  streamSoramimi,
   SORAMIMI_SYSTEM_PROMPT,
   SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT,
   convertLinesToAnnotatedText,
+  parseSoramimiRubyMarkup,
+  fillMissingReadings,
+  cleanSoramimiReading,
 } from "./_soramimi.js";
 
 import {
@@ -982,8 +984,8 @@ Output:
             lineSegments
               .map(seg => {
                 if (seg.reading) {
-                  // Clean the reading to remove any Korean/Japanese
-                  const cleanedReading = seg.reading.replace(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/g, '');
+                  // Clean the reading using shared helper from _soramimi.ts
+                  const cleanedReading = cleanSoramimiReading(seg.reading);
                   return cleanedReading ? { ...seg, reading: cleanedReading } : { text: seg.text };
                 }
                 return seg;
@@ -1107,16 +1109,8 @@ Output:
               }
             }
 
-            // Helper to clean reading - remove non-Chinese characters (Korean, Japanese kana)
-            const cleanReading = (reading: string): string => {
-              // Keep only Chinese characters (CJK Unified Ideographs)
-              // Remove Korean (Hangul) and Japanese kana
-              return reading.replace(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/g, '');
-            };
-
             // Helper to process a complete line from AI output
-            // SIMPLIFIED: Parse segments directly without complex alignment
-            // This is more robust for Korean (which has spaces between words)
+            // Uses shared parseRubyMarkup from _soramimi.ts
             const processLine = (line: string) => {
               const trimmedLine = line.trim();
               if (!trimmedLine) return;
@@ -1130,62 +1124,11 @@ Output:
                   const info = nonEnglishLines[nonEnglishLineIndex];
                   const originalIndex = info.originalIndex;
                   
-                  // Helper to strip furigana annotations from text
-                  // When we send annotated text like 耳(みみ), the AI outputs {耳(みみ)|咪咪}
-                  // We need to remove the (みみ) part to get just the original kanji
-                  const stripFuriganaAnnotation = (text: string): string => {
-                    // Remove parenthesized hiragana/katakana readings: 耳(みみ) -> 耳
-                    return text.replace(/\([\u3040-\u309F\u30A0-\u30FF]+\)/g, '');
-                  };
-                  
-                  // Simple parsing - extract {text|reading} patterns and preserve plain text between them
-                  const segments: Array<{ text: string; reading?: string }> = [];
-                  const regex = /\{([^|}]+)\|([^}]+)\}/g;
-                  let m;
-                  let lastIndex = 0;
-                  
-                  while ((m = regex.exec(content)) !== null) {
-                    // Add any plain text before this match (preserving it exactly as-is, including spaces)
-                    if (m.index > lastIndex) {
-                      let textBefore = content.slice(lastIndex, m.index);
-                      // AI sometimes outputs "|" as delimiter between words - strip it but keep spaces
-                      textBefore = textBefore.replace(/\|/g, '');
-                      // Strip furigana annotations from plain text too
-                      textBefore = stripFuriganaAnnotation(textBefore);
-                      if (textBefore) {
-                        segments.push({ text: textBefore });
-                      }
-                    }
-                    
-                    if (m[1]) {
-                      // Strip furigana annotations from the text portion
-                      const cleanedText = stripFuriganaAnnotation(m[1]);
-                      // Clean the reading to remove any Korean/Japanese that AI incorrectly included
-                      const cleanedReading = cleanReading(m[2]);
-                      if (cleanedText) {
-                        if (cleanedReading) {
-                          segments.push({ text: cleanedText, reading: cleanedReading });
-                        } else {
-                          // If reading became empty after cleaning, just add text without reading
-                          segments.push({ text: cleanedText });
-                        }
-                      }
-                    }
-                    
-                    lastIndex = regex.lastIndex;
-                  }
-                  
-                  // Handle any remaining text after the last match
-                  if (lastIndex < content.length) {
-                    let remaining = content.slice(lastIndex);
-                    // Strip standalone | delimiters
-                    remaining = remaining.replace(/\|/g, '');
-                    // Strip furigana annotations
-                    remaining = stripFuriganaAnnotation(remaining);
-                    if (remaining) {
-                      segments.push({ text: remaining });
-                    }
-                  }
+                  // Use shared parsing from _soramimi.ts
+                  // parseSoramimiRubyMarkup handles: extracting {text|reading} patterns,
+                  // stripping furigana annotations from output, cleaning readings
+                  const rawSegments = parseSoramimiRubyMarkup(content);
+                  const segments = fillMissingReadings(rawSegments);
                   
                   if (segments.length > 0) {
                     allSoramimi[originalIndex] = segments;

@@ -2,11 +2,9 @@
  * Soramimi Generation Functions (空耳 - Chinese Misheard Lyrics)
  * 
  * Handles generating Chinese phonetic readings for non-Chinese lyrics.
+ * Provides prompts and parsing utilities for soramimi generation.
  */
 
-import { google } from "@ai-sdk/google";
-import { streamText } from "ai";
-import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
 // =============================================================================
@@ -129,7 +127,7 @@ function isJapaneseKana(char: string): boolean {
 /**
  * Post-process segments to fill in missing readings for Japanese kana
  */
-function fillMissingReadings(segments: FuriganaSegment[]): FuriganaSegment[] {
+export function fillMissingReadings(segments: FuriganaSegment[]): FuriganaSegment[] {
   return segments.map(segment => {
     // If segment already has a reading, keep it
     if (segment.reading) return segment;
@@ -166,33 +164,7 @@ function fillMissingReadings(segments: FuriganaSegment[]): FuriganaSegment[] {
 }
 
 // =============================================================================
-// English Detection
-// =============================================================================
-
-/**
- * Check if a string is primarily English/Latin text
- * Returns true if the string contains mostly ASCII letters, numbers, and common punctuation
- * with no CJK characters (Chinese, Japanese, Korean)
- */
-function isEnglishLine(text: string): boolean {
-  if (!text || !text.trim()) return true;
-  
-  const trimmed = text.trim();
-  
-  // Check for CJK characters (Chinese, Japanese Kanji, Korean Hangul)
-  // Also check for Japanese Hiragana and Katakana
-  const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(trimmed);
-  
-  if (hasCJK) {
-    return false;
-  }
-  
-  // If no CJK characters, it's considered English/Latin text
-  return true;
-}
-
-// =============================================================================
-// Soramimi Generation
+// Soramimi Generation - Prompts and Parsing
 // =============================================================================
 
 export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese/Korean lyrics while telling a poetic story.
@@ -308,10 +280,6 @@ SPECIAL: っ/ッ (gemination) → ～ Example: ずっと → {ずっと|祖～�
 
 BE CREATIVE! A beautiful Chinese phrase that's 80% phonetically accurate is better than an ugly phrase that's 100% accurate. Tell a story with your characters!`;
 
-// AI generation timeout (120 seconds for full song streaming)
-// Increased since streaming keeps connection alive and we process entire song
-const AI_TIMEOUT_MS = 120000;
-
 /**
  * Clean AI output by removing malformed segments like {reading} without text
  * These occur when AI outputs just Chinese characters in braces without the original text
@@ -329,32 +297,33 @@ function cleanAiOutput(line: string): string {
 }
 
 /**
+ * Strip furigana annotations from text
+ * When we send annotated text like 耳(みみ), the AI outputs {耳(みみ)|咪咪}
+ * We need to remove the (みみ) part to get just the original kanji
+ */
+export function stripFuriganaAnnotation(text: string): string {
+  // Remove parenthesized hiragana/katakana readings: 耳(みみ) -> 耳
+  return text.replace(/\([\u3040-\u309F\u30A0-\u30FF]+\)/g, '');
+}
+
+/**
  * Clean reading to remove non-Chinese characters (Korean Hangul, Japanese kana)
  * AI sometimes incorrectly includes original text in the reading
  */
-function cleanReading(reading: string): string {
+export function cleanSoramimiReading(reading: string): string {
   // Remove Korean (Hangul syllables and Jamo) and Japanese (Hiragana and Katakana)
   return reading.replace(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/g, '');
 }
 
 /**
- * Parse ruby markup format (e.g., "{사랑|思浪} {해요|海喲}") into FuriganaSegment array
+ * Parse soramimi ruby markup format (e.g., "{사랑|思浪} {해요|海喲}") into FuriganaSegment array
  * 
- * SIMPLIFIED APPROACH: Trust the AI output directly without complex alignment.
- * This is the same approach used by furigana and is more robust for Korean text
- * which has spaces between words (unlike Japanese).
+ * This is similar to furigana's parseRubyMarkup but includes additional cleaning:
+ * - Strips furigana annotations from text (e.g., 耳(みみ) -> 耳)
+ * - Cleans readings to remove non-Chinese characters
+ * - Handles malformed AI output
  */
-/**
- * Strip furigana annotations from text
- * When we send annotated text like 耳(みみ), the AI outputs {耳(みみ)|咪咪}
- * We need to remove the (みみ) part to get just the original kanji
- */
-function stripFuriganaAnnotation(text: string): string {
-  // Remove parenthesized hiragana/katakana readings: 耳(みみ) -> 耳
-  return text.replace(/\([\u3040-\u309F\u30A0-\u30FF]+\)/g, '');
-}
-
-function parseRubyMarkup(line: string): FuriganaSegment[] {
+export function parseSoramimiRubyMarkup(line: string): FuriganaSegment[] {
   // First clean the line of malformed segments
   const cleanedLine = cleanAiOutput(line);
   
@@ -382,7 +351,7 @@ function parseRubyMarkup(line: string): FuriganaSegment[] {
     
     // Strip furigana annotations from the text portion
     const text = stripFuriganaAnnotation(match[1]);
-    const reading = cleanReading(match[2]);
+    const reading = cleanSoramimiReading(match[2]);
 
     if (text) {
       // Only add reading if it's not empty after cleaning
@@ -409,29 +378,6 @@ function parseRubyMarkup(line: string): FuriganaSegment[] {
   }
   
   return segments.length > 0 ? segments : [{ text: line }];
-}
-
-// =============================================================================
-// NOTE: Complex alignment functions removed in favor of simpler approach
-// =============================================================================
-// 
-// The previous implementation had `alignSegmentsToOriginal` and `buildFallbackSegments`
-// which attempted to realign AI output to the original text character-by-character.
-// 
-// This caused issues with Korean text because:
-// 1. Korean uses spaces between words (unlike Japanese)
-// 2. Unicode normalization mismatches (NFC vs NFD) caused string comparisons to fail
-// 3. When alignment failed, readings were lost
-// 
-// The new approach (same as furigana) trusts the AI output directly.
-// The AI is instructed to output {original|reading} format which preserves the text.
-// =============================================================================
-
-/** Result of soramimi generation */
-export interface SoramimiResult {
-  segments: FuriganaSegment[][];
-  /** True if AI generation succeeded, false if fallback was used */
-  success: boolean;
 }
 
 // =============================================================================
@@ -484,187 +430,3 @@ export function convertLinesToAnnotatedText(
   });
 }
 
-/**
- * Stream soramimi generation for all lyrics line-by-line using streamText
- * Emits each line as it's completed via onLine callback
- * 
- * English lines are kept intact without any Chinese phonetic readings.
- * 
- * @param lines - All lyrics lines to process
- * @param requestId - Request ID for logging
- * @param onLine - Callback called for each completed line (lineIndex, segments)
- * @returns Promise that resolves when streaming is complete
- */
-export async function streamSoramimi(
-  lines: LyricLine[],
-  requestId: string,
-  onLine: (lineIndex: number, segments: FuriganaSegment[]) => void
-): Promise<SoramimiResult> {
-  if (lines.length === 0) {
-    return { segments: [], success: true };
-  }
-
-  // Separate English lines from non-English lines
-  // English lines will be returned as-is without soramimi processing
-  const lineInfo = lines.map((line, originalIndex) => ({
-    line,
-    originalIndex,
-    isEnglish: isEnglishLine(line.words),
-  }));
-
-  const nonEnglishLines = lineInfo.filter(info => !info.isEnglish);
-  const englishCount = lineInfo.filter(info => info.isEnglish).length;
-
-  // Initialize results with fallback
-  const results: FuriganaSegment[][] = new Array(lines.length);
-  for (let i = 0; i < lines.length; i++) {
-    results[i] = [{ text: lines[i].words }];
-  }
-
-  logInfo(requestId, `Soramimi stream starting`, { 
-    totalLines: lines.length, 
-    englishLines: englishCount, 
-    nonEnglishLines: nonEnglishLines.length 
-  });
-
-  // Emit English lines immediately (they don't need processing)
-  for (const info of lineInfo) {
-    if (info.isEnglish) {
-      onLine(info.originalIndex, results[info.originalIndex]);
-    }
-  }
-
-  // If all lines are English, return them as plain text
-  if (nonEnglishLines.length === 0) {
-    logInfo(requestId, `All lines are English, skipping soramimi AI generation`);
-    return { segments: results, success: true };
-  }
-
-  // Use numbered lines to help AI maintain line count (only for non-English lines)
-  const textsToProcess = nonEnglishLines.map((info, idx) => `${idx + 1}: ${info.line.words}`).join("\n");
-
-  const startTime = Date.now();
-  logInfo(requestId, `Soramimi AI stream starting`, { linesCount: nonEnglishLines.length, timeoutMs: AI_TIMEOUT_MS });
-
-  let completedCount = 0;
-  let currentLineBuffer = "";
-
-  // Helper to process a complete line
-  const processLine = (line: string) => {
-    const trimmedLine = line.trim();
-    if (!trimmedLine) return;
-    
-    // Parse line number format: "1: {annotated|text}"
-    const match = trimmedLine.match(/^(\d+)[:.\s]\s*(.*)$/);
-    if (match) {
-      const nonEnglishLineIndex = parseInt(match[1], 10) - 1;
-      const content = match[2].trim();
-      
-      if (nonEnglishLineIndex >= 0 && nonEnglishLineIndex < nonEnglishLines.length && content) {
-        const info = nonEnglishLines[nonEnglishLineIndex];
-        const originalIndex = info.originalIndex;
-        
-        // SIMPLIFIED: Parse segments directly without complex alignment
-        // The AI is instructed to output {original|reading} which preserves the text
-        // This approach is more robust for Korean (which has spaces) and avoids
-        // Unicode normalization issues that caused only the first word to work
-        const rawSegments = parseRubyMarkup(content);
-        const finalSegments = fillMissingReadings(rawSegments);
-        
-        results[originalIndex] = finalSegments;
-        completedCount++;
-        onLine(originalIndex, finalSegments);
-      }
-    }
-  };
-
-  try {
-    // Use streamText and get the native text stream response
-    const result = streamText({
-      model: google("gemini-2.5-flash"),
-      messages: [
-        { role: "system", content: SORAMIMI_SYSTEM_PROMPT },
-        { role: "user", content: textsToProcess },
-      ],
-      temperature: 0.7,
-    });
-
-    // Use toTextStreamResponse() to get native AI SDK streaming
-    const textStreamResponse = result.toTextStreamResponse();
-    const reader = textStreamResponse.body!.getReader();
-    const decoder = new TextDecoder();
-    
-    let chunkCount = 0;
-    let firstChunkTime: number | null = null;
-    
-    // Read from the native text stream response
-    while (true) {
-      const { done, value } = await reader.read();
-      
-      if (done) {
-        break;
-      }
-      
-      const text = decoder.decode(value, { stream: true });
-      
-      if (firstChunkTime === null && text.length > 0) {
-        firstChunkTime = Date.now();
-      }
-      
-      chunkCount++;
-      currentLineBuffer += text;
-      
-      // Process complete lines (ending with newline)
-      let newlineIdx;
-      while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
-        const completeLine = currentLineBuffer.slice(0, newlineIdx);
-        currentLineBuffer = currentLineBuffer.slice(newlineIdx + 1);
-        processLine(completeLine);
-      }
-    }
-    
-    // Process any remaining content in buffer
-    if (currentLineBuffer.trim()) {
-      processLine(currentLineBuffer);
-    }
-
-    const totalDurationMs = Date.now() - startTime;
-    logInfo(requestId, `Soramimi AI stream completed`, { totalDurationMs, chunkCount });
-    
-    // Emit fallback for any non-English lines that weren't processed
-    for (const info of nonEnglishLines) {
-      const hasResult = results[info.originalIndex].some(seg => seg.reading);
-      if (!hasResult) {
-        // Not yet processed with readings, emit as fallback
-        const fallback = fillMissingReadings([{ text: info.line.words }]);
-        results[info.originalIndex] = fallback;
-        onLine(info.originalIndex, fallback);
-      }
-    }
-    
-    logInfo(requestId, `Soramimi processing completed`, { 
-      totalDurationMs, 
-      completedNonEnglishLines: completedCount, 
-      totalNonEnglishLines: nonEnglishLines.length,
-      totalLines: lines.length
-    });
-    
-    return { segments: results, success: true };
-  } catch (error) {
-    const durationMs = Date.now() - startTime;
-    
-    logError(requestId, `Soramimi stream failed`, { error, durationMs, completedCount });
-    
-    // Emit fallback for remaining non-English lines
-    for (const info of nonEnglishLines) {
-      const hasResult = results[info.originalIndex].some(seg => seg.reading);
-      if (!hasResult) {
-        const fallback = fillMissingReadings([{ text: info.line.words }]);
-        results[info.originalIndex] = fallback;
-        onLine(info.originalIndex, fallback);
-      }
-    }
-    
-    return { segments: results, success: false };
-  }
-}
