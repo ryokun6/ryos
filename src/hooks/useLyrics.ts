@@ -325,8 +325,8 @@ export function useLyrics({
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
         
         // Log if there were failed lines (translations use fallback text, so less critical)
-        if (result.isPartial && result.failedLines.length > 0) {
-          console.warn(`Translation had ${result.failedLines.length} lines using fallback text`);
+        if (result.isPartial && result.missingChunks.length > 0) {
+          console.warn(`Translation had ${result.missingChunks.length} incomplete chunks - will resume on next request`);
         }
       })
       .catch((err: unknown) => {

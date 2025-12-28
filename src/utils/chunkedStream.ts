@@ -31,10 +31,14 @@ export interface TranslationChunkInfo {
   cached: boolean;
   /** Cached translation LRC (only present if cached=true) */
   lrc?: string;
-  /** Whether the cached data is partial (some lines failed) */
-  isPartial?: boolean;
-  /** Line indices that failed and need resume */
-  failedLines?: number[];
+  /** Whether there's in-progress chunk cache to resume from */
+  hasProgress?: boolean;
+  /** Number of chunks already cached (when resuming) */
+  cachedChunks?: number;
+  /** Chunk indices that still need processing */
+  missingChunks?: number[];
+  /** Partial translation data from cached chunks (array of translation strings) */
+  partialData?: string[];
 }
 
 /** Pre-fetched furigana info from initial lyrics fetch */
@@ -45,10 +49,14 @@ export interface FuriganaChunkInfo {
   cached: boolean;
   /** Cached furigana data (only present if cached=true) */
   data?: Array<Array<{ text: string; reading?: string }>>;
-  /** Whether the cached data is partial (some lines failed) */
-  isPartial?: boolean;
-  /** Line indices that failed and need resume */
-  failedLines?: number[];
+  /** Whether there's in-progress chunk cache to resume from */
+  hasProgress?: boolean;
+  /** Number of chunks already cached (when resuming) */
+  cachedChunks?: number;
+  /** Chunk indices that still need processing */
+  missingChunks?: number[];
+  /** Partial furigana data from cached chunks */
+  partialData?: Array<Array<{ text: string; reading?: string }>>;
 }
 
 /** Pre-fetched soramimi info from initial lyrics fetch */
@@ -63,10 +71,14 @@ export interface SoramimiChunkInfo {
   skipped?: boolean;
   /** Reason for skipping */
   skipReason?: string;
-  /** Whether the cached data is partial (some lines failed) */
-  isPartial?: boolean;
-  /** Line indices that failed and need resume */
-  failedLines?: number[];
+  /** Whether there's in-progress chunk cache to resume from */
+  hasProgress?: boolean;
+  /** Number of chunks already cached (when resuming) */
+  cachedChunks?: number;
+  /** Chunk indices that still need processing */
+  missingChunks?: number[];
+  /** Partial soramimi data from cached chunks */
+  partialData?: Array<Array<{ text: string; reading?: string }>>;
 }
 
 // =============================================================================
@@ -104,8 +116,8 @@ interface TranslationCompleteEvent {
   failCount: number;
   cached: boolean;
   translations: string[];
-  /** Line indices that failed (for client to trigger resume) */
-  failedLines?: number[];
+  /** Chunk indices that failed (server will auto-resume on next request) */
+  failedChunks?: number[];
 }
 
 interface TranslationCachedEvent {
@@ -131,8 +143,8 @@ interface FuriganaCompleteEvent {
   failCount: number;
   cached: boolean;
   furigana: Array<Array<{ text: string; reading?: string }>>;
-  /** Line indices that failed (for client to trigger resume) */
-  failedLines?: number[];
+  /** Chunk indices that failed (server will auto-resume on next request) */
+  failedChunks?: number[];
 }
 
 interface FuriganaCachedEvent {
@@ -158,8 +170,8 @@ interface SoramimiCompleteEvent {
   failCount: number;
   cached: boolean;
   soramimi: Array<Array<{ text: string; reading?: string }>>;
-  /** Line indices that failed (for client to trigger resume) */
-  failedLines?: number[];
+  /** Chunk indices that failed (server will auto-resume on next request) */
+  failedChunks?: number[];
 }
 
 interface SoramimiCachedEvent {
@@ -226,16 +238,16 @@ export interface ProcessTranslationOptions {
 export interface TranslationResult {
   /** The translations array */
   data: string[];
-  /** Whether the result is partial (some lines failed) */
+  /** Whether the result is partial (some chunks still missing) */
   isPartial: boolean;
-  /** Line indices that failed and need resume */
-  failedLines: number[];
+  /** Chunk indices that still need processing (server will handle on next request) */
+  missingChunks: number[];
 }
 
 /**
  * Process translation using Server-Sent Events (SSE).
  * The server processes all chunks and saves to cache, even if client disconnects.
- * Returns both the data and info about any failed lines that need resume.
+ * If there's existing progress from a previous interrupted request, server resumes automatically.
  */
 export async function processTranslationSSE(
   songId: string,
@@ -244,19 +256,43 @@ export async function processTranslationSSE(
 ): Promise<TranslationResult> {
   const { force, signal, onProgress, onChunk, prefetchedInfo } = options;
 
-  // If we have cached data from prefetch and not forcing, use it
+  // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.lrc) {
     try {
       onProgress?.({ completedChunks: 1, totalChunks: 1, percentage: 100 });
     } catch (callbackErr) {
       console.warn("SSE: Callback error:", callbackErr);
     }
-    const failedLines = prefetchedInfo.failedLines || [];
     return {
       data: parseLrcToTranslations(prefetchedInfo.lrc),
-      isPartial: prefetchedInfo.isPartial || failedLines.length > 0,
-      failedLines,
+      isPartial: false,
+      missingChunks: [],
     };
+  }
+
+  // If we have partial progress data from prefetch, send it to client immediately
+  if (!force && prefetchedInfo?.hasProgress && prefetchedInfo.partialData) {
+    const { partialData, cachedChunks = 0, totalChunks, chunkSize, missingChunks = [] } = prefetchedInfo;
+    
+    // Send cached chunks to client immediately
+    try {
+      onProgress?.({ 
+        completedChunks: cachedChunks, 
+        totalChunks, 
+        percentage: Math.round((cachedChunks / totalChunks) * 100) 
+      });
+      
+      // Send each cached line
+      for (let i = 0; i < partialData.length; i++) {
+        if (partialData[i]) {
+          onChunk?.(Math.floor(i / chunkSize), i, [partialData[i]]);
+        }
+      }
+    } catch (callbackErr) {
+      console.warn("SSE: Callback error:", callbackErr);
+    }
+    
+    console.log(`Translation: prefetched ${cachedChunks}/${totalChunks} chunks, ${missingChunks.length} to fetch`);
   }
 
   const controller = new AbortController();
@@ -349,7 +385,7 @@ export async function processTranslationSSE(
                 finalResult = { 
                   data: parseLrcToTranslations(data.translation),
                   isPartial: false,
-                  failedLines: [],
+                  missingChunks: [],
                 };
                 try {
                   onProgress?.({ completedChunks: 1, totalChunks: 1, percentage: 100 });
@@ -361,8 +397,8 @@ export async function processTranslationSSE(
               case "complete":
                 finalResult = {
                   data: data.translations,
-                  isPartial: (data.failedLines?.length ?? 0) > 0,
-                  failedLines: data.failedLines || [],
+                  isPartial: (data.failedChunks?.length ?? 0) > 0,
+                  missingChunks: data.failedChunks || [],
                 };
                 try {
                   onProgress?.({
@@ -453,16 +489,16 @@ export interface ProcessFuriganaOptions {
 export interface FuriganaResult {
   /** The furigana data */
   data: Array<Array<{ text: string; reading?: string }>>;
-  /** Whether the result is partial (some lines failed) */
+  /** Whether the result is partial (some chunks still missing) */
   isPartial: boolean;
-  /** Line indices that failed and need resume */
-  failedLines: number[];
+  /** Chunk indices that still need processing (server will handle on next request) */
+  missingChunks: number[];
 }
 
 /**
  * Process furigana using Server-Sent Events (SSE).
  * The server processes all chunks and saves to cache, even if client disconnects.
- * Returns both the data and info about any failed lines that need resume.
+ * If there's existing progress from a previous interrupted request, server resumes automatically.
  */
 export async function processFuriganaSSE(
   songId: string,
@@ -470,19 +506,44 @@ export async function processFuriganaSSE(
 ): Promise<FuriganaResult> {
   const { force, signal, onProgress, onChunk, prefetchedInfo } = options;
 
-  // If we have cached data from prefetch and not forcing, use it
+  // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
     try {
       onProgress?.({ completedChunks: 1, totalChunks: 1, percentage: 100 });
     } catch (callbackErr) {
       console.warn("SSE: Callback error:", callbackErr);
     }
-    const failedLines = prefetchedInfo.failedLines || [];
     return {
       data: prefetchedInfo.data,
-      isPartial: prefetchedInfo.isPartial || failedLines.length > 0,
-      failedLines,
+      isPartial: false,
+      missingChunks: [],
     };
+  }
+
+  // If we have partial progress data from prefetch, send it to client immediately
+  // Then let the stream fill in the missing chunks
+  if (!force && prefetchedInfo?.hasProgress && prefetchedInfo.partialData) {
+    const { partialData, cachedChunks = 0, totalChunks, chunkSize, missingChunks = [] } = prefetchedInfo;
+    
+    // Send cached chunks to client immediately
+    try {
+      onProgress?.({ 
+        completedChunks: cachedChunks, 
+        totalChunks, 
+        percentage: Math.round((cachedChunks / totalChunks) * 100) 
+      });
+      
+      // Send each cached line as if it were a chunk
+      for (let i = 0; i < partialData.length; i++) {
+        if (partialData[i] && partialData[i].length > 0) {
+          onChunk?.(Math.floor(i / chunkSize), i, [partialData[i]]);
+        }
+      }
+    } catch (callbackErr) {
+      console.warn("SSE: Callback error:", callbackErr);
+    }
+    
+    console.log(`Furigana: prefetched ${cachedChunks}/${totalChunks} chunks, ${missingChunks.length} to fetch`);
   }
 
   const controller = new AbortController();
@@ -571,7 +632,7 @@ export async function processFuriganaSSE(
                 break;
 
               case "cached":
-                finalResult = { data: data.furigana, isPartial: false, failedLines: [] };
+                finalResult = { data: data.furigana, isPartial: false, missingChunks: [] };
                 try {
                   onProgress?.({ completedChunks: 1, totalChunks: 1, percentage: 100 });
                 } catch (callbackErr) {
@@ -582,8 +643,8 @@ export async function processFuriganaSSE(
               case "complete":
                 finalResult = {
                   data: data.furigana,
-                  isPartial: (data.failedLines?.length ?? 0) > 0,
-                  failedLines: data.failedLines || [],
+                  isPartial: (data.failedChunks?.length ?? 0) > 0,
+                  missingChunks: data.failedChunks || [],
                 };
                 try {
                   onProgress?.({
@@ -1152,16 +1213,16 @@ export interface ProcessSoramimiOptions {
 export interface SoramimiResult {
   /** The soramimi data */
   data: Array<Array<{ text: string; reading?: string }>>;
-  /** Whether the result is partial (some lines failed) */
+  /** Whether the result is partial (some chunks still missing) */
   isPartial: boolean;
-  /** Line indices that failed and need resume */
-  failedLines: number[];
+  /** Chunk indices that still need processing (server will handle on next request) */
+  missingChunks: number[];
 }
 
 /**
  * Process soramimi using Server-Sent Events (SSE).
  * The server processes all chunks and saves to cache, even if client disconnects.
- * Returns both the data and info about any failed lines that need resume.
+ * If there's existing progress from a previous interrupted request, server resumes automatically.
  */
 export async function processSoramimiSSE(
   songId: string,
@@ -1169,19 +1230,17 @@ export async function processSoramimiSSE(
 ): Promise<SoramimiResult> {
   const { force, signal, onProgress, onChunk, prefetchedInfo } = options;
 
-  // If we have cached data from prefetch and not forcing, use it
+  // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
     try {
       onProgress?.({ completedChunks: 1, totalChunks: 1, percentage: 100 });
     } catch (callbackErr) {
       console.warn("SSE: Callback error:", callbackErr);
     }
-    // Check if the cached data is partial
-    const failedLines = prefetchedInfo.failedLines || [];
     return {
       data: prefetchedInfo.data,
-      isPartial: prefetchedInfo.isPartial || failedLines.length > 0,
-      failedLines,
+      isPartial: false,
+      missingChunks: [],
     };
   }
 
@@ -1192,7 +1251,32 @@ export async function processSoramimiSSE(
     } catch (callbackErr) {
       console.warn("SSE: Callback error:", callbackErr);
     }
-    return { data: [], isPartial: false, failedLines: [] };
+    return { data: [], isPartial: false, missingChunks: [] };
+  }
+
+  // If we have partial progress data from prefetch, send it to client immediately
+  if (!force && prefetchedInfo?.hasProgress && prefetchedInfo.partialData) {
+    const { partialData, cachedChunks = 0, totalChunks, chunkSize, missingChunks = [] } = prefetchedInfo;
+    
+    // Send cached chunks to client immediately
+    try {
+      onProgress?.({ 
+        completedChunks: cachedChunks, 
+        totalChunks, 
+        percentage: Math.round((cachedChunks / totalChunks) * 100) 
+      });
+      
+      // Send each cached line as if it were a chunk
+      for (let i = 0; i < partialData.length; i++) {
+        if (partialData[i] && partialData[i].length > 0) {
+          onChunk?.(Math.floor(i / chunkSize), i, [partialData[i]]);
+        }
+      }
+    } catch (callbackErr) {
+      console.warn("SSE: Callback error:", callbackErr);
+    }
+    
+    console.log(`Soramimi: prefetched ${cachedChunks}/${totalChunks} chunks, ${missingChunks.length} to fetch`);
   }
 
   const controller = new AbortController();
@@ -1227,7 +1311,7 @@ export async function processSoramimiSSE(
           } catch (callbackErr) {
             console.warn("SSE: Callback error:", callbackErr);
           }
-          return { data: [], isPartial: false, failedLines: [] };
+          return { data: [], isPartial: false, missingChunks: [] };
         }
         throw new Error(json.error || "Unknown error");
       }
@@ -1289,7 +1373,7 @@ export async function processSoramimiSSE(
                 break;
 
               case "cached":
-                finalSoramimi = { data: data.soramimi, isPartial: false, failedLines: [] };
+                finalSoramimi = { data: data.soramimi, isPartial: false, missingChunks: [] };
                 try {
                   onProgress?.({ completedChunks: 1, totalChunks: 1, percentage: 100 });
                 } catch (callbackErr) {
@@ -1300,8 +1384,8 @@ export async function processSoramimiSSE(
               case "complete":
                 finalSoramimi = { 
                   data: data.soramimi, 
-                  isPartial: (data.failedLines?.length ?? 0) > 0,
-                  failedLines: data.failedLines || [],
+                  isPartial: (data.failedChunks?.length ?? 0) > 0,
+                  missingChunks: data.failedChunks || [],
                 };
                 try {
                   onProgress?.({

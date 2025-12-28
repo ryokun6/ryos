@@ -338,10 +338,30 @@ export default async function handler(req: Request) {
               }
             }
             
-            // Check if there are failed lines that need resume
-            const translationMeta = song.translationsMeta?.[translateTo];
-            const translationFailedLines = translationMeta?.failedLines || [];
-            const translationIsPartial = translationFailedLines.length > 0;
+            // Check for in-progress chunk cache if no complete translation
+            let chunkProgress: { cachedChunks: number; missingChunks: number[]; partialData?: string[] } | undefined;
+            if (!hasTranslation) {
+              const progress = await getChunkProgress<string[]>(redis, songId, "translation", translateTo);
+              if (progress && Object.keys(progress.chunks).length > 0) {
+                const missingChunks = getMissingChunkIndices(progress, totalChunks);
+                // Reconstruct partial data from cached chunks
+                const partialData: string[] = new Array(totalLines).fill("");
+                for (const [chunkIdxStr, chunkData] of Object.entries(progress.chunks)) {
+                  const chunkIndex = parseInt(chunkIdxStr, 10);
+                  const startIndex = chunkIndex * CHUNK_SIZE;
+                  chunkData.forEach((text, i) => {
+                    if (startIndex + i < totalLines) {
+                      partialData[startIndex + i] = text;
+                    }
+                  });
+                }
+                chunkProgress = {
+                  cachedChunks: Object.keys(progress.chunks).length,
+                  missingChunks,
+                  partialData,
+                };
+              }
+            }
             
             response.translation = {
               totalLines,
@@ -349,10 +369,12 @@ export default async function handler(req: Request) {
               chunkSize: CHUNK_SIZE,
               cached: hasTranslation,
               ...(translationLrc ? { lrc: translationLrc } : {}),
-              // Include metadata about partial results
-              ...(translationIsPartial ? { 
-                isPartial: true, 
-                failedLines: translationFailedLines,
+              // Include chunk progress if resuming
+              ...(chunkProgress ? { 
+                hasProgress: true,
+                cachedChunks: chunkProgress.cachedChunks,
+                missingChunks: chunkProgress.missingChunks,
+                partialData: chunkProgress.partialData,
               } : {}),
             };
           }
@@ -362,9 +384,32 @@ export default async function handler(req: Request) {
             const totalLines = song.lyrics.parsedLines.length;
             const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
             const hasFurigana = !!(song.furigana && song.furigana.length > 0);
-            // Check if there are failed lines that need resume
-            const furiganaFailedLines = song.furiganaMeta?.failedLines || [];
-            const furiganaIsPartial = furiganaFailedLines.length > 0;
+            
+            // Check for in-progress chunk cache if no complete furigana
+            type FuriganaChunk = Array<{ text: string; reading?: string }>[];
+            let chunkProgress: { cachedChunks: number; missingChunks: number[]; partialData?: FuriganaChunk } | undefined;
+            if (!hasFurigana) {
+              const progress = await getChunkProgress<FuriganaChunk[number]>(redis, songId, "furigana");
+              if (progress && Object.keys(progress.chunks).length > 0) {
+                const missingChunks = getMissingChunkIndices(progress, totalChunks);
+                // Reconstruct partial data from cached chunks
+                const partialData: FuriganaChunk = new Array(totalLines).fill(null).map(() => []);
+                for (const [chunkIdxStr, chunkData] of Object.entries(progress.chunks)) {
+                  const chunkIndex = parseInt(chunkIdxStr, 10);
+                  const startIndex = chunkIndex * CHUNK_SIZE;
+                  chunkData.forEach((seg, i) => {
+                    if (startIndex + i < totalLines) {
+                      partialData[startIndex + i] = seg;
+                    }
+                  });
+                }
+                chunkProgress = {
+                  cachedChunks: Object.keys(progress.chunks).length,
+                  missingChunks,
+                  partialData,
+                };
+              }
+            }
             
             response.furigana = {
               totalLines,
@@ -372,10 +417,12 @@ export default async function handler(req: Request) {
               chunkSize: CHUNK_SIZE,
               cached: hasFurigana,
               ...(hasFurigana ? { data: song.furigana } : {}),
-              // Include metadata about partial results
-              ...(furiganaIsPartial ? { 
-                isPartial: true, 
-                failedLines: furiganaFailedLines,
+              // Include chunk progress if resuming
+              ...(chunkProgress ? { 
+                hasProgress: true,
+                cachedChunks: chunkProgress.cachedChunks,
+                missingChunks: chunkProgress.missingChunks,
+                partialData: chunkProgress.partialData,
               } : {}),
             };
           }
@@ -385,19 +432,45 @@ export default async function handler(req: Request) {
             const totalLines = song.lyrics.parsedLines.length;
             const totalChunks = Math.ceil(totalLines / SORAMIMI_CHUNK_SIZE);
             const hasSoramimi = !!(song.soramimi && song.soramimi.length > 0);
-            // Check if there are failed lines that need resume
-            const failedLines = song.soramimiMeta?.failedLines || [];
-            const isPartial = failedLines.length > 0;
+            
+            // Check for in-progress chunk cache if no complete soramimi
+            type SoramimiChunk = Array<{ text: string; reading?: string }>[];
+            let chunkProgress: { cachedChunks: number; missingChunks: number[]; partialData?: SoramimiChunk } | undefined;
+            if (!hasSoramimi) {
+              const progress = await getChunkProgress<SoramimiChunk[number]>(redis, songId, "soramimi");
+              if (progress && Object.keys(progress.chunks).length > 0) {
+                const missingChunks = getMissingChunkIndices(progress, totalChunks);
+                // Reconstruct partial data from cached chunks
+                const partialData: SoramimiChunk = new Array(totalLines).fill(null).map(() => []);
+                for (const [chunkIdxStr, chunkData] of Object.entries(progress.chunks)) {
+                  const chunkIndex = parseInt(chunkIdxStr, 10);
+                  const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
+                  chunkData.forEach((seg, i) => {
+                    if (startIndex + i < totalLines) {
+                      partialData[startIndex + i] = seg;
+                    }
+                  });
+                }
+                chunkProgress = {
+                  cachedChunks: Object.keys(progress.chunks).length,
+                  missingChunks,
+                  partialData,
+                };
+              }
+            }
+            
             response.soramimi = {
               totalLines,
               totalChunks,
               chunkSize: SORAMIMI_CHUNK_SIZE,
               cached: hasSoramimi,
               ...(hasSoramimi ? { data: song.soramimi } : {}),
-              // Include metadata about partial results
-              ...(isPartial ? { 
-                isPartial: true, 
-                failedLines,
+              // Include chunk progress if resuming
+              ...(chunkProgress ? { 
+                hasProgress: true,
+                cachedChunks: chunkProgress.cachedChunks,
+                missingChunks: chunkProgress.missingChunks,
+                partialData: chunkProgress.partialData,
               } : {}),
             };
           }

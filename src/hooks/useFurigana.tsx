@@ -231,8 +231,8 @@ export function useFurigana({
       
       // Note: Partial results are now handled server-side via chunk progress caching
       // The next request will automatically resume from where it left off
-      if (prefetchedInfo.isPartial && prefetchedInfo.failedLines && prefetchedInfo.failedLines.length > 0) {
-        console.log(`Furigana has ${prefetchedInfo.failedLines.length} incomplete lines - will resume on next request`);
+      if (prefetchedInfo.hasProgress && prefetchedInfo.missingChunks && prefetchedInfo.missingChunks.length > 0) {
+        console.log(`Furigana has ${prefetchedInfo.missingChunks.length} incomplete chunks - will resume on next request`);
       }
       return;
     }
@@ -307,8 +307,8 @@ export function useFurigana({
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
         
         // Note: Partial results are now handled server-side via chunk progress caching
-        if (result.isPartial && result.failedLines.length > 0) {
-          console.log(`Furigana has ${result.failedLines.length} incomplete lines - will resume on next request`);
+        if (result.isPartial && result.missingChunks.length > 0) {
+          console.log(`Furigana has ${result.missingChunks.length} incomplete chunks - will resume on next request`);
         }
       })
       .catch((err) => {
@@ -408,8 +408,8 @@ export function useFurigana({
       soramimiCacheKeyRef.current = cacheKey;
       
       // Note: Partial results are now handled server-side via chunk progress caching
-      if (prefetchedSoramimiInfo.isPartial && prefetchedSoramimiInfo.failedLines && prefetchedSoramimiInfo.failedLines.length > 0) {
-        console.log(`Soramimi has ${prefetchedSoramimiInfo.failedLines.length} incomplete lines - will resume on next request`);
+      if (prefetchedSoramimiInfo.hasProgress && prefetchedSoramimiInfo.missingChunks && prefetchedSoramimiInfo.missingChunks.length > 0) {
+        console.log(`Soramimi has ${prefetchedSoramimiInfo.missingChunks.length} incomplete chunks - will resume on next request`);
       }
       return;
     }
@@ -484,8 +484,8 @@ export function useFurigana({
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
         
         // Note: Partial results are now handled server-side via chunk progress caching
-        if (result.isPartial && result.failedLines.length > 0) {
-          console.log(`Soramimi has ${result.failedLines.length} incomplete lines - will resume on next request`);
+        if (result.isPartial && result.missingChunks.length > 0) {
+          console.log(`Soramimi has ${result.missingChunks.length} incomplete chunks - will resume on next request`);
         }
       })
       .catch((err) => {
