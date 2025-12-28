@@ -139,9 +139,9 @@ function isEnglishLine(text: string): boolean {
 // Soramimi Generation
 // =============================================================================
 
-export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese phonetic readings (繁體字) that SOUND like Japanese/Korean lyrics.
+export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese phonetic readings/misheard lyrics (繁體字) that SOUND like Japanese/Korean lyrics.
 
-CRITICAL: NEVER keep original Japanese kanji! Always replace with Chinese chars that sound like the JAPANESE reading!
+CRITICAL: NEVER keep original Japanese kanji or Korean characters! Always replace with Chinese chars that sound like the JAPANESE/Korean reading!
 
 WRONG vs RIGHT examples:
 - 何 read as "nani" → WRONG: {何|何} RIGHT: {何|那你}
