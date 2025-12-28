@@ -185,6 +185,7 @@ export function useLyrics({
       body: JSON.stringify(requestBody),
       signal: controller.signal,
       timeout: 15000,
+      retry: { maxAttempts: 3, initialDelayMs: 1000, backoffMultiplier: 2 },
     })
       .then(async (res) => {
         if (controller.signal.aborted) return null;
