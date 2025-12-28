@@ -106,7 +106,7 @@ export async function processTranslationSSE(
 
   const controller = new AbortController();
   if (signal) {
-    signal.addEventListener("abort", () => controller.abort());
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
 
   let buffer = "";
@@ -331,7 +331,7 @@ export async function processFuriganaSSE(
 
   const controller = new AbortController();
   if (signal) {
-    signal.addEventListener("abort", () => controller.abort());
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
 
   let buffer = "";
@@ -568,7 +568,7 @@ export async function processSoramimiSSE(
 
   const controller = new AbortController();
   if (signal) {
-    signal.addEventListener("abort", () => controller.abort());
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
 
   let buffer = "";

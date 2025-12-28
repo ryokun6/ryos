@@ -488,6 +488,7 @@ export async function saveLyrics(
     includeLyrics: true,
     includeTranslations: true,
     includeFurigana: true,
+    includeSoramimi: true,
   });
 
   return saveSong(redis, {
@@ -502,6 +503,7 @@ export async function saveLyrics(
   }, {
     preserveTranslations: true,
     preserveFurigana: true,
+    preserveSoramimi: true,
   }, existing);
 }
 
@@ -520,6 +522,7 @@ export async function saveTranslation(
     includeLyrics: true,
     includeTranslations: true,
     includeFurigana: true,
+    includeSoramimi: true,
   });
   if (!existing) return null;
 

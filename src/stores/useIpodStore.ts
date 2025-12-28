@@ -537,6 +537,8 @@ export const useIpodStore = create<IpodState>()(
               currentSongId: songId,
               playbackHistory: newPlaybackHistory,
               historyPosition: -1,
+              currentLyrics: null, // Clear stale lyrics from previous song
+              currentFuriganaMap: null, // Clear stale furigana from previous song
             };
           }
           return {};
