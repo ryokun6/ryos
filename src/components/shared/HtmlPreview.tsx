@@ -32,25 +32,6 @@ import {
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
 
-// Lazily load shiki only when code view is requested to keep initial bundle smaller
-let shikiModulePromise: Promise<typeof import("shiki")> | null = null;
-let highlighterPromise: Promise<import("shiki").Highlighter> | null = null;
-
-const getHighlighterInstance = () => {
-  if (!highlighterPromise) {
-    if (!shikiModulePromise) {
-      shikiModulePromise = import("shiki");
-    }
-    highlighterPromise = shikiModulePromise.then((shiki) =>
-      shiki.createHighlighter({
-        themes: ["github-dark"],
-        langs: ["html"],
-      })
-    );
-  }
-  return highlighterPromise;
-};
-
 // Check if a string is a HTML code block
 export const isHtmlCodeBlock = (
   text: string
@@ -200,7 +181,6 @@ export default function HtmlPreview({
   const [copySuccess, setCopySuccess] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [isSplitView, setIsSplitView] = useState(loadHtmlPreviewSplit());
-  const [highlightedCode, setHighlightedCode] = useState("");
   const [originalHeight, setOriginalHeight] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -666,43 +646,6 @@ export default function HtmlPreview({
     // Dependency: htmlContent ensures update if content changes *after* streaming
     // Dependency: isStreaming ensures update when streaming stops
     }, [isStreaming, htmlContent, processedHtmlContent, updateIframeContent]);
-
-  // Initialize syntax highlighting only when code view is active
-  useEffect(() => {
-    let isMounted = true;
-
-    const highlight = async () => {
-      try {
-        const highlighter = await getHighlighterInstance();
-        // Use the stored final HTML content for highlighting
-        const contentToHighlight =
-          finalProcessedHtmlRef.current || processedHtmlContent;
-        if (isMounted && contentToHighlight) {
-          const highlighted = highlighter.codeToHtml(contentToHighlight, {
-            lang: "html",
-            theme: "github-dark",
-          });
-          setHighlightedCode(highlighted);
-        }
-      } catch (error) {
-        console.error("Failed to highlight code:", error);
-      }
-    };
-
-    // Only initialize Shiki and highlight code when code view is active
-    // Reset highlightedCode if showCode becomes false
-    if (showCode) {
-      if (!highlightedCode) {
-        highlight();
-      }
-    } else {
-      setHighlightedCode(""); // Clear when code view is hidden
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [showCode, finalProcessedHtmlRef.current]); // Depend on showCode and the final content ref
 
   // Play music and cancel when unmounting for streaming content
   useEffect(() => {
@@ -1399,15 +1342,17 @@ export default function HtmlPreview({
                     {showCode ? (
                       <motion.div
                         key="code"
-                        className="absolute inset-0 bg-[#24292e] font-geneva-12 overflow-auto p-4 z-10"
+                        className="absolute inset-0 bg-[#24292e] overflow-auto p-4 z-10"
                         onClick={(e) => e.stopPropagation()}
-                        style={{ fontSize: "12px" }}
-                        dangerouslySetInnerHTML={{ __html: highlightedCode }}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.25 }}
-                      />
+                      >
+                        <pre className="text-[12px] font-monaco text-gray-300 whitespace-pre-wrap break-words m-0">
+                          {finalProcessedHtmlRef.current || processedHtmlContent}
+                        </pre>
+                      </motion.div>
                     ) : null}
                   </AnimatePresence>
 

@@ -17,9 +17,21 @@ export default defineConfig({
     // Expose VERCEL_ENV to the client for environment detection
     'import.meta.env.VITE_VERCEL_ENV': JSON.stringify(process.env.VERCEL_ENV || ''),
   },
+  // Optimize JSON imports for better performance
+  json: {
+    stringify: true, // Use JSON.parse instead of object literals (faster)
+  },
+  // Explicit cache directory for better memory management
+  cacheDir: 'node_modules/.vite',
   server: {
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
     cors: { origin: ["*"] },
+    // Enable cached file system checks for faster dev server
+    fs: {
+      cachedChecks: true,
+    },
+    // Pre-transform requests for faster page loads
+    preTransformRequests: true,
     watch: {
       // Each pattern must be a separate array element for proper matching
       ignored: [
@@ -30,17 +42,22 @@ export default defineConfig({
         "**/api/**",
         "**/public/**", // 500+ static files don't need HMR watching
         "**/node_modules/**",
+        "**/.git/**",
       ],
+      // Use polling only when necessary (e.g., Docker/VM)
+      usePolling: false,
     },
     warmup: {
+      // Only warmup critical entry files to reduce memory overhead
       clientFiles: [
         "./src/main.tsx",
         "./src/App.tsx",
-        "./src/components/**/*.tsx",
       ],
     },
   },
   optimizeDeps: {
+    // Don't wait for full crawl - allows faster initial dev startup
+    holdUntilCrawlEnd: false,
     // Force pre-bundle these deps to avoid slow unbundled ESM loading
     include: [
       "react",
@@ -53,7 +70,10 @@ export default defineConfig({
       "tone",
       "wavesurfer.js",
       "three",
-      "shiki",
+    ],
+    // Exclude large deps that are rarely changed to reduce memory
+    exclude: [
+      "opencc-js", // Large Chinese dictionary, lazy-loaded
     ],
   },
   plugins: [
@@ -320,7 +340,16 @@ export default defineConfig({
   vercel: {
     defaultSupportsResponseStreaming: true,
   },
+  // esbuild options for faster dev transforms
+  esbuild: {
+    // Remove legal comments to reduce memory overhead
+    legalComments: 'none',
+    // Target modern browsers for faster transforms
+    target: 'es2022',
+  },
   build: {
+    // Target modern browsers for smaller bundles
+    target: 'es2022',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -376,9 +405,6 @@ export default defineConfig({
           // 3D rendering - deferred until PC app opens
           three: ["three"],
           
-          // Code highlighting - deferred until needed
-          shiki: ["shiki"],
-          
           // Animation - used by multiple apps
           motion: ["framer-motion"],
           
@@ -392,5 +418,7 @@ export default defineConfig({
     },
     sourcemap: false,
     minify: true,
+    // Reduce chunk size warnings threshold
+    chunkSizeWarningLimit: 1000,
   },
 });
