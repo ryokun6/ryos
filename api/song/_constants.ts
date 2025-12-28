@@ -8,12 +8,6 @@ import { z } from "zod";
 // Constants
 // =============================================================================
 
-export const CHUNK_SIZE = 15;
-
-// Soramimi uses a smaller chunk size because the creative prompt is more complex
-// and takes longer to process than translation/furigana
-export const SORAMIMI_CHUNK_SIZE = 8;
-
 export const kugouHeaders: HeadersInit = {
   "User-Agent":
     '{"percent": 21.4, "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36", "system": "Chrome 116.0 Win10", "browser": "chrome", "version": 116.0, "os": "win10"}',
@@ -90,23 +84,23 @@ export const SearchLyricsSchema = z.object({
 });
 
 // =============================================================================
-// SSE Streaming Schemas - Server processes all chunks and saves result
+// SSE Streaming Schemas - Line-by-line streaming
 // =============================================================================
 
-// SSE streaming translation - server processes all chunks and saves result
+// SSE streaming translation - streams each line as it's generated
 export const TranslateStreamSchema = z.object({
   action: z.literal("translate-stream"),
   language: z.string().max(10),
   force: z.boolean().optional(),
 });
 
-// SSE streaming furigana - server processes all chunks and saves result
+// SSE streaming furigana - streams each line as it's generated
 export const FuriganaStreamSchema = z.object({
   action: z.literal("furigana-stream"),
   force: z.boolean().optional(),
 });
 
-// SSE streaming soramimi - server processes all chunks and saves result
+// SSE streaming soramimi - streams each line as it's generated
 export const SoramimiStreamSchema = z.object({
   action: z.literal("soramimi-stream"),
   force: z.boolean().optional(),

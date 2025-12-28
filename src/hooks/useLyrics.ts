@@ -7,9 +7,9 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import {
   processTranslationSSE,
   parseLrcToTranslations,
-  type TranslationChunkInfo,
-  type FuriganaChunkInfo,
-  type SoramimiChunkInfo,
+  type TranslationStreamInfo,
+  type FuriganaStreamInfo,
+  type SoramimiStreamInfo,
   type TranslationResult,
 } from "@/utils/chunkedStream";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
@@ -47,9 +47,9 @@ interface LyricsState {
   error?: string;
   updateCurrentTimeManually: (newTimeInSeconds: number) => void;
   /** Pre-fetched furigana info (pass to useFurigana to skip extra API call) */
-  furiganaInfo?: FuriganaChunkInfo;
+  furiganaInfo?: FuriganaStreamInfo;
   /** Pre-fetched soramimi info (pass to useFurigana to skip extra API call) */
-  soramimiInfo?: SoramimiChunkInfo;
+  soramimiInfo?: SoramimiStreamInfo;
 }
 
 interface ParsedLine {
@@ -67,9 +67,9 @@ interface UnifiedLyricsResponse {
     parsedLines: ParsedLine[];
   };
   cached?: boolean;
-  translation?: TranslationChunkInfo;
-  furigana?: FuriganaChunkInfo;
-  soramimi?: SoramimiChunkInfo;
+  translation?: TranslationStreamInfo;
+  furigana?: FuriganaStreamInfo;
+  soramimi?: SoramimiStreamInfo;
 }
 
 // =============================================================================
@@ -94,8 +94,8 @@ export function useLyrics({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationProgress, setTranslationProgress] = useState<number | undefined>();
   const [error, setError] = useState<string | undefined>();
-  const [furiganaInfo, setFuriganaInfo] = useState<FuriganaChunkInfo | undefined>();
-  const [soramimiInfo, setSoramimiInfo] = useState<SoramimiChunkInfo | undefined>();
+  const [furiganaInfo, setFuriganaInfo] = useState<FuriganaStreamInfo | undefined>();
+  const [soramimiInfo, setSoramimiInfo] = useState<SoramimiStreamInfo | undefined>();
 
   // Refs for tracking state across renders
   const cachedKeyRef = useRef<string | null>(null);
@@ -110,7 +110,7 @@ export function useLyrics({
   const lastCacheBustTriggerRef = useRef<number>(0);
 
   // Ref to store translation info from initial fetch (with language to ensure we only use matching translations)
-  const translationInfoRef = useRef<{ info: TranslationChunkInfo; language: string } | undefined>(undefined);
+  const translationInfoRef = useRef<{ info: TranslationStreamInfo; language: string } | undefined>(undefined);
 
   // ==========================================================================
   // Effect: Fetch lyrics (and optionally translation/furigana info)
@@ -290,7 +290,6 @@ export function useLyrics({
     processTranslationSSE(effectSongId, translateTo, {
       force: isForceRequest,
       signal: controller.signal,
-      // Pass pre-fetched info to skip get-chunk-info call
       prefetchedInfo: !isForceRequest ? prefetchedInfo : undefined,
       onProgress: (progress) => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
@@ -320,11 +319,6 @@ export function useLyrics({
         }));
         setTranslatedLines(finalLines);
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
-        
-        // Log if there were failed lines (translations use fallback text, so less critical)
-        if (result.isPartial && result.missingChunks.length > 0) {
-          console.warn(`Translation had ${result.missingChunks.length} incomplete chunks - will resume on next request`);
-        }
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;

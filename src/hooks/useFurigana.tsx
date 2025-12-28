@@ -18,11 +18,11 @@ import {
   getFuriganaSegmentsPronunciationOnly,
 } from "@/utils/romanization";
 import type { FuriganaSegment } from "@/utils/romanization";
-import { 
+import {
   processFuriganaSSE, 
   processSoramimiSSE, 
-  type FuriganaChunkInfo, 
-  type SoramimiChunkInfo,
+  type FuriganaStreamInfo, 
+  type SoramimiStreamInfo,
   type FuriganaResult,
   type SoramimiResult,
 } from "@/utils/chunkedStream";
@@ -42,9 +42,9 @@ interface UseFuriganaParams {
   /** Callback when loading state changes */
   onLoadingChange?: (isLoading: boolean) => void;
   /** Pre-fetched furigana info from initial lyrics request (skips extra API call) */
-  prefetchedInfo?: FuriganaChunkInfo;
+  prefetchedInfo?: FuriganaStreamInfo;
   /** Pre-fetched soramimi info from initial lyrics request (skips extra API call) */
-  prefetchedSoramimiInfo?: SoramimiChunkInfo;
+  prefetchedSoramimiInfo?: SoramimiStreamInfo;
 }
 
 interface UseFuriganaReturn {
@@ -97,7 +97,6 @@ export function useFurigana({
   const [progress, setProgress] = useState<number | undefined>();
   const [error, setError] = useState<string>();
   
-  // Note: Resume is now handled server-side via chunk progress caching
   // These are kept for interface compatibility but always false
   const isResumingFurigana = false;
   const isResumingSoramimi = false;
@@ -162,7 +161,7 @@ export function useFurigana({
   // Track the last songId we had data for - only clear cache when song actually changes
   const lastFuriganaSongIdRef = useRef<string>("");
 
-  // Fetch furigana for original lines when enabled using chunked streaming
+  // Fetch furigana for original lines when enabled using line-by-line streaming
   // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   useEffect(() => {
     // Capture songId at effect start for stale request detection
@@ -228,12 +227,6 @@ export function useFurigana({
       setFuriganaMap(finalMap);
       furiganaCacheKeyRef.current = cacheKey;
       setIsFetchingFurigana(false);
-      
-      // Note: Partial results are now handled server-side via chunk progress caching
-      // The next request will automatically resume from where it left off
-      if (prefetchedInfo.hasProgress && prefetchedInfo.missingChunks && prefetchedInfo.missingChunks.length > 0) {
-        console.log(`Furigana has ${prefetchedInfo.missingChunks.length} incomplete chunks - will resume on next request`);
-      }
       return;
     }
 
@@ -261,13 +254,12 @@ export function useFurigana({
     // Track this request so we can detect duplicates
     furiganaForceRequestRef.current = { controller, requestId };
 
-    // Use chunked streaming for furigana to avoid edge function timeouts
+    // Use line-by-line streaming for furigana
     const progressiveMap = new Map<string, FuriganaSegment[]>();
     
     processFuriganaSSE(effectSongId, {
       force: isForceRequest,
       signal: controller.signal,
-      // Pass pre-fetched info to skip get-chunk-info call
       prefetchedInfo: !isForceRequest ? prefetchedInfo : undefined,
       onProgress: (progress) => {
         if (!controller.signal.aborted) {
@@ -301,11 +293,6 @@ export function useFurigana({
         setFuriganaMap(finalMap);
         furiganaCacheKeyRef.current = cacheKey;
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
-        
-        // Note: Partial results are now handled server-side via chunk progress caching
-        if (result.isPartial && result.missingChunks.length > 0) {
-          console.log(`Furigana has ${result.missingChunks.length} incomplete chunks - will resume on next request`);
-        }
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -343,17 +330,13 @@ export function useFurigana({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
 
-  // Note: Resume is now handled server-side via chunk progress caching
-  // When the client reconnects and requests furigana/soramimi, the server
-  // automatically detects any previously cached chunk progress and resumes from there.
-
   // Check conditions for soramimi fetching
   const shouldFetchSoramimi = romanization.enabled && romanization.chineseSoramimi;
   
   // Track the last songId we had data for - only clear cache when song actually changes
   const lastSoramimiSongIdRef = useRef<string>("");
 
-  // Fetch soramimi for lyrics when enabled using chunked streaming
+  // Fetch soramimi for lyrics when enabled using line-by-line streaming
   // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
   useEffect(() => {
     // Capture songId at effect start for stale request detection
@@ -402,11 +385,6 @@ export function useFurigana({
       });
       setSoramimiMap(finalMap);
       soramimiCacheKeyRef.current = cacheKey;
-      
-      // Note: Partial results are now handled server-side via chunk progress caching
-      if (prefetchedSoramimiInfo.hasProgress && prefetchedSoramimiInfo.missingChunks && prefetchedSoramimiInfo.missingChunks.length > 0) {
-        console.log(`Soramimi has ${prefetchedSoramimiInfo.missingChunks.length} incomplete chunks - will resume on next request`);
-      }
       return;
     }
 
@@ -434,13 +412,12 @@ export function useFurigana({
     // Track this request so we can detect duplicates
     soramimiForceRequestRef.current = { controller, requestId };
 
-    // Use SSE streaming for soramimi - server processes all chunks and caches result
+    // Use line-by-line streaming for soramimi
     const progressiveMap = new Map<string, FuriganaSegment[]>();
     
     processSoramimiSSE(effectSongId, {
       force: isForceRequest,
       signal: controller.signal,
-      // Pass pre-fetched info to skip get-chunk-info call
       prefetchedInfo: !isForceRequest ? prefetchedSoramimiInfo : undefined,
       onProgress: (progress) => {
         if (!controller.signal.aborted) {
@@ -474,11 +451,6 @@ export function useFurigana({
         setSoramimiMap(finalMap);
         soramimiCacheKeyRef.current = cacheKey;
         lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
-        
-        // Note: Partial results are now handled server-side via chunk progress caching
-        if (result.isPartial && result.missingChunks.length > 0) {
-          console.log(`Soramimi has ${result.missingChunks.length} incomplete chunks - will resume on next request`);
-        }
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -506,7 +478,6 @@ export function useFurigana({
 
     return () => {
       // Always abort this request on cleanup
-      // This prevents stale requests with wrong totalChunks from continuing
       const isThisRequest = soramimiForceRequestRef.current?.requestId === requestId;
       if (isThisRequest) {
         controller.abort();

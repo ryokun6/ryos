@@ -23,45 +23,24 @@ export interface LineProgress {
   percentage: number;
 }
 
-/** @deprecated Use LineProgress instead */
-export interface ChunkProgress {
-  completedChunks: number;
-  totalChunks: number;
-  percentage: number;
-}
-
 /** Pre-fetched translation info from initial lyrics fetch */
-export interface TranslationChunkInfo {
+export interface TranslationStreamInfo {
   totalLines: number;
   cached: boolean;
   /** Cached translation LRC (only present if cached=true) */
   lrc?: string;
-  // Legacy fields for backwards compatibility
-  totalChunks?: number;
-  chunkSize?: number;
-  hasProgress?: boolean;
-  cachedChunks?: number;
-  missingChunks?: number[];
-  partialData?: string[];
 }
 
 /** Pre-fetched furigana info from initial lyrics fetch */
-export interface FuriganaChunkInfo {
+export interface FuriganaStreamInfo {
   totalLines: number;
   cached: boolean;
   /** Cached furigana data (only present if cached=true) */
   data?: Array<Array<{ text: string; reading?: string }>>;
-  // Legacy fields for backwards compatibility
-  totalChunks?: number;
-  chunkSize?: number;
-  hasProgress?: boolean;
-  cachedChunks?: number;
-  missingChunks?: number[];
-  partialData?: Array<Array<{ text: string; reading?: string }>>;
 }
 
 /** Pre-fetched soramimi info from initial lyrics fetch */
-export interface SoramimiChunkInfo {
+export interface SoramimiStreamInfo {
   totalLines: number;
   cached: boolean;
   /** Cached soramimi data (only present if cached=true) */
@@ -70,14 +49,15 @@ export interface SoramimiChunkInfo {
   skipped?: boolean;
   /** Reason for skipping */
   skipReason?: string;
-  // Legacy fields for backwards compatibility
-  totalChunks?: number;
-  chunkSize?: number;
-  hasProgress?: boolean;
-  cachedChunks?: number;
-  missingChunks?: number[];
-  partialData?: Array<Array<{ text: string; reading?: string }>>;
 }
+
+// Legacy type aliases for backwards compatibility
+/** @deprecated Use TranslationStreamInfo instead */
+export type TranslationChunkInfo = TranslationStreamInfo;
+/** @deprecated Use FuriganaStreamInfo instead */
+export type FuriganaChunkInfo = FuriganaStreamInfo;
+/** @deprecated Use SoramimiStreamInfo instead */
+export type SoramimiChunkInfo = SoramimiStreamInfo;
 
 // =============================================================================
 // SSE Event Types (Line-by-line streaming)
@@ -171,10 +151,8 @@ export interface ProcessTranslationOptions {
   signal?: AbortSignal;
   onProgress?: (progress: LineProgress) => void;
   onLine?: (lineIndex: number, translation: string) => void;
-  /** @deprecated Use onLine instead */
-  onChunk?: (chunkIndex: number, startIndex: number, translations: string[]) => void;
-  /** Pre-fetched chunk info from initial lyrics request */
-  prefetchedInfo?: TranslationChunkInfo;
+  /** Pre-fetched info from initial lyrics request */
+  prefetchedInfo?: TranslationStreamInfo;
 }
 
 /** Result of translation processing */
@@ -183,10 +161,6 @@ export interface TranslationResult {
   data: string[];
   /** Whether the result was successful */
   success: boolean;
-  /** @deprecated Always false in line-by-line mode */
-  isPartial: boolean;
-  /** @deprecated Always empty in line-by-line mode */
-  missingChunks: number[];
 }
 
 /**
@@ -198,7 +172,7 @@ export async function processTranslationSSE(
   language: string,
   options: ProcessTranslationOptions = {}
 ): Promise<TranslationResult> {
-  const { force, signal, onProgress, onLine, onChunk, prefetchedInfo } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo } = options;
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.lrc) {
@@ -210,8 +184,6 @@ export async function processTranslationSSE(
     return {
       data: parseLrcToTranslations(prefetchedInfo.lrc),
       success: true,
-      isPartial: false,
-      missingChunks: [],
     };
   }
 
@@ -282,8 +254,6 @@ export async function processTranslationSSE(
                     percentage: data.progress,
                   });
                   onLine?.(data.lineIndex, data.translation);
-                  // Legacy callback support
-                  onChunk?.(0, data.lineIndex, [data.translation]);
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
@@ -298,8 +268,6 @@ export async function processTranslationSSE(
                 finalResult = { 
                   data: cachedTranslations,
                   success: true,
-                  isPartial: false,
-                  missingChunks: [],
                 };
                 try {
                   onProgress?.({ completedLines: cachedTranslations.length, totalLines: cachedTranslations.length, percentage: 100 });
@@ -312,8 +280,6 @@ export async function processTranslationSSE(
                 finalResult = {
                   data: data.translations,
                   success: data.success,
-                  isPartial: !data.success,
-                  missingChunks: [],
                 };
                 try {
                   onProgress?.({
@@ -396,10 +362,8 @@ export interface ProcessFuriganaOptions {
   signal?: AbortSignal;
   onProgress?: (progress: LineProgress) => void;
   onLine?: (lineIndex: number, furigana: Array<{ text: string; reading?: string }>) => void;
-  /** @deprecated Use onLine instead */
-  onChunk?: (chunkIndex: number, startIndex: number, furigana: Array<Array<{ text: string; reading?: string }>>) => void;
-  /** Pre-fetched chunk info from initial lyrics request */
-  prefetchedInfo?: FuriganaChunkInfo;
+  /** Pre-fetched info from initial lyrics request */
+  prefetchedInfo?: FuriganaStreamInfo;
 }
 
 /** Result of furigana processing */
@@ -408,10 +372,6 @@ export interface FuriganaResult {
   data: Array<Array<{ text: string; reading?: string }>>;
   /** Whether the result was successful */
   success: boolean;
-  /** @deprecated Always false in line-by-line mode */
-  isPartial: boolean;
-  /** @deprecated Always empty in line-by-line mode */
-  missingChunks: number[];
 }
 
 /**
@@ -422,7 +382,7 @@ export async function processFuriganaSSE(
   songId: string,
   options: ProcessFuriganaOptions = {}
 ): Promise<FuriganaResult> {
-  const { force, signal, onProgress, onLine, onChunk, prefetchedInfo } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo } = options;
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
@@ -434,8 +394,6 @@ export async function processFuriganaSSE(
     return {
       data: prefetchedInfo.data,
       success: true,
-      isPartial: false,
-      missingChunks: [],
     };
   }
 
@@ -505,8 +463,6 @@ export async function processFuriganaSSE(
                     percentage: data.progress,
                   });
                   onLine?.(data.lineIndex, data.furigana);
-                  // Legacy callback support
-                  onChunk?.(0, data.lineIndex, [data.furigana]);
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
@@ -517,7 +473,7 @@ export async function processFuriganaSSE(
                 break;
 
               case "cached":
-                finalResult = { data: data.furigana, success: true, isPartial: false, missingChunks: [] };
+                finalResult = { data: data.furigana, success: true };
                 try {
                   onProgress?.({ completedLines: data.furigana.length, totalLines: data.furigana.length, percentage: 100 });
                 } catch (callbackErr) {
@@ -529,8 +485,6 @@ export async function processFuriganaSSE(
                 finalResult = {
                   data: data.furigana,
                   success: data.success,
-                  isPartial: !data.success,
-                  missingChunks: [],
                 };
                 try {
                   onProgress?.({
@@ -613,10 +567,8 @@ export interface ProcessSoramimiOptions {
   signal?: AbortSignal;
   onProgress?: (progress: LineProgress) => void;
   onLine?: (lineIndex: number, soramimi: Array<{ text: string; reading?: string }>) => void;
-  /** @deprecated Use onLine instead */
-  onChunk?: (chunkIndex: number, startIndex: number, soramimi: Array<Array<{ text: string; reading?: string }>>) => void;
-  /** Pre-fetched chunk info from initial lyrics request */
-  prefetchedInfo?: SoramimiChunkInfo;
+  /** Pre-fetched info from initial lyrics request */
+  prefetchedInfo?: SoramimiStreamInfo;
 }
 
 /** Result of soramimi processing */
@@ -625,10 +577,6 @@ export interface SoramimiResult {
   data: Array<Array<{ text: string; reading?: string }>>;
   /** Whether the result was successful */
   success: boolean;
-  /** @deprecated Always false in line-by-line mode */
-  isPartial: boolean;
-  /** @deprecated Always empty in line-by-line mode */
-  missingChunks: number[];
 }
 
 /**
@@ -639,7 +587,7 @@ export async function processSoramimiSSE(
   songId: string,
   options: ProcessSoramimiOptions = {}
 ): Promise<SoramimiResult> {
-  const { force, signal, onProgress, onLine, onChunk, prefetchedInfo } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo } = options;
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
@@ -651,8 +599,6 @@ export async function processSoramimiSSE(
     return {
       data: prefetchedInfo.data,
       success: true,
-      isPartial: false,
-      missingChunks: [],
     };
   }
 
@@ -663,7 +609,7 @@ export async function processSoramimiSSE(
     } catch (callbackErr) {
       console.warn("SSE: Callback error:", callbackErr);
     }
-    return { data: [], success: true, isPartial: false, missingChunks: [] };
+    return { data: [], success: true };
   }
 
   const controller = new AbortController();
@@ -693,13 +639,13 @@ export async function processSoramimiSSE(
       if (contentType?.includes("application/json")) {
         const json = await response.json();
         if (json.skipped) {
-          try {
-            onProgress?.({ completedLines: 0, totalLines: 0, percentage: 100 });
-          } catch (callbackErr) {
-            console.warn("SSE: Callback error:", callbackErr);
-          }
-          return { data: [], success: true, isPartial: false, missingChunks: [] };
+        try {
+          onProgress?.({ completedLines: 0, totalLines: 0, percentage: 100 });
+        } catch (callbackErr) {
+          console.warn("SSE: Callback error:", callbackErr);
         }
+        return { data: [], success: true };
+      }
         throw new Error(json.error || "Unknown error");
       }
 
@@ -740,8 +686,6 @@ export async function processSoramimiSSE(
                     percentage: data.progress,
                   });
                   onLine?.(data.lineIndex, data.soramimi);
-                  // Legacy callback support
-                  onChunk?.(0, data.lineIndex, [data.soramimi]);
                 } catch (callbackErr) {
                   console.warn("SSE: Callback error:", callbackErr);
                 }
@@ -752,7 +696,7 @@ export async function processSoramimiSSE(
                 break;
 
               case "cached":
-                finalSoramimi = { data: data.soramimi, success: true, isPartial: false, missingChunks: [] };
+                finalSoramimi = { data: data.soramimi, success: true };
                 try {
                   onProgress?.({ completedLines: data.soramimi.length, totalLines: data.soramimi.length, percentage: 100 });
                 } catch (callbackErr) {
@@ -764,8 +708,6 @@ export async function processSoramimiSSE(
                 finalSoramimi = { 
                   data: data.soramimi, 
                   success: data.success,
-                  isPartial: !data.success,
-                  missingChunks: [],
                 };
                 try {
                   onProgress?.({
