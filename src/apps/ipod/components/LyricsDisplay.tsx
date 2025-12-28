@@ -153,7 +153,7 @@ const ErrorState = ({
 // Shared shadow constants for word highlighting
 const BASE_SHADOW = "0 0 6px rgba(0,0,0,0.5), 0 0 6px rgba(0,0,0,0.5)";
 // Text shadow glow for non-word-timed lines
-const GLOW_SHADOW = "0 0 6px rgba(255,255,255,0.9), 0 0 6px rgba(0,0,0,0.5), 0 0 6px rgba(0,0,0,0.5)";
+const GLOW_SHADOW = "0 0 6px rgba(255,255,255,1), 0 0 6px rgba(0,0,0,0.5), 0 0 6px rgba(0,0,0,0.5)";
 // Drop shadow filter for word-timed glow (applied to container, not clipped by mask)
 const GLOW_FILTER = "drop-shadow(0 0 6px rgba(255,255,255,0.4))";
 const FEATHER = 15; // Width of the soft edge in percentage
@@ -768,7 +768,7 @@ function WordTimingHighlight({
               ref={(el) => { overlayRefs.current[idx] = el; }}
               style={{ 
                 display: "block",
-                color: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "rgba(255,255,255,0.9)",
+                color: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "#fff",
                 textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW,
                 WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_STROKE : undefined,
                 paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
@@ -823,22 +823,22 @@ const getVariants = (
     if (isOldSchoolKaraoke) return 1;
     
     // Alternating layout: less aggressive dimming
-    if (isAlternating) return isCurrent ? 1 : 0.75;
+    if (isAlternating) return isCurrent ? 1 : 0.85;
     
     if (hasWordTiming) {
       // Word-timed lines: current at full, inactive more faded for focus effect
       if (isCurrent) return 1;
       // Past line (position -1) dimmer than next line (position 1)
-      if (position === -1) return 0.55;
-      if (position === 1) return 0.75;
-      return 0.75;
+      if (position === -1) return 0.7;
+      if (position === 1) return 0.85;
+      return 0.85;
     }
     // Non-word-timed lines: normal opacity animation
     if (isCurrent) return 1;
     // Past line dimmer than next line in FocusThree mode
-    if (position === -1) return 0.3;
-    if (position === 1) return 0.4;
-    return 0.2;
+    if (position === -1) return 0.5;
+    if (position === 1) return 0.6;
+    return 0.4;
   };
 
   // For word-timed lines, start at target opacity to avoid flash on entry
