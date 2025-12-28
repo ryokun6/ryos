@@ -41,46 +41,13 @@ export function FullScreenPortal({
   syncModeContent,
   fullScreenPlayerRef,
   activityState,
-  // Legacy props (backwards compatibility - prefer activityState)
-  isLoadingLyrics: isLoadingLyricsLegacy,
-  isProcessingLyrics: isProcessingLyricsLegacy,
-  isFetchingFurigana: isFetchingFuriganaLegacy,
-  isFetchingSoramimi: isFetchingSoramimiLegacy,
-  isAddingSong: isAddingSongLegacy,
-  translationProgress: translationProgressLegacy,
-  translationLanguage: translationLanguageLegacy,
-  furiganaProgress: furiganaProgressLegacy,
-  soramimiProgress: soramimiProgressLegacy,
 }: FullScreenPortalProps) {
-  // Merge activity state from either the new prop or legacy props
-  const resolvedActivityState = useMemo(() => ({
-    isLoadingLyrics: activityState?.isLoadingLyrics ?? isLoadingLyricsLegacy,
-    isTranslating: activityState?.isTranslating ?? isProcessingLyricsLegacy,
-    translationProgress: activityState?.translationProgress ?? translationProgressLegacy,
-    translationLanguage: activityState?.translationLanguage ?? translationLanguageLegacy,
-    isFetchingFurigana: activityState?.isFetchingFurigana ?? isFetchingFuriganaLegacy,
-    furiganaProgress: activityState?.furiganaProgress ?? furiganaProgressLegacy,
-    isFetchingSoramimi: activityState?.isFetchingSoramimi ?? isFetchingSoramimiLegacy,
-    soramimiProgress: activityState?.soramimiProgress ?? soramimiProgressLegacy,
-    isAddingSong: activityState?.isAddingSong ?? isAddingSongLegacy,
-  }), [
-    activityState,
-    isLoadingLyricsLegacy,
-    isProcessingLyricsLegacy,
-    translationProgressLegacy,
-    translationLanguageLegacy,
-    isFetchingFuriganaLegacy,
-    furiganaProgressLegacy,
-    isFetchingSoramimiLegacy,
-    soramimiProgressLegacy,
-    isAddingSongLegacy,
-  ]);
-  
-  const isAnyActivityActive = resolvedActivityState.isLoadingLyrics || 
-    resolvedActivityState.isTranslating || 
-    resolvedActivityState.isFetchingFurigana || 
-    resolvedActivityState.isFetchingSoramimi || 
-    resolvedActivityState.isAddingSong;
+  const isAnyActivityActive = activityState.isLoadingLyrics || 
+    activityState.isTranslating || 
+    activityState.isFetchingFurigana || 
+    activityState.isFetchingSoramimi || 
+    activityState.isAddingSong;
+
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -503,8 +470,7 @@ export function FullScreenPortal({
           >
             <ActivityIndicatorWithLabel
               size="lg"
-              state={resolvedActivityState}
-              className="text-[min(4vw,4vh)]"
+              state={activityState}
             />
           </motion.div>
         )}

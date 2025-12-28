@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,6 @@ import {
   StatusDisplay,
 } from "./screen";
 import type { IpodScreenProps } from "../types";
-import type { ActivityInfo } from "@/hooks/useActivityLabel";
 
 // Animation variants for menu transitions
 const menuVariants = {
@@ -72,46 +71,14 @@ export function IpodScreen({
   furiganaMap,
   soramimiMap,
   activityState,
-  // Legacy props (backwards compatibility - prefer activityState)
-  isFetchingFurigana: isFetchingFuriganaLegacy,
-  isFetchingSoramimi: isFetchingSoramimiLegacy,
-  isAddingSong: isAddingSongLegacy,
-  translationProgress: translationProgressLegacy,
-  translationLanguage: translationLanguageLegacy,
-  furiganaProgress: furiganaProgressLegacy,
-  soramimiProgress: soramimiProgressLegacy,
 }: IpodScreenProps) {
   const { t } = useTranslation();
   
-  // Merge activity state from either the new prop or legacy props
-  const resolvedActivityState: ActivityInfo = useMemo(() => ({
-    isLoadingLyrics: activityState?.isLoadingLyrics ?? lyricsControls.isLoading,
-    isTranslating: activityState?.isTranslating ?? lyricsControls.isTranslating,
-    translationProgress: activityState?.translationProgress ?? translationProgressLegacy,
-    translationLanguage: activityState?.translationLanguage ?? translationLanguageLegacy,
-    isFetchingFurigana: activityState?.isFetchingFurigana ?? isFetchingFuriganaLegacy,
-    furiganaProgress: activityState?.furiganaProgress ?? furiganaProgressLegacy,
-    isFetchingSoramimi: activityState?.isFetchingSoramimi ?? isFetchingSoramimiLegacy,
-    soramimiProgress: activityState?.soramimiProgress ?? soramimiProgressLegacy,
-    isAddingSong: activityState?.isAddingSong ?? isAddingSongLegacy,
-  }), [
-    activityState,
-    lyricsControls.isLoading,
-    lyricsControls.isTranslating,
-    translationProgressLegacy,
-    translationLanguageLegacy,
-    isFetchingFuriganaLegacy,
-    furiganaProgressLegacy,
-    isFetchingSoramimiLegacy,
-    soramimiProgressLegacy,
-    isAddingSongLegacy,
-  ]);
-  
-  const isAnyActivityActive = resolvedActivityState.isLoadingLyrics || 
-    resolvedActivityState.isTranslating || 
-    resolvedActivityState.isFetchingFurigana || 
-    resolvedActivityState.isFetchingSoramimi || 
-    resolvedActivityState.isAddingSong;
+  const isAnyActivityActive = activityState.isLoadingLyrics || 
+    activityState.isTranslating || 
+    activityState.isFetchingFurigana || 
+    activityState.isFetchingSoramimi || 
+    activityState.isAddingSong;
 
   // Current menu title
   const currentMenuTitle = menuMode
@@ -356,8 +323,7 @@ export function IpodScreen({
                 >
                   <ActivityIndicatorWithLabel
                     size="md"
-                    state={resolvedActivityState}
-                    labelClassName="text-[10px]"
+                    state={activityState}
                   />
                 </motion.div>
               )}

@@ -2,8 +2,7 @@ import { cn } from "@/lib/utils";
 import { ActivityIndicator } from "./activity-indicator";
 import { getActivityLabel, type ActivityInfo } from "@/hooks/useActivityLabel";
 
-// Re-export ActivityInfo as ActivityState for backwards compatibility
-export type { ActivityInfo as ActivityState } from "@/hooks/useActivityLabel";
+export type { ActivityInfo } from "@/hooks/useActivityLabel";
 
 interface ActivityIndicatorWithLabelProps {
   /** Activity state object containing all loading states */
@@ -40,7 +39,7 @@ export function ActivityIndicatorWithLabel({
       {showLabel && label && (
         <span
           className={cn(
-            "font-chicago text-white text-[min(3vw,3vh,14px)] whitespace-nowrap",
+            "font-geneva-12 text-white whitespace-nowrap",
             "drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]",
             "[text-shadow:_0_1px_0_rgba(0,0,0,0.8),_0_-1px_0_rgba(0,0,0,0.8),_1px_0_0_rgba(0,0,0,0.8),_-1px_0_0_rgba(0,0,0,0.8)]",
             labelClassName

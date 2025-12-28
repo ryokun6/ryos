@@ -70,27 +70,8 @@ export interface FullScreenPortalProps {
   syncModeContent?: React.ReactNode;
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
-  /** Consolidated activity state for loading indicators */
-  activityState?: ActivityInfo;
-  // Legacy props for backwards compatibility (deprecated - use activityState instead)
-  /** @deprecated Use activityState.isLoadingLyrics */
-  isLoadingLyrics?: boolean;
-  /** @deprecated Use activityState.isTranslating */
-  isProcessingLyrics?: boolean;
-  /** @deprecated Use activityState.isFetchingFurigana */
-  isFetchingFurigana?: boolean;
-  /** @deprecated Use activityState.isFetchingSoramimi */
-  isFetchingSoramimi?: boolean;
-  /** @deprecated Use activityState.isAddingSong */
-  isAddingSong?: boolean;
-  /** @deprecated Use activityState.translationProgress */
-  translationProgress?: number;
-  /** @deprecated Use activityState.translationLanguage */
-  translationLanguage?: string | null;
-  /** @deprecated Use activityState.furiganaProgress */
-  furiganaProgress?: number;
-  /** @deprecated Use activityState.soramimiProgress */
-  soramimiProgress?: number;
+  /** Activity state for loading indicators */
+  activityState: ActivityInfo;
 }
 
 // IpodScreen props
@@ -138,23 +119,8 @@ export interface IpodScreenProps {
   furiganaMap?: Map<string, FuriganaSegment[]>;
   /** Soramimi map from parent (Map of startTimeMs -> FuriganaSegment[]) */
   soramimiMap?: Map<string, FuriganaSegment[]>;
-  /** Consolidated activity state for loading indicators */
-  activityState?: ActivityInfo;
-  // Legacy props for backwards compatibility (deprecated - use activityState instead)
-  /** @deprecated Use activityState.isFetchingFurigana */
-  isFetchingFurigana?: boolean;
-  /** @deprecated Use activityState.isFetchingSoramimi */
-  isFetchingSoramimi?: boolean;
-  /** @deprecated Use activityState.isAddingSong */
-  isAddingSong?: boolean;
-  /** @deprecated Use activityState.translationProgress */
-  translationProgress?: number;
-  /** @deprecated Use activityState.translationLanguage */
-  translationLanguage?: string | null;
-  /** @deprecated Use activityState.furiganaProgress */
-  furiganaProgress?: number;
-  /** @deprecated Use activityState.soramimiProgress */
-  soramimiProgress?: number;
+  /** Activity state for loading indicators */
+  activityState: ActivityInfo;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery

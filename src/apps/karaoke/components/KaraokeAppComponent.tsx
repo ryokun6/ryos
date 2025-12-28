@@ -29,7 +29,7 @@ import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicatorWithLabel, type ActivityState } from "@/components/ui/activity-indicator-with-label";
+import { ActivityIndicatorWithLabel, type ActivityInfo } from "@/components/ui/activity-indicator-with-label";
 import { TRANSLATION_LANGUAGES } from "@/apps/ipod/constants";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
@@ -287,7 +287,7 @@ export function KaraokeAppComponent({
   });
 
   // Consolidated activity state for loading indicators
-  const activityState: ActivityState = useMemo(() => ({
+  const activityState: ActivityInfo = useMemo(() => ({
     isLoadingLyrics: lyricsControls.isLoading,
     isTranslating: lyricsControls.isTranslating,
     translationProgress: lyricsControls.translationProgress,
