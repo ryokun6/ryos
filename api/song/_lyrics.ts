@@ -347,74 +347,142 @@ function msToLrcTimeInternal(msStr: string): string {
 // Translation
 // =============================================================================
 
-// AI generation timeout (30 seconds)
-const AI_TIMEOUT_MS = 30000;
-// Retry configuration
-const MAX_RETRIES = 2;
-const INITIAL_DELAY_MS = 1000;
+import { streamText } from "ai";
+
+// AI generation timeout (90 seconds for full song streaming)
+const AI_TIMEOUT_MS = 90000;
 
 /**
- * Translate a chunk of lyrics using AI
+ * Stream translation for all lyrics line-by-line using streamText
+ * Emits each line as it's completed via onLine callback
+ * 
+ * @param lines - All lyrics lines to translate
+ * @param targetLanguage - Target language (e.g., "English", "繁體中文")
+ * @param requestId - Request ID for logging
+ * @param onLine - Callback called for each completed line (lineIndex, translation)
+ * @returns Promise that resolves when streaming is complete
  */
-export async function translateChunk(
-  chunk: LyricLine[],
+export async function streamTranslation(
+  lines: LyricLine[],
   targetLanguage: string,
-  requestId: string
-): Promise<string[]> {
-  const systemPrompt = `Translate lyrics to ${targetLanguage} (one line per input line).
-Return translations in same order. If already in ${targetLanguage}, return as-is.
-For instrumental lines (e.g., "---"), return original. No punctuation at end of lines.
-Preserve artistic intent and rhythm.`;
-
-  // Use plain text (newline-separated) instead of JSON for efficiency
-  const textsToProcess = chunk.map((line) => line.words).join("\n");
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    // Create abort controller with timeout
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
-
-    try {
-      const { object: aiResponse } = await generateObject({
-        model: google("gemini-2.5-flash"),
-        schema: AiTranslatedTextsSchema,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: textsToProcess },
-        ],
-        temperature: 0.3,
-        abortSignal: abortController.signal,
-      });
-      
-      clearTimeout(timeoutId);
-
-      if (aiResponse.translatedTexts.length !== chunk.length) {
-        logInfo(requestId, `Warning: Translation response length mismatch - expected ${chunk.length}, got ${aiResponse.translatedTexts.length}`);
-      }
-
-      return chunk.map((line, index) => aiResponse.translatedTexts[index] || line.words);
-    } catch (error) {
-      clearTimeout(timeoutId);
-      
-      // Don't retry on abort (includes timeout)
-      if (error instanceof Error && error.name === "AbortError") {
-        logError(requestId, "Translation chunk failed (timeout/abort), returning original text as fallback", error);
-        return chunk.map((line) => line.words);
-      }
-      
-      // If last attempt, return fallback
-      if (attempt === MAX_RETRIES) {
-        logError(requestId, `Translation chunk failed after ${MAX_RETRIES + 1} attempts, returning original text as fallback`, error);
-        return chunk.map((line) => line.words);
-      }
-      
-      // Wait before retry with exponential backoff
-      const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
-      logInfo(requestId, `Translation retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
-      await new Promise(r => setTimeout(r, delay));
-    }
+  requestId: string,
+  onLine: (lineIndex: number, translation: string) => void
+): Promise<{ translations: string[]; success: boolean }> {
+  if (lines.length === 0) {
+    return { translations: [], success: true };
   }
 
-  // Fallback (should never reach here, but TypeScript needs it)
-  return chunk.map((line) => line.words);
+  const systemPrompt = `Translate lyrics to ${targetLanguage} (one line per input line).
+Output format: Number each line like "1: translation", "2: translation", etc.
+If already in ${targetLanguage}, return as-is.
+For instrumental lines (e.g., "---"), return original.
+No punctuation at end of lines. Preserve artistic intent and rhythm.
+
+Example output format:
+1: First translated line
+2: Second translated line
+3: Third translated line`;
+
+  // Use numbered lines for reliable parsing during streaming
+  const textsToProcess = lines.map((line, i) => `${i + 1}: ${line.words}`).join("\n");
+  
+  const results: string[] = new Array(lines.length).fill("");
+  let currentLineBuffer = "";
+  let completedCount = 0;
+
+  // Create abort controller with timeout
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
+
+  const startTime = Date.now();
+  logInfo(requestId, `Starting translation stream`, { totalLines: lines.length, targetLanguage, timeoutMs: AI_TIMEOUT_MS });
+
+  try {
+    const result = streamText({
+      model: google("gemini-2.5-flash"),
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: textsToProcess },
+      ],
+      temperature: 0.3,
+      abortSignal: abortController.signal,
+    });
+
+    // Process streaming text
+    for await (const chunk of result.textStream) {
+      currentLineBuffer += chunk;
+      
+      // Process complete lines (ending with newline)
+      let newlineIdx;
+      while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
+        const completeLine = currentLineBuffer.slice(0, newlineIdx).trim();
+        currentLineBuffer = currentLineBuffer.slice(newlineIdx + 1);
+        
+        if (!completeLine) continue;
+        
+        // Parse line number format: "1: translation text"
+        const match = completeLine.match(/^(\d+):\s*(.*)$/);
+        if (match) {
+          const lineIndex = parseInt(match[1], 10) - 1; // 1-based to 0-based
+          const translation = match[2].trim();
+          
+          if (lineIndex >= 0 && lineIndex < lines.length && translation) {
+            results[lineIndex] = translation;
+            completedCount++;
+            onLine(lineIndex, translation);
+          }
+        }
+      }
+    }
+    
+    // Handle any remaining content (last line might not end with newline)
+    if (currentLineBuffer.trim()) {
+      const match = currentLineBuffer.trim().match(/^(\d+):\s*(.*)$/);
+      if (match) {
+        const lineIndex = parseInt(match[1], 10) - 1;
+        const translation = match[2].trim();
+        
+        if (lineIndex >= 0 && lineIndex < lines.length && translation) {
+          results[lineIndex] = translation;
+          completedCount++;
+          onLine(lineIndex, translation);
+        }
+      }
+    }
+    
+    clearTimeout(timeoutId);
+    const durationMs = Date.now() - startTime;
+    
+    // Fill in any missing translations with original text
+    for (let i = 0; i < lines.length; i++) {
+      if (!results[i]) {
+        results[i] = lines[i].words;
+      }
+    }
+    
+    logInfo(requestId, `Translation stream completed`, { 
+      durationMs, 
+      completedCount, 
+      totalLines: lines.length,
+      missedLines: lines.length - completedCount
+    });
+    
+    return { translations: results, success: true };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    const durationMs = Date.now() - startTime;
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    
+    logError(requestId, `Translation stream failed${isTimeout ? " (timeout)" : ""}`, { error, durationMs, completedCount });
+    
+    // Fill in remaining with original text as fallback
+    for (let i = 0; i < lines.length; i++) {
+      if (!results[i]) {
+        results[i] = lines[i].words;
+        onLine(i, lines[i].words); // Emit fallback
+      }
+    }
+    
+    return { translations: results, success: false };
+  }
 }

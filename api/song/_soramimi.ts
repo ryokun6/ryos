@@ -5,7 +5,7 @@
  */
 
 import { google } from "@ai-sdk/google";
-import { generateText } from "ai";
+import { streamText } from "ai";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
@@ -180,9 +180,9 @@ Output:
 3: {君を|寄迷我}love{してる|詩特露}
 4: {사랑|思浪}{해요|海喲}`;
 
-// AI generation timeout (55 seconds - slightly less than Vercel's 60s edge function limit
-// to allow graceful fallback response before the function is killed)
-const AI_TIMEOUT_MS = 55000;
+// AI generation timeout (120 seconds for full song streaming)
+// Increased since streaming keeps connection alive and we process entire song
+const AI_TIMEOUT_MS = 120000;
 
 /**
  * Clean AI output by removing malformed segments like {reading} without text
@@ -399,14 +399,20 @@ export interface SoramimiResult {
 }
 
 /**
- * Generate soramimi for a chunk of lyrics
- * Returns { segments, success } where success=false means fallback was used (don't cache)
+ * Stream soramimi generation for all lyrics line-by-line using streamText
+ * Emits each line as it's completed via onLine callback
  * 
  * English lines are kept intact without any Chinese phonetic readings.
+ * 
+ * @param lines - All lyrics lines to process
+ * @param requestId - Request ID for logging
+ * @param onLine - Callback called for each completed line (lineIndex, segments)
+ * @returns Promise that resolves when streaming is complete
  */
-export async function generateSoramimiForChunk(
+export async function streamSoramimi(
   lines: LyricLine[],
-  requestId: string
+  requestId: string,
+  onLine: (lineIndex: number, segments: FuriganaSegment[]) => void
 ): Promise<SoramimiResult> {
   if (lines.length === 0) {
     return { segments: [], success: true };
@@ -423,19 +429,29 @@ export async function generateSoramimiForChunk(
   const nonEnglishLines = lineInfo.filter(info => !info.isEnglish);
   const englishCount = lineInfo.filter(info => info.isEnglish).length;
 
-  logInfo(requestId, `Soramimi processing`, { 
+  // Initialize results with fallback
+  const results: FuriganaSegment[][] = new Array(lines.length);
+  for (let i = 0; i < lines.length; i++) {
+    results[i] = [{ text: lines[i].words }];
+  }
+
+  logInfo(requestId, `Soramimi stream starting`, { 
     totalLines: lines.length, 
     englishLines: englishCount, 
     nonEnglishLines: nonEnglishLines.length 
   });
 
+  // Emit English lines immediately (they don't need processing)
+  for (const info of lineInfo) {
+    if (info.isEnglish) {
+      onLine(info.originalIndex, results[info.originalIndex]);
+    }
+  }
+
   // If all lines are English, return them as plain text
   if (nonEnglishLines.length === 0) {
     logInfo(requestId, `All lines are English, skipping soramimi AI generation`);
-    return { 
-      segments: lines.map((line) => [{ text: line.words }]),
-      success: true 
-    };
+    return { segments: results, success: true };
   }
 
   // Use numbered lines to help AI maintain line count (only for non-English lines)
@@ -446,10 +462,13 @@ export async function generateSoramimiForChunk(
   const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
 
   const startTime = Date.now();
-  logInfo(requestId, `Soramimi AI generation starting`, { linesCount: nonEnglishLines.length, timeoutMs: AI_TIMEOUT_MS });
+  logInfo(requestId, `Soramimi AI stream starting`, { linesCount: nonEnglishLines.length, timeoutMs: AI_TIMEOUT_MS });
+
+  let currentLineBuffer = "";
+  let completedCount = 0;
 
   try {
-    const { text: responseText } = await generateText({
+    const result = streamText({
       model: google("gemini-2.5-flash"),
       messages: [
         { role: "system", content: SORAMIMI_SYSTEM_PROMPT },
@@ -458,81 +477,105 @@ export async function generateSoramimiForChunk(
       temperature: 0.7,
       abortSignal: abortController.signal,
     });
+
+    // Process streaming text
+    for await (const chunk of result.textStream) {
+      currentLineBuffer += chunk;
+      
+      // Process complete lines (ending with newline)
+      let newlineIdx;
+      while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
+        const completeLine = currentLineBuffer.slice(0, newlineIdx).trim();
+        currentLineBuffer = currentLineBuffer.slice(newlineIdx + 1);
+        
+        if (!completeLine) continue;
+        
+        // Parse line number format: "1: {annotated|text}"
+        const match = completeLine.match(/^(\d+)[:.\s]\s*(.*)$/);
+        if (match) {
+          const nonEnglishLineIndex = parseInt(match[1], 10) - 1; // 1-based to 0-based in non-English lines
+          const content = match[2].trim();
+          
+          if (nonEnglishLineIndex >= 0 && nonEnglishLineIndex < nonEnglishLines.length && content) {
+            const info = nonEnglishLines[nonEnglishLineIndex];
+            const originalIndex = info.originalIndex;
+            const original = info.line.words;
+            
+            // Parse and align segments
+            const rawSegments = parseRubyMarkup(content);
+            const alignedSegments = alignSegmentsToOriginal(rawSegments, original);
+            const finalSegments = fillMissingReadings(alignedSegments);
+            
+            results[originalIndex] = finalSegments;
+            completedCount++;
+            onLine(originalIndex, finalSegments);
+          }
+        }
+      }
+    }
+    
+    // Handle any remaining content (last line might not end with newline)
+    if (currentLineBuffer.trim()) {
+      const match = currentLineBuffer.trim().match(/^(\d+)[:.\s]\s*(.*)$/);
+      if (match) {
+        const nonEnglishLineIndex = parseInt(match[1], 10) - 1;
+        const content = match[2].trim();
+        
+        if (nonEnglishLineIndex >= 0 && nonEnglishLineIndex < nonEnglishLines.length && content) {
+          const info = nonEnglishLines[nonEnglishLineIndex];
+          const originalIndex = info.originalIndex;
+          const original = info.line.words;
+          
+          const rawSegments = parseRubyMarkup(content);
+          const alignedSegments = alignSegmentsToOriginal(rawSegments, original);
+          const finalSegments = fillMissingReadings(alignedSegments);
+          
+          results[originalIndex] = finalSegments;
+          completedCount++;
+          onLine(originalIndex, finalSegments);
+        }
+      }
+    }
     
     clearTimeout(timeoutId);
     const durationMs = Date.now() - startTime;
-    logInfo(requestId, `Soramimi AI generation completed`, { durationMs, responseLength: responseText.length });
-
-    // Parse the ruby markup response with line number matching
-    const responseLines = responseText.trim().split("\n");
     
-    // Build a map of line number -> parsed content (for non-English lines only)
-    const lineContentMap = new Map<number, FuriganaSegment[]>();
-    for (const responseLine of responseLines) {
-      const trimmed = responseLine.trim();
-      if (!trimmed) continue;
-      
-      // Try to extract line number prefix (e.g., "1: content" or "1. content")
-      const lineNumMatch = trimmed.match(/^(\d+)[:.\s]\s*(.*)$/);
-      if (lineNumMatch) {
-        const lineNum = parseInt(lineNumMatch[1], 10);
-        const content = lineNumMatch[2];
-        lineContentMap.set(lineNum, parseRubyMarkup(content));
-      } else {
-        // No line number - try to use sequential position
-        // This handles cases where AI doesn't include line numbers
-        const nextExpectedLine = lineContentMap.size + 1;
-        lineContentMap.set(nextExpectedLine, parseRubyMarkup(trimmed));
+    // Emit fallback for any non-English lines that weren't processed
+    for (const info of nonEnglishLines) {
+      const hasResult = results[info.originalIndex].some(seg => seg.reading);
+      if (!hasResult) {
+        // Not yet processed with readings, emit as fallback
+        const fallback = fillMissingReadings([{ text: info.line.words }]);
+        results[info.originalIndex] = fallback;
+        onLine(info.originalIndex, fallback);
       }
     }
-
-    const matchedCount = Math.min(lineContentMap.size, nonEnglishLines.length);
-    if (matchedCount < nonEnglishLines.length) {
-      logInfo(requestId, `Warning: Soramimi response line mismatch - expected ${nonEnglishLines.length}, matched ${matchedCount}`, { 
-        expectedLines: nonEnglishLines.length, 
-        responseLines: responseLines.length,
-        matchedLines: matchedCount,
-        willUseFallbackForMissing: true 
-      });
-    }
-
-    // Build a map from non-English line index (1-based) to parsed segments
-    const nonEnglishResultMap = new Map<number, FuriganaSegment[]>();
-    for (let i = 0; i < nonEnglishLines.length; i++) {
-      const lineNum = i + 1;
-      const info = nonEnglishLines[i];
-      const rawSegments = lineContentMap.get(lineNum) || [{ text: info.line.words }];
-      const original = info.line.words;
-      
-      // Align segments to original text (handles spacing mismatches)
-      const alignedSegments = alignSegmentsToOriginal(rawSegments, original);
-      
-      // Fill in missing readings for any Japanese characters that AI missed
-      const finalSegments = fillMissingReadings(alignedSegments);
-      
-      nonEnglishResultMap.set(info.originalIndex, finalSegments);
-    }
-
-    // Build final result, inserting English lines as plain text
-    const segments = lineInfo.map((info) => {
-      if (info.isEnglish) {
-        // English line: return as plain text without readings
-        return [{ text: info.line.words }];
-      } else {
-        // Non-English line: use the parsed soramimi result
-        return nonEnglishResultMap.get(info.originalIndex) || [{ text: info.line.words }];
-      }
+    
+    logInfo(requestId, `Soramimi stream completed`, { 
+      durationMs, 
+      completedNonEnglishLines: completedCount, 
+      totalNonEnglishLines: nonEnglishLines.length,
+      totalLines: lines.length
     });
-
-    return { segments, success: true };
+    
+    return { segments: results, success: true };
   } catch (error) {
     clearTimeout(timeoutId);
     const durationMs = Date.now() - startTime;
     const isTimeout = error instanceof Error && error.name === "AbortError";
-    logError(requestId, `Soramimi chunk failed${isTimeout ? " (timeout)" : ""}, returning plain text segments as fallback`, { error, durationMs, isTimeout });
-    return { 
-      segments: lines.map((line) => [{ text: line.words }]),
-      success: false 
-    };
+    
+    logError(requestId, `Soramimi stream failed${isTimeout ? " (timeout)" : ""}`, { error, durationMs, completedCount });
+    
+    // Emit fallback for remaining non-English lines
+    for (const info of nonEnglishLines) {
+      const hasResult = results[info.originalIndex].some(seg => seg.reading);
+      if (!hasResult) {
+        const fallback = fillMissingReadings([{ text: info.line.words }]);
+        results[info.originalIndex] = fallback;
+        onLine(info.originalIndex, fallback);
+      }
+    }
+    
+    return { segments: results, success: false };
   }
 }

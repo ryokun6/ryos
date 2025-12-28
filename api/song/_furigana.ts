@@ -5,7 +5,7 @@
  */
 
 import { google } from "@ai-sdk/google";
-import { generateText } from "ai";
+import { streamText } from "ai";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
@@ -108,11 +108,8 @@ Output:
 {夜空|よぞら}の{星|ほし}
 {私|わたし}は{走|はし}る`;
 
-// AI generation timeout (30 seconds)
-const AI_TIMEOUT_MS = 30000;
-// Retry configuration
-const MAX_RETRIES = 2;
-const INITIAL_DELAY_MS = 1000;
+// AI generation timeout (90 seconds for full song streaming)
+const AI_TIMEOUT_MS = 90000;
 
 /**
  * Parse ruby markup format (e.g., "{夜空|よぞら}の{星|ほし}") into FuriganaSegment array
@@ -156,75 +153,165 @@ function parseRubyMarkup(line: string): FuriganaSegment[] {
 }
 
 /**
- * Generate furigana for a chunk of lyrics
+ * Stream furigana generation for all lyrics line-by-line using streamText
+ * Emits each line as it's completed via onLine callback
+ * 
+ * @param lines - All lyrics lines to process
+ * @param requestId - Request ID for logging
+ * @param onLine - Callback called for each completed line (lineIndex, segments)
+ * @returns Promise that resolves when streaming is complete
  */
-export async function generateFuriganaForChunk(
+export async function streamFurigana(
   lines: LyricLine[],
-  requestId: string
-): Promise<FuriganaSegment[][]> {
-  const linesNeedingFurigana = lines.filter((line) => containsKanji(line.words));
-  
-  if (linesNeedingFurigana.length === 0) {
-    return lines.map((line) => [{ text: line.words }]);
+  requestId: string,
+  onLine: (lineIndex: number, segments: FuriganaSegment[]) => void
+): Promise<{ furigana: FuriganaSegment[][]; success: boolean }> {
+  if (lines.length === 0) {
+    return { furigana: [], success: true };
   }
 
-  // Use plain text (newline-separated) for efficiency
-  const textsToProcess = linesNeedingFurigana.map((line) => line.words).join("\n");
+  // Build index mapping: track which lines need furigana
+  const lineInfo = lines.map((line, originalIndex) => ({
+    line,
+    originalIndex,
+    needsFurigana: containsKanji(line.words),
+  }));
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    // Create abort controller with timeout
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
+  const linesNeedingFurigana = lineInfo.filter((info) => info.needsFurigana);
+  
+  // Initialize results with fallback for non-kanji lines
+  const results: FuriganaSegment[][] = new Array(lines.length);
+  for (let i = 0; i < lines.length; i++) {
+    results[i] = [{ text: lines[i].words }];
+  }
 
-    try {
-      const { text: responseText } = await generateText({
-        model: google("gemini-2.5-flash"),
-        messages: [
-          { role: "system", content: FURIGANA_SYSTEM_PROMPT },
-          { role: "user", content: textsToProcess },
-        ],
-        temperature: 0.1,
-        abortSignal: abortController.signal,
-      });
-      
-      clearTimeout(timeoutId);
-
-      // Parse the ruby markup response
-      const annotatedLines = responseText.trim().split("\n").map(line => parseRubyMarkup(line.trim()));
-
-      if (annotatedLines.length !== linesNeedingFurigana.length) {
-        logInfo(requestId, `Warning: Furigana response length mismatch - expected ${linesNeedingFurigana.length}, got ${annotatedLines.length}`);
-      }
-
-      let furiganaIndex = 0;
-      return lines.map((line) => {
-        if (containsKanji(line.words)) {
-          return annotatedLines[furiganaIndex++] || [{ text: line.words }];
-        }
-        return [{ text: line.words }];
-      });
-    } catch (error) {
-      clearTimeout(timeoutId);
-      
-      // Don't retry on abort (includes timeout)
-      if (error instanceof Error && error.name === "AbortError") {
-        logError(requestId, "Furigana chunk failed (timeout/abort), returning plain text segments as fallback", error);
-        return lines.map((line) => [{ text: line.words }]);
-      }
-      
-      // If last attempt, return fallback
-      if (attempt === MAX_RETRIES) {
-        logError(requestId, `Furigana chunk failed after ${MAX_RETRIES + 1} attempts, returning plain text segments as fallback`, error);
-        return lines.map((line) => [{ text: line.words }]);
-      }
-      
-      // Wait before retry with exponential backoff
-      const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
-      logInfo(requestId, `Furigana retry attempt ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
-      await new Promise(r => setTimeout(r, delay));
+  // Emit non-kanji lines immediately
+  for (const info of lineInfo) {
+    if (!info.needsFurigana) {
+      onLine(info.originalIndex, results[info.originalIndex]);
     }
   }
 
-  // Fallback (should never reach here, but TypeScript needs it)
-  return lines.map((line) => [{ text: line.words }]);
+  if (linesNeedingFurigana.length === 0) {
+    logInfo(requestId, `No kanji lines, skipping furigana AI generation`);
+    return { furigana: results, success: true };
+  }
+
+  // Use numbered lines for reliable parsing during streaming
+  const systemPrompt = `Add furigana to kanji using ruby markup format: {text|reading}
+
+Format: {漢字|ふりがな} - text first, then reading after pipe
+- Plain text without reading stays as-is
+- Separate okurigana: {走|はし}る (NOT {走る|はしる})
+
+Output format: Number each line like "1: annotated line", "2: annotated line", etc.
+
+Example:
+Input:
+1: 夜空の星
+2: 私は走る
+
+Output:
+1: {夜空|よぞら}の{星|ほし}
+2: {私|わたし}は{走|はし}る`;
+
+  const textsToProcess = linesNeedingFurigana.map((info, i) => `${i + 1}: ${info.line.words}`).join("\n");
+
+  let currentLineBuffer = "";
+  let completedCount = 0;
+
+  // Create abort controller with timeout
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), AI_TIMEOUT_MS);
+
+  const startTime = Date.now();
+  logInfo(requestId, `Starting furigana stream`, { totalLines: lines.length, kanjiLines: linesNeedingFurigana.length, timeoutMs: AI_TIMEOUT_MS });
+
+  try {
+    const result = streamText({
+      model: google("gemini-2.5-flash"),
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: textsToProcess },
+      ],
+      temperature: 0.1,
+      abortSignal: abortController.signal,
+    });
+
+    // Process streaming text
+    for await (const chunk of result.textStream) {
+      currentLineBuffer += chunk;
+      
+      // Process complete lines (ending with newline)
+      let newlineIdx;
+      while ((newlineIdx = currentLineBuffer.indexOf("\n")) !== -1) {
+        const completeLine = currentLineBuffer.slice(0, newlineIdx).trim();
+        currentLineBuffer = currentLineBuffer.slice(newlineIdx + 1);
+        
+        if (!completeLine) continue;
+        
+        // Parse line number format: "1: {annotated|text}"
+        const match = completeLine.match(/^(\d+):\s*(.*)$/);
+        if (match) {
+          const kanjiLineIndex = parseInt(match[1], 10) - 1; // 1-based to 0-based in kanji lines
+          const content = match[2].trim();
+          
+          if (kanjiLineIndex >= 0 && kanjiLineIndex < linesNeedingFurigana.length && content) {
+            const originalIndex = linesNeedingFurigana[kanjiLineIndex].originalIndex;
+            const segments = parseRubyMarkup(content);
+            results[originalIndex] = segments;
+            completedCount++;
+            onLine(originalIndex, segments);
+          }
+        }
+      }
+    }
+    
+    // Handle any remaining content (last line might not end with newline)
+    if (currentLineBuffer.trim()) {
+      const match = currentLineBuffer.trim().match(/^(\d+):\s*(.*)$/);
+      if (match) {
+        const kanjiLineIndex = parseInt(match[1], 10) - 1;
+        const content = match[2].trim();
+        
+        if (kanjiLineIndex >= 0 && kanjiLineIndex < linesNeedingFurigana.length && content) {
+          const originalIndex = linesNeedingFurigana[kanjiLineIndex].originalIndex;
+          const segments = parseRubyMarkup(content);
+          results[originalIndex] = segments;
+          completedCount++;
+          onLine(originalIndex, segments);
+        }
+      }
+    }
+    
+    clearTimeout(timeoutId);
+    const durationMs = Date.now() - startTime;
+    
+    logInfo(requestId, `Furigana stream completed`, { 
+      durationMs, 
+      completedKanjiLines: completedCount, 
+      totalKanjiLines: linesNeedingFurigana.length,
+      totalLines: lines.length
+    });
+    
+    return { furigana: results, success: true };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    const durationMs = Date.now() - startTime;
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    
+    logError(requestId, `Furigana stream failed${isTimeout ? " (timeout)" : ""}`, { error, durationMs, completedCount });
+    
+    // Emit fallback for remaining kanji lines
+    for (const info of linesNeedingFurigana) {
+      if (!results[info.originalIndex] || results[info.originalIndex].length === 1 && results[info.originalIndex][0].text === info.line.words) {
+        // Not yet processed or only has fallback, emit fallback
+        const fallback = [{ text: info.line.words }];
+        results[info.originalIndex] = fallback;
+        onLine(info.originalIndex, fallback);
+      }
+    }
+    
+    return { furigana: results, success: false };
+  }
 }

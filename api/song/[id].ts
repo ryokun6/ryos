@@ -34,22 +34,13 @@ import {
   saveFurigana,
   saveSoramimi,
   canModifySong,
-  // Chunk progress caching for resilience
-  saveChunkProgress,
-  getChunkProgress,
-  clearChunkProgress,
-  getMissingChunkIndices,
-  isChunkProgressComplete,
   type LyricsSource,
   type LyricsContent,
   type FuriganaSegment,
-  type ChunkProgressData,
 } from "../_utils/song-service.js";
 
 // Import from split modules
 import {
-  CHUNK_SIZE,
-  SORAMIMI_CHUNK_SIZE,
   UpdateSongSchema,
   FetchLyricsSchema,
   SearchLyricsSchema,
@@ -81,16 +72,16 @@ import {
   isChineseTraditional,
   parseLyricsContent,
   buildChineseTranslationFromKrc,
-  translateChunk,
+  streamTranslation,
 } from "./_lyrics.js";
 
 import {
   lyricsAreMostlyChinese,
-  generateFuriganaForChunk,
+  streamFurigana,
 } from "./_furigana.js";
 
 import {
-  generateSoramimiForChunk,
+  streamSoramimi,
 } from "./_soramimi.js";
 
 // Vercel Edge Function configuration
@@ -98,8 +89,8 @@ export const config = {
   runtime: "edge",
 };
 
-// Extended timeout for AI processing
-export const maxDuration = 60;
+// Extended timeout for AI streaming (increased for line-by-line streaming)
+export const maxDuration = 120;
 
 // =============================================================================
 // Main Handler
@@ -618,8 +609,8 @@ export default async function handler(req: Request) {
       }
 
       // =======================================================================
-      // Handle translate-stream action - SSE streaming with chunk-level caching
-      // Each successful chunk is cached immediately; main document updated only when complete
+      // Handle translate-stream action - SSE streaming with line-by-line updates
+      // Uses streamText for real-time line emission as AI generates each line
       // =======================================================================
       if (action === "translate-stream") {
         const parsed = TranslateStreamSchema.safeParse(body);
@@ -705,48 +696,20 @@ export default async function handler(req: Request) {
         }
 
         const totalLines = song.lyrics.parsedLines.length;
-        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
-        // Check for existing chunk progress (resume previous partial attempt)
-        const existingProgress = force 
-          ? null 
-          : await getChunkProgress<string[]>(redis, songId, "translation", language);
-        
-        // Determine which chunks need processing
-        const missingChunks = getMissingChunkIndices(existingProgress, totalChunks);
-
-        logInfo(requestId, `Starting translate SSE stream`, { 
+        logInfo(requestId, `Starting translate SSE stream (line-by-line)`, { 
           totalLines, 
-          totalChunks, 
           language,
-          alreadyCached: existingProgress ? Object.keys(existingProgress.chunks).length : 0,
-          toProcess: missingChunks.length 
         });
 
-        // Create SSE stream
+        // Create SSE stream with line-by-line updates
         const encoder = new TextEncoder();
         let streamClosed = false;
         
         const stream = new ReadableStream({
           async start(controller) {
-            // Initialize with already-cached chunks or empty
             const allTranslations: string[] = new Array(totalLines).fill("");
-            
-            // Load existing progress into allTranslations
-            if (existingProgress) {
-              for (const [chunkIdxStr, chunkData] of Object.entries(existingProgress.chunks)) {
-                const chunkIndex = parseInt(chunkIdxStr, 10);
-                const startIndex = chunkIndex * CHUNK_SIZE;
-                chunkData.forEach((text, i) => {
-                  const targetIndex = startIndex + i;
-                  if (targetIndex < allTranslations.length) {
-                    allTranslations[targetIndex] = text;
-                  }
-                });
-              }
-            }
-            
-            let completedChunks = existingProgress ? Object.keys(existingProgress.chunks).length : 0;
+            let completedLines = 0;
 
             const sendEvent = (data: unknown) => {
               if (streamClosed) return;
@@ -757,155 +720,73 @@ export default async function handler(req: Request) {
               }
             };
 
-            // Send initial progress (including already-cached chunks)
+            // Send initial progress
             sendEvent({
               type: "start",
-              totalChunks,
               totalLines,
-              chunkSize: CHUNK_SIZE,
-              resuming: missingChunks.length < totalChunks,
-              alreadyCached: completedChunks,
             });
 
-            // If resuming, send cached chunks immediately
-            if (existingProgress) {
-              for (const [chunkIdxStr, chunkData] of Object.entries(existingProgress.chunks)) {
-                const chunkIndex = parseInt(chunkIdxStr, 10);
-                const startIndex = chunkIndex * CHUNK_SIZE;
-                sendEvent({
-                  type: "chunk",
-                  chunkIndex,
-                  startIndex,
-                  translations: chunkData,
-                  progress: Math.round((completedChunks / totalChunks) * 100),
-                  cached: true,
-                });
+            // Prepare lines for translation
+            const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
+              words: line.words,
+              startTimeMs: line.startTimeMs,
+            }));
+
+            try {
+              // Use streamTranslation with line callback
+              const result = await streamTranslation(
+                lines,
+                language,
+                requestId,
+                (lineIndex: number, translation: string) => {
+                  if (streamClosed) return;
+                  
+                  allTranslations[lineIndex] = translation;
+                  completedLines++;
+                  
+                  // Emit line event immediately
+                  sendEvent({
+                    type: "line",
+                    lineIndex,
+                    translation,
+                    progress: Math.round((completedLines / totalLines) * 100),
+                  });
+                }
+              );
+
+              // Save complete translation to main document
+              if (result.success) {
+                try {
+                  const translatedLrc = song.lyrics!.parsedLines!
+                    .map((line, index) => `${msToLrcTime(line.startTimeMs)}${result.translations[index] || line.words}`)
+                    .join("\n");
+                  await saveTranslation(redis, songId, language, translatedLrc);
+                  logInfo(requestId, `SSE: Translation complete - saved to main document`);
+                } catch (err) {
+                  logError(requestId, "SSE: Failed to save translation", err);
+                }
               }
+
+              sendEvent({
+                type: "complete",
+                totalLines,
+                successCount: completedLines,
+                translations: result.translations,
+                success: result.success,
+              });
+
+              logInfo(requestId, `SSE: Translate stream complete`, { 
+                completedLines,
+                totalLines,
+                success: result.success,
+              });
+            } catch (err) {
+              logError(requestId, "SSE: Translation stream failed", err);
+              sendEvent({
+                type: "error",
+                error: err instanceof Error ? err.message : "Unknown error",
+              });
             }
-
-            const failedChunks: number[] = [];
-            const MAX_CONCURRENT = 3;
-
-            // Helper function to process a single chunk
-            const processChunk = async (chunkIndex: number): Promise<{ chunkIndex: number; success: boolean }> => {
-              if (streamClosed) {
-                logInfo(requestId, `SSE: Skipping translate chunk ${chunkIndex} - stream closed`);
-                return { chunkIndex, success: false };
-              }
-
-              const startIndex = chunkIndex * CHUNK_SIZE;
-              const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
-              const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
-
-              const lines: LyricLine[] = chunkLines.map(line => ({
-                words: line.words,
-                startTimeMs: line.startTimeMs,
-              }));
-
-              try {
-                logInfo(requestId, `SSE: Translating chunk ${chunkIndex + 1}/${totalChunks}`);
-                const translations = await translateChunk(lines, language, requestId);
-
-                // Store in allTranslations
-                translations.forEach((text, i) => {
-                  const targetIndex = startIndex + i;
-                  if (targetIndex < allTranslations.length) {
-                    allTranslations[targetIndex] = text;
-                  }
-                });
-
-                // Cache this chunk immediately to progress storage
-                await saveChunkProgress(
-                  redis, songId, "translation", chunkIndex, translations, totalChunks, language
-                );
-
-                completedChunks++;
-
-                sendEvent({
-                  type: "chunk",
-                  chunkIndex,
-                  startIndex,
-                  translations,
-                  progress: Math.round((completedChunks / totalChunks) * 100),
-                });
-
-                logInfo(requestId, `SSE: Translate chunk ${chunkIndex + 1}/${totalChunks} done and cached`);
-                return { chunkIndex, success: true };
-              } catch (err) {
-                logError(requestId, `SSE: Translate chunk ${chunkIndex} failed`, err);
-                
-                sendEvent({
-                  type: "chunk_error",
-                  chunkIndex,
-                  startIndex,
-                  error: err instanceof Error ? err.message : "Unknown error",
-                  progress: Math.round((completedChunks / totalChunks) * 100),
-                });
-
-                return { chunkIndex, success: false };
-              }
-            };
-
-            // Process chunks in parallel with concurrency limit
-            const processInParallel = async (chunkIndices: number[]) => {
-              const results: { chunkIndex: number; success: boolean }[] = [];
-              
-              for (let i = 0; i < chunkIndices.length; i += MAX_CONCURRENT) {
-                const batch = chunkIndices.slice(i, i + MAX_CONCURRENT);
-                const batchResults = await Promise.all(
-                  batch.map(idx => processChunk(idx))
-                );
-                results.push(...batchResults);
-              }
-              
-              return results;
-            };
-
-            // Process only missing chunks
-            const results = await processInParallel(missingChunks);
-
-            for (const result of results) {
-              if (!result.success) {
-                failedChunks.push(result.chunkIndex);
-              }
-            }
-
-            // Check if all chunks are complete
-            const allComplete = failedChunks.length === 0;
-
-            // Only save to main song document if ALL chunks succeeded
-            if (allComplete) {
-              try {
-                const translatedLrc = song.lyrics!.parsedLines!
-                  .map((line, index) => `${msToLrcTime(line.startTimeMs)}${allTranslations[index] || line.words}`)
-                  .join("\n");
-                await saveTranslation(redis, songId, language, translatedLrc);
-                // Clear progress cache since we're done
-                await clearChunkProgress(redis, songId, "translation", language);
-                logInfo(requestId, `SSE: All chunks complete - saved translation to main document`);
-              } catch (err) {
-                logError(requestId, "SSE: Failed to save translation", err);
-              }
-            } else {
-              logInfo(requestId, `SSE: ${failedChunks.length} chunks failed - progress cached, main document NOT updated`);
-            }
-
-            sendEvent({
-              type: "complete",
-              totalChunks,
-              successCount: completedChunks,
-              failCount: failedChunks.length,
-              cached: allComplete,
-              partialSuccess: !allComplete && completedChunks > 0,
-              translations: allTranslations,
-              ...(failedChunks.length > 0 ? { failedChunks } : {}),
-            });
-
-            logInfo(requestId, `SSE: Translate stream complete`, { 
-              completedChunks, 
-              failedChunks: failedChunks.length, 
-              savedToMain: allComplete 
-            });
             
             if (!streamClosed) {
               controller.close();
@@ -928,8 +809,8 @@ export default async function handler(req: Request) {
       }
 
       // =======================================================================
-      // Handle furigana-stream action - SSE streaming with chunk-level caching
-      // Each successful chunk is cached immediately; main document updated only when complete
+      // Handle furigana-stream action - SSE streaming with line-by-line updates
+      // Uses streamText for real-time line emission as AI generates each line
       // =======================================================================
       if (action === "furigana-stream") {
         const parsed = FuriganaStreamSchema.safeParse(body);
@@ -984,49 +865,20 @@ export default async function handler(req: Request) {
         }
 
         const totalLines = song.lyrics.parsedLines.length;
-        const totalChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
-        // Check for existing chunk progress (resume previous partial attempt)
-        type FuriganaChunk = Array<{ text: string; reading?: string }>[];
-        const existingProgress = force 
-          ? null 
-          : await getChunkProgress<FuriganaChunk>(redis, songId, "furigana");
-        
-        // Determine which chunks need processing
-        const missingChunks = getMissingChunkIndices(existingProgress, totalChunks);
-
-        logInfo(requestId, `Starting furigana SSE stream`, { 
-          totalLines, 
-          totalChunks, 
-          alreadyCached: existingProgress ? Object.keys(existingProgress.chunks).length : 0,
-          toProcess: missingChunks.length 
+        logInfo(requestId, `Starting furigana SSE stream (line-by-line)`, { 
+          totalLines,
         });
 
-        // Create SSE stream
+        // Create SSE stream with line-by-line updates
         const encoder = new TextEncoder();
         let streamClosed = false;
         
         const stream = new ReadableStream({
           async start(controller) {
-            // Initialize with already-cached chunks or empty
             const allFurigana: Array<Array<{ text: string; reading?: string }>> = 
               new Array(totalLines).fill(null).map(() => []);
-            
-            // Load existing progress into allFurigana
-            if (existingProgress) {
-              for (const [chunkIdxStr, chunkData] of Object.entries(existingProgress.chunks)) {
-                const chunkIndex = parseInt(chunkIdxStr, 10);
-                const startIndex = chunkIndex * CHUNK_SIZE;
-                chunkData.forEach((seg, i) => {
-                  const targetIndex = startIndex + i;
-                  if (targetIndex < allFurigana.length) {
-                    allFurigana[targetIndex] = seg;
-                  }
-                });
-              }
-            }
-            
-            let completedChunks = existingProgress ? Object.keys(existingProgress.chunks).length : 0;
+            let completedLines = 0;
 
             const sendEvent = (data: unknown) => {
               if (streamClosed) return;
@@ -1037,152 +889,69 @@ export default async function handler(req: Request) {
               }
             };
 
-            // Send initial progress (including already-cached chunks)
+            // Send initial progress
             sendEvent({
               type: "start",
-              totalChunks,
               totalLines,
-              chunkSize: CHUNK_SIZE,
-              resuming: missingChunks.length < totalChunks,
-              alreadyCached: completedChunks,
             });
 
-            // If resuming, send cached chunks immediately
-            if (existingProgress) {
-              for (const [chunkIdxStr, chunkData] of Object.entries(existingProgress.chunks)) {
-                const chunkIndex = parseInt(chunkIdxStr, 10);
-                const startIndex = chunkIndex * CHUNK_SIZE;
-                sendEvent({
-                  type: "chunk",
-                  chunkIndex,
-                  startIndex,
-                  furigana: chunkData,
-                  progress: Math.round((completedChunks / totalChunks) * 100),
-                  cached: true,
-                });
+            // Prepare lines for furigana
+            const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
+              words: line.words,
+              startTimeMs: line.startTimeMs,
+            }));
+
+            try {
+              // Use streamFurigana with line callback
+              const result = await streamFurigana(
+                lines,
+                requestId,
+                (lineIndex: number, segments: FuriganaSegment[]) => {
+                  if (streamClosed) return;
+                  
+                  allFurigana[lineIndex] = segments;
+                  completedLines++;
+                  
+                  // Emit line event immediately
+                  sendEvent({
+                    type: "line",
+                    lineIndex,
+                    furigana: segments,
+                    progress: Math.round((completedLines / totalLines) * 100),
+                  });
+                }
+              );
+
+              // Save complete furigana to main document
+              if (result.success) {
+                try {
+                  await saveFurigana(redis, songId, result.furigana);
+                  logInfo(requestId, `SSE: Furigana complete - saved to main document`);
+                } catch (err) {
+                  logError(requestId, "SSE: Failed to save furigana", err);
+                }
               }
+
+              sendEvent({
+                type: "complete",
+                totalLines,
+                successCount: completedLines,
+                furigana: result.furigana,
+                success: result.success,
+              });
+
+              logInfo(requestId, `SSE: Furigana stream complete`, { 
+                completedLines,
+                totalLines,
+                success: result.success,
+              });
+            } catch (err) {
+              logError(requestId, "SSE: Furigana stream failed", err);
+              sendEvent({
+                type: "error",
+                error: err instanceof Error ? err.message : "Unknown error",
+              });
             }
-
-            const failedChunks: number[] = [];
-            const MAX_CONCURRENT = 3;
-
-            // Helper function to process a single chunk
-            const processChunk = async (chunkIndex: number): Promise<{ chunkIndex: number; success: boolean }> => {
-              if (streamClosed) {
-                logInfo(requestId, `SSE: Skipping furigana chunk ${chunkIndex} - stream closed`);
-                return { chunkIndex, success: false };
-              }
-
-              const startIndex = chunkIndex * CHUNK_SIZE;
-              const endIndex = Math.min(startIndex + CHUNK_SIZE, totalLines);
-              const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
-
-              const lines: LyricLine[] = chunkLines.map(line => ({
-                words: line.words,
-                startTimeMs: line.startTimeMs,
-              }));
-
-              try {
-                logInfo(requestId, `SSE: Generating furigana chunk ${chunkIndex + 1}/${totalChunks}`);
-                const furigana = await generateFuriganaForChunk(lines, requestId);
-
-                // Store in allFurigana
-                furigana.forEach((segments, i) => {
-                  const targetIndex = startIndex + i;
-                  if (targetIndex < allFurigana.length) {
-                    allFurigana[targetIndex] = segments;
-                  }
-                });
-
-                // Cache this chunk immediately to progress storage
-                await saveChunkProgress(
-                  redis, songId, "furigana", chunkIndex, furigana, totalChunks
-                );
-
-                completedChunks++;
-
-                sendEvent({
-                  type: "chunk",
-                  chunkIndex,
-                  startIndex,
-                  furigana,
-                  progress: Math.round((completedChunks / totalChunks) * 100),
-                });
-
-                logInfo(requestId, `SSE: Furigana chunk ${chunkIndex + 1}/${totalChunks} done and cached`);
-                return { chunkIndex, success: true };
-              } catch (err) {
-                logError(requestId, `SSE: Furigana chunk ${chunkIndex} failed`, err);
-
-                sendEvent({
-                  type: "chunk_error",
-                  chunkIndex,
-                  startIndex,
-                  error: err instanceof Error ? err.message : "Unknown error",
-                  progress: Math.round((completedChunks / totalChunks) * 100),
-                });
-
-                return { chunkIndex, success: false };
-              }
-            };
-
-            // Process chunks in parallel with concurrency limit
-            const processInParallel = async (chunkIndices: number[]) => {
-              const results: { chunkIndex: number; success: boolean }[] = [];
-              
-              for (let i = 0; i < chunkIndices.length; i += MAX_CONCURRENT) {
-                const batch = chunkIndices.slice(i, i + MAX_CONCURRENT);
-                const batchResults = await Promise.all(
-                  batch.map(idx => processChunk(idx))
-                );
-                results.push(...batchResults);
-              }
-              
-              return results;
-            };
-
-            // Process only missing chunks
-            const results = await processInParallel(missingChunks);
-
-            for (const result of results) {
-              if (!result.success) {
-                failedChunks.push(result.chunkIndex);
-              }
-            }
-
-            // Check if all chunks are complete
-            const allComplete = failedChunks.length === 0;
-
-            // Only save to main song document if ALL chunks succeeded
-            if (allComplete) {
-              try {
-                await saveFurigana(redis, songId, allFurigana);
-                // Clear progress cache since we're done
-                await clearChunkProgress(redis, songId, "furigana");
-                logInfo(requestId, `SSE: All chunks complete - saved furigana to main document`);
-              } catch (err) {
-                logError(requestId, "SSE: Failed to save furigana", err);
-              }
-            } else {
-              logInfo(requestId, `SSE: ${failedChunks.length} chunks failed - progress cached, main document NOT updated`);
-            }
-
-            sendEvent({
-              type: "complete",
-              totalChunks,
-              successCount: completedChunks,
-              failCount: failedChunks.length,
-              cached: allComplete,
-              partialSuccess: !allComplete && completedChunks > 0,
-              furigana: allFurigana,
-              ...(failedChunks.length > 0 ? { failedChunks } : {}),
-            });
-
-            logInfo(requestId, `SSE: Furigana stream complete`, { 
-              completedChunks, 
-              failedChunks: failedChunks.length, 
-              savedToMain: allComplete 
-            });
             
             if (!streamClosed) {
               controller.close();
@@ -1205,8 +974,8 @@ export default async function handler(req: Request) {
       }
 
       // =======================================================================
-      // Handle soramimi-stream action - SSE streaming with chunk-level caching
-      // Each successful chunk is cached immediately; main document updated only when complete
+      // Handle soramimi-stream action - SSE streaming with line-by-line updates
+      // Uses streamText for real-time line emission as AI generates each line
       // =======================================================================
       if (action === "soramimi-stream") {
         const parsed = SoramimiStreamSchema.safeParse(body);
@@ -1270,51 +1039,21 @@ export default async function handler(req: Request) {
         }
 
         const totalLines = song.lyrics.parsedLines.length;
-        const totalChunks = Math.ceil(totalLines / SORAMIMI_CHUNK_SIZE);
 
-        // Check for existing chunk progress (resume previous partial attempt)
-        type SoramimiChunk = Array<{ text: string; reading?: string }>[];
-        const existingProgress = force 
-          ? null 
-          : await getChunkProgress<SoramimiChunk>(redis, songId, "soramimi");
-        
-        // Determine which chunks need processing
-        const missingChunks = getMissingChunkIndices(existingProgress, totalChunks);
-        
-        logInfo(requestId, `Starting soramimi SSE stream`, { 
-          totalLines, 
-          totalChunks, 
-          alreadyCached: existingProgress ? Object.keys(existingProgress.chunks).length : 0,
-          toProcess: missingChunks.length 
+        logInfo(requestId, `Starting soramimi SSE stream (line-by-line)`, { 
+          totalLines,
         });
 
-        // Create SSE stream
+        // Create SSE stream with line-by-line updates
         const encoder = new TextEncoder();
         let streamClosed = false;
         
         const stream = new ReadableStream({
           async start(controller) {
-            // Initialize with already-cached chunks or empty
             const allSoramimi: Array<Array<{ text: string; reading?: string }>> = 
               new Array(totalLines).fill(null).map(() => []);
-            
-            // Load existing progress into allSoramimi
-            if (existingProgress) {
-              for (const [chunkIdxStr, chunkData] of Object.entries(existingProgress.chunks)) {
-                const chunkIndex = parseInt(chunkIdxStr, 10);
-                const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
-                chunkData.forEach((seg, i) => {
-                  const targetIndex = startIndex + i;
-                  if (targetIndex < allSoramimi.length) {
-                    allSoramimi[targetIndex] = seg;
-                  }
-                });
-              }
-            }
-            
-            let completedChunks = existingProgress ? Object.keys(existingProgress.chunks).length : 0;
+            let completedLines = 0;
 
-            // Helper to send SSE event (ignore errors if stream closed)
             const sendEvent = (data: unknown) => {
               if (streamClosed) return;
               try {
@@ -1324,187 +1063,69 @@ export default async function handler(req: Request) {
               }
             };
 
-            // Send initial progress (including already-cached chunks)
+            // Send initial progress
             sendEvent({
               type: "start",
-              totalChunks,
               totalLines,
-              chunkSize: SORAMIMI_CHUNK_SIZE,
-              resuming: missingChunks.length < totalChunks,
-              alreadyCached: completedChunks,
             });
 
-            // If resuming, send cached chunks immediately
-            if (existingProgress) {
-              for (const [chunkIdxStr, chunkData] of Object.entries(existingProgress.chunks)) {
-                const chunkIndex = parseInt(chunkIdxStr, 10);
-                const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
-                sendEvent({
-                  type: "chunk",
-                  chunkIndex,
-                  startIndex,
-                  soramimi: chunkData,
-                  progress: Math.round((completedChunks / totalChunks) * 100),
-                  cached: true,
-                });
-              }
-            }
+            // Prepare lines for soramimi
+            const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
+              words: line.words,
+              startTimeMs: line.startTimeMs,
+            }));
 
-            const failedChunks: number[] = [];
-            const MAX_RETRIES = 2;
-            const MAX_CONCURRENT = 3;
-
-            // Helper function to process a single chunk
-            const processChunk = async (chunkIndex: number, isRetry = false): Promise<{ chunkIndex: number; success: boolean }> => {
-              if (streamClosed) {
-                logInfo(requestId, `SSE: Skipping chunk ${chunkIndex} - stream closed`);
-                return { chunkIndex, success: false };
-              }
-
-              const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
-              const endIndex = Math.min(startIndex + SORAMIMI_CHUNK_SIZE, totalLines);
-              const chunkLines = song.lyrics!.parsedLines!.slice(startIndex, endIndex);
-
-              const lines: LyricLine[] = chunkLines.map(line => ({
-                words: line.words,
-                startTimeMs: line.startTimeMs,
-              }));
-
-              try {
-                logInfo(requestId, `SSE: ${isRetry ? "Retrying" : "Generating"} chunk ${chunkIndex + 1}/${totalChunks}`);
-                const { segments, success } = await generateSoramimiForChunk(lines, requestId);
-
-                if (success) {
-                  // Store in allSoramimi
-                  segments.forEach((seg, i) => {
-                    const targetIndex = startIndex + i;
-                    if (targetIndex < allSoramimi.length) {
-                      allSoramimi[targetIndex] = seg;
-                    }
-                  });
-
-                  // Cache this chunk immediately to progress storage
-                  await saveChunkProgress(
-                    redis, songId, "soramimi", chunkIndex, segments, totalChunks
-                  );
-
-                  completedChunks++;
-
-                  // Send progress event
+            try {
+              // Use streamSoramimi with line callback
+              const result = await streamSoramimi(
+                lines,
+                requestId,
+                (lineIndex: number, segments: FuriganaSegment[]) => {
+                  if (streamClosed) return;
+                  
+                  allSoramimi[lineIndex] = segments;
+                  completedLines++;
+                  
+                  // Emit line event immediately
                   sendEvent({
-                    type: "chunk",
-                    chunkIndex,
-                    startIndex,
+                    type: "line",
+                    lineIndex,
                     soramimi: segments,
-                    progress: Math.round((completedChunks / totalChunks) * 100),
+                    progress: Math.round((completedLines / totalLines) * 100),
                   });
-
-                  logInfo(requestId, `SSE: Chunk ${chunkIndex + 1}/${totalChunks} done and cached`);
-                  return { chunkIndex, success: true };
-                } else {
-                  logInfo(requestId, `SSE: Chunk ${chunkIndex + 1}/${totalChunks} returned fallback, will retry`);
-                  return { chunkIndex, success: false };
                 }
-              } catch (err) {
-                logError(requestId, `SSE: Chunk ${chunkIndex} failed`, err);
-                return { chunkIndex, success: false };
-              }
-            };
+              );
 
-            // Process chunks in parallel with concurrency limit
-            const processInParallel = async (chunkIndices: number[], isRetry = false) => {
-              const results: { chunkIndex: number; success: boolean }[] = [];
-              
-              for (let i = 0; i < chunkIndices.length; i += MAX_CONCURRENT) {
-                const batch = chunkIndices.slice(i, i + MAX_CONCURRENT);
-                const batchResults = await Promise.all(
-                  batch.map(idx => processChunk(idx, isRetry))
-                );
-                results.push(...batchResults);
-              }
-              
-              return results;
-            };
-
-            // First pass: process only missing chunks
-            const firstPassResults = await processInParallel(missingChunks);
-            
-            for (const result of firstPassResults) {
-              if (!result.success) {
-                failedChunks.push(result.chunkIndex);
-              }
-            }
-
-            // Retry failed chunks (sequentially for reliability)
-            if (failedChunks.length > 0) {
-              logInfo(requestId, `SSE: Retrying ${failedChunks.length} failed chunks`);
-              
-              for (let retry = 0; retry < MAX_RETRIES && failedChunks.length > 0; retry++) {
-                const chunksToRetry = [...failedChunks];
-                failedChunks.length = 0;
-                
-                for (const chunkIndex of chunksToRetry) {
-                  const result = await processChunk(chunkIndex, true);
-                  if (result.success) {
-                    logInfo(requestId, `SSE: Retry succeeded for chunk ${chunkIndex + 1}`);
-                  } else {
-                    failedChunks.push(chunkIndex);
-                  }
-                }
-
-                if (failedChunks.length > 0) {
-                  logInfo(requestId, `SSE: ${failedChunks.length} chunks still failed after retry ${retry + 1}`);
+              // Save complete soramimi to main document
+              if (result.success) {
+                try {
+                  await saveSoramimi(redis, songId, result.segments);
+                  logInfo(requestId, `SSE: Soramimi complete - saved to main document`);
+                } catch (err) {
+                  logError(requestId, "SSE: Failed to save soramimi", err);
                 }
               }
-            }
 
-            // Send error events for any chunks that still failed
-            for (const chunkIndex of failedChunks) {
-              const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
               sendEvent({
-                type: "chunk_error",
-                chunkIndex,
-                startIndex,
-                error: "Failed after retries",
-                progress: 100,
+                type: "complete",
+                totalLines,
+                successCount: completedLines,
+                soramimi: result.segments,
+                success: result.success,
+              });
+
+              logInfo(requestId, `SSE: Soramimi stream complete`, { 
+                completedLines,
+                totalLines,
+                success: result.success,
+              });
+            } catch (err) {
+              logError(requestId, "SSE: Soramimi stream failed", err);
+              sendEvent({
+                type: "error",
+                error: err instanceof Error ? err.message : "Unknown error",
               });
             }
-
-            // Check if all chunks are complete
-            const allComplete = failedChunks.length === 0;
-
-            // Only save to main song document if ALL chunks succeeded
-            if (allComplete) {
-              try {
-                await saveSoramimi(redis, songId, allSoramimi);
-                // Clear progress cache since we're done
-                await clearChunkProgress(redis, songId, "soramimi");
-                logInfo(requestId, `SSE: All chunks complete - saved soramimi to main document`);
-              } catch (err) {
-                logError(requestId, "SSE: Failed to save soramimi", err);
-              }
-            } else {
-              logInfo(requestId, `SSE: ${failedChunks.length} chunks failed - progress cached, main document NOT updated`);
-            }
-
-            // Send complete event
-            sendEvent({
-              type: "complete",
-              totalChunks,
-              successCount: completedChunks,
-              failCount: failedChunks.length,
-              cached: allComplete,
-              partialSuccess: !allComplete && completedChunks > 0,
-              soramimi: allSoramimi,
-              // If not complete, client can retry later (progress is cached)
-              ...(failedChunks.length > 0 ? { failedChunks } : {}),
-            });
-
-            logInfo(requestId, `SSE: Stream complete`, { 
-              completedChunks, 
-              failedChunks: failedChunks.length, 
-              savedToMain: allComplete 
-            });
             
             if (!streamClosed) {
               controller.close();
