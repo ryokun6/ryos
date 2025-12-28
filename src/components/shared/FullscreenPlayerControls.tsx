@@ -105,7 +105,7 @@ export function FullscreenPlayerControls({
     if (!romanization?.enabled) return "漢";
     // Priority: soramimi > romaji > korean > furigana > pinyin
     if (romanization.soramimi && romanization.soramamiTargetLanguage === "zh-TW") return "空";
-    if (romanization.soramimi && romanization.soramamiTargetLanguage === "en") return "So";
+    if (romanization.soramimi && romanization.soramamiTargetLanguage === "en") return "Mi";
     if (romanization.japaneseRomaji) return "Ro";
     if (romanization.korean) return "Ko";
     if (romanization.japaneseFurigana) return "ふ";
