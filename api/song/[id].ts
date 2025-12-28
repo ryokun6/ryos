@@ -87,6 +87,8 @@ import {
 import {
   streamSoramimi,
   SORAMIMI_SYSTEM_PROMPT,
+  SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT,
+  convertLinesToAnnotatedText,
 } from "./_soramimi.js";
 
 import {
@@ -933,7 +935,7 @@ Output:
           return errorResponse("Invalid request body");
         }
 
-        const { force } = parsed.data;
+        const { force, furigana: clientFurigana } = parsed.data;
 
         // Get song with lyrics and existing soramimi
         const song = await getSong(redis, songId, {
@@ -1016,8 +1018,14 @@ Output:
 
         const totalLines = song.lyrics.parsedLines.length;
 
+        // Check if furigana was provided by client (for Japanese songs)
+        // This helps the AI know the correct pronunciation of kanji
+        const hasFuriganaData = clientFurigana && clientFurigana.length > 0 && 
+          clientFurigana.some(line => line.some(seg => seg.reading));
+
         logInfo(requestId, `Starting soramimi SSE stream using createUIMessageStream`, { 
           totalLines,
+          hasFurigana: hasFuriganaData,
         });
 
         // Prepare lines for soramimi - identify non-English lines
@@ -1040,16 +1048,32 @@ Output:
           }
         }
         
-        // Build prompt with word boundaries marked if available
-        const textsToProcess = nonEnglishLines.map((info, idx) => {
-          const wordTimings = info.line.wordTimings;
-          if (wordTimings && wordTimings.length > 0) {
-            // Mark word boundaries with | so AI knows exact segments
-            const wordsMarked = wordTimings.map(w => w.text).join('|');
-            return `${idx + 1}: ${wordsMarked}`;
-          }
-          return `${idx + 1}: ${info.line.words}`;
-        }).join("\n");
+        // Build prompt text - if furigana is available, use annotated text format
+        // This includes hiragana readings after kanji so AI knows exact pronunciation
+        let textsToProcess: string;
+        let systemPrompt: string;
+        
+        if (hasFuriganaData) {
+          // Convert furigana to annotated text: 私(わたし)は走(はし)る
+          const annotatedLines = convertLinesToAnnotatedText(lines, clientFurigana);
+          textsToProcess = nonEnglishLines.map((info, idx) => {
+            return `${idx + 1}: ${annotatedLines[info.originalIndex]}`;
+          }).join("\n");
+          systemPrompt = SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT;
+          logInfo(requestId, "Using Japanese prompt with furigana annotations");
+        } else {
+          // No furigana - use standard prompt with word boundaries if available
+          textsToProcess = nonEnglishLines.map((info, idx) => {
+            const wordTimings = info.line.wordTimings;
+            if (wordTimings && wordTimings.length > 0) {
+              // Mark word boundaries with | so AI knows exact segments
+              const wordsMarked = wordTimings.map(w => w.text).join('|');
+              return `${idx + 1}: ${wordsMarked}`;
+            }
+            return `${idx + 1}: ${info.line.words}`;
+          }).join("\n");
+          systemPrompt = SORAMIMI_SYSTEM_PROMPT;
+        }
 
         // Use AI SDK's createUIMessageStream for proper streaming
         const allSoramimi: Array<Array<{ text: string; reading?: string }>> =
@@ -1164,7 +1188,7 @@ Output:
             const result = streamText({
               model: openai("gpt-5.2"),
               messages: [
-                { role: "system", content: SORAMIMI_SYSTEM_PROMPT },
+                { role: "system", content: systemPrompt },
                 { role: "user", content: textsToProcess },
               ],
               temperature: 0.7,

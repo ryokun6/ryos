@@ -516,6 +516,13 @@ export interface ProcessSoramimiOptions {
   onLine?: (lineIndex: number, soramimi: Array<{ text: string; reading?: string }>) => void;
   /** Pre-fetched info from initial lyrics request */
   prefetchedInfo?: SoramimiStreamInfo;
+  /** 
+   * Optional furigana data for Japanese songs. 
+   * When provided, the API will use this to generate more accurate soramimi
+   * by knowing the correct pronunciation of kanji characters.
+   * Format: 2D array of segments [{text, reading?}] indexed by line
+   */
+  furigana?: Array<Array<{ text: string; reading?: string }>>;
 }
 
 /** Result of soramimi processing */
@@ -534,7 +541,7 @@ export async function processSoramimiSSE(
   songId: string,
   options: ProcessSoramimiOptions = {}
 ): Promise<SoramimiResult> {
-  const { force, signal, onProgress, onLine, prefetchedInfo } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo, furigana } = options;
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
@@ -568,13 +575,22 @@ export async function processSoramimiSSE(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      // Build request body - include furigana if provided (for Japanese songs)
+      const requestBody: Record<string, unknown> = {
+        action: "soramimi-stream",
+        force,
+      };
+      
+      // Only include furigana if it has actual reading data
+      // This helps the AI know the correct pronunciation of kanji
+      if (furigana && furigana.length > 0 && furigana.some(line => line.some(seg => seg.reading))) {
+        requestBody.furigana = furigana;
+      }
+      
       const response = await fetch(getApiUrl(`/api/song/${songId}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "soramimi-stream",
-          force,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
 

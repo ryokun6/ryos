@@ -10,6 +10,62 @@ import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
 
 // =============================================================================
+// Language Detection Helpers
+// =============================================================================
+
+/**
+ * Check if text contains Japanese kana (Hiragana or Katakana)
+ * Used to distinguish Japanese from Chinese/Korean text
+ */
+export function containsKana(text: string): boolean {
+  // Hiragana: U+3040-U+309F, Katakana: U+30A0-U+30FF
+  return /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
+}
+
+/**
+ * Check if text contains Korean Hangul
+ */
+export function containsHangul(text: string): boolean {
+  // Hangul syllables (AC00-D7AF) and Jamo (1100-11FF, 3130-318F)
+  return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(text);
+}
+
+/**
+ * Check if text contains CJK ideographs (Kanji/Hanzi)
+ */
+export function containsKanji(text: string): boolean {
+  return /[\u4E00-\u9FFF]/.test(text);
+}
+
+/**
+ * Check if lyrics are Japanese (contain both kanji and kana)
+ * This distinguishes Japanese from Chinese (which has only hanzi)
+ */
+export function isJapaneseLyrics(lines: { words: string }[]): boolean {
+  if (!lines || lines.length === 0) return false;
+  
+  let hasKana = false;
+  let hasKanji = false;
+  
+  for (const line of lines) {
+    if (containsKana(line.words)) hasKana = true;
+    if (containsKanji(line.words)) hasKanji = true;
+    if (hasKana && hasKanji) return true;
+  }
+  
+  // Japanese text typically has kana - if we have both kana and kanji, it's Japanese
+  return hasKana && hasKanji;
+}
+
+/**
+ * Check if lyrics are Korean (contain Hangul)
+ */
+export function isKoreanLyrics(lines: { words: string }[]): boolean {
+  if (!lines || lines.length === 0) return false;
+  return lines.some(line => containsHangul(line.words));
+}
+
+// =============================================================================
 // Fallback Kana to Chinese Map (last resort when AI misses characters)
 // This is only used as a fallback - the AI is encouraged to create creative,
 // story-like phonetic readings rather than using fixed character mappings.
@@ -195,6 +251,67 @@ SPECIAL: っ/ッ (small tsu, pause/gemination) → use ～ NOT 促! Example: ず
 
 BONUS: Make readings poetic when sounds match meanings! 思浪 for 사랑 (love) is beautiful!`;
 
+/**
+ * System prompt for Japanese lyrics with furigana readings provided
+ * When furigana is available, we pass the hiragana readings inline so the AI
+ * knows exactly how each kanji should be pronounced
+ */
+export const SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT = `Create 空耳 (soramimi) - Chinese phonetic readings (繁體字) that SOUND like Japanese lyrics.
+
+CRITICAL: You are given Japanese text with furigana readings in parentheses after kanji, like: 私(わたし)は走(はし)る
+This tells you EXACTLY how each kanji is pronounced. Use this reading to create accurate Chinese phonetic equivalents!
+
+CRITICAL RULE: The reading field must contain ONLY Chinese characters! Never include Japanese kana in readings!
+
+=== HOW TO USE FURIGANA ===
+
+When you see: 私(わたし)は走(はし)る
+- 私 is pronounced "wa-ta-shi" (わたし)
+- 走 is pronounced "ha-shi" (はし)
+- So output: {私|哇他西}は{走|哈西}る → then also annotate the kana: {私|哇他西}{は|哈}{走|哈西}{る|嚕}
+
+Examples with furigana provided:
+- 夢(ゆめ)を見(み)た → {夢|欲沒}{を|喔}{見|咪}{た|他}
+- 心(こころ)の中(なか) → {心|口口落}{の|諾}{中|那咖}
+- 私(わたし)の名前(なまえ) → {私|哇他西}{の|諾}{名前|那媽诶}
+- 大切(たいせつ)な人(ひと) → {大切|他衣些此}{な|那}{人|嘻頭}
+
+=== WRONG vs RIGHT ===
+
+WRONG (ignoring furigana, using Chinese reading):
+- 私(わたし) → {私|我} ❌ (我 is Chinese "wo", not Japanese "watashi")
+- 心(こころ) → {心|心} ❌ (心 is Chinese "xin", not Japanese "kokoro")
+
+RIGHT (using furigana reading):
+- 私(わたし) → {私|哇他西} ✓ (sounds like "wa-ta-shi")
+- 心(こころ) → {心|口口落} ✓ (sounds like "ko-ko-ro")
+
+=== KANA TO CHINESE ===
+
+Hiragana/Katakana should also get Chinese phonetic readings:
+- あ/ア → 阿, い/イ → 衣, う/ウ → 屋, え/エ → 欸, お/オ → 喔
+- か/カ → 咖, き/キ → 奇, く/ク → 酷, け/ケ → 給, こ/コ → 可
+- さ/サ → 撒, し/シ → 西, す/ス → 蘇, せ/セ → 些, そ/ソ → 搜
+- た/タ → 他, ち/チ → 吃, つ/ツ → 此, て/テ → 貼, と/ト → 頭
+- な/ナ → 那, に/ニ → 你, ぬ/ヌ → 奴, ね/ネ → 內, の/ノ → 諾
+- は/ハ → 哈, ひ/ヒ → 嘻, ふ/フ → 夫, へ/ヘ → 嘿, ほ/ホ → 火
+- ま/マ → 媽, み/ミ → 咪, む/ム → 木, め/メ → 沒, も/モ → 摸
+- や/ヤ → 壓, ゆ/ユ → 玉, よ/ヨ → 喲
+- ら/ラ → 啦, り/リ → 里, る/ル → 嚕, れ/レ → 咧, ろ/ロ → 囉
+- わ/ワ → 哇, を/ヲ → 喔, ん/ン → 嗯
+
+SPECIAL: っ/ッ (small tsu, gemination) → use ～ Example: ずっと → {ずっと|祖～頭}
+
+=== FORMAT RULES ===
+
+1. Format: {original|chinese_phonetic} for EVERY word (kanji AND kana)
+2. English words stay unwrapped (no braces)
+3. Output EVERY segment - annotate all Japanese text!
+4. Reading must be PURE CHINESE - no kana (かな/カナ) allowed!
+5. When kanji has furigana like 漢字(かんじ), use the furigana reading to determine pronunciation
+
+BONUS: Make readings poetic when sounds match meanings!`;
+
 // AI generation timeout (120 seconds for full song streaming)
 // Increased since streaming keeps connection alive and we process entire song
 const AI_TIMEOUT_MS = 120000;
@@ -304,6 +421,56 @@ export interface SoramimiResult {
   segments: FuriganaSegment[][];
   /** True if AI generation succeeded, false if fallback was used */
   success: boolean;
+}
+
+// =============================================================================
+// Furigana to Annotated Text Conversion
+// =============================================================================
+
+/**
+ * Convert furigana segments to annotated text format for the AI prompt.
+ * Adds hiragana readings in parentheses after kanji so the AI knows the pronunciation.
+ * 
+ * Example: [{text: "私", reading: "わたし"}, {text: "は"}] → "私(わたし)は"
+ * 
+ * This helps the AI generate accurate Chinese phonetic readings based on
+ * the actual Japanese pronunciation rather than guessing.
+ */
+export function furiganaToAnnotatedText(segments: FuriganaSegment[]): string {
+  return segments.map(seg => {
+    if (seg.reading) {
+      // Add the reading in parentheses after the text
+      // This tells the AI exactly how the kanji is pronounced
+      return `${seg.text}(${seg.reading})`;
+    }
+    return seg.text;
+  }).join("");
+}
+
+/**
+ * Convert an array of lyric lines with their furigana to annotated text.
+ * For lines without furigana, returns the original text.
+ * 
+ * @param lines - Lyric lines (just need words property)
+ * @param furigana - 2D array of furigana segments, indexed by line
+ * @returns Array of annotated text strings
+ */
+export function convertLinesToAnnotatedText(
+  lines: { words: string }[],
+  furigana: FuriganaSegment[][] | undefined
+): string[] {
+  return lines.map((line, index) => {
+    // If we have furigana for this line, convert it to annotated text
+    if (furigana && furigana[index] && furigana[index].length > 0) {
+      // Check if any segment has a reading (otherwise it's just plain text split into segments)
+      const hasReadings = furigana[index].some(seg => seg.reading);
+      if (hasReadings) {
+        return furiganaToAnnotatedText(furigana[index]);
+      }
+    }
+    // No furigana available, return original text
+    return line.words;
+  });
 }
 
 /**

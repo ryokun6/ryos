@@ -101,9 +101,16 @@ export const FuriganaStreamSchema = z.object({
 });
 
 // SSE streaming soramimi - streams each line as it's generated
+// Accepts optional furigana data to use for Japanese lyrics (provides pronunciation for kanji)
 export const SoramimiStreamSchema = z.object({
   action: z.literal("soramimi-stream"),
   force: z.boolean().optional(),
+  // Optional furigana data for Japanese songs - helps AI know correct kanji pronunciation
+  // Format: 2D array of segments [{text, reading?}] indexed by line
+  furigana: z.array(z.array(z.object({
+    text: z.string(),
+    reading: z.string().optional(),
+  }))).optional(),
 });
 
 // Schema for clearing cached translations, furigana, and soramimi
