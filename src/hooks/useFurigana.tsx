@@ -109,6 +109,10 @@ export function useFurigana({
   const currentSongIdRef = useRef(songId);
   currentSongIdRef.current = songId;
   
+  // Track current lines for callback access
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+  
   // Track cache bust trigger for clearing caches
   const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
   const lastCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
@@ -271,9 +275,10 @@ export function useFurigana({
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
         
-        if (lineIndex < lines.length && segments) {
+        const currentLines = linesRef.current;
+        if (lineIndex < currentLines.length && segments) {
           console.log(`[Furigana] Line ${lineIndex} received:`, segments.length, 'segments');
-          progressiveMap.set(lines[lineIndex].startTimeMs, segments);
+          progressiveMap.set(currentLines[lineIndex].startTimeMs, segments);
           setFuriganaMap(new Map(progressiveMap));
         }
       },
@@ -284,10 +289,11 @@ export function useFurigana({
         if (effectSongId !== currentSongIdRef.current) return;
 
         // Final update to ensure we have everything
+        const currentLines = linesRef.current;
         const finalMap = new Map<string, FuriganaSegment[]>();
         result.data.forEach((segments, index) => {
-          if (index < lines.length && segments) {
-            finalMap.set(lines[index].startTimeMs, segments);
+          if (index < currentLines.length && segments) {
+            finalMap.set(currentLines[index].startTimeMs, segments);
           }
         });
 
@@ -430,9 +436,10 @@ export function useFurigana({
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
         
-        if (lineIndex < lines.length && segments) {
+        const currentLines = linesRef.current;
+        if (lineIndex < currentLines.length && segments) {
           console.log(`[Soramimi] Line ${lineIndex} received:`, segments.length, 'segments');
-          progressiveMap.set(lines[lineIndex].startTimeMs, segments);
+          progressiveMap.set(currentLines[lineIndex].startTimeMs, segments);
           setSoramimiMap(new Map(progressiveMap));
         }
       },
@@ -443,10 +450,11 @@ export function useFurigana({
         if (effectSongId !== currentSongIdRef.current) return;
 
         // Final update to ensure we have everything
+        const currentLines = linesRef.current;
         const finalMap = new Map<string, FuriganaSegment[]>();
         result.data.forEach((segments, index) => {
-          if (index < lines.length && segments) {
-            finalMap.set(lines[index].startTimeMs, segments);
+          if (index < currentLines.length && segments) {
+            finalMap.set(currentLines[index].startTimeMs, segments);
           }
         });
 
