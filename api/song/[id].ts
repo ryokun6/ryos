@@ -389,7 +389,7 @@ export default async function handler(req: Request) {
             type FuriganaChunk = Array<{ text: string; reading?: string }>[];
             let chunkProgress: { cachedChunks: number; missingChunks: number[]; partialData?: FuriganaChunk } | undefined;
             if (!hasFurigana) {
-              const progress = await getChunkProgress<FuriganaChunk[number]>(redis, songId, "furigana");
+              const progress = await getChunkProgress<FuriganaChunk>(redis, songId, "furigana");
               if (progress && Object.keys(progress.chunks).length > 0) {
                 const missingChunks = getMissingChunkIndices(progress, totalChunks);
                 // Reconstruct partial data from cached chunks
@@ -397,9 +397,9 @@ export default async function handler(req: Request) {
                 for (const [chunkIdxStr, chunkData] of Object.entries(progress.chunks)) {
                   const chunkIndex = parseInt(chunkIdxStr, 10);
                   const startIndex = chunkIndex * CHUNK_SIZE;
-                  chunkData.forEach((seg, i) => {
+                  chunkData.forEach((lineSegments, i) => {
                     if (startIndex + i < totalLines) {
-                      partialData[startIndex + i] = seg;
+                      partialData[startIndex + i] = lineSegments;
                     }
                   });
                 }
@@ -437,7 +437,7 @@ export default async function handler(req: Request) {
             type SoramimiChunk = Array<{ text: string; reading?: string }>[];
             let chunkProgress: { cachedChunks: number; missingChunks: number[]; partialData?: SoramimiChunk } | undefined;
             if (!hasSoramimi) {
-              const progress = await getChunkProgress<SoramimiChunk[number]>(redis, songId, "soramimi");
+              const progress = await getChunkProgress<SoramimiChunk>(redis, songId, "soramimi");
               if (progress && Object.keys(progress.chunks).length > 0) {
                 const missingChunks = getMissingChunkIndices(progress, totalChunks);
                 // Reconstruct partial data from cached chunks
@@ -445,9 +445,9 @@ export default async function handler(req: Request) {
                 for (const [chunkIdxStr, chunkData] of Object.entries(progress.chunks)) {
                   const chunkIndex = parseInt(chunkIdxStr, 10);
                   const startIndex = chunkIndex * SORAMIMI_CHUNK_SIZE;
-                  chunkData.forEach((seg, i) => {
+                  chunkData.forEach((lineSegments, i) => {
                     if (startIndex + i < totalLines) {
-                      partialData[startIndex + i] = seg;
+                      partialData[startIndex + i] = lineSegments;
                     }
                   });
                 }
