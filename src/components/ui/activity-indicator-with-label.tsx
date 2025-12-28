@@ -31,6 +31,8 @@ interface ActivityIndicatorWithLabelProps {
   className?: string;
   /** Additional CSS classes for the label */
   labelClassName?: string;
+  /** Whether to show the label text (default: true) */
+  showLabel?: boolean;
 }
 
 // Map language codes to display names
@@ -57,6 +59,7 @@ export function ActivityIndicatorWithLabel({
   size = "md",
   className,
   labelClassName,
+  showLabel = true,
 }: ActivityIndicatorWithLabelProps) {
   const {
     isLoadingLyrics,
@@ -100,11 +103,7 @@ export function ActivityIndicatorWithLabel({
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <ActivityIndicator
-        size={size}
-        className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
-      />
-      {label && (
+      {showLabel && label && (
         <span
           className={cn(
             "font-chicago text-white text-[min(3vw,3vh,14px)] whitespace-nowrap",
@@ -116,6 +115,10 @@ export function ActivityIndicatorWithLabel({
           {label}
         </span>
       )}
+      <ActivityIndicator
+        size={size}
+        className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+      />
     </div>
   );
 }
