@@ -1130,6 +1130,14 @@ Output:
                   const info = nonEnglishLines[nonEnglishLineIndex];
                   const originalIndex = info.originalIndex;
                   
+                  // Helper to strip furigana annotations from text
+                  // When we send annotated text like 耳(みみ), the AI outputs {耳(みみ)|咪咪}
+                  // We need to remove the (みみ) part to get just the original kanji
+                  const stripFuriganaAnnotation = (text: string): string => {
+                    // Remove parenthesized hiragana/katakana readings: 耳(みみ) -> 耳
+                    return text.replace(/\([\u3040-\u309F\u30A0-\u30FF]+\)/g, '');
+                  };
+                  
                   // Simple parsing - extract {text|reading} patterns and preserve plain text between them
                   const segments: Array<{ text: string; reading?: string }> = [];
                   const regex = /\{([^|}]+)\|([^}]+)\}/g;
@@ -1142,19 +1150,25 @@ Output:
                       let textBefore = content.slice(lastIndex, m.index);
                       // AI sometimes outputs "|" as delimiter between words - strip it but keep spaces
                       textBefore = textBefore.replace(/\|/g, '');
+                      // Strip furigana annotations from plain text too
+                      textBefore = stripFuriganaAnnotation(textBefore);
                       if (textBefore) {
                         segments.push({ text: textBefore });
                       }
                     }
                     
                     if (m[1]) {
+                      // Strip furigana annotations from the text portion
+                      const cleanedText = stripFuriganaAnnotation(m[1]);
                       // Clean the reading to remove any Korean/Japanese that AI incorrectly included
                       const cleanedReading = cleanReading(m[2]);
-                      if (cleanedReading) {
-                        segments.push({ text: m[1], reading: cleanedReading });
-                      } else {
-                        // If reading became empty after cleaning, just add text without reading
-                        segments.push({ text: m[1] });
+                      if (cleanedText) {
+                        if (cleanedReading) {
+                          segments.push({ text: cleanedText, reading: cleanedReading });
+                        } else {
+                          // If reading became empty after cleaning, just add text without reading
+                          segments.push({ text: cleanedText });
+                        }
                       }
                     }
                     
@@ -1166,6 +1180,8 @@ Output:
                     let remaining = content.slice(lastIndex);
                     // Strip standalone | delimiters
                     remaining = remaining.replace(/\|/g, '');
+                    // Strip furigana annotations
+                    remaining = stripFuriganaAnnotation(remaining);
                     if (remaining) {
                       segments.push({ text: remaining });
                     }
