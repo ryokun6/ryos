@@ -81,7 +81,7 @@ export function getActivityLabel(info: ActivityInfo, t?: TranslationFn): Activit
       label = langName;
     }
   } else if (isFetchingSoramimi) {
-    const soramimiLabel = translate("common.activity.soramimi", "Soramimi");
+    const soramimiLabel = translate("common.activity.soramimi", "Misheard");
     if (soramimiProgress !== undefined && soramimiProgress < 100) {
       label = `${Math.round(soramimiProgress)}% ${soramimiLabel}`;
     } else {
