@@ -141,36 +141,57 @@ function isEnglishLine(text: string): boolean {
 
 export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese phonetic readings/misheard lyrics (繁體字) that SOUND like Japanese/Korean lyrics.
 
-CRITICAL: NEVER keep original Japanese kanji or Korean characters! Always replace with Chinese chars that sound like the JAPANESE/Korean reading!
+CRITICAL: The reading field must contain ONLY Chinese characters! Never include Korean Hangul or Japanese kana in readings!
 
-WRONG vs RIGHT examples:
+=== JAPANESE EXAMPLES ===
+
+WRONG vs RIGHT:
 - 何 read as "nani" → WRONG: {何|何} RIGHT: {何|那你}
 - 私 read as "watashi" → WRONG: {私|我} RIGHT: {私|哇他西}
 - 前 read as "mae" → WRONG: {前|前} RIGHT: {前|麥}
 - 目 read as "me" → WRONG: {目|目} RIGHT: {目|沒}
 - 夢 read as "yume" → WRONG: {夢|夢} RIGHT: {夢|欲沒}
 - 心 read as "kokoro" → WRONG: {心|心} RIGHT: {心|口口落}
-- 愛 read as "ai" → WRONG: {愛|愛} RIGHT: {愛|哀} (can reuse if sounds same!)
 
-Common Japanese words - ALWAYS transliterate the SOUND:
+Common Japanese words:
 - 何もいらない (na-ni-mo-i-ra-na-i) → {何|那你}{も|摸}{いらない|衣啦那衣}
 - 私に (wa-ta-shi-ni) → {私|哇他西}{に|你}
-- 目の前 (me-no-ma-e) → {目|沒}{の|諾}{前|麥}
 - あなた (a-na-ta) → {あなた|阿那他}
-- 誰 (da-re) → {誰|達雷}
-- 君 (ki-mi) → {君|寄迷}
 - 好き (su-ki) → {好き|速奇}
 
-FORMAT: {original|chinese_phonetic} for EVERY Japanese/Korean word. English stays unwrapped.
+=== KOREAN EXAMPLES ===
 
-BONUS: Make readings poetic when possible! 思浪 for 사랑, 海喲 for 해요 - sounds match AND meanings are beautiful!
+WRONG vs RIGHT (Korean reading must be Chinese, never Hangul!):
+- 사랑 (sa-rang) → WRONG: {사랑|사랑} RIGHT: {사랑|思浪}
+- 해요 (hae-yo) → WRONG: {해요|해요} RIGHT: {해요|海喲}
+- 나를 (na-reul) → WRONG: {나를|나를} RIGHT: {나를|那路}
+- 오빠 (o-ppa) → WRONG: {오빠|오빠} RIGHT: {오빠|偶爸}
+- 사람 (sa-ram) → WRONG: {사람|사람} RIGHT: {사람|撒浪}
 
-RULES:
-1. NEVER output the original kanji as the reading - always transliterate the SOUND
-2. Read kanji by their JAPANESE pronunciation in context (kun/on-yomi as appropriate)
-3. Each syllable needs a Chinese character that sounds similar
-4. Prefer meaningful/poetic Chinese words that match original lyric meaning when sounds match
-5. No Korean/Japanese characters in readings - PURE Chinese only!`;
+Common Korean words - wrap EACH word (Korean uses spaces between words):
+- 사랑해요 (sa-rang-hae-yo) → {사랑해요|思浪嘿唷}
+- 보고 싶어 (bo-go si-peo) → {보고|波哥} {싶어|西坡}
+- 고마워요 (go-ma-wo-yo) → {고마워요|哥媽我喲}
+- 나를 사랑해 (na-reul sa-rang-hae) → {나를|那路} {사랑해|思浪嘿}
+- 내 마음 (nae ma-eum) → {내|奶} {마음|媽嗯}
+
+=== FORMAT RULES ===
+
+1. Format: {original|chinese_phonetic} for EVERY Japanese/Korean word
+2. English words stay unwrapped (no braces)
+3. PRESERVE spaces: Korean has spaces between words, keep them!
+4. Output EVERY word - don't skip any Korean words!
+5. Reading must be PURE CHINESE - no Hangul (한글) or Kana (かな) allowed!
+
+=== PRONUNCIATION TIPS ===
+
+Japanese: Read kanji by their Japanese pronunciation (kun/on-yomi as appropriate)
+Korean: Each syllable needs a Chinese character that sounds similar:
+- 사 → 思/撒, 랑 → 浪, 해 → 嘿/海, 요 → 喲
+- 보 → 波, 고 → 哥, 싶 → 西, 어 → 坡/噢
+- 나 → 那/奶, 를 → 路, 마 → 媽, 음 → 嗯
+
+BONUS: Make readings poetic when sounds match meanings! 思浪 for 사랑 (love) is beautiful!`;
 
 // AI generation timeout (120 seconds for full song streaming)
 // Increased since streaming keeps connection alive and we process entire song
@@ -202,8 +223,11 @@ function cleanReading(reading: string): string {
 }
 
 /**
- * Parse ruby markup format (e.g., "{Sor|搜} {ry|哩}") into FuriganaSegment array
- * Preserves spaces as plain text segments for proper timing alignment
+ * Parse ruby markup format (e.g., "{사랑|思浪} {해요|海喲}") into FuriganaSegment array
+ * 
+ * SIMPLIFIED APPROACH: Trust the AI output directly without complex alignment.
+ * This is the same approach used by furigana and is more robust for Korean text
+ * which has spaces between words (unlike Japanese).
  */
 function parseRubyMarkup(line: string): FuriganaSegment[] {
   // First clean the line of malformed segments
@@ -217,16 +241,15 @@ function parseRubyMarkup(line: string): FuriganaSegment[] {
   let lastIndex = 0;
   
   while ((match = regex.exec(cleanedLine)) !== null) {
-    // Add any plain text before this match (including spaces)
+    // Add any plain text before this match (preserving it exactly as-is)
     if (match.index > lastIndex) {
-      const textBefore = cleanedLine.slice(lastIndex, match.index);
+      let textBefore = cleanedLine.slice(lastIndex, match.index);
+      // AI sometimes outputs "|" as delimiter between words - strip it but keep spaces
+      // e.g., "{넌|嫩} |{언제나|摁這那}" -> strip the standalone |
+      textBefore = textBefore.replace(/\|/g, '');
       if (textBefore) {
-        // Only add non-empty, non-whitespace-only segments, or single space
-        if (textBefore === ' ') {
-          segments.push({ text: ' ' });
-        } else if (textBefore.trim()) {
-          segments.push({ text: textBefore.trim() });
-        }
+        // Keep text exactly as-is, including spaces
+        segments.push({ text: textBefore });
       }
     }
     
@@ -245,157 +268,34 @@ function parseRubyMarkup(line: string): FuriganaSegment[] {
     lastIndex = regex.lastIndex;
   }
   
-  // Handle any remaining text
+  // Handle any remaining text after the last match
   if (lastIndex < cleanedLine.length) {
-    const remaining = cleanedLine.slice(lastIndex);
-    if (remaining && remaining.trim()) {
-      segments.push({ text: remaining.trim() });
+    let remaining = cleanedLine.slice(lastIndex);
+    // Strip standalone | delimiters
+    remaining = remaining.replace(/\|/g, '');
+    if (remaining) {
+      segments.push({ text: remaining });
     }
   }
   
   return segments.length > 0 ? segments : [{ text: line }];
 }
 
-/**
- * Align parsed segments to match the original text by word boundaries
- * Simple approach: match segments to words in original, insert spaces between
- */
-function alignSegmentsToOriginal(segments: FuriganaSegment[], original: string): FuriganaSegment[] {
-  // Filter out space-only segments (we'll reconstruct spaces from original)
-  const contentSegments = segments.filter(s => s.text.trim());
-  
-  if (contentSegments.length === 0) {
-    return [{ text: original }];
-  }
-  
-  const result: FuriganaSegment[] = [];
-  let originalIdx = 0;
-  let segmentIdx = 0;
-  
-  while (originalIdx < original.length && segmentIdx < contentSegments.length) {
-    const char = original[originalIdx];
-    
-    // Handle spaces - add them directly
-    if (char === ' ') {
-      if (result.length > 0 && result[result.length - 1].text !== ' ') {
-        result.push({ text: ' ' });
-      }
-      originalIdx++;
-      continue;
-    }
-    
-    const segment = contentSegments[segmentIdx];
-    const segmentText = segment.text;
-    
-    // Try to find this segment starting from current position
-    const remainingOriginal = original.slice(originalIdx);
-    
-    // Case-insensitive search for the segment text
-    const matchIndex = remainingOriginal.toLowerCase().indexOf(segmentText.toLowerCase());
-    
-    if (matchIndex === 0) {
-      // Segment matches at current position
-      const matchedText = original.slice(originalIdx, originalIdx + segmentText.length);
-      result.push({ text: matchedText, reading: segment.reading });
-      originalIdx += segmentText.length;
-      segmentIdx++;
-    } else if (matchIndex > 0 && matchIndex < 3) {
-      // Segment is close (within a few chars) - add skipped chars without reading
-      for (let i = 0; i < matchIndex; i++) {
-        const skippedChar = original[originalIdx + i];
-        if (skippedChar === ' ') {
-          if (result.length === 0 || result[result.length - 1].text !== ' ') {
-            result.push({ text: ' ' });
-          }
-        } else {
-          result.push({ text: skippedChar });
-        }
-      }
-      originalIdx += matchIndex;
-      // Don't increment segmentIdx - retry matching the segment
-    } else {
-      // Segment doesn't match well - add current char and move on
-      result.push({ text: char });
-      originalIdx++;
-      
-      // If we've gone too far without finding the segment, skip it
-      if (matchIndex < 0 || matchIndex > 10) {
-        segmentIdx++;
-      }
-    }
-  }
-  
-  // Add any remaining original text
-  while (originalIdx < original.length) {
-    const char = original[originalIdx];
-    if (char === ' ') {
-      if (result.length === 0 || result[result.length - 1].text !== ' ') {
-        result.push({ text: ' ' });
-      }
-    } else {
-      result.push({ text: char });
-    }
-    originalIdx++;
-  }
-  
-  // Verify reconstruction
-  const reconstructed = result.map(s => s.text).join('');
-  if (reconstructed !== original) {
-    // Alignment failed - return simple fallback with readings where we can find them
-    return buildFallbackSegments(segments, original);
-  }
-  
-  return result;
-}
-
-/**
- * Fallback: Build segments by splitting original text and matching readings
- */
-function buildFallbackSegments(segments: FuriganaSegment[], original: string): FuriganaSegment[] {
-  const result: FuriganaSegment[] = [];
-  const words = original.split(/(\s+)/); // Split but keep spaces
-  
-  // Build a map of text -> reading from segments
-  const readingMap = new Map<string, string>();
-  for (const seg of segments) {
-    if (seg.reading && seg.text.trim()) {
-      readingMap.set(seg.text.toLowerCase(), seg.reading);
-    }
-  }
-  
-  for (const word of words) {
-    if (!word) continue;
-    
-    if (/^\s+$/.test(word)) {
-      // It's whitespace
-      result.push({ text: ' ' });
-    } else {
-      // Try to find a reading for this word or its parts
-      const reading = readingMap.get(word.toLowerCase());
-      if (reading) {
-        result.push({ text: word, reading });
-      } else {
-        // Try to find readings for substrings
-        let found = false;
-        for (const [text, r] of readingMap) {
-          if (word.toLowerCase().startsWith(text)) {
-            result.push({ text: word.slice(0, text.length), reading: r });
-            if (word.length > text.length) {
-              result.push({ text: word.slice(text.length) });
-            }
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          result.push({ text: word });
-        }
-      }
-    }
-  }
-  
-  return result.length > 0 ? result : [{ text: original }];
-}
+// =============================================================================
+// NOTE: Complex alignment functions removed in favor of simpler approach
+// =============================================================================
+// 
+// The previous implementation had `alignSegmentsToOriginal` and `buildFallbackSegments`
+// which attempted to realign AI output to the original text character-by-character.
+// 
+// This caused issues with Korean text because:
+// 1. Korean uses spaces between words (unlike Japanese)
+// 2. Unicode normalization mismatches (NFC vs NFD) caused string comparisons to fail
+// 3. When alignment failed, readings were lost
+// 
+// The new approach (same as furigana) trusts the AI output directly.
+// The AI is instructed to output {original|reading} format which preserves the text.
+// =============================================================================
 
 /** Result of soramimi generation */
 export interface SoramimiResult {
@@ -483,12 +383,13 @@ export async function streamSoramimi(
       if (nonEnglishLineIndex >= 0 && nonEnglishLineIndex < nonEnglishLines.length && content) {
         const info = nonEnglishLines[nonEnglishLineIndex];
         const originalIndex = info.originalIndex;
-        const original = info.line.words;
         
-        // Parse and align segments
+        // SIMPLIFIED: Parse segments directly without complex alignment
+        // The AI is instructed to output {original|reading} which preserves the text
+        // This approach is more robust for Korean (which has spaces) and avoids
+        // Unicode normalization issues that caused only the first word to work
         const rawSegments = parseRubyMarkup(content);
-        const alignedSegments = alignSegmentsToOriginal(rawSegments, original);
-        const finalSegments = fillMissingReadings(alignedSegments);
+        const finalSegments = fillMissingReadings(rawSegments);
         
         results[originalIndex] = finalSegments;
         completedCount++;

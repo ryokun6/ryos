@@ -1089,13 +1089,10 @@ Output:
               // Remove Korean (Hangul) and Japanese kana
               return reading.replace(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/g, '');
             };
-            
-            // Helper to check if text contains Korean or Japanese
-            const containsKoreanOrJapanese = (text: string): boolean => {
-              return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/.test(text);
-            };
 
             // Helper to process a complete line from AI output
+            // SIMPLIFIED: Parse segments directly without complex alignment
+            // This is more robust for Korean (which has spaces between words)
             const processLine = (line: string) => {
               const trimmedLine = line.trim();
               if (!trimmedLine) return;
@@ -1109,12 +1106,24 @@ Output:
                   const info = nonEnglishLines[nonEnglishLineIndex];
                   const originalIndex = info.originalIndex;
                   
-                  // Simple parsing - just extract segments
+                  // Simple parsing - extract {text|reading} patterns and preserve plain text between them
                   const segments: Array<{ text: string; reading?: string }> = [];
-                  const regex = /\{([^|]+)\|([^}]+)\}|([^{]+)/g;
+                  const regex = /\{([^|}]+)\|([^}]+)\}/g;
                   let m;
+                  let lastIndex = 0;
+                  
                   while ((m = regex.exec(content)) !== null) {
-                    if (m[1] && m[2]) {
+                    // Add any plain text before this match (preserving it exactly as-is, including spaces)
+                    if (m.index > lastIndex) {
+                      let textBefore = content.slice(lastIndex, m.index);
+                      // AI sometimes outputs "|" as delimiter between words - strip it but keep spaces
+                      textBefore = textBefore.replace(/\|/g, '');
+                      if (textBefore) {
+                        segments.push({ text: textBefore });
+                      }
+                    }
+                    
+                    if (m[1]) {
                       // Clean the reading to remove any Korean/Japanese that AI incorrectly included
                       const cleanedReading = cleanReading(m[2]);
                       if (cleanedReading) {
@@ -1123,13 +1132,18 @@ Output:
                         // If reading became empty after cleaning, just add text without reading
                         segments.push({ text: m[1] });
                       }
-                    } else if (m[3] && m[3].trim()) {
-                      const plainText = m[3].trim();
-                      // Skip plain Korean/Japanese text that AI failed to wrap
-                      // These are duplicates that shouldn't appear
-                      if (!containsKoreanOrJapanese(plainText)) {
-                        segments.push({ text: plainText });
-                      }
+                    }
+                    
+                    lastIndex = regex.lastIndex;
+                  }
+                  
+                  // Handle any remaining text after the last match
+                  if (lastIndex < content.length) {
+                    let remaining = content.slice(lastIndex);
+                    // Strip standalone | delimiters
+                    remaining = remaining.replace(/\|/g, '');
+                    if (remaining) {
+                      segments.push({ text: remaining });
                     }
                   }
                   
