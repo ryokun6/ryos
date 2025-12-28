@@ -74,26 +74,27 @@ export function ActivityIndicatorWithLabel({
   } = state;
 
   // Determine what to show based on active state
-  // Priority: Adding > Soramimi > Furigana > Translation > Loading
+  // Priority: Adding > any with progress > any without progress
   // Format: "XX% Label" (e.g., "45% Furigana")
   let label: string | null = null;
   
   if (isAddingSong) {
     label = "Adding";
+  } else if (isTranslating && translationProgress !== undefined && translationProgress < 100) {
+    // Translation with progress takes priority (most user-visible operation)
+    const langName = translationLanguage ? (languageNames[translationLanguage] || translationLanguage) : "";
+    label = langName ? `${Math.round(translationProgress)}% ${langName}` : `${Math.round(translationProgress)}%`;
   } else if (isFetchingSoramimi && soramimiProgress !== undefined && soramimiProgress < 100) {
     label = `${Math.round(soramimiProgress)}% Soramimi`;
   } else if (isFetchingFurigana && furiganaProgress !== undefined && furiganaProgress < 100) {
     label = `${Math.round(furiganaProgress)}% Furigana`;
-  } else if (isTranslating && translationProgress !== undefined && translationProgress < 100) {
+  } else if (isTranslating) {
     const langName = translationLanguage ? (languageNames[translationLanguage] || translationLanguage) : "";
-    label = langName ? `${Math.round(translationProgress)}% ${langName}` : `${Math.round(translationProgress)}%`;
+    label = langName || null;
   } else if (isFetchingSoramimi) {
     label = "Soramimi";
   } else if (isFetchingFurigana) {
     label = "Furigana";
-  } else if (isTranslating) {
-    const langName = translationLanguage ? (languageNames[translationLanguage] || translationLanguage) : "";
-    label = langName || null;
   }
 
   // Don't render if nothing is happening
