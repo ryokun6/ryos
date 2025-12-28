@@ -29,7 +29,7 @@ import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { TRANSLATION_LANGUAGES } from "@/apps/ipod/constants";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
@@ -174,6 +174,7 @@ export function KaraokeAppComponent({
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
+  const [isAddingSong, setIsAddingSong] = useState(false);
 
   // Full screen additional state
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
@@ -270,7 +271,14 @@ export function KaraokeAppComponent({
 
   // Fetch furigana for lyrics (shared between main and fullscreen displays)
   // Use pre-fetched info from lyrics request to skip extra API call
-  const { furiganaMap, soramimiMap } = useFurigana({
+  const { 
+    furiganaMap, 
+    soramimiMap,
+    isFetchingFurigana: isFetchingFuriganaFromHook,
+    isFetchingSoramimi,
+    furiganaProgress,
+    soramimiProgress,
+  } = useFurigana({
     songId: currentTrack?.id ?? "",
     lines: lyricsControls.originalLines,
     isShowingOriginal: true,
@@ -649,15 +657,20 @@ export function KaraokeAppComponent({
   // Track handling for add dialog
   const handleAddTrack = useCallback(
     async (url: string, autoplay = true) => {
-      const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
-      if (addedTrack) {
-        showStatus(t("apps.ipod.status.added"));
-        // New tracks are added at the beginning, set current to the new track
-        startTrackSwitch();
-        setCurrentSongId(addedTrack.id);
-        if (autoplay) setIsPlaying(true);
-      } else {
-        throw new Error("Failed to add track");
+      setIsAddingSong(true);
+      try {
+        const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
+        if (addedTrack) {
+          showStatus(t("apps.ipod.status.added"));
+          // New tracks are added at the beginning, set current to the new track
+          startTrackSwitch();
+          setCurrentSongId(addedTrack.id);
+          if (autoplay) setIsPlaying(true);
+        } else {
+          throw new Error("Failed to add track");
+        }
+      } finally {
+        setIsAddingSong(false);
       }
     },
     [showStatus, t, setCurrentSongId, setIsPlaying, startTrackSwitch]
@@ -1051,7 +1064,7 @@ export function KaraokeAppComponent({
 
           {/* Activity indicator - scales with container size */}
           <AnimatePresence>
-            {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana) && (
+            {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana || isFetchingSoramimi || isAddingSong) && (
               <motion.div
                 className="absolute top-8 right-6 z-40 pointer-events-none"
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -1059,9 +1072,20 @@ export function KaraokeAppComponent({
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.2 }}
               >
-                <ActivityIndicator
+                <ActivityIndicatorWithLabel
                   size={32}
-                  className="karaoke-activity-indicator text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                  state={{
+                    isLoadingLyrics: lyricsControls.isLoading,
+                    isTranslating: lyricsControls.isTranslating,
+                    translationProgress: lyricsControls.translationProgress,
+                    translationLanguage: effectiveTranslationLanguage,
+                    isFetchingFurigana: isFetchingFuriganaFromHook,
+                    furiganaProgress,
+                    isFetchingSoramimi,
+                    soramimiProgress,
+                    isAddingSong,
+                  }}
+                  className="karaoke-activity-indicator"
                 />
               </motion.div>
             )}
@@ -1273,7 +1297,13 @@ export function KaraokeAppComponent({
           fullScreenPlayerRef={fullScreenPlayerRef}
           isLoadingLyrics={lyricsControls.isLoading}
           isProcessingLyrics={lyricsControls.isTranslating}
-          isFetchingFurigana={isFetchingFurigana}
+          isFetchingFurigana={isFetchingFuriganaFromHook}
+          isFetchingSoramimi={isFetchingSoramimi}
+          isAddingSong={isAddingSong}
+          translationProgress={lyricsControls.translationProgress}
+          translationLanguage={effectiveTranslationLanguage}
+          furiganaProgress={furiganaProgress}
+          soramimiProgress={soramimiProgress}
         >
           {({ controlsVisible }) => (
             <div className="flex flex-col w-full h-full">

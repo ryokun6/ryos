@@ -73,6 +73,13 @@ export interface FullScreenPortalProps {
   isLoadingLyrics?: boolean;
   isProcessingLyrics?: boolean;
   isFetchingFurigana?: boolean;
+  isFetchingSoramimi?: boolean;
+  isAddingSong?: boolean;
+  // Progress info
+  translationProgress?: number;
+  translationLanguage?: string | null;
+  furiganaProgress?: number;
+  soramimiProgress?: number;
 }
 
 // IpodScreen props
@@ -122,6 +129,18 @@ export interface IpodScreenProps {
   soramimiMap?: Map<string, FuriganaSegment[]>;
   /** Whether fetching furigana/soramimi annotations */
   isFetchingFurigana?: boolean;
+  /** Whether fetching soramimi annotations */
+  isFetchingSoramimi?: boolean;
+  /** Whether adding a new song */
+  isAddingSong?: boolean;
+  /** Translation progress percentage (0-100) */
+  translationProgress?: number;
+  /** Translation target language code */
+  translationLanguage?: string | null;
+  /** Furigana progress percentage (0-100) */
+  furiganaProgress?: number;
+  /** Soramimi progress percentage (0-100) */
+  soramimiProgress?: number;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery

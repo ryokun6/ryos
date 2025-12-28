@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
@@ -43,6 +43,12 @@ export function FullScreenPortal({
   isLoadingLyrics,
   isProcessingLyrics,
   isFetchingFurigana,
+  isFetchingSoramimi,
+  isAddingSong,
+  translationProgress,
+  translationLanguage,
+  furiganaProgress,
+  soramimiProgress,
 }: FullScreenPortalProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -451,7 +457,7 @@ export function FullScreenPortal({
 
       {/* Activity Indicator */}
       <AnimatePresence>
-        {(isLoadingLyrics || isProcessingLyrics || isFetchingFurigana) && (
+        {(isLoadingLyrics || isProcessingLyrics || isFetchingFurigana || isFetchingSoramimi || isAddingSong) && (
           <motion.div
             className="absolute z-40 pointer-events-none"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -464,9 +470,20 @@ export function FullScreenPortal({
                 "calc(max(env(safe-area-inset-right), 0.75rem) + clamp(1rem, 6dvw, 4rem))",
             }}
           >
-            <ActivityIndicator
+            <ActivityIndicatorWithLabel
               size="lg"
-              className="w-[min(6vw,6vh)] h-[min(6vw,6vh)] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+              state={{
+                isLoadingLyrics,
+                isTranslating: isProcessingLyrics,
+                translationProgress,
+                translationLanguage,
+                isFetchingFurigana,
+                furiganaProgress,
+                isFetchingSoramimi,
+                soramimiProgress,
+                isAddingSong,
+              }}
+              className="text-[min(4vw,4vh)]"
             />
           </motion.div>
         )}

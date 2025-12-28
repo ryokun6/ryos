@@ -190,6 +190,7 @@ export function IpodAppComponent({
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
+  const [isAddingSong, setIsAddingSong] = useState(false);
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -783,13 +784,18 @@ export function IpodAppComponent({
   // Track handling
   const handleAddTrack = useCallback(
     async (url: string) => {
-      const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
-      if (addedTrack) {
-        showStatus(t("apps.ipod.status.added"));
-        // Start track switch guard since addTrackFromVideoId sets currentIndex to 0 and isPlaying to true
-        startTrackSwitch();
-      } else {
-        throw new Error("Failed to add track");
+      setIsAddingSong(true);
+      try {
+        const addedTrack = await useIpodStore.getState().addTrackFromVideoId(url);
+        if (addedTrack) {
+          showStatus(t("apps.ipod.status.added"));
+          // Start track switch guard since addTrackFromVideoId sets currentIndex to 0 and isPlaying to true
+          startTrackSwitch();
+        } else {
+          throw new Error("Failed to add track");
+        }
+      } finally {
+        setIsAddingSong(false);
       }
     },
     [showStatus, t, startTrackSwitch]
@@ -1333,7 +1339,14 @@ export function IpodAppComponent({
 
   // Fetch furigana for lyrics and store in shared state
   // Use pre-fetched info from lyrics request to skip extra API call
-  const { furiganaMap, soramimiMap, isFetching: isFetchingFurigana } = useFurigana({
+  const { 
+    furiganaMap, 
+    soramimiMap, 
+    isFetchingFurigana,
+    isFetchingSoramimi,
+    furiganaProgress,
+    soramimiProgress,
+  } = useFurigana({
     songId: currentTrack?.id ?? "",
     lines: fullScreenLyricsControls.originalLines,
     isShowingOriginal: true,
@@ -1638,6 +1651,12 @@ export function IpodAppComponent({
               furiganaMap={furiganaMap}
               soramimiMap={soramimiMap}
               isFetchingFurigana={isFetchingFurigana}
+              isFetchingSoramimi={isFetchingSoramimi}
+              isAddingSong={isAddingSong}
+              translationProgress={fullScreenLyricsControls.translationProgress}
+              translationLanguage={effectiveTranslationLanguage}
+              furiganaProgress={furiganaProgress}
+              soramimiProgress={soramimiProgress}
               onNextTrack={() => {
                 if (isOffline) {
                   showOfflineStatus();
@@ -1752,6 +1771,12 @@ export function IpodAppComponent({
             isLoadingLyrics={fullScreenLyricsControls.isLoading}
             isProcessingLyrics={fullScreenLyricsControls.isTranslating}
             isFetchingFurigana={isFetchingFurigana}
+            isFetchingSoramimi={isFetchingSoramimi}
+            isAddingSong={isAddingSong}
+            translationProgress={fullScreenLyricsControls.translationProgress}
+            translationLanguage={effectiveTranslationLanguage}
+            furiganaProgress={furiganaProgress}
+            soramimiProgress={soramimiProgress}
           >
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
