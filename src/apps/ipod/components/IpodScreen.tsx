@@ -334,7 +334,7 @@ export function IpodScreen({
                       soramimiProgress,
                       isAddingSong,
                     }}
-                    showLabel={false}
+                    labelClassName="text-[10px]"
                   />
                 </motion.div>
               )}
