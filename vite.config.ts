@@ -26,10 +26,6 @@ export default defineConfig({
   server: {
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
     cors: { origin: ["*"] },
-    // Enable cached file system checks for faster dev server
-    fs: {
-      cachedChecks: true,
-    },
     // Pre-transform requests for faster page loads
     preTransformRequests: true,
     watch: {
