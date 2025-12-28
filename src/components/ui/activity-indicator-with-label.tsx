@@ -103,7 +103,7 @@ export function ActivityIndicatorWithLabel({
   }
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("inline-flex items-center gap-2", className)}>
       {showLabel && label && (
         <span
           className={cn(
@@ -118,7 +118,7 @@ export function ActivityIndicatorWithLabel({
       )}
       <ActivityIndicator
         size={size}
-        className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+        className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] flex-shrink-0"
       />
     </div>
   );

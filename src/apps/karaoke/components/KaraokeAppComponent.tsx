@@ -1066,7 +1066,7 @@ export function KaraokeAppComponent({
           <AnimatePresence>
             {(lyricsControls.isLoading || lyricsControls.isTranslating || isFetchingFurigana || isFetchingSoramimi || isAddingSong) && (
               <motion.div
-                className="absolute top-8 right-6 z-40 pointer-events-none"
+                className="absolute top-8 right-6 z-40 pointer-events-none flex justify-end"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
