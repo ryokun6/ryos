@@ -68,17 +68,37 @@ export interface KugouSearchResult {
 }
 
 // =============================================================================
-// Cover URL Helper
+// Cover URL Functions
 // =============================================================================
 
 /**
- * Construct Kugou cover image URL from hash
- * Format: https://imge.kugou.com/{SIZE}/{HASH}.jpg
- * Available sizes: 100, 165, 400, 1000
+ * Fetch cover image URL from Kugou API
+ * Uses the mobile getSongInfo endpoint which returns album_img
+ * The URL contains {size} placeholder that should be replaced on the client
  */
-export function getKugouCoverUrl(hash: string, size: 100 | 165 | 400 | 1000 = 400): string {
-  if (!hash) return "";
-  return `https://imge.kugou.com/${size}/${hash}.jpg`;
+async function fetchCoverUrl(hash: string, albumId: string | number): Promise<string> {
+  try {
+    const url = new URL("http://m.kugou.com/app/i/getSongInfo.php");
+    url.searchParams.set("cmd", "playInfo");
+    url.searchParams.set("hash", hash);
+
+    const res = await fetchWithTimeout(url.toString(), { headers: kugouHeaders }, 5000);
+    if (!res.ok) return "";
+    const json = (await res.json()) as { album_img?: string };
+    // Return the album_img which contains {size} placeholder
+    return json?.album_img ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Replace {size} placeholder in Kugou image URL with actual size
+ * Kugou image URLs contain {size} that needs to be replaced with: 100, 150, 240, 400, etc.
+ */
+export function formatKugouImageUrl(imgUrl: string | undefined, size: number = 400): string {
+  if (!imgUrl) return "";
+  return imgUrl.replace("{size}", String(size));
 }
 
 // =============================================================================
@@ -216,8 +236,8 @@ export async function fetchLyricsFromKugou(
     return null;
   }
 
-  // Construct cover image URL directly (no API call needed)
-  const cover = getKugouCoverUrl(hash, 400);
+  // Fetch cover image URL from Kugou API
+  const cover = await fetchCoverUrl(hash, albumId);
 
   return {
     lrc: lrc || krc || "",

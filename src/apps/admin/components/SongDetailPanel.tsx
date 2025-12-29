@@ -36,19 +36,21 @@ interface SongDetail {
   album?: string;
   lyricOffset?: number;
   lyricsSource?: CachedLyricsSource;
+  lyrics?: {
+    cover?: string;
+  };
   createdBy?: string;
   createdAt: number;
   updatedAt: number;
 }
 
 /**
- * Construct Kugou cover image URL from hash
- * Format: https://imge.kugou.com/{SIZE}/{HASH}.jpg
- * Available sizes: 100, 165, 400, 1000
+ * Replace {size} placeholder in Kugou image URL with actual size
+ * Kugou image URLs contain {size} that needs to be replaced with: 100, 150, 240, 400, etc.
  */
-function getKugouCoverUrl(hash: string | undefined, size: 100 | 165 | 400 | 1000 = 400): string | null {
-  if (!hash) return null;
-  return `https://imge.kugou.com/${size}/${hash}.jpg`;
+function formatKugouImageUrl(imgUrl: string | undefined, size: number = 400): string | null {
+  if (!imgUrl) return null;
+  return imgUrl.replace("{size}", String(size));
 }
 
 interface SongDetailPanelProps {
@@ -85,8 +87,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   const fetchSong = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Include lyrics to get cover image URL
       const response = await fetch(
-        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata`),
+        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata,lyrics`),
         {
           headers: {
             "Content-Type": "application/json",
@@ -319,7 +322,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           >
             {!isLoading && (
               <img
-                src={getKugouCoverUrl(song?.lyricsSource?.hash, 165) || `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                src={formatKugouImageUrl(song?.lyrics?.cover, 150) || `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
                 alt=""
                 className="w-full h-full object-cover"
                 onError={(e) => {
