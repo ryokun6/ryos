@@ -19,6 +19,7 @@
 
 import { Redis } from "@upstash/redis";
 import { z } from "zod";
+import pako from "pako";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -136,7 +137,7 @@ function logError(id: string, message: string, error: unknown) {
  * Decompress a gzip:base64 encoded string back to the original data
  * Returns the parsed JSON if the string starts with "gzip:", otherwise returns null
  */
-async function decompressFromBase64<T>(value: unknown): Promise<T | null> {
+function decompressFromBase64<T>(value: unknown): T | null {
   if (typeof value !== "string" || !value.startsWith("gzip:")) {
     return null; // Not compressed, return null to indicate raw data should be used
   }
@@ -149,10 +150,8 @@ async function decompressFromBase64<T>(value: unknown): Promise<T | null> {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    const stream = new Blob([bytes]).stream();
-    const decompressedStream = stream.pipeThrough(new DecompressionStream("gzip"));
-    const decompressedBlob = await new Response(decompressedStream).blob();
-    const text = await decompressedBlob.text();
+    const decompressed = pako.inflate(bytes);
+    const text = new TextDecoder("utf-8").decode(decompressed);
     return JSON.parse(text) as T;
   } catch (error) {
     console.error("Failed to decompress:", error);
@@ -164,13 +163,13 @@ async function decompressFromBase64<T>(value: unknown): Promise<T | null> {
  * Get a field value, decompressing if needed
  * Works with both compressed (gzip:base64) and raw JSON data
  */
-async function getFieldValue<T>(value: unknown): Promise<T | undefined> {
+function getFieldValue<T>(value: unknown): T | undefined {
   if (value === undefined || value === null) {
     return undefined;
   }
 
   // Check if it's a compressed string
-  const decompressed = await decompressFromBase64<T>(value);
+  const decompressed = decompressFromBase64<T>(value);
   if (decompressed !== null) {
     return decompressed;
   }
@@ -347,7 +346,7 @@ export default async function handler(req: Request) {
           const content: SongContent = {};
           
           // Handle lyrics - may be compressed string or raw object
-          const lyricsValue = await getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
+          const lyricsValue = getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
           if (lyricsValue?.lrc) {
             content.lyrics = {
               lrc: lyricsValue.lrc,
@@ -357,25 +356,25 @@ export default async function handler(req: Request) {
           }
           
           // Handle translations - may be compressed string or raw object
-          const translationsValue = await getFieldValue<Record<string, string>>(songData.translations);
+          const translationsValue = getFieldValue<Record<string, string>>(songData.translations);
           if (translationsValue && Object.keys(translationsValue).length > 0) {
             content.translations = translationsValue;
           }
           
           // Handle furigana - may be compressed string or raw array
-          const furiganaValue = await getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.furigana);
+          const furiganaValue = getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.furigana);
           if (furiganaValue && furiganaValue.length > 0) {
             content.furigana = furiganaValue;
           }
           
           // Handle soramimi - may be compressed string or raw array
-          const soramimiValue = await getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.soramimi);
+          const soramimiValue = getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.soramimi);
           if (soramimiValue && soramimiValue.length > 0) {
             content.soramimi = soramimiValue;
           }
           
           // Handle soramimiByLang - may be compressed string or raw object
-          const soramimiByLangValue = await getFieldValue<Record<string, Array<Array<{ text: string; reading?: string }>>>>(songData.soramimiByLang);
+          const soramimiByLangValue = getFieldValue<Record<string, Array<Array<{ text: string; reading?: string }>>>>(songData.soramimiByLang);
           if (soramimiByLangValue && Object.keys(soramimiByLangValue).length > 0) {
             content.soramimiByLang = soramimiByLangValue;
           }
