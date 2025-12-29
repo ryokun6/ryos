@@ -308,16 +308,30 @@ export async function saveSong(
   };
 
   // Build content document
+  // When preserve* is false AND the field is explicitly in the song object, use the song value (even if undefined)
+  // This allows explicit clearing of fields by passing undefined
+  const hasSoramimiField = 'soramimi' in song;
+  const hasSoramimiByLangField = 'soramimiByLang' in song;
+  const hasFuriganaField = 'furigana' in song;
+  const hasTranslationsField = 'translations' in song;
+  const hasLyricsField = 'lyrics' in song;
+
   const content: SongContent = {
-    lyrics: preserveLyrics ? (existing?.lyrics ?? song.lyrics) : (song.lyrics ?? existing?.lyrics),
+    lyrics: preserveLyrics 
+      ? (existing?.lyrics ?? song.lyrics) 
+      : (hasLyricsField ? song.lyrics : existing?.lyrics),
     translations: preserveTranslations
       ? { ...existing?.translations, ...song.translations }
-      : (song.translations ?? existing?.translations),
-    furigana: preserveFurigana ? (existing?.furigana ?? song.furigana) : (song.furigana ?? existing?.furigana),
-    soramimi: preserveSoramimi ? (existing?.soramimi ?? song.soramimi) : (song.soramimi ?? existing?.soramimi),
+      : (hasTranslationsField ? song.translations : existing?.translations),
+    furigana: preserveFurigana 
+      ? (existing?.furigana ?? song.furigana) 
+      : (hasFuriganaField ? song.furigana : existing?.furigana),
+    soramimi: preserveSoramimi 
+      ? (existing?.soramimi ?? song.soramimi) 
+      : (hasSoramimiField ? song.soramimi : existing?.soramimi),
     soramimiByLang: preserveSoramimi 
       ? { ...existing?.soramimiByLang, ...song.soramimiByLang }
-      : (song.soramimiByLang ?? existing?.soramimiByLang),
+      : (hasSoramimiByLangField ? song.soramimiByLang : existing?.soramimiByLang),
   };
 
   // Save metadata to Redis
@@ -417,7 +431,7 @@ export async function listSongs(
   let rawContents: (string | null)[] | null = null;
   if (needsContent) {
     const contentKeys = songIds.map((id) => getSongContentKey(id));
-    rawContents = await redis.mget(...contentKeys);
+    rawContents = await redis.mget(...contentKeys) as (string | null)[];
   }
 
   const songs: SongDocument[] = [];
