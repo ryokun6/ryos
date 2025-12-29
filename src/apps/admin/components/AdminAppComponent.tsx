@@ -443,6 +443,22 @@ export function AdminAppComponent({
     [username, authToken, fetchSongs, t]
   );
 
+  // Compress and base64 encode a string (for large content fields)
+  const compressToBase64 = async (data: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const stream = new Blob([encoder.encode(data)]).stream();
+    const compressedStream = stream.pipeThrough(new CompressionStream("gzip"));
+    const compressedBlob = await new Response(compressedStream).blob();
+    const arrayBuffer = await compressedBlob.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    // Convert to base64
+    let binary = "";
+    for (let i = 0; i < uint8Array.length; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    return "gzip:" + btoa(binary);
+  };
+
   // Handle export library
   const handleExportLibrary = useCallback(async () => {
     if (songs.length === 0) {
@@ -471,28 +487,26 @@ export function AdminAppComponent({
       const data = await response.json();
       const fullSongs = data.songs || [];
 
-      // Map songs to export format (compatible with import format, includes all content)
-      const exportData = {
-        exportedAt: new Date().toISOString(),
-        version: 2, // Version 2 includes content data
-        videos: fullSongs.map((song: {
-          id: string;
-          title: string;
-          artist?: string;
-          album?: string;
-          lyricOffset?: number;
-          lyricsSource?: CachedSongMetadata["lyricsSource"];
-          createdBy?: string;
-          createdAt: number;
-          updatedAt: number;
-          importOrder?: number;
-          lyrics?: { lrc?: string; krc?: string; cover?: string };
-          translations?: Record<string, string>;
-          furigana?: Array<Array<{ text: string; reading?: string }>>;
-          soramimi?: Array<Array<{ text: string; reading?: string }>>;
-          soramimiByLang?: Record<string, Array<Array<{ text: string; reading?: string }>>>;
-        }) => ({
-          // Metadata
+      // Map songs to export format with compressed content
+      const exportVideos = await Promise.all(fullSongs.map(async (song: {
+        id: string;
+        title: string;
+        artist?: string;
+        album?: string;
+        lyricOffset?: number;
+        lyricsSource?: CachedSongMetadata["lyricsSource"];
+        createdBy?: string;
+        createdAt: number;
+        updatedAt: number;
+        importOrder?: number;
+        lyrics?: { lrc?: string; krc?: string; cover?: string };
+        translations?: Record<string, string>;
+        furigana?: Array<Array<{ text: string; reading?: string }>>;
+        soramimi?: Array<Array<{ text: string; reading?: string }>>;
+        soramimiByLang?: Record<string, Array<Array<{ text: string; reading?: string }>>>;
+      }) => {
+        const result: Record<string, unknown> = {
+          // Metadata (never compressed - small and needs to be readable)
           id: song.id,
           title: song.title,
           artist: song.artist,
@@ -503,13 +517,38 @@ export function AdminAppComponent({
           createdAt: song.createdAt,
           updatedAt: song.updatedAt,
           importOrder: song.importOrder,
-          // Content (optional, may not exist for all songs)
-          ...(song.lyrics && { lyrics: song.lyrics }),
-          ...(song.translations && Object.keys(song.translations).length > 0 && { translations: song.translations }),
-          ...(song.furigana && song.furigana.length > 0 && { furigana: song.furigana }),
-          ...(song.soramimi && song.soramimi.length > 0 && { soramimi: song.soramimi }),
-          ...(song.soramimiByLang && Object.keys(song.soramimiByLang).length > 0 && { soramimiByLang: song.soramimiByLang }),
-        })),
+        };
+
+        // Compress large content fields
+        if (song.lyrics) {
+          const lyricsJson = JSON.stringify(song.lyrics);
+          result.lyrics = lyricsJson.length > 500 ? await compressToBase64(lyricsJson) : song.lyrics;
+        }
+        if (song.translations && Object.keys(song.translations).length > 0) {
+          const translationsJson = JSON.stringify(song.translations);
+          result.translations = translationsJson.length > 500 ? await compressToBase64(translationsJson) : song.translations;
+        }
+        if (song.furigana && song.furigana.length > 0) {
+          const furiganaJson = JSON.stringify(song.furigana);
+          result.furigana = furiganaJson.length > 500 ? await compressToBase64(furiganaJson) : song.furigana;
+        }
+        if (song.soramimi && song.soramimi.length > 0) {
+          const soramimiJson = JSON.stringify(song.soramimi);
+          result.soramimi = soramimiJson.length > 500 ? await compressToBase64(soramimiJson) : song.soramimi;
+        }
+        if (song.soramimiByLang && Object.keys(song.soramimiByLang).length > 0) {
+          const soramimiByLangJson = JSON.stringify(song.soramimiByLang);
+          result.soramimiByLang = soramimiByLangJson.length > 500 ? await compressToBase64(soramimiByLangJson) : song.soramimiByLang;
+        }
+
+        return result;
+      }));
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        version: 3, // Version 3 supports compressed content
+        compressed: true, // Indicates content fields may be compressed
+        videos: exportVideos,
       };
 
       // Create and download the file

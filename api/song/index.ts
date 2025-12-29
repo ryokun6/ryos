@@ -79,6 +79,10 @@ const LyricsContentSchema = z.object({
   cover: z.string().optional(),
 });
 
+// Helper to create a schema that accepts either compressed string or raw data
+const compressedOrRaw = <T extends z.ZodTypeAny>(schema: T) => 
+  z.union([z.string().startsWith("gzip:"), schema]);
+
 const BulkImportSchema = z.object({
   action: z.literal("import"),
   songs: z.array(
@@ -97,12 +101,12 @@ const BulkImportSchema = z.object({
           selection: LyricsSourceSchema.optional(),
         })
         .optional(),
-      // Content fields (v2 export format)
-      lyrics: LyricsContentSchema.optional(),
-      translations: z.record(z.string(), z.string()).optional(),
-      furigana: z.array(z.array(FuriganaSegmentSchema)).optional(),
-      soramimi: z.array(z.array(FuriganaSegmentSchema)).optional(),
-      soramimiByLang: z.record(z.string(), z.array(z.array(FuriganaSegmentSchema))).optional(),
+      // Content fields (v2/v3 export format) - can be compressed or raw
+      lyrics: compressedOrRaw(LyricsContentSchema).optional(),
+      translations: compressedOrRaw(z.record(z.string(), z.string())).optional(),
+      furigana: compressedOrRaw(z.array(z.array(FuriganaSegmentSchema))).optional(),
+      soramimi: compressedOrRaw(z.array(z.array(FuriganaSegmentSchema))).optional(),
+      soramimiByLang: compressedOrRaw(z.record(z.string(), z.array(z.array(FuriganaSegmentSchema)))).optional(),
       // Timestamps for preserving original dates
       createdBy: z.string().optional(),
       createdAt: z.number().optional(),
@@ -126,6 +130,53 @@ function logInfo(id: string, message: string, data?: unknown) {
 
 function logError(id: string, message: string, error: unknown) {
   console.error(`[${id}] ERROR: ${message}`, error);
+}
+
+/**
+ * Decompress a gzip:base64 encoded string back to the original data
+ * Returns the parsed JSON if the string starts with "gzip:", otherwise returns null
+ */
+async function decompressFromBase64<T>(value: unknown): Promise<T | null> {
+  if (typeof value !== "string" || !value.startsWith("gzip:")) {
+    return null; // Not compressed, return null to indicate raw data should be used
+  }
+
+  try {
+    const base64Data = value.slice(5); // Remove "gzip:" prefix
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const stream = new Blob([bytes]).stream();
+    const decompressedStream = stream.pipeThrough(new DecompressionStream("gzip"));
+    const decompressedBlob = await new Response(decompressedStream).blob();
+    const text = await decompressedBlob.text();
+    return JSON.parse(text) as T;
+  } catch (error) {
+    console.error("Failed to decompress:", error);
+    return null;
+  }
+}
+
+/**
+ * Get a field value, decompressing if needed
+ * Works with both compressed (gzip:base64) and raw JSON data
+ */
+async function getFieldValue<T>(value: unknown): Promise<T | undefined> {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  // Check if it's a compressed string
+  const decompressed = await decompressFromBase64<T>(value);
+  if (decompressed !== null) {
+    return decompressed;
+  }
+
+  // Return raw value (already parsed JSON)
+  return value as T;
 }
 
 // =============================================================================
@@ -266,7 +317,8 @@ export default async function handler(req: Request) {
         const existingMap = new Map(existingSongs.map((s) => [s.id, s]));
 
         // Build all song metadata and content documents
-        const songDocs = songs.map((songData, i) => {
+        // Use Promise.all to handle async decompression of content fields
+        const songDocs = await Promise.all(songs.map(async (songData, i) => {
           const existing = existingMap.get(songData.id);
 
           // Convert legacy lyricsSearch to lyricsSource
@@ -291,25 +343,41 @@ export default async function handler(req: Request) {
           };
 
           // Build content (if any content fields are present)
+          // Content may be compressed (gzip:base64) or raw JSON - handle both
           const content: SongContent = {};
-          if (songData.lyrics?.lrc) {
+          
+          // Handle lyrics - may be compressed string or raw object
+          const lyricsValue = await getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
+          if (lyricsValue?.lrc) {
             content.lyrics = {
-              lrc: songData.lyrics.lrc,
-              krc: songData.lyrics.krc,
-              cover: songData.lyrics.cover,
+              lrc: lyricsValue.lrc,
+              krc: lyricsValue.krc,
+              cover: lyricsValue.cover,
             };
           }
-          if (songData.translations && Object.keys(songData.translations).length > 0) {
-            content.translations = songData.translations;
+          
+          // Handle translations - may be compressed string or raw object
+          const translationsValue = await getFieldValue<Record<string, string>>(songData.translations);
+          if (translationsValue && Object.keys(translationsValue).length > 0) {
+            content.translations = translationsValue;
           }
-          if (songData.furigana && songData.furigana.length > 0) {
-            content.furigana = songData.furigana;
+          
+          // Handle furigana - may be compressed string or raw array
+          const furiganaValue = await getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.furigana);
+          if (furiganaValue && furiganaValue.length > 0) {
+            content.furigana = furiganaValue;
           }
-          if (songData.soramimi && songData.soramimi.length > 0) {
-            content.soramimi = songData.soramimi;
+          
+          // Handle soramimi - may be compressed string or raw array
+          const soramimiValue = await getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.soramimi);
+          if (soramimiValue && soramimiValue.length > 0) {
+            content.soramimi = soramimiValue;
           }
-          if (songData.soramimiByLang && Object.keys(songData.soramimiByLang).length > 0) {
-            content.soramimiByLang = songData.soramimiByLang;
+          
+          // Handle soramimiByLang - may be compressed string or raw object
+          const soramimiByLangValue = await getFieldValue<Record<string, Array<Array<{ text: string; reading?: string }>>>>(songData.soramimiByLang);
+          if (soramimiByLangValue && Object.keys(soramimiByLangValue).length > 0) {
+            content.soramimiByLang = soramimiByLangValue;
           }
 
           const hasContent = Object.keys(content).length > 0;
@@ -319,7 +387,7 @@ export default async function handler(req: Request) {
             content: hasContent ? content : null,
             isUpdate: !!existing,
           };
-        });
+        }));
 
         // Use pipeline for all writes (1 batched Redis call)
         const pipeline = redis.pipeline();
