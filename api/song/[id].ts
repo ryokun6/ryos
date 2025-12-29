@@ -373,18 +373,32 @@ export default async function handler(req: Request) {
           // Include soramimi info if requested
           if (includeSoramimi && parsedLines.length > 0) {
             const totalLines = parsedLines.length;
-            // Get cached soramimi for the requested language
-            // First check new soramimiByLang, then fall back to legacy soramimi (Chinese only)
-            const cachedSoramimiData = song.soramimiByLang?.[soramimiTargetLanguage] 
-              ?? (soramimiTargetLanguage === "zh-TW" ? song.soramimi : undefined);
-            const hasSoramimi = !!(cachedSoramimiData && cachedSoramimiData.length > 0);
+            
+            // Skip Chinese soramimi for Chinese lyrics (no point making Chinese sound like Chinese)
+            const shouldSkipChineseSoramimi = soramimiTargetLanguage === "zh-TW" && lyricsAreMostlyChinese(parsedLines);
+            
+            if (shouldSkipChineseSoramimi) {
+              response.soramimi = {
+                totalLines,
+                cached: false,
+                targetLanguage: soramimiTargetLanguage,
+                skipped: true,
+                skipReason: "chinese_lyrics",
+              };
+            } else {
+              // Get cached soramimi for the requested language
+              // First check new soramimiByLang, then fall back to legacy soramimi (Chinese only)
+              const cachedSoramimiData = song.soramimiByLang?.[soramimiTargetLanguage] 
+                ?? (soramimiTargetLanguage === "zh-TW" ? song.soramimi : undefined);
+              const hasSoramimi = !!(cachedSoramimiData && cachedSoramimiData.length > 0);
 
-            response.soramimi = {
-              totalLines,
-              cached: hasSoramimi,
-              targetLanguage: soramimiTargetLanguage,
-              ...(hasSoramimi ? { data: cachedSoramimiData } : {}),
-            };
+              response.soramimi = {
+                totalLines,
+                cached: hasSoramimi,
+                targetLanguage: soramimiTargetLanguage,
+                ...(hasSoramimi ? { data: cachedSoramimiData } : {}),
+              };
+            }
           }
           
           return jsonResponse(response);
@@ -506,9 +520,14 @@ export default async function handler(req: Request) {
         
         // Include soramimi info if requested (not cached since lyrics are fresh)
         if (includeSoramimi) {
+          // Skip Chinese soramimi for Chinese lyrics (no point making Chinese sound like Chinese)
+          const shouldSkipChineseSoramimi = soramimiTargetLanguage === "zh-TW" && lyricsAreMostlyChinese(parsedLines);
+          
           response.soramimi = {
             totalLines: parsedLines.length,
             cached: false,
+            targetLanguage: soramimiTargetLanguage,
+            ...(shouldSkipChineseSoramimi ? { skipped: true, skipReason: "chinese_lyrics" } : {}),
           };
         }
         

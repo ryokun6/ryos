@@ -34,8 +34,10 @@ export function isChineseText(text: string): boolean {
  * Check if lyrics are mostly Chinese text
  * Used to skip soramimi generation for Chinese lyrics
  * 
- * This checks the overall character composition of lyrics, not just kanji-containing lines.
- * Korean/English songs with Chinese credits should NOT be flagged as mostly Chinese.
+ * Logic: Chinese lyrics have Han characters but NO Japanese kana.
+ * - If there's kana → Japanese (not Chinese)
+ * - If there's significant Hangul → Korean (not Chinese)
+ * - If there are Han characters with no kana/hangul → Chinese
  */
 export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
   if (!lines || lines.length === 0) return false;
@@ -43,48 +45,45 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
   // Count characters by script type across all lines
   let hangulChars = 0;
   let kanaChars = 0;
-  let kanjiChars = 0;
-  let totalCjkChars = 0;
-  let totalNonWhitespaceChars = 0;
+  let hanChars = 0; // Chinese/Japanese kanji
   
   for (const line of lines) {
     const text = line.words;
     for (const char of text) {
-      // Skip whitespace
-      if (/\s/.test(char)) continue;
+      // Skip whitespace and punctuation
+      if (/[\s\p{P}]/u.test(char)) continue;
       
-      totalNonWhitespaceChars++;
-      
+      // Korean Hangul
       if (/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(char)) {
         hangulChars++;
-        totalCjkChars++;
-      } else if (/[\u3040-\u309F\u30A0-\u30FF]/.test(char)) {
+      }
+      // Japanese Hiragana and Katakana
+      else if (/[\u3040-\u309F\u30A0-\u30FF]/.test(char)) {
         kanaChars++;
-        totalCjkChars++;
-      } else if (/[\u4E00-\u9FFF]/.test(char)) {
-        kanjiChars++;
-        totalCjkChars++;
+      }
+      // CJK Unified Ideographs (Han characters - shared by Chinese/Japanese)
+      else if (/[\u4E00-\u9FFF\u3400-\u4DBF]/.test(char)) {
+        hanChars++;
       }
     }
   }
   
-  // No CJK characters at all - not Chinese
-  if (totalCjkChars === 0) return false;
+  // No Han characters at all - definitely not Chinese
+  if (hanChars === 0) return false;
   
-  // If CJK characters are less than 50% of total text, it's likely credits in an English/other song
-  // Don't flag as Chinese
-  if (totalNonWhitespaceChars > 0 && totalCjkChars / totalNonWhitespaceChars < 0.5) return false;
-  
-  // If there's significant Korean content (>20% of CJK chars are Hangul), 
-  // don't classify as Chinese - it's likely a Korean song with Chinese credits
-  if (hangulChars / totalCjkChars > 0.2) return false;
-  
-  // If there's significant Japanese content (any kana), don't classify as Chinese
+  // If there's ANY kana, it's Japanese (kanji + kana = Japanese)
   if (kanaChars > 0) return false;
   
-  // If kanji makes up >80% of CJK characters and there's no kana/hangul,
-  // it's likely Chinese
-  return kanjiChars / totalCjkChars > 0.8;
+  // If there's significant Korean (more Hangul than Han), it's Korean
+  if (hangulChars > hanChars) return false;
+  
+  // If there's some Hangul mixed with Han, check ratio
+  // Korean songs with Chinese loan words have mostly Hangul
+  // Chinese songs should have Han >> Hangul
+  if (hangulChars > 0 && hangulChars > hanChars * 0.1) return false;
+  
+  // Han characters with no kana and minimal hangul = Chinese
+  return true;
 }
 
 // =============================================================================
