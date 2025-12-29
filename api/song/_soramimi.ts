@@ -226,59 +226,69 @@ Japanese words MUST have Chinese readings:
  * When furigana is available, we pass the hiragana readings inline so the AI
  * knows exactly how each kanji should be pronounced
  */
-export const SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese lyrics.
+export const SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese/Korean lyrics.
 
-You are given Japanese text with:
-- Furigana in parentheses: 私(わたし) means 私 is read as "わたし"
-- Segments separated by | (pipe): 私(わたし)|は|走(はし)|る
+You are given text with:
+- Japanese with furigana in parentheses: 私(わたし) means 私 is read as "わたし"
+- Korean words (no furigana needed - read as-is)
+- Segments separated by | (pipe)
 
 CRITICAL RULES:
-1. You MUST wrap EVERY segment in <original:chinese> format
-2. Chinese readings must be ONLY Chinese characters - no kana!
-3. Use the furigana to know correct pronunciation
+1. You MUST wrap EVERY Japanese AND Korean segment in <original:chinese> format
+2. Chinese readings must be ONLY Chinese characters - no kana or hangul!
+3. Use furigana for Japanese pronunciation, read Korean as-is
 4. Do NOT include parentheses in output
 
 === OUTPUT FORMAT (MANDATORY) ===
 
 Format: <original_text:chinese_phonetic_reading>
 
-EXAMPLE INPUT:
+EXAMPLE INPUT (mixed Japanese/Korean):
 1: 私(わたし)|は|好き(すき)|だよ
-2: 夢(ゆめ)|を|見(み)|た
+2: 사랑|해요
+3: 夢(ゆめ)|을|꿔
 
 EXAMPLE OUTPUT:
 1: <私:娃她西><は:哈><好き:速奇><だよ:搭喲>
-2: <夢:欲沒><を:喔><見:迷><た:塔>
+2: <사랑:思浪><해요:海喲>
+3: <夢:欲沒><을:屋><꿔:固>
+
+=== KOREAN TO CHINESE GUIDE ===
+
+Korean syllables to Chinese:
+- 사 (sa) → 思/撒, 랑 (rang) → 浪/郎
+- 해 (hae) → 海/嗨, 요 (yo) → 喲/搖
+- 보 (bo) → 波/寶, 고 (go) → 哥/姑
+- 싶 (ship) → 希/西, 어 (eo) → 喔/呃
+- 내 (nae) → 奶/乃, 마음 (ma-eum) → 媽音
+- 을/를 (eul/reul) → 屋/嚕
 
 === KANA TO CHINESE GUIDE ===
 
-Use the furigana reading to pick Chinese characters that sound similar:
-- わたし (watashi) → 娃她西 or 哇他西
-- すき (suki) → 速奇 or 蘇奇
+Use the furigana reading:
+- わたし (watashi) → 娃她西
+- すき (suki) → 速奇
 - こころ (kokoro) → 哭口落
-- なみだ (namida) → 那迷搭
-- ゆめ (yume) → 欲沒 or 玉沒
+- ゆめ (yume) → 欲沒
 
 Single kana:
 - あ→阿, い→衣, う→屋, え→欸, お→喔
 - か→咖, き→奇, く→酷, け→給, こ→口
 - さ→撒, し→西, す→蘇, せ→些, そ→搜
 - た→他, ち→吃, つ→此, て→貼, と→頭
-- な→那, に→你, ぬ→奴, ね→內, の→諾
-- は→哈, ひ→嘻, ふ→夫, へ→嘿, ほ→火
+- な→那, に→你, の→諾, は→哈, ひ→嘻
 - ま→媽, み→咪, む→木, め→沒, も→摸
-- や→壓, ゆ→玉, よ→喲
-- ら→啦, り→里, る→嚕, れ→咧, ろ→囉
-- わ→哇, を→喔, ん→嗯
+- や→壓, ゆ→玉, よ→喲, ら→啦, り→里
+- る→嚕, れ→咧, ろ→囉, わ→哇, を→喔, ん→嗯
 - っ/ッ → ～ (Example: ずっと → <ずっと:祖～頭>)
 
 === RULES ===
 
-1. EVERY segment between | MUST be wrapped: <segment:chinese>
+1. EVERY Japanese AND Korean segment MUST be wrapped: <segment:chinese>
 2. Remove furigana parentheses from output
 3. English words stay unwrapped
 4. Output one numbered line per input line
-5. NEVER output plain Japanese without <:> wrapper!`;
+5. NEVER output plain Japanese or Korean without <:> wrapper!`;
 
 // =============================================================================
 // English Soramimi Prompts - Phonetic English approximations
@@ -337,47 +347,58 @@ EXAMPLE OUTPUT:
 4. Output one numbered line per input line
 5. NEVER output plain Korean/Japanese/Chinese without <:> wrapper!`;
 
-export const SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT = `Create English "misheard lyrics" (soramimi) - English words that SOUND like Japanese lyrics.
+export const SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT = `Create English "misheard lyrics" (soramimi) - English words that SOUND like Japanese/Korean lyrics.
 
-You are given Japanese text with:
-- Furigana in parentheses: 私(わたし) means 私 is read as "わたし"
-- Segments separated by | (pipe): 私(わたし)|は|走(はし)|る
+You are given text with:
+- Japanese with furigana in parentheses: 私(わたし) means 私 is read as "わたし"
+- Korean words (no furigana needed - read as-is)
+- Segments separated by | (pipe)
 
 CRITICAL RULES:
-1. You MUST wrap EVERY segment in <original:english> format
-2. Use real English words that sound like the furigana
+1. You MUST wrap EVERY Japanese AND Korean segment in <original:english> format
+2. Use real English words that sound like the pronunciation
 3. Do NOT include parentheses in output
 
 === OUTPUT FORMAT (MANDATORY) ===
 
 Format: <original_text:english_phonetic>
 
-EXAMPLE INPUT:
+EXAMPLE INPUT (mixed Japanese/Korean):
 1: 私(わたし)|が|好き(すき)|だよ
-2: 夢(ゆめ)|を|見(み)|た
+2: 사랑|해요
+3: 夢(ゆめ)|을|꿔
 
 EXAMPLE OUTPUT:
 1: <私:what a she><が:ga><好き:ski><だよ:die yo>
-2: <夢:you may><を:oh><見:me><た:ta>
+2: <사랑:saw wrong><해요:hey yo>
+3: <夢:you may><을:wool><꿔:gwo>
 
-=== FURIGANA TO ENGLISH GUIDE ===
+=== KOREAN TO ENGLISH GUIDE ===
 
-Use the furigana to pick English words that sound similar:
-- わたし (watashi) → what a she, watt ah she
+- 사랑 (sa-rang) → saw wrong, sah wrong
+- 해요 (hae-yo) → hey yo, hay yo
+- 보고 (bo-go) → bow go, bogo
+- 싶어 (ship-eo) → ship uh, she puh
+- 내 (nae) → nay, neh
+- 마음 (ma-eum) → ma oom, mom
+
+=== JAPANESE TO ENGLISH GUIDE ===
+
+Use the furigana:
+- わたし (watashi) → what a she
 - すき (suki) → ski, sue key
-- こころ (kokoro) → cocoa row, ko ko row
-- なみだ (namida) → nah me da
-- ゆめ (yume) → you may, you meh
+- こころ (kokoro) → cocoa row
+- ゆめ (yume) → you may
 - はしる (hashiru) → ha she roo
 
 === RULES ===
 
-1. EVERY segment between | MUST be wrapped: <segment:english>
+1. EVERY Japanese AND Korean segment MUST be wrapped: <segment:english>
 2. Remove furigana parentheses from output
 3. English words in original lyrics stay unwrapped
 4. Use spaces between English words for readability
 5. Output one numbered line per input line
-6. NEVER output plain Japanese without <:> wrapper!`;
+6. NEVER output plain Japanese or Korean without <:> wrapper!`;
 
 /**
  * Clean AI output by removing malformed segments like <reading> without proper base:ruby structure
