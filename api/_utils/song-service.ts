@@ -2,12 +2,10 @@
  * Unified Song Service
  *
  * Provides a single source of truth for song data including:
- * - Metadata (title, artist, album, etc.)
- * - Lyrics (LRC/KRC format from Kugou)
- * - Translations (multiple languages)
- * - Furigana (Japanese reading annotations)
+ * - Metadata (title, artist, album, etc.) - stored in song:meta:{id}
+ * - Content (lyrics, translations, furigana, soramimi) - stored in song:content:{id}
  *
- * Redis Key Format: song:{youtubeId}
+ * Split storage avoids exceeding Upstash's 10MB request limit when listing songs.
  */
 
 import type { Redis } from "@upstash/redis";
@@ -49,8 +47,8 @@ export interface ParsedLyricLine {
  * Fetched lyrics content
  */
 export interface LyricsContent {
-  lrc: string; // LRC format lyrics (raw, kept for backwards compat)
-  krc?: string; // KRC format if available (raw, kept for backwards compat)
+  lrc: string; // LRC format lyrics (raw)
+  krc?: string; // KRC format if available (raw)
   cover?: string; // Cover image URL
   parsedLines?: ParsedLyricLine[]; // Pre-parsed and filtered lines (use this for display)
 }
@@ -64,39 +62,39 @@ export interface FuriganaSegment {
 }
 
 /**
- * Unified song document stored in Redis
+ * Song metadata stored in song:meta:{id}
+ * Lightweight data for listing (~300 bytes per song)
  */
-export interface SongDocument {
+export interface SongMetadata {
   id: string; // YouTube video ID
   title: string;
   artist?: string;
   album?: string;
   lyricOffset?: number; // Offset in ms to adjust lyrics timing
-
-  // Lyrics source from Kugou search
   lyricsSource?: LyricsSource;
-
-  // Fetched lyrics content
-  lyrics?: LyricsContent;
-
-  // Translations keyed by language code
-  translations?: Record<string, string>;
-
-  // Furigana annotations (one array per lyric line)
-  furigana?: FuriganaSegment[][];
-
-  // Soramimi annotations - misheard lyrics (空耳)
-  // Legacy: single array for Chinese soramimi (backwards compat)
-  soramimi?: FuriganaSegment[][];
-  // New: keyed by language ("zh-TW" for Chinese, "en" for English)
-  soramimiByLang?: Record<string, FuriganaSegment[][]>;
-
-  // Metadata
   createdBy?: string;
   createdAt: number;
   updatedAt: number;
   importOrder?: number; // For stable sorting during bulk imports
 }
+
+/**
+ * Song content stored in song:content:{id}
+ * Heavy data (~5-50KB per song)
+ */
+export interface SongContent {
+  lyrics?: LyricsContent;
+  translations?: Record<string, string>;
+  furigana?: FuriganaSegment[][];
+  soramimi?: FuriganaSegment[][];
+  soramimiByLang?: Record<string, FuriganaSegment[][]>;
+}
+
+/**
+ * Unified song document (metadata + content combined)
+ * Used for API responses and internal operations
+ */
+export interface SongDocument extends SongMetadata, SongContent {}
 
 /**
  * Options for fetching song data
@@ -127,33 +125,40 @@ export interface SaveSongOptions {
 // Constants
 // =============================================================================
 
-/** Redis key prefix for unified song documents */
-export const SONG_KEY_PREFIX = "song:";
+/** Redis key prefix for song metadata (lightweight) */
+export const SONG_META_PREFIX = "song:meta:";
+
+/** Redis key prefix for song content (heavy data) */
+export const SONG_CONTENT_PREFIX = "song:content:";
 
 /** Redis set tracking all song IDs */
 export const SONG_SET_KEY = "song:all";
-
-/** Old key prefix for backwards compatibility */
-export const LEGACY_SONG_METADATA_PREFIX = "song:metadata:";
 
 // =============================================================================
 // Utility Functions
 // =============================================================================
 
 /**
- * Get the Redis key for a song document
+ * Get the Redis key for song metadata
  */
-export function getSongKey(id: string): string {
-  return `${SONG_KEY_PREFIX}${id}`;
+export function getSongMetaKey(id: string): string {
+  return `${SONG_META_PREFIX}${id}`;
 }
 
 /**
- * Parse stored song data (handles both string and object formats)
+ * Get the Redis key for song content
  */
-export function parseSongDocument(raw: unknown): SongDocument | null {
+export function getSongContentKey(id: string): string {
+  return `${SONG_CONTENT_PREFIX}${id}`;
+}
+
+/**
+ * Parse stored data (handles both string and object formats)
+ */
+function parseJson<T>(raw: unknown): T | null {
   if (!raw) return null;
   try {
-    return typeof raw === "string" ? JSON.parse(raw) : (raw as SongDocument);
+    return typeof raw === "string" ? JSON.parse(raw) : (raw as T);
   } catch {
     return null;
   }
@@ -165,7 +170,7 @@ export function parseSongDocument(raw: unknown): SongDocument | null {
 
 /**
  * Get a song by ID from Redis
- * Includes backwards compatibility with legacy format
+ * Fetches metadata always, content only when needed
  */
 export async function getSong(
   redis: Redis,
@@ -177,67 +182,70 @@ export async function getSong(
     includeLyrics = false,
     includeTranslations = false,
     includeFurigana = false,
+    includeSoramimi = false,
   } = options;
 
-  // Try new unified format first
-  const songKey = getSongKey(id);
-  const raw = await redis.get(songKey);
-  let song = parseSongDocument(raw);
+  // Determine if we need content
+  const needsContent = includeLyrics || includeTranslations || includeFurigana || includeSoramimi;
 
-  // Fall back to legacy format if not found
-  if (!song) {
-    song = await getLegacySong(redis, id);
-    if (song) {
-      // Optionally migrate to new format (write-through)
-      // Uncomment to enable automatic migration:
-      // await saveSong(redis, song);
-    }
-  }
+  // Fetch metadata (always needed)
+  const metaKey = getSongMetaKey(id);
+  const metaRaw = await redis.get(metaKey);
+  const meta = parseJson<SongMetadata>(metaRaw);
 
-  if (!song) return null;
+  if (!meta) return null;
 
-  // Filter response based on options
+  // Build result with metadata
   const result: SongDocument = {
-    id: song.id,
-    title: song.title,
-    createdAt: song.createdAt,
-    updatedAt: song.updatedAt,
+    id: meta.id,
+    title: meta.title,
+    createdAt: meta.createdAt,
+    updatedAt: meta.updatedAt,
   };
 
   if (includeMetadata) {
-    result.artist = song.artist;
-    result.album = song.album;
-    result.lyricOffset = song.lyricOffset;
-    result.lyricsSource = song.lyricsSource;
-    result.createdBy = song.createdBy;
-    result.importOrder = song.importOrder;
+    result.artist = meta.artist;
+    result.album = meta.album;
+    result.lyricOffset = meta.lyricOffset;
+    result.lyricsSource = meta.lyricsSource;
+    result.createdBy = meta.createdBy;
+    result.importOrder = meta.importOrder;
   }
 
-  if (includeLyrics && song.lyrics) {
-    result.lyrics = song.lyrics;
-  }
+  // Fetch content if needed
+  if (needsContent) {
+    const contentKey = getSongContentKey(id);
+    const contentRaw = await redis.get(contentKey);
+    const content = parseJson<SongContent>(contentRaw);
 
-  if (includeFurigana && song.furigana) {
-    result.furigana = song.furigana;
-  }
+    if (content) {
+      if (includeLyrics && content.lyrics) {
+        result.lyrics = content.lyrics;
+      }
 
-  if (options.includeSoramimi) {
-    if (song.soramimi) {
-      result.soramimi = song.soramimi;
-    }
-    if (song.soramimiByLang) {
-      result.soramimiByLang = song.soramimiByLang;
-    }
-  }
+      if (includeFurigana && content.furigana) {
+        result.furigana = content.furigana;
+      }
 
-  if (includeTranslations && song.translations) {
-    if (includeTranslations === true) {
-      result.translations = song.translations;
-    } else if (Array.isArray(includeTranslations)) {
-      result.translations = {};
-      for (const lang of includeTranslations) {
-        if (song.translations[lang]) {
-          result.translations[lang] = song.translations[lang];
+      if (includeSoramimi) {
+        if (content.soramimi) {
+          result.soramimi = content.soramimi;
+        }
+        if (content.soramimiByLang) {
+          result.soramimiByLang = content.soramimiByLang;
+        }
+      }
+
+      if (includeTranslations && content.translations) {
+        if (includeTranslations === true) {
+          result.translations = content.translations;
+        } else if (Array.isArray(includeTranslations)) {
+          result.translations = {};
+          for (const lang of includeTranslations) {
+            if (content.translations[lang]) {
+              result.translations[lang] = content.translations[lang];
+            }
+          }
         }
       }
     }
@@ -247,47 +255,7 @@ export async function getSong(
 }
 
 /**
- * Get song from legacy format (song:metadata + lyrics:cache)
- */
-async function getLegacySong(
-  redis: Redis,
-  id: string
-): Promise<SongDocument | null> {
-  const metadataKey = `${LEGACY_SONG_METADATA_PREFIX}${id}`;
-  const metadataRaw = await redis.get(metadataKey);
-
-  if (!metadataRaw) return null;
-
-  const metadata = parseSongDocument(metadataRaw);
-  if (!metadata) return null;
-
-  // Legacy format has different property names
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const legacyData = metadata as any;
-
-  // Convert legacy format to new format
-  const song: SongDocument = {
-    id: legacyData.youtubeId || id,
-    title: legacyData.title || metadata.title,
-    artist: legacyData.artist || metadata.artist,
-    album: legacyData.album || metadata.album,
-    lyricOffset: legacyData.lyricOffset || metadata.lyricOffset,
-    createdBy: legacyData.createdBy || metadata.createdBy,
-    createdAt: legacyData.createdAt || metadata.createdAt || Date.now(),
-    updatedAt: legacyData.updatedAt || metadata.updatedAt || Date.now(),
-    importOrder: legacyData.importOrder || metadata.importOrder,
-  };
-
-  // Convert legacy lyricsSearch to lyricsSource
-  if (legacyData.lyricsSearch?.selection) {
-    song.lyricsSource = legacyData.lyricsSearch.selection;
-  }
-
-  return song;
-}
-
-/**
- * Save a song to Redis
+ * Save a song to Redis (split storage: metadata + content)
  */
 export async function saveSong(
   redis: Redis,
@@ -301,26 +269,38 @@ export async function saveSong(
     preserveFurigana = false, 
     preserveSoramimi = false, 
   } = options;
-  const songKey = getSongKey(song.id);
   const now = Date.now();
 
-  // Get existing song to merge with (use provided or fetch)
+  // Get existing song to merge with (use provided or fetch full document)
   const existing = existingSong !== undefined 
     ? existingSong 
-    : parseSongDocument(await redis.get(songKey));
+    : await getSong(redis, song.id, {
+        includeMetadata: true,
+        includeLyrics: true,
+        includeTranslations: true,
+        includeFurigana: true,
+        includeSoramimi: true,
+      });
 
-  // Build the document
+  // Build metadata document
   // Note: For createdBy, we check if the key exists in the song object to allow explicit clearing
-  // If 'createdBy' key exists (even as undefined), use that value; otherwise preserve existing
   const createdByValue = 'createdBy' in song ? song.createdBy : existing?.createdBy;
   
-  const doc: SongDocument = {
+  const meta: SongMetadata = {
     id: song.id,
     title: song.title ?? existing?.title ?? "",
     artist: song.artist ?? existing?.artist,
     album: song.album ?? existing?.album,
     lyricOffset: song.lyricOffset ?? existing?.lyricOffset,
     lyricsSource: song.lyricsSource ?? existing?.lyricsSource,
+    createdBy: createdByValue,
+    createdAt: existing?.createdAt ?? song.createdAt ?? now,
+    updatedAt: now,
+    importOrder: song.importOrder ?? existing?.importOrder,
+  };
+
+  // Build content document
+  const content: SongContent = {
     lyrics: preserveLyrics ? (existing?.lyrics ?? song.lyrics) : (song.lyrics ?? existing?.lyrics),
     translations: preserveTranslations
       ? { ...existing?.translations, ...song.translations }
@@ -330,33 +310,37 @@ export async function saveSong(
     soramimiByLang: preserveSoramimi 
       ? { ...existing?.soramimiByLang, ...song.soramimiByLang }
       : (song.soramimiByLang ?? existing?.soramimiByLang),
-    createdBy: createdByValue,
-    createdAt: existing?.createdAt ?? song.createdAt ?? now,
-    updatedAt: now,
-    importOrder: song.importOrder ?? existing?.importOrder,
   };
 
-  // Save to Redis
-  await redis.set(songKey, JSON.stringify(doc));
+  // Save metadata to Redis
+  await redis.set(getSongMetaKey(song.id), JSON.stringify(meta));
+
+  // Save content to Redis (only if there's any content)
+  const hasContent = content.lyrics || content.translations || content.furigana || 
+                     content.soramimi || content.soramimiByLang;
+  if (hasContent) {
+    await redis.set(getSongContentKey(song.id), JSON.stringify(content));
+  }
 
   // Add to the set of all song IDs
   await redis.sadd(SONG_SET_KEY, song.id);
 
-  return doc;
+  // Return combined document
+  return { ...meta, ...content };
 }
 
 /**
- * Delete a song from Redis
+ * Delete a song from Redis (both metadata and content keys)
  */
 export async function deleteSong(redis: Redis, id: string): Promise<boolean> {
-  const songKey = getSongKey(id);
+  const metaKey = getSongMetaKey(id);
 
   // Check if exists
-  const exists = await redis.exists(songKey);
+  const exists = await redis.exists(metaKey);
   if (!exists) return false;
 
-  // Delete song document
-  await redis.del(songKey);
+  // Delete both metadata and content keys
+  await redis.del(metaKey, getSongContentKey(id));
 
   // Remove from the set
   await redis.srem(SONG_SET_KEY, id);
@@ -376,9 +360,10 @@ export async function deleteAllSongs(redis: Redis): Promise<number> {
     return 0;
   }
 
-  // Delete all song documents
-  const keys = songIds.map((id) => getSongKey(id));
-  await redis.del(...keys);
+  // Delete all metadata and content keys
+  const metaKeys = songIds.map((id) => getSongMetaKey(id));
+  const contentKeys = songIds.map((id) => getSongContentKey(id));
+  await redis.del(...metaKeys, ...contentKeys);
 
   // Clear the set
   await redis.del(SONG_SET_KEY);
@@ -388,6 +373,7 @@ export async function deleteAllSongs(redis: Redis): Promise<number> {
 
 /**
  * List songs with optional filtering
+ * Only fetches metadata by default (lightweight), fetches content only when requested
  */
 export async function listSongs(
   redis: Redis,
@@ -411,71 +397,91 @@ export async function listSongs(
     return [];
   }
 
-  // Fetch all songs in parallel
-  const keys = songIds.map((id) => getSongKey(id));
-  const rawDocs = await redis.mget(...keys);
+  // Determine if we need content
+  const needsContent = getOptions.includeLyrics || getOptions.includeTranslations || 
+                       getOptions.includeFurigana || getOptions.includeSoramimi;
+
+  // Fetch all metadata (lightweight, ~300 bytes per song)
+  const metaKeys = songIds.map((id) => getSongMetaKey(id));
+  const rawMetas = await redis.mget(...metaKeys);
+
+  // Fetch content only if needed (heavy data)
+  let rawContents: (string | null)[] | null = null;
+  if (needsContent) {
+    const contentKeys = songIds.map((id) => getSongContentKey(id));
+    rawContents = await redis.mget(...contentKeys);
+  }
 
   const songs: SongDocument[] = [];
-  for (let i = 0; i < rawDocs.length; i++) {
-    const raw = rawDocs[i];
-    if (!raw) continue;
+  for (let i = 0; i < rawMetas.length; i++) {
+    const rawMeta = rawMetas[i];
+    if (!rawMeta) continue;
 
-    const song = parseSongDocument(raw);
-    if (!song) continue;
+    const meta = parseJson<SongMetadata>(rawMeta);
+    if (!meta) continue;
 
     // Filter by createdBy if specified
-    if (createdBy && song.createdBy !== createdBy) {
+    if (createdBy && meta.createdBy !== createdBy) {
       continue;
     }
 
-    // Apply filtering based on getOptions
-    const filtered: SongDocument = {
-      id: song.id,
-      title: song.title,
-      createdAt: song.createdAt,
-      updatedAt: song.updatedAt,
+    // Build result with metadata
+    const result: SongDocument = {
+      id: meta.id,
+      title: meta.title,
+      createdAt: meta.createdAt,
+      updatedAt: meta.updatedAt,
     };
 
     if (getOptions.includeMetadata) {
-      filtered.artist = song.artist;
-      filtered.album = song.album;
-      filtered.lyricOffset = song.lyricOffset;
-      filtered.lyricsSource = song.lyricsSource;
-      filtered.createdBy = song.createdBy;
-      filtered.importOrder = song.importOrder;
+      result.artist = meta.artist;
+      result.album = meta.album;
+      result.lyricOffset = meta.lyricOffset;
+      result.lyricsSource = meta.lyricsSource;
+      result.createdBy = meta.createdBy;
+      result.importOrder = meta.importOrder;
     }
 
-    if (getOptions.includeLyrics && song.lyrics) {
-      filtered.lyrics = song.lyrics;
-    }
+    // Add content if fetched
+    if (needsContent && rawContents) {
+      const rawContent = rawContents[i];
+      if (rawContent) {
+        const content = parseJson<SongContent>(rawContent);
+        if (content) {
+          if (getOptions.includeLyrics && content.lyrics) {
+            result.lyrics = content.lyrics;
+          }
 
-    if (getOptions.includeFurigana && song.furigana) {
-      filtered.furigana = song.furigana;
-    }
+          if (getOptions.includeFurigana && content.furigana) {
+            result.furigana = content.furigana;
+          }
 
-    if (getOptions.includeSoramimi) {
-      if (song.soramimi) {
-        filtered.soramimi = song.soramimi;
-      }
-      if (song.soramimiByLang) {
-        filtered.soramimiByLang = song.soramimiByLang;
-      }
-    }
+          if (getOptions.includeSoramimi) {
+            if (content.soramimi) {
+              result.soramimi = content.soramimi;
+            }
+            if (content.soramimiByLang) {
+              result.soramimiByLang = content.soramimiByLang;
+            }
+          }
 
-    if (getOptions.includeTranslations && song.translations) {
-      if (getOptions.includeTranslations === true) {
-        filtered.translations = song.translations;
-      } else if (Array.isArray(getOptions.includeTranslations)) {
-        filtered.translations = {};
-        for (const lang of getOptions.includeTranslations) {
-          if (song.translations[lang]) {
-            filtered.translations[lang] = song.translations[lang];
+          if (getOptions.includeTranslations && content.translations) {
+            if (getOptions.includeTranslations === true) {
+              result.translations = content.translations;
+            } else if (Array.isArray(getOptions.includeTranslations)) {
+              result.translations = {};
+              for (const lang of getOptions.includeTranslations) {
+                if (content.translations[lang]) {
+                  result.translations[lang] = content.translations[lang];
+                }
+              }
+            }
           }
         }
       }
     }
 
-    songs.push(filtered);
+    songs.push(result);
   }
 
   // Sort by createdAt (newest first), then by importOrder for stable sorting
@@ -490,7 +496,7 @@ export async function listSongs(
 
 /**
  * Save lyrics content for a song
- * Creates a minimal song document if it doesn't exist
+ * Creates metadata if it doesn't exist, updates content key directly
  */
 export async function saveLyrics(
   redis: Redis,
@@ -498,33 +504,49 @@ export async function saveLyrics(
   lyrics: LyricsContent,
   lyricsSource?: LyricsSource
 ): Promise<SongDocument> {
-  // Get existing song or create a minimal document
-  const existing = await getSong(redis, id, {
-    includeMetadata: true,
-    includeLyrics: true,
-    includeTranslations: true,
-    includeFurigana: true,
-    includeSoramimi: true,
-  });
+  const metaKey = getSongMetaKey(id);
+  const contentKey = getSongContentKey(id);
+  const now = Date.now();
 
-  return saveSong(redis, {
+  // Get existing metadata
+  const existingMeta = parseJson<SongMetadata>(await redis.get(metaKey));
+  
+  // Get existing content to preserve other fields
+  const existingContent = parseJson<SongContent>(await redis.get(contentKey));
+
+  // Build/update metadata
+  const meta: SongMetadata = {
     id,
-    title: existing?.title || lyricsSource?.title || id,
-    artist: existing?.artist || lyricsSource?.artist,
-    album: existing?.album || lyricsSource?.album,
+    title: existingMeta?.title || lyricsSource?.title || id,
+    artist: existingMeta?.artist || lyricsSource?.artist,
+    album: existingMeta?.album || lyricsSource?.album,
+    lyricOffset: existingMeta?.lyricOffset,
+    lyricsSource: lyricsSource ?? existingMeta?.lyricsSource,
+    createdBy: existingMeta?.createdBy,
+    createdAt: existingMeta?.createdAt ?? now,
+    updatedAt: now,
+    importOrder: existingMeta?.importOrder,
+  };
+
+  // Build content (preserve existing translations, furigana, soramimi)
+  const content: SongContent = {
     lyrics,
-    ...(lyricsSource && { lyricsSource }),
-    createdBy: existing?.createdBy,
-    createdAt: existing?.createdAt,
-  }, {
-    preserveTranslations: true,
-    preserveFurigana: true,
-    preserveSoramimi: true,
-  }, existing);
+    translations: existingContent?.translations,
+    furigana: existingContent?.furigana,
+    soramimi: existingContent?.soramimi,
+    soramimiByLang: existingContent?.soramimiByLang,
+  };
+
+  // Save both keys
+  await redis.set(metaKey, JSON.stringify(meta));
+  await redis.set(contentKey, JSON.stringify(content));
+  await redis.sadd(SONG_SET_KEY, id);
+
+  return { ...meta, ...content };
 }
 
 /**
- * Save a translation for a song
+ * Save a translation for a song (updates content key only)
  * Requires the song to exist (call after saveLyrics)
  */
 export async function saveTranslation(
@@ -533,25 +555,30 @@ export async function saveTranslation(
   language: string,
   translatedLrc: string
 ): Promise<SongDocument | null> {
-  const existing = await getSong(redis, id, { 
-    includeMetadata: true,
-    includeLyrics: true,
-    includeTranslations: true,
-    includeFurigana: true,
-    includeSoramimi: true,
-  });
-  if (!existing) return null;
+  const metaKey = getSongMetaKey(id);
+  const contentKey = getSongContentKey(id);
 
-  const translations = { ...existing.translations, [language]: translatedLrc };
+  // Verify song exists
+  const existingMeta = parseJson<SongMetadata>(await redis.get(metaKey));
+  if (!existingMeta) return null;
 
-  return saveSong(redis, {
-    ...existing,
-    translations,
-  }, {}, existing);
+  // Get existing content
+  const existingContent = parseJson<SongContent>(await redis.get(contentKey)) ?? {};
+
+  // Update translations
+  const content: SongContent = {
+    ...existingContent,
+    translations: { ...existingContent.translations, [language]: translatedLrc },
+  };
+
+  // Save content key only
+  await redis.set(contentKey, JSON.stringify(content));
+
+  return { ...existingMeta, ...content };
 }
 
 /**
- * Save furigana annotations for a song
+ * Save furigana annotations for a song (updates content key only)
  * Requires the song to exist (call after saveLyrics)
  */
 export async function saveFurigana(
@@ -559,26 +586,32 @@ export async function saveFurigana(
   id: string,
   furigana: FuriganaSegment[][]
 ): Promise<SongDocument | null> {
-  const existing = await getSong(redis, id, { 
-    includeMetadata: true,
-    includeLyrics: true,
-    includeTranslations: true,
-    includeFurigana: true,
-    includeSoramimi: true,
-  });
-  if (!existing) return null;
+  const metaKey = getSongMetaKey(id);
+  const contentKey = getSongContentKey(id);
 
-  return saveSong(redis, {
-    ...existing,
+  // Verify song exists
+  const existingMeta = parseJson<SongMetadata>(await redis.get(metaKey));
+  if (!existingMeta) return null;
+
+  // Get existing content
+  const existingContent = parseJson<SongContent>(await redis.get(contentKey)) ?? {};
+
+  // Update furigana
+  const content: SongContent = {
+    ...existingContent,
     furigana,
-  }, {}, existing);
+  };
+
+  // Save content key only
+  await redis.set(contentKey, JSON.stringify(content));
+
+  return { ...existingMeta, ...content };
 }
 
 /**
- * Save soramimi annotations for a song
+ * Save soramimi annotations for a song (updates content key only)
  * Requires the song to exist (call after saveLyrics)
- * @param language - Target language: "zh-TW" for Chinese, "en" for English. 
- *                   If not provided, saves to legacy `soramimi` field for backwards compat.
+ * @param language - Target language: "zh-TW" for Chinese, "en" for English.
  */
 export async function saveSoramimi(
   redis: Redis,
@@ -586,32 +619,28 @@ export async function saveSoramimi(
   soramimi: FuriganaSegment[][],
   language?: "zh-TW" | "en"
 ): Promise<SongDocument | null> {
-  const existing = await getSong(redis, id, { 
-    includeMetadata: true,
-    includeLyrics: true,
-    includeTranslations: true,
-    includeFurigana: true,
-    includeSoramimi: true,
-  });
-  if (!existing) return null;
+  const metaKey = getSongMetaKey(id);
+  const contentKey = getSongContentKey(id);
 
-  // If language specified, save to soramimiByLang; otherwise save to legacy field
-  if (language) {
-    const soramimiByLang = {
-      ...existing.soramimiByLang,
-      [language]: soramimi,
-    };
-    return saveSong(redis, {
-      ...existing,
-      soramimiByLang,
-    }, {}, existing);
-  }
+  // Verify song exists
+  const existingMeta = parseJson<SongMetadata>(await redis.get(metaKey));
+  if (!existingMeta) return null;
 
-  // Legacy: save to soramimi field (backwards compat)
-  return saveSong(redis, {
-    ...existing,
-    soramimi,
-  }, {}, existing);
+  // Get existing content
+  const existingContent = parseJson<SongContent>(await redis.get(contentKey)) ?? {};
+
+  // Update soramimi (use language-specific field if language provided)
+  const content: SongContent = {
+    ...existingContent,
+    ...(language
+      ? { soramimiByLang: { ...existingContent.soramimiByLang, [language]: soramimi } }
+      : { soramimi }),
+  };
+
+  // Save content key only
+  await redis.set(contentKey, JSON.stringify(content));
+
+  return { ...existingMeta, ...content };
 }
 
 /**

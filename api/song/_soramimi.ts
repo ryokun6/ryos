@@ -518,22 +518,23 @@ export function convertLinesToAnnotatedText(
 // =============================================================================
 
 /**
- * Convert Chinese soramimi readings to Traditional Chinese.
- * The AI should output 繁體字, but this ensures any simplified characters
- * are converted to their traditional equivalents.
+ * Convert soramimi text (original lyrics) to Traditional Chinese.
+ * The lyrics come from Kugou which uses Simplified Chinese.
+ * Skips conversion for Korean (Hangul) or Japanese (Kana) text.
  * 
- * @param segments - Array of soramimi segments with readings
- * @returns New array with readings converted to Traditional Chinese
+ * @param segments - Array of soramimi segments
+ * @returns New array with text converted to Traditional Chinese
  */
 export function convertSoramimiToTraditional(segments: FuriganaSegment[]): FuriganaSegment[] {
   return segments.map(seg => {
-    if (seg.reading) {
-      return {
-        text: seg.text,
-        reading: simplifiedToTraditional(seg.reading),
-      };
+    // Skip conversion if text contains Japanese kana
+    if (containsKana(seg.text)) {
+      return seg;
     }
-    return seg;
+    return {
+      text: simplifiedToTraditional(seg.text),
+      ...(seg.reading ? { reading: seg.reading } : {}),
+    };
   });
 }
 

@@ -1153,11 +1153,9 @@ Output:
                   const rawSegments = parseSoramimiRubyMarkup(content);
                   let segments = fillMissingReadings(rawSegments);
                   
-                  // For Chinese soramimi, ensure readings are in Traditional Chinese
-                  // The AI should output 繁體字, but this catches any simplified characters
-                  if (!isEnglishOutput) {
-                    segments = convertSoramimiToTraditional(segments);
-                  }
+                  // Convert original lyrics text to Traditional Chinese
+                  // The lyrics come from Kugou which uses Simplified Chinese
+                  segments = convertSoramimiToTraditional(segments);
                   
                   if (segments.length > 0) {
                     allSoramimi[originalIndex] = segments;

@@ -31,9 +31,9 @@ import {
   canModifySong,
   getSong,
   deleteAllSongs,
-  getSongKey,
+  getSongMetaKey,
   SONG_SET_KEY,
-  type SongDocument,
+  type SongMetadata,
   type GetSongOptions,
   type LyricsSource,
 } from "../_utils/song-service.js";
@@ -238,8 +238,9 @@ export default async function handler(req: Request) {
         });
         const existingMap = new Map(existingSongs.map((s) => [s.id, s]));
 
-        // Build all song documents (no async needed)
-        const songDocs = songs.map((songData, i) => {
+        // Build all song metadata documents (no async needed)
+        // Bulk import only imports metadata, not content (lyrics, etc.)
+        const songMetas = songs.map((songData, i) => {
           const existing = existingMap.get(songData.id);
 
           // Convert legacy lyricsSearch to lyricsSource
@@ -250,7 +251,7 @@ export default async function handler(req: Request) {
           }
 
           return {
-            doc: {
+            meta: {
               id: songData.id,
               title: songData.title,
               artist: songData.artist,
@@ -261,21 +262,22 @@ export default async function handler(req: Request) {
               createdAt: existing?.createdAt || now - i, // Maintain order
               updatedAt: now,
               importOrder: existing?.importOrder ?? i,
-            } as SongDocument,
+            } as SongMetadata,
             isUpdate: !!existing,
           };
         });
 
-        // Use pipeline for all writes (1 batched Redis call instead of 2N)
+        // Use pipeline for all writes (1 batched Redis call)
+        // Only write to metadata keys - content is handled separately when lyrics are fetched
         const pipeline = redis.pipeline();
-        for (const { doc } of songDocs) {
-          pipeline.set(getSongKey(doc.id), JSON.stringify(doc));
-          pipeline.sadd(SONG_SET_KEY, doc.id);
+        for (const { meta } of songMetas) {
+          pipeline.set(getSongMetaKey(meta.id), JSON.stringify(meta));
+          pipeline.sadd(SONG_SET_KEY, meta.id);
         }
         await pipeline.exec();
 
-        const imported = songDocs.filter((d) => !d.isUpdate).length;
-        const updated = songDocs.filter((d) => d.isUpdate).length;
+        const imported = songMetas.filter((d) => !d.isUpdate).length;
+        const updated = songMetas.filter((d) => d.isUpdate).length;
 
         logInfo(requestId, "Bulk import complete", {
           imported,
