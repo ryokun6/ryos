@@ -44,13 +44,21 @@ export interface ParsedLyricLine {
 }
 
 /**
- * Fetched lyrics content
+ * Stored lyrics content (what we save in Redis)
+ * NOTE: parsedLines is NOT stored - it's derived from lrc/krc on-demand
  */
 export interface LyricsContent {
   lrc: string; // LRC format lyrics (raw)
   krc?: string; // KRC format if available (raw)
   cover?: string; // Cover image URL
-  parsedLines?: ParsedLyricLine[]; // Pre-parsed and filtered lines (use this for display)
+}
+
+/**
+ * Lyrics content with parsed lines for API responses
+ * This is what the client receives - parsedLines is generated on-demand
+ */
+export interface LyricsResponse extends LyricsContent {
+  parsedLines: ParsedLyricLine[]; // Generated on-demand from lrc/krc
 }
 
 /**

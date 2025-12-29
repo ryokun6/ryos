@@ -191,16 +191,13 @@ export default async function handler(req: Request) {
         return errorResponse("Song not found", 404);
       }
 
-      // Ensure parsedLines exist (generate for legacy data)
-      if (song.lyrics && !song.lyrics.parsedLines) {
-        logInfo(requestId, "Generating parsedLines for legacy data");
-        song.lyrics.parsedLines = parseLyricsContent(
+      // Generate parsedLines on-demand (not stored in Redis)
+      if (song.lyrics) {
+        (song.lyrics as LyricsContent & { parsedLines?: unknown }).parsedLines = parseLyricsContent(
           { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
           song.title,
           song.artist
         );
-        // Save updated lyrics with parsedLines
-        await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
       }
 
       logInfo(requestId, `Response: 200 OK`, { 
@@ -314,19 +311,26 @@ export default async function handler(req: Request) {
 
         // If we have cached lyrics and not forcing, return them
         if (!force && song?.lyrics?.lrc) {
+          // Generate parsedLines on-demand (not stored in Redis)
+          const parsedLines = parseLyricsContent(
+            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+            song.lyricsSource?.title || song.title,
+            song.lyricsSource?.artist || song.artist
+          );
+          
           logInfo(requestId, `Response: 200 OK - Returning cached lyrics`, {
-            parsedLinesCount: song.lyrics.parsedLines?.length ?? 0,
+            parsedLinesCount: parsedLines.length,
           });
           
           // Build response with optional translation/furigana info
           const response: Record<string, unknown> = {
-            lyrics: { parsedLines: song.lyrics.parsedLines },
+            lyrics: { parsedLines },
             cached: true,
           };
           
           // Include translation info if requested
-          if (translateTo && song.lyrics.parsedLines) {
-            const totalLines = song.lyrics.parsedLines.length;
+          if (translateTo && parsedLines.length > 0) {
+            const totalLines = parsedLines.length;
             let hasTranslation = !!(song.translations?.[translateTo]);
             let translationLrc = hasTranslation ? song.translations![translateTo] : undefined;
             
@@ -354,8 +358,8 @@ export default async function handler(req: Request) {
           }
           
           // Include furigana info if requested
-          if (includeFurigana && song.lyrics.parsedLines) {
-            const totalLines = song.lyrics.parsedLines.length;
+          if (includeFurigana && parsedLines.length > 0) {
+            const totalLines = parsedLines.length;
             const hasFurigana = !!(song.furigana && song.furigana.length > 0);
             
             response.furigana = {
@@ -366,8 +370,8 @@ export default async function handler(req: Request) {
           }
           
           // Include soramimi info if requested
-          if (includeSoramimi && song.lyrics.parsedLines) {
-            const totalLines = song.lyrics.parsedLines.length;
+          if (includeSoramimi && parsedLines.length > 0) {
+            const totalLines = parsedLines.length;
             // Get cached soramimi for the requested language
             // First check new soramimiByLang, then fall back to legacy soramimi (Chinese only)
             const cachedSoramimiData = song.soramimiByLang?.[soramimiTargetLanguage] 
@@ -436,19 +440,17 @@ export default async function handler(req: Request) {
         }
 
         // Parse lyrics with consistent filtering (single source of truth)
+        // NOTE: parsedLines is generated on-demand, NOT stored in Redis
         const parsedLines = parseLyricsContent(
           { lrc: rawLyrics.lrc, krc: rawLyrics.krc },
           lyricsSource.title,
           lyricsSource.artist
         );
 
-        // Include parsedLines in the lyrics content
-        const lyrics: LyricsContent = {
-          ...rawLyrics,
-          parsedLines,
-        };
+        // Save raw lyrics only (no parsedLines - it's derived data)
+        const lyrics: LyricsContent = rawLyrics;
 
-        // Save to song document (full lyrics with lrc/krc for internal use)
+        // Save to song document (only raw lrc/krc, parsedLines generated on-demand)
         const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource);
         logInfo(requestId, `Lyrics saved to song document`, { 
           songId,
@@ -535,15 +537,12 @@ export default async function handler(req: Request) {
           return errorResponse("Song has no lyrics", 404);
         }
 
-        // Ensure parsedLines exist
-        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
-          song.lyrics.parsedLines = parseLyricsContent(
-            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-            song.title,
-            song.artist
-          );
-          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
-        }
+        // Generate parsedLines on-demand (not stored in Redis)
+        const parsedLines = parseLyricsContent(
+          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+          song.title,
+          song.artist
+        );
 
         // Check if already cached in main document (and not forcing regeneration)
         if (!force && song.translations?.[language]) {
@@ -601,7 +600,7 @@ export default async function handler(req: Request) {
           }
         }
 
-        const totalLines = song.lyrics.parsedLines.length;
+        const totalLines = parsedLines.length;
 
         logInfo(requestId, `Starting translate SSE stream using createUIMessageStream`, { 
           totalLines, 
@@ -609,7 +608,7 @@ export default async function handler(req: Request) {
         });
 
         // Prepare lines for translation
-        const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
+        const lines: LyricLine[] = parsedLines.map(line => ({
           words: line.words,
           startTimeMs: line.startTimeMs,
         }));
@@ -690,7 +689,7 @@ export default async function handler(req: Request) {
 
             // Save to Redis
             try {
-              const translatedLrc = song.lyrics!.parsedLines!
+              const translatedLrc = parsedLines
                 .map((line, index) => `${msToLrcTime(line.startTimeMs)}${allTranslations[index] || line.words}`)
                 .join("\n");
               await saveTranslation(redis, songId, language, translatedLrc);
@@ -743,15 +742,12 @@ export default async function handler(req: Request) {
           return errorResponse("Song has no lyrics", 404);
         }
 
-        // Ensure parsedLines exist
-        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
-          song.lyrics.parsedLines = parseLyricsContent(
-            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-            song.title,
-            song.artist
-          );
-          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
-        }
+        // Generate parsedLines on-demand (not stored in Redis)
+        const parsedLinesFurigana = parseLyricsContent(
+          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+          song.title,
+          song.artist
+        );
 
         // Check if already cached in main document
         if (!force && song.furigana && song.furigana.length > 0) {
@@ -777,14 +773,14 @@ export default async function handler(req: Request) {
           });
         }
 
-        const totalLines = song.lyrics.parsedLines.length;
+        const totalLines = parsedLinesFurigana.length;
 
         logInfo(requestId, `Starting furigana SSE stream using createUIMessageStream`, { 
           totalLines,
         });
 
         // Prepare lines for furigana
-        const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
+        const lines: LyricLine[] = parsedLinesFurigana.map(line => ({
           words: line.words,
           startTimeMs: line.startTimeMs,
         }));
@@ -957,19 +953,16 @@ Output:
           return errorResponse("Song has no lyrics", 404);
         }
 
-        // Ensure parsedLines exist
-        if (!song.lyrics.parsedLines || song.lyrics.parsedLines.length === 0) {
-          song.lyrics.parsedLines = parseLyricsContent(
-            { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-            song.title,
-            song.artist
-          );
-          await saveLyrics(redis, songId, song.lyrics, song.lyricsSource);
-        }
+        // Generate parsedLines on-demand (not stored in Redis)
+        const parsedLinesSoramimi = parseLyricsContent(
+          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+          song.title,
+          song.artist
+        );
 
         // Skip Chinese soramimi for Chinese lyrics (no point making Chinese sound like Chinese)
         // But English soramimi should still work for Chinese lyrics
-        if (targetLanguage === "zh-TW" && lyricsAreMostlyChinese(song.lyrics.parsedLines)) {
+        if (targetLanguage === "zh-TW" && lyricsAreMostlyChinese(parsedLinesSoramimi)) {
           logInfo(requestId, "Skipping Chinese soramimi stream - lyrics are already Chinese");
           return jsonResponse({
             skipped: true,
@@ -1030,7 +1023,7 @@ Output:
           });
         }
 
-        const totalLines = song.lyrics.parsedLines.length;
+        const totalLines = parsedLinesSoramimi.length;
 
         // Check if furigana was provided by client (for Japanese songs)
         // This helps the AI know the correct pronunciation of kanji
@@ -1044,7 +1037,7 @@ Output:
 
         // Prepare lines for soramimi - identify non-English lines
         // Include wordTimings for segment alignment
-        const lines: LyricLine[] = song.lyrics!.parsedLines!.map(line => ({
+        const lines: LyricLine[] = parsedLinesSoramimi.map(line => ({
           words: line.words,
           startTimeMs: line.startTimeMs,
           wordTimings: line.wordTimings,
