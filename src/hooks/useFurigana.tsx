@@ -181,7 +181,10 @@ export function useFurigana({
   }, [lyricsCacheBustTrigger]);
 
   // Check conditions outside effect to avoid running effect body when not needed
-  const shouldFetchFurigana = romanization.enabled && romanization.japaneseFurigana;
+  // Fetch furigana if:
+  // 1. User has furigana display enabled, OR
+  // 2. Soramimi is enabled (furigana helps AI know kanji pronunciation for Japanese songs)
+  const shouldFetchFurigana = romanization.enabled && (romanization.japaneseFurigana || romanization.soramimi);
   const hasLines = lines.length > 0;
   
   // Track the last songId we had data for - only clear cache when song actually changes
