@@ -192,11 +192,12 @@ export default async function handler(req: Request) {
       }
 
       // Generate parsedLines on-demand (not stored in Redis)
+      // Use lyricsSource title/artist for filtering (consistent with how annotations were generated)
       if (song.lyrics) {
         (song.lyrics as LyricsContent & { parsedLines?: unknown }).parsedLines = parseLyricsContent(
           { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-          song.title,
-          song.artist
+          song.lyricsSource?.title || song.title,
+          song.lyricsSource?.artist || song.artist
         );
       }
 
@@ -538,10 +539,11 @@ export default async function handler(req: Request) {
         }
 
         // Generate parsedLines on-demand (not stored in Redis)
+        // Use lyricsSource title/artist for filtering (consistent with cached lyrics)
         const parsedLines = parseLyricsContent(
           { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-          song.title,
-          song.artist
+          song.lyricsSource?.title || song.title,
+          song.lyricsSource?.artist || song.artist
         );
 
         // Check if already cached in main document (and not forcing regeneration)
@@ -743,10 +745,11 @@ export default async function handler(req: Request) {
         }
 
         // Generate parsedLines on-demand (not stored in Redis)
+        // Use lyricsSource title/artist for filtering (consistent with cached lyrics)
         const parsedLinesFurigana = parseLyricsContent(
           { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-          song.title,
-          song.artist
+          song.lyricsSource?.title || song.title,
+          song.lyricsSource?.artist || song.artist
         );
 
         // Check if already cached in main document
@@ -954,10 +957,11 @@ Output:
         }
 
         // Generate parsedLines on-demand (not stored in Redis)
+        // Use lyricsSource title/artist for filtering (consistent with cached lyrics)
         const parsedLinesSoramimi = parseLyricsContent(
           { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-          song.title,
-          song.artist
+          song.lyricsSource?.title || song.title,
+          song.lyricsSource?.artist || song.artist
         );
 
         // Skip Chinese soramimi for Chinese lyrics (no point making Chinese sound like Chinese)
