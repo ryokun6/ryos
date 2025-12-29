@@ -441,10 +441,33 @@ function StaticWordRendering({
       return processed;
     };
 
-    // Determine if we need to add spaces between words for romanized output
-    // Include English soramimi which also needs spaces between words
+    // Helper to check if text is primarily Latin characters (romanized output needs spaces)
+    const isLatinText = (text: string): boolean => {
+      // Check if text contains mostly Latin letters (a-z, A-Z)
+      const latinChars = text.match(/[a-zA-Z]/g);
+      return latinChars !== null && latinChars.length > text.length / 2;
+    };
+
+    // Helper to determine if a word's output will be romanized (Latin)
+    const willOutputLatin = (text: string, reading?: string): boolean => {
+      if (reading) {
+        // If there's a reading, check if it will be romanized
+        const displayReading = japaneseRomaji ? toRomaji(reading) : reading;
+        return isLatinText(displayReading);
+      }
+      // No reading - check if getWordContent will romanize it
+      const processed = processText(text);
+      if (japaneseRomaji && hasKanaTextLocal(processed)) return true;
+      if (koreanRomanized && KOREAN_REGEX.test(text)) {
+        KOREAN_REGEX.lastIndex = 0;
+        return true;
+      }
+      if (chinesePinyin && isChineseText(processed)) return true;
+      return false;
+    };
+
+    // English soramimi always needs spaces
     const isEnglishSoramimi = soramimiTargetLanguage === "en";
-    const needsRomanizedSpacing = pronunciationOnly && (japaneseRomaji || chinesePinyin || koreanRomanized || isEnglishSoramimi);
 
     if (furiganaSegments && furiganaSegments.length > 0) {
       // Use character-position alignment to handle boundary mismatches
@@ -458,15 +481,18 @@ function StaticWordRendering({
         const lastWord = wordTimings[lastWordIdx];
         const lastTrimmed = lastWord.text.trim();
         const trailingSpace = lastWord.text.slice(lastTrimmed.length);
-        // Add space for romanized output if no natural trailing space (except for last word)
         const isLastWord = idx === mappedItems.length - 1;
-        const spacer = needsRomanizedSpacing && !trailingSpace && !isLastWord ? " " : trailingSpace;
         
         let content: ReactNode;
         if (item.reading) {
           // Has a reading - show combined text with ruby annotation
           // Convert to romaji if japaneseRomaji is enabled
           const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
+          // Only add space if output is Latin (romanized) or English soramimi
+          const outputIsLatin = isLatinText(displayReading) || isEnglishSoramimi;
+          const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+          const spacer = needsSpace ? " " : trailingSpace;
+          
           if (pronunciationOnly) {
             content = <>{displayReading}{spacer}</>;
           } else {
@@ -481,11 +507,11 @@ function StaticWordRendering({
             );
           }
         } else {
-          // No reading - use original word text as-is (add spacer for romanized)
+          // No reading - check if this word will be romanized
           const wordContent = getWordContent(word.text);
-          content = needsRomanizedSpacing && !trailingSpace && !isLastWord 
-            ? <>{wordContent}{" "}</> 
-            : wordContent;
+          const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;
+          const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+          content = needsSpace ? <>{wordContent}{" "}</> : wordContent;
         }
         
         return {
@@ -501,10 +527,10 @@ function StaticWordRendering({
       const trimmed = word.text.trim();
       const trailingSpace = word.text.slice(trimmed.length);
       const wordContent = getWordContent(word.text);
-      // Add space for romanized output if no natural trailing space
-      const content = needsRomanizedSpacing && !trailingSpace && !isLastWord
-        ? <>{wordContent}{" "}</>
-        : wordContent;
+      // Only add space if output is Latin (romanized)
+      const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;
+      const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+      const content = needsSpace ? <>{wordContent}{" "}</> : wordContent;
       return {
         key: `${idx}-${word.text}`,
         content,
@@ -640,10 +666,30 @@ function WordTimingHighlight({
       return processed;
     };
 
-    // Determine if we need to add spaces between words for romanized output
-    // Include English soramimi which also needs spaces between words
+    // Helper to check if text is primarily Latin characters (romanized output needs spaces)
+    const isLatinText = (text: string): boolean => {
+      const latinChars = text.match(/[a-zA-Z]/g);
+      return latinChars !== null && latinChars.length > text.length / 2;
+    };
+
+    // Helper to determine if a word's output will be romanized (Latin)
+    const willOutputLatin = (text: string, reading?: string): boolean => {
+      if (reading) {
+        const displayReading = japaneseRomaji ? toRomaji(reading) : reading;
+        return isLatinText(displayReading);
+      }
+      const processed = processText(text);
+      if (japaneseRomaji && hasKanaTextLocal(processed)) return true;
+      if (koreanRomanized && KOREAN_REGEX.test(text)) {
+        KOREAN_REGEX.lastIndex = 0;
+        return true;
+      }
+      if (chinesePinyin && isChineseText(processed)) return true;
+      return false;
+    };
+
+    // English soramimi always needs spaces
     const isEnglishSoramimi = soramimiTargetLanguage === "en";
-    const needsRomanizedSpacing = pronunciationOnly && (japaneseRomaji || chinesePinyin || koreanRomanized || isEnglishSoramimi);
 
     if (furiganaSegments && furiganaSegments.length > 0) {
       // Use character-position alignment to handle boundary mismatches
@@ -657,15 +703,18 @@ function WordTimingHighlight({
         const lastWord = wordTimings[lastWordIdx];
         const lastTrimmed = lastWord.text.trim();
         const trailingSpace = lastWord.text.slice(lastTrimmed.length);
-        // Add space for romanized output if no natural trailing space (except for last word)
         const isLastWord = idx === mappedItems.length - 1;
-        const spacer = needsRomanizedSpacing && !trailingSpace && !isLastWord ? " " : trailingSpace;
         
         let content: ReactNode;
         if (item.reading) {
           // Has a reading - show combined text with ruby annotation
           // Convert to romaji if japaneseRomaji is enabled
           const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
+          // Only add space if output is Latin (romanized) or English soramimi
+          const outputIsLatin = isLatinText(displayReading) || isEnglishSoramimi;
+          const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+          const spacer = needsSpace ? " " : trailingSpace;
+          
           if (pronunciationOnly) {
             content = <>{displayReading}{spacer}</>;
           } else {
@@ -681,11 +730,11 @@ function WordTimingHighlight({
             );
           }
         } else {
-          // No reading - use original word text as-is (add spacer for romanized)
+          // No reading - check if this word will be romanized
           const wordContent = getWordContent(word.text);
-          content = needsRomanizedSpacing && !trailingSpace && !isLastWord 
-            ? <>{wordContent}{" "}</> 
-            : wordContent;
+          const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;
+          const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+          content = needsSpace ? <>{wordContent}{" "}</> : wordContent;
         }
         
         return {
@@ -703,10 +752,10 @@ function WordTimingHighlight({
       const trimmed = word.text.trim();
       const trailingSpace = word.text.slice(trimmed.length);
       const wordContent = getWordContent(word.text);
-      // Add space for romanized output if no natural trailing space
-      const content = needsRomanizedSpacing && !trailingSpace && !isLastWord
-        ? <>{wordContent}{" "}</>
-        : wordContent;
+      // Only add space if output is Latin (romanized)
+      const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;
+      const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+      const content = needsSpace ? <>{wordContent}{" "}</> : wordContent;
       return {
         word,
         extraDurationMs: 0,
