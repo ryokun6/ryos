@@ -858,7 +858,11 @@ function WordTimingHighlight({
           <span
             aria-hidden="true"
             className="lyrics-word-layer"
-            style={{ filter: isOldSchoolKaraoke ? "none" : GLOW_FILTER }}
+            style={{ 
+              filter: isOldSchoolKaraoke ? "none" : GLOW_FILTER,
+              // Keep GPU-composited to prevent pixel rounding
+              backfaceVisibility: "hidden",
+            }}
           >
             {/* Masked text - uses CSS custom property for GPU-accelerated animation */}
             <span
@@ -882,6 +886,9 @@ function WordTimingHighlight({
                 paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
                 marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
+                // Keep GPU-composited to prevent pixel rounding
+                backfaceVisibility: "hidden",
+                willChange: "mask-image",
               } as React.CSSProperties}
             >
               {item.content}
@@ -1608,6 +1615,9 @@ export function LyricsDisplay({
                                 visibleLines.length > 1
                                   ? "5%"
                                   : undefined,
+                              // Keep GPU-composited to prevent pixel rounding at end of transforms
+                              backfaceVisibility: "hidden",
+                              transform: "translateZ(0)",
                             }}
                           >
                             {/* Original lyrics with karaoke highlighting */}
