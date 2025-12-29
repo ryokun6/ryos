@@ -41,6 +41,16 @@ interface SongDetail {
   updatedAt: number;
 }
 
+/**
+ * Construct Kugou cover image URL from hash
+ * Format: https://imge.kugou.com/{SIZE}/{HASH}.jpg
+ * Available sizes: 100, 165, 400, 1000
+ */
+function getKugouCoverUrl(hash: string | undefined, size: 100 | 165 | 400 | 1000 = 400): string | null {
+  if (!hash) return null;
+  return `https://imge.kugou.com/${size}/${hash}.jpg`;
+}
+
 interface SongDetailPanelProps {
   youtubeId: string;
   onBack: () => void;
@@ -309,9 +319,16 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           >
             {!isLoading && (
               <img
-                src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                src={getKugouCoverUrl(song?.lyricsSource?.hash, 165) || `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
                 alt=""
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fall back to YouTube thumbnail if Kugou cover fails
+                  const target = e.target as HTMLImageElement;
+                  if (!target.src.includes("youtube.com")) {
+                    target.src = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
+                  }
+                }}
               />
             )}
           </div>

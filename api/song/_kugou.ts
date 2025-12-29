@@ -8,7 +8,6 @@ import { Converter } from "opencc-js";
 import { kugouHeaders } from "./_constants.js";
 import {
   fetchWithTimeout,
-  randomString,
   base64ToUtf8,
   decodeKRC,
   scoreSongMatch,
@@ -69,26 +68,17 @@ export interface KugouSearchResult {
 }
 
 // =============================================================================
-// Internal Functions
+// Cover URL Helper
 // =============================================================================
 
-async function getCover(hash: string, albumId: string | number): Promise<string> {
-  try {
-    const url = new URL("https://wwwapi.kugou.com/yy/index.php");
-    url.searchParams.set("r", "play/getdata");
-    url.searchParams.set("hash", hash);
-    url.searchParams.set("dfid", randomString(23, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"));
-    url.searchParams.set("mid", randomString(23, "abcdefghijklmnopqrstuvwxyz0123456789"));
-    url.searchParams.set("album_id", String(albumId));
-    url.searchParams.set("_", String(Date.now()));
-
-    const res = await fetchWithTimeout(url.toString(), { headers: kugouHeaders });
-    if (!res.ok) return "";
-    const json = (await res.json()) as { data?: { img?: string } };
-    return json?.data?.img ?? "";
-  } catch {
-    return "";
-  }
+/**
+ * Construct Kugou cover image URL from hash
+ * Format: https://imge.kugou.com/{SIZE}/{HASH}.jpg
+ * Available sizes: 100, 165, 400, 1000
+ */
+export function getKugouCoverUrl(hash: string, size: 100 | 165 | 400 | 1000 = 400): string {
+  if (!hash) return "";
+  return `https://imge.kugou.com/${size}/${hash}.jpg`;
 }
 
 // =============================================================================
@@ -226,8 +216,8 @@ export async function fetchLyricsFromKugou(
     return null;
   }
 
-  // Fetch cover image
-  const cover = await getCover(hash, albumId);
+  // Construct cover image URL directly (no API call needed)
+  const cover = getKugouCoverUrl(hash, 400);
 
   return {
     lrc: lrc || krc || "",
