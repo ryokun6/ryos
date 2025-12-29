@@ -397,21 +397,34 @@ export function AdminAppComponent({
           return;
         }
 
-        // Map to the expected song format
-        const songs = videos.map((v: Record<string, unknown>) => ({
+        // Map to the expected song format, including content fields
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const songs = videos.map((v: Record<string, any>) => ({
           id: v.id as string,
           url: v.url as string | undefined,
           title: v.title as string,
           artist: v.artist as string | undefined,
           album: v.album as string | undefined,
           lyricOffset: v.lyricOffset as number | undefined,
-          lyricsSource: (v.lyricsSource || (v.lyricsSearch as { selection?: unknown })?.selection) as {
+          lyricsSource: (v.lyricsSource || v.lyricsSearch?.selection) as {
             hash: string;
             albumId: string | number;
             title: string;
             artist: string;
             album?: string;
           } | undefined,
+          // Include content fields (may be compressed gzip:base64 strings or raw objects)
+          // These are passed through as-is to the API which handles decompression
+          lyrics: v.lyrics,
+          translations: v.translations,
+          furigana: v.furigana,
+          soramimi: v.soramimi,
+          soramimiByLang: v.soramimiByLang,
+          // Timestamps
+          createdBy: v.createdBy as string | undefined,
+          createdAt: v.createdAt as number | undefined,
+          updatedAt: v.updatedAt as number | undefined,
+          importOrder: v.importOrder as number | undefined,
         }));
 
         const result = await bulkImportSongMetadata(songs, { username, authToken });
