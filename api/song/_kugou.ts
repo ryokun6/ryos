@@ -73,20 +73,21 @@ export interface KugouSearchResult {
 
 /**
  * Fetch cover image URL from Kugou API
- * Uses the mobile getSongInfo endpoint which returns album_img
+ * Uses the album/info endpoint which returns imgurl
  * The URL contains {size} placeholder that should be replaced on the client
+ * Returns HTTPS URL to avoid mixed content issues
  */
 async function fetchCoverUrl(hash: string, albumId: string | number): Promise<string> {
+  if (!albumId) return "";
+  
   try {
-    const url = new URL("http://m.kugou.com/app/i/getSongInfo.php");
-    url.searchParams.set("cmd", "playInfo");
-    url.searchParams.set("hash", hash);
-
-    const res = await fetchWithTimeout(url.toString(), { headers: kugouHeaders }, 5000);
+    const url = `http://mobilecdn.kugou.com/api/v3/album/info?albumid=${albumId}`;
+    const res = await fetchWithTimeout(url, { headers: kugouHeaders }, 5000);
     if (!res.ok) return "";
-    const json = (await res.json()) as { album_img?: string };
-    // Return the album_img which contains {size} placeholder
-    return json?.album_img ?? "";
+    const json = (await res.json()) as { data?: { imgurl?: string } };
+    const imgurl = json?.data?.imgurl ?? "";
+    // Convert to HTTPS to avoid mixed content issues in browsers
+    return imgurl.replace(/^http:\/\//, "https://");
   } catch {
     return "";
   }

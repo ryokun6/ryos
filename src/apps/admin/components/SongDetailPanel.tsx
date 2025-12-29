@@ -47,10 +47,14 @@ interface SongDetail {
 /**
  * Replace {size} placeholder in Kugou image URL with actual size
  * Kugou image URLs contain {size} that needs to be replaced with: 100, 150, 240, 400, etc.
+ * Also ensures HTTPS is used to avoid mixed content issues
  */
 function formatKugouImageUrl(imgUrl: string | undefined, size: number = 400): string | null {
   if (!imgUrl) return null;
-  return imgUrl.replace("{size}", String(size));
+  let url = imgUrl.replace("{size}", String(size));
+  // Ensure HTTPS
+  url = url.replace(/^http:\/\//, "https://");
+  return url;
 }
 
 interface SongDetailPanelProps {
