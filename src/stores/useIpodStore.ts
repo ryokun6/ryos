@@ -232,10 +232,6 @@ export interface IpodState extends IpodData {
   setLyricsAlignment: (alignment: LyricsAlignment) => void;
   /** Set lyrics font style */
   setLyricsFont: (font: LyricsFont) => void;
-  /** Set Korean text display mode @deprecated Use setRomanization instead */
-  setKoreanDisplay: (display: KoreanDisplay) => void;
-  /** Set Japanese furigana display mode @deprecated Use setRomanization instead */
-  setJapaneseFurigana: (mode: JapaneseFurigana) => void;
   /** Set romanization settings */
   setRomanization: (settings: Partial<RomanizationSettings>) => void;
   /** Toggle master romanization on/off */
@@ -803,8 +799,6 @@ export const useIpodStore = create<IpodState>()(
       },
       setLyricsAlignment: (alignment) => set({ lyricsAlignment: alignment }),
       setLyricsFont: (font) => set({ lyricsFont: font }),
-      setKoreanDisplay: (display) => set({ koreanDisplay: display }),
-      setJapaneseFurigana: (mode) => set({ japaneseFurigana: mode }),
       setRomanization: (settings) =>
         set((state) => ({
           romanization: { ...state.romanization, ...settings },
@@ -1239,8 +1233,8 @@ export const useIpodStore = create<IpodState>()(
         showLyrics: state.showLyrics,
         lyricsAlignment: state.lyricsAlignment,
         lyricsFont: state.lyricsFont,
-        koreanDisplay: state.koreanDisplay,
-        japaneseFurigana: state.japaneseFurigana,
+        // NOTE: koreanDisplay and japaneseFurigana removed from persistence
+        // They are deprecated and migrated to romanization settings
         romanization: state.romanization,
         lyricsTranslationLanguage: state.lyricsTranslationLanguage,
         isFullScreen: state.isFullScreen,

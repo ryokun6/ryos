@@ -280,7 +280,11 @@ export function useLyrics({
         }
       });
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      // Reset loading state on cleanup to prevent stuck indicators
+      setIsFetchingOriginal(false);
+    };
   }, [songId, title, artist, refetchTrigger, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage]);
 
   // ==========================================================================
@@ -377,7 +381,12 @@ export function useLyrics({
         }
       });
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      // Reset loading state on cleanup to prevent stuck indicators
+      setIsTranslating(false);
+      setTranslationProgress(undefined);
+    };
   }, [songId, originalLines, translateTo, isFetchingOriginal, lyricsCacheBustTrigger]);
 
   // ==========================================================================
