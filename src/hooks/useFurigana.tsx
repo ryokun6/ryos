@@ -596,7 +596,9 @@ export function useFurigana({
         if (soramimiSegments && soramimiSegments.length > 0) {
           // Pronunciation-only mode: show only the soramimi readings
           if (pronunciationOnly) {
-            const pronunciationText = soramimiSegments.map(seg => seg.reading || seg.text).join("");
+            // English soramimi should have spaces between words for readability
+            const separator = romanization.soramamiTargetLanguage === "en" ? " " : "";
+            const pronunciationText = soramimiSegments.map(seg => seg.reading || seg.text).join(separator);
             return <span key={keyPrefix}>{pronunciationText}</span>;
           }
           return (

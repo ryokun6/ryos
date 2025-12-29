@@ -93,6 +93,7 @@ import {
   parseSoramimiRubyMarkup,
   fillMissingReadings,
   cleanSoramimiReading,
+  convertSoramimiToTraditional,
 } from "./_soramimi.js";
 
 import {
@@ -1150,7 +1151,13 @@ Output:
                   // parseSoramimiRubyMarkup handles: extracting {text|reading} patterns,
                   // stripping furigana annotations from output, cleaning readings
                   const rawSegments = parseSoramimiRubyMarkup(content);
-                  const segments = fillMissingReadings(rawSegments);
+                  let segments = fillMissingReadings(rawSegments);
+                  
+                  // For Chinese soramimi, ensure readings are in Traditional Chinese
+                  // The AI should output 繁體字, but this catches any simplified characters
+                  if (!isEnglishOutput) {
+                    segments = convertSoramimiToTraditional(segments);
+                  }
                   
                   if (segments.length > 0) {
                     allSoramimi[originalIndex] = segments;
