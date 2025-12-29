@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { listAllCachedSongMetadata, deleteSongMetadata, deleteAllSongMetadata, bulkImportSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
+import { getApiUrl } from "@/utils/platform";
 
 interface User {
   username: string;
@@ -452,12 +453,47 @@ export function AdminAppComponent({
     setIsExporting(true);
 
     try {
-      // Map songs to export format (compatible with import format)
+      // Fetch full song data including content (lyrics, translations, furigana, soramimi)
+      const response = await fetch(
+        getApiUrl("/api/song?include=metadata,lyrics,translations,furigana,soramimi"),
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch songs: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const fullSongs = data.songs || [];
+
+      // Map songs to export format (compatible with import format, includes all content)
       const exportData = {
         exportedAt: new Date().toISOString(),
-        version: 1,
-        videos: songs.map((song) => ({
-          id: song.youtubeId,
+        version: 2, // Version 2 includes content data
+        videos: fullSongs.map((song: {
+          id: string;
+          title: string;
+          artist?: string;
+          album?: string;
+          lyricOffset?: number;
+          lyricsSource?: CachedSongMetadata["lyricsSource"];
+          createdBy?: string;
+          createdAt: number;
+          updatedAt: number;
+          importOrder?: number;
+          lyrics?: { lrc?: string; krc?: string; cover?: string };
+          translations?: Record<string, string>;
+          furigana?: Array<Array<{ text: string; reading?: string }>>;
+          soramimi?: Array<Array<{ text: string; reading?: string }>>;
+          soramimiByLang?: Record<string, Array<Array<{ text: string; reading?: string }>>>;
+        }) => ({
+          // Metadata
+          id: song.id,
           title: song.title,
           artist: song.artist,
           album: song.album,
@@ -466,6 +502,13 @@ export function AdminAppComponent({
           createdBy: song.createdBy,
           createdAt: song.createdAt,
           updatedAt: song.updatedAt,
+          importOrder: song.importOrder,
+          // Content (optional, may not exist for all songs)
+          ...(song.lyrics && { lyrics: song.lyrics }),
+          ...(song.translations && Object.keys(song.translations).length > 0 && { translations: song.translations }),
+          ...(song.furigana && song.furigana.length > 0 && { furigana: song.furigana }),
+          ...(song.soramimi && song.soramimi.length > 0 && { soramimi: song.soramimi }),
+          ...(song.soramimiByLang && Object.keys(song.soramimiByLang).length > 0 && { soramimiByLang: song.soramimiByLang }),
         })),
       };
 
@@ -482,8 +525,8 @@ export function AdminAppComponent({
 
       toast.success(
         t("apps.admin.messages.exportSuccess", {
-          count: songs.length,
-          defaultValue: `Exported ${songs.length} songs`,
+          count: fullSongs.length,
+          defaultValue: `Exported ${fullSongs.length} songs`,
         })
       );
     } catch (error) {
@@ -492,7 +535,7 @@ export function AdminAppComponent({
     } finally {
       setIsExporting(false);
     }
-  }, [songs, t]);
+  }, [songs.length, t]);
 
   // Prompt delete all songs (opens dialog)
   const handleDeleteAllSongs = useCallback(() => {

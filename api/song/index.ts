@@ -32,8 +32,10 @@ import {
   getSong,
   deleteAllSongs,
   getSongMetaKey,
+  getSongContentKey,
   SONG_SET_KEY,
   type SongMetadata,
+  type SongContent,
   type GetSongOptions,
   type LyricsSource,
 } from "../_utils/song-service.js";
@@ -64,6 +66,19 @@ const CreateSongSchema = z.object({
   lyricsSource: LyricsSourceSchema.optional(),
 });
 
+// Furigana/Soramimi segment schema
+const FuriganaSegmentSchema = z.object({
+  text: z.string(),
+  reading: z.string().optional(),
+});
+
+// Lyrics content schema
+const LyricsContentSchema = z.object({
+  lrc: z.string().optional(),
+  krc: z.string().optional(),
+  cover: z.string().optional(),
+});
+
 const BulkImportSchema = z.object({
   action: z.literal("import"),
   songs: z.array(
@@ -82,6 +97,17 @@ const BulkImportSchema = z.object({
           selection: LyricsSourceSchema.optional(),
         })
         .optional(),
+      // Content fields (v2 export format)
+      lyrics: LyricsContentSchema.optional(),
+      translations: z.record(z.string(), z.string()).optional(),
+      furigana: z.array(z.array(FuriganaSegmentSchema)).optional(),
+      soramimi: z.array(z.array(FuriganaSegmentSchema)).optional(),
+      soramimiByLang: z.record(z.string(), z.array(z.array(FuriganaSegmentSchema))).optional(),
+      // Timestamps for preserving original dates
+      createdBy: z.string().optional(),
+      createdAt: z.number().optional(),
+      updatedAt: z.number().optional(),
+      importOrder: z.number().optional(),
     })
   ),
 });
@@ -166,6 +192,7 @@ export default async function handler(req: Request) {
         includeLyrics: includes.includes("lyrics"),
         includeTranslations: includes.includes("translations"),
         includeFurigana: includes.includes("furigana"),
+        includeSoramimi: includes.includes("soramimi"),
       };
 
       const songs = await listSongs(redis, {
@@ -238,9 +265,8 @@ export default async function handler(req: Request) {
         });
         const existingMap = new Map(existingSongs.map((s) => [s.id, s]));
 
-        // Build all song metadata documents (no async needed)
-        // Bulk import only imports metadata, not content (lyrics, etc.)
-        const songMetas = songs.map((songData, i) => {
+        // Build all song metadata and content documents
+        const songDocs = songs.map((songData, i) => {
           const existing = existingMap.get(songData.id);
 
           // Convert legacy lyricsSearch to lyricsSource
@@ -250,38 +276,72 @@ export default async function handler(req: Request) {
             lyricsSource = songData.lyricsSearch.selection as LyricsSource;
           }
 
+          // Build metadata
+          const meta: SongMetadata = {
+            id: songData.id,
+            title: songData.title,
+            artist: songData.artist,
+            album: songData.album,
+            lyricOffset: songData.lyricOffset,
+            lyricsSource,
+            createdBy: songData.createdBy || existing?.createdBy || username || undefined,
+            createdAt: songData.createdAt || existing?.createdAt || now - i, // Maintain order
+            updatedAt: songData.updatedAt || now,
+            importOrder: songData.importOrder ?? existing?.importOrder ?? i,
+          };
+
+          // Build content (if any content fields are present)
+          const content: SongContent = {};
+          if (songData.lyrics?.lrc) {
+            content.lyrics = {
+              lrc: songData.lyrics.lrc,
+              krc: songData.lyrics.krc,
+              cover: songData.lyrics.cover,
+            };
+          }
+          if (songData.translations && Object.keys(songData.translations).length > 0) {
+            content.translations = songData.translations;
+          }
+          if (songData.furigana && songData.furigana.length > 0) {
+            content.furigana = songData.furigana;
+          }
+          if (songData.soramimi && songData.soramimi.length > 0) {
+            content.soramimi = songData.soramimi;
+          }
+          if (songData.soramimiByLang && Object.keys(songData.soramimiByLang).length > 0) {
+            content.soramimiByLang = songData.soramimiByLang;
+          }
+
+          const hasContent = Object.keys(content).length > 0;
+
           return {
-            meta: {
-              id: songData.id,
-              title: songData.title,
-              artist: songData.artist,
-              album: songData.album,
-              lyricOffset: songData.lyricOffset,
-              lyricsSource,
-              createdBy: existing?.createdBy || username || undefined,
-              createdAt: existing?.createdAt || now - i, // Maintain order
-              updatedAt: now,
-              importOrder: existing?.importOrder ?? i,
-            } as SongMetadata,
+            meta,
+            content: hasContent ? content : null,
             isUpdate: !!existing,
           };
         });
 
         // Use pipeline for all writes (1 batched Redis call)
-        // Only write to metadata keys - content is handled separately when lyrics are fetched
         const pipeline = redis.pipeline();
-        for (const { meta } of songMetas) {
+        for (const { meta, content } of songDocs) {
           pipeline.set(getSongMetaKey(meta.id), JSON.stringify(meta));
           pipeline.sadd(SONG_SET_KEY, meta.id);
+          // Save content if present
+          if (content) {
+            pipeline.set(getSongContentKey(meta.id), JSON.stringify(content));
+          }
         }
         await pipeline.exec();
 
-        const imported = songMetas.filter((d) => !d.isUpdate).length;
-        const updated = songMetas.filter((d) => d.isUpdate).length;
+        const contentCount = songDocs.filter((d) => d.content !== null).length;
+
+        const imported = songDocs.filter((d) => !d.isUpdate).length;
+        const updated = songDocs.filter((d) => d.isUpdate).length;
 
         logInfo(requestId, "Bulk import complete", {
           imported,
           updated,
+          withContent: contentCount,
           total: songs.length,
           duration: `${Date.now() - startTime}ms`,
         });
@@ -290,6 +350,7 @@ export default async function handler(req: Request) {
           success: true,
           imported,
           updated,
+          withContent: contentCount,
           total: songs.length,
         });
       }
