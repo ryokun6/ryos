@@ -1,3 +1,5 @@
+import { Redis } from "@upstash/redis";
+
 // App display names for OG titles
 const APP_NAMES: Record<string, string> = {
   finder: "Finder",
@@ -124,6 +126,37 @@ export const config = {
   ],
 };
 
+// Fetch song metadata from Redis song library
+async function getSongFromRedis(videoId: string): Promise<{ title: string; artist: string | null } | null> {
+  try {
+    // Skip if no Redis credentials
+    if (!process.env.REDIS_KV_REST_API_URL || !process.env.REDIS_KV_REST_API_TOKEN) {
+      return null;
+    }
+
+    const redis = new Redis({
+      url: process.env.REDIS_KV_REST_API_URL,
+      token: process.env.REDIS_KV_REST_API_TOKEN,
+    });
+
+    // Fetch from song:meta:{id} (split storage format)
+    const metaKey = `song:meta:${videoId}`;
+    const raw = await redis.get(metaKey);
+    
+    if (!raw) return null;
+
+    const meta = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (!meta?.title) return null;
+
+    return {
+      title: meta.title,
+      artist: meta.artist || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Simple title parser - extracts artist and title from common YouTube formats
 function parseYouTubeTitle(rawTitle: string): { title: string; artist: string | null } {
   // Remove common suffixes
@@ -231,14 +264,14 @@ export default async function middleware(request: Request) {
     const videoId = ipodMatch[1];
     imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
     
-    // Fetch YouTube info for title/artist
-    const ytInfo = await getYouTubeInfo(videoId);
-    if (ytInfo) {
-      if (ytInfo.artist) {
-        title = `${ytInfo.title} - ${ytInfo.artist}`;
+    // First try to get song info from Redis library, then fall back to YouTube
+    const songInfo = await getSongFromRedis(videoId) || await getYouTubeInfo(videoId);
+    if (songInfo) {
+      if (songInfo.artist) {
+        title = `${songInfo.title} - ${songInfo.artist}`;
         description = `Listen on ryOS iPod`;
       } else {
-        title = ytInfo.title;
+        title = songInfo.title;
         description = "Listen on ryOS iPod";
       }
     } else {
@@ -254,11 +287,11 @@ export default async function middleware(request: Request) {
     const videoId = karaokeMatch[1];
     imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
     
-    // Fetch YouTube info for title/artist
-    const ytInfo = await getYouTubeInfo(videoId);
-    if (ytInfo) {
+    // First try to get song info from Redis library, then fall back to YouTube
+    const songInfo = await getSongFromRedis(videoId) || await getYouTubeInfo(videoId);
+    if (songInfo) {
       // Format: "Sing [Title] - [Artist] on ryOS" or "Sing [Title] on ryOS"
-      const songDisplay = ytInfo.artist ? `${ytInfo.title} - ${ytInfo.artist}` : ytInfo.title;
+      const songDisplay = songInfo.artist ? `${songInfo.title} - ${songInfo.artist}` : songInfo.title;
       title = `Sing ${songDisplay} on ryOS`;
       description = `Sing along on ryOS Karaoke`;
     } else {
