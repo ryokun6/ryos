@@ -150,7 +150,8 @@ function decompressFromBase64<T>(value: unknown): T | null {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    const decompressed = pako.inflate(bytes);
+    // Use ungzip since the data is gzip compressed (not raw deflate)
+    const decompressed = pako.ungzip(bytes);
     const text = new TextDecoder("utf-8").decode(decompressed);
     return JSON.parse(text) as T;
   } catch (error) {
