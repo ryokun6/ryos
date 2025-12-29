@@ -308,7 +308,7 @@ export function getKoreanPronunciationOnly(text: string): string {
 
 /**
  * Get pronunciation-only text for Chinese (pinyin)
- * Adds spaces between pinyin syllables for readability
+ * No spaces within word - spaces are added at segment level in getFuriganaSegmentsPronunciationOnly
  */
 export function getChinesePronunciationOnly(text: string): string {
   // Convert traditional to simplified for accurate pinyin lookup
@@ -318,30 +318,18 @@ export function getChinesePronunciationOnly(text: string): string {
   const pinyinResult = pinyin(simplifiedText, { type: 'array', toneType: 'none' });
   const chars = [...text];
   
-  const parts: string[] = [];
-  let nonChineseBuffer = "";
-  
+  let result = "";
   for (let idx = 0; idx < chars.length; idx++) {
     const char = chars[idx];
     CHINESE_REGEX.lastIndex = 0;
     if (CHINESE_REGEX.test(char)) {
-      // Flush non-Chinese buffer first
-      if (nonChineseBuffer) {
-        parts.push(nonChineseBuffer);
-        nonChineseBuffer = "";
-      }
-      parts.push(pinyinResult[idx] || char);
+      result += pinyinResult[idx] || char;
     } else {
-      nonChineseBuffer += char;
+      result += char;
     }
   }
-  // Flush remaining non-Chinese buffer
-  if (nonChineseBuffer) {
-    parts.push(nonChineseBuffer);
-  }
   
-  // Join with spaces and collapse multiple spaces
-  return parts.join(" ").replace(/\s+/g, " ").trim();
+  return result;
 }
 
 /**
@@ -370,13 +358,16 @@ export function getKanaPronunciationOnly(text: string): string {
 /**
  * Get pronunciation-only text from furigana segments
  * Returns the reading/pronunciation instead of the original text
- * Adds spaces between segments for readability when using romanization
+ * Adds spaces between segments only when outputting romanized text (latin characters)
  */
 export function getFuriganaSegmentsPronunciationOnly(
   segments: FuriganaSegment[],
   options: RomanizationOptions = {}
 ): string {
   const { koreanRomanization = false, japaneseRomaji = false, chinesePinyin = false } = options;
+  
+  // Determine if we're outputting latin characters (romanization needs spaces between words)
+  const isRomanized = japaneseRomaji || chinesePinyin || koreanRomanization;
   
   const parts: string[] = [];
   
@@ -409,9 +400,12 @@ export function getFuriganaSegmentsPronunciationOnly(
     parts.push(segment.text);
   }
   
-  // Join with spaces and collapse multiple spaces for clean output
-  // This handles: Japanese romaji, mixed content, Korean with natural spaces
-  return parts.join(" ").replace(/\s+/g, " ").trim();
+  // Only add spaces between segments when outputting romanized (latin) text
+  // Native scripts (hiragana, hanzi, hangul) don't need inter-segment spaces
+  if (isRomanized) {
+    return parts.join(" ").replace(/\s+/g, " ").trim();
+  }
+  return parts.join("");
 }
 
 /**
