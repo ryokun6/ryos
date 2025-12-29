@@ -167,205 +167,217 @@ export function fillMissingReadings(segments: FuriganaSegment[]): FuriganaSegmen
 // Soramimi Generation - Prompts and Parsing
 // =============================================================================
 
-export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese/Korean lyrics while telling a poetic story.
+export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese/Korean lyrics.
 
-CRITICAL: Readings must be ONLY Chinese characters! Never include Korean Hangul or Japanese kana!
+CRITICAL RULES:
+1. You MUST wrap EVERY non-English word in <original:chinese> format
+2. Chinese readings must be ONLY Chinese characters - no Hangul or kana!
+3. English words stay unwrapped (no angle brackets)
 
-=== PHILOSOPHY: SOUND + MEANING + POETRY ===
+=== OUTPUT FORMAT (MANDATORY) ===
 
-空耳 is an art form! Don't just transliterate sounds mechanically. Create Chinese phrases that:
-1. SOUND approximately like the original (doesn't need to be exact!)
-2. CARRY MEANING related to the song's emotion or story
-3. FORM POETIC PHRASES that read beautifully in Chinese
+Format: <original_text:chinese_phonetic_reading>
+- The original text goes BEFORE the colon
+- The Chinese reading goes AFTER the colon
+- Wrap in angle brackets < >
 
-BEST EXAMPLES (sound + meaning):
-- 사랑 (sa-rang, "love") → <사랑:思浪> "thinking waves" - sounds like sa-rang AND evokes love's waves
-- 心 (kokoro, "heart") → <心:哭口落> "crying mouth falls" - sounds like ko-ko-ro AND feels emotional
-- 夢 (yume, "dream") → <夢:欲沒> "desire sinks" - sounds like yu-me AND feels dreamlike
-- 涙 (namida, "tears") → <涙:那迷搭> "that lost path" - sounds close AND evokes sadness
+EXAMPLE INPUT:
+1: Oh|no|시간이|갈수록|널
+2: 사랑해요
 
-AVOID mechanical transliteration like:
-- ❌ <あなた:阿那他> - just sounds, no meaning
-- ✓ <あなた:阿娜她> "elegant her" - if singing about a woman
-- ✓ <あなた:啊那塔> "ah that tower" - if the context fits
+EXAMPLE OUTPUT:
+1: Oh no <시간이:思干이> <갈수록:嘎蘇录> <널:呢>
+2: <사랑해요:思浪海喲>
 
-=== JAPANESE ===
+=== KOREAN EXAMPLES ===
 
-Read kanji by Japanese pronunciation. For love songs, sad songs, happy songs - choose characters that match the mood!
-- 私 (watashi) → pick from: 哇他西, 我他希, 娃她惜 (choose what fits the feeling)
-- 好き (suki) → pick from: 速奇, 宿期, 訴泣 (訴泣 "telling tears" for sad love!)
+Korean words MUST have Chinese readings:
+- 시간이 → <시간이:思干이> (shi-gan-i sounds like 思干이)
+- 갈수록 → <갈수록:嘎蘇录> (gal-su-rok sounds like 嘎蘇录)
+- 사랑 → <사랑:思浪> (sa-rang sounds like 思浪)
+- 해요 → <해요:海喲> (hae-yo sounds like 海喲)
+- 보고 싶어 → <보고:波哥> <싶어:希破>
 
-=== KOREAN ===
+=== JAPANESE EXAMPLES ===
 
-Korean has spaces between words - keep them! Choose meaningful characters:
-- 사랑해요 → <사랑해요:思浪海喲> "thinking waves, ocean yo!" 
-- 보고 싶어 → <보고:波哥> <싶어:惜破> "wave brother, cherish broken"
-- 내 마음 → <내:奶> <마음:媽音> or <내:乃> <마음:麻吟> - pick what sounds poetic
+Japanese words MUST have Chinese readings:
+- 私 (watashi) → <私:娃他西>
+- 好き (suki) → <好き:速奇>
+- 心 (kokoro) → <心:哭口落>
+- ずっと → <ずっと:祖～頭> (use ～ for っ)
 
-=== FORMAT ===
+=== PHILOSOPHY ===
 
-1. If input uses | (pipe) between words, wrap EACH segment separately: 私|は|走る → <私:娃><は:哈><走る:哈西嚕>
-2. Format: <original:chinese_reading> for EVERY Japanese/Korean word
-3. English words stay unwrapped
-4. Keep spaces in Korean text
-5. Output EVERY word!
-6. PURE CHINESE only in readings!
-7. っ/ッ (gemination) → use ～ Example: ずっと → <ずっと:祖～頭>
+空耳 is an art! Choose Chinese characters that:
+1. SOUND like the original pronunciation
+2. CARRY poetic MEANING when possible
+3. Form beautiful Chinese phrases
 
-BE CREATIVE! Prioritize: poetic meaning > exact sound. Approximate sounds are fine if the Chinese phrase is beautiful and emotionally fitting!`;
+=== RULES ===
+
+1. EVERY non-English word MUST be wrapped: <word:chinese>
+2. English words stay plain (unwrapped)
+3. If input has | between words, wrap each segment separately
+4. Output one numbered line per input line
+5. NEVER output plain Korean/Japanese without <:> wrapper!`;
 
 /**
  * System prompt for Japanese lyrics with furigana readings provided
  * When furigana is available, we pass the hiragana readings inline so the AI
  * knows exactly how each kanji should be pronounced
  */
-export const SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese lyrics while forming poetic Chinese phrases.
+export const SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese lyrics.
 
 You are given Japanese text with:
-- Furigana in parentheses showing pronunciation: 私(わたし) means 私 is read as "わたし"
+- Furigana in parentheses: 私(わたし) means 私 is read as "わたし"
 - Segments separated by | (pipe): 私(わたし)|は|走(はし)|る
 
-Each | marks a word boundary. Create a Chinese reading for EACH segment separately!
+CRITICAL RULES:
+1. You MUST wrap EVERY segment in <original:chinese> format
+2. Chinese readings must be ONLY Chinese characters - no kana!
+3. Use the furigana to know correct pronunciation
+4. Do NOT include parentheses in output
 
-CRITICAL: Readings must be ONLY Chinese characters! Never include Japanese kana!
+=== OUTPUT FORMAT (MANDATORY) ===
 
-=== PHILOSOPHY: POETRY OVER PRECISION ===
+Format: <original_text:chinese_phonetic_reading>
 
-空耳 is an art! Don't mechanically map sounds. Create Chinese phrases that:
-1. SOUND approximately like the Japanese (use the furigana as guide)
-2. CARRY MEANING - choose characters that relate to the song's emotion
-3. FORM POETRY - the Chinese should read like a poem or story
+EXAMPLE INPUT:
+1: 私(わたし)|は|好き(すき)|だよ
+2: 夢(ゆめ)|を|見(み)|た
 
-EXAMPLES - Sound + Meaning + Poetry:
+EXAMPLE OUTPUT:
+1: <私:娃她西><は:哈><好き:速奇><だよ:搭喲>
+2: <夢:欲沒><を:喔><見:迷><た:塔>
 
-Love song lyrics:
-- 私(わたし)の → <私:娃她西><の:諾> "baby she west, promise" - sounds like watashi-no
-- 心(こころ)が → <心:哭口落><が:嘎> "crying mouth falls" - evokes heartache
-- 好き(すき)だよ → <好き:宿期><だよ:搭喲> "destined time" - romantic meaning!
+=== KANA TO CHINESE GUIDE ===
 
-Sad song lyrics:
-- 涙(なみだ) → <涙:那迷搭> "that lost path" - sounds like namida, feels sad
-- 夢(ゆめ)を見(み)た → <夢:欲沒><を:喔><見:迷><た:塔> "desire sinks, oh lost tower"
-- 忘(わす)れない → <忘れない:娃思咧奈> "baby thinks, alas!" 
+Use the furigana reading to pick Chinese characters that sound similar:
+- わたし (watashi) → 娃她西 or 哇他西
+- すき (suki) → 速奇 or 蘇奇
+- こころ (kokoro) → 哭口落
+- なみだ (namida) → 那迷搭
+- ゆめ (yume) → 欲沒 or 玉沒
 
-Happy/energetic:
-- 走(はし)る → <走:哈西嚕> or <走:哈希露> "ha west dew" - pick what fits!
-- 飛(と)ぶ → <飛:頭布> "head cloth" or <飛:兔步> "rabbit steps"
+Single kana:
+- あ→阿, い→衣, う→屋, え→欸, お→喔
+- か→咖, き→奇, く→酷, け→給, こ→口
+- さ→撒, し→西, す→蘇, せ→些, そ→搜
+- た→他, ち→吃, つ→此, て→貼, と→頭
+- な→那, に→你, ぬ→奴, ね→內, の→諾
+- は→哈, ひ→嘻, ふ→夫, へ→嘿, ほ→火
+- ま→媽, み→咪, む→木, め→沒, も→摸
+- や→壓, ゆ→玉, よ→喲
+- ら→啦, り→里, る→嚕, れ→咧, ろ→囉
+- わ→哇, を→喔, ん→嗯
+- っ/ッ → ～ (Example: ずっと → <ずっと:祖～頭>)
 
-=== HOW TO USE FURIGANA ===
+=== RULES ===
 
-The furigana tells you pronunciation. Be creative with the Chinese!
-- 大切(たいせつ)な人(ひと) → <大切:太惜刺><な:那><人:嘻頭> "too cherished thorn, that playful head"
-- 名前(なまえ) → <名前:那嘛诶> or <名前:娜媽欸> - choose based on context
-
-=== KANA GUIDELINES (flexible, not strict!) ===
-
-These are suggestions - feel free to pick different characters that sound similar AND add meaning:
-- あ → 阿/啊/娃, い → 衣/一/以, う → 屋/烏/舞, え → 欸/诶/耶, お → 喔/哦/噢
-- か → 咖/卡/嘎, き → 奇/期/棋, く → 酷/哭/枯, け → 給/可/課, こ → 口/哭/枯
-- さ → 撒/薩/灑, し → 西/思/詩, す → 蘇/速/訴, せ → 些/謝/洩, そ → 搜/梭/訴
-- た → 他/她/塔, ち → 吃/痴/遲, つ → 此/刺/促, て → 貼/鐵/蝶, と → 頭/兔/途
-- な → 那/娜/奈, に → 你/泥/尼, ぬ → 奴/怒, ね → 內/捏/涅, の → 諾/糯/挪
-- は → 哈/哇/花, ひ → 嘻/希/悲, ふ → 夫/福/浮, へ → 嘿/黑/嘿, ほ → 火/乎/呼
-- ま → 媽/嘛/馬, み → 咪/迷/蜜, む → 木/慕/霧, め → 沒/梅/迷, も → 摸/莫/默
-- や → 壓/呀/雅, ゆ → 玉/欲/雨, よ → 喲/呦/幽
-- ら → 啦/拉/辣, り → 里/離/理, る → 嚕/路/露, れ → 咧/裂/烈, ろ → 囉/落/洛
-- わ → 哇/娃/挖, を → 喔/我/握, ん → 嗯/恩/音
-
-SPECIAL: っ/ッ (gemination) → ～ Example: ずっと → <ずっと:祖～頭> or <ずっと:族～途>
-
-=== FORMAT ===
-
-1. Each | in input marks a segment boundary - wrap EACH segment separately!
-2. Format: <original:chinese_reading> - do NOT include the furigana parentheses in output
-3. Example input: 私(わたし)|は|好き(すき)
-   Example output: <私:娃她西><は:哈><好き:速奇>
-4. English words stay unwrapped
-5. PURE CHINESE only - no kana allowed in readings!
-6. Use the furigana pronunciation as your sound guide
-
-BE CREATIVE! A beautiful Chinese phrase that's 80% phonetically accurate is better than an ugly phrase that's 100% accurate. Tell a story with your characters!`;
+1. EVERY segment between | MUST be wrapped: <segment:chinese>
+2. Remove furigana parentheses from output
+3. English words stay unwrapped
+4. Output one numbered line per input line
+5. NEVER output plain Japanese without <:> wrapper!`;
 
 // =============================================================================
 // English Soramimi Prompts - Phonetic English approximations
 // =============================================================================
 
-export const SORAMIMI_ENGLISH_SYSTEM_PROMPT = `Create English "misheard lyrics" (soramimi) - English words/phrases that SOUND like Japanese/Korean/Chinese lyrics.
+export const SORAMIMI_ENGLISH_SYSTEM_PROMPT = `Create English "misheard lyrics" (soramimi) - English words that SOUND like Japanese/Korean/Chinese lyrics.
 
-=== WHAT IS ENGLISH SORAMIMI? ===
+This is like "Benny Lava" or "Ken Lee" - mishearing foreign songs as English words.
 
-Take non-English lyrics and create English words that phonetically approximate how they sound.
-This is like the famous "Benny Lava" or "Ken Lee" videos - mishearing foreign songs as English words.
+CRITICAL RULES:
+1. You MUST wrap EVERY non-English word in <original:english> format
+2. Use real English words that sound like the original
+3. English words in lyrics stay unwrapped
 
-EXAMPLES:
-- 見つめていたい (mi-tsu-me-te-i-ta-i) → "meet sue, mate a tie"
-- 사랑해 (sa-rang-hae) → "sorry hey" or "saw wrong hay"  
-- ずっと (zu-t-to) → "zoo toe"
-- 君の名は (ki-mi-no-na-wa) → "key me no now what"
-- 夢 (yume) → "you may"
-- 涙 (namida) → "nah me da"
-- 我愛你 (wǒ ài nǐ) → "wall I knee"
-- 月亮 (yuè liàng) → "you eh leeyong"
-- 心情 (xīn qíng) → "shin ching"
+=== OUTPUT FORMAT (MANDATORY) ===
+
+Format: <original_text:english_phonetic>
+
+EXAMPLE INPUT:
+1: 시간이|갈수록|널
+2: 사랑해요
+3: Fire in the water
+
+EXAMPLE OUTPUT:
+1: <시간이:she gone knee> <갈수록:gal sue rock> <널:null>
+2: <사랑해요:saw wrong hey yo>
+3: Fire in the water
+
+=== KOREAN EXAMPLES ===
+
+- 시간이 (shi-gan-i) → <시간이:she gone knee>
+- 갈수록 (gal-su-rok) → <갈수록:gal sue rock>
+- 사랑 (sa-rang) → <사랑:saw wrong>
+- 해요 (hae-yo) → <해요:hey yo>
+- 보고 싶어 → <보고:bow go> <싶어:ship uh>
+
+=== JAPANESE EXAMPLES ===
+
+- 見つめていたい → <見つめていたい:meet sue mate a tie>
+- ずっと → <ずっと:zoo toe>
+- 君の名は → <君の名は:key me no now what>
+- 私 → <私:what a she>
+- 好き → <好き:ski>
+
+=== CHINESE EXAMPLES ===
+
+- 我愛你 → <我愛你:wall I knee>
+- 月亮 → <月亮:you eh leeyong>
+- 心情 → <心情:shin ching>
 
 === RULES ===
 
-1. Use ONLY English words/sounds in the reading
-2. Prioritize recognizable English words over nonsense syllables when possible
-3. It's OK if the English doesn't make grammatical sense - focus on SOUND
-4. Break long words into multiple English words if needed
-5. Include spaces between English words for readability
+1. EVERY non-English word MUST be wrapped: <word:english>
+2. English words in original lyrics stay plain (unwrapped)
+3. Use spaces between English words for readability
+4. Output one numbered line per input line
+5. NEVER output plain Korean/Japanese/Chinese without <:> wrapper!`;
 
-=== FORMAT ===
-
-1. If input uses | (pipe) between words, wrap EACH segment separately: 私|は|走る → <私:watt><は:ha><走る:ha she rue>
-2. Format: <original:english_reading> for EVERY Japanese/Korean/Chinese word
-3. English words in original text stay unwrapped (unchanged)
-4. Keep spaces in Korean text
-5. Output EVERY non-English word!
-
-Example output:
-1: <見つめていたい:meet sue mate a tie>
-2: <ずっと:zoo toe> <一緒に:each show knee>
-3: <사랑:saw wrong> <해요:hey yo>
-4: <我愛你:wall I knee>`;
-
-export const SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT = `Create English "misheard lyrics" (soramimi) - English words/phrases that SOUND like Japanese lyrics.
+export const SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT = `Create English "misheard lyrics" (soramimi) - English words that SOUND like Japanese lyrics.
 
 You are given Japanese text with:
-- Furigana in parentheses showing pronunciation: 私(わたし) means 私 is read as "わたし"
+- Furigana in parentheses: 私(わたし) means 私 is read as "わたし"
 - Segments separated by | (pipe): 私(わたし)|は|走(はし)|る
 
-Each | marks a word boundary. Create an English reading for EACH segment separately!
+CRITICAL RULES:
+1. You MUST wrap EVERY segment in <original:english> format
+2. Use real English words that sound like the furigana
+3. Do NOT include parentheses in output
 
-=== WHAT IS ENGLISH SORAMIMI? ===
+=== OUTPUT FORMAT (MANDATORY) ===
 
-Take Japanese lyrics and create English words that phonetically approximate how they sound.
-The furigana tells you exactly how to pronounce each word - match that sound with English!
+Format: <original_text:english_phonetic>
 
-EXAMPLES with furigana:
-- 私(わたし) → "what a she" or "watt ah she"
-- 好き(すき) → "ski" or "sue key"
-- 心(こころ) → "cocoa row" or "ko ko row"
-- 涙(なみだ) → "nah me da" or "mommy duh"
-- 夢(ゆめ) → "you may" or "yoo meh"
+EXAMPLE INPUT:
+1: 私(わたし)|が|好き(すき)|だよ
+2: 夢(ゆめ)|を|見(み)|た
+
+EXAMPLE OUTPUT:
+1: <私:what a she><が:ga><好き:ski><だよ:die yo>
+2: <夢:you may><を:oh><見:me><た:ta>
+
+=== FURIGANA TO ENGLISH GUIDE ===
+
+Use the furigana to pick English words that sound similar:
+- わたし (watashi) → what a she, watt ah she
+- すき (suki) → ski, sue key
+- こころ (kokoro) → cocoa row, ko ko row
+- なみだ (namida) → nah me da
+- ゆめ (yume) → you may, you meh
+- はしる (hashiru) → ha she roo
 
 === RULES ===
 
-1. Use ONLY English words/sounds in the reading
-2. Use the furigana pronunciation as your guide (not the kanji meaning)
-3. Prioritize recognizable English words over pure phonetic spelling
-4. Break into multiple short English words for readability
-5. It's OK if the English doesn't make sense - focus on SOUND matching
-
-=== FORMAT ===
-
-1. Each | in input marks a segment boundary - wrap EACH segment separately!
-2. Format: <original:english_reading> - do NOT include the furigana parentheses in output
-3. Example input: 私(わたし)|が|好き(すき)|だよ
-   Example output: <私:what a she><が:ga><好き:sue key><だよ:die yo>
-4. English words in original lyrics stay unwrapped
-5. PURE ENGLISH only - no Japanese in readings!`;
+1. EVERY segment between | MUST be wrapped: <segment:english>
+2. Remove furigana parentheses from output
+3. English words in original lyrics stay unwrapped
+4. Use spaces between English words for readability
+5. Output one numbered line per input line
+6. NEVER output plain Japanese without <:> wrapper!`;
 
 /**
  * Clean AI output by removing malformed segments like <reading> without proper base:ruby structure
