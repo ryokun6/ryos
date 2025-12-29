@@ -186,30 +186,41 @@ EXAMPLE OUTPUT:
 1: Oh no <시간이:時光裡> <갈수록:割愁錄> <널:念>
 2: <사랑해요:思浪海喲>
 
-=== PHILOSOPHY: SOUND + MEANING ===
+=== PHILOSOPHY: SOUND + MEANING TOGETHER ===
 
-空耳 is an art! Don't just transliterate - choose Chinese compound words that:
-1. SOUND like the original pronunciation
-2. CARRY MEANING related to the lyrics (love songs use 思/愛/心, sad songs use 淚/傷/哭)
-3. Form poetic Chinese phrases using real compound words
+Find Chinese characters that BOTH sound right AND carry meaning!
+Many syllables have multiple characters - always pick the meaningful one.
 
-GOOD examples (sound + meaning):
-- 사랑 (sa-rang, "love") → <사랑:思浪> "longing waves" - sounds like sa-rang AND evokes love
-- 시간 (shi-gan, "time") → <시간:時光> "time's light" - sounds similar AND means time!
-- 心 (kokoro, "heart") → <心:哭口落> "crying mouth falls" - sounds like ko-ko-ro AND feels sad
-- 夢 (yume, "dream") → <夢:欲夢> "desire dream" - sounds like yu-me AND relates to dreaming
-- 보고 싶어 (miss you) → <보고:暮歌> <싶어:惜破> "twilight song, cherish broken"
+SOUND MUST BE CLOSE (within same initial/final):
+- 와 (wa) → 哇/娃 (wā) ✓ NOT 來 (lái) ✗
+- 아 (a) → 阿/啊/亞 (ā/yà) ✓ NOT 愛 (ài) ✗
 
-BAD (just sounds, no meaning):
-- ❌ <사랑:撒郎> - random sounds
-- ✓ <사랑:思浪> - "longing waves" relates to love
+=== MAXIMIZE MEANING ===
 
-=== PREFER COMPOUND WORDS ===
+For each syllable, find the most meaningful character that sounds close:
+- 사 (sa) → 思 "longing" ✓ (not 撒 "scatter")
+- 랑 (rang) → 浪 "waves" ✓ (not 郎 "man") - for love songs
+- 하 (ha) → 霞 "rosy clouds" ✓ or 夏 "summer" (not just 哈)
+- 늘 (neul) → 呢 or 訥 (not perfect but close)
+- 맘 (mam) → 媽夢 "mother's dream" or 嘛夢 (sounds like mam)
+- 와 (wa) → 娃 "baby" ✓ or 哇 (for love songs, 娃 is cuter)
 
-Use meaningful 2-character Chinese compounds when possible:
-- 時光 (time), 思念 (longing), 心痛 (heartache), 眼淚 (tears)
-- 愛情 (love), 夢想 (dreams), 永遠 (forever), 回憶 (memories)
-- 離別 (parting), 相遇 (meeting), 溫柔 (gentle), 寂寞 (lonely)
+=== POETIC COMPOUND EXAMPLES ===
+
+Build meaningful phrases from phonetically-accurate characters:
+- 사랑 (sa-rang, "love") → <사랑:思浪> "longing waves" 
+- 하늘 (ha-neul, "sky") → <하늘:霞嶺> "rosy cloud peaks"
+- 마음 (ma-eum, "heart") → <마음:媽音> "mother's voice"
+- 시간 (shi-gan, "time") → <시간:時光> "time's light"
+- 눈물 (nun-mul, "tears") → <눈물:淚沒> "tears submerge"
+- 영원 (yeong-won, "forever") → <영원:永願> "eternal wish"
+
+=== BAD: WRONG SOUNDS ===
+
+Never sacrifice phonetics completely:
+- ❌ 와 (wa) → 來 (lái) - "lai" ≠ "wa"!
+- ❌ 맘 (mam) → 心 (xīn) - "xin" ≠ "mam"!
+- ❌ 아래 (a-rae) → 阿來 - 來 is "lai" not "rae"! Use 阿瑞/阿蕊
 
 === RULES ===
 
@@ -252,25 +263,41 @@ EXAMPLE OUTPUT:
 2: <사랑:思浪><해요:海喲>
 3: <夢:欲夢><を:喔><見:迷><た:塔>
 
-=== PHILOSOPHY: SOUND + MEANING ===
+=== PHILOSOPHY: SOUND + MEANING TOGETHER ===
 
-空耳 is art! Choose Chinese compound words that:
-1. SOUND like the furigana/Korean pronunciation
-2. CARRY MEANING related to the lyrics
+Find Chinese characters that BOTH sound right AND carry meaning!
+Many syllables have multiple characters - always pick the meaningful one.
 
-GOOD examples (sound + meaning):
-- 私(わたし) "I" → <私:我他希> - 我 means "I"!
-- 好き(すき) "like" → <好き:宿期> "destined time" - romantic!
-- 心(こころ) "heart" → <心:哭口落> "crying mouth falls" - emotional
-- 夢(ゆめ) "dream" → <夢:欲夢> "desire dream" - about dreams!
-- 사랑 "love" → <사랑:思浪> "longing waves" - about love!
-- 보고 싶어 "miss you" → <보고:暮歌><싶어:惜破> "twilight song, cherish broken"
+SOUND MUST BE CLOSE:
+- わ (wa) → 哇/娃 (wā) ✓ NOT 我 (wǒ) ✗
+- し (shi) → 西/思/詩 (xī/sī/shī) ✓ NOT 是 (shì) ✗
 
-=== PREFER COMPOUND WORDS ===
+=== MAXIMIZE MEANING ===
 
-Use meaningful 2-char compounds when phonetically possible:
-- 思念 (longing), 心痛 (heartache), 眼淚 (tears), 愛情 (love)
-- 夢想 (dreams), 永遠 (forever), 回憶 (memories), 離別 (parting)
+For each syllable, find the most meaningful character that sounds close:
+- わ (wa) → 娃 "baby" ✓ (cuter than 哇 for love songs)
+- た (ta) → 她 "her" ✓ or 他 "him" (not just 塔)
+- し (shi) → 思 "longing" ✓ or 詩 "poetry" (not just 西)
+- き (ki) → 期 "time/date" ✓ or 奇 "wonder" (not just 奇)
+- こ (ko) → 哭 "cry" ✓ for sad songs (not just 口)
+- ゆ (yu) → 欲 "desire" ✓ or 玉 "jade" (not just 玉)
+- め (me) → 夢 "dream" ✓ or 迷 "lost" (not just 沒)
+
+=== POETIC COMPOUND EXAMPLES ===
+
+Build meaningful phrases:
+- 私(わたし) → <私:娃她惜> "baby her cherish"
+- 好き(すき) → <好き:宿期> "destined time"
+- 心(こころ) → <心:哭口落> "crying mouth falls"
+- 夢(ゆめ) → <夢:欲夢> "desire dream"
+- 사랑 → <사랑:思浪> "longing waves"
+- 하늘 → <하늘:霞嶺> "rosy cloud peaks"
+
+=== BAD: WRONG SOUNDS ===
+
+Never sacrifice phonetics completely:
+- ❌ 私(わたし) → 我 - "wo" ≠ "watashi"!
+- ❌ 와 (wa) → 來 (lái) - "lai" ≠ "wa"!
 
 === KANA GUIDE ===
 
