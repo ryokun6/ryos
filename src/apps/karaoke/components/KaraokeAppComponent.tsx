@@ -56,7 +56,6 @@ export function KaraokeAppComponent({
     showLyrics,
     lyricsAlignment,
     lyricsFont,
-    chineseVariant,
     koreanDisplay,
     japaneseFurigana,
     romanization,
@@ -67,7 +66,6 @@ export function KaraokeAppComponent({
       showLyrics: s.showLyrics,
       lyricsAlignment: s.lyricsAlignment,
       lyricsFont: s.lyricsFont,
-      chineseVariant: s.chineseVariant,
       koreanDisplay: s.koreanDisplay,
       japaneseFurigana: s.japaneseFurigana,
       romanization: s.romanization,
@@ -1032,7 +1030,6 @@ export function KaraokeAppComponent({
                         visible={true}
                         videoVisible={true}
                         alignment={lyricsAlignment}
-                        chineseVariant={chineseVariant}
                         koreanDisplay={koreanDisplay}
                         japaneseFurigana={japaneseFurigana}
                         fontClassName={lyricsFontClassName}
@@ -1392,7 +1389,6 @@ export function KaraokeAppComponent({
                         visible={true}
                         videoVisible={true}
                         alignment={lyricsAlignment}
-                        chineseVariant={chineseVariant}
                         koreanDisplay={koreanDisplay}
                         japaneseFurigana={japaneseFurigana}
                         fontClassName={lyricsFontClassName}

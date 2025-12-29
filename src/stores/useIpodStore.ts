@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { LyricsAlignment, ChineseVariant, KoreanDisplay, JapaneseFurigana, LyricsFont, RomanizationSettings } from "@/types/lyrics";
+import { LyricsAlignment, KoreanDisplay, JapaneseFurigana, LyricsFont, RomanizationSettings } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
@@ -50,7 +50,6 @@ interface IpodData {
   showLyrics: boolean;
   lyricsAlignment: LyricsAlignment;
   lyricsFont: LyricsFont;
-  chineseVariant: ChineseVariant;
   /** @deprecated Use romanization settings instead */
   koreanDisplay: KoreanDisplay;
   /** @deprecated Use romanization settings instead */
@@ -164,7 +163,6 @@ const initialIpodData: IpodData = {
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
   lyricsFont: LyricsFont.Rounded,
-  chineseVariant: ChineseVariant.Traditional,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
   romanization: {
@@ -234,8 +232,6 @@ export interface IpodState extends IpodData {
   setLyricsAlignment: (alignment: LyricsAlignment) => void;
   /** Set lyrics font style */
   setLyricsFont: (font: LyricsFont) => void;
-  /** Set Chinese character variant */
-  setChineseVariant: (variant: ChineseVariant) => void;
   /** Set Korean text display mode @deprecated Use setRomanization instead */
   setKoreanDisplay: (display: KoreanDisplay) => void;
   /** Set Japanese furigana display mode @deprecated Use setRomanization instead */
@@ -805,7 +801,6 @@ export const useIpodStore = create<IpodState>()(
       },
       setLyricsAlignment: (alignment) => set({ lyricsAlignment: alignment }),
       setLyricsFont: (font) => set({ lyricsFont: font }),
-      setChineseVariant: (variant) => set({ chineseVariant: variant }),
       setKoreanDisplay: (display) => set({ koreanDisplay: display }),
       setJapaneseFurigana: (mode) => set({ japaneseFurigana: mode }),
       setRomanization: (settings) =>
@@ -1242,7 +1237,6 @@ export const useIpodStore = create<IpodState>()(
         showLyrics: state.showLyrics,
         lyricsAlignment: state.lyricsAlignment,
         lyricsFont: state.lyricsFont,
-        chineseVariant: state.chineseVariant,
         koreanDisplay: state.koreanDisplay,
         japaneseFurigana: state.japaneseFurigana,
         romanization: state.romanization,
@@ -1309,7 +1303,6 @@ export const useIpodStore = create<IpodState>()(
             showLyrics: state.showLyrics ?? true,
             lyricsAlignment: state.lyricsAlignment ?? LyricsAlignment.Alternating,
             lyricsFont: state.lyricsFont ?? LyricsFont.Rounded,
-            chineseVariant: state.chineseVariant ?? ChineseVariant.Traditional,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
             romanization,
@@ -1330,7 +1323,6 @@ export const useIpodStore = create<IpodState>()(
           showLyrics: state.showLyrics,
           lyricsAlignment: state.lyricsAlignment,
           lyricsFont: state.lyricsFont,
-          chineseVariant: state.chineseVariant,
           koreanDisplay: state.koreanDisplay,
           japaneseFurigana: state.japaneseFurigana,
           romanization: state.romanization ?? initialIpodData.romanization,

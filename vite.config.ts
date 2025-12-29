@@ -68,9 +68,7 @@ export default defineConfig({
       "three",
     ],
     // Exclude large deps that are rarely changed to reduce memory
-    exclude: [
-      "opencc-js", // Large Chinese dictionary, lazy-loaded
-    ],
+    exclude: [],
   },
   plugins: [
     react(),
@@ -374,10 +372,7 @@ export default defineConfig({
           
           // Media player - shared by iPod and Videos apps
           "media-player": ["react-player"],
-          
-          // Chinese character conversion - large dictionary data, only needed for lyrics
-          "opencc": ["opencc-js"],
-          
+
           // Korean romanization - only needed for lyrics
           "hangul": ["hangul-romanization"],
           

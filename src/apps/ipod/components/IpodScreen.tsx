@@ -58,7 +58,6 @@ export function IpodScreen({
   showStatusCallback,
   showLyrics,
   lyricsAlignment,
-  chineseVariant,
   koreanDisplay,
   japaneseFurigana,
   lyricOffset,
@@ -339,7 +338,6 @@ export function IpodScreen({
               visible={shouldShowLyrics}
               videoVisible={showVideo}
               alignment={lyricsAlignment}
-              chineseVariant={chineseVariant}
               koreanDisplay={koreanDisplay}
               japaneseFurigana={japaneseFurigana}
               isTranslating={lyricsControls.isTranslating}

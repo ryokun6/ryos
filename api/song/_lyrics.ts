@@ -16,6 +16,34 @@ import type { LyricsContent, ParsedLyricLine, WordTiming } from "../_utils/song-
 const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
 const traditionalToSimplified = Converter({ from: "tw", to: "cn" });
 
+// Unicode ranges for script detection
+const HIRAGANA_REGEX = /[\u3040-\u309F]/;
+const KATAKANA_REGEX = /[\u30A0-\u30FF]/;
+const CJK_UNIFIED_REGEX = /[\u4E00-\u9FFF]/;
+
+/**
+ * Check if text contains Japanese Kana (Hiragana or Katakana)
+ */
+function hasKanaText(text: string): boolean {
+  return HIRAGANA_REGEX.test(text) || KATAKANA_REGEX.test(text);
+}
+
+/**
+ * Check if text contains CJK ideographs (Kanji/Hanzi)
+ */
+function hasKanjiText(text: string): boolean {
+  return CJK_UNIFIED_REGEX.test(text);
+}
+
+/**
+ * Check if lyrics are Japanese (have both Kanji and Kana somewhere in the text)
+ * This distinguishes Japanese from Chinese (which has Hanzi but no Kana)
+ */
+function lyricsAreJapanese(lines: Array<{ words: string }>): boolean {
+  const allText = lines.map(l => l.words).join("");
+  return hasKanjiText(allText) && hasKanaText(allText);
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -239,9 +267,16 @@ export function parseLyricsContent(
     }));
   }
   
-  // Convert Chinese lyrics to Traditional Chinese
+  // Convert Chinese lyrics from Simplified to Traditional Chinese
   // Kugou lyrics are in Simplified Chinese - convert to Traditional for display
-  // This only affects Chinese characters; Japanese kana and Korean hangul are unchanged
+  // IMPORTANT: Skip this for Japanese lyrics to avoid corrupting Japanese Kanji
+  // (e.g., Japanese 気→氣, 国→國 would be wrong)
+  if (lyricsAreJapanese(lines)) {
+    // Japanese lyrics - return as-is without Chinese conversion
+    return lines;
+  }
+
+  // Chinese lyrics - convert from Simplified to Traditional
   return lines.map(line => ({
     ...line,
     words: simplifiedToTraditional(line.words),

@@ -5,12 +5,7 @@
 import { convert as romanizeKorean } from "hangul-romanization";
 import { pinyin } from "pinyin-pro";
 import { toRomaji } from "wanakana";
-import { Converter } from "opencc-js";
 import { hasKoreanText, isChineseText } from "./languageDetection";
-
-// Traditional to Simplified Chinese converter for accurate pinyin
-// pinyin-pro gives incorrect readings for traditional characters (e.g., 車 → jū instead of chē)
-const traditionalToSimplified = Converter({ from: "tw", to: "cn" });
 
 // Re-export detection utilities for convenience
 export { hasKoreanText, isChineseText, isJapaneseText, hasKanaText } from "./languageDetection";
@@ -116,16 +111,11 @@ export function renderKoreanWithRomanization(text: string, keyPrefix: string = "
 
 /**
  * Render text with Chinese pinyin as ruby annotation
- * Converts traditional Chinese to simplified internally for accurate pinyin lookup,
- * but displays the original characters
+ * Note: pinyin-pro may give less accurate readings for some Traditional Chinese characters
  */
 export function renderChineseWithPinyin(text: string, keyPrefix: string = "cn"): React.ReactNode {
-  // Convert traditional to simplified for accurate pinyin lookup
-  // pinyin-pro gives wrong readings for traditional chars (e.g., 車 → jū instead of chē)
-  const simplifiedText = traditionalToSimplified(text);
-  
-  // Get pinyin without tone marks for each character (from simplified text)
-  const pinyinResult = pinyin(simplifiedText, { type: 'array', toneType: 'none' });
+  // Get pinyin without tone marks for each character
+  const pinyinResult = pinyin(text, { type: 'array', toneType: 'none' });
   const chars = [...text]; // Original characters for display
   
   if (chars.length === 0) {
@@ -309,13 +299,11 @@ export function getKoreanPronunciationOnly(text: string): string {
 /**
  * Get pronunciation-only text for Chinese (pinyin)
  * No spaces within word - spaces are added at segment level in getFuriganaSegmentsPronunciationOnly
+ * Note: pinyin-pro may give less accurate readings for some Traditional Chinese characters
  */
 export function getChinesePronunciationOnly(text: string): string {
-  // Convert traditional to simplified for accurate pinyin lookup
-  const simplifiedText = traditionalToSimplified(text);
-  
   // Get pinyin without tone marks for each character
-  const pinyinResult = pinyin(simplifiedText, { type: 'array', toneType: 'none' });
+  const pinyinResult = pinyin(text, { type: 'array', toneType: 'none' });
   const chars = [...text];
   
   let result = "";

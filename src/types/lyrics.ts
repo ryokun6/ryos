@@ -29,12 +29,6 @@ export enum LyricsAlignment {
   Center = "center",
 }
 
-export enum ChineseVariant {
-  Original = "original",
-  Traditional = "traditional",
-  Simplified = "simplified",
-}
-
 export enum KoreanDisplay {
   Original = "original",
   Romanized = "romanized",

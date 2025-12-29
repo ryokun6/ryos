@@ -2,7 +2,6 @@ import {
   LyricLine,
   LyricWord,
   LyricsAlignment,
-  ChineseVariant,
   KoreanDisplay,
   JapaneseFurigana,
   RomanizationSettings,
@@ -11,7 +10,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { Converter } from "opencc-js";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
 import { toRomaji } from "wanakana";
@@ -44,8 +42,6 @@ interface LyricsDisplayProps {
   videoVisible?: boolean;
   /** Override alignment (if not provided, reads from store) */
   alignment?: LyricsAlignment;
-  /** Override Chinese variant (if not provided, reads from store) */
-  chineseVariant?: ChineseVariant;
   /** Override Korean display (if not provided, reads from store) */
   koreanDisplay?: KoreanDisplay;
   /** Override Japanese furigana (if not provided, reads from store) */
@@ -983,7 +979,6 @@ export function LyricsDisplay({
   visible = true,
   videoVisible = true,
   alignment: alignmentOverride,
-  chineseVariant: chineseVariantOverride,
   koreanDisplay: koreanDisplayOverride,
   japaneseFurigana: japaneseFuriganaOverride,
   onAdjustOffset,
@@ -1007,14 +1002,12 @@ export function LyricsDisplay({
   // Read display settings from store (can be overridden by props)
   const {
     lyricsAlignment: storeAlignment,
-    chineseVariant: storeChineseVariant,
     koreanDisplay: storeKoreanDisplay,
     japaneseFurigana: storeJapaneseFurigana,
     romanization: storeRomanization,
   } = useIpodStore(
     useShallow((s) => ({
       lyricsAlignment: s.lyricsAlignment,
-      chineseVariant: s.chineseVariant,
       koreanDisplay: s.koreanDisplay,
       japaneseFurigana: s.japaneseFurigana,
       romanization: s.romanization,
@@ -1023,7 +1016,6 @@ export function LyricsDisplay({
 
   // Use override props if provided, otherwise use store values
   const alignment = alignmentOverride ?? storeAlignment;
-  const chineseVariant = chineseVariantOverride ?? storeChineseVariant;
   const koreanDisplay = koreanDisplayOverride ?? storeKoreanDisplay;
   const japaneseFurigana = japaneseFuriganaOverride ?? storeJapaneseFurigana;
   
@@ -1043,11 +1035,6 @@ export function LyricsDisplay({
       soramamiTargetLanguage: "zh-TW",
     };
   }, [storeRomanization, japaneseFurigana, koreanDisplay]);
-
-  const chineseConverter = useMemo(
-    () => Converter({ from: "cn", to: "tw" }),
-    []
-  );
 
   // Determine if translation is active (showing translated lines alongside original)
   const hasTranslation = originalLines && lines !== originalLines;
@@ -1247,19 +1234,11 @@ export function LyricsDisplay({
   );
 
   // Memoize processText to prevent WordTimingHighlight renderItems from recomputing on every parent render
+  // Note: Chinese Simplified→Traditional conversion is handled by the API in parseLyricsContent
+  // Korean romanization is handled via ruby rendering, not text replacement
   const processText = useCallback(
-    (text: string) => {
-      let processed = text;
-      if (
-        chineseVariant === ChineseVariant.Traditional &&
-        isChineseText(processed)
-      ) {
-        processed = chineseConverter(processed);
-      }
-      // Note: Korean romanization is now handled via ruby rendering, not text replacement
-      return processed;
-    },
-    [chineseVariant, chineseConverter]
+    (text: string) => text,
+    []
   );
 
   // For word-level timing, we still need to track Korean romanization state

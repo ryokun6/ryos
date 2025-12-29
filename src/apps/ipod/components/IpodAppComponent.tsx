@@ -95,7 +95,6 @@ export function IpodAppComponent({
     showLyrics,
     lyricsAlignment,
     lyricsFont,
-    chineseVariant,
     koreanDisplay,
     japaneseFurigana,
     romanization,
@@ -126,7 +125,6 @@ export function IpodAppComponent({
     showLyrics: s.showLyrics,
     lyricsAlignment: s.lyricsAlignment,
     lyricsFont: s.lyricsFont,
-    chineseVariant: s.chineseVariant,
     koreanDisplay: s.koreanDisplay,
     japaneseFurigana: s.japaneseFurigana,
     romanization: s.romanization,
@@ -1676,7 +1674,6 @@ export function IpodAppComponent({
               showStatusCallback={showStatus}
               showLyrics={showLyrics}
               lyricsAlignment={lyricsAlignment}
-              chineseVariant={chineseVariant}
               koreanDisplay={koreanDisplay}
               japaneseFurigana={japaneseFurigana}
               lyricOffset={lyricOffset ?? 0}
@@ -1869,7 +1866,6 @@ export function IpodAppComponent({
                         visible={true}
                         videoVisible={true}
                         alignment={lyricsAlignment}
-                        chineseVariant={chineseVariant}
                         koreanDisplay={koreanDisplay}
                         japaneseFurigana={japaneseFurigana}
                         fontClassName={lyricsFontClassName}
