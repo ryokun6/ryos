@@ -331,6 +331,7 @@ export function useLyrics({
       force: isForceRequest,
       signal: controller.signal,
       prefetchedInfo: !isForceRequest ? prefetchedInfo : undefined,
+      auth,
       onProgress: (progress) => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setTranslationProgress(progress.percentage);

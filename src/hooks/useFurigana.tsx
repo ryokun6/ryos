@@ -46,6 +46,8 @@ interface UseFuriganaParams {
   prefetchedInfo?: FuriganaStreamInfo;
   /** Pre-fetched soramimi info from initial lyrics request (skips extra API call) */
   prefetchedSoramimiInfo?: SoramimiStreamInfo;
+  /** Auth credentials (required for force refresh) */
+  auth?: { username: string; authToken: string };
 }
 
 interface UseFuriganaReturn {
@@ -94,6 +96,7 @@ export function useFurigana({
   onLoadingChange,
   prefetchedInfo,
   prefetchedSoramimiInfo,
+  auth,
 }: UseFuriganaParams): UseFuriganaReturn {
   const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
   const [soramimiMap, setSoramimiMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
@@ -286,6 +289,7 @@ export function useFurigana({
       force: isForceRequest,
       signal: controller.signal,
       prefetchedInfo: !isForceRequest ? prefetchedInfo : undefined,
+      auth,
       onProgress: (progress) => {
         if (!controller.signal.aborted) {
           if (effectSongId !== currentSongIdRef.current) return;
@@ -502,6 +506,7 @@ export function useFurigana({
       // Pass furigana data for Japanese songs so AI knows kanji pronunciation
       furigana: furiganaForApi,
       targetLanguage: soramimiTargetLanguage,
+      auth,
       onProgress: (progress) => {
         if (!controller.signal.aborted) {
           if (effectSongId !== currentSongIdRef.current) return;

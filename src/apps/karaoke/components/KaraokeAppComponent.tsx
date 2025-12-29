@@ -297,6 +297,7 @@ export function KaraokeAppComponent({
     romanization,
     prefetchedInfo: lyricsControls.furiganaInfo,
     prefetchedSoramimiInfo: lyricsControls.soramimiInfo,
+    auth,
   });
 
   // Consolidated activity state for loading indicators

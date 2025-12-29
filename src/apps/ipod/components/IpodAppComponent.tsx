@@ -1367,6 +1367,7 @@ export function IpodAppComponent({
     romanization,
     prefetchedInfo: fullScreenLyricsControls.furiganaInfo,
     prefetchedSoramimiInfo: fullScreenLyricsControls.soramimiInfo,
+    auth,
   });
 
   // Consolidated activity state for loading indicators
