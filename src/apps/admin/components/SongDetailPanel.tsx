@@ -327,8 +327,16 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   // Fall back to YouTube thumbnail if Kugou cover fails
+                  // Use proper URL parsing to check hostname (not substring match which could be bypassed)
                   const target = e.target as HTMLImageElement;
-                  if (!target.src.includes("youtube.com")) {
+                  try {
+                    const url = new URL(target.src);
+                    const isYouTube = url.hostname === "img.youtube.com" || url.hostname === "i.ytimg.com";
+                    if (!isYouTube) {
+                      target.src = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
+                    }
+                  } catch {
+                    // Invalid URL, set fallback
                     target.src = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
                   }
                 }}
