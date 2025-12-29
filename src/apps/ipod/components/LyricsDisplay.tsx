@@ -391,6 +391,7 @@ function StaticWordRendering({
   japaneseRomaji = false,
   chinesePinyin = false,
   pronunciationOnly = false,
+  soramimiTargetLanguage,
   lineStartTimeMs,
   onSeekToTime,
   isOldSchoolKaraoke = false,
@@ -403,6 +404,8 @@ function StaticWordRendering({
   chinesePinyin?: boolean;
   /** Show only pronunciation (replace original text with phonetic content) */
   pronunciationOnly?: boolean;
+  /** Soramimi target language for spacing ("en" needs spaces between words) */
+  soramimiTargetLanguage?: "zh-TW" | "en";
   lineStartTimeMs?: number;
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline, white text) */
@@ -438,26 +441,60 @@ function StaticWordRendering({
       return processed;
     };
 
+    // Helper to check if text is primarily Latin characters (romanized output needs spaces)
+    const isLatinText = (text: string): boolean => {
+      // Check if text contains mostly Latin letters (a-z, A-Z)
+      const latinChars = text.match(/[a-zA-Z]/g);
+      return latinChars !== null && latinChars.length > text.length / 2;
+    };
+
+    // Helper to determine if a word's output will be romanized (Latin)
+    const willOutputLatin = (text: string, reading?: string): boolean => {
+      if (reading) {
+        // If there's a reading, check if it will be romanized
+        const displayReading = japaneseRomaji ? toRomaji(reading) : reading;
+        return isLatinText(displayReading);
+      }
+      // No reading - check if getWordContent will romanize it
+      const processed = processText(text);
+      if (japaneseRomaji && hasKanaTextLocal(processed)) return true;
+      if (koreanRomanized && KOREAN_REGEX.test(text)) {
+        KOREAN_REGEX.lastIndex = 0;
+        return true;
+      }
+      if (chinesePinyin && isChineseText(processed)) return true;
+      return false;
+    };
+
+    // English soramimi always needs spaces
+    const isEnglishSoramimi = soramimiTargetLanguage === "en";
+
     if (furiganaSegments && furiganaSegments.length > 0) {
       // Use character-position alignment to handle boundary mismatches
       // When a furigana segment spans multiple word timings, they're combined into one unit
       const { renderItems: mappedItems } = mapWordTimingsToFurigana(wordTimings, furiganaSegments);
       
-      return mappedItems.map((item) => {
+      return mappedItems.map((item, idx) => {
         const word = wordTimings[item.wordIdx];
         // Get trailing space from last combined word
         const lastWordIdx = item.combinedWordIndices[item.combinedWordIndices.length - 1];
         const lastWord = wordTimings[lastWordIdx];
         const lastTrimmed = lastWord.text.trim();
         const trailingSpace = lastWord.text.slice(lastTrimmed.length);
+        const isLastWord = idx === mappedItems.length - 1;
         
         let content: ReactNode;
         if (item.reading) {
           // Has a reading - show combined text with ruby annotation
           // Convert to romaji if japaneseRomaji is enabled
           const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
+          // Only add space if output is Latin (romanized) or English soramimi
+          const outputIsLatin = isLatinText(displayReading) || isEnglishSoramimi;
+          const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+          const spacer = needsSpace ? " " : trailingSpace;
+          
           if (pronunciationOnly) {
-            content = <>{displayReading}{trailingSpace}</>;
+            content = <>{displayReading}{spacer}</>;
           } else {
             content = (
               <>
@@ -470,8 +507,11 @@ function StaticWordRendering({
             );
           }
         } else {
-          // No reading - use original word text as-is
-          content = getWordContent(word.text);
+          // No reading - check if this word will be romanized
+          const wordContent = getWordContent(word.text);
+          const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;
+          const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+          content = needsSpace ? <>{wordContent}{" "}</> : wordContent;
         }
         
         return {
@@ -482,12 +522,22 @@ function StaticWordRendering({
       });
     }
     
-    return wordTimings.map((word, idx) => ({
-      key: `${idx}-${word.text}`,
-      content: getWordContent(word.text),
-      startTimeMs: word.startTimeMs,
-    }));
-  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly]);
+    return wordTimings.map((word, idx) => {
+      const isLastWord = idx === wordTimings.length - 1;
+      const trimmed = word.text.trim();
+      const trailingSpace = word.text.slice(trimmed.length);
+      const wordContent = getWordContent(word.text);
+      // Only add space if output is Latin (romanized)
+      const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;
+      const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+      const content = needsSpace ? <>{wordContent}{" "}</> : wordContent;
+      return {
+        key: `${idx}-${word.text}`,
+        content,
+        startTimeMs: word.startTimeMs,
+      };
+    });
+  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly, soramimiTargetLanguage]);
 
   const handleWordClick = (wordStartTimeMs: number) => {
     if (onSeekToTime && lineStartTimeMs !== undefined) {
@@ -556,6 +606,7 @@ function WordTimingHighlight({
   japaneseRomaji = false,
   chinesePinyin = false,
   pronunciationOnly = false,
+  soramimiTargetLanguage,
   onSeekToTime,
   isOldSchoolKaraoke = false,
 }: {
@@ -569,6 +620,8 @@ function WordTimingHighlight({
   chinesePinyin?: boolean;
   /** Show only pronunciation (replace original text with phonetic content) */
   pronunciationOnly?: boolean;
+  /** Soramimi target language for spacing ("en" needs spaces between words) */
+  soramimiTargetLanguage?: "zh-TW" | "en";
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline white text -> white outline blue text) */
   isOldSchoolKaraoke?: boolean;
@@ -613,26 +666,57 @@ function WordTimingHighlight({
       return processed;
     };
 
+    // Helper to check if text is primarily Latin characters (romanized output needs spaces)
+    const isLatinText = (text: string): boolean => {
+      const latinChars = text.match(/[a-zA-Z]/g);
+      return latinChars !== null && latinChars.length > text.length / 2;
+    };
+
+    // Helper to determine if a word's output will be romanized (Latin)
+    const willOutputLatin = (text: string, reading?: string): boolean => {
+      if (reading) {
+        const displayReading = japaneseRomaji ? toRomaji(reading) : reading;
+        return isLatinText(displayReading);
+      }
+      const processed = processText(text);
+      if (japaneseRomaji && hasKanaTextLocal(processed)) return true;
+      if (koreanRomanized && KOREAN_REGEX.test(text)) {
+        KOREAN_REGEX.lastIndex = 0;
+        return true;
+      }
+      if (chinesePinyin && isChineseText(processed)) return true;
+      return false;
+    };
+
+    // English soramimi always needs spaces
+    const isEnglishSoramimi = soramimiTargetLanguage === "en";
+
     if (furiganaSegments && furiganaSegments.length > 0) {
       // Use character-position alignment to handle boundary mismatches
       // When a furigana segment spans multiple word timings, they're combined into one unit
       const { renderItems: mappedItems } = mapWordTimingsToFurigana(wordTimings, furiganaSegments);
       
-      return mappedItems.map((item) => {
+      return mappedItems.map((item, idx) => {
         const word = wordTimings[item.wordIdx];
         // Get trailing space from last combined word
         const lastWordIdx = item.combinedWordIndices[item.combinedWordIndices.length - 1];
         const lastWord = wordTimings[lastWordIdx];
         const lastTrimmed = lastWord.text.trim();
         const trailingSpace = lastWord.text.slice(lastTrimmed.length);
+        const isLastWord = idx === mappedItems.length - 1;
         
         let content: ReactNode;
         if (item.reading) {
           // Has a reading - show combined text with ruby annotation
           // Convert to romaji if japaneseRomaji is enabled
           const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
+          // Only add space if output is Latin (romanized) or English soramimi
+          const outputIsLatin = isLatinText(displayReading) || isEnglishSoramimi;
+          const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+          const spacer = needsSpace ? " " : trailingSpace;
+          
           if (pronunciationOnly) {
-            content = <>{displayReading}{trailingSpace}</>;
+            content = <>{displayReading}{spacer}</>;
           } else {
             // Ruby annotation mode
             content = (
@@ -646,8 +730,11 @@ function WordTimingHighlight({
             );
           }
         } else {
-          // No reading - use original word text as-is (preserves spacing)
-          content = getWordContent(word.text);
+          // No reading - check if this word will be romanized
+          const wordContent = getWordContent(word.text);
+          const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;
+          const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+          content = needsSpace ? <>{wordContent}{" "}</> : wordContent;
         }
         
         return {
@@ -660,13 +747,23 @@ function WordTimingHighlight({
     }
     
     // No furigana - simple word list with romanization support
-    return wordTimings.map((word, idx) => ({
-      word,
-      extraDurationMs: 0,
-      content: getWordContent(word.text),
-      key: `${idx}-${word.text}`,
-    }));
-  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly]);
+    return wordTimings.map((word, idx) => {
+      const isLastWord = idx === wordTimings.length - 1;
+      const trimmed = word.text.trim();
+      const trailingSpace = word.text.slice(trimmed.length);
+      const wordContent = getWordContent(word.text);
+      // Only add space if output is Latin (romanized)
+      const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;
+      const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
+      const content = needsSpace ? <>{wordContent}{" "}</> : wordContent;
+      return {
+        word,
+        extraDurationMs: 0,
+        content,
+        key: `${idx}-${word.text}`,
+      };
+    });
+  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly, soramimiTargetLanguage]);
 
   // Sync time ref when prop changes
   useEffect(() => {
@@ -1004,6 +1101,18 @@ export function LyricsDisplay({
         if (soramimiSegments && soramimiSegments.length > 0) {
           // Pronunciation-only mode: show only the soramimi readings
           if (pronunciationOnly) {
+            // English soramimi should have spaces between words for readability
+            // Korean has natural spaces (preserved as segments), Japanese/Chinese may have AI-added spaces
+            // Join with spaces and collapse multiple spaces to avoid double-spacing
+            if (romanization.soramamiTargetLanguage === "en") {
+              const pronunciationText = soramimiSegments
+                .map(seg => seg.reading || seg.text)
+                .join(" ")
+                .replace(/\s+/g, " ")
+                .trim();
+              return <span key={keyPrefix}>{pronunciationText}</span>;
+            }
+            // Chinese soramimi: join without spaces (Chinese characters don't need spacing)
             const pronunciationText = soramimiSegments.map(seg => seg.reading || seg.text).join("");
             return <span key={keyPrefix}>{pronunciationText}</span>;
           }
@@ -1557,6 +1666,7 @@ export function LyricsDisplay({
                     japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
                     chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
                     pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                    soramimiTargetLanguage={soramimiSegments ? romanization.soramamiTargetLanguage : undefined}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}
                   />
@@ -1569,6 +1679,7 @@ export function LyricsDisplay({
                     japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
                     chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
                     pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                    soramimiTargetLanguage={soramimiSegments ? romanization.soramamiTargetLanguage : undefined}
                     lineStartTimeMs={parseInt(line.startTimeMs, 10)}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}

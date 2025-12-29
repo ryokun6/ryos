@@ -5,7 +5,11 @@
  * Provides prompts and parsing utilities for soramimi generation.
  */
 
+import { Converter } from "opencc-js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
+
+// Simplified Chinese to Traditional Chinese converter
+const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
 
 // =============================================================================
 // Language Detection Helpers
@@ -506,6 +510,30 @@ export function convertLinesToAnnotatedText(
     }
     // No furigana available, return original text
     return line.words;
+  });
+}
+
+// =============================================================================
+// Traditional Chinese Conversion for Soramimi
+// =============================================================================
+
+/**
+ * Convert Chinese soramimi readings to Traditional Chinese.
+ * The AI should output 繁體字, but this ensures any simplified characters
+ * are converted to their traditional equivalents.
+ * 
+ * @param segments - Array of soramimi segments with readings
+ * @returns New array with readings converted to Traditional Chinese
+ */
+export function convertSoramimiToTraditional(segments: FuriganaSegment[]): FuriganaSegment[] {
+  return segments.map(seg => {
+    if (seg.reading) {
+      return {
+        text: seg.text,
+        reading: simplifiedToTraditional(seg.reading),
+      };
+    }
+    return seg;
   });
 }
 

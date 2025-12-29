@@ -596,6 +596,18 @@ export function useFurigana({
         if (soramimiSegments && soramimiSegments.length > 0) {
           // Pronunciation-only mode: show only the soramimi readings
           if (pronunciationOnly) {
+            // English soramimi should have spaces between words for readability
+            // Korean has natural spaces (preserved as segments), Japanese/Chinese may have AI-added spaces
+            // Join with spaces and collapse multiple spaces to avoid double-spacing
+            if (romanization.soramamiTargetLanguage === "en") {
+              const pronunciationText = soramimiSegments
+                .map(seg => seg.reading || seg.text)
+                .join(" ")
+                .replace(/\s+/g, " ")
+                .trim();
+              return <span key={keyPrefix}>{pronunciationText}</span>;
+            }
+            // Chinese soramimi: join without spaces (Chinese characters don't need spacing)
             const pronunciationText = soramimiSegments.map(seg => seg.reading || seg.text).join("");
             return <span key={keyPrefix}>{pronunciationText}</span>;
           }
