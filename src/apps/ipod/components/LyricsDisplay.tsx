@@ -391,6 +391,7 @@ function StaticWordRendering({
   japaneseRomaji = false,
   chinesePinyin = false,
   pronunciationOnly = false,
+  soramimiTargetLanguage,
   lineStartTimeMs,
   onSeekToTime,
   isOldSchoolKaraoke = false,
@@ -403,6 +404,8 @@ function StaticWordRendering({
   chinesePinyin?: boolean;
   /** Show only pronunciation (replace original text with phonetic content) */
   pronunciationOnly?: boolean;
+  /** Soramimi target language for spacing ("en" needs spaces between words) */
+  soramimiTargetLanguage?: "zh-TW" | "en";
   lineStartTimeMs?: number;
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline, white text) */
@@ -439,7 +442,9 @@ function StaticWordRendering({
     };
 
     // Determine if we need to add spaces between words for romanized output
-    const needsRomanizedSpacing = pronunciationOnly && (japaneseRomaji || chinesePinyin || koreanRomanized);
+    // Include English soramimi which also needs spaces between words
+    const isEnglishSoramimi = soramimiTargetLanguage === "en";
+    const needsRomanizedSpacing = pronunciationOnly && (japaneseRomaji || chinesePinyin || koreanRomanized || isEnglishSoramimi);
 
     if (furiganaSegments && furiganaSegments.length > 0) {
       // Use character-position alignment to handle boundary mismatches
@@ -506,7 +511,7 @@ function StaticWordRendering({
         startTimeMs: word.startTimeMs,
       };
     });
-  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly]);
+  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly, soramimiTargetLanguage]);
 
   const handleWordClick = (wordStartTimeMs: number) => {
     if (onSeekToTime && lineStartTimeMs !== undefined) {
@@ -575,6 +580,7 @@ function WordTimingHighlight({
   japaneseRomaji = false,
   chinesePinyin = false,
   pronunciationOnly = false,
+  soramimiTargetLanguage,
   onSeekToTime,
   isOldSchoolKaraoke = false,
 }: {
@@ -588,6 +594,8 @@ function WordTimingHighlight({
   chinesePinyin?: boolean;
   /** Show only pronunciation (replace original text with phonetic content) */
   pronunciationOnly?: boolean;
+  /** Soramimi target language for spacing ("en" needs spaces between words) */
+  soramimiTargetLanguage?: "zh-TW" | "en";
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline white text -> white outline blue text) */
   isOldSchoolKaraoke?: boolean;
@@ -633,7 +641,9 @@ function WordTimingHighlight({
     };
 
     // Determine if we need to add spaces between words for romanized output
-    const needsRomanizedSpacing = pronunciationOnly && (japaneseRomaji || chinesePinyin || koreanRomanized);
+    // Include English soramimi which also needs spaces between words
+    const isEnglishSoramimi = soramimiTargetLanguage === "en";
+    const needsRomanizedSpacing = pronunciationOnly && (japaneseRomaji || chinesePinyin || koreanRomanized || isEnglishSoramimi);
 
     if (furiganaSegments && furiganaSegments.length > 0) {
       // Use character-position alignment to handle boundary mismatches
@@ -704,7 +714,7 @@ function WordTimingHighlight({
         key: `${idx}-${word.text}`,
       };
     });
-  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly]);
+  }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly, soramimiTargetLanguage]);
 
   // Sync time ref when prop changes
   useEffect(() => {
@@ -1607,6 +1617,7 @@ export function LyricsDisplay({
                     japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
                     chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
                     pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                    soramimiTargetLanguage={soramimiSegments ? romanization.soramamiTargetLanguage : undefined}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}
                   />
@@ -1619,6 +1630,7 @@ export function LyricsDisplay({
                     japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
                     chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
                     pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                    soramimiTargetLanguage={soramimiSegments ? romanization.soramamiTargetLanguage : undefined}
                     lineStartTimeMs={parseInt(line.startTimeMs, 10)}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}
