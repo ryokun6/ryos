@@ -320,9 +320,12 @@ export default async function handler(req: Request) {
         // Permission check: changing lyrics source or force refresh requires auth
         // First-time fetch (no existing lyrics source) is allowed for anyone
         if ((force || lyricsSourceChanged) && song?.lyricsSource) {
+          if (!username || !authToken) {
+            return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
+          }
           const authResult = await validateAuthToken(redis, username, authToken);
           if (!authResult.valid) {
-            return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
+            return errorResponse("Unauthorized - invalid credentials", 401);
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
@@ -588,9 +591,12 @@ export default async function handler(req: Request) {
 
         // Permission check: force refresh requires auth when translation already exists
         if (force && song.translations?.[language]) {
+          if (!username || !authToken) {
+            return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
+          }
           const authResult = await validateAuthToken(redis, username, authToken);
           if (!authResult.valid) {
-            return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
+            return errorResponse("Unauthorized - invalid credentials", 401);
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
@@ -808,9 +814,12 @@ export default async function handler(req: Request) {
 
         // Permission check: force refresh requires auth when furigana already exists
         if (force && song.furigana && song.furigana.length > 0) {
+          if (!username || !authToken) {
+            return errorResponse("Unauthorized - authentication required to force refresh furigana", 401);
+          }
           const authResult = await validateAuthToken(redis, username, authToken);
           if (!authResult.valid) {
-            return errorResponse("Unauthorized - authentication required to force refresh furigana", 401);
+            return errorResponse("Unauthorized - invalid credentials", 401);
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
@@ -1033,12 +1042,15 @@ Output:
         }
 
         // Permission check: force refresh requires auth when soramimi already exists
-        const existingSoramimi = song.soramimiByLang?.[targetLanguage] 
+        const existingSoramimi = song.soramimiByLang?.[targetLanguage]
           ?? (targetLanguage === "zh-TW" ? song.soramimi : undefined);
         if (force && existingSoramimi && existingSoramimi.length > 0) {
+          if (!username || !authToken) {
+            return errorResponse("Unauthorized - authentication required to force refresh soramimi", 401);
+          }
           const authResult = await validateAuthToken(redis, username, authToken);
           if (!authResult.valid) {
-            return errorResponse("Unauthorized - authentication required to force refresh soramimi", 401);
+            return errorResponse("Unauthorized - invalid credentials", 401);
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {

@@ -37,6 +37,11 @@ interface UseLyricsParams {
     artist?: string;
     album?: string;
   };
+  /** Auth credentials (required for force refresh / changing lyrics source) */
+  auth?: {
+    username: string;
+    authToken: string;
+  };
 }
 
 interface LyricsState {
@@ -88,6 +93,7 @@ export function useLyrics({
   includeSoramimi,
   soramimiTargetLanguage = "zh-TW",
   selectedMatch,
+  auth,
 }: UseLyricsParams): LyricsState {
   // State
   const [originalLines, setOriginalLines] = useState<LyricLine[]>([]);
@@ -202,9 +208,16 @@ export function useLyrics({
       };
     }
 
+    // Build headers with optional auth
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (auth?.username && auth?.authToken) {
+      headers["Authorization"] = `Bearer ${auth.authToken}`;
+      headers["X-Username"] = auth.username;
+    }
+
     abortableFetch(getApiUrl(`/api/song/${effectSongId}`), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(requestBody),
       signal: controller.signal,
       timeout: 15000,

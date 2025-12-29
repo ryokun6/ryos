@@ -152,6 +152,15 @@ export function KaraokeAppComponent({
     }))
   );
 
+  // Auth for protected operations (force refresh, change lyrics source)
+  const { username, authToken } = useChatsStore(
+    useShallow((s) => ({ username: s.username, authToken: s.authToken }))
+  );
+  const auth = useMemo(
+    () => (username && authToken ? { username, authToken } : undefined),
+    [username, authToken]
+  );
+
   // Compute currentIndex from currentSongId
   const currentIndex = useMemo(() => {
     if (!currentSongId) return tracks.length > 0 ? 0 : -1;
@@ -231,6 +240,8 @@ export function KaraokeAppComponent({
     includeSoramimi: true,
     // Pass target language so server returns correct cached soramimi data
     soramimiTargetLanguage: romanization.soramamiTargetLanguage ?? "zh-TW",
+    // Auth for force refresh / changing lyrics source
+    auth,
   });
 
   // Track last song ID we showed a lyrics error toast for to avoid duplicates

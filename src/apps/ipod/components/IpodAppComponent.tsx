@@ -153,6 +153,15 @@ export function IpodAppComponent({
     setCurrentFuriganaMap: s.setCurrentFuriganaMap,
   }));
 
+  // Auth for protected operations (force refresh, change lyrics source)
+  const { username, authToken } = useChatsStore(
+    useShallow((s) => ({ username: s.username, authToken: s.authToken }))
+  );
+  const auth = useMemo(
+    () => (username && authToken ? { username, authToken } : undefined),
+    [username, authToken]
+  );
+
   const lyricOffset = useIpodStore(
     (s) => {
       const track = s.currentSongId 
@@ -1301,6 +1310,8 @@ export function IpodAppComponent({
     includeSoramimi: true,
     // Pass target language so server returns correct cached soramimi data
     soramimiTargetLanguage: romanization.soramamiTargetLanguage ?? "zh-TW",
+    // Auth for force refresh / changing lyrics source
+    auth,
   });
 
   // Track last song ID we showed a lyrics error toast for to avoid duplicates
