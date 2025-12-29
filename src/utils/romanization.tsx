@@ -308,6 +308,7 @@ export function getKoreanPronunciationOnly(text: string): string {
 
 /**
  * Get pronunciation-only text for Chinese (pinyin)
+ * Adds spaces between pinyin syllables for readability
  */
 export function getChinesePronunciationOnly(text: string): string {
   // Convert traditional to simplified for accurate pinyin lookup
@@ -317,18 +318,30 @@ export function getChinesePronunciationOnly(text: string): string {
   const pinyinResult = pinyin(simplifiedText, { type: 'array', toneType: 'none' });
   const chars = [...text];
   
-  let result = "";
+  const parts: string[] = [];
+  let nonChineseBuffer = "";
+  
   for (let idx = 0; idx < chars.length; idx++) {
     const char = chars[idx];
     CHINESE_REGEX.lastIndex = 0;
     if (CHINESE_REGEX.test(char)) {
-      result += pinyinResult[idx] || char;
+      // Flush non-Chinese buffer first
+      if (nonChineseBuffer) {
+        parts.push(nonChineseBuffer);
+        nonChineseBuffer = "";
+      }
+      parts.push(pinyinResult[idx] || char);
     } else {
-      result += char;
+      nonChineseBuffer += char;
     }
   }
+  // Flush remaining non-Chinese buffer
+  if (nonChineseBuffer) {
+    parts.push(nonChineseBuffer);
+  }
   
-  return result;
+  // Join with spaces and collapse multiple spaces
+  return parts.join(" ").replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -357,6 +370,7 @@ export function getKanaPronunciationOnly(text: string): string {
 /**
  * Get pronunciation-only text from furigana segments
  * Returns the reading/pronunciation instead of the original text
+ * Adds spaces between segments for readability when using romanization
  */
 export function getFuriganaSegmentsPronunciationOnly(
   segments: FuriganaSegment[],
@@ -364,38 +378,40 @@ export function getFuriganaSegmentsPronunciationOnly(
 ): string {
   const { koreanRomanization = false, japaneseRomaji = false, chinesePinyin = false } = options;
   
-  let result = "";
+  const parts: string[] = [];
   
   for (const segment of segments) {
     // If segment has a reading (furigana), use that
     if (segment.reading) {
-      result += japaneseRomaji ? toRomaji(segment.reading) : segment.reading;
+      parts.push(japaneseRomaji ? toRomaji(segment.reading) : segment.reading);
       continue;
     }
     
     // Check for Korean text
     if (koreanRomanization && hasKoreanText(segment.text)) {
-      result += getKoreanPronunciationOnly(segment.text);
+      parts.push(getKoreanPronunciationOnly(segment.text));
       continue;
     }
     
     // Check for Chinese text
     if (chinesePinyin && isChineseText(segment.text)) {
-      result += getChinesePronunciationOnly(segment.text);
+      parts.push(getChinesePronunciationOnly(segment.text));
       continue;
     }
     
     // Check for standalone kana
     if (japaneseRomaji && hasKanaTextLocal(segment.text)) {
-      result += getKanaPronunciationOnly(segment.text);
+      parts.push(getKanaPronunciationOnly(segment.text));
       continue;
     }
     
-    // Otherwise, keep the original text
-    result += segment.text;
+    // Otherwise, keep the original text (including spaces)
+    parts.push(segment.text);
   }
   
-  return result;
+  // Join with spaces and collapse multiple spaces for clean output
+  // This handles: Japanese romaji, mixed content, Korean with natural spaces
+  return parts.join(" ").replace(/\s+/g, " ").trim();
 }
 
 /**
