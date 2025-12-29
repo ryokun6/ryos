@@ -90,11 +90,11 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
 // Furigana Generation
 // =============================================================================
 
-export const FURIGANA_SYSTEM_PROMPT = `Add furigana to kanji using ruby markup format: {text|reading}
+export const FURIGANA_SYSTEM_PROMPT = `Add furigana to kanji using ruby markup format: <text:reading>
 
-Format: {漢字|ふりがな} - text first, then reading after pipe
+Format: <漢字:ふりがな> - text first, then reading after colon
 - Plain text without reading stays as-is
-- Separate okurigana: {走|はし}る (NOT {走る|はしる})
+- Separate okurigana: <走:はし>る (NOT <走る:はしる>)
 
 One line output per input line.
 
@@ -104,20 +104,22 @@ Input:
 私は走る
 
 Output:
-{夜空|よぞら}の{星|ほし}
-{私|わたし}は{走|はし}る`;
+<夜空:よぞら>の<星:ほし>
+<私:わたし>は<走:はし>る`;
 
 // AI generation timeout (90 seconds for full song streaming)
 const AI_TIMEOUT_MS = 90000;
 
 /**
- * Parse ruby markup format (e.g., "{夜空|よぞら}の{星|ほし}") into FuriganaSegment array
+ * Parse ruby markup format (e.g., "<夜空:よぞら>の<星:ほし>") into FuriganaSegment array
+ * 
+ * Format: <text:reading> - angle brackets with colon separator
  */
 export function parseRubyMarkup(line: string): FuriganaSegment[] {
   const segments: FuriganaSegment[] = [];
   
-  // Match {text|reading} patterns and plain text between them
-  const regex = /\{([^|}]+)\|([^}]+)\}/g;
+  // Match <text:reading> patterns
+  const regex = /<([^:>]+):([^>]+)>/g;
   let match;
   let lastIndex = 0;
   
@@ -197,11 +199,11 @@ export async function streamFurigana(
   }
 
   // Use numbered lines for reliable parsing during streaming
-  const systemPrompt = `Add furigana to kanji using ruby markup format: {text|reading}
+  const systemPrompt = `Add furigana to kanji using ruby markup format: <text:reading>
 
-Format: {漢字|ふりがな} - text first, then reading after pipe
+Format: <漢字:ふりがな> - text first, then reading after colon
 - Plain text without reading stays as-is
-- Separate okurigana: {走|はし}る (NOT {走る|はしる})
+- Separate okurigana: <走:はし>る (NOT <走る:はしる>)
 
 Output format: Number each line like "1: annotated line", "2: annotated line", etc.
 
@@ -211,8 +213,8 @@ Input:
 2: 私は走る
 
 Output:
-1: {夜空|よぞら}の{星|ほし}
-2: {私|わたし}は{走|はし}る`;
+1: <夜空:よぞら>の<星:ほし>
+2: <私:わたし>は<走:はし>る`;
 
   const textsToProcess = linesNeedingFurigana.map((info, i) => `${i + 1}: ${info.line.words}`).join("\n");
 

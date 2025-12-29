@@ -943,11 +943,11 @@ export default async function handler(req: Request) {
             };
 
             // Use streamText with GPT-5.2 for furigana (using numbered prompt format)
-            const furiganaSystemPrompt = `Add furigana to kanji using ruby markup format: {text|reading}
+            const furiganaSystemPrompt = `Add furigana to kanji using ruby markup format: <text:reading>
 
-Format: {漢字|ふりがな} - text first, then reading after pipe
+Format: <漢字:ふりがな> - text first, then reading after colon
 - Plain text without reading stays as-is
-- Separate okurigana: {走|はし}る (NOT {走る|はしる})
+- Separate okurigana: <走:はし>る (NOT <走る:はしる>)
 
 Output format: Number each line like "1: annotated line", "2: annotated line", etc.
 
@@ -957,8 +957,8 @@ Input:
 2: 私は走る
 
 Output:
-1: {夜空|よぞら}の{星|ほし}
-2: {私|わたし}は{走|はし}る`;
+1: <夜空:よぞら>の<星:ほし>
+2: <私:わたし>は<走:はし>る`;
 
             const result = streamText({
               model: openai("gpt-5.2"),

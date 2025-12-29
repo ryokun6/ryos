@@ -179,15 +179,15 @@ CRITICAL: Readings must be ONLY Chinese characters! Never include Korean Hangul 
 3. FORM POETIC PHRASES that read beautifully in Chinese
 
 BEST EXAMPLES (sound + meaning):
-- 사랑 (sa-rang, "love") → {사랑|思浪} "thinking waves" - sounds like sa-rang AND evokes love's waves
-- 心 (kokoro, "heart") → {心|哭口落} "crying mouth falls" - sounds like ko-ko-ro AND feels emotional
-- 夢 (yume, "dream") → {夢|欲沒} "desire sinks" - sounds like yu-me AND feels dreamlike
-- 涙 (namida, "tears") → {涙|那迷搭} "that lost path" - sounds close AND evokes sadness
+- 사랑 (sa-rang, "love") → <사랑:思浪> "thinking waves" - sounds like sa-rang AND evokes love's waves
+- 心 (kokoro, "heart") → <心:哭口落> "crying mouth falls" - sounds like ko-ko-ro AND feels emotional
+- 夢 (yume, "dream") → <夢:欲沒> "desire sinks" - sounds like yu-me AND feels dreamlike
+- 涙 (namida, "tears") → <涙:那迷搭> "that lost path" - sounds close AND evokes sadness
 
 AVOID mechanical transliteration like:
-- ❌ {あなた|阿那他} - just sounds, no meaning
-- ✓ {あなた|阿娜她} "elegant her" - if singing about a woman
-- ✓ {あなた|啊那塔} "ah that tower" - if the context fits
+- ❌ <あなた:阿那他> - just sounds, no meaning
+- ✓ <あなた:阿娜她> "elegant her" - if singing about a woman
+- ✓ <あなた:啊那塔> "ah that tower" - if the context fits
 
 === JAPANESE ===
 
@@ -198,19 +198,19 @@ Read kanji by Japanese pronunciation. For love songs, sad songs, happy songs - c
 === KOREAN ===
 
 Korean has spaces between words - keep them! Choose meaningful characters:
-- 사랑해요 → {사랑해요|思浪海喲} "thinking waves, ocean yo!" 
-- 보고 싶어 → {보고|波哥} {싶어|惜破} "wave brother, cherish broken"
-- 내 마음 → {내|奶} {마음|媽音} or {내|乃} {마음|麻吟} - pick what sounds poetic
+- 사랑해요 → <사랑해요:思浪海喲> "thinking waves, ocean yo!" 
+- 보고 싶어 → <보고:波哥> <싶어:惜破> "wave brother, cherish broken"
+- 내 마음 → <내:奶> <마음:媽音> or <내:乃> <마음:麻吟> - pick what sounds poetic
 
 === FORMAT ===
 
-1. If input uses | (pipe) between words, wrap EACH segment separately: 私|は|走る → {私|娃}{は|哈}{走る|哈西嚕}
-2. Format: {original|chinese_reading} for EVERY Japanese/Korean word
+1. If input uses | (pipe) between words, wrap EACH segment separately: 私|は|走る → <私:娃><は:哈><走る:哈西嚕>
+2. Format: <original:chinese_reading> for EVERY Japanese/Korean word
 3. English words stay unwrapped
 4. Keep spaces in Korean text
 5. Output EVERY word!
 6. PURE CHINESE only in readings!
-7. っ/ッ (gemination) → use ～ Example: ずっと → {ずっと|祖～頭}
+7. っ/ッ (gemination) → use ～ Example: ずっと → <ずっと:祖～頭>
 
 BE CREATIVE! Prioritize: poetic meaning > exact sound. Approximate sounds are fine if the Chinese phrase is beautiful and emotionally fitting!`;
 
@@ -236,29 +236,27 @@ CRITICAL: Readings must be ONLY Chinese characters! Never include Japanese kana!
 2. CARRY MEANING - choose characters that relate to the song's emotion
 3. FORM POETRY - the Chinese should read like a poem or story
 
-EXAMPLES - EVERY segment MUST be wrapped!
+EXAMPLES - Sound + Meaning + Poetry:
 
-Input uses | delimiter. EACH segment needs {text|reading} - never skip any!
+Love song lyrics:
+- 私(わたし)の → <私:娃她西><の:諾> "baby she west, promise" - sounds like watashi-no
+- 心(こころ)が → <心:哭口落><が:嘎> "crying mouth falls" - evokes heartache
+- 好き(すき)だよ → <好き:宿期><だよ:搭喲> "destined time" - romantic meaning!
 
-Input: 私(わたし)|の
-Output: {私|娃她西}{の|諾}
+Sad song lyrics:
+- 涙(なみだ) → <涙:那迷搭> "that lost path" - sounds like namida, feels sad
+- 夢(ゆめ)を見(み)た → <夢:欲沒><を:喔><見:迷><た:塔> "desire sinks, oh lost tower"
+- 忘(わす)れない → <忘れない:娃思咧奈> "baby thinks, alas!" 
 
-Input: 心(こころ)|が|痛(いた)|い
-Output: {心|哭口落}{が|嘎}{痛|衣她}{い|衣}
+Happy/energetic:
+- 走(はし)る → <走:哈西嚕> or <走:哈希露> "ha west dew" - pick what fits!
+- 飛(と)ぶ → <飛:頭布> "head cloth" or <飛:兔步> "rabbit steps"
 
-Input: 好(す)|き|だ|よ
-Output: {好|速}{き|奇}{だ|搭}{よ|喲}
+=== HOW TO USE FURIGANA ===
 
-Input: 逢(あ)|え|た|ら
-Output: {逢|阿}{え|欸}{た|她}{ら|啦}
-
-Input: あ|あ|め|ぐ|り
-Output: {あ|啊}{あ|啊}{め|妹}{ぐ|古}{り|里}
-
-Input: 涙(なみだ)|が|出(で)|る
-Output: {涙|那迷搭}{が|嘎}{出|得}{る|嚕}
-
-CRITICAL: Count the | in input = number of {segments} in output. Never merge or skip!
+The furigana tells you pronunciation. Be creative with the Chinese!
+- 大切(たいせつ)な人(ひと) → <大切:太惜刺><な:那><人:嘻頭> "too cherished thorn, that playful head"
+- 名前(なまえ) → <名前:那嘛诶> or <名前:娜媽欸> - choose based on context
 
 === KANA GUIDELINES (flexible, not strict!) ===
 
@@ -274,21 +272,19 @@ These are suggestions - feel free to pick different characters that sound simila
 - ら → 啦/拉/辣, り → 里/離/理, る → 嚕/路/露, れ → 咧/裂/烈, ろ → 囉/落/洛
 - わ → 哇/娃/挖, を → 喔/我/握, ん → 嗯/恩/音
 
-SPECIAL: っ/ッ (gemination) → ～ Example: ずっと → {ずっと|祖～頭} or {ずっと|族～途}
+SPECIAL: っ/ッ (gemination) → ～ Example: ずっと → <ずっと:祖～頭> or <ずっと:族～途>
 
 === FORMAT ===
 
-1. Count | delimiters in input - output MUST have that many + 1 wrapped segments!
-2. Format: {original|chinese_reading} - strip the (furigana) from output text
-3. EVERY segment gets wrapped - kanji, kana, particles, everything!
+1. Each | in input marks a segment boundary - wrap EACH segment separately!
+2. Format: <original:chinese_reading> - do NOT include the furigana parentheses in output
+3. Example input: 私(わたし)|は|好き(すき)
+   Example output: <私:娃她西><は:哈><好き:速奇>
 4. English words stay unwrapped
 5. PURE CHINESE only - no kana allowed in readings!
+6. Use the furigana pronunciation as your sound guide
 
-Example: 3 pipes = 4 segments
-Input: 私(わたし)|は|好(す)|き
-Output: {私|娃她西}{は|哈}{好|速}{き|奇}
-
-BE CREATIVE with character choices, but NEVER skip segments!`;
+BE CREATIVE! A beautiful Chinese phrase that's 80% phonetically accurate is better than an ugly phrase that's 100% accurate. Tell a story with your characters!`;
 
 // =============================================================================
 // English Soramimi Prompts - Phonetic English approximations
@@ -322,17 +318,17 @@ EXAMPLES:
 
 === FORMAT ===
 
-1. If input uses | (pipe) between words, wrap EACH segment separately: 私|は|走る → {私|watt}{は|ha}{走る|ha she rue}
-2. Format: {original|english_reading} for EVERY Japanese/Korean/Chinese word
+1. If input uses | (pipe) between words, wrap EACH segment separately: 私|は|走る → <私:watt><は:ha><走る:ha she rue>
+2. Format: <original:english_reading> for EVERY Japanese/Korean/Chinese word
 3. English words in original text stay unwrapped (unchanged)
 4. Keep spaces in Korean text
 5. Output EVERY non-English word!
 
 Example output:
-1: {見つめていたい|meet sue mate a tie}
-2: {ずっと|zoo toe} {一緒に|each show knee}
-3: {사랑|saw wrong} {해요|hey yo}
-4: {我愛你|wall I knee}`;
+1: <見つめていたい:meet sue mate a tie>
+2: <ずっと:zoo toe> <一緒に:each show knee>
+3: <사랑:saw wrong> <해요:hey yo>
+4: <我愛你:wall I knee>`;
 
 export const SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT = `Create English "misheard lyrics" (soramimi) - English words/phrases that SOUND like Japanese lyrics.
 
@@ -342,42 +338,44 @@ You are given Japanese text with:
 
 Each | marks a word boundary. Create an English reading for EACH segment separately!
 
-=== EXAMPLES - EVERY segment MUST be wrapped! ===
+=== WHAT IS ENGLISH SORAMIMI? ===
 
-Input uses | delimiter. EACH segment needs {text|reading} - never skip any!
+Take Japanese lyrics and create English words that phonetically approximate how they sound.
+The furigana tells you exactly how to pronounce each word - match that sound with English!
 
-Input: 私(わたし)|が
-Output: {私|what a she}{が|ga}
+EXAMPLES with furigana:
+- 私(わたし) → "what a she" or "watt ah she"
+- 好き(すき) → "ski" or "sue key"
+- 心(こころ) → "cocoa row" or "ko ko row"
+- 涙(なみだ) → "nah me da" or "mommy duh"
+- 夢(ゆめ) → "you may" or "yoo meh"
 
-Input: 好(す)|き|だ|よ
-Output: {好|sue}{き|key}{だ|da}{よ|yo}
+=== RULES ===
 
-Input: 逢(あ)|え|た|ら
-Output: {逢|ah}{え|eh}{た|ta}{ら|la}
-
-Input: あ|あ|め|ぐ|り
-Output: {あ|ah}{あ|ah}{め|meh}{ぐ|goo}{り|ree}
-
-CRITICAL: Count the | in input = number of {segments} in output. Never merge or skip!
+1. Use ONLY English words/sounds in the reading
+2. Use the furigana pronunciation as your guide (not the kanji meaning)
+3. Prioritize recognizable English words over pure phonetic spelling
+4. Break into multiple short English words for readability
+5. It's OK if the English doesn't make sense - focus on SOUND matching
 
 === FORMAT ===
 
-1. Count | delimiters in input - output MUST have that many + 1 wrapped segments!
-2. Format: {original|english_reading} - strip the (furigana) from output text
-3. EVERY segment gets wrapped - kanji, kana, particles, everything!
+1. Each | in input marks a segment boundary - wrap EACH segment separately!
+2. Format: <original:english_reading> - do NOT include the furigana parentheses in output
+3. Example input: 私(わたし)|が|好き(すき)|だよ
+   Example output: <私:what a she><が:ga><好き:sue key><だよ:die yo>
 4. English words in original lyrics stay unwrapped
 5. PURE ENGLISH only - no Japanese in readings!`;
 
 /**
- * Clean AI output by removing malformed segments like {reading} without text
- * These occur when AI outputs just Chinese characters in braces without the original text
+ * Clean AI output by removing malformed segments like <reading> without proper base:ruby structure
  */
 function cleanAiOutput(line: string): string {
-  // Remove malformed {reading} patterns (Chinese chars in braces without pipe)
-  // Match {content} where content has no pipe and contains CJK characters
-  return line.replace(/\{([^|{}]+)\}(?!\|)/g, (match, content) => {
-    // If it contains CJK characters and no pipe, it's likely a malformed reading - remove it
-    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(content) && !content.includes('|')) {
+  // Remove malformed <reading> patterns (Chinese chars in angle brackets without colon)
+  // Match <content> where content has no colon and contains CJK characters
+  return line.replace(/<([^:>]+)>(?!:)/g, (match, content) => {
+    // If it contains CJK characters and no colon, it's likely a malformed reading - remove it
+    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(content) && !content.includes(':')) {
       return '';
     }
     return match;
@@ -404,9 +402,11 @@ export function cleanSoramimiReading(reading: string): string {
 }
 
 /**
- * Parse soramimi ruby markup format (e.g., "{사랑|思浪} {해요|海喲}") into FuriganaSegment array
+ * Parse soramimi ruby markup format (e.g., "<사랑:思浪> <해요:海喲>") into FuriganaSegment array
  * 
- * This is similar to furigana's parseRubyMarkup but includes additional cleaning:
+ * Format: <original:reading> - angle brackets with colon separator
+ * 
+ * Additional cleaning:
  * - Strips furigana annotations from text (e.g., 耳(みみ) -> 耳)
  * - Cleans readings to remove non-Chinese characters
  * - Handles malformed AI output
@@ -417,8 +417,8 @@ export function parseSoramimiRubyMarkup(line: string): FuriganaSegment[] {
   
   const segments: FuriganaSegment[] = [];
   
-  // Match {text|reading} patterns and plain text between them
-  const regex = /\{([^|}]+)\|([^}]+)\}/g;
+  // Match <text:reading> patterns
+  const regex = /<([^:>]+):([^>]+)>/g;
   let match;
   let lastIndex = 0;
   
@@ -427,7 +427,6 @@ export function parseSoramimiRubyMarkup(line: string): FuriganaSegment[] {
     if (match.index > lastIndex) {
       let textBefore = cleanedLine.slice(lastIndex, match.index);
       // AI sometimes outputs "|" as delimiter between words - strip it but keep spaces
-      // e.g., "{넌|嫩} |{언제나|摁這那}" -> strip the standalone |
       textBefore = textBefore.replace(/\|/g, '');
       // Strip furigana annotations from plain text too
       textBefore = stripFuriganaAnnotation(textBefore);
