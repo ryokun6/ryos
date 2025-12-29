@@ -438,18 +438,24 @@ function StaticWordRendering({
       return processed;
     };
 
+    // Determine if we need to add spaces between words for romanized output
+    const needsRomanizedSpacing = pronunciationOnly && (japaneseRomaji || chinesePinyin || koreanRomanized);
+
     if (furiganaSegments && furiganaSegments.length > 0) {
       // Use character-position alignment to handle boundary mismatches
       // When a furigana segment spans multiple word timings, they're combined into one unit
       const { renderItems: mappedItems } = mapWordTimingsToFurigana(wordTimings, furiganaSegments);
       
-      return mappedItems.map((item) => {
+      return mappedItems.map((item, idx) => {
         const word = wordTimings[item.wordIdx];
         // Get trailing space from last combined word
         const lastWordIdx = item.combinedWordIndices[item.combinedWordIndices.length - 1];
         const lastWord = wordTimings[lastWordIdx];
         const lastTrimmed = lastWord.text.trim();
         const trailingSpace = lastWord.text.slice(lastTrimmed.length);
+        // Add space for romanized output if no natural trailing space (except for last word)
+        const isLastWord = idx === mappedItems.length - 1;
+        const spacer = needsRomanizedSpacing && !trailingSpace && !isLastWord ? " " : trailingSpace;
         
         let content: ReactNode;
         if (item.reading) {
@@ -457,7 +463,7 @@ function StaticWordRendering({
           // Convert to romaji if japaneseRomaji is enabled
           const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
           if (pronunciationOnly) {
-            content = <>{displayReading}{trailingSpace}</>;
+            content = <>{displayReading}{spacer}</>;
           } else {
             content = (
               <>
@@ -470,8 +476,11 @@ function StaticWordRendering({
             );
           }
         } else {
-          // No reading - use original word text as-is
-          content = getWordContent(word.text);
+          // No reading - use original word text as-is (add spacer for romanized)
+          const wordContent = getWordContent(word.text);
+          content = needsRomanizedSpacing && !trailingSpace && !isLastWord 
+            ? <>{wordContent}{" "}</> 
+            : wordContent;
         }
         
         return {
@@ -482,11 +491,21 @@ function StaticWordRendering({
       });
     }
     
-    return wordTimings.map((word, idx) => ({
-      key: `${idx}-${word.text}`,
-      content: getWordContent(word.text),
-      startTimeMs: word.startTimeMs,
-    }));
+    return wordTimings.map((word, idx) => {
+      const isLastWord = idx === wordTimings.length - 1;
+      const trimmed = word.text.trim();
+      const trailingSpace = word.text.slice(trimmed.length);
+      const wordContent = getWordContent(word.text);
+      // Add space for romanized output if no natural trailing space
+      const content = needsRomanizedSpacing && !trailingSpace && !isLastWord
+        ? <>{wordContent}{" "}</>
+        : wordContent;
+      return {
+        key: `${idx}-${word.text}`,
+        content,
+        startTimeMs: word.startTimeMs,
+      };
+    });
   }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly]);
 
   const handleWordClick = (wordStartTimeMs: number) => {
@@ -613,18 +632,24 @@ function WordTimingHighlight({
       return processed;
     };
 
+    // Determine if we need to add spaces between words for romanized output
+    const needsRomanizedSpacing = pronunciationOnly && (japaneseRomaji || chinesePinyin || koreanRomanized);
+
     if (furiganaSegments && furiganaSegments.length > 0) {
       // Use character-position alignment to handle boundary mismatches
       // When a furigana segment spans multiple word timings, they're combined into one unit
       const { renderItems: mappedItems } = mapWordTimingsToFurigana(wordTimings, furiganaSegments);
       
-      return mappedItems.map((item) => {
+      return mappedItems.map((item, idx) => {
         const word = wordTimings[item.wordIdx];
         // Get trailing space from last combined word
         const lastWordIdx = item.combinedWordIndices[item.combinedWordIndices.length - 1];
         const lastWord = wordTimings[lastWordIdx];
         const lastTrimmed = lastWord.text.trim();
         const trailingSpace = lastWord.text.slice(lastTrimmed.length);
+        // Add space for romanized output if no natural trailing space (except for last word)
+        const isLastWord = idx === mappedItems.length - 1;
+        const spacer = needsRomanizedSpacing && !trailingSpace && !isLastWord ? " " : trailingSpace;
         
         let content: ReactNode;
         if (item.reading) {
@@ -632,7 +657,7 @@ function WordTimingHighlight({
           // Convert to romaji if japaneseRomaji is enabled
           const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
           if (pronunciationOnly) {
-            content = <>{displayReading}{trailingSpace}</>;
+            content = <>{displayReading}{spacer}</>;
           } else {
             // Ruby annotation mode
             content = (
@@ -646,8 +671,11 @@ function WordTimingHighlight({
             );
           }
         } else {
-          // No reading - use original word text as-is (preserves spacing)
-          content = getWordContent(word.text);
+          // No reading - use original word text as-is (add spacer for romanized)
+          const wordContent = getWordContent(word.text);
+          content = needsRomanizedSpacing && !trailingSpace && !isLastWord 
+            ? <>{wordContent}{" "}</> 
+            : wordContent;
         }
         
         return {
@@ -660,12 +688,22 @@ function WordTimingHighlight({
     }
     
     // No furigana - simple word list with romanization support
-    return wordTimings.map((word, idx) => ({
-      word,
-      extraDurationMs: 0,
-      content: getWordContent(word.text),
-      key: `${idx}-${word.text}`,
-    }));
+    return wordTimings.map((word, idx) => {
+      const isLastWord = idx === wordTimings.length - 1;
+      const trimmed = word.text.trim();
+      const trailingSpace = word.text.slice(trimmed.length);
+      const wordContent = getWordContent(word.text);
+      // Add space for romanized output if no natural trailing space
+      const content = needsRomanizedSpacing && !trailingSpace && !isLastWord
+        ? <>{wordContent}{" "}</>
+        : wordContent;
+      return {
+        word,
+        extraDurationMs: 0,
+        content,
+        key: `${idx}-${word.text}`,
+      };
+    });
   }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly]);
 
   // Sync time ref when prop changes
