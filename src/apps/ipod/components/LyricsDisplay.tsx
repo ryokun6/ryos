@@ -1634,7 +1634,7 @@ export function LyricsDisplay({
                             {/* Original lyrics with karaoke highlighting */}
                             {/* Determine which annotation segments to use: soramimi takes precedence, then furigana */}
                             {(() => {
-                              const soramimiSegments = romanization.soramimi ? soramimiMap.get(line.startTimeMs) : undefined;
+                              const soramimiSegments = romanization.enabled && romanization.soramimi ? soramimiMap.get(line.startTimeMs) : undefined;
                               const annotationSegments = soramimiSegments ?? (
                                 romanization.enabled && romanization.japaneseFurigana
                                   ? furiganaMap.get(line.startTimeMs)
