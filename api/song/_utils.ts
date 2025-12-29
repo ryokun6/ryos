@@ -245,8 +245,12 @@ export function parseYouTubeTitleSimple(rawTitle: string, channelName?: string):
   return { title: cleaned, artist };
 }
 
+// Timeout for AI title parsing (8 seconds - should be less than fetch timeout)
+const AI_TITLE_PARSE_TIMEOUT_MS = 8000;
+
 /**
  * Use AI to parse a YouTube title into song title and artist.
+ * Has a timeout to prevent hanging the request if AI is slow.
  */
 export async function parseYouTubeTitleWithAI(
   rawTitle: string,
@@ -262,6 +266,10 @@ export async function parseYouTubeTitleWithAI(
     }
     return parseYouTubeTitleSimple(rawTitle, channelName);
   }
+  
+  // Create abort controller with timeout for AI call
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), AI_TITLE_PARSE_TIMEOUT_MS);
   
   try {
     const { object: parsedData } = await generateObject({
@@ -295,7 +303,10 @@ Examples:
         },
       ],
       temperature: 0.1,
+      abortSignal: abortController.signal,
     });
+
+    clearTimeout(timeoutId);
 
     const result = {
       title: parsedData.title || cleanTitle,
@@ -315,8 +326,10 @@ Examples:
     
     return result;
   } catch (error) {
+    clearTimeout(timeoutId);
+    const isTimeout = error instanceof Error && error.name === "AbortError";
     if (requestId) {
-      logError(requestId, "AI title parsing failed, using fallback", error);
+      logError(requestId, `AI title parsing failed${isTimeout ? " (timeout)" : ""}, using fallback`, error);
     }
     return parseYouTubeTitleSimple(rawTitle, channelName);
   }

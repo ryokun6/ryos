@@ -95,6 +95,9 @@ async function getCover(hash: string, albumId: string | number): Promise<string>
 // Public API
 // =============================================================================
 
+// Timeout for Kugou API search (15 seconds - external API may be slow)
+const KUGOU_SEARCH_TIMEOUT_MS = 15000;
+
 /**
  * Search for songs on Kugou
  */
@@ -108,10 +111,10 @@ export async function searchKugou(
 
   let searchRes: Response;
   try {
-    searchRes = await fetchWithTimeout(searchUrl, { headers: kugouHeaders });
+    searchRes = await fetchWithTimeout(searchUrl, { headers: kugouHeaders }, KUGOU_SEARCH_TIMEOUT_MS);
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Kugou search timed out after 10 seconds");
+      throw new Error(`Kugou search timed out after ${KUGOU_SEARCH_TIMEOUT_MS / 1000} seconds`);
     }
     throw new Error(`Kugou search network error: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
