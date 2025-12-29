@@ -1363,10 +1363,12 @@ Output:
           cleared.push("furigana");
         }
 
-        // Clear soramimi if requested
+        // Clear soramimi if requested (both legacy soramimi and soramimiByLang)
         if (shouldClearSoramimi) {
-          if (song.soramimi && song.soramimi.length > 0) {
-            await saveSong(redis, { id: songId, soramimi: [] }, { preserveSoramimi: false });
+          const hasSoramimi = (song.soramimi && song.soramimi.length > 0) || 
+                              (song.soramimiByLang && Object.keys(song.soramimiByLang).length > 0);
+          if (hasSoramimi) {
+            await saveSong(redis, { id: songId, soramimi: [], soramimiByLang: {} }, { preserveSoramimi: false });
           }
           cleared.push("soramimi");
         }
@@ -1476,6 +1478,7 @@ Output:
       }
       if (clearSoramimi) {
         updateData.soramimi = undefined;
+        updateData.soramimiByLang = undefined;
       }
       if (clearLyrics) {
         updateData.lyrics = undefined;

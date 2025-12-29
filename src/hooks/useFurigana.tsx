@@ -356,14 +356,15 @@ export function useFurigana({
       });
 
     return () => {
-      // Always abort this request on cleanup
+      // Always abort this request on cleanup - this controller is scoped to this effect run
+      controller.abort();
+      // Only clear the ref if this is still the current request
       const isThisRequest = furiganaForceRequestRef.current?.requestId === requestId;
       if (isThisRequest) {
-        controller.abort();
         furiganaForceRequestRef.current = null;
-        setIsFetchingFurigana(false);
-        setFuriganaProgress(undefined);
       }
+      setIsFetchingFurigana(false);
+      setFuriganaProgress(undefined);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
@@ -573,14 +574,15 @@ export function useFurigana({
       });
 
     return () => {
-      // Always abort this request on cleanup
+      // Always abort this request on cleanup - this controller is scoped to this effect run
+      controller.abort();
+      // Only clear the ref if this is still the current request
       const isThisRequest = soramimiForceRequestRef.current?.requestId === requestId;
       if (isThisRequest) {
-        controller.abort();
         soramimiForceRequestRef.current = null;
-        setIsFetchingSoramimi(false);
-        setSoramimiProgress(undefined);
       }
+      setIsFetchingSoramimi(false);
+      setSoramimiProgress(undefined);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- soramimiCacheKey captures lines content + target language, shouldFetchSoramimi captures romanization settings, furiganaReadyForSoramimi handles furigana sequencing, furiganaMapRef accessed via ref to avoid re-runs during streaming
   }, [songId, soramimiCacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedSoramimiInfo, isJapanese, furiganaReadyForSoramimi, soramimiTargetLanguage]);

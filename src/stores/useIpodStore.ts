@@ -493,9 +493,10 @@ async function saveLyricsSourceToServer(
           artist: lyricsSource.artist,
           album: lyricsSource.album,
         }),
-        // Clear translations and furigana since lyrics changed
+        // Clear translations, furigana, and soramimi since lyrics changed
         clearTranslations: true,
         clearFurigana: true,
+        clearSoramimi: true,
         clearLyrics: true,
       }),
     });
@@ -728,7 +729,7 @@ export const useIpodStore = create<IpodState>()(
         const state = get();
         const currentTrack = state.getCurrentTrack();
         
-        // Clear server-side cache for translations and furigana
+        // Clear server-side cache for translations, furigana, and soramimi
         if (currentTrack?.id) {
           fetch(getApiUrl(`/api/song/${currentTrack.id}`), {
             method: "POST",
@@ -737,6 +738,7 @@ export const useIpodStore = create<IpodState>()(
               action: "clear-cached-data",
               clearTranslations: true,
               clearFurigana: true,
+              clearSoramimi: true,
             }),
           }).catch((err) => {
             console.error("[iPod Store] Failed to clear server cache:", err);

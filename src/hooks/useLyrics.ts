@@ -121,12 +121,15 @@ export function useLyrics({
   // Ref to store translation info from initial fetch (with language to ensure we only use matching translations)
   const translationInfoRef = useRef<{ info: TranslationStreamInfo; language: string } | undefined>(undefined);
 
-  // Clear cached translation info when cache bust trigger changes (force refresh)
+  // Clear cached translation/furigana/soramimi info when cache bust trigger changes (force refresh)
   useEffect(() => {
     // Skip on initial mount - only clear on actual trigger changes
     if (lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger) {
       translationInfoRef.current = undefined;
       setTranslatedLines(null);
+      // Also clear furigana and soramimi info so useFurigana refetches
+      setFuriganaInfo(undefined);
+      setSoramimiInfo(undefined);
     }
   }, [lyricsCacheBustTrigger]);
 
