@@ -295,6 +295,9 @@ export default async function handler(req: Request) {
         const clientTitle = parsed.data.title;
         const clientArtist = parsed.data.artist;
         
+        // Return metadata in response (useful for one-call song setup)
+        const returnMetadata = parsed.data.returnMetadata;
+        
         // Optional: include translation/furigana/soramimi info to reduce round-trips
         const translateTo = parsed.data.translateTo;
         const includeFurigana = parsed.data.includeFurigana;
@@ -449,6 +452,17 @@ export default async function handler(req: Request) {
             }
           }
           
+          // Include metadata if requested (useful for one-call song setup)
+          if (returnMetadata) {
+            response.metadata = {
+              title: song.lyricsSource?.title || song.title,
+              artist: song.lyricsSource?.artist || song.artist,
+              album: song.lyricsSource?.album || song.album,
+              cover: song.cover,
+              lyricsSource: song.lyricsSource,
+            };
+          }
+          
           return jsonResponse(response);
         }
 
@@ -576,6 +590,18 @@ export default async function handler(req: Request) {
             cached: false,
             targetLanguage: soramimiTargetLanguage,
             ...(shouldSkipChineseSoramimi ? { skipped: true, skipReason: "chinese_lyrics" } : {}),
+          };
+        }
+        
+        // Include metadata if requested (useful for one-call song setup)
+        // For fresh fetch, savedSong has the complete metadata
+        if (returnMetadata) {
+          response.metadata = {
+            title: savedSong.title,
+            artist: savedSong.artist,
+            album: savedSong.album,
+            cover: savedSong.cover,
+            lyricsSource: savedSong.lyricsSource,
           };
         }
         
