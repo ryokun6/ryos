@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, Upload } from "lucide-react";
+import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, Upload, Download } from "lucide-react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Table,
@@ -115,6 +115,7 @@ export function AdminAppComponent({
   const [isFrameNarrow, setIsFrameNarrow] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -441,6 +442,58 @@ export function AdminAppComponent({
     [username, authToken, fetchSongs, t]
   );
 
+  // Handle export library
+  const handleExportLibrary = useCallback(async () => {
+    if (songs.length === 0) {
+      toast.info(t("apps.admin.songs.noSongsToExport", "No songs to export"));
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      // Map songs to export format (compatible with import format)
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        version: 1,
+        videos: songs.map((song) => ({
+          id: song.youtubeId,
+          title: song.title,
+          artist: song.artist,
+          album: song.album,
+          lyricOffset: song.lyricOffset,
+          lyricsSource: song.lyricsSource,
+          createdBy: song.createdBy,
+          createdAt: song.createdAt,
+          updatedAt: song.updatedAt,
+        })),
+      };
+
+      // Create and download the file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ryos-library-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(
+        t("apps.admin.messages.exportSuccess", {
+          count: songs.length,
+          defaultValue: `Exported ${songs.length} songs`,
+        })
+      );
+    } catch (error) {
+      console.error("Failed to export library:", error);
+      toast.error(t("apps.admin.errors.exportFailed", "Export failed"));
+    } finally {
+      setIsExporting(false);
+    }
+  }, [songs, t]);
+
   // Prompt delete all songs (opens dialog)
   const handleDeleteAllSongs = useCallback(() => {
     setDeleteTarget({ type: "allSongs", id: "all", name: t("apps.admin.songs.allSongs", "all songs") });
@@ -748,11 +801,26 @@ export function AdminAppComponent({
                       variant="ghost"
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={isImporting || isDeletingAll}
+                      disabled={isImporting || isExporting || isDeletingAll}
                       className="h-7 w-7 p-0"
                       title={t("apps.admin.songs.import", "Import Library")}
                     >
                       {isImporting ? (
+                        <ActivityIndicator size={14} />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    {/* Export button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleExportLibrary}
+                      disabled={isExporting || isImporting || isDeletingAll || songs.length === 0}
+                      className="h-7 w-7 p-0"
+                      title={t("apps.admin.songs.export", "Export Library")}
+                    >
+                      {isExporting ? (
                         <ActivityIndicator size={14} />
                       ) : (
                         <Upload className="h-3.5 w-3.5" />

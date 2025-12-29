@@ -16,11 +16,20 @@ import {
   RefreshCw,
   Mic,
   UserX,
+  Languages,
+  FileText,
+  Type,
+  Ear,
+  Check,
+  X,
+  RotateCcw,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { LyricsSearchDialog, LyricsSearchResult } from "@/components/dialogs/LyricsSearchDialog";
 import { deleteSongMetadata, saveSongMetadata, CachedLyricsSource } from "@/utils/songMetadataCache";
 import { getApiUrl } from "@/utils/platform";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
@@ -28,6 +37,11 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+
+interface FuriganaSegment {
+  text: string;
+  reading?: string;
+}
 
 interface SongDetail {
   id: string;
@@ -38,7 +52,14 @@ interface SongDetail {
   lyricsSource?: CachedLyricsSource;
   lyrics?: {
     cover?: string;
+    lrc?: string;
+    krc?: string;
+    parsedLines?: Array<{ words: string; startTimeMs: string }>;
   };
+  translations?: Record<string, string>;
+  furigana?: FuriganaSegment[][];
+  soramimi?: FuriganaSegment[][];
+  soramimiByLang?: Record<string, FuriganaSegment[][]>;
   createdBy?: string;
   createdAt: number;
   updatedAt: number;
@@ -76,6 +97,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isUnshareDialogOpen, setIsUnshareDialogOpen] = useState(false);
   const [isUnsharing, setIsUnsharing] = useState(false);
+  const [isForceRefreshing, setIsForceRefreshing] = useState(false);
+  const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
   
   // Edit states
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -91,9 +114,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   const fetchSong = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Include lyrics to get cover image URL
+      // Include lyrics, translations, furigana, soramimi to get full song data
       const response = await fetch(
-        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata,lyrics`),
+        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata,lyrics,translations,furigana,soramimi`),
         {
           headers: {
             "Content-Type": "application/json",
@@ -114,6 +137,154 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
       setIsLoading(false);
     }
   }, [youtubeId, t]);
+
+  // Force refresh lyrics from Kugou
+  const handleForceRefresh = useCallback(async () => {
+    if (!username || !authToken || !song?.lyricsSource) {
+      toast.error(t("apps.admin.errors.cannotForceRefresh", "Cannot force refresh - no lyrics source or not authenticated"));
+      return;
+    }
+
+    setIsForceRefreshing(true);
+    try {
+      const response = await fetch(
+        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`,
+            "X-Username": username,
+          },
+          body: JSON.stringify({
+            action: "fetch-lyrics",
+            force: true,
+            lyricsSource: song.lyricsSource,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success(t("apps.admin.messages.lyricsRefreshed", "Lyrics refreshed from source"));
+        // Re-fetch song to get updated data
+        await fetchSong();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || t("apps.admin.errors.failedToRefreshLyrics", "Failed to refresh lyrics"));
+      }
+    } catch (error) {
+      console.error("Failed to force refresh lyrics:", error);
+      toast.error(t("apps.admin.errors.failedToRefreshLyrics", "Failed to refresh lyrics"));
+    } finally {
+      setIsForceRefreshing(false);
+    }
+  }, [youtubeId, username, authToken, song?.lyricsSource, fetchSong, t]);
+
+  // Handle lyrics search selection - fetch new lyrics with selected source and update metadata
+  const handleLyricsSearchSelect = useCallback(async (result: LyricsSearchResult) => {
+    if (!username || !authToken) {
+      toast.error(t("apps.admin.errors.notAuthenticated", "Not authenticated"));
+      return;
+    }
+
+    setIsForceRefreshing(true);
+    try {
+      // First, fetch lyrics with the new source
+      const lyricsResponse = await fetch(
+        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`,
+            "X-Username": username,
+          },
+          body: JSON.stringify({
+            action: "fetch-lyrics",
+            force: true,
+            lyricsSource: {
+              hash: result.hash,
+              albumId: result.albumId,
+              title: result.title,
+              artist: result.artist,
+              album: result.album,
+            },
+          }),
+        }
+      );
+
+      if (!lyricsResponse.ok) {
+        const data = await lyricsResponse.json();
+        toast.error(data.error || t("apps.admin.errors.failedToUpdateLyrics", "Failed to update lyrics"));
+        return;
+      }
+
+      // Then, update song metadata with title/artist/album from the search result
+      const metadataResponse = await fetch(
+        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`,
+            "X-Username": username,
+          },
+          body: JSON.stringify({
+            title: result.title,
+            artist: result.artist,
+            album: result.album,
+          }),
+        }
+      );
+
+      if (metadataResponse.ok) {
+        toast.success(t("apps.admin.messages.lyricsAndMetadataUpdated", "Lyrics and metadata updated"));
+      } else {
+        // Lyrics updated but metadata failed - still show partial success
+        toast.success(t("apps.admin.messages.lyricsUpdated", "Lyrics updated"));
+        toast.warning(t("apps.admin.errors.failedToUpdateMetadata", "Failed to update metadata"));
+      }
+
+      // Re-fetch song to get updated data
+      await fetchSong();
+    } catch (error) {
+      console.error("Failed to update lyrics source:", error);
+      toast.error(t("apps.admin.errors.failedToUpdateLyrics", "Failed to update lyrics"));
+    } finally {
+      setIsForceRefreshing(false);
+    }
+  }, [youtubeId, username, authToken, fetchSong, t]);
+
+  // Handle lyrics search reset - clear lyrics source
+  const handleLyricsSearchReset = useCallback(async () => {
+    if (!username || !authToken) return;
+
+    try {
+      const response = await fetch(
+        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`,
+            "X-Username": username,
+          },
+          body: JSON.stringify({
+            clearLyrics: true,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success(t("apps.admin.messages.lyricsReset", "Lyrics reset"));
+        await fetchSong();
+      } else {
+        toast.error(t("apps.admin.errors.failedToResetLyrics", "Failed to reset lyrics"));
+      }
+    } catch (error) {
+      console.error("Failed to reset lyrics:", error);
+    }
+  }, [youtubeId, username, authToken, fetchSong, t]);
 
   // Play song in iPod
   const handlePlayInIpod = useCallback(async () => {
@@ -413,6 +584,28 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                 <Mic className="h-3 w-3" />
                 <span>{t("apps.admin.song.playInKaraoke", "Play in Karaoke")}</span>
               </button>
+              <button
+                onClick={() => setIsLyricsSearchDialogOpen(true)}
+                className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+              >
+                <Search className="h-3 w-3" />
+                <span>{t("apps.admin.song.searchLyrics", "Search Lyrics")}</span>
+              </button>
+              {song.lyricsSource && (
+                <button
+                  onClick={handleForceRefresh}
+                  disabled={isForceRefreshing}
+                  className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+                  title={t("apps.admin.song.forceRefreshTooltip", "Re-fetch lyrics from Kugou and clear cached annotations")}
+                >
+                  {isForceRefreshing ? (
+                    <ActivityIndicator size={12} />
+                  ) : (
+                    <RotateCcw className="h-3 w-3" />
+                  )}
+                  <span>{t("apps.admin.song.forceRefresh", "Force Refresh")}</span>
+                </button>
+              )}
               {song.createdBy && (
                 <button
                   onClick={() => setIsUnshareDialogOpen(true)}
@@ -647,6 +840,169 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             </div>
           </div>
 
+          {/* Lyrics Content Section */}
+          <div className="space-y-2">
+            <div className="!text-[11px] uppercase tracking-wide text-black/50">
+              {t("apps.admin.song.lyricsContent", "Lyrics Content")}
+            </div>
+            <div className="space-y-2">
+              {/* Lyrics Source */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
+                <FileText className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-neutral-500">{t("apps.admin.song.lyricsSource", "Lyrics")}</div>
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-32 mt-1" />
+                  ) : (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {song?.lyrics?.lrc ? (
+                        <>
+                          <Check className="h-3 w-3 text-green-500" />
+                          <span className="text-[11px] text-green-600">
+                            {song.lyrics.parsedLines?.length || 0} {t("apps.admin.song.lines", "lines")}
+                            {song.lyrics.krc && (
+                              <span className="text-neutral-400 ml-1">
+                                ({t("apps.admin.song.withWordTiming", "with word timing")})
+                              </span>
+                            )}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-3 w-3 text-neutral-400" />
+                          <span className="text-[11px] text-neutral-400">
+                            {t("apps.admin.song.notAvailable", "Not available")}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {!isLoading && song?.lyricsSource && (
+                    <div className="text-[10px] text-neutral-400 mt-1">
+                      {t("apps.admin.song.source", "Source")}: {song.lyricsSource.title} - {song.lyricsSource.artist}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Furigana */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
+                <Type className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-neutral-500">{t("apps.admin.song.furigana", "Furigana")}</div>
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-24 mt-1" />
+                  ) : (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {song?.furigana && song.furigana.length > 0 ? (
+                        <>
+                          <Check className="h-3 w-3 text-green-500" />
+                          <span className="text-[11px] text-green-600">
+                            {song.furigana.length} {t("apps.admin.song.lines", "lines")}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-3 w-3 text-neutral-400" />
+                          <span className="text-[11px] text-neutral-400">
+                            {t("apps.admin.song.notGenerated", "Not generated")}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Translations */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
+                <Languages className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-neutral-500">{t("apps.admin.song.translations", "Translations")}</div>
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-32 mt-1" />
+                  ) : (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {song?.translations && Object.keys(song.translations).length > 0 ? (
+                        <>
+                          <Check className="h-3 w-3 text-green-500" />
+                          <span className="text-[11px] text-green-600">
+                            {Object.keys(song.translations).map(lang => {
+                              const langNames: Record<string, string> = {
+                                "en": "English",
+                                "ja": "Japanese",
+                                "ko": "Korean",
+                                "zh-CN": "Chinese (Simplified)",
+                                "zh-TW": "Chinese (Traditional)",
+                              };
+                              return langNames[lang] || lang;
+                            }).join(", ")}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-3 w-3 text-neutral-400" />
+                          <span className="text-[11px] text-neutral-400">
+                            {t("apps.admin.song.notGenerated", "Not generated")}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Soramimi */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
+                <Ear className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-neutral-500">{t("apps.admin.song.soramimi", "Soramimi (空耳)")}</div>
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-32 mt-1" />
+                  ) : (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {(() => {
+                        const hasSoramimi = song?.soramimi && song.soramimi.length > 0;
+                        const soramimiByLang = song?.soramimiByLang;
+                        const hasSoramimiByLang = soramimiByLang && Object.keys(soramimiByLang).length > 0;
+                        
+                        if (hasSoramimi || hasSoramimiByLang) {
+                          const languages: string[] = [];
+                          if (hasSoramimi) languages.push("zh-TW");
+                          if (hasSoramimiByLang) {
+                            Object.keys(soramimiByLang).forEach(lang => {
+                              if (!languages.includes(lang)) languages.push(lang);
+                            });
+                          }
+                          const langNames: Record<string, string> = {
+                            "zh-TW": "Chinese",
+                            "en": "English",
+                          };
+                          return (
+                            <>
+                              <Check className="h-3 w-3 text-green-500" />
+                              <span className="text-[11px] text-green-600">
+                                {languages.map(l => langNames[l] || l).join(", ")}
+                              </span>
+                            </>
+                          );
+                        }
+                        return (
+                          <>
+                            <X className="h-3 w-3 text-neutral-400" />
+                            <span className="text-[11px] text-neutral-400">
+                              {t("apps.admin.song.notGenerated", "Not generated")}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Info Section */}
           {!isLoading && song && (
             <div className="space-y-2">
@@ -694,6 +1050,24 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           defaultValue: `This will remove "${song?.title || youtubeId}" from ${song?.createdBy || "user"}'s shared songs. The song will remain in the library but won't be associated with any user.`,
         })}
       />
+      {song && (
+        <LyricsSearchDialog
+          isOpen={isLyricsSearchDialogOpen}
+          onOpenChange={setIsLyricsSearchDialogOpen}
+          trackId={song.id}
+          trackTitle={song.title}
+          trackArtist={song.artist}
+          initialQuery={`${song.title} ${song.artist || ""}`.trim()}
+          onSelect={handleLyricsSearchSelect}
+          onReset={handleLyricsSearchReset}
+          hasOverride={!!song.lyricsSource}
+          currentSelection={song.lyricsSource ? {
+            title: song.lyricsSource.title,
+            artist: song.lyricsSource.artist,
+            album: song.lyricsSource.album,
+          } : undefined}
+        />
+      )}
     </div>
   );
 };
