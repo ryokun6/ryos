@@ -215,12 +215,36 @@ Build meaningful phrases from phonetically-accurate characters:
 - 눈물 (nun-mul, "tears") → <눈물:淚沒> "tears submerge"
 - 영원 (yeong-won, "forever") → <영원:永願> "eternal wish"
 
+=== KOREAN COMPOUND SOUNDS ===
+
+Korean verb endings have multiple sounds - include ALL of them!
+
+겠어 (gess-eo) = 겠 (gess) + 어 (eo) = TWO sounds needed:
+- <겠어:結梭> ✓ - 結(jié) for 겟 + 梭(suō) for 써/eo
+- <겠어:게쏘> ✓ - captures both sounds
+- <겠어:結> ✗ - WRONG! Missing the 어(eo) sound!
+
+했어 (haess-eo) = 했 (haet) + 어 (eo):
+- <했어:嗨梭> ✓ or <했어:海索> ✓
+- <했어:海> ✗ - WRONG! Missing 어!
+
+CORRECT EXAMPLES:
+- 만들겠어 (man-deul-gess-eo) → <만들겠어:滿得結梭> ✓ - has 梭 for 어!
+- 좋겠어 (jo-gess-eo) → <좋겠어:走結梭> ✓
+- 하겠어 (ha-gess-eo) → <하겠어:哈結梭> ✓
+
+Other compound endings:
+- 없어 (eop-seo) → 噁梭/喔梭
+- 있어 (iss-eo) → 衣梭/一梭
+- 싶어 (ship-eo) → 西破/希破
+
 === BAD: WRONG SOUNDS ===
 
 Never sacrifice phonetics completely:
 - ❌ 와 (wa) → 來 (lái) - "lai" ≠ "wa"!
 - ❌ 맘 (mam) → 心 (xīn) - "xin" ≠ "mam"!
-- ❌ 아래 (a-rae) → 阿來 - 來 is "lai" not "rae"! Use 阿瑞/阿蕊
+- ❌ 겠어 (gess-eo) → 噢 - missing the 겠 sound!
+- ❌ 아래 (a-rae) → 阿來 - 來 is "lai" not "rae"!
 
 === RULES ===
 
@@ -293,11 +317,25 @@ Build meaningful phrases:
 - 사랑 → <사랑:思浪> "longing waves"
 - 하늘 → <하늘:霞嶺> "rosy cloud peaks"
 
+=== KOREAN COMPOUND SOUNDS ===
+
+Korean verb endings have multiple sounds - include ALL:
+
+겠어 (gess-eo) = TWO sounds:
+- <겠어:結梭> ✓ - 結 for 겟 + 梭 for 어
+- <겠어:結> ✗ - WRONG! Missing 어!
+
+했어 (haess-eo) = TWO sounds:
+- <했어:嗨梭> ✓ or <했어:海索> ✓
+
+Examples: 만들겠어 → <만들겠어:滿得結梭> ✓
+
 === BAD: WRONG SOUNDS ===
 
 Never sacrifice phonetics completely:
 - ❌ 私(わたし) → 我 - "wo" ≠ "watashi"!
 - ❌ 와 (wa) → 來 (lái) - "lai" ≠ "wa"!
+- ❌ 겠어 → 結 - missing the 어 sound! Use 結梭!
 
 === KANA GUIDE ===
 
