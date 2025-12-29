@@ -204,12 +204,13 @@ Korean has spaces between words - keep them! Choose meaningful characters:
 
 === FORMAT ===
 
-1. Format: {original|chinese_reading} for EVERY Japanese/Korean word
-2. English words stay unwrapped
-3. Keep spaces in Korean text
-4. Output EVERY word!
-5. PURE CHINESE only in readings!
-6. っ/ッ (gemination) → use ～ Example: ずっと → {ずっと|祖～頭}
+1. If input uses | (pipe) between words, wrap EACH segment separately: 私|は|走る → {私|娃}{は|哈}{走る|哈西嚕}
+2. Format: {original|chinese_reading} for EVERY Japanese/Korean word
+3. English words stay unwrapped
+4. Keep spaces in Korean text
+5. Output EVERY word!
+6. PURE CHINESE only in readings!
+7. っ/ッ (gemination) → use ～ Example: ずっと → {ずっと|祖～頭}
 
 BE CREATIVE! Prioritize: poetic meaning > exact sound. Approximate sounds are fine if the Chinese phrase is beautiful and emotionally fitting!`;
 
@@ -220,8 +221,11 @@ BE CREATIVE! Prioritize: poetic meaning > exact sound. Approximate sounds are fi
  */
 export const SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese lyrics while forming poetic Chinese phrases.
 
-You are given Japanese text with furigana in parentheses: 私(わたし)は走(はし)る
-This tells you the EXACT pronunciation. Use it to create Chinese that sounds similar AND carries meaning!
+You are given Japanese text with:
+- Furigana in parentheses showing pronunciation: 私(わたし) means 私 is read as "わたし"
+- Segments separated by | (pipe): 私(わたし)|は|走(はし)|る
+
+Each | marks a word boundary. Create a Chinese reading for EACH segment separately!
 
 CRITICAL: Readings must be ONLY Chinese characters! Never include Japanese kana!
 
@@ -232,27 +236,29 @@ CRITICAL: Readings must be ONLY Chinese characters! Never include Japanese kana!
 2. CARRY MEANING - choose characters that relate to the song's emotion
 3. FORM POETRY - the Chinese should read like a poem or story
 
-EXAMPLES - Sound + Meaning + Poetry:
+EXAMPLES - EVERY segment MUST be wrapped!
 
-Love song lyrics:
-- 私(わたし)の → {私|娃她西}{の|諾} "baby she west, promise" - sounds like watashi-no
-- 心(こころ)が → {心|哭口落}{が|嘎} "crying mouth falls" - evokes heartache
-- 好き(すき)だよ → {好き|宿期}{だよ|搭喲} "destined time" - romantic meaning!
+Input uses | delimiter. EACH segment needs {text|reading} - never skip any!
 
-Sad song lyrics:
-- 涙(なみだ) → {涙|那迷搭} "that lost path" - sounds like namida, feels sad
-- 夢(ゆめ)を見(み)た → {夢|欲沒}{を|喔}{見|迷}{た|塔} "desire sinks, oh lost tower"
-- 忘(わす)れない → {忘れない|娃思咧奈} "baby thinks, alas!" 
+Input: 私(わたし)|の
+Output: {私|娃她西}{の|諾}
 
-Happy/energetic:
-- 走(はし)る → {走|哈西嚕} or {走|哈希露} "ha west dew" - pick what fits!
-- 飛(と)ぶ → {飛|頭布} "head cloth" or {飛|兔步} "rabbit steps"
+Input: 心(こころ)|が|痛(いた)|い
+Output: {心|哭口落}{が|嘎}{痛|衣她}{い|衣}
 
-=== HOW TO USE FURIGANA ===
+Input: 好(す)|き|だ|よ
+Output: {好|速}{き|奇}{だ|搭}{よ|喲}
 
-The furigana tells you pronunciation. Be creative with the Chinese!
-- 大切(たいせつ)な人(ひと) → {大切|太惜刺}{な|那}{人|嘻頭} "too cherished thorn, that playful head"
-- 名前(なまえ) → {名前|那嘛诶} or {名前|娜媽欸} - choose based on context
+Input: 逢(あ)|え|た|ら
+Output: {逢|阿}{え|欸}{た|她}{ら|啦}
+
+Input: あ|あ|め|ぐ|り
+Output: {あ|啊}{あ|啊}{め|妹}{ぐ|古}{り|里}
+
+Input: 涙(なみだ)|が|出(で)|る
+Output: {涙|那迷搭}{が|嘎}{出|得}{る|嚕}
+
+CRITICAL: Count the | in input = number of {segments} in output. Never merge or skip!
 
 === KANA GUIDELINES (flexible, not strict!) ===
 
@@ -272,13 +278,17 @@ SPECIAL: っ/ッ (gemination) → ～ Example: ずっと → {ずっと|祖～�
 
 === FORMAT ===
 
-1. Format: {original|chinese_reading} for ALL Japanese text (kanji AND kana)
-2. English stays unwrapped
-3. Annotate EVERY segment!
-4. PURE CHINESE only - no kana allowed in readings!
-5. Use furigana pronunciation as your sound guide
+1. Count | delimiters in input - output MUST have that many + 1 wrapped segments!
+2. Format: {original|chinese_reading} - strip the (furigana) from output text
+3. EVERY segment gets wrapped - kanji, kana, particles, everything!
+4. English words stay unwrapped
+5. PURE CHINESE only - no kana allowed in readings!
 
-BE CREATIVE! A beautiful Chinese phrase that's 80% phonetically accurate is better than an ugly phrase that's 100% accurate. Tell a story with your characters!`;
+Example: 3 pipes = 4 segments
+Input: 私(わたし)|は|好(す)|き
+Output: {私|娃她西}{は|哈}{好|速}{き|奇}
+
+BE CREATIVE with character choices, but NEVER skip segments!`;
 
 // =============================================================================
 // English Soramimi Prompts - Phonetic English approximations
@@ -312,10 +322,11 @@ EXAMPLES:
 
 === FORMAT ===
 
-1. Format: {original|english_reading} for EVERY Japanese/Korean/Chinese word
-2. English words in original text stay unwrapped (unchanged)
-3. Keep spaces in Korean text
-4. Output EVERY non-English word!
+1. If input uses | (pipe) between words, wrap EACH segment separately: 私|は|走る → {私|watt}{は|ha}{走る|ha she rue}
+2. Format: {original|english_reading} for EVERY Japanese/Korean/Chinese word
+3. English words in original text stay unwrapped (unchanged)
+4. Keep spaces in Korean text
+5. Output EVERY non-English word!
 
 Example output:
 1: {見つめていたい|meet sue mate a tie}
@@ -325,39 +336,37 @@ Example output:
 
 export const SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT = `Create English "misheard lyrics" (soramimi) - English words/phrases that SOUND like Japanese lyrics.
 
-You are given Japanese text with furigana in parentheses: 私(わたし)は走(はし)る
-This tells you the EXACT pronunciation. Use it to create English that sounds similar!
+You are given Japanese text with:
+- Furigana in parentheses showing pronunciation: 私(わたし) means 私 is read as "わたし"
+- Segments separated by | (pipe): 私(わたし)|は|走(はし)|る
 
-=== WHAT IS ENGLISH SORAMIMI? ===
+Each | marks a word boundary. Create an English reading for EACH segment separately!
 
-Take Japanese lyrics and create English words that phonetically approximate how they sound.
-The furigana tells you exactly how to pronounce each word - match that sound with English!
+=== EXAMPLES - EVERY segment MUST be wrapped! ===
 
-EXAMPLES with furigana:
-- 私(わたし) → "what a she" or "watt ah she"
-- 好き(すき) → "ski" or "sue key"
-- 心(こころ) → "cocoa row" or "ko ko row"
-- 涙(なみだ) → "nah me da" or "mommy duh"
-- 夢(ゆめ) → "you may" or "yoo meh"
+Input uses | delimiter. EACH segment needs {text|reading} - never skip any!
 
-=== RULES ===
+Input: 私(わたし)|が
+Output: {私|what a she}{が|ga}
 
-1. Use ONLY English words/sounds in the reading
-2. Use the furigana pronunciation as your guide (not the kanji meaning)
-3. Prioritize recognizable English words over pure phonetic spelling
-4. Break into multiple short English words for readability
-5. It's OK if the English doesn't make sense - focus on SOUND matching
+Input: 好(す)|き|だ|よ
+Output: {好|sue}{き|key}{だ|da}{よ|yo}
+
+Input: 逢(あ)|え|た|ら
+Output: {逢|ah}{え|eh}{た|ta}{ら|la}
+
+Input: あ|あ|め|ぐ|り
+Output: {あ|ah}{あ|ah}{め|meh}{ぐ|goo}{り|ree}
+
+CRITICAL: Count the | in input = number of {segments} in output. Never merge or skip!
 
 === FORMAT ===
 
-1. Format: {original|english_reading} for ALL Japanese text
-2. English stays unwrapped
-3. Annotate EVERY segment!
-4. PURE ENGLISH only - no Japanese in readings!
-
-Example:
-Input: 1: 私(わたし)が好き(すき)だよ
-Output: 1: {私|what a she} {が|ga} {好き|sue key} {だよ|die yo}`;
+1. Count | delimiters in input - output MUST have that many + 1 wrapped segments!
+2. Format: {original|english_reading} - strip the (furigana) from output text
+3. EVERY segment gets wrapped - kanji, kana, particles, everything!
+4. English words in original lyrics stay unwrapped
+5. PURE ENGLISH only - no Japanese in readings!`;
 
 /**
  * Clean AI output by removing malformed segments like {reading} without text
@@ -466,8 +475,9 @@ export function parseSoramimiRubyMarkup(line: string): FuriganaSegment[] {
 /**
  * Convert furigana segments to annotated text format for the AI prompt.
  * Adds hiragana readings in parentheses after kanji so the AI knows the pronunciation.
+ * Uses | delimiter between segments so AI knows exact word boundaries.
  * 
- * Example: [{text: "私", reading: "わたし"}, {text: "は"}] → "私(わたし)は"
+ * Example: [{text: "私", reading: "わたし"}, {text: "は"}] → "私(わたし)|は"
  * 
  * This helps the AI generate accurate Chinese phonetic readings based on
  * the actual Japanese pronunciation rather than guessing.
@@ -480,7 +490,7 @@ export function furiganaToAnnotatedText(segments: FuriganaSegment[]): string {
       return `${seg.text}(${seg.reading})`;
     }
     return seg.text;
-  }).join("");
+  }).join("|"); // Use | delimiter to mark segment boundaries
 }
 
 /**
