@@ -505,6 +505,10 @@ export async function listSongs(
 /**
  * Save lyrics content for a song
  * Creates metadata if it doesn't exist, updates content key directly
+ * 
+ * NOTE: When lyrics source changes (different hash), cached annotations
+ * (translations, furigana, soramimi) are cleared since they're tied to
+ * the specific lyrics content.
  */
 export async function saveLyrics(
   redis: Redis,
@@ -522,6 +526,12 @@ export async function saveLyrics(
   // Get existing content to preserve other fields
   const existingContent = parseJson<SongContent>(await redis.get(contentKey));
 
+  // Check if lyrics source changed (compare by hash)
+  // If changed, we need to clear cached annotations since they're tied to the old lyrics
+  const lyricsSourceChanged = lyricsSource?.hash && 
+    existingMeta?.lyricsSource?.hash && 
+    lyricsSource.hash !== existingMeta.lyricsSource.hash;
+
   // Build/update metadata
   const meta: SongMetadata = {
     id,
@@ -536,13 +546,15 @@ export async function saveLyrics(
     importOrder: existingMeta?.importOrder,
   };
 
-  // Build content (preserve existing translations, furigana, soramimi)
+  // Build content
+  // If lyrics source changed, clear annotations (they're tied to specific lyrics)
+  // Otherwise preserve existing translations, furigana, soramimi
   const content: SongContent = {
     lyrics,
-    translations: existingContent?.translations,
-    furigana: existingContent?.furigana,
-    soramimi: existingContent?.soramimi,
-    soramimiByLang: existingContent?.soramimiByLang,
+    translations: lyricsSourceChanged ? undefined : existingContent?.translations,
+    furigana: lyricsSourceChanged ? undefined : existingContent?.furigana,
+    soramimi: lyricsSourceChanged ? undefined : existingContent?.soramimi,
+    soramimiByLang: lyricsSourceChanged ? undefined : existingContent?.soramimiByLang,
   };
 
   // Save both keys

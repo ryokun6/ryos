@@ -276,7 +276,9 @@ export default async function handler(req: Request) {
         return jsonResponse({ results });
       }
 
-      // Handle fetch-lyrics action (no auth required)
+      // Handle fetch-lyrics action
+      // - First time fetch (no existing lyrics): anyone can do it
+      // - Changing lyrics source or force refresh: requires auth + canModifySong
       if (action === "fetch-lyrics") {
         const parsed = FetchLyricsSchema.safeParse(body);
         if (!parsed.success) {
@@ -310,8 +312,33 @@ export default async function handler(req: Request) {
           lyricsSource = song.lyricsSource;
         }
 
-        // If we have cached lyrics and not forcing, return them
-        if (!force && song?.lyrics?.lrc) {
+        // Check if lyrics source changed (user picked different search result)
+        const lyricsSourceChanged = lyricsSource?.hash && 
+          song?.lyricsSource?.hash && 
+          lyricsSource.hash !== song.lyricsSource.hash;
+
+        // Permission check: changing lyrics source or force refresh requires auth
+        // First-time fetch (no existing lyrics source) is allowed for anyone
+        if ((force || lyricsSourceChanged) && song?.lyricsSource) {
+          const authResult = await validateAuthToken(redis, username, authToken);
+          if (!authResult.valid) {
+            return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
+          }
+          const permission = canModifySong(song, username);
+          if (!permission.canModify) {
+            return errorResponse(permission.reason || "Only the song owner can change lyrics source", 403);
+          }
+        }
+
+        if (lyricsSourceChanged) {
+          logInfo(requestId, "Lyrics source changed, will re-fetch and clear cached annotations", {
+            oldHash: song?.lyricsSource?.hash,
+            newHash: lyricsSource?.hash,
+          });
+        }
+
+        // If we have cached lyrics and not forcing AND source hasn't changed, return them
+        if (!force && !lyricsSourceChanged && song?.lyrics?.lrc) {
           // Generate parsedLines on-demand (not stored in Redis)
           const parsedLines = parseLyricsContent(
             { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
@@ -537,6 +564,8 @@ export default async function handler(req: Request) {
       // =======================================================================
       // Handle translate-stream action - SSE streaming with line-by-line updates
       // Uses streamText for real-time line emission as AI generates each line
+      // - First time translation: anyone can do it
+      // - Force refresh: requires auth + canModifySong
       // =======================================================================
       if (action === "translate-stream") {
         const parsed = TranslateStreamSchema.safeParse(body);
@@ -555,6 +584,18 @@ export default async function handler(req: Request) {
 
         if (!song?.lyrics?.lrc) {
           return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Permission check: force refresh requires auth when translation already exists
+        if (force && song.translations?.[language]) {
+          const authResult = await validateAuthToken(redis, username, authToken);
+          if (!authResult.valid) {
+            return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
+          }
+          const permission = canModifySong(song, username);
+          if (!permission.canModify) {
+            return errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+          }
         }
 
         // Generate parsedLines on-demand (not stored in Redis)
@@ -743,6 +784,8 @@ export default async function handler(req: Request) {
       // =======================================================================
       // Handle furigana-stream action - SSE streaming with line-by-line updates
       // Uses streamText for real-time line emission as AI generates each line
+      // - First time furigana: anyone can do it
+      // - Force refresh: requires auth + canModifySong
       // =======================================================================
       if (action === "furigana-stream") {
         const parsed = FuriganaStreamSchema.safeParse(body);
@@ -761,6 +804,18 @@ export default async function handler(req: Request) {
 
         if (!song?.lyrics?.lrc) {
           return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Permission check: force refresh requires auth when furigana already exists
+        if (force && song.furigana && song.furigana.length > 0) {
+          const authResult = await validateAuthToken(redis, username, authToken);
+          if (!authResult.valid) {
+            return errorResponse("Unauthorized - authentication required to force refresh furigana", 401);
+          }
+          const permission = canModifySong(song, username);
+          if (!permission.canModify) {
+            return errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+          }
         }
 
         // Generate parsedLines on-demand (not stored in Redis)
@@ -955,6 +1010,8 @@ Output:
       // =======================================================================
       // Handle soramimi-stream action - SSE streaming with line-by-line updates
       // Uses streamText for real-time line emission as AI generates each line
+      // - First time soramimi: anyone can do it
+      // - Force refresh: requires auth + canModifySong
       // =======================================================================
       if (action === "soramimi-stream") {
         const parsed = SoramimiStreamSchema.safeParse(body);
@@ -973,6 +1030,20 @@ Output:
 
         if (!song?.lyrics?.lrc) {
           return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Permission check: force refresh requires auth when soramimi already exists
+        const existingSoramimi = song.soramimiByLang?.[targetLanguage] 
+          ?? (targetLanguage === "zh-TW" ? song.soramimi : undefined);
+        if (force && existingSoramimi && existingSoramimi.length > 0) {
+          const authResult = await validateAuthToken(redis, username, authToken);
+          if (!authResult.valid) {
+            return errorResponse("Unauthorized - authentication required to force refresh soramimi", 401);
+          }
+          const permission = canModifySong(song, username);
+          if (!permission.canModify) {
+            return errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+          }
         }
 
         // Generate parsedLines on-demand (not stored in Redis)
