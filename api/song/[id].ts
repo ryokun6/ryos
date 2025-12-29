@@ -185,6 +185,7 @@ export default async function handler(req: Request) {
         includeLyrics: includes.includes("lyrics"),
         includeTranslations: includes.includes("translations"),
         includeFurigana: includes.includes("furigana"),
+        includeSoramimi: includes.includes("soramimi"),
       });
 
       if (!song) {
@@ -205,6 +206,7 @@ export default async function handler(req: Request) {
         hasLyrics: !!song.lyrics,
         hasTranslations: !!song.translations,
         hasFurigana: !!song.furigana,
+        hasSoramimi: !!song.soramimi || !!song.soramimiByLang,
         duration: `${Date.now() - startTime}ms` 
       });
       return jsonResponse(song);

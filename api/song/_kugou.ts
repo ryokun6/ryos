@@ -8,7 +8,6 @@ import { Converter } from "opencc-js";
 import { kugouHeaders } from "./_constants.js";
 import {
   fetchWithTimeout,
-  randomString,
   base64ToUtf8,
   decodeKRC,
   scoreSongMatch,
@@ -69,31 +68,46 @@ export interface KugouSearchResult {
 }
 
 // =============================================================================
-// Internal Functions
+// Cover URL Functions
 // =============================================================================
 
-async function getCover(hash: string, albumId: string | number): Promise<string> {
+/**
+ * Fetch cover image URL from Kugou API
+ * Uses the album/info endpoint which returns imgurl
+ * The URL contains {size} placeholder that should be replaced on the client
+ * Returns HTTPS URL to avoid mixed content issues
+ */
+async function fetchCoverUrl(hash: string, albumId: string | number): Promise<string> {
+  if (!albumId) return "";
+  
   try {
-    const url = new URL("https://wwwapi.kugou.com/yy/index.php");
-    url.searchParams.set("r", "play/getdata");
-    url.searchParams.set("hash", hash);
-    url.searchParams.set("dfid", randomString(23, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"));
-    url.searchParams.set("mid", randomString(23, "abcdefghijklmnopqrstuvwxyz0123456789"));
-    url.searchParams.set("album_id", String(albumId));
-    url.searchParams.set("_", String(Date.now()));
-
-    const res = await fetchWithTimeout(url.toString(), { headers: kugouHeaders });
+    const url = `http://mobilecdn.kugou.com/api/v3/album/info?albumid=${albumId}`;
+    const res = await fetchWithTimeout(url, { headers: kugouHeaders }, 5000);
     if (!res.ok) return "";
-    const json = (await res.json()) as { data?: { img?: string } };
-    return json?.data?.img ?? "";
+    const json = (await res.json()) as { data?: { imgurl?: string } };
+    const imgurl = json?.data?.imgurl ?? "";
+    // Convert to HTTPS to avoid mixed content issues in browsers
+    return imgurl.replace(/^http:\/\//, "https://");
   } catch {
     return "";
   }
 }
 
+/**
+ * Replace {size} placeholder in Kugou image URL with actual size
+ * Kugou image URLs contain {size} that needs to be replaced with: 100, 150, 240, 400, etc.
+ */
+export function formatKugouImageUrl(imgUrl: string | undefined, size: number = 400): string {
+  if (!imgUrl) return "";
+  return imgUrl.replace("{size}", String(size));
+}
+
 // =============================================================================
 // Public API
 // =============================================================================
+
+// Timeout for Kugou API search (15 seconds - external API may be slow)
+const KUGOU_SEARCH_TIMEOUT_MS = 15000;
 
 /**
  * Search for songs on Kugou
@@ -108,10 +122,10 @@ export async function searchKugou(
 
   let searchRes: Response;
   try {
-    searchRes = await fetchWithTimeout(searchUrl, { headers: kugouHeaders });
+    searchRes = await fetchWithTimeout(searchUrl, { headers: kugouHeaders }, KUGOU_SEARCH_TIMEOUT_MS);
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("Kugou search timed out after 10 seconds");
+      throw new Error(`Kugou search timed out after ${KUGOU_SEARCH_TIMEOUT_MS / 1000} seconds`);
     }
     throw new Error(`Kugou search network error: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
@@ -223,8 +237,8 @@ export async function fetchLyricsFromKugou(
     return null;
   }
 
-  // Fetch cover image
-  const cover = await getCover(hash, albumId);
+  // Fetch cover image URL from Kugou API
+  const cover = await fetchCoverUrl(hash, albumId);
 
   return {
     lrc: lrc || krc || "",

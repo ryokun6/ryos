@@ -19,6 +19,7 @@
 
 import { Redis } from "@upstash/redis";
 import { z } from "zod";
+import pako from "pako";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -32,8 +33,10 @@ import {
   getSong,
   deleteAllSongs,
   getSongMetaKey,
+  getSongContentKey,
   SONG_SET_KEY,
   type SongMetadata,
+  type SongContent,
   type GetSongOptions,
   type LyricsSource,
 } from "../_utils/song-service.js";
@@ -64,6 +67,23 @@ const CreateSongSchema = z.object({
   lyricsSource: LyricsSourceSchema.optional(),
 });
 
+// Furigana/Soramimi segment schema
+const FuriganaSegmentSchema = z.object({
+  text: z.string(),
+  reading: z.string().optional(),
+});
+
+// Lyrics content schema
+const LyricsContentSchema = z.object({
+  lrc: z.string().optional(),
+  krc: z.string().optional(),
+  cover: z.string().optional(),
+});
+
+// Helper to create a schema that accepts either compressed string or raw data
+const compressedOrRaw = <T extends z.ZodTypeAny>(schema: T) => 
+  z.union([z.string().startsWith("gzip:"), schema]);
+
 const BulkImportSchema = z.object({
   action: z.literal("import"),
   songs: z.array(
@@ -82,6 +102,17 @@ const BulkImportSchema = z.object({
           selection: LyricsSourceSchema.optional(),
         })
         .optional(),
+      // Content fields (v2/v3 export format) - can be compressed or raw
+      lyrics: compressedOrRaw(LyricsContentSchema).optional(),
+      translations: compressedOrRaw(z.record(z.string(), z.string())).optional(),
+      furigana: compressedOrRaw(z.array(z.array(FuriganaSegmentSchema))).optional(),
+      soramimi: compressedOrRaw(z.array(z.array(FuriganaSegmentSchema))).optional(),
+      soramimiByLang: compressedOrRaw(z.record(z.string(), z.array(z.array(FuriganaSegmentSchema)))).optional(),
+      // Timestamps for preserving original dates
+      createdBy: z.string().optional(),
+      createdAt: z.number().optional(),
+      updatedAt: z.number().optional(),
+      importOrder: z.number().optional(),
     })
   ),
 });
@@ -100,6 +131,52 @@ function logInfo(id: string, message: string, data?: unknown) {
 
 function logError(id: string, message: string, error: unknown) {
   console.error(`[${id}] ERROR: ${message}`, error);
+}
+
+/**
+ * Decompress a gzip:base64 encoded string back to the original data
+ * Returns the parsed JSON if the string starts with "gzip:", otherwise returns null
+ */
+function decompressFromBase64<T>(value: unknown): T | null {
+  if (typeof value !== "string" || !value.startsWith("gzip:")) {
+    return null; // Not compressed, return null to indicate raw data should be used
+  }
+
+  try {
+    const base64Data = value.slice(5); // Remove "gzip:" prefix
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // Use ungzip since the data is gzip compressed (not raw deflate)
+    const decompressed = pako.ungzip(bytes);
+    const text = new TextDecoder("utf-8").decode(decompressed);
+    return JSON.parse(text) as T;
+  } catch (error) {
+    console.error("Failed to decompress:", error);
+    return null;
+  }
+}
+
+/**
+ * Get a field value, decompressing if needed
+ * Works with both compressed (gzip:base64) and raw JSON data
+ */
+function getFieldValue<T>(value: unknown): T | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  // Check if it's a compressed string
+  const decompressed = decompressFromBase64<T>(value);
+  if (decompressed !== null) {
+    return decompressed;
+  }
+
+  // Return raw value (already parsed JSON)
+  return value as T;
 }
 
 // =============================================================================
@@ -166,6 +243,7 @@ export default async function handler(req: Request) {
         includeLyrics: includes.includes("lyrics"),
         includeTranslations: includes.includes("translations"),
         includeFurigana: includes.includes("furigana"),
+        includeSoramimi: includes.includes("soramimi"),
       };
 
       const songs = await listSongs(redis, {
@@ -238,9 +316,9 @@ export default async function handler(req: Request) {
         });
         const existingMap = new Map(existingSongs.map((s) => [s.id, s]));
 
-        // Build all song metadata documents (no async needed)
-        // Bulk import only imports metadata, not content (lyrics, etc.)
-        const songMetas = songs.map((songData, i) => {
+        // Build all song metadata and content documents
+        // Use Promise.all to handle async decompression of content fields
+        const songDocs = await Promise.all(songs.map(async (songData, i) => {
           const existing = existingMap.get(songData.id);
 
           // Convert legacy lyricsSearch to lyricsSource
@@ -250,38 +328,88 @@ export default async function handler(req: Request) {
             lyricsSource = songData.lyricsSearch.selection as LyricsSource;
           }
 
+          // Build metadata
+          const meta: SongMetadata = {
+            id: songData.id,
+            title: songData.title,
+            artist: songData.artist,
+            album: songData.album,
+            lyricOffset: songData.lyricOffset,
+            lyricsSource,
+            createdBy: songData.createdBy || existing?.createdBy || username || undefined,
+            createdAt: songData.createdAt || existing?.createdAt || now - i, // Maintain order
+            updatedAt: songData.updatedAt || now,
+            importOrder: songData.importOrder ?? existing?.importOrder ?? i,
+          };
+
+          // Build content (if any content fields are present)
+          // Content may be compressed (gzip:base64) or raw JSON - handle both
+          const content: SongContent = {};
+          
+          // Handle lyrics - may be compressed string or raw object
+          const lyricsValue = getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
+          if (lyricsValue?.lrc) {
+            content.lyrics = {
+              lrc: lyricsValue.lrc,
+              krc: lyricsValue.krc,
+              cover: lyricsValue.cover,
+            };
+          }
+          
+          // Handle translations - may be compressed string or raw object
+          const translationsValue = getFieldValue<Record<string, string>>(songData.translations);
+          if (translationsValue && Object.keys(translationsValue).length > 0) {
+            content.translations = translationsValue;
+          }
+          
+          // Handle furigana - may be compressed string or raw array
+          const furiganaValue = getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.furigana);
+          if (furiganaValue && furiganaValue.length > 0) {
+            content.furigana = furiganaValue;
+          }
+          
+          // Handle soramimi - may be compressed string or raw array
+          const soramimiValue = getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.soramimi);
+          if (soramimiValue && soramimiValue.length > 0) {
+            content.soramimi = soramimiValue;
+          }
+          
+          // Handle soramimiByLang - may be compressed string or raw object
+          const soramimiByLangValue = getFieldValue<Record<string, Array<Array<{ text: string; reading?: string }>>>>(songData.soramimiByLang);
+          if (soramimiByLangValue && Object.keys(soramimiByLangValue).length > 0) {
+            content.soramimiByLang = soramimiByLangValue;
+          }
+
+          const hasContent = Object.keys(content).length > 0;
+
           return {
-            meta: {
-              id: songData.id,
-              title: songData.title,
-              artist: songData.artist,
-              album: songData.album,
-              lyricOffset: songData.lyricOffset,
-              lyricsSource,
-              createdBy: existing?.createdBy || username || undefined,
-              createdAt: existing?.createdAt || now - i, // Maintain order
-              updatedAt: now,
-              importOrder: existing?.importOrder ?? i,
-            } as SongMetadata,
+            meta,
+            content: hasContent ? content : null,
             isUpdate: !!existing,
           };
-        });
+        }));
 
         // Use pipeline for all writes (1 batched Redis call)
-        // Only write to metadata keys - content is handled separately when lyrics are fetched
         const pipeline = redis.pipeline();
-        for (const { meta } of songMetas) {
+        for (const { meta, content } of songDocs) {
           pipeline.set(getSongMetaKey(meta.id), JSON.stringify(meta));
           pipeline.sadd(SONG_SET_KEY, meta.id);
+          // Save content if present
+          if (content) {
+            pipeline.set(getSongContentKey(meta.id), JSON.stringify(content));
+          }
         }
         await pipeline.exec();
 
-        const imported = songMetas.filter((d) => !d.isUpdate).length;
-        const updated = songMetas.filter((d) => d.isUpdate).length;
+        const contentCount = songDocs.filter((d) => d.content !== null).length;
+
+        const imported = songDocs.filter((d) => !d.isUpdate).length;
+        const updated = songDocs.filter((d) => d.isUpdate).length;
 
         logInfo(requestId, "Bulk import complete", {
           imported,
           updated,
+          withContent: contentCount,
           total: songs.length,
           duration: `${Date.now() - startTime}ms`,
         });
@@ -290,6 +418,7 @@ export default async function handler(req: Request) {
           success: true,
           imported,
           updated,
+          withContent: contentCount,
           total: songs.length,
         });
       }

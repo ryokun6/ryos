@@ -353,6 +353,18 @@ export async function bulkImportSongMetadata(
     album?: string;
     lyricOffset?: number;
     lyricsSource?: CachedLyricsSource;
+    // Content fields (may be compressed gzip:base64 strings or raw objects)
+    // Using unknown to allow flexible import from JSON files
+    lyrics?: unknown;
+    translations?: unknown;
+    furigana?: unknown;
+    soramimi?: unknown;
+    soramimiByLang?: unknown;
+    // Timestamps
+    createdBy?: string;
+    createdAt?: number;
+    updatedAt?: number;
+    importOrder?: number;
   }>,
   auth: SongMetadataAuthCredentials
 ): Promise<{ success: boolean; imported: number; updated: number; total: number; error?: string }> {

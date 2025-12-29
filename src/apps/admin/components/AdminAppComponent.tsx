@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, Upload } from "lucide-react";
+import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, Upload, Download } from "lucide-react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Table,
@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { listAllCachedSongMetadata, deleteSongMetadata, deleteAllSongMetadata, bulkImportSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
+import { getApiUrl } from "@/utils/platform";
 
 interface User {
   username: string;
@@ -115,6 +116,7 @@ export function AdminAppComponent({
   const [isFrameNarrow, setIsFrameNarrow] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -395,21 +397,34 @@ export function AdminAppComponent({
           return;
         }
 
-        // Map to the expected song format
-        const songs = videos.map((v: Record<string, unknown>) => ({
+        // Map to the expected song format, including content fields
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const songs = videos.map((v: Record<string, any>) => ({
           id: v.id as string,
           url: v.url as string | undefined,
           title: v.title as string,
           artist: v.artist as string | undefined,
           album: v.album as string | undefined,
           lyricOffset: v.lyricOffset as number | undefined,
-          lyricsSource: (v.lyricsSource || (v.lyricsSearch as { selection?: unknown })?.selection) as {
+          lyricsSource: (v.lyricsSource || v.lyricsSearch?.selection) as {
             hash: string;
             albumId: string | number;
             title: string;
             artist: string;
             album?: string;
           } | undefined,
+          // Include content fields (may be compressed gzip:base64 strings or raw objects)
+          // These are passed through as-is to the API which handles decompression
+          lyrics: v.lyrics,
+          translations: v.translations,
+          furigana: v.furigana,
+          soramimi: v.soramimi,
+          soramimiByLang: v.soramimiByLang,
+          // Timestamps
+          createdBy: v.createdBy as string | undefined,
+          createdAt: v.createdAt as number | undefined,
+          updatedAt: v.updatedAt as number | undefined,
+          importOrder: v.importOrder as number | undefined,
         }));
 
         const result = await bulkImportSongMetadata(songs, { username, authToken });
@@ -440,6 +455,139 @@ export function AdminAppComponent({
     },
     [username, authToken, fetchSongs, t]
   );
+
+  // Compress and base64 encode a string (for large content fields)
+  const compressToBase64 = async (data: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const stream = new Blob([encoder.encode(data)]).stream();
+    const compressedStream = stream.pipeThrough(new CompressionStream("gzip"));
+    const compressedBlob = await new Response(compressedStream).blob();
+    const arrayBuffer = await compressedBlob.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    // Convert to base64
+    let binary = "";
+    for (let i = 0; i < uint8Array.length; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    return "gzip:" + btoa(binary);
+  };
+
+  // Handle export library
+  const handleExportLibrary = useCallback(async () => {
+    if (songs.length === 0) {
+      toast.info(t("apps.admin.songs.noSongsToExport", "No songs to export"));
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      // Fetch full song data including content (lyrics, translations, furigana, soramimi)
+      const response = await fetch(
+        getApiUrl("/api/song?include=metadata,lyrics,translations,furigana,soramimi"),
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch songs: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const fullSongs = data.songs || [];
+
+      // Map songs to export format with compressed content
+      const exportVideos = await Promise.all(fullSongs.map(async (song: {
+        id: string;
+        title: string;
+        artist?: string;
+        album?: string;
+        lyricOffset?: number;
+        lyricsSource?: CachedSongMetadata["lyricsSource"];
+        createdBy?: string;
+        createdAt: number;
+        updatedAt: number;
+        importOrder?: number;
+        lyrics?: { lrc?: string; krc?: string; cover?: string };
+        translations?: Record<string, string>;
+        furigana?: Array<Array<{ text: string; reading?: string }>>;
+        soramimi?: Array<Array<{ text: string; reading?: string }>>;
+        soramimiByLang?: Record<string, Array<Array<{ text: string; reading?: string }>>>;
+      }) => {
+        const result: Record<string, unknown> = {
+          // Metadata (never compressed - small and needs to be readable)
+          id: song.id,
+          title: song.title,
+          artist: song.artist,
+          album: song.album,
+          lyricOffset: song.lyricOffset,
+          lyricsSource: song.lyricsSource,
+          createdBy: song.createdBy,
+          createdAt: song.createdAt,
+          updatedAt: song.updatedAt,
+          importOrder: song.importOrder,
+        };
+
+        // Compress large content fields
+        if (song.lyrics) {
+          const lyricsJson = JSON.stringify(song.lyrics);
+          result.lyrics = lyricsJson.length > 500 ? await compressToBase64(lyricsJson) : song.lyrics;
+        }
+        if (song.translations && Object.keys(song.translations).length > 0) {
+          const translationsJson = JSON.stringify(song.translations);
+          result.translations = translationsJson.length > 500 ? await compressToBase64(translationsJson) : song.translations;
+        }
+        if (song.furigana && song.furigana.length > 0) {
+          const furiganaJson = JSON.stringify(song.furigana);
+          result.furigana = furiganaJson.length > 500 ? await compressToBase64(furiganaJson) : song.furigana;
+        }
+        if (song.soramimi && song.soramimi.length > 0) {
+          const soramimiJson = JSON.stringify(song.soramimi);
+          result.soramimi = soramimiJson.length > 500 ? await compressToBase64(soramimiJson) : song.soramimi;
+        }
+        if (song.soramimiByLang && Object.keys(song.soramimiByLang).length > 0) {
+          const soramimiByLangJson = JSON.stringify(song.soramimiByLang);
+          result.soramimiByLang = soramimiByLangJson.length > 500 ? await compressToBase64(soramimiByLangJson) : song.soramimiByLang;
+        }
+
+        return result;
+      }));
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        version: 3, // Version 3 supports compressed content
+        compressed: true, // Indicates content fields may be compressed
+        videos: exportVideos,
+      };
+
+      // Create and download the file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ryos-library-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(
+        t("apps.admin.messages.exportSuccess", {
+          count: fullSongs.length,
+          defaultValue: `Exported ${fullSongs.length} songs`,
+        })
+      );
+    } catch (error) {
+      console.error("Failed to export library:", error);
+      toast.error(t("apps.admin.errors.exportFailed", "Export failed"));
+    } finally {
+      setIsExporting(false);
+    }
+  }, [songs.length, t]);
 
   // Prompt delete all songs (opens dialog)
   const handleDeleteAllSongs = useCallback(() => {
@@ -748,11 +896,26 @@ export function AdminAppComponent({
                       variant="ghost"
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={isImporting || isDeletingAll}
+                      disabled={isImporting || isExporting || isDeletingAll}
                       className="h-7 w-7 p-0"
                       title={t("apps.admin.songs.import", "Import Library")}
                     >
                       {isImporting ? (
+                        <ActivityIndicator size={14} />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    {/* Export button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleExportLibrary}
+                      disabled={isExporting || isImporting || isDeletingAll || songs.length === 0}
+                      className="h-7 w-7 p-0"
+                      title={t("apps.admin.songs.export", "Export Library")}
+                    >
+                      {isExporting ? (
                         <ActivityIndicator size={14} />
                       ) : (
                         <Upload className="h-3.5 w-3.5" />
