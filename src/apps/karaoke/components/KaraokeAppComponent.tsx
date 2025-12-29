@@ -25,16 +25,18 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useFurigana } from "@/hooks/useFurigana";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicatorWithLabel, type ActivityInfo } from "@/components/ui/activity-indicator-with-label";
+import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { TRANSLATION_LANGUAGES } from "@/apps/ipod/constants";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useActivityState, isAnyActivityActive } from "@/hooks/useActivityState";
+import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -242,42 +244,14 @@ export function KaraokeAppComponent({
     auth,
   });
 
-  // Track last song ID we showed a lyrics error toast for to avoid duplicates
-  const lastLyricsErrorToastSongRef = useRef<string | null>(null);
-
   // Show toast with Search button when lyrics fetch fails
-  useEffect(() => {
-    const lyricsError = lyricsControls.error;
-    const songId = currentTrack?.id;
-    
-    // Only show toast for "No lyrics available" type errors (not network errors, timeouts, etc.)
-    const isNoLyricsError = lyricsError && (
-      lyricsError.includes("No lyrics") ||
-      lyricsError.includes("not found") ||
-      lyricsError.includes("400") ||
-      lyricsError.includes("No valid lyrics") ||
-      lyricsError.includes("No lyrics source")
-    );
-    
-    // Show toast if we have a no-lyrics error and haven't shown one for this song yet
-    if (isNoLyricsError && songId && lastLyricsErrorToastSongRef.current !== songId) {
-      lastLyricsErrorToastSongRef.current = songId;
-      toast(t("apps.karaoke.lyrics.noLyricsFound", { defaultValue: "No lyrics found" }), {
-        id: `lyrics-error-${songId}`,
-        description: t("apps.karaoke.lyrics.searchForLyrics", { defaultValue: "Search for lyrics manually" }),
-        action: {
-          label: t("apps.karaoke.lyrics.search", { defaultValue: "Search" }),
-          onClick: () => setIsLyricsSearchDialogOpen(true),
-        },
-        duration: 5000,
-      });
-    }
-    
-    // Reset when song changes
-    if (songId !== lastLyricsErrorToastSongRef.current && !lyricsError) {
-      lastLyricsErrorToastSongRef.current = null;
-    }
-  }, [lyricsControls.error, currentTrack?.id, t]);
+  useLyricsErrorToast({
+    error: lyricsControls.error,
+    songId: currentTrack?.id,
+    onSearchClick: () => setIsLyricsSearchDialogOpen(true),
+    t,
+    appId: "karaoke",
+  });
 
   // Fetch furigana for lyrics (shared between main and fullscreen displays)
   // Use pre-fetched info from lyrics request to skip extra API call
@@ -299,33 +273,23 @@ export function KaraokeAppComponent({
   });
 
   // Consolidated activity state for loading indicators
-  const activityState: ActivityInfo = useMemo(() => ({
-    isLoadingLyrics: lyricsControls.isLoading,
-    isTranslating: lyricsControls.isTranslating,
-    translationProgress: lyricsControls.translationProgress,
+  const activityState = useActivityState({
+    lyricsState: {
+      isLoading: lyricsControls.isLoading,
+      isTranslating: lyricsControls.isTranslating,
+      translationProgress: lyricsControls.translationProgress,
+    },
+    furiganaState: {
+      isFetchingFurigana: isFetchingFuriganaFromHook,
+      furiganaProgress,
+      isFetchingSoramimi,
+      soramimiProgress,
+    },
     translationLanguage: effectiveTranslationLanguage,
-    isFetchingFurigana: isFetchingFuriganaFromHook,
-    furiganaProgress,
-    isFetchingSoramimi,
-    soramimiProgress,
     isAddingSong,
-  }), [
-    lyricsControls.isLoading,
-    lyricsControls.isTranslating,
-    lyricsControls.translationProgress,
-    effectiveTranslationLanguage,
-    isFetchingFuriganaFromHook,
-    furiganaProgress,
-    isFetchingSoramimi,
-    soramimiProgress,
-    isAddingSong,
-  ]);
+  });
   
-  const isAnyActivityActive = activityState.isLoadingLyrics || 
-    activityState.isTranslating || 
-    activityState.isFetchingFurigana || 
-    activityState.isFetchingSoramimi || 
-    activityState.isAddingSong;
+  const hasActiveActivity = isAnyActivityActive(activityState);
 
   // Translation languages with translated labels
   const translationLanguages = useMemo(
@@ -339,17 +303,7 @@ export function KaraokeAppComponent({
   );
 
   // Get CSS class name for current lyrics font
-  const lyricsFontClassName = useMemo(() => {
-    switch (lyricsFont) {
-      case LyricsFont.Serif:
-        return "font-lyrics-serif";
-      case LyricsFont.SansSerif:
-        return "font-lyrics-sans";
-      case LyricsFont.Rounded:
-      default:
-        return "font-lyrics-rounded";
-    }
-  }, [lyricsFont]);
+  const lyricsFontClassName = getLyricsFontClassName(lyricsFont);
 
   // Status helper functions
   const showStatus = useCallback((message: string) => {
@@ -1102,7 +1056,7 @@ export function KaraokeAppComponent({
 
           {/* Activity indicator - scales with container size */}
           <AnimatePresence>
-            {isAnyActivityActive && (
+            {hasActiveActivity && (
               <motion.div
                 className="absolute top-8 right-6 z-40 pointer-events-none flex justify-end"
                 initial={{ opacity: 0, scale: 0.8 }}

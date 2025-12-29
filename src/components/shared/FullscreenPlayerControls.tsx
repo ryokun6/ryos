@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
-import { LyricsFont } from "@/types/lyrics";
+import { LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
 import { Globe, Maximize2, X, Clock } from "lucide-react";
 import {
@@ -292,11 +292,7 @@ export function FullscreenPlayerControls({
         >
           <span className={cn(
             smallIconSize,
-            currentFont === LyricsFont.Rounded
-              ? "font-lyrics-rounded"
-              : currentFont === LyricsFont.Serif
-              ? "font-lyrics-serif"
-              : "font-lyrics-sans"
+            getLyricsFontClassName(currentFont)
           )}>
             {getFontLabel()}
           </span>

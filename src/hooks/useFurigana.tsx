@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
-import { useIpodStore } from "@/stores/useIpodStore";
+import { useCacheBustTrigger } from "@/hooks/useCacheBustTrigger";
 import { isOffline } from "@/utils/offline";
 import i18n from "@/lib/i18n";
 import { isJapaneseText } from "@/utils/romanization";
@@ -103,11 +103,10 @@ export function useFurigana({
   const linesRef = useRef(lines);
   linesRef.current = lines;
   
-  // Track cache bust trigger for clearing caches
-  const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
-  // Separate refs for furigana and soramimi to prevent one completing first from skipping the other's force-refresh
-  const lastFuriganaCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
-  const lastSoramimiCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
+  // Separate cache bust triggers for furigana and soramimi
+  // This prevents one completing first from skipping the other's force-refresh
+  const { currentTrigger: lyricsCacheBustTrigger, isForceRequest: isFuriganaForceRequest, markHandled: markFuriganaHandled } = useCacheBustTrigger();
+  const { isForceRequest: isSoramimiForceRequest, markHandled: markSoramimiHandled } = useCacheBustTrigger();
   
   // Track in-flight force requests to prevent premature abort on effect re-runs
   // Store both the controller and a unique requestId to distinguish new vs duplicate requests
@@ -145,9 +144,10 @@ export function useFurigana({
   }, [songId]);
   
   // Effect to immediately clear furigana and soramimi when cache bust trigger changes
+  // Only clear when BOTH are force requests (i.e., fresh cache bust)
+  // This prevents re-clearing when one completes and marks handled while the other is still pending
   useEffect(() => {
-    if (lastFuriganaCacheBustTriggerRef.current !== lyricsCacheBustTrigger || 
-        lastSoramimiCacheBustTriggerRef.current !== lyricsCacheBustTrigger) {
+    if (isFuriganaForceRequest && isSoramimiForceRequest) {
       setFuriganaMap(new Map());
       setSoramimiMap(new Map());
       furiganaCacheKeyRef.current = "";
@@ -156,9 +156,8 @@ export function useFurigana({
       // Clear force request refs to prevent stale state blocking new requests
       furiganaForceRequestRef.current = null;
       soramimiForceRequestRef.current = null;
-      // Note: Don't update the cache bust refs here - let each effect update its own ref on completion
     }
-  }, [lyricsCacheBustTrigger]);
+  }, [isFuriganaForceRequest, isSoramimiForceRequest]);
 
   // Check conditions outside effect to avoid running effect body when not needed
   // Fetch furigana if:
@@ -187,6 +186,8 @@ export function useFurigana({
         setIsFetchingFurigana(false);
         setProgress(undefined);
         setError(undefined);
+        // Mark handled to keep ref in sync for next song
+        markFuriganaHandled();
       }
       return;
     }
@@ -208,6 +209,8 @@ export function useFurigana({
       setIsFetchingFurigana(false);
       setProgress(undefined);
       setError(undefined);
+      // Mark handled even when skipping to keep ref in sync for next song
+      markFuriganaHandled();
       return;
     }
 
@@ -218,16 +221,13 @@ export function useFurigana({
       return;
     }
 
-    // Check if this is a force cache clear request
-    const isForceRequest = lastFuriganaCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
-    
     // Skip if we already have this data and it's not a force request
-    if (!isForceRequest && cacheKey === furiganaCacheKeyRef.current) {
+    if (!isFuriganaForceRequest && cacheKey === furiganaCacheKeyRef.current) {
       return;
     }
 
     // If we have cached furigana from initial fetch, use it immediately
-    if (prefetchedInfo?.cached && prefetchedInfo.data && !isForceRequest) {
+    if (prefetchedInfo?.cached && prefetchedInfo.data && !isFuriganaForceRequest) {
       const finalMap = new Map<string, FuriganaSegment[]>();
       prefetchedInfo.data.forEach((segments, index) => {
         if (index < lines.length && segments) {
@@ -269,9 +269,9 @@ export function useFurigana({
     const progressiveMap = new Map<string, FuriganaSegment[]>();
     
     processFuriganaSSE(effectSongId, {
-      force: isForceRequest,
+      force: isFuriganaForceRequest,
       signal: controller.signal,
-      prefetchedInfo: !isForceRequest ? prefetchedInfo : undefined,
+      prefetchedInfo: !isFuriganaForceRequest ? prefetchedInfo : undefined,
       auth,
       onProgress: (progress) => {
         if (!controller.signal.aborted) {
@@ -308,7 +308,7 @@ export function useFurigana({
 
         setFuriganaMap(finalMap);
         furiganaCacheKeyRef.current = cacheKey;
-        lastFuriganaCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        markFuriganaHandled();
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -388,6 +388,8 @@ export function useFurigana({
         setSoramimiMap(new Map());
         soramimiCacheKeyRef.current = "";
         lastSoramimiSongIdRef.current = effectSongId || "";
+        // Mark handled to keep ref in sync for next song
+        markSoramimiHandled();
       }
       return;
     }
@@ -412,18 +414,15 @@ export function useFurigana({
       return;
     }
 
-    // Check if this is a force cache clear request
-    const isForceRequest = lastSoramimiCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
-    
     // Skip if we already have this data and it's not a force request
-    if (!isForceRequest && soramimiCacheKey === soramimiCacheKeyRef.current) {
+    if (!isSoramimiForceRequest && soramimiCacheKey === soramimiCacheKeyRef.current) {
       return;
     }
 
     // If we have cached soramimi from initial fetch, use it immediately
     // Only use if the cached data is for the same language we're requesting
     const prefetchedIsCorrectLanguage = prefetchedSoramimiInfo?.targetLanguage === soramimiTargetLanguage;
-    if (prefetchedSoramimiInfo?.cached && prefetchedSoramimiInfo.data && !isForceRequest && prefetchedIsCorrectLanguage) {
+    if (prefetchedSoramimiInfo?.cached && prefetchedSoramimiInfo.data && !isSoramimiForceRequest && prefetchedIsCorrectLanguage) {
       const finalMap = new Map<string, FuriganaSegment[]>();
       prefetchedSoramimiInfo.data.forEach((segments, index) => {
         if (index < lines.length && segments) {
@@ -484,9 +483,9 @@ export function useFurigana({
     }
     
     processSoramimiSSE(effectSongId, {
-      force: isForceRequest,
+      force: isSoramimiForceRequest,
       signal: controller.signal,
-      prefetchedInfo: !isForceRequest ? prefetchedSoramimiInfo : undefined,
+      prefetchedInfo: !isSoramimiForceRequest ? prefetchedSoramimiInfo : undefined,
       // Pass furigana data for Japanese songs so AI knows kanji pronunciation
       furigana: furiganaForApi,
       targetLanguage: soramimiTargetLanguage,
@@ -526,7 +525,7 @@ export function useFurigana({
 
         setSoramimiMap(finalMap);
         soramimiCacheKeyRef.current = soramimiCacheKey;
-        lastSoramimiCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        markSoramimiHandled();
       })
       .catch((err) => {
         if (controller.signal.aborted) return;

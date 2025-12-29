@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import type { LyricLine } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useCacheBustTrigger, useRefetchTrigger } from "@/hooks/useCacheBustTrigger";
 import { isOffline } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -112,26 +113,23 @@ export function useLyrics({
   const currentSongIdRef = useRef(songId);
   currentSongIdRef.current = songId;
 
-  // Store triggers - initialize refs to current store values to avoid false "force" on mount
-  const refetchTrigger = useIpodStore((s) => s.lyricsRefetchTrigger);
-  const lastRefetchTriggerRef = useRef<number>(refetchTrigger);
-  const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
-  const lastCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
+  // Cache bust and refetch triggers
+  const { isForceRequest: isCacheBustRequest, markHandled: markCacheBustHandled } = useCacheBustTrigger();
+  const { isForceRequest: isRefetchRequest, markHandled: markRefetchHandled } = useRefetchTrigger();
 
   // Ref to store translation info from initial fetch (with language to ensure we only use matching translations)
   const translationInfoRef = useRef<{ info: TranslationStreamInfo; language: string } | undefined>(undefined);
 
   // Clear cached translation/furigana/soramimi info when cache bust trigger changes (force refresh)
   useEffect(() => {
-    // Skip on initial mount - only clear on actual trigger changes
-    if (lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger) {
+    if (isCacheBustRequest) {
       translationInfoRef.current = undefined;
       setTranslatedLines(null);
       // Also clear furigana and soramimi info so useFurigana refetches
       setFuriganaInfo(undefined);
       setSoramimiInfo(undefined);
     }
-  }, [lyricsCacheBustTrigger]);
+  }, [isCacheBustRequest]);
 
   // Track soramimi target language to clear prefetched info when it changes
   const lastSoramimiTargetLanguageRef = useRef(soramimiTargetLanguage);
@@ -169,10 +167,9 @@ export function useLyrics({
 
     const selectedMatchKey = selectedMatch?.hash || "";
     const cacheKey = `song:${effectSongId}:${selectedMatchKey}`;
-    const isForced = lastRefetchTriggerRef.current !== refetchTrigger;
 
-    if (!isForced && cacheKey === cachedKeyRef.current) {
-      lastRefetchTriggerRef.current = refetchTrigger;
+    if (!isRefetchRequest && cacheKey === cachedKeyRef.current) {
+      markRefetchHandled();
       return;
     }
 
@@ -192,7 +189,7 @@ export function useLyrics({
     // Build request - include translateTo, includeFurigana, includeSoramimi to reduce round-trips
     const requestBody: Record<string, unknown> = {
       action: "fetch-lyrics",
-      force: isForced,
+      force: isRefetchRequest,
       title: title || undefined,
       artist: artist || undefined,
       translateTo: translateTo || undefined,
@@ -276,7 +273,7 @@ export function useLyrics({
       .finally(() => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsFetchingOriginal(false);
-          lastRefetchTriggerRef.current = refetchTrigger;
+          markRefetchHandled();
         }
       });
 
@@ -285,7 +282,7 @@ export function useLyrics({
       // Reset loading state on cleanup to prevent stuck indicators
       setIsFetchingOriginal(false);
     };
-  }, [songId, title, artist, refetchTrigger, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage]);
+  }, [songId, title, artist, isRefetchRequest, markRefetchHandled, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage]);
 
   // ==========================================================================
   // Effect: Translate lyrics
@@ -311,13 +308,12 @@ export function useLyrics({
       return;
     }
 
-    const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
     const prefetchedData = translationInfoRef.current;
     // Only use prefetched info if it's for the same language we're requesting
     const prefetchedInfo = prefetchedData?.language === translateTo ? prefetchedData.info : undefined;
 
     // If we have cached translation from initial fetch for the same language, use it immediately
-    if (prefetchedInfo?.cached && prefetchedInfo.lrc && !isForceRequest) {
+    if (prefetchedInfo?.cached && prefetchedInfo.lrc && !isCacheBustRequest) {
       const translations = parseLrcToTranslations(prefetchedInfo.lrc);
       const translatedLines: LyricLine[] = originalLines.map((line, index) => ({
         ...line,
@@ -335,9 +331,9 @@ export function useLyrics({
     const controller = new AbortController();
 
     processTranslationSSE(effectSongId, translateTo, {
-      force: isForceRequest,
+      force: isCacheBustRequest,
       signal: controller.signal,
-      prefetchedInfo: !isForceRequest ? prefetchedInfo : undefined,
+      prefetchedInfo: !isCacheBustRequest ? prefetchedInfo : undefined,
       auth,
       onProgress: (progress) => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
@@ -366,7 +362,7 @@ export function useLyrics({
           words: result.data[index] || line.words,
         }));
         setTranslatedLines(finalLines);
-        lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        markCacheBustHandled();
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
@@ -377,7 +373,7 @@ export function useLyrics({
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setIsTranslating(false);
           setTranslationProgress(undefined);
-          lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+          markCacheBustHandled();
         }
       });
 
@@ -387,7 +383,7 @@ export function useLyrics({
       setIsTranslating(false);
       setTranslationProgress(undefined);
     };
-  }, [songId, originalLines, translateTo, isFetchingOriginal, lyricsCacheBustTrigger]);
+  }, [songId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled]);
 
   // ==========================================================================
   // Current line tracking

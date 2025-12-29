@@ -23,6 +23,22 @@ export enum LyricsFont {
   Rounded = "rounded",
 }
 
+/**
+ * Gets the CSS class name for a lyrics font setting.
+ * Pure function - no memoization needed.
+ */
+export function getLyricsFontClassName(font: LyricsFont): string {
+  switch (font) {
+    case LyricsFont.Serif:
+      return "font-lyrics-serif";
+    case LyricsFont.SansSerif:
+      return "font-lyrics-sans";
+    case LyricsFont.Rounded:
+    default:
+      return "font-lyrics-rounded";
+  }
+}
+
 export enum LyricsAlignment {
   Alternating = "alternating",
   FocusThree = "focusThree",

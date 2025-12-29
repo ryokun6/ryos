@@ -30,7 +30,7 @@ import { useLyrics } from "@/hooks/useLyrics";
 import { useFurigana } from "@/hooks/useFurigana";
 import { useLibraryUpdateChecker } from "../hooks/useLibraryUpdateChecker";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { track } from "@vercel/analytics";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
@@ -40,7 +40,8 @@ import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { BACKLIGHT_TIMEOUT_MS, SEEK_AMOUNT_SECONDS } from "../constants";
 import type { WheelArea, RotationDirection } from "../types";
-import type { ActivityInfo } from "@/hooks/useActivityLabel";
+import { useActivityState } from "@/hooks/useActivityState";
+import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -1312,42 +1313,14 @@ export function IpodAppComponent({
     auth,
   });
 
-  // Track last song ID we showed a lyrics error toast for to avoid duplicates
-  const lastLyricsErrorToastSongRef = useRef<string | null>(null);
-
   // Show toast with Search button when lyrics fetch fails
-  useEffect(() => {
-    const lyricsError = fullScreenLyricsControls.error;
-    const songId = currentTrack?.id;
-    
-    // Only show toast for "No lyrics available" type errors (not network errors, timeouts, etc.)
-    const isNoLyricsError = lyricsError && (
-      lyricsError.includes("No lyrics") ||
-      lyricsError.includes("not found") ||
-      lyricsError.includes("400") ||
-      lyricsError.includes("No valid lyrics") ||
-      lyricsError.includes("No lyrics source")
-    );
-    
-    // Show toast if we have a no-lyrics error and haven't shown one for this song yet
-    if (isNoLyricsError && songId && lastLyricsErrorToastSongRef.current !== songId) {
-      lastLyricsErrorToastSongRef.current = songId;
-      toast(t("apps.ipod.lyrics.noLyricsFound", { defaultValue: "No lyrics found" }), {
-        id: `lyrics-error-${songId}`,
-        description: t("apps.ipod.lyrics.searchForLyrics", { defaultValue: "Search for lyrics manually" }),
-        action: {
-          label: t("apps.ipod.lyrics.search", { defaultValue: "Search" }),
-          onClick: () => setIsLyricsSearchDialogOpen(true),
-        },
-        duration: 5000,
-      });
-    }
-    
-    // Reset when song changes
-    if (songId !== lastLyricsErrorToastSongRef.current && !lyricsError) {
-      lastLyricsErrorToastSongRef.current = null;
-    }
-  }, [fullScreenLyricsControls.error, currentTrack?.id, t]);
+  useLyricsErrorToast({
+    error: fullScreenLyricsControls.error,
+    songId: currentTrack?.id,
+    onSearchClick: () => setIsLyricsSearchDialogOpen(true),
+    t,
+    appId: "ipod",
+  });
 
   // Fetch furigana for lyrics and store in shared state
   // Use pre-fetched info from lyrics request to skip extra API call
@@ -1369,27 +1342,21 @@ export function IpodAppComponent({
   });
 
   // Consolidated activity state for loading indicators
-  const activityState: ActivityInfo = useMemo(() => ({
-    isLoadingLyrics: fullScreenLyricsControls.isLoading,
-    isTranslating: fullScreenLyricsControls.isTranslating,
-    translationProgress: fullScreenLyricsControls.translationProgress,
+  const activityState = useActivityState({
+    lyricsState: {
+      isLoading: fullScreenLyricsControls.isLoading,
+      isTranslating: fullScreenLyricsControls.isTranslating,
+      translationProgress: fullScreenLyricsControls.translationProgress,
+    },
+    furiganaState: {
+      isFetchingFurigana,
+      furiganaProgress,
+      isFetchingSoramimi,
+      soramimiProgress,
+    },
     translationLanguage: effectiveTranslationLanguage,
-    isFetchingFurigana,
-    furiganaProgress,
-    isFetchingSoramimi,
-    soramimiProgress,
     isAddingSong,
-  }), [
-    fullScreenLyricsControls.isLoading,
-    fullScreenLyricsControls.isTranslating,
-    fullScreenLyricsControls.translationProgress,
-    effectiveTranslationLanguage,
-    isFetchingFurigana,
-    furiganaProgress,
-    isFetchingSoramimi,
-    soramimiProgress,
-    isAddingSong,
-  ]);
+  });
 
   // Convert furiganaMap to Record for storage - only when content actually changes
   const furiganaRecord = useMemo(() => {
@@ -1562,17 +1529,7 @@ export function IpodAppComponent({
   }, [showStatus, t]);
 
   // Get CSS class name for current lyrics font
-  const lyricsFontClassName = useMemo(() => {
-    switch (lyricsFont) {
-      case LyricsFont.Serif:
-        return "font-lyrics-serif";
-      case LyricsFont.SansSerif:
-        return "font-lyrics-sans";
-      case LyricsFont.Rounded:
-      default:
-        return "font-lyrics-rounded";
-    }
-  }, [lyricsFont]);
+  const lyricsFontClassName = getLyricsFontClassName(lyricsFont);
 
   // Fullscreen change handler
   useEffect(() => {

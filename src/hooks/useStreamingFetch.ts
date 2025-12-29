@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useIpodStore } from "@/stores/useIpodStore";
+import { useCacheBustTrigger } from "@/hooks/useCacheBustTrigger";
 import { isOffline } from "@/utils/offline";
 
 // =============================================================================
@@ -103,9 +103,8 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
   currentResourceIdRef.current = resourceId;
   const lastResourceIdRef = useRef<string>("");
 
-  // Cache bust trigger from store
-  const lyricsCacheBustTrigger = useIpodStore((s) => s.lyricsCacheBustTrigger);
-  const lastCacheBustTriggerRef = useRef<number>(lyricsCacheBustTrigger);
+  // Cache bust trigger
+  const { currentTrigger: lyricsCacheBustTrigger, isForceRequest: isCacheBustRequest, markHandled: markCacheBustHandled } = useCacheBustTrigger();
 
   // Track in-flight requests to prevent duplicates
   const requestRef = useRef<{ controller: AbortController; requestId: string } | null>(null);
@@ -138,13 +137,13 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
 
   // Clear data when cache bust trigger changes
   useEffect(() => {
-    if (lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger) {
+    if (isCacheBustRequest) {
       setData(null);
       cacheKeyRef.current = "";
       setError(undefined);
       requestRef.current = null;
     }
-  }, [lyricsCacheBustTrigger]);
+  }, [isCacheBustRequest]);
 
   // Main fetch effect
   // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures content
@@ -174,16 +173,13 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
       return;
     }
 
-    // Check if this is a force request
-    const isForceRequest = lastCacheBustTriggerRef.current !== lyricsCacheBustTrigger;
-
     // Skip if we already have this data and it's not a force request
-    if (!isForceRequest && cacheKey === cacheKeyRef.current) {
+    if (!isCacheBustRequest && cacheKey === cacheKeyRef.current) {
       return;
     }
 
     // Use prefetched data if available and not forcing
-    if (prefetchedData?.cached && prefetchedData.data && !isForceRequest) {
+    if (prefetchedData?.cached && prefetchedData.data && !isCacheBustRequest) {
       setData(prefetchedData.data);
       cacheKeyRef.current = cacheKey;
       setIsLoading(false);
@@ -214,9 +210,9 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
     console.log(`[${debugLabel}] Starting fetch for ${effectResourceId}`);
 
     fetchFn(effectResourceId, {
-      force: isForceRequest,
+      force: isCacheBustRequest,
       signal: controller.signal,
-      prefetchedInfo: !isForceRequest ? prefetchedData : undefined,
+      prefetchedInfo: !isCacheBustRequest ? prefetchedData : undefined,
       auth,
       onProgress: (prog) => {
         if (controller.signal.aborted) return;
@@ -235,7 +231,7 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
 
         setData(result.data);
         cacheKeyRef.current = cacheKey;
-        lastCacheBustTriggerRef.current = lyricsCacheBustTrigger;
+        markCacheBustHandled();
         onCompleteRef.current?.(result.data);
       })
       .catch((err) => {
