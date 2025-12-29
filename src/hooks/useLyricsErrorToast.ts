@@ -59,6 +59,10 @@ export function useLyricsErrorToast({
 }: UseLyricsErrorToastParams): void {
   // Track last song ID we showed a toast for to avoid duplicates
   const lastErrorToastSongRef = useRef<string | null>(null);
+  
+  // Stable ref for callback to avoid effect re-runs when callers pass inline functions
+  const onSearchClickRef = useRef(onSearchClick);
+  onSearchClickRef.current = onSearchClick;
 
   useEffect(() => {
     // Only show toast for "no lyrics" type errors
@@ -73,7 +77,7 @@ export function useLyricsErrorToast({
         description: t(`apps.${appId}.lyrics.searchForLyrics`, { defaultValue: "Search for lyrics manually" }),
         action: {
           label: t(`apps.${appId}.lyrics.search`, { defaultValue: "Search" }),
-          onClick: onSearchClick,
+          onClick: () => onSearchClickRef.current(),
         },
         duration: 5000,
       });
@@ -83,5 +87,5 @@ export function useLyricsErrorToast({
     if (songId !== lastErrorToastSongRef.current && !error) {
       lastErrorToastSongRef.current = null;
     }
-  }, [error, songId, onSearchClick, t, appId]);
+  }, [error, songId, t, appId]);
 }
