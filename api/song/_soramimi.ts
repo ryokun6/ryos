@@ -167,7 +167,7 @@ export function fillMissingReadings(segments: FuriganaSegment[]): FuriganaSegmen
 // Soramimi Generation - Prompts and Parsing
 // =============================================================================
 
-export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese/Korean lyrics.
+export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese/Korean lyrics while carrying poetic meaning.
 
 CRITICAL RULES:
 1. You MUST wrap EVERY non-English word in <original:chinese> format
@@ -177,41 +177,39 @@ CRITICAL RULES:
 === OUTPUT FORMAT (MANDATORY) ===
 
 Format: <original_text:chinese_phonetic_reading>
-- The original text goes BEFORE the colon
-- The Chinese reading goes AFTER the colon
-- Wrap in angle brackets < >
 
 EXAMPLE INPUT:
 1: Oh|no|시간이|갈수록|널
 2: 사랑해요
 
 EXAMPLE OUTPUT:
-1: Oh no <시간이:思干이> <갈수록:嘎蘇录> <널:呢>
+1: Oh no <시간이:時光裡> <갈수록:割愁錄> <널:念>
 2: <사랑해요:思浪海喲>
 
-=== KOREAN EXAMPLES ===
+=== PHILOSOPHY: SOUND + MEANING ===
 
-Korean words MUST have Chinese readings:
-- 시간이 → <시간이:思干이> (shi-gan-i sounds like 思干이)
-- 갈수록 → <갈수록:嘎蘇录> (gal-su-rok sounds like 嘎蘇录)
-- 사랑 → <사랑:思浪> (sa-rang sounds like 思浪)
-- 해요 → <해요:海喲> (hae-yo sounds like 海喲)
-- 보고 싶어 → <보고:波哥> <싶어:希破>
-
-=== JAPANESE EXAMPLES ===
-
-Japanese words MUST have Chinese readings:
-- 私 (watashi) → <私:娃他西>
-- 好き (suki) → <好き:速奇>
-- 心 (kokoro) → <心:哭口落>
-- ずっと → <ずっと:祖～頭> (use ～ for っ)
-
-=== PHILOSOPHY ===
-
-空耳 is an art! Choose Chinese characters that:
+空耳 is an art! Don't just transliterate - choose Chinese compound words that:
 1. SOUND like the original pronunciation
-2. CARRY poetic MEANING when possible
-3. Form beautiful Chinese phrases
+2. CARRY MEANING related to the lyrics (love songs use 思/愛/心, sad songs use 淚/傷/哭)
+3. Form poetic Chinese phrases using real compound words
+
+GOOD examples (sound + meaning):
+- 사랑 (sa-rang, "love") → <사랑:思浪> "longing waves" - sounds like sa-rang AND evokes love
+- 시간 (shi-gan, "time") → <시간:時光> "time's light" - sounds similar AND means time!
+- 心 (kokoro, "heart") → <心:哭口落> "crying mouth falls" - sounds like ko-ko-ro AND feels sad
+- 夢 (yume, "dream") → <夢:欲夢> "desire dream" - sounds like yu-me AND relates to dreaming
+- 보고 싶어 (miss you) → <보고:暮歌> <싶어:惜破> "twilight song, cherish broken"
+
+BAD (just sounds, no meaning):
+- ❌ <사랑:撒郎> - random sounds
+- ✓ <사랑:思浪> - "longing waves" relates to love
+
+=== PREFER COMPOUND WORDS ===
+
+Use meaningful 2-character Chinese compounds when possible:
+- 時光 (time), 思念 (longing), 心痛 (heartache), 眼淚 (tears)
+- 愛情 (love), 夢想 (dreams), 永遠 (forever), 回憶 (memories)
+- 離別 (parting), 相遇 (meeting), 溫柔 (gentle), 寂寞 (lonely)
 
 === RULES ===
 
@@ -219,14 +217,15 @@ Japanese words MUST have Chinese readings:
 2. English words stay plain (unwrapped)
 3. If input has | between words, wrap each segment separately
 4. Output one numbered line per input line
-5. NEVER output plain Korean/Japanese without <:> wrapper!`;
+5. NEVER output plain Korean/Japanese without <:> wrapper!
+6. Prefer compound words over single characters when phonetically possible`;
 
 /**
  * System prompt for Japanese lyrics with furigana readings provided
  * When furigana is available, we pass the hiragana readings inline so the AI
  * knows exactly how each kanji should be pronounced
  */
-export const SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese/Korean lyrics.
+export const SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese/Korean lyrics while carrying poetic meaning.
 
 You are given text with:
 - Japanese with furigana in parentheses: 私(わたし) means 私 is read as "わたし"
@@ -243,35 +242,38 @@ CRITICAL RULES:
 
 Format: <original_text:chinese_phonetic_reading>
 
-EXAMPLE INPUT (mixed Japanese/Korean):
+EXAMPLE INPUT:
 1: 私(わたし)|は|好き(すき)|だよ
 2: 사랑|해요
-3: 夢(ゆめ)|을|꿔
+3: 夢(ゆめ)|を|見(み)|た
 
 EXAMPLE OUTPUT:
-1: <私:娃她西><は:哈><好き:速奇><だよ:搭喲>
+1: <私:我他希><は:哈><好き:宿期><だよ:搭喲>
 2: <사랑:思浪><해요:海喲>
-3: <夢:欲沒><을:屋><꿔:固>
+3: <夢:欲夢><を:喔><見:迷><た:塔>
 
-=== KOREAN TO CHINESE GUIDE ===
+=== PHILOSOPHY: SOUND + MEANING ===
 
-Korean syllables to Chinese:
-- 사 (sa) → 思/撒, 랑 (rang) → 浪/郎
-- 해 (hae) → 海/嗨, 요 (yo) → 喲/搖
-- 보 (bo) → 波/寶, 고 (go) → 哥/姑
-- 싶 (ship) → 希/西, 어 (eo) → 喔/呃
-- 내 (nae) → 奶/乃, 마음 (ma-eum) → 媽音
-- 을/를 (eul/reul) → 屋/嚕
+空耳 is art! Choose Chinese compound words that:
+1. SOUND like the furigana/Korean pronunciation
+2. CARRY MEANING related to the lyrics
 
-=== KANA TO CHINESE GUIDE ===
+GOOD examples (sound + meaning):
+- 私(わたし) "I" → <私:我他希> - 我 means "I"!
+- 好き(すき) "like" → <好き:宿期> "destined time" - romantic!
+- 心(こころ) "heart" → <心:哭口落> "crying mouth falls" - emotional
+- 夢(ゆめ) "dream" → <夢:欲夢> "desire dream" - about dreams!
+- 사랑 "love" → <사랑:思浪> "longing waves" - about love!
+- 보고 싶어 "miss you" → <보고:暮歌><싶어:惜破> "twilight song, cherish broken"
 
-Use the furigana reading:
-- わたし (watashi) → 娃她西
-- すき (suki) → 速奇
-- こころ (kokoro) → 哭口落
-- ゆめ (yume) → 欲沒
+=== PREFER COMPOUND WORDS ===
 
-Single kana:
+Use meaningful 2-char compounds when phonetically possible:
+- 思念 (longing), 心痛 (heartache), 眼淚 (tears), 愛情 (love)
+- 夢想 (dreams), 永遠 (forever), 回憶 (memories), 離別 (parting)
+
+=== KANA GUIDE ===
+
 - あ→阿, い→衣, う→屋, え→欸, お→喔
 - か→咖, き→奇, く→酷, け→給, こ→口
 - さ→撒, し→西, す→蘇, せ→些, そ→搜
@@ -280,7 +282,12 @@ Single kana:
 - ま→媽, み→咪, む→木, め→沒, も→摸
 - や→壓, ゆ→玉, よ→喲, ら→啦, り→里
 - る→嚕, れ→咧, ろ→囉, わ→哇, を→喔, ん→嗯
-- っ/ッ → ～ (Example: ずっと → <ずっと:祖～頭>)
+- っ/ッ → ～
+
+=== KOREAN GUIDE ===
+
+- 사→思, 랑→浪, 해→海, 요→喲, 보→暮/波, 고→歌/哥
+- 싶→惜, 어→破/喔, 내→奶, 마음→媽音
 
 === RULES ===
 
@@ -288,7 +295,8 @@ Single kana:
 2. Remove furigana parentheses from output
 3. English words stay unwrapped
 4. Output one numbered line per input line
-5. NEVER output plain Japanese or Korean without <:> wrapper!`;
+5. NEVER output plain Japanese or Korean without <:> wrapper!
+6. Prefer compound words that relate to the song's meaning`;
 
 // =============================================================================
 // English Soramimi Prompts - Phonetic English approximations
