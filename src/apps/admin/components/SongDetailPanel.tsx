@@ -48,10 +48,10 @@ interface SongDetail {
   title: string;
   artist?: string;
   album?: string;
+  cover?: string; // Cover image URL (now in metadata, not lyrics)
   lyricOffset?: number;
   lyricsSource?: CachedLyricsSource;
   lyrics?: {
-    cover?: string;
     lrc?: string;
     krc?: string;
     parsedLines?: Array<{ words: string; startTimeMs: string }>;
@@ -497,7 +497,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           >
             {!isLoading && (
               <img
-                src={formatKugouImageUrl(song?.lyrics?.cover, 150) || `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                src={formatKugouImageUrl(song?.cover, 150) || `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
                 alt=""
                 className="w-full h-full object-cover"
                 onError={(e) => {

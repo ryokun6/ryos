@@ -40,6 +40,7 @@ import {
   type GetSongOptions,
   type LyricsSource,
 } from "../_utils/song-service.js";
+import { fetchCoverUrl } from "./_kugou.js";
 
 // Vercel Edge Function configuration
 export const config = {
@@ -73,11 +74,11 @@ const FuriganaSegmentSchema = z.object({
   reading: z.string().optional(),
 });
 
-// Lyrics content schema
+// Lyrics content schema (cover is now in metadata, but accept it here for backwards compatibility during import)
 const LyricsContentSchema = z.object({
   lrc: z.string().optional(),
   krc: z.string().optional(),
-  cover: z.string().optional(),
+  cover: z.string().optional(), // Accepted during import but stored in metadata
 });
 
 // Helper to create a schema that accepts either compressed string or raw data
@@ -328,12 +329,20 @@ export default async function handler(req: Request) {
             lyricsSource = songData.lyricsSearch.selection as LyricsSource;
           }
 
-          // Build metadata
+          // Handle lyrics - may be compressed string or raw object
+          // Extract cover from lyrics (old format) to put in metadata (new format)
+          const lyricsValue = getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
+          
+          // Cover: prefer from lyrics data (backwards compat), otherwise from existing, otherwise fetch later
+          let cover = lyricsValue?.cover || existing?.cover;
+
+          // Build metadata (cover is now in metadata, not lyrics)
           const meta: SongMetadata = {
             id: songData.id,
             title: songData.title,
             artist: songData.artist,
             album: songData.album,
+            cover, // Will be updated later if we need to fetch it
             lyricOffset: songData.lyricOffset,
             lyricsSource,
             createdBy: songData.createdBy || existing?.createdBy || username || undefined,
@@ -346,13 +355,11 @@ export default async function handler(req: Request) {
           // Content may be compressed (gzip:base64) or raw JSON - handle both
           const content: SongContent = {};
           
-          // Handle lyrics - may be compressed string or raw object
-          const lyricsValue = getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
+          // Handle lyrics - cover is extracted above and stored in metadata
           if (lyricsValue?.lrc) {
             content.lyrics = {
               lrc: lyricsValue.lrc,
               krc: lyricsValue.krc,
-              cover: lyricsValue.cover,
             };
           }
           
@@ -386,8 +393,39 @@ export default async function handler(req: Request) {
             meta,
             content: hasContent ? content : null,
             isUpdate: !!existing,
+            needsCover: !meta.cover && !!lyricsSource,
           };
         }));
+
+        // Fetch missing covers for songs that have lyricsSource but no cover
+        const songsNeedingCovers = songDocs.filter(d => d.needsCover && d.meta.lyricsSource);
+        if (songsNeedingCovers.length > 0) {
+          logInfo(requestId, `Fetching ${songsNeedingCovers.length} missing covers from Kugou`);
+          
+          // Fetch covers in parallel (but limit concurrency to avoid rate limiting)
+          const COVER_FETCH_BATCH_SIZE = 10;
+          let fetchedCount = 0;
+          
+          for (let i = 0; i < songsNeedingCovers.length; i += COVER_FETCH_BATCH_SIZE) {
+            const batch = songsNeedingCovers.slice(i, i + COVER_FETCH_BATCH_SIZE);
+            const coverPromises = batch.map(async (doc) => {
+              const source = doc.meta.lyricsSource!;
+              try {
+                const cover = await fetchCoverUrl(source.hash, source.albumId);
+                if (cover) {
+                  doc.meta.cover = cover;
+                  fetchedCount++;
+                }
+              } catch (err) {
+                // Log but don't fail the import if cover fetch fails
+                console.warn(`[${requestId}] Failed to fetch cover for ${doc.meta.id}:`, err);
+              }
+            });
+            await Promise.all(coverPromises);
+          }
+          
+          logInfo(requestId, `Fetched ${fetchedCount}/${songsNeedingCovers.length} covers`);
+        }
 
         // Use pipeline for all writes (1 batched Redis call)
         const pipeline = redis.pipeline();

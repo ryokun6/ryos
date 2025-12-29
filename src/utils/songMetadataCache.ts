@@ -29,6 +29,8 @@ export interface CachedSongMetadata {
   title: string;
   artist?: string;
   album?: string;
+  /** Cover image URL from Kugou */
+  cover?: string;
   lyricOffset?: number;
   /** Lyrics source from Kugou (user-selected or auto-detected) */
   lyricsSource?: CachedLyricsSource;
@@ -46,6 +48,7 @@ interface UnifiedSongDocument {
   title: string;
   artist?: string;
   album?: string;
+  cover?: string;
   lyricOffset?: number;
   lyricsSource?: CachedLyricsSource;
   createdBy?: string;
@@ -89,6 +92,7 @@ function unifiedToMetadata(doc: UnifiedSongDocument): CachedSongMetadata {
     title: doc.title,
     artist: doc.artist,
     album: doc.album,
+    cover: doc.cover,
     lyricOffset: doc.lyricOffset,
     lyricsSource: doc.lyricsSource,
     createdBy: doc.createdBy,

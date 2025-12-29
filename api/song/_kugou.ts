@@ -67,6 +67,15 @@ export interface KugouSearchResult {
   score: number;
 }
 
+/**
+ * Result from fetching lyrics from Kugou
+ * Cover is returned separately from lyrics content since it's stored in metadata
+ */
+export interface KugouLyricsResult {
+  lyrics: LyricsContent;
+  cover: string;
+}
+
 // =============================================================================
 // Cover URL Functions
 // =============================================================================
@@ -77,7 +86,7 @@ export interface KugouSearchResult {
  * The URL contains {size} placeholder that should be replaced on the client
  * Returns HTTPS URL to avoid mixed content issues
  */
-async function fetchCoverUrl(hash: string, albumId: string | number): Promise<string> {
+export async function fetchCoverUrl(hash: string, albumId: string | number): Promise<string> {
   if (!albumId) return "";
   
   try {
@@ -154,11 +163,12 @@ export async function searchKugou(
 
 /**
  * Fetch lyrics from Kugou using a lyrics source
+ * Returns both lyrics content and cover URL (cover is stored in metadata, not lyrics)
  */
 export async function fetchLyricsFromKugou(
   source: LyricsSource,
   requestId: string
-): Promise<LyricsContent | null> {
+): Promise<KugouLyricsResult | null> {
   const { hash, albumId } = source;
 
   // Get lyrics candidate
@@ -241,8 +251,10 @@ export async function fetchLyricsFromKugou(
   const cover = await fetchCoverUrl(hash, albumId);
 
   return {
-    lrc: lrc || krc || "",
-    krc,
+    lyrics: {
+      lrc: lrc || krc || "",
+      krc,
+    },
     cover,
   };
 }

@@ -65,6 +65,7 @@ import {
 import {
   searchKugou,
   fetchLyricsFromKugou,
+  fetchCoverUrl,
 } from "./_kugou.js";
 
 import {
@@ -351,6 +352,21 @@ export default async function handler(req: Request) {
             song.lyricsSource?.artist || song.artist
           );
           
+          // Fetch cover in background if missing (don't block the response)
+          if (!song.cover && song.lyricsSource?.hash && song.lyricsSource?.albumId) {
+            const coverSource = song.lyricsSource;
+            fetchCoverUrl(coverSource.hash, coverSource.albumId)
+              .then(async (cover) => {
+                if (cover) {
+                  await saveLyrics(redis, songId, song.lyrics!, song.lyricsSource, cover);
+                  logInfo(requestId, "Fetched missing cover in background");
+                }
+              })
+              .catch((err) => {
+                logInfo(requestId, "Failed to fetch missing cover", err);
+              });
+          }
+          
           logInfo(requestId, `Response: 200 OK - Returning cached lyrics`, {
             parsedLinesCount: parsedLines.length,
           });
@@ -480,25 +496,25 @@ export default async function handler(req: Request) {
         }
 
         logInfo(requestId, "Fetching lyrics from Kugou", { source: lyricsSource });
-        const rawLyrics = await fetchLyricsFromKugou(lyricsSource, requestId);
+        const kugouResult = await fetchLyricsFromKugou(lyricsSource, requestId);
 
-        if (!rawLyrics) {
+        if (!kugouResult) {
           return errorResponse("Failed to fetch lyrics", 404);
         }
 
         // Parse lyrics with consistent filtering (single source of truth)
         // NOTE: parsedLines is generated on-demand, NOT stored in Redis
         const parsedLines = parseLyricsContent(
-          { lrc: rawLyrics.lrc, krc: rawLyrics.krc },
+          { lrc: kugouResult.lyrics.lrc, krc: kugouResult.lyrics.krc },
           lyricsSource.title,
           lyricsSource.artist
         );
 
         // Save raw lyrics only (no parsedLines - it's derived data)
-        const lyrics: LyricsContent = rawLyrics;
+        const lyrics: LyricsContent = kugouResult.lyrics;
 
-        // Save to song document (only raw lrc/krc, parsedLines generated on-demand)
-        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource);
+        // Save to song document (lyrics + cover in metadata)
+        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource, kugouResult.cover);
         logInfo(requestId, `Lyrics saved to song document`, { 
           songId,
           hasLyricsStored: !!savedSong.lyrics,

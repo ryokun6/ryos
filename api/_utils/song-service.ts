@@ -46,11 +46,11 @@ export interface ParsedLyricLine {
 /**
  * Stored lyrics content (what we save in Redis)
  * NOTE: parsedLines is NOT stored - it's derived from lrc/krc on-demand
+ * NOTE: cover is now stored in SongMetadata, not here
  */
 export interface LyricsContent {
   lrc: string; // LRC format lyrics (raw)
   krc?: string; // KRC format if available (raw)
-  cover?: string; // Cover image URL
 }
 
 /**
@@ -78,6 +78,7 @@ export interface SongMetadata {
   title: string;
   artist?: string;
   album?: string;
+  cover?: string; // Cover image URL (from Kugou)
   lyricOffset?: number; // Offset in ms to adjust lyrics timing
   lyricsSource?: LyricsSource;
   createdBy?: string;
@@ -214,6 +215,7 @@ export async function getSong(
   if (includeMetadata) {
     result.artist = meta.artist;
     result.album = meta.album;
+    result.cover = meta.cover;
     result.lyricOffset = meta.lyricOffset;
     result.lyricsSource = meta.lyricsSource;
     result.createdBy = meta.createdBy;
@@ -299,6 +301,7 @@ export async function saveSong(
     title: song.title ?? existing?.title ?? "",
     artist: song.artist ?? existing?.artist,
     album: song.album ?? existing?.album,
+    cover: song.cover ?? existing?.cover,
     lyricOffset: song.lyricOffset ?? existing?.lyricOffset,
     lyricsSource: song.lyricsSource ?? existing?.lyricsSource,
     createdBy: createdByValue,
@@ -458,6 +461,7 @@ export async function listSongs(
     if (getOptions.includeMetadata) {
       result.artist = meta.artist;
       result.album = meta.album;
+      result.cover = meta.cover;
       result.lyricOffset = meta.lyricOffset;
       result.lyricsSource = meta.lyricsSource;
       result.createdBy = meta.createdBy;
@@ -523,12 +527,15 @@ export async function listSongs(
  * NOTE: When lyrics source changes (different hash), cached annotations
  * (translations, furigana, soramimi) are cleared since they're tied to
  * the specific lyrics content.
+ * 
+ * @param cover - Cover image URL (stored in metadata, not lyrics content)
  */
 export async function saveLyrics(
   redis: Redis,
   id: string,
   lyrics: LyricsContent,
-  lyricsSource?: LyricsSource
+  lyricsSource?: LyricsSource,
+  cover?: string
 ): Promise<SongDocument> {
   const metaKey = getSongMetaKey(id);
   const contentKey = getSongContentKey(id);
@@ -552,6 +559,7 @@ export async function saveLyrics(
     title: existingMeta?.title || lyricsSource?.title || id,
     artist: existingMeta?.artist || lyricsSource?.artist,
     album: existingMeta?.album || lyricsSource?.album,
+    cover: cover ?? existingMeta?.cover,
     lyricOffset: existingMeta?.lyricOffset,
     lyricsSource: lyricsSource ?? existingMeta?.lyricsSource,
     createdBy: existingMeta?.createdBy,
