@@ -65,7 +65,6 @@ import {
 import {
   searchKugou,
   fetchLyricsFromKugou,
-  simplifiedToTraditional,
 } from "./_kugou.js";
 
 import {
@@ -93,7 +92,6 @@ import {
   parseSoramimiRubyMarkup,
   fillMissingReadings,
   cleanSoramimiReading,
-  convertSoramimiToTraditional,
 } from "./_soramimi.js";
 
 import {
@@ -1153,9 +1151,6 @@ Output:
                   const rawSegments = parseSoramimiRubyMarkup(content);
                   let segments = fillMissingReadings(rawSegments);
                   
-                  // Convert original lyrics text to Traditional Chinese
-                  // The lyrics come from Kugou which uses Simplified Chinese
-                  segments = convertSoramimiToTraditional(segments);
                   
                   if (segments.length > 0) {
                     allSoramimi[originalIndex] = segments;

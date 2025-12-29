@@ -233,5 +233,3 @@ export async function fetchLyricsFromKugou(
   };
 }
 
-// Re-export the converter for use in KRC translation extraction
-export { simplifiedToTraditional };

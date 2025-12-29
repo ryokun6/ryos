@@ -5,11 +5,7 @@
  * Provides prompts and parsing utilities for soramimi generation.
  */
 
-import { Converter } from "opencc-js";
 import type { FuriganaSegment } from "../_utils/song-service.js";
-
-// Simplified Chinese to Traditional Chinese converter
-const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
 
 // =============================================================================
 // Language Detection Helpers
@@ -512,29 +508,3 @@ export function convertLinesToAnnotatedText(
     return line.words;
   });
 }
-
-// =============================================================================
-// Traditional Chinese Conversion for Soramimi
-// =============================================================================
-
-/**
- * Convert soramimi text (original lyrics) to Traditional Chinese.
- * The lyrics come from Kugou which uses Simplified Chinese.
- * Skips conversion for Japanese (Kana) text.
- * 
- * @param segments - Array of soramimi segments
- * @returns New array with text converted to Traditional Chinese
- */
-export function convertSoramimiToTraditional(segments: FuriganaSegment[]): FuriganaSegment[] {
-  return segments.map(seg => {
-    // Skip conversion if text contains Japanese kana
-    if (containsKana(seg.text)) {
-      return seg;
-    }
-    return {
-      text: simplifiedToTraditional(seg.text),
-      ...(seg.reading ? { reading: seg.reading } : {}),
-    };
-  });
-}
-

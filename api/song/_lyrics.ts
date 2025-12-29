@@ -215,28 +215,44 @@ export function isKrcFormat(text: string): boolean {
 
 /**
  * Unified parsing function - parses KRC or LRC with consistent filtering
+ * Converts Chinese lyrics to Traditional Chinese (Kugou uses Simplified)
  */
 export function parseLyricsContent(
   lyrics: { lrc?: string; krc?: string },
   title?: string,
   artist?: string
 ): ParsedLyricLine[] {
+  let lines: ParsedLyricLine[] = [];
+  
   if (lyrics.krc && isKrcFormat(lyrics.krc)) {
     const parsed = parseKrcToLines(lyrics.krc, title, artist);
     if (parsed.length > 0) {
-      return parsed;
+      lines = parsed;
     }
   }
   
-  if (lyrics.lrc) {
+  if (lines.length === 0 && lyrics.lrc) {
     const lrcLines = parseLrcToLines(lyrics.lrc, title, artist);
-    return lrcLines.map(line => ({
+    lines = lrcLines.map(line => ({
       startTimeMs: line.startTimeMs,
       words: line.words,
     }));
   }
   
-  return [];
+  // Convert Chinese lyrics to Traditional Chinese
+  // Kugou lyrics are in Simplified Chinese - convert to Traditional for display
+  // This only affects Chinese characters; Japanese kana and Korean hangul are unchanged
+  return lines.map(line => ({
+    ...line,
+    words: simplifiedToTraditional(line.words),
+    // Also convert wordTimings text if present
+    ...(line.wordTimings && {
+      wordTimings: line.wordTimings.map(wt => ({
+        ...wt,
+        text: simplifiedToTraditional(wt.text),
+      })),
+    }),
+  }));
 }
 
 // =============================================================================
