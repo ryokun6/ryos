@@ -114,31 +114,17 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Exclude API routes, iframe content, and app deep links from navigation fallback
-        // This prevents the SW from returning index.html for iframe requests
-        // and allows the middleware to handle OG meta tags for shared links
+        // Exclude API routes and iframe content from navigation fallback
+        // This prevents the SW from returning index.html for API/iframe requests
         navigateFallbackDenylist: [
           /^\/api\//,  // API routes
           /^\/iframe-check/,  // iframe proxy endpoint
           /^\/404/,  // Don't intercept 404 redirects
-          // App routes handled by middleware for OG preview links
-          // These need to reach the middleware first, then redirect to ?_ryo=1
-          /^\/finder$/,
-          /^\/soundboard$/,
-          /^\/internet-explorer(\/|$)/,
-          /^\/chats$/,
-          /^\/textedit$/,
-          /^\/paint$/,
-          /^\/photo-booth$/,
-          /^\/minesweeper$/,
-          /^\/videos(\/|$)/,
-          /^\/ipod(\/|$)/,
-          /^\/karaoke(\/|$)/,
-          /^\/synth$/,
-          /^\/pc$/,
-          /^\/terminal$/,
-          /^\/applet-viewer(\/|$)/,
-          /^\/control-panels$/,
+          // NOTE: App routes (e.g. /karaoke, /ipod) are NOT in this list.
+          // The middleware handles OG meta tags for social media crawlers (server-side only).
+          // The service worker should serve cached index.html for these routes when offline.
+          // When online: server middleware returns OG redirect HTML (with Cache-Control: no-store)
+          // When offline: service worker serves cached index.html (SPA handles routing)
         ],
         // Enable navigation fallback to precached index.html for offline support
         // This ensures the app can start when offline by serving the cached shell

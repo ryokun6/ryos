@@ -11,12 +11,13 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useAuth } from "@/hooks/useAuth";
+import { useOffline } from "@/hooks/useOffline";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, Upload, Download } from "lucide-react";
+import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, Upload, Download, WifiOff } from "lucide-react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Table,
@@ -75,6 +76,7 @@ export function AdminAppComponent({
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("admin", helpItems);
   const { username, authToken } = useAuth();
+  const isOffline = useOffline();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -126,6 +128,7 @@ export function AdminAppComponent({
   // Fetch stats
   const fetchStats = useCallback(async () => {
     if (!username || !authToken) return;
+    if (isOffline) return; // Skip API calls when offline
 
     try {
       const response = await fetch(`/api/admin?action=getStats`, {
@@ -142,11 +145,12 @@ export function AdminAppComponent({
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     }
-  }, [username, authToken]);
+  }, [username, authToken, isOffline]);
 
   // Fetch users (uses admin API to get all users)
   const fetchUsers = useCallback(async (search: string = "") => {
     if (!username || !authToken) return;
+    if (isOffline) return; // Skip API calls when offline
 
     setIsLoading(true);
     try {
@@ -180,11 +184,12 @@ export function AdminAppComponent({
     } finally {
       setIsLoading(false);
     }
-  }, [username, authToken, t, USERS_PER_PAGE]);
+  }, [username, authToken, t, USERS_PER_PAGE, isOffline]);
 
   // Fetch rooms
   const fetchRooms = useCallback(async () => {
     if (!username || !authToken) return;
+    if (isOffline) return; // Skip API calls when offline
 
     setIsLoading(true);
     try {
@@ -205,12 +210,13 @@ export function AdminAppComponent({
     } finally {
       setIsLoading(false);
     }
-  }, [username, authToken, t]);
+  }, [username, authToken, t, isOffline]);
 
   // Fetch messages for a room
   const fetchRoomMessages = useCallback(
     async (roomId: string) => {
       if (!username || !authToken) return;
+      if (isOffline) return; // Skip API calls when offline
 
       setIsLoading(true);
       try {
@@ -232,11 +238,13 @@ export function AdminAppComponent({
         setIsLoading(false);
       }
     },
-    [username, authToken, t]
+    [username, authToken, t, isOffline]
   );
 
   // Fetch songs from Redis cache
   const fetchSongs = useCallback(async () => {
+    if (isOffline) return; // Skip API calls when offline
+
     setIsLoading(true);
     try {
       const allSongs = await listAllCachedSongMetadata();
@@ -249,7 +257,7 @@ export function AdminAppComponent({
     } finally {
       setIsLoading(false);
     }
-  }, [t, SONGS_PER_PAGE]);
+  }, [t, SONGS_PER_PAGE, isOffline]);
 
   // Delete user
   const deleteUser = useCallback(
@@ -689,6 +697,10 @@ export function AdminAppComponent({
   }, [selectedRoomId, fetchRoomMessages]);
 
   const handleRefresh = useCallback(() => {
+    if (isOffline) {
+      toast.error(t("common.offline", "You are offline"));
+      return;
+    }
     fetchRooms();
     fetchStats();
     fetchSongs();
@@ -706,6 +718,7 @@ export function AdminAppComponent({
     selectedRoomId,
     userSearch,
     t,
+    isOffline,
   ]);
 
   // Toggle sidebar visibility
@@ -808,6 +821,34 @@ export function AdminAppComponent({
                 {t("apps.admin.accessDenied.loginPrompt")}
               </p>
             )}
+          </div>
+        </WindowFrame>
+      </>
+    );
+  }
+
+  // Offline view
+  if (isOffline) {
+    return (
+      <>
+        {!isXpTheme && isForeground && menuBar}
+        <WindowFrame
+          title={t("apps.admin.title")}
+          onClose={onClose}
+          isForeground={isForeground}
+          appId="admin"
+          skipInitialSound={skipInitialSound}
+          instanceId={instanceId}
+          onNavigateNext={onNavigateNext}
+          onNavigatePrevious={onNavigatePrevious}
+          menuBar={isXpTheme ? menuBar : undefined}
+        >
+          <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center bg-white">
+            <WifiOff className="h-10 w-10 text-neutral-400" />
+            <h2 className="text-sm font-bold">{t("apps.admin.offline.title", "Offline")}</h2>
+            <p className="text-xs text-neutral-500 max-w-xs">
+              {t("apps.admin.offline.description", "Admin requires an internet connection to manage data.")}
+            </p>
           </div>
         </WindowFrame>
       </>
