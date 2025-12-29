@@ -520,7 +520,7 @@ export function convertLinesToAnnotatedText(
 /**
  * Convert soramimi text (original lyrics) to Traditional Chinese.
  * The lyrics come from Kugou which uses Simplified Chinese.
- * Skips conversion for Korean (Hangul) or Japanese (Kana) text.
+ * Skips conversion for Japanese (Kana) text.
  * 
  * @param segments - Array of soramimi segments
  * @returns New array with text converted to Traditional Chinese
