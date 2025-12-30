@@ -670,14 +670,17 @@
       "masterVolume": "マスター音量",
       "menu": {
         "aboutControlPanels": "コントロールパネルについて",
+        "aboutControlPanelsForMacosX": "システム環境設定について",
         "app": "アプリ",
-        "controlPanelsHelp": "コントロールパネルヘルプ"
+        "controlPanelsHelp": "コントロールパネルヘルプ",
+        "controlPanelsHelpForMacosX": "システム環境設定ヘルプ"
       },
       "min": "分",
       "minute": "分",
       "minutes": "分",
       "mono": "モノラル",
       "name": "コントロールパネル",
+      "nameForMacosX": "システム環境設定",
       "openai": "OpenAI",
       "openaiVoice": "OpenAI 音声",
       "patterns": "パターン",
@@ -2077,6 +2080,7 @@
       "aboutThisComputer": "このコンピュータについて",
       "softwareUpdate": "ソフトウェア・アップデート…",
       "systemPreferences": "システム環境設定…",
+      "controlPanels": "コントロールパネル…",
       "appletStore": "アプレットストア…",
       "recentItems": "最近使った項目",
       "noRecentApps": "最近使ったアプリはありません",

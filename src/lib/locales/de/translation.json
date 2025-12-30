@@ -678,6 +678,7 @@
       "minutes": "Minuten",
       "mono": "Mono",
       "name": "Systemeinstellungen",
+      "nameForMacosX": "Systemeinstellungen",
       "openai": "OpenAI",
       "openaiVoice": "OpenAI Voice",
       "patterns": "Muster",

@@ -670,14 +670,17 @@
       "masterVolume": "Volume Principal",
       "menu": {
         "aboutControlPanels": "Sobre Painéis de Controle",
+        "aboutControlPanelsForMacosX": "Sobre Preferências do Sistema",
         "app": "App",
-        "controlPanelsHelp": "Ajuda dos Painéis de Controle"
+        "controlPanelsHelp": "Ajuda dos Painéis de Controle",
+        "controlPanelsHelpForMacosX": "Ajuda Preferências do Sistema"
       },
       "min": "min",
       "minute": "minuto",
       "minutes": "minutos",
       "mono": "Mono",
       "name": "Painéis de Controle",
+      "nameForMacosX": "Preferências do Sistema",
       "openai": "OpenAI",
       "openaiVoice": "Voz OpenAI",
       "patterns": "Padrões",
@@ -2077,6 +2080,7 @@
       "aboutThisComputer": "Sobre Este Computador",
       "softwareUpdate": "Atualização de Software…",
       "systemPreferences": "Preferências do Sistema…",
+      "controlPanels": "Painel de Controlo…",
       "appletStore": "Applet Store…",
       "recentItems": "Itens Recentes",
       "noRecentApps": "Nenhuma app recente",

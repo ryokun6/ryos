@@ -172,12 +172,12 @@ export function AppleMenu() {
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-          {/* System Preferences */}
+          {/* System Preferences / Control Panels */}
           <MenubarItem
             onClick={handleSystemPreferences}
             className="text-md h-6 px-3"
           >
-            {t("common.appleMenu.systemPreferences")}
+            {isMacOsxTheme ? t("common.appleMenu.systemPreferences") : t("common.appleMenu.controlPanels")}
           </MenubarItem>
 
           {/* Applet Store */}

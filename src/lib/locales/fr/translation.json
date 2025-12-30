@@ -670,6 +670,7 @@
       "masterVolume": "Volume principal",
       "menu": {
         "aboutControlPanels": "À propos des panneaux de configuration",
+        "aboutControlPanelsForMacosX": "À propos de Préférences Système",
         "app": "App",
         "controlPanelsHelp": "Aide Panneaux de configuration"
       },
@@ -678,6 +679,7 @@
       "minutes": "minutes",
       "mono": "Mono",
       "name": "Panneaux de configuration",
+      "nameForMacosX": "Préférences Système",
       "openai": "OpenAI",
       "openaiVoice": "Voix OpenAI",
       "patterns": "Motifs",

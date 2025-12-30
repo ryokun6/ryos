@@ -670,14 +670,17 @@
       "masterVolume": "Общая громкость",
       "menu": {
         "aboutControlPanels": "О панелях управления",
+        "aboutControlPanelsForMacosX": "О Системных настройках",
         "app": "Приложение",
-        "controlPanelsHelp": "Справка по панелям управления"
+        "controlPanelsHelp": "Справка по панелям управления",
+        "controlPanelsHelpForMacosX": "Справка Системных настроек"
       },
       "min": "мин.",
       "minute": "минута",
       "minutes": "минуты",
       "mono": "Моно",
       "name": "Панели управления",
+      "nameForMacosX": "Системные настройки",
       "openai": "OpenAI",
       "openaiVoice": "Голос OpenAI",
       "patterns": "Шаблоны",
@@ -2077,6 +2080,7 @@
       "aboutThisComputer": "Об этом компьютере",
       "softwareUpdate": "Обновление ПО…",
       "systemPreferences": "Системные настройки…",
+      "controlPanels": "Панель управления…",
       "appletStore": "Applet Store…",
       "recentItems": "Недавние объекты",
       "noRecentApps": "Нет недавних программ",
