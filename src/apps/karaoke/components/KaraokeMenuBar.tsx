@@ -52,6 +52,9 @@ interface KaraokeMenuBarProps {
   onToggleFullScreen: () => void;
   onRefreshLyrics?: () => void;
   onAdjustTiming?: () => void;
+  // CoverFlow
+  isCoverFlowOpen?: boolean;
+  onToggleCoverFlow?: () => void;
   // Tracks
   tracks: Track[];
   currentIndex: number;
@@ -81,6 +84,8 @@ export function KaraokeMenuBar({
   onToggleFullScreen,
   onRefreshLyrics,
   onAdjustTiming,
+  isCoverFlowOpen,
+  onToggleCoverFlow,
   tracks,
   currentIndex,
 }: KaraokeMenuBarProps) {
@@ -303,6 +308,18 @@ export function KaraokeMenuBar({
           {t("apps.karaoke.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          {/* Cover Flow toggle */}
+          <MenubarCheckboxItem
+            checked={isCoverFlowOpen}
+            onCheckedChange={onToggleCoverFlow}
+            className="text-md h-6 px-3"
+            disabled={tracks.length === 0}
+          >
+            {t("apps.ipod.menu.coverFlow")}
+          </MenubarCheckboxItem>
+          
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+
           {/* Lyrics Submenu */}
           <MenubarSub>
             <MenubarSubTrigger className="text-md h-6 px-3">

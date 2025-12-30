@@ -16,6 +16,7 @@ import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
+import { CoverFlow, CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { useIpodStore, Track, getEffectiveTranslationLanguage, flushPendingLyricOffsetSave } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
@@ -183,6 +184,14 @@ export function KaraokeAppComponent({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
+  
+  // CoverFlow state
+  const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
+  const coverFlowRef = useRef<CoverFlowRef>(null);
+  
+  // Long press refs for CoverFlow toggle
+  const screenLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const screenLongPressFiredRef = useRef(false);
 
   // Full screen additional state
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
@@ -774,6 +783,31 @@ export function KaraokeAppComponent({
     }
   }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
 
+  // CoverFlow toggle handler (for long press and menu)
+  const handleToggleCoverFlow = useCallback(() => {
+    if (isCoverFlowOpen) {
+      setIsCoverFlowOpen(false);
+    } else if (tracks.length > 0) {
+      setIsCoverFlowOpen(true);
+    }
+  }, [isCoverFlowOpen, tracks.length]);
+
+  // CoverFlow track selection handler
+  const handleCoverFlowSelectTrack = useCallback((index: number) => {
+    const trackId = tracks[index]?.id;
+    if (trackId) {
+      startTrackSwitch();
+      setCurrentSongId(trackId);
+      setIsPlaying(true);
+      setIsCoverFlowOpen(false);
+    }
+  }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
+
+  // CoverFlow rotation feedback
+  const handleCoverFlowRotation = useCallback(() => {
+    // Optional: play click sound or vibrate here if desired
+  }, []);
+
   // Keyboard controls
   useEffect(() => {
     if (!isForeground) return;
@@ -891,6 +925,8 @@ export function KaraokeAppComponent({
       onAdjustTiming={() => setIsSyncModeOpen(true)}
       tracks={tracks}
       currentIndex={currentIndex}
+      isCoverFlowOpen={isCoverFlowOpen}
+      onToggleCoverFlow={handleToggleCoverFlow}
     />
   );
 
@@ -914,10 +950,56 @@ export function KaraokeAppComponent({
         <div
           className="relative w-full h-full bg-black select-none overflow-hidden @container"
           onMouseMove={restartAutoHideTimer}
+          onMouseDown={() => {
+            // Start long press timer for CoverFlow toggle
+            if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
+            screenLongPressFiredRef.current = false;
+            screenLongPressTimerRef.current = setTimeout(() => {
+              screenLongPressFiredRef.current = true;
+              handleToggleCoverFlow();
+            }, 500);
+          }}
+          onMouseUp={() => {
+            if (screenLongPressTimerRef.current) {
+              clearTimeout(screenLongPressTimerRef.current);
+              screenLongPressTimerRef.current = null;
+            }
+          }}
+          onMouseLeave={() => {
+            if (screenLongPressTimerRef.current) {
+              clearTimeout(screenLongPressTimerRef.current);
+              screenLongPressTimerRef.current = null;
+            }
+          }}
+          onTouchStart={() => {
+            if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
+            screenLongPressFiredRef.current = false;
+            screenLongPressTimerRef.current = setTimeout(() => {
+              screenLongPressFiredRef.current = true;
+              handleToggleCoverFlow();
+            }, 500);
+          }}
+          onTouchEnd={() => {
+            if (screenLongPressTimerRef.current) {
+              clearTimeout(screenLongPressTimerRef.current);
+              screenLongPressTimerRef.current = null;
+            }
+          }}
+          onTouchCancel={() => {
+            if (screenLongPressTimerRef.current) {
+              clearTimeout(screenLongPressTimerRef.current);
+              screenLongPressTimerRef.current = null;
+            }
+          }}
           onClick={() => {
+            // Don't trigger click if long press was fired
+            if (screenLongPressFiredRef.current) {
+              screenLongPressFiredRef.current = false;
+              return;
+            }
             if (isOffline) {
               showOfflineStatus();
-            } else if (currentTrack) {
+            } else if (currentTrack && !isCoverFlowOpen) {
               togglePlay();
               showStatus(isPlaying ? "⏸" : "▶");
             }
@@ -1025,6 +1107,21 @@ export function KaraokeAppComponent({
                       />
               </div>
             </>
+          )}
+
+          {/* CoverFlow overlay */}
+          {isCoverFlowOpen && tracks.length > 0 && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center">
+              <CoverFlow
+                ref={coverFlowRef}
+                tracks={tracks}
+                currentIndex={currentIndex}
+                onSelectTrack={handleCoverFlowSelectTrack}
+                onExit={() => setIsCoverFlowOpen(false)}
+                onRotation={handleCoverFlowRotation}
+                isVisible={isCoverFlowOpen}
+              />
+            </div>
           )}
 
           {/* Status message - scales with container size */}
