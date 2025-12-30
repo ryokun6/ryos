@@ -337,6 +337,8 @@ export default async function handler(req: Request) {
           let cover = lyricsValue?.cover || existing?.cover;
 
           // Build metadata (cover is now in metadata, not lyrics)
+          // For imports, respect the original createdBy from the export file
+          // Only fall back to existing song's creator, NOT to the importing user
           const meta: SongMetadata = {
             id: songData.id,
             title: songData.title,
@@ -345,7 +347,7 @@ export default async function handler(req: Request) {
             cover, // Will be updated later if we need to fetch it
             lyricOffset: songData.lyricOffset,
             lyricsSource,
-            createdBy: songData.createdBy || existing?.createdBy || username || undefined,
+            createdBy: songData.createdBy || existing?.createdBy,
             createdAt: songData.createdAt || existing?.createdAt || now - i, // Maintain order
             updatedAt: songData.updatedAt || now,
             importOrder: songData.importOrder ?? existing?.importOrder ?? i,
