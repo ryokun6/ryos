@@ -217,6 +217,8 @@ export function IpodAppComponent({
   // Screen long press for CoverFlow toggle
   const screenLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const screenLongPressFiredRef = useRef(false);
+  const screenLongPressStartPos = useRef<{ x: number; y: number } | null>(null);
+  const SCREEN_LONG_PRESS_MOVE_THRESHOLD = 10; // pixels - cancel if moved more than this
   
   // Track switching state to prevent race conditions
   const isTrackSwitchingRef = useRef(false);
@@ -1634,7 +1636,6 @@ export function IpodAppComponent({
       onShareSong={handleShareSong}
       onRefreshLyrics={handleRefreshLyrics}
       onAdjustTiming={() => setIsSyncModeOpen(true)}
-      isCoverFlowOpen={isCoverFlowOpen}
       onToggleCoverFlow={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
     />
   );
@@ -1688,42 +1689,74 @@ export function IpodAppComponent({
                 // Start long press timer for CoverFlow toggle
                 if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
                 screenLongPressFiredRef.current = false;
+                screenLongPressStartPos.current = { x: e.clientX, y: e.clientY };
                 screenLongPressTimerRef.current = setTimeout(() => {
                   screenLongPressFiredRef.current = true;
                   handleCenterLongPress();
                 }, 500);
+              }}
+              onMouseMove={(e) => {
+                // Cancel long press if moved too far from start position
+                if (screenLongPressStartPos.current && screenLongPressTimerRef.current) {
+                  const dx = e.clientX - screenLongPressStartPos.current.x;
+                  const dy = e.clientY - screenLongPressStartPos.current.y;
+                  if (Math.abs(dx) > SCREEN_LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > SCREEN_LONG_PRESS_MOVE_THRESHOLD) {
+                    clearTimeout(screenLongPressTimerRef.current);
+                    screenLongPressTimerRef.current = null;
+                    screenLongPressStartPos.current = null;
+                  }
+                }
               }}
               onMouseUp={() => {
                 if (screenLongPressTimerRef.current) {
                   clearTimeout(screenLongPressTimerRef.current);
                   screenLongPressTimerRef.current = null;
                 }
+                screenLongPressStartPos.current = null;
               }}
               onMouseLeave={() => {
                 if (screenLongPressTimerRef.current) {
                   clearTimeout(screenLongPressTimerRef.current);
                   screenLongPressTimerRef.current = null;
                 }
+                screenLongPressStartPos.current = null;
               }}
-              onTouchStart={() => {
+              onTouchStart={(e) => {
                 if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
                 screenLongPressFiredRef.current = false;
+                const touch = e.touches[0];
+                screenLongPressStartPos.current = { x: touch.clientX, y: touch.clientY };
                 screenLongPressTimerRef.current = setTimeout(() => {
                   screenLongPressFiredRef.current = true;
                   handleCenterLongPress();
                 }, 500);
+              }}
+              onTouchMove={(e) => {
+                // Cancel long press if moved too far from start position
+                if (screenLongPressStartPos.current && screenLongPressTimerRef.current) {
+                  const touch = e.touches[0];
+                  const dx = touch.clientX - screenLongPressStartPos.current.x;
+                  const dy = touch.clientY - screenLongPressStartPos.current.y;
+                  if (Math.abs(dx) > SCREEN_LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > SCREEN_LONG_PRESS_MOVE_THRESHOLD) {
+                    clearTimeout(screenLongPressTimerRef.current);
+                    screenLongPressTimerRef.current = null;
+                    screenLongPressStartPos.current = null;
+                  }
+                }
               }}
               onTouchEnd={() => {
                 if (screenLongPressTimerRef.current) {
                   clearTimeout(screenLongPressTimerRef.current);
                   screenLongPressTimerRef.current = null;
                 }
+                screenLongPressStartPos.current = null;
               }}
               onTouchCancel={() => {
                 if (screenLongPressTimerRef.current) {
                   clearTimeout(screenLongPressTimerRef.current);
                   screenLongPressTimerRef.current = null;
                 }
+                screenLongPressStartPos.current = null;
               }}
             >
               <IpodScreen

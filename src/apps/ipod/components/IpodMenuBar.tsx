@@ -34,7 +34,6 @@ interface IpodMenuBarProps {
   onShareSong: () => void;
   onRefreshLyrics?: () => void;
   onAdjustTiming?: () => void;
-  isCoverFlowOpen?: boolean;
   onToggleCoverFlow?: () => void;
 }
 
@@ -48,7 +47,6 @@ export function IpodMenuBar({
   onShareSong,
   onRefreshLyrics,
   onAdjustTiming,
-  isCoverFlowOpen,
   onToggleCoverFlow,
 }: IpodMenuBarProps) {
   const { t } = useTranslation();
@@ -563,14 +561,6 @@ export function IpodMenuBar({
           >
             {t("apps.ipod.menu.video")}
           </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={isCoverFlowOpen}
-            onCheckedChange={() => onToggleCoverFlow?.()}
-            className="text-md h-6 px-3"
-            disabled={tracks.length === 0}
-          >
-            {t("apps.ipod.menu.coverFlow")}
-          </MenubarCheckboxItem>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarCheckboxItem
@@ -603,6 +593,13 @@ export function IpodMenuBar({
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
+          <MenubarItem
+            onClick={() => onToggleCoverFlow?.()}
+            className="text-md h-6 px-3"
+            disabled={tracks.length === 0}
+          >
+            {t("apps.ipod.menu.coverFlow")}
+          </MenubarItem>
           <MenubarItem
             onClick={() => toggleFullScreen()}
             className="text-md h-6 px-3"

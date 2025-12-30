@@ -16,6 +16,7 @@ import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
+import { CoverFlow, CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { useIpodStore, Track, getEffectiveTranslationLanguage, flushPendingLyricOffsetSave } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
@@ -183,6 +184,16 @@ export function KaraokeAppComponent({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
+  
+  // CoverFlow state
+  const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
+  const coverFlowRef = useRef<CoverFlowRef>(null);
+  
+  // Long press refs for CoverFlow toggle
+  const screenLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const screenLongPressFiredRef = useRef(false);
+  const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
+  const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels - cancel if moved more than this
 
   // Full screen additional state
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
@@ -774,6 +785,31 @@ export function KaraokeAppComponent({
     }
   }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
 
+  // CoverFlow toggle handler (for long press and menu)
+  const handleToggleCoverFlow = useCallback(() => {
+    if (isCoverFlowOpen) {
+      setIsCoverFlowOpen(false);
+    } else if (tracks.length > 0) {
+      setIsCoverFlowOpen(true);
+    }
+  }, [isCoverFlowOpen, tracks.length]);
+
+  // CoverFlow track selection handler
+  const handleCoverFlowSelectTrack = useCallback((index: number) => {
+    const trackId = tracks[index]?.id;
+    if (trackId) {
+      startTrackSwitch();
+      setCurrentSongId(trackId);
+      setIsPlaying(true);
+      setIsCoverFlowOpen(false);
+    }
+  }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
+
+  // CoverFlow rotation feedback
+  const handleCoverFlowRotation = useCallback(() => {
+    // Optional: play click sound or vibrate here if desired
+  }, []);
+
   // Keyboard controls
   useEffect(() => {
     if (!isForeground) return;
@@ -891,6 +927,7 @@ export function KaraokeAppComponent({
       onAdjustTiming={() => setIsSyncModeOpen(true)}
       tracks={tracks}
       currentIndex={currentIndex}
+      onToggleCoverFlow={handleToggleCoverFlow}
     />
   );
 
@@ -913,11 +950,89 @@ export function KaraokeAppComponent({
       >
         <div
           className="relative w-full h-full bg-black select-none overflow-hidden @container"
-          onMouseMove={restartAutoHideTimer}
+          onMouseMove={(e) => {
+            restartAutoHideTimer();
+            // Cancel long press if moved too far from start position
+            if (longPressStartPos.current && screenLongPressTimerRef.current) {
+              const dx = e.clientX - longPressStartPos.current.x;
+              const dy = e.clientY - longPressStartPos.current.y;
+              if (Math.abs(dx) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
+                clearTimeout(screenLongPressTimerRef.current);
+                screenLongPressTimerRef.current = null;
+                longPressStartPos.current = null;
+              }
+            }
+          }}
+          onMouseDown={(e) => {
+            // Start long press timer for CoverFlow toggle
+            if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
+            screenLongPressFiredRef.current = false;
+            longPressStartPos.current = { x: e.clientX, y: e.clientY };
+            screenLongPressTimerRef.current = setTimeout(() => {
+              screenLongPressFiredRef.current = true;
+              handleToggleCoverFlow();
+            }, 500);
+          }}
+          onMouseUp={() => {
+            if (screenLongPressTimerRef.current) {
+              clearTimeout(screenLongPressTimerRef.current);
+              screenLongPressTimerRef.current = null;
+            }
+            longPressStartPos.current = null;
+          }}
+          onMouseLeave={() => {
+            if (screenLongPressTimerRef.current) {
+              clearTimeout(screenLongPressTimerRef.current);
+              screenLongPressTimerRef.current = null;
+            }
+            longPressStartPos.current = null;
+          }}
+          onTouchStart={(e) => {
+            if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
+            screenLongPressFiredRef.current = false;
+            const touch = e.touches[0];
+            longPressStartPos.current = { x: touch.clientX, y: touch.clientY };
+            screenLongPressTimerRef.current = setTimeout(() => {
+              screenLongPressFiredRef.current = true;
+              handleToggleCoverFlow();
+            }, 500);
+          }}
+          onTouchMove={(e) => {
+            // Cancel long press if moved too far from start position
+            if (longPressStartPos.current && screenLongPressTimerRef.current) {
+              const touch = e.touches[0];
+              const dx = touch.clientX - longPressStartPos.current.x;
+              const dy = touch.clientY - longPressStartPos.current.y;
+              if (Math.abs(dx) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
+                clearTimeout(screenLongPressTimerRef.current);
+                screenLongPressTimerRef.current = null;
+                longPressStartPos.current = null;
+              }
+            }
+          }}
+          onTouchEnd={() => {
+            if (screenLongPressTimerRef.current) {
+              clearTimeout(screenLongPressTimerRef.current);
+              screenLongPressTimerRef.current = null;
+            }
+            longPressStartPos.current = null;
+          }}
+          onTouchCancel={() => {
+            if (screenLongPressTimerRef.current) {
+              clearTimeout(screenLongPressTimerRef.current);
+              screenLongPressTimerRef.current = null;
+            }
+            longPressStartPos.current = null;
+          }}
           onClick={() => {
+            // Don't trigger click if long press was fired
+            if (screenLongPressFiredRef.current) {
+              screenLongPressFiredRef.current = false;
+              return;
+            }
             if (isOffline) {
               showOfflineStatus();
-            } else if (currentTrack) {
+            } else if (currentTrack && !isCoverFlowOpen) {
               togglePlay();
               showStatus(isPlaying ? "⏸" : "▶");
             }
@@ -1027,6 +1142,22 @@ export function KaraokeAppComponent({
             </>
           )}
 
+          {/* CoverFlow overlay - full height, below notitlebar (z-50) */}
+          {isCoverFlowOpen && tracks.length > 0 && (
+            <div className="absolute inset-0 z-40">
+              <CoverFlow
+                ref={coverFlowRef}
+                tracks={tracks}
+                currentIndex={currentIndex}
+                onSelectTrack={handleCoverFlowSelectTrack}
+                onExit={() => setIsCoverFlowOpen(false)}
+                onRotation={handleCoverFlowRotation}
+                isVisible={isCoverFlowOpen}
+                ipodMode={false}
+              />
+            </div>
+          )}
+
           {/* Status message - scales with container size */}
           <AnimatePresence>
             {statusMessage && (
@@ -1072,12 +1203,12 @@ export function KaraokeAppComponent({
             )}
           </AnimatePresence>
 
-          {/* Control toolbar */}
+          {/* Control toolbar - hidden when CoverFlow is open */}
           <div
             data-toolbar
             className={cn(
               "absolute bottom-0 left-0 right-0 flex justify-center z-[60] transition-opacity duration-200",
-              showControls || anyMenuOpen || !isPlaying
+              (showControls || anyMenuOpen || !isPlaying) && !isCoverFlowOpen
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none"
             )}
