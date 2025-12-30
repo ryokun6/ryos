@@ -168,6 +168,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   // Track swipe state
   const swipeStartX = useRef<number | null>(null);
   const lastMoveX = useRef<number | null>(null);
+  const isDraggingRef = useRef(false);
   
   // Long press handling for exit
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -183,9 +184,13 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const startLongPress = useCallback(() => {
     clearLongPress();
     longPressFiredRef.current = false;
+    isDraggingRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
-      longPressFiredRef.current = true;
-      onExit();
+      // Only fire exit if not dragging
+      if (!isDraggingRef.current) {
+        longPressFiredRef.current = true;
+        onExit();
+      }
     }, LONG_PRESS_DELAY);
   }, [onExit, clearLongPress]);
 
@@ -270,10 +275,19 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const handlePanStart = useCallback((_: unknown, info: PanInfo) => {
     swipeStartX.current = info.point.x;
     lastMoveX.current = info.point.x;
-  }, []);
+    isDraggingRef.current = true;
+    // Cancel long press when dragging starts to prevent dismissal during swipe
+    clearLongPress();
+  }, [clearLongPress]);
 
   const handlePan = useCallback((_: unknown, info: PanInfo) => {
     if (lastMoveX.current === null) return;
+    
+    // Cancel long press on any pan movement (safety check)
+    if (!isDraggingRef.current) {
+      isDraggingRef.current = true;
+      clearLongPress();
+    }
     
     const deltaX = info.point.x - lastMoveX.current;
     const threshold = 30; // Pixels to move before triggering navigation
@@ -286,11 +300,12 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
       }
       lastMoveX.current = info.point.x;
     }
-  }, [navigateNext, navigatePrevious]);
+  }, [navigateNext, navigatePrevious, clearLongPress]);
 
   const handlePanEnd = useCallback(() => {
     swipeStartX.current = null;
     lastMoveX.current = null;
+    isDraggingRef.current = false;
   }, []);
 
   // Handle wheel scroll
