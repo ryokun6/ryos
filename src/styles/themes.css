@@ -1199,6 +1199,15 @@
   font-size: 24px !important;
 }
 
+/* Preserve arbitrary text sizes in iPod components (CoverFlow, etc.) */
+:root[data-os-theme="macosx"] .ipod-force-font .text-\[8px\] {
+  font-size: 8px !important;
+}
+
+:root[data-os-theme="macosx"] .ipod-force-font .text-\[10px\] {
+  font-size: 10px !important;
+}
+
 /* Preserve large desktop Hangul glyph size in iPod fullscreen */
 @media (min-width: 768px) {
   :root[data-os-theme="macosx"] .ipod-force-font .md\:text-\[20px\] {

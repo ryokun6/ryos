@@ -27,6 +27,8 @@ export interface Track {
   title: string;
   artist?: string;
   album?: string;
+  /** Cover image URL from Kugou */
+  cover?: string;
   /** Offset in milliseconds to adjust lyrics timing for this track (positive = lyrics earlier) */
   lyricOffset?: number;
   /** Selected lyrics source from Kugou (user override) */
@@ -123,6 +125,7 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
         title: song.title,
         artist: song.artist,
         album: song.album ?? "",
+        cover: song.cover,
         lyricOffset: song.lyricOffset,
         lyricsSource: song.lyricsSource,
       }));
@@ -932,6 +935,7 @@ export const useIpodStore = create<IpodState>()(
               title: cachedMetadata.title,
               artist: cachedMetadata.artist,
               album: cachedMetadata.album,
+              cover: cachedMetadata.cover,
               lyricOffset: cachedMetadata.lyricOffset ?? 500,
               lyricsSource: cachedMetadata.lyricsSource,
             };
@@ -1100,6 +1104,7 @@ export const useIpodStore = create<IpodState>()(
                 currentTrack.title !== serverTrack.title ||
                 currentTrack.artist !== serverTrack.artist ||
                 currentTrack.album !== serverTrack.album ||
+                currentTrack.cover !== serverTrack.cover ||
                 currentTrack.url !== serverTrack.url ||
                 currentTrack.lyricOffset !== serverTrack.lyricOffset;
 
@@ -1116,6 +1121,7 @@ export const useIpodStore = create<IpodState>()(
                   title: serverTrack.title,
                   artist: serverTrack.artist,
                   album: serverTrack.album,
+                  cover: serverTrack.cover,
                   url: serverTrack.url,
                   lyricOffset: serverTrack.lyricOffset,
                   // Only set lyricsSource from server if user doesn't have one

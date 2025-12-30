@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { useSongCover } from "@/hooks/useSongCover";
-import { getYouTubeVideoId } from "../constants";
+import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
 
 interface CoverFlowProps {
@@ -20,68 +18,67 @@ export interface CoverFlowRef {
   selectCurrent: () => void;
 }
 
-// Individual cover component to use the hook
+// Individual cover component - uses track's cover directly (fetched during sync)
 function CoverImage({ 
   track, 
-  isCenter,
   position,
 }: { 
   track: Track;
-  isCenter: boolean;
   position: number;
 }) {
+  // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   const videoId = track?.url ? getYouTubeVideoId(track.url) : null;
   const youtubeThumbnail = videoId
     ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
     : null;
-  const coverUrl = useSongCover(videoId, youtubeThumbnail);
+  const coverUrl = formatKugouImageUrl(track?.cover) ?? youtubeThumbnail;
 
   // Calculate 3D transform based on position
-  const getTransform = () => {
-    if (position === 0) {
-      // Center cover
+  const getTransform = (pos: number) => {
+    if (pos === 0) {
+      // Center cover - slightly larger and forward
       return {
         x: 0,
         rotateY: 0,
-        z: 30,
+        z: 20,
         scale: 1,
         opacity: 1,
       };
     }
     
-    const direction = position > 0 ? 1 : -1;
-    const absPos = Math.abs(position);
+    const direction = pos > 0 ? 1 : -1;
+    const absPos = Math.abs(pos);
     
-    // Limit visible covers
-    if (absPos > 3) {
-      return {
-        x: direction * (60 + absPos * 15),
-        rotateY: direction * -60,
-        z: -60 - absPos * 20,
-        scale: 0.4,
-        opacity: 0,
-      };
-    }
-    
+    // Side covers - similar scale, stacked with perspective rotation
     return {
-      x: direction * (40 + absPos * 22),
-      rotateY: direction * -55,
-      z: -absPos * 25,
-      scale: 0.65 - absPos * 0.08,
-      opacity: 1 - absPos * 0.25,
+      x: direction * (38 + absPos * 28),
+      rotateY: direction * -65,
+      z: -absPos * 10,
+      scale: 0.95,
+      opacity: Math.max(0, 1 - absPos * 0.3),
     };
   };
 
-  const transform = getTransform();
+  const transform = getTransform(position);
+  
+  // Initial position for entering covers (from off-screen in the direction they're coming from)
+  const initialTransform = getTransform(position > 0 ? position + 1 : position - 1);
 
   return (
     <motion.div
       className="absolute"
       style={{
-        width: 70,
-        height: 70,
+        width: 85,
+        height: 85,
         perspective: 400,
         transformStyle: "preserve-3d",
+      }}
+      initial={{
+        x: initialTransform.x,
+        rotateY: initialTransform.rotateY,
+        z: initialTransform.z,
+        scale: initialTransform.scale,
+        opacity: 0,
       }}
       animate={{
         x: transform.x,
@@ -90,17 +87,18 @@ function CoverImage({
         scale: transform.scale,
         opacity: transform.opacity,
       }}
+      exit={{
+        opacity: 0,
+      }}
       transition={{
         type: "spring",
-        stiffness: 300,
-        damping: 30,
+        stiffness: 400,
+        damping: 35,
       }}
     >
+      {/* Cover art */}
       <div
-        className={cn(
-          "w-full h-full rounded-lg shadow-xl overflow-hidden",
-          isCenter && "ring-2 ring-white/50"
-        )}
+        className="w-full h-full rounded-lg shadow-xl overflow-hidden"
         style={{
           background: "#1a1a1a",
         }}
@@ -125,6 +123,29 @@ function CoverImage({
             </svg>
           </div>
         )}
+      </div>
+      
+      {/* Reflection */}
+      <div
+        className="absolute w-full pointer-events-none"
+        style={{
+          height: "50%",
+          top: "100%",
+        }}
+      >
+        <img
+          src={coverUrl || ""}
+          alt=""
+          className="w-full h-auto rounded-lg"
+          style={{
+            transform: "scaleY(-1)",
+            opacity: 0.3,
+            maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
+            WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
+            display: coverUrl ? "block" : "none",
+          }}
+          draggable={false}
+        />
       </div>
     </motion.div>
   );
@@ -250,7 +271,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
 
   // Get visible covers (optimize rendering)
   const getVisibleCovers = () => {
-    const visibleRange = 4; // Show 4 covers on each side
+    const visibleRange = 3; // Show 3 covers on each side
     const covers: { track: Track; index: number; position: number }[] = [];
     
     for (let i = Math.max(0, selectedIndex - visibleRange); i <= Math.min(tracks.length - 1, selectedIndex + visibleRange); i++) {
@@ -264,6 +285,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     // Sort by z-index (center last so it renders on top)
     return covers.sort((a, b) => Math.abs(b.position) - Math.abs(a.position));
   };
+  
+  const visibleCovers = getVisibleCovers();
 
   const currentTrack = tracks[selectedIndex];
 
@@ -295,42 +318,44 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           {/* Cover Flow container */}
           <motion.div
             ref={containerRef}
-            className="absolute inset-0 flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
+            className="absolute inset-0 flex items-start justify-center cursor-grab active:cursor-grabbing"
             onPanStart={handlePanStart}
             onPan={handlePan}
             onPanEnd={handlePanEnd}
             onWheel={handleWheel}
-            style={{ touchAction: "none", paddingBottom: "20px" }}
+            style={{ touchAction: "none", overflow: "visible" }}
           >
             {/* Covers */}
             <div 
               className="relative flex items-center justify-center"
               style={{ 
                 width: "100%", 
-                height: 80,
+                height: 130,
                 perspective: 400,
                 transformStyle: "preserve-3d",
               }}
             >
-              {getVisibleCovers().map(({ track, index, position }) => (
-                <CoverImage
-                  key={track.id}
-                  track={track}
-                  isCenter={index === selectedIndex}
-                  position={position}
-                />
-              ))}
+              <AnimatePresence mode="popLayout">
+                {visibleCovers.map(({ track, position }) => (
+                  <CoverImage
+                    key={track.id}
+                    track={track}
+                    position={position}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
           </motion.div>
 
           {/* Track info */}
           <motion.div
-            className="absolute bottom-1.5 left-0 right-0 text-center px-2"
+            className="absolute left-0 right-0 text-center px-2 font-geneva-12"
+            style={{ bottom: "8px" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="text-white text-[10px] font-medium truncate leading-tight">
+            <div className="text-white text-[10px] truncate leading-tight">
               {currentTrack?.title || "No track"}
             </div>
             {currentTrack?.artist && (
@@ -338,18 +363,6 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 {currentTrack.artist}
               </div>
             )}
-          </motion.div>
-
-          {/* Track counter */}
-          <motion.div
-            className="absolute top-1 right-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.6 }}
-            transition={{ delay: 0.2 }}
-          >
-            <span className="text-white/60 text-[8px] font-chicago">
-              {selectedIndex + 1}/{tracks.length}
-            </span>
           </motion.div>
         </motion.div>
       )}

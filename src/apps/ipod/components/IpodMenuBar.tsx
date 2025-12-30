@@ -34,6 +34,8 @@ interface IpodMenuBarProps {
   onShareSong: () => void;
   onRefreshLyrics?: () => void;
   onAdjustTiming?: () => void;
+  isCoverFlowOpen?: boolean;
+  onToggleCoverFlow?: () => void;
 }
 
 export function IpodMenuBar({
@@ -46,6 +48,8 @@ export function IpodMenuBar({
   onShareSong,
   onRefreshLyrics,
   onAdjustTiming,
+  isCoverFlowOpen,
+  onToggleCoverFlow,
 }: IpodMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -558,6 +562,14 @@ export function IpodMenuBar({
             disabled={!isPlaying}
           >
             {t("apps.ipod.menu.video")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={isCoverFlowOpen}
+            onCheckedChange={() => onToggleCoverFlow?.()}
+            className="text-md h-6 px-3"
+            disabled={tracks.length === 0}
+          >
+            {t("apps.ipod.menu.coverFlow")}
           </MenubarCheckboxItem>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />

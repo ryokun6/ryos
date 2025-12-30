@@ -6,8 +6,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { useIsPhone } from "@/hooks/useIsPhone";
-import { useSongCover } from "@/hooks/useSongCover";
-import { getYouTubeVideoId } from "../constants";
+import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { PipPlayerProps } from "../types";
 
 export function PipPlayer({
@@ -38,16 +37,14 @@ export function PipPlayer({
     }
   }, [currentTheme]);
 
-  // Get YouTube thumbnail as fallback
+  // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   const youtubeVideoId = currentTrack?.url
     ? getYouTubeVideoId(currentTrack.url)
     : null;
   const youtubeThumbnail = youtubeVideoId
     ? `https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`
     : null;
-
-  // Get cover URL from song metadata (Kugou cover), falling back to YouTube thumbnail
-  const thumbnailUrl = useSongCover(youtubeVideoId, youtubeThumbnail);
+  const thumbnailUrl = formatKugouImageUrl(currentTrack?.cover) ?? youtubeThumbnail;
 
   // Determine horizontal positioning based on theme
   const isMacOSX = currentTheme === "macosx";
