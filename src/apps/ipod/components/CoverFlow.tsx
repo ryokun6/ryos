@@ -43,9 +43,9 @@ function CoverImage({
   const coverUrl = formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
   // Cover size: larger for karaoke mode (non-iPod)
-  const coverSize = ipodMode ? 55 : 60; // cqmin units
+  const coverSize = ipodMode ? 60 : 60; // cqmin units
   // Side cover spacing adjusts based on cover size
-  const baseSpacing = ipodMode ? 25 : 28;
+  const baseSpacing = ipodMode ? 28 : 28;
   const positionSpacing = ipodMode ? 18 : 20;
 
   // Calculate 3D transform based on position - uses relative units (cqmin = % of container's smaller dimension)
@@ -392,7 +392,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               className="relative flex items-center justify-center w-full"
               style={{ 
                 height: "75%",
-                marginTop: "-5%",
+                marginTop: ipodMode ? "-12%" : "-5%",
                 perspective: 400,
                 transformStyle: "preserve-3d",
               }}
