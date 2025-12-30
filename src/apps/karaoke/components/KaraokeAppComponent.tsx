@@ -1154,6 +1154,7 @@ export function KaraokeAppComponent({
                 onExit={() => setIsCoverFlowOpen(false)}
                 onRotation={handleCoverFlowRotation}
                 isVisible={isCoverFlowOpen}
+                ipodMode={false}
               />
             </div>
           )}

@@ -13,6 +13,8 @@ interface CoverFlowProps {
   onExit: () => void;
   onRotation: () => void;
   isVisible: boolean;
+  /** Use iPod-specific styling (fixed sizes, ipod-force-font) */
+  ipodMode?: boolean;
 }
 
 export interface CoverFlowRef {
@@ -162,6 +164,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   onExit,
   onRotation,
   isVisible,
+  ipodMode = true,
 }, ref) {
   const [selectedIndex, setSelectedIndex] = useState(currentIndex);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -334,7 +337,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className="ipod-force-font absolute inset-0 z-50 bg-gradient-to-b from-gray-900 via-black to-gray-900 overflow-hidden"
+          className={`absolute inset-0 z-50 bg-gradient-to-b from-gray-900 via-black to-gray-900 overflow-hidden ${ipodMode ? "ipod-force-font" : ""}`}
           style={{ containerType: "size" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -396,24 +399,24 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             </div>
           </motion.div>
 
-          {/* Track info - scales with container, uses iPod font */}
+          {/* Track info - fixed size for iPod, responsive for Karaoke */}
           <motion.div
-            className="absolute left-0 right-0 text-center px-2 font-geneva-12"
-            style={{ bottom: "4cqmin" }}
+            className={`absolute left-0 right-0 text-center px-2 ${ipodMode ? "font-geneva-12" : "font-chicago"}`}
+            style={{ bottom: ipodMode ? "8px" : "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
             <div 
               className="text-white truncate leading-tight"
-              style={{ fontSize: "clamp(9px, 6cqmin, 16px)" }}
+              style={{ fontSize: ipodMode ? "10px" : "clamp(14px, 5cqmin, 24px)" }}
             >
               {currentTrack?.title || "No track"}
             </div>
             {currentTrack?.artist && (
               <div 
                 className="text-white/60 truncate leading-tight"
-                style={{ fontSize: "clamp(7px, 4.5cqmin, 13px)" }}
+                style={{ fontSize: ipodMode ? "8px" : "clamp(12px, 4cqmin, 18px)" }}
               >
                 {currentTrack.artist}
               </div>
