@@ -27,18 +27,28 @@ export interface CoverFlowRef {
 function CoverImage({ 
   track, 
   position,
+  ipodMode = true,
 }: { 
   track: Track;
   position: number;
+  ipodMode?: boolean;
 }) {
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
+  // Use higher resolution images for karaoke mode (non-iPod)
   const videoId = track?.url ? getYouTubeVideoId(track.url) : null;
   const youtubeThumbnail = videoId
-    ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+    ? `https://img.youtube.com/vi/${videoId}/${ipodMode ? "mqdefault" : "hqdefault"}.jpg`
     : null;
-  const coverUrl = formatKugouImageUrl(track?.cover) ?? youtubeThumbnail;
+  const kugouImageSize = ipodMode ? 400 : 800;
+  const coverUrl = formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
-  // Calculate 3D transform based on position - uses relative units (50cqmin = 50% of container's smaller dimension)
+  // Cover size: larger for karaoke mode (non-iPod)
+  const coverSize = ipodMode ? 55 : 60; // cqmin units
+  // Side cover spacing adjusts based on cover size
+  const baseSpacing = ipodMode ? 25 : 28;
+  const positionSpacing = ipodMode ? 18 : 20;
+
+  // Calculate 3D transform based on position - uses relative units (cqmin = % of container's smaller dimension)
   const getTransform = (pos: number) => {
     if (pos === 0) {
       // Center cover - slightly larger and forward
@@ -54,9 +64,9 @@ function CoverImage({
     const direction = pos > 0 ? 1 : -1;
     const absPos = Math.abs(pos);
     
-    // Side covers - spacing scales with container (25cqmin base + 18cqmin per position)
+    // Side covers - spacing scales with container
     return {
-      x: `${direction * (25 + absPos * 18)}cqmin`,
+      x: `${direction * (baseSpacing + absPos * positionSpacing)}cqmin`,
       rotateY: direction * -65,
       z: -absPos * 10,
       scale: 0.95,
@@ -71,11 +81,11 @@ function CoverImage({
 
   return (
     <motion.div
-      className="absolute"
+      className="absolute pointer-events-none"
       style={{
-        // Cover size scales with container - 55% of container's smaller dimension
-        width: "55cqmin",
-        height: "55cqmin",
+        // Cover size scales with container
+        width: `${coverSize}cqmin`,
+        height: `${coverSize}cqmin`,
         perspective: 400,
         transformStyle: "preserve-3d",
       }}
@@ -337,18 +347,18 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className={`absolute inset-0 z-50 bg-gradient-to-b from-gray-900 via-black to-gray-900 overflow-hidden ${ipodMode ? "ipod-force-font" : ""}`}
+          className={`absolute inset-0 z-50 bg-black overflow-hidden ${ipodMode ? "ipod-force-font" : ""}`}
           style={{ containerType: "size" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
+          transition={{ duration: ipodMode ? 0.2 : 0.35, ease: "easeOut" }}
         >
-          {/* Reflective floor effect */}
+          {/* Reflective floor gradient - bottom only */}
           <div 
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to bottom, transparent 50%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.05) 100%)",
+              background: "linear-gradient(to bottom, transparent 40%, rgba(38,38,38,0.5) 70%, rgba(64,64,64,0.3) 100%)",
               pointerEvents: "none",
             }}
           />
@@ -362,7 +372,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             onPanEnd={handlePanEnd}
             onWheel={handleWheel}
             onClick={() => {
-              // Don't trigger click if long press was fired or if we were swiping
+              // Don't trigger click if long press was fired
               if (longPressFiredRef.current) {
                 longPressFiredRef.current = false;
                 return;
@@ -393,6 +403,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     key={track.id}
                     track={track}
                     position={position}
+                    ipodMode={ipodMode}
                   />
                 ))}
               </AnimatePresence>
