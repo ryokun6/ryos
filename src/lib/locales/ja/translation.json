@@ -13,9 +13,14 @@
         "deleteDescription": "{{type}}「{{name}}」を削除しますか？この操作は元に戻せません。",
         "deleteTitle": "{{type}}を削除しますか？",
         "editSong": "{{field}}を編集",
-        "editSongDescription": "新しい値を入力"
+        "editSongDescription": "新しい値を入力",
+        "unshareDescription": "これにより、{{user}}の共有曲リストから「{{name}}」が削除されます。曲はライブラリに残りますが、どのユーザーとも関連付けられなくなります。",
+        "unshareTitle": "曲の共有を解除"
       },
       "errors": {
+        "cannotForceRefresh": "強制更新できません - 歌詞のソースがないか、認証されていません",
+        "deleteAllFailed": "曲の削除に失敗しました",
+        "exportFailed": "エクスポートに失敗しました",
         "failedToAddToLibrary": "ライブラリへの追加に失敗しました",
         "failedToBanUser": "ユーザーのBANに失敗しました",
         "failedToDeleteMessage": "メッセージの削除に失敗しました。",
@@ -28,10 +33,16 @@
         "failedToFetchSong": "曲の取得に失敗しました",
         "failedToFetchSongs": "曲の取得に失敗しました",
         "failedToFetchUsers": "ユーザーの取得に失敗しました。",
+        "failedToRefreshLyrics": "歌詞の更新に失敗しました",
+        "failedToResetLyrics": "歌詞のリセットに失敗しました",
         "failedToUnbanUser": "ユーザーのBAN解除に失敗しました",
+        "failedToUnshareSong": "曲の共有解除に失敗しました",
+        "failedToUpdateLyrics": "歌詞の更新に失敗しました",
+        "failedToUpdateMetadata": "メタデータの更新に失敗しました",
         "failedToUpdateSong": "曲の更新に失敗しました",
         "importFailed": "インポートに失敗しました",
         "invalidImportFormat": "無効なファイル形式",
+        "notAuthenticated": "認証されていません",
         "songNotInLibrary": "ライブラリに曲がありません"
       },
       "help": {
@@ -52,6 +63,13 @@
           "title": "ユーザー管理"
         }
       },
+      "languages": {
+        "en": "英語",
+        "ja": "日本語",
+        "ko": "韓国語",
+        "zh-CN": "中国語 (簡体字)",
+        "zh-TW": "中国語 (繁体字)"
+      },
       "loadMore": "さらに読み込む（残り{{remaining}}件）",
       "menu": {
         "aboutAdmin": "Adminについて",
@@ -62,18 +80,30 @@
       "messages": {
         "addingToLibrary": "ライブラリに追加中...",
         "dataRefreshed": "データが更新されました",
+        "deleteAllSuccess": "{{total}}曲中{{success}}曲を削除しました",
+        "exportSuccess": "{{count}}曲をエクスポートしました",
         "importSuccess": "新規 {{imported}} 件、更新 {{updated}} 件 (合計 {{total}} 件)",
+        "lyricsAndMetadataUpdated": "歌詞とメタデータを更新しました",
+        "lyricsRefreshed": "歌詞をソースから更新しました",
+        "lyricsReset": "歌詞をリセットしました",
+        "lyricsUpdated": "歌詞を更新しました",
         "messageDeleted": "メッセージが削除されました",
+        "noSongsToDelete": "削除する曲がありません",
         "playingInIpod": "iPodで再生中",
         "playingInKaraoke": "カラオケで再生中",
         "roomDeleted": "ルームが削除されました",
         "songDeleted": "曲を削除しました",
+        "songUnshared": "曲の共有を解除しました",
         "songUpdated": "曲を更新しました",
         "userBanned": "ユーザー{{username}}をBANしました",
         "userDeleted": "ユーザー {{username}} が削除されました",
         "userUnbanned": "ユーザー{{username}}のBANを解除しました"
       },
       "name": "Admin",
+      "offline": {
+        "description": "管理者がデータを管理するにはインターネット接続が必要です。",
+        "title": "オフライン"
+      },
       "profile": {
         "actions": "アクション",
         "activeRooms": "ルームで活動中",
@@ -118,19 +148,37 @@
         "album": "アルバム",
         "createdAt": "作成",
         "delete": "曲を削除",
+        "forceRefresh": "強制リフレッシュ",
+        "forceRefreshTooltip": "Kugouから歌詞を再取得し、キャッシュされた注釈をクリアします",
+        "furigana": "ふりがな",
         "info": "情報",
+        "lines": "行",
+        "lyricsContent": "歌詞の内容",
         "lyricsOffset": "歌詞オフセット",
+        "lyricsSource": "歌詞",
         "metadata": "メタデータ",
+        "notAvailable": "利用できません",
         "notFound": "曲が見つかりません",
+        "notGenerated": "生成されていません",
         "playInIpod": "iPodで再生",
         "playInKaraoke": "カラオケで再生",
+        "searchLyrics": "歌詞を検索",
+        "soramimi": "空耳 (そらみみ)",
+        "source": "ソース",
+        "translations": "翻訳",
         "unknownArtist": "不明なアーティスト",
+        "unshare": "共有を解除",
         "updatedAt": "更新",
+        "withWordTiming": "単語のタイミング付き",
         "youtubeId": "YouTube ID"
       },
       "songs": {
+        "allSongs": "すべての曲",
+        "deleteAll": "すべての曲を削除",
+        "export": "ライブラリを書き出す",
         "import": "インポート",
-        "noSongs": "キャッシュに曲がありません"
+        "noSongs": "キャッシュに曲がありません",
+        "noSongsToExport": "書き出す曲がありません"
       },
       "statusBar": {
         "loggedInAs": "{{username}}としてログイン中",
@@ -2078,18 +2126,18 @@
     },
     "appleMenu": {
       "aboutThisComputer": "このコンピュータについて",
-      "softwareUpdate": "ソフトウェア・アップデート…",
-      "systemPreferences": "システム環境設定…",
-      "controlPanels": "コントロールパネル…",
       "appletStore": "アプレットストア…",
-      "recentItems": "最近使った項目",
-      "noRecentApps": "最近使ったアプリはありません",
-      "noRecentDocuments": "最近使った書類はありません",
+      "controlPanels": "コントロールパネル…",
+      "createAccount": "アカウントを作成…",
+      "logOut": "{{username}}をログアウト…",
+      "login": "ログイン…",
       "moreApps": "その他のアプリ…",
       "moreDocuments": "その他の書類…",
-      "createAccount": "アカウントを作成…",
-      "login": "ログイン…",
-      "logOut": "{{username}}をログアウト…"
+      "noRecentApps": "最近使ったアプリはありません",
+      "noRecentDocuments": "最近使った書類はありません",
+      "recentItems": "最近使った項目",
+      "softwareUpdate": "ソフトウェア・アップデート…",
+      "systemPreferences": "システム環境設定…"
     },
     "auth": {
       "createAccount": "アカウントを作成",

@@ -13,9 +13,14 @@
         "deleteDescription": "Möchten Sie {{type}} „{{name}}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
         "deleteTitle": "{{type}} löschen?",
         "editSong": "{{field}} bearbeiten",
-        "editSongDescription": "Neuen Wert eingeben"
+        "editSongDescription": "Neuen Wert eingeben",
+        "unshareDescription": "Dadurch wird „{{name}}“ aus den geteilten Liedern von {{user}} entfernt. Das Lied verbleibt in der Mediathek, wird aber keinem Benutzer zugeordnet.",
+        "unshareTitle": "Freigabe aufheben"
       },
       "errors": {
+        "cannotForceRefresh": "Erzwungenes Aktualisieren nicht möglich – keine Liedtextquelle oder nicht authentifiziert",
+        "deleteAllFailed": "Fehler beim Löschen von Liedern",
+        "exportFailed": "Export fehlgeschlagen",
         "failedToAddToLibrary": "Hinzufügen zur Bibliothek fehlgeschlagen",
         "failedToBanUser": "Nutzer konnte nicht gesperrt werden",
         "failedToDeleteMessage": "Nachricht konnte nicht gelöscht werden",
@@ -28,10 +33,16 @@
         "failedToFetchSong": "Laden des Songs fehlgeschlagen",
         "failedToFetchSongs": "Abrufen der Lieder fehlgeschlagen",
         "failedToFetchUsers": "Benutzer konnten nicht abgerufen werden",
+        "failedToRefreshLyrics": "Fehler beim Aktualisieren der Liedtexte",
+        "failedToResetLyrics": "Fehler beim Zurücksetzen der Liedtexte",
         "failedToUnbanUser": "Nutzer konnte nicht entsperrt werden",
+        "failedToUnshareSong": "Fehler beim Aufheben der Liedfreigabe",
+        "failedToUpdateLyrics": "Fehler beim Aktualisieren der Liedtexte",
+        "failedToUpdateMetadata": "Fehler beim Aktualisieren der Metadaten",
         "failedToUpdateSong": "Aktualisieren des Liedes fehlgeschlagen",
         "importFailed": "Import fehlgeschlagen",
         "invalidImportFormat": "Ungültiges Dateiformat",
+        "notAuthenticated": "Nicht authentifiziert",
         "songNotInLibrary": "Song nicht in Mediathek"
       },
       "help": {
@@ -52,6 +63,13 @@
           "title": "Benutzerverwaltung"
         }
       },
+      "languages": {
+        "en": "Englisch",
+        "ja": "Japanisch",
+        "ko": "Koreanisch",
+        "zh-CN": "Chinesisch (vereinfacht)",
+        "zh-TW": "Chinesisch (traditionell)"
+      },
       "loadMore": "Mehr laden ({{remaining}} übrig)",
       "menu": {
         "aboutAdmin": "Über Admin",
@@ -62,18 +80,30 @@
       "messages": {
         "addingToLibrary": "Wird zur Bibliothek hinzugefügt...",
         "dataRefreshed": "Daten aktualisiert",
+        "deleteAllSuccess": "{{success}} von {{total}} Liedern gelöscht",
+        "exportSuccess": "{{count}} Lieder exportiert",
         "importSuccess": "{{imported}} neu, {{updated}} aktualisiert (insgesamt {{total}})",
+        "lyricsAndMetadataUpdated": "Liedtexte und Metadaten aktualisiert",
+        "lyricsRefreshed": "Liedtexte aus Quelle aktualisiert",
+        "lyricsReset": "Liedtext zurückgesetzt",
+        "lyricsUpdated": "Liedtext aktualisiert",
         "messageDeleted": "Nachricht gelöscht",
+        "noSongsToDelete": "Keine Lieder zum Löschen",
         "playingInIpod": "Wird auf iPod wiedergegeben",
         "playingInKaraoke": "Wird im Karaoke wiedergegeben",
         "roomDeleted": "Raum gelöscht",
         "songDeleted": "Lied gelöscht",
+        "songUnshared": "Song nicht mehr geteilt",
         "songUpdated": "Lied aktualisiert",
         "userBanned": "Nutzer {{username}} gesperrt",
         "userDeleted": "Benutzer {{username}} gelöscht",
         "userUnbanned": "Nutzer {{username}} entsperrt"
       },
       "name": "Admin",
+      "offline": {
+        "description": "Admin benötigt eine Internetverbindung zur Datenverwaltung.",
+        "title": "Offline"
+      },
       "profile": {
         "actions": "Aktionen",
         "activeRooms": "Aktiv in Räumen",
@@ -118,19 +148,37 @@
         "album": "Album",
         "createdAt": "Erstellt",
         "delete": "Song löschen",
+        "forceRefresh": "Aktualisierung erzwingen",
+        "forceRefreshTooltip": "Liedtext von Kugou erneut abrufen und zwischengespeicherte Anmerkungen löschen",
+        "furigana": "Furigana",
         "info": "Info",
+        "lines": "Zeilen",
+        "lyricsContent": "Liedtextinhalt",
         "lyricsOffset": "Liedtext-Offset",
+        "lyricsSource": "Liedtext",
         "metadata": "Metadaten",
+        "notAvailable": "Nicht verfügbar",
         "notFound": "Song nicht gefunden",
+        "notGenerated": "Nicht generiert",
         "playInIpod": "Auf iPod abspielen",
         "playInKaraoke": "Im Karaoke abspielen",
+        "searchLyrics": "Liedtext suchen",
+        "soramimi": "Soramimi (空耳)",
+        "source": "Quelle",
+        "translations": "Übersetzungen",
         "unknownArtist": "Unbekannter Künstler",
+        "unshare": "Teilen aufheben",
         "updatedAt": "Aktualisiert",
+        "withWordTiming": "mit Wort-Timing",
         "youtubeId": "YouTube-ID"
       },
       "songs": {
+        "allSongs": "Alle Songs",
+        "deleteAll": "Alle Songs löschen",
+        "export": "Bibliothek exportieren",
         "import": "Import",
-        "noSongs": "Keine Lieder im Cache"
+        "noSongs": "Keine Lieder im Cache",
+        "noSongsToExport": "Keine Songs zum Exportieren"
       },
       "statusBar": {
         "loggedInAs": "Angemeldet als {{username}}",
@@ -2078,18 +2126,18 @@
     },
     "appleMenu": {
       "aboutThisComputer": "Über diesen Computer",
-      "softwareUpdate": "Softwareaktualisierung…",
-      "systemPreferences": "Systemeinstellungen…",
-      "controlPanels": "Systemsteuerung…",
       "appletStore": "Applet Store…",
-      "recentItems": "Benutzte Objekte",
-      "noRecentApps": "Keine kürzlich verwendeten Apps",
-      "noRecentDocuments": "Keine kürzlich verwendeten Dokumente",
+      "controlPanels": "Systemsteuerung…",
+      "createAccount": "Account erstellen…",
+      "logOut": "{{username}} abmelden…",
+      "login": "Anmelden…",
       "moreApps": "Mehr Apps…",
       "moreDocuments": "Mehr Dokumente…",
-      "createAccount": "Account erstellen…",
-      "login": "Anmelden…",
-      "logOut": "{{username}} abmelden…"
+      "noRecentApps": "Keine kürzlich verwendeten Apps",
+      "noRecentDocuments": "Keine kürzlich verwendeten Dokumente",
+      "recentItems": "Benutzte Objekte",
+      "softwareUpdate": "Softwareaktualisierung…",
+      "systemPreferences": "Systemeinstellungen…"
     },
     "auth": {
       "createAccount": "Konto erstellen",

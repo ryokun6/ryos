@@ -13,9 +13,14 @@
         "deleteDescription": "Sei sicuro di voler eliminare {{type}} \"{{name}}\"? Questa azione non può essere annullata.",
         "deleteTitle": "Eliminare {{type}}?",
         "editSong": "Modifica {{field}}",
-        "editSongDescription": "Inserisci il nuovo valore"
+        "editSongDescription": "Inserisci il nuovo valore",
+        "unshareDescription": "Questo rimuoverà \"{{name}}\" dai brani condivisi di {{user}}. Il brano rimarrà nella libreria ma non sarà associato a nessun utente.",
+        "unshareTitle": "Interrompi condivisione brano"
       },
       "errors": {
+        "cannotForceRefresh": "Impossibile forzare l'aggiornamento - nessuna fonte di testi o non autenticato",
+        "deleteAllFailed": "Impossibile eliminare i brani",
+        "exportFailed": "Esportazione fallita",
         "failedToAddToLibrary": "Impossibile aggiungere alla libreria",
         "failedToBanUser": "Impossibile bannare l'utente",
         "failedToDeleteMessage": "Impossibile eliminare il messaggio",
@@ -28,10 +33,16 @@
         "failedToFetchSong": "Impossibile recuperare il brano",
         "failedToFetchSongs": "Impossibile recuperare i brani",
         "failedToFetchUsers": "Impossibile recuperare gli utenti",
+        "failedToRefreshLyrics": "Impossibile aggiornare i testi",
+        "failedToResetLyrics": "Impossibile reimpostare i testi",
         "failedToUnbanUser": "Impossibile sbannare l'utente",
+        "failedToUnshareSong": "Impossibile interrompere la condivisione del brano",
+        "failedToUpdateLyrics": "Impossibile aggiornare i testi",
+        "failedToUpdateMetadata": "Impossibile aggiornare i metadati",
         "failedToUpdateSong": "Impossibile aggiornare il brano",
         "importFailed": "Importazione non riuscita",
         "invalidImportFormat": "Formato file non valido",
+        "notAuthenticated": "Non autenticato",
         "songNotInLibrary": "Brano non nella libreria"
       },
       "help": {
@@ -52,6 +63,13 @@
           "title": "Gestione Utenti"
         }
       },
+      "languages": {
+        "en": "Inglese",
+        "ja": "Giapponese",
+        "ko": "Coreano",
+        "zh-CN": "Cinese (Semplificato)",
+        "zh-TW": "Cinese (Tradizionale)"
+      },
       "loadMore": "Carica altri ({{remaining}} rimanenti)",
       "menu": {
         "aboutAdmin": "Informazioni su Admin",
@@ -62,18 +80,30 @@
       "messages": {
         "addingToLibrary": "Aggiunta alla libreria...",
         "dataRefreshed": "Dati aggiornati",
+        "deleteAllSuccess": "Eliminati {{success}} di {{total}} brani",
+        "exportSuccess": "Esportati {{count}} brani",
         "importSuccess": "Importati {{imported}} nuovi, aggiornati {{updated}} ({{total}} totali)",
+        "lyricsAndMetadataUpdated": "Testi e metadati aggiornati",
+        "lyricsRefreshed": "Testi aggiornati dalla fonte",
+        "lyricsReset": "Testo reimpostato",
+        "lyricsUpdated": "Testo aggiornato",
         "messageDeleted": "Messaggio eliminato",
+        "noSongsToDelete": "Nessun brano da eliminare",
         "playingInIpod": "In riproduzione su iPod",
         "playingInKaraoke": "In riproduzione in Karaoke",
         "roomDeleted": "Stanza eliminata",
         "songDeleted": "Brano eliminato",
+        "songUnshared": "Brano non condiviso",
         "songUpdated": "Brano aggiornato",
         "userBanned": "Utente {{username}} bannato",
         "userDeleted": "Utente {{username}} eliminato",
         "userUnbanned": "Utente {{username}} sbannato"
       },
       "name": "Admin",
+      "offline": {
+        "description": "L'amministratore richiede una connessione internet per gestire i dati.",
+        "title": "Offline"
+      },
       "profile": {
         "actions": "Azioni",
         "activeRooms": "Attivo nelle stanze",
@@ -118,19 +148,37 @@
         "album": "Album",
         "createdAt": "Creato",
         "delete": "Elimina brano",
+        "forceRefresh": "Forza aggiornamento",
+        "forceRefreshTooltip": "Ricarica i testi da Kugou e cancella le annotazioni in cache",
+        "furigana": "Furigana",
         "info": "Info",
+        "lines": "righe",
+        "lyricsContent": "Contenuto del testo",
         "lyricsOffset": "Offset testi",
+        "lyricsSource": "Testo",
         "metadata": "Metadati",
+        "notAvailable": "Non disponibile",
         "notFound": "Brano non trovato",
+        "notGenerated": "Non generato",
         "playInIpod": "Riproduci su iPod",
         "playInKaraoke": "Riproduci in Karaoke",
+        "searchLyrics": "Cerca testi",
+        "soramimi": "Soramimi (空耳)",
+        "source": "Fonte",
+        "translations": "Traduzioni",
         "unknownArtist": "Artista sconosciuto",
+        "unshare": "Annulla condivisione",
         "updatedAt": "Aggiornato",
+        "withWordTiming": "con sincronizzazione delle parole",
         "youtubeId": "ID YouTube"
       },
       "songs": {
+        "allSongs": "tutte le canzoni",
+        "deleteAll": "Elimina tutte le canzoni",
+        "export": "Esporta libreria",
         "import": "Importa",
-        "noSongs": "Nessun brano nella cache"
+        "noSongs": "Nessun brano nella cache",
+        "noSongsToExport": "Nessuna canzone da esportare"
       },
       "statusBar": {
         "loggedInAs": "Accesso effettuato come {{username}}",
@@ -2078,18 +2126,18 @@
     },
     "appleMenu": {
       "aboutThisComputer": "Informazioni su questo computer",
-      "softwareUpdate": "Aggiornamento Software…",
-      "systemPreferences": "Preferenze di Sistema…",
-      "controlPanels": "Pannello di Controllo…",
       "appletStore": "Applet Store…",
-      "recentItems": "Elementi recenti",
-      "noRecentApps": "Nessuna app recente",
-      "noRecentDocuments": "Nessun documento recente",
+      "controlPanels": "Pannello di Controllo…",
+      "createAccount": "Crea Account…",
+      "logOut": "Esci da {{username}}…",
+      "login": "Accedi…",
       "moreApps": "Altre App…",
       "moreDocuments": "Altri Documenti…",
-      "createAccount": "Crea Account…",
-      "login": "Accedi…",
-      "logOut": "Esci da {{username}}…"
+      "noRecentApps": "Nessuna app recente",
+      "noRecentDocuments": "Nessun documento recente",
+      "recentItems": "Elementi recenti",
+      "softwareUpdate": "Aggiornamento Software…",
+      "systemPreferences": "Preferenze di Sistema…"
     },
     "auth": {
       "createAccount": "Crea account",

@@ -13,9 +13,14 @@
         "deleteDescription": "您確定要刪除{{type}}「{{name}}」嗎？此動作無法復原。",
         "deleteTitle": "刪除{{type}}？",
         "editSong": "編輯 {{field}}",
-        "editSongDescription": "輸入新值"
+        "editSongDescription": "輸入新值",
+        "unshareDescription": "這會從 {{user}} 的共享歌曲中移除「{{name}}」。歌曲會保留在資料庫中，但不會與任何使用者關聯。",
+        "unshareTitle": "停止共享歌曲"
       },
       "errors": {
+        "cannotForceRefresh": "無法強制重新整理 - 沒有歌詞來源或未經認證",
+        "deleteAllFailed": "刪除歌曲失敗",
+        "exportFailed": "匯出失敗",
         "failedToAddToLibrary": "加入資料庫失敗",
         "failedToBanUser": "無法封鎖使用者",
         "failedToDeleteMessage": "無法刪除訊息",
@@ -28,10 +33,16 @@
         "failedToFetchSong": "無法取得歌曲",
         "failedToFetchSongs": "擷取歌曲失敗",
         "failedToFetchUsers": "無法擷取使用者",
+        "failedToRefreshLyrics": "重新整理歌詞失敗",
+        "failedToResetLyrics": "重設歌詞失敗",
         "failedToUnbanUser": "無法解除封鎖使用者",
+        "failedToUnshareSong": "停止共享歌曲失敗",
+        "failedToUpdateLyrics": "更新歌詞失敗",
+        "failedToUpdateMetadata": "更新中繼資料失敗",
         "failedToUpdateSong": "更新歌曲失敗",
         "importFailed": "匯入失敗",
         "invalidImportFormat": "無效的檔案格式",
+        "notAuthenticated": "未經認證",
         "songNotInLibrary": "歌曲不在資料庫中"
       },
       "help": {
@@ -52,6 +63,13 @@
           "title": "使用者管理"
         }
       },
+      "languages": {
+        "en": "英文",
+        "ja": "日文",
+        "ko": "韓文",
+        "zh-CN": "簡體中文",
+        "zh-TW": "繁體中文"
+      },
       "loadMore": "載入更多（剩餘 {{remaining}} 個）",
       "menu": {
         "aboutAdmin": "關於管理員",
@@ -62,18 +80,30 @@
       "messages": {
         "addingToLibrary": "正在加入資料庫...",
         "dataRefreshed": "資料已重新整理",
+        "deleteAllSuccess": "已刪除 {{total}} 首歌曲中的 {{success}} 首",
+        "exportSuccess": "已匯出 {{count}} 首歌曲",
         "importSuccess": "新增 {{imported}} 首，更新 {{updated}} 首 (共 {{total}} 首)",
+        "lyricsAndMetadataUpdated": "歌詞與中繼資料已更新",
+        "lyricsRefreshed": "歌詞已從來源重新整理",
+        "lyricsReset": "歌詞已重設",
+        "lyricsUpdated": "歌詞已更新",
         "messageDeleted": "訊息已刪除",
+        "noSongsToDelete": "沒有歌曲可刪除",
         "playingInIpod": "正在 iPod 中播放",
         "playingInKaraoke": "正在卡拉 OK 中播放",
         "roomDeleted": "聊天室已刪除",
         "songDeleted": "歌曲已刪除",
+        "songUnshared": "歌曲已取消分享",
         "songUpdated": "歌曲已更新",
         "userBanned": "使用者 {{username}} 已封鎖",
         "userDeleted": "使用者 {{username}} 已刪除",
         "userUnbanned": "使用者 {{username}} 已解除封鎖"
       },
       "name": "管理員",
+      "offline": {
+        "description": "管理員需要網際網路連線才能管理資料。",
+        "title": "離線"
+      },
       "profile": {
         "actions": "動作",
         "activeRooms": "聊天室活躍中",
@@ -118,19 +148,37 @@
         "album": "專輯",
         "createdAt": "建立",
         "delete": "刪除歌曲",
+        "forceRefresh": "強制重新整理",
+        "forceRefreshTooltip": "從酷狗重新擷取歌詞並清除快取註解。",
+        "furigana": "振假名",
         "info": "資訊",
+        "lines": "行",
+        "lyricsContent": "歌詞內容",
         "lyricsOffset": "歌詞偏移",
+        "lyricsSource": "歌詞",
         "metadata": "中繼資料",
+        "notAvailable": "未提供",
         "notFound": "找不到歌曲",
+        "notGenerated": "未產生",
         "playInIpod": "在 iPod 中播放",
         "playInKaraoke": "在卡拉 OK 中播放",
+        "searchLyrics": "搜尋歌詞",
+        "soramimi": "空耳",
+        "source": "來源",
+        "translations": "翻譯",
         "unknownArtist": "未知藝人",
+        "unshare": "取消分享",
         "updatedAt": "更新",
+        "withWordTiming": "附帶逐字時間",
         "youtubeId": "YouTube ID"
       },
       "songs": {
+        "allSongs": "所有歌曲",
+        "deleteAll": "刪除所有歌曲",
+        "export": "匯出資料庫",
         "import": "匯入",
-        "noSongs": "快取中沒有歌曲"
+        "noSongs": "快取中沒有歌曲",
+        "noSongsToExport": "沒有歌曲可供匯出"
       },
       "statusBar": {
         "loggedInAs": "已登入為 {{username}}",
@@ -2078,18 +2126,18 @@
     },
     "appleMenu": {
       "aboutThisComputer": "關於此電腦",
-      "softwareUpdate": "軟體更新…",
-      "systemPreferences": "系統偏好設定…",
-      "controlPanels": "控制台…",
       "appletStore": "小程式商店…",
-      "recentItems": "最近使用過的項目",
-      "noRecentApps": "沒有最近使用的 App",
-      "noRecentDocuments": "沒有最近使用的文件",
+      "controlPanels": "控制台…",
+      "createAccount": "建立帳戶…",
+      "logOut": "登出 {{username}}…",
+      "login": "登入…",
       "moreApps": "更多 App…",
       "moreDocuments": "更多文件…",
-      "createAccount": "建立帳戶…",
-      "login": "登入…",
-      "logOut": "登出 {{username}}…"
+      "noRecentApps": "沒有最近使用的 App",
+      "noRecentDocuments": "沒有最近使用的文件",
+      "recentItems": "最近使用過的項目",
+      "softwareUpdate": "軟體更新…",
+      "systemPreferences": "系統偏好設定…"
     },
     "auth": {
       "createAccount": "建立帳戶",

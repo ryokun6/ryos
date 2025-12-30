@@ -13,9 +13,14 @@
         "deleteDescription": "Êtes-vous sûr de vouloir supprimer {{type}} « {{name}} » ? Cette action est irréversible.",
         "deleteTitle": "Supprimer {{type}} ?",
         "editSong": "Modifier {{field}}",
-        "editSongDescription": "Saisir la nouvelle valeur"
+        "editSongDescription": "Saisir la nouvelle valeur",
+        "unshareDescription": "Ceci supprimera \"{{name}}\" des chansons partagées de {{user}}. La chanson restera dans la bibliothèque mais ne sera associée à aucun utilisateur.",
+        "unshareTitle": "Cesser le partage"
       },
       "errors": {
+        "cannotForceRefresh": "Impossible de forcer l'actualisation - aucune source de paroles ou non authentifié",
+        "deleteAllFailed": "Échec de la suppression des chansons",
+        "exportFailed": "Échec de l'exportation",
         "failedToAddToLibrary": "Échec de l'ajout à la bibliothèque",
         "failedToBanUser": "Échec du bannissement de l'utilisateur",
         "failedToDeleteMessage": "Échec de la suppression du message",
@@ -28,10 +33,16 @@
         "failedToFetchSong": "Échec de la récupération de la chanson",
         "failedToFetchSongs": "Impossible de récupérer les morceaux",
         "failedToFetchUsers": "Échec de la récupération des utilisateurs",
+        "failedToRefreshLyrics": "Échec de l'actualisation des paroles",
+        "failedToResetLyrics": "Échec de la réinitialisation des paroles",
         "failedToUnbanUser": "Échec du débannissement de l'utilisateur",
+        "failedToUnshareSong": "Échec de la cessation du partage de la chanson",
+        "failedToUpdateLyrics": "Échec de la mise à jour des paroles",
+        "failedToUpdateMetadata": "Échec de la mise à jour des métadonnées",
         "failedToUpdateSong": "Impossible de mettre à jour le morceau",
         "importFailed": "Échec de l'importation",
         "invalidImportFormat": "Format de fichier non valide",
+        "notAuthenticated": "Non authentifié",
         "songNotInLibrary": "Chanson absente de la bibliothèque"
       },
       "help": {
@@ -52,6 +63,13 @@
           "title": "Gestion des utilisateurs"
         }
       },
+      "languages": {
+        "en": "Anglais",
+        "ja": "Japonais",
+        "ko": "Coréen",
+        "zh-CN": "Chinois (simplifié)",
+        "zh-TW": "Chinois (traditionnel)"
+      },
       "loadMore": "Charger plus ({{remaining}} restants)",
       "menu": {
         "aboutAdmin": "À propos d'Admin",
@@ -62,18 +80,30 @@
       "messages": {
         "addingToLibrary": "Ajout à la bibliothèque...",
         "dataRefreshed": "Données actualisées",
+        "deleteAllSuccess": "Supprimé {{success}} des {{total}} chansons",
+        "exportSuccess": "Exporté {{count}} chansons",
         "importSuccess": "Importés : {{imported}} nouveaux, mis à jour : {{updated}} ({{total}} au total)",
+        "lyricsAndMetadataUpdated": "Paroles et métadonnées mises à jour",
+        "lyricsRefreshed": "Paroles actualisées depuis la source",
+        "lyricsReset": "Paroles réinitialisées",
+        "lyricsUpdated": "Paroles mises à jour",
         "messageDeleted": "Message supprimé",
+        "noSongsToDelete": "Aucune chanson à supprimer",
         "playingInIpod": "Lecture sur iPod",
         "playingInKaraoke": "Lecture Karaoké",
         "roomDeleted": "Salon supprimé",
         "songDeleted": "Morceau supprimé",
+        "songUnshared": "Partage de la chanson annulé",
         "songUpdated": "Morceau mis à jour",
         "userBanned": "Utilisateur {{username}} banni",
         "userDeleted": "Utilisateur {{username}} supprimé",
         "userUnbanned": "Utilisateur {{username}} débanni"
       },
       "name": "Admin",
+      "offline": {
+        "description": "Une connexion internet est requise pour que l'administrateur puisse gérer les données.",
+        "title": "Hors ligne"
+      },
       "profile": {
         "actions": "Actions",
         "activeRooms": "Actif dans les salons",
@@ -118,19 +148,37 @@
         "album": "Album",
         "createdAt": "Créé",
         "delete": "Supprimer la chanson",
+        "forceRefresh": "Forcer l'actualisation",
+        "forceRefreshTooltip": "Recharger les paroles depuis Kugou et vider le cache des annotations",
+        "furigana": "Furigana",
         "info": "Infos",
+        "lines": "lignes",
+        "lyricsContent": "Contenu des paroles",
         "lyricsOffset": "Décalage des paroles",
+        "lyricsSource": "Paroles",
         "metadata": "Métadonnées",
+        "notAvailable": "Non disponible",
         "notFound": "Chanson introuvable",
+        "notGenerated": "Non généré",
         "playInIpod": "Lire sur iPod",
         "playInKaraoke": "Lire en Karaoké",
+        "searchLyrics": "Rechercher des paroles",
+        "soramimi": "Soramimi (空耳)",
+        "source": "Source",
+        "translations": "Traductions",
         "unknownArtist": "Artiste inconnu",
+        "unshare": "Annuler le partage",
         "updatedAt": "Mis à jour",
+        "withWordTiming": "avec synchronisation des mots",
         "youtubeId": "ID YouTube"
       },
       "songs": {
+        "allSongs": "toutes les chansons",
+        "deleteAll": "Supprimer toutes les chansons",
+        "export": "Exporter la bibliothèque",
         "import": "Importation",
-        "noSongs": "Aucun morceau en cache"
+        "noSongs": "Aucun morceau en cache",
+        "noSongsToExport": "Aucune chanson à exporter"
       },
       "statusBar": {
         "loggedInAs": "Connecté en tant que {{username}}",
@@ -2078,18 +2126,18 @@
     },
     "appleMenu": {
       "aboutThisComputer": "À propos de cet ordinateur",
-      "softwareUpdate": "Mise à jour de logiciels…",
-      "systemPreferences": "Préférences Système…",
-      "controlPanels": "Panneau de configuration…",
       "appletStore": "Applet Store…",
-      "recentItems": "Éléments récents",
-      "noRecentApps": "Aucune app récente",
-      "noRecentDocuments": "Aucun document récent",
+      "controlPanels": "Panneau de configuration…",
+      "createAccount": "Créer un compte…",
+      "logOut": "Déconnecter {{username}}…",
+      "login": "Connexion…",
       "moreApps": "Plus d'apps…",
       "moreDocuments": "Plus de documents…",
-      "createAccount": "Créer un compte…",
-      "login": "Connexion…",
-      "logOut": "Déconnecter {{username}}…"
+      "noRecentApps": "Aucune app récente",
+      "noRecentDocuments": "Aucun document récent",
+      "recentItems": "Éléments récents",
+      "softwareUpdate": "Mise à jour de logiciels…",
+      "systemPreferences": "Préférences Système…"
     },
     "auth": {
       "createAccount": "Créer un compte",

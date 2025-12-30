@@ -13,9 +13,14 @@
         "deleteDescription": "{{type}} \"{{name}}\"을(를) 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
         "deleteTitle": "{{type}}(을)를 삭제하시겠습니까?",
         "editSong": "{{field}} 수정",
-        "editSongDescription": "새 값을 입력하세요."
+        "editSongDescription": "새 값을 입력하세요.",
+        "unshareDescription": "이것은 {{user}}님의 공유된 노래 목록에서 \"{{name}}\"을(를) 제거합니다. 이 노래는 보관함에 남아있지만, 어떤 사용자에게도 연결되지 않습니다.",
+        "unshareTitle": "노래 공유 해제"
       },
       "errors": {
+        "cannotForceRefresh": "강제 새로 고침을 할 수 없습니다 - 가사 출처가 없거나 인증되지 않았습니다.",
+        "deleteAllFailed": "노래 삭제 실패",
+        "exportFailed": "내보내기 실패",
         "failedToAddToLibrary": "라이브러리에 추가 실패",
         "failedToBanUser": "사용자 차단 실패",
         "failedToDeleteMessage": "메시지 삭제 실패",
@@ -28,10 +33,16 @@
         "failedToFetchSong": "노래를 가져오지 못했습니다.",
         "failedToFetchSongs": "곡을 가져오는 데 실패했습니다.",
         "failedToFetchUsers": "사용자 불러오기 실패",
+        "failedToRefreshLyrics": "가사 새로 고침 실패",
+        "failedToResetLyrics": "가사 재설정 실패",
         "failedToUnbanUser": "사용자 차단 해제 실패",
+        "failedToUnshareSong": "노래 공유 해제 실패",
+        "failedToUpdateLyrics": "가사 업데이트 실패",
+        "failedToUpdateMetadata": "메타데이터 업데이트 실패",
         "failedToUpdateSong": "곡 업데이트에 실패했습니다.",
         "importFailed": "가져오기 실패",
         "invalidImportFormat": "잘못된 파일 형식",
+        "notAuthenticated": "인증되지 않음",
         "songNotInLibrary": "보관함에 없는 노래"
       },
       "help": {
@@ -52,6 +63,13 @@
           "title": "사용자 관리"
         }
       },
+      "languages": {
+        "en": "영어",
+        "ja": "일본어",
+        "ko": "한국어",
+        "zh-CN": "중국어(간체)",
+        "zh-TW": "중국어(번체)"
+      },
       "loadMore": "더 보기 ({{remaining}}개 남음)",
       "menu": {
         "aboutAdmin": "관리자 정보",
@@ -62,18 +80,30 @@
       "messages": {
         "addingToLibrary": "라이브러리에 추가 중...",
         "dataRefreshed": "데이터 새로고침 완료",
+        "deleteAllSuccess": "총 {{total}}곡 중 {{success}}곡 삭제됨",
+        "exportSuccess": "{{count}}곡 내보냄",
         "importSuccess": "{{imported}}개 새로 가져옴, {{updated}}개 업데이트됨 (총 {{total}}개)",
+        "lyricsAndMetadataUpdated": "가사 및 메타데이터 업데이트됨",
+        "lyricsRefreshed": "가사가 출처에서 새로 고침됨",
+        "lyricsReset": "가사 초기화",
+        "lyricsUpdated": "가사 업데이트됨",
         "messageDeleted": "메시지 삭제됨",
+        "noSongsToDelete": "삭제할 곡이 없습니다",
         "playingInIpod": "iPod에서 재생 중",
         "playingInKaraoke": "노래방에서 재생 중",
         "roomDeleted": "방 삭제됨",
         "songDeleted": "곡 삭제됨",
+        "songUnshared": "곡 공유 해제됨",
         "songUpdated": "곡 업데이트됨",
         "userBanned": "{{username}}님 차단됨",
         "userDeleted": "사용자 {{username}} 삭제됨",
         "userUnbanned": "{{username}}님 차단 해제됨"
       },
       "name": "관리자",
+      "offline": {
+        "description": "관리자는 데이터 관리를 위해 인터넷 연결이 필요합니다.",
+        "title": "오프라인"
+      },
       "profile": {
         "actions": "작업",
         "activeRooms": "채팅방 활동",
@@ -118,19 +148,37 @@
         "album": "앨범",
         "createdAt": "생성일",
         "delete": "노래 삭제",
+        "forceRefresh": "강제 새로 고침",
+        "forceRefreshTooltip": "Kugou에서 가사를 다시 가져오고 캐시된 주석을 지웁니다.",
+        "furigana": "후리가나",
         "info": "정보",
+        "lines": "줄",
+        "lyricsContent": "가사 내용",
         "lyricsOffset": "가사 오프셋",
+        "lyricsSource": "가사",
         "metadata": "메타데이터",
+        "notAvailable": "사용할 수 없음",
         "notFound": "노래를 찾을 수 없습니다.",
+        "notGenerated": "생성되지 않음",
         "playInIpod": "iPod에서 재생",
         "playInKaraoke": "노래방에서 재생",
+        "searchLyrics": "가사 검색",
+        "soramimi": "소라미미 (空耳)",
+        "source": "출처",
+        "translations": "번역",
         "unknownArtist": "알 수 없는 아티스트",
+        "unshare": "공유 해제",
         "updatedAt": "업데이트일",
+        "withWordTiming": "단어 타이밍 포함",
         "youtubeId": "YouTube ID"
       },
       "songs": {
+        "allSongs": "모든 노래",
+        "deleteAll": "모든 노래 삭제",
+        "export": "보관함 내보내기",
         "import": "가져오기",
-        "noSongs": "캐시에 곡 없음"
+        "noSongs": "캐시에 곡 없음",
+        "noSongsToExport": "내보낼 노래가 없습니다."
       },
       "statusBar": {
         "loggedInAs": "{{username}}님으로 로그인됨",
@@ -2078,18 +2126,18 @@
     },
     "appleMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",
-      "softwareUpdate": "소프트웨어 업데이트…",
-      "systemPreferences": "시스템 환경설정…",
-      "controlPanels": "제어판…",
       "appletStore": "애플릿 스토어…",
-      "recentItems": "최근 사용 항목",
-      "noRecentApps": "최근 사용한 앱 없음",
-      "noRecentDocuments": "최근 사용한 문서 없음",
+      "controlPanels": "제어판…",
+      "createAccount": "계정 생성…",
+      "logOut": "{{username}} 로그아웃…",
+      "login": "로그인…",
       "moreApps": "더 많은 앱…",
       "moreDocuments": "더 많은 문서…",
-      "createAccount": "계정 생성…",
-      "login": "로그인…",
-      "logOut": "{{username}} 로그아웃…"
+      "noRecentApps": "최근 사용한 앱 없음",
+      "noRecentDocuments": "최근 사용한 문서 없음",
+      "recentItems": "최근 사용 항목",
+      "softwareUpdate": "소프트웨어 업데이트…",
+      "systemPreferences": "시스템 환경설정…"
     },
     "auth": {
       "createAccount": "계정 만들기",

@@ -2160,8 +2160,12 @@
         "noMessages": "No messages"
       },
       "songs": {
-        "import": "Import",
-        "noSongs": "No songs in cache"
+        "import": "Import Library",
+        "export": "Export Library",
+        "deleteAll": "Delete All Songs",
+        "noSongs": "No songs in cache",
+        "noSongsToExport": "No songs to export",
+        "allSongs": "all songs"
       },
       "song": {
         "notFound": "Song not found",
@@ -2169,13 +2173,38 @@
         "delete": "Delete Song",
         "playInIpod": "Play in iPod",
         "playInKaraoke": "Play in Karaoke",
+        "searchLyrics": "Search Lyrics",
+        "forceRefresh": "Force Refresh",
+        "forceRefreshTooltip": "Re-fetch lyrics from Kugou and clear cached annotations",
+        "unshare": "Unshare",
         "metadata": "Metadata",
         "album": "Album",
         "lyricsOffset": "Lyrics Offset",
         "youtubeId": "YouTube ID",
+        "lyricsContent": "Lyrics Content",
+        "lyricsSource": "Lyrics",
+        "lines": "lines",
+        "withWordTiming": "with word timing",
+        "notAvailable": "Not available",
+        "source": "Source",
+        "furigana": "Furigana",
+        "translations": "Translations",
+        "soramimi": "Soramimi (空耳)",
+        "notGenerated": "Not generated",
         "info": "Info",
         "createdAt": "Created",
         "updatedAt": "Updated"
+      },
+      "languages": {
+        "en": "English",
+        "ja": "Japanese",
+        "ko": "Korean",
+        "zh-CN": "Chinese (Simplified)",
+        "zh-TW": "Chinese (Traditional)"
+      },
+      "offline": {
+        "title": "Offline",
+        "description": "Admin requires an internet connection to manage data."
       },
       "user": {
         "admin": "Admin",
@@ -2210,11 +2239,19 @@
         "messageDeleted": "Message deleted",
         "songDeleted": "Song deleted",
         "songUpdated": "Song updated",
+        "songUnshared": "Song unshared",
         "importSuccess": "Imported {{imported}} new, updated {{updated}} ({{total}} total)",
+        "exportSuccess": "Exported {{count}} songs",
+        "deleteAllSuccess": "Deleted {{success}} of {{total}} songs",
+        "noSongsToDelete": "No songs to delete",
         "dataRefreshed": "Data refreshed",
         "playingInIpod": "Playing in iPod",
         "playingInKaraoke": "Playing in Karaoke",
-        "addingToLibrary": "Adding to library..."
+        "addingToLibrary": "Adding to library...",
+        "lyricsRefreshed": "Lyrics refreshed from source",
+        "lyricsAndMetadataUpdated": "Lyrics and metadata updated",
+        "lyricsUpdated": "Lyrics updated",
+        "lyricsReset": "Lyrics reset"
       },
       "errors": {
         "failedToFetchUsers": "Failed to fetch users",
@@ -2232,8 +2269,17 @@
         "failedToUnbanUser": "Failed to unban user",
         "invalidImportFormat": "Invalid file format",
         "importFailed": "Import failed",
+        "exportFailed": "Export failed",
+        "deleteAllFailed": "Failed to delete songs",
         "songNotInLibrary": "Song not in library",
-        "failedToAddToLibrary": "Failed to add to library"
+        "failedToAddToLibrary": "Failed to add to library",
+        "cannotForceRefresh": "Cannot force refresh - no lyrics source or not authenticated",
+        "failedToRefreshLyrics": "Failed to refresh lyrics",
+        "notAuthenticated": "Not authenticated",
+        "failedToUpdateLyrics": "Failed to update lyrics",
+        "failedToUpdateMetadata": "Failed to update metadata",
+        "failedToResetLyrics": "Failed to reset lyrics",
+        "failedToUnshareSong": "Failed to unshare song"
       },
       "statusBar": {
         "usersCount": "{{count}} user",
@@ -2279,7 +2325,9 @@
         "banTitle": "Ban User?",
         "banDescription": "Are you sure you want to ban {{username}}? They will be logged out and unable to access the service.",
         "editSong": "Edit {{field}}",
-        "editSongDescription": "Enter the new value"
+        "editSongDescription": "Enter the new value",
+        "unshareTitle": "Unshare Song",
+        "unshareDescription": "This will remove \"{{name}}\" from {{user}}'s shared songs. The song will remain in the library but won't be associated with any user."
       },
       "help": {
         "adminAccess": {

@@ -927,16 +927,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         <>
                           <Check className="h-3 w-3 text-green-500" />
                           <span className="text-[11px] text-green-600">
-                            {Object.keys(song.translations).map(lang => {
-                              const langNames: Record<string, string> = {
-                                "en": "English",
-                                "ja": "Japanese",
-                                "ko": "Korean",
-                                "zh-CN": "Chinese (Simplified)",
-                                "zh-TW": "Chinese (Traditional)",
-                              };
-                              return langNames[lang] || lang;
-                            }).join(", ")}
+                            {Object.keys(song.translations).map(lang => 
+                              t(`apps.admin.languages.${lang}`, lang)
+                            ).join(", ")}
                           </span>
                         </>
                       ) : (
@@ -974,15 +967,11 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                               if (!languages.includes(lang)) languages.push(lang);
                             });
                           }
-                          const langNames: Record<string, string> = {
-                            "zh-TW": "Chinese",
-                            "en": "English",
-                          };
                           return (
                             <>
                               <Check className="h-3 w-3 text-green-500" />
                               <span className="text-[11px] text-green-600">
-                                {languages.map(l => langNames[l] || l).join(", ")}
+                                {languages.map(l => t(`apps.admin.languages.${l}`, l)).join(", ")}
                               </span>
                             </>
                           );

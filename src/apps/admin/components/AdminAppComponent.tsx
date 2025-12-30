@@ -126,6 +126,7 @@ export function AdminAppComponent({
 
   // Sidebar visibility and mobile detection
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
   const [isFrameNarrow, setIsFrameNarrow] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
@@ -783,6 +784,16 @@ export function AdminAppComponent({
     prevFrameNarrowRef.current = isFrameNarrow;
   }, [isFrameNarrow, isSidebarVisible]);
 
+  // Scroll to top when navigating to detail views
+  useEffect(() => {
+    if (selectedSongId || selectedUserProfile) {
+      const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTo({ top: 0 });
+      }
+    }
+  }, [selectedSongId, selectedUserProfile]);
+
   const formatRelativeTime = (timestamp: number) => {
     const diff = Date.now() - timestamp;
     const minutes = Math.floor(diff / 60000);
@@ -1035,7 +1046,7 @@ export function AdminAppComponent({
             )}
 
             {/* Content Area */}
-            <ScrollArea className="flex-1">
+            <ScrollArea ref={scrollAreaRef} className="flex-1">
               {/* User Profile View */}
               {selectedUserProfile && (
                 <UserProfilePanel

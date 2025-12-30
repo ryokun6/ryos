@@ -13,9 +13,14 @@
         "deleteDescription": "¿Estás seguro de que quieres eliminar {{type}} \"{{name}}\"? Esta acción no se puede deshacer.",
         "deleteTitle": "¿Eliminar {{type}}?",
         "editSong": "Editar {{field}}",
-        "editSongDescription": "Introduzca el nuevo valor"
+        "editSongDescription": "Introduzca el nuevo valor",
+        "unshareDescription": "Esto eliminará \"{{name}}\" de las canciones compartidas de {{user}}. La canción permanecerá en la biblioteca pero no estará asociada a ningún usuario.",
+        "unshareTitle": "Dejar de compartir canción"
       },
       "errors": {
+        "cannotForceRefresh": "No se puede forzar la actualización: no hay fuente de letras o no autenticado",
+        "deleteAllFailed": "Error al eliminar canciones",
+        "exportFailed": "Error en la exportación",
         "failedToAddToLibrary": "Error al añadir a la biblioteca",
         "failedToBanUser": "Error al banear al usuario",
         "failedToDeleteMessage": "Error al eliminar mensaje",
@@ -28,10 +33,16 @@
         "failedToFetchSong": "No se pudo obtener la canción",
         "failedToFetchSongs": "No se pudieron obtener las canciones",
         "failedToFetchUsers": "Error al obtener usuarios",
+        "failedToRefreshLyrics": "Error al actualizar letras",
+        "failedToResetLyrics": "Error al restablecer letras",
         "failedToUnbanUser": "Error al desbanear al usuario",
+        "failedToUnshareSong": "Error al dejar de compartir canción",
+        "failedToUpdateLyrics": "Error al actualizar letras",
+        "failedToUpdateMetadata": "Error al actualizar metadatos",
         "failedToUpdateSong": "No se pudo actualizar la canción",
         "importFailed": "Importación fallida",
         "invalidImportFormat": "Formato de archivo no válido",
+        "notAuthenticated": "No autenticado",
         "songNotInLibrary": "Canción no en la biblioteca"
       },
       "help": {
@@ -52,6 +63,13 @@
           "title": "Gestión de usuarios"
         }
       },
+      "languages": {
+        "en": "Inglés",
+        "ja": "Japonés",
+        "ko": "Coreano",
+        "zh-CN": "Chino (simplificado)",
+        "zh-TW": "Chino (tradicional)"
+      },
       "loadMore": "Cargar más ({{remaining}} restantes)",
       "menu": {
         "aboutAdmin": "Acerca de Admin",
@@ -62,18 +80,30 @@
       "messages": {
         "addingToLibrary": "Añadiendo a la biblioteca...",
         "dataRefreshed": "Datos actualizados",
+        "deleteAllSuccess": "Eliminadas {{success}} de {{total}} canciones",
+        "exportSuccess": "Exportadas {{count}} canciones",
         "importSuccess": "Importadas {{imported}} nuevas, actualizadas {{updated}} ({{total}} en total)",
+        "lyricsAndMetadataUpdated": "Letras y metadatos actualizados",
+        "lyricsRefreshed": "Letras actualizadas desde la fuente",
+        "lyricsReset": "Letras restablecidas",
+        "lyricsUpdated": "Letras actualizadas",
         "messageDeleted": "Mensaje eliminado",
+        "noSongsToDelete": "No hay canciones para eliminar",
         "playingInIpod": "Reproduciendo en iPod",
         "playingInKaraoke": "Reproduciendo en Karaoke",
         "roomDeleted": "Sala eliminada",
         "songDeleted": "Canción eliminada",
+        "songUnshared": "Canción dejó de compartirse",
         "songUpdated": "Canción actualizada",
         "userBanned": "Usuario {{username}} baneado",
         "userDeleted": "Usuario {{username}} eliminado",
         "userUnbanned": "Usuario {{username}} desbaneado"
       },
       "name": "Admin",
+      "offline": {
+        "description": "El administrador requiere una conexión a internet para gestionar los datos.",
+        "title": "Sin conexión"
+      },
       "profile": {
         "actions": "Acciones",
         "activeRooms": "Activo en Salas",
@@ -118,19 +148,37 @@
         "album": "Álbum",
         "createdAt": "Creado",
         "delete": "Eliminar canción",
+        "forceRefresh": "Forzar actualización",
+        "forceRefreshTooltip": "Volver a obtener letras de Kugou y borrar anotaciones en caché",
+        "furigana": "Furigana",
         "info": "Información",
+        "lines": "líneas",
+        "lyricsContent": "Contenido de las letras",
         "lyricsOffset": "Desplazamiento de letras",
+        "lyricsSource": "Letras",
         "metadata": "Metadatos",
+        "notAvailable": "No disponible",
         "notFound": "Canción no encontrada",
+        "notGenerated": "No generado",
         "playInIpod": "Reproducir en iPod",
         "playInKaraoke": "Reproducir en Karaoke",
+        "searchLyrics": "Buscar letras",
+        "soramimi": "Soramimi (空耳)",
+        "source": "Fuente",
+        "translations": "Traducciones",
         "unknownArtist": "Artista desconocido",
+        "unshare": "Dejar de compartir",
         "updatedAt": "Actualizado",
+        "withWordTiming": "con sincronización de palabras",
         "youtubeId": "ID de YouTube"
       },
       "songs": {
+        "allSongs": "todas las canciones",
+        "deleteAll": "Eliminar todas las canciones",
+        "export": "Exportar biblioteca",
         "import": "Importar",
-        "noSongs": "No hay canciones en caché"
+        "noSongs": "No hay canciones en caché",
+        "noSongsToExport": "No hay canciones para exportar"
       },
       "statusBar": {
         "loggedInAs": "Sesión iniciada como {{username}}",
@@ -2078,18 +2126,18 @@
     },
     "appleMenu": {
       "aboutThisComputer": "Acerca de Este Equipo",
-      "softwareUpdate": "Actualización de Software…",
-      "systemPreferences": "Preferencias del Sistema…",
-      "controlPanels": "Panel de Control…",
       "appletStore": "Applet Store…",
-      "recentItems": "Elementos Recientes",
-      "noRecentApps": "No hay apps recientes",
-      "noRecentDocuments": "No hay documentos recientes",
+      "controlPanels": "Panel de Control…",
+      "createAccount": "Crear Cuenta…",
+      "logOut": "Cerrar Sesión de {{username}}…",
+      "login": "Iniciar Sesión…",
       "moreApps": "Más Apps…",
       "moreDocuments": "Más Documentos…",
-      "createAccount": "Crear Cuenta…",
-      "login": "Iniciar Sesión…",
-      "logOut": "Cerrar Sesión de {{username}}…"
+      "noRecentApps": "No hay apps recientes",
+      "noRecentDocuments": "No hay documentos recientes",
+      "recentItems": "Elementos Recientes",
+      "softwareUpdate": "Actualización de Software…",
+      "systemPreferences": "Preferencias del Sistema…"
     },
     "auth": {
       "createAccount": "Crear cuenta",

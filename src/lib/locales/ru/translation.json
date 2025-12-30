@@ -13,9 +13,14 @@
         "deleteDescription": "Вы уверены, что хотите удалить {{type}} «{{name}}»? Это действие невозможно отменить.",
         "deleteTitle": "Удалить {{type}}?",
         "editSong": "Редактировать {{field}}",
-        "editSongDescription": "Введите новое значение"
+        "editSongDescription": "Введите новое значение",
+        "unshareDescription": "Это удалит \"{{name}}\" из общих песен {{user}}. Песня останется в библиотеке, но не будет связана ни с каким пользователем.",
+        "unshareTitle": "Отменить общий доступ к песне"
       },
       "errors": {
+        "cannotForceRefresh": "Невозможно принудительно обновить — нет источника текста песни или не авторизован",
+        "deleteAllFailed": "Не удалось удалить песни",
+        "exportFailed": "Экспорт не удался",
         "failedToAddToLibrary": "Не удалось добавить в библиотеку",
         "failedToBanUser": "Не удалось заблокировать пользователя",
         "failedToDeleteMessage": "Не удалось удалить сообщение",
@@ -28,10 +33,16 @@
         "failedToFetchSong": "Не удалось получить песню",
         "failedToFetchSongs": "Не удалось получить песни",
         "failedToFetchUsers": "Не удалось получить пользователей",
+        "failedToRefreshLyrics": "Не удалось обновить текст песни",
+        "failedToResetLyrics": "Не удалось сбросить текст песни",
         "failedToUnbanUser": "Не удалось разблокировать пользователя",
+        "failedToUnshareSong": "Не удалось отменить общий доступ к песне",
+        "failedToUpdateLyrics": "Не удалось обновить текст песни",
+        "failedToUpdateMetadata": "Не удалось обновить метаданные",
         "failedToUpdateSong": "Не удалось обновить песню",
         "importFailed": "Импорт не удался",
         "invalidImportFormat": "Неверный формат файла",
+        "notAuthenticated": "Не авторизован",
         "songNotInLibrary": "Песни нет в библиотеке"
       },
       "help": {
@@ -52,6 +63,13 @@
           "title": "Управление пользователями"
         }
       },
+      "languages": {
+        "en": "Английский",
+        "ja": "Японский",
+        "ko": "Корейский",
+        "zh-CN": "Китайский (упрощенный)",
+        "zh-TW": "Китайский (традиционный)"
+      },
       "loadMore": "Загрузить ещё ({{remaining}} осталось)",
       "menu": {
         "aboutAdmin": "Об администрировании",
@@ -62,18 +80,30 @@
       "messages": {
         "addingToLibrary": "Добавление в библиотеку...",
         "dataRefreshed": "Данные обновлены",
+        "deleteAllSuccess": "Удалено {{success}} из {{total}} песен",
+        "exportSuccess": "Экспортировано {{count}} песен",
         "importSuccess": "Импортировано {{imported}} новых, обновлено {{updated}} (всего {{total}})",
+        "lyricsAndMetadataUpdated": "Текст песни и метаданные обновлены",
+        "lyricsRefreshed": "Текст песни обновлен из источника",
+        "lyricsReset": "Текст песни сброшен",
+        "lyricsUpdated": "Текст песни обновлен",
         "messageDeleted": "Сообщение удалено",
+        "noSongsToDelete": "Нет песен для удаления",
         "playingInIpod": "Воспроизводится на iPod",
         "playingInKaraoke": "Воспроизводится в Караоке",
         "roomDeleted": "Комната удалена",
         "songDeleted": "Песня удалена",
+        "songUnshared": "Доступ к песне отменен",
         "songUpdated": "Песня обновлена",
         "userBanned": "Пользователь {{username}} заблокирован",
         "userDeleted": "Пользователь {{username}} удален",
         "userUnbanned": "Пользователь {{username}} разблокирован"
       },
       "name": "Администрирование",
+      "offline": {
+        "description": "Администратору требуется подключение к интернету для управления данными.",
+        "title": "Офлайн"
+      },
       "profile": {
         "actions": "Действия",
         "activeRooms": "Активен в комнатах",
@@ -118,19 +148,37 @@
         "album": "Альбом",
         "createdAt": "Создано",
         "delete": "Удалить песню",
+        "forceRefresh": "Принудительное обновление",
+        "forceRefreshTooltip": "Повторно загрузить текст песни из Kugou и очистить кэшированные аннотации",
+        "furigana": "Фуригана",
         "info": "Инфо",
+        "lines": "строк",
+        "lyricsContent": "Текст песни",
         "lyricsOffset": "Смещение текста",
+        "lyricsSource": "Текст песни",
         "metadata": "Метаданные",
+        "notAvailable": "Недоступно",
         "notFound": "Песня не найдена",
+        "notGenerated": "Не сгенерировано",
         "playInIpod": "Воспроизвести на iPod",
         "playInKaraoke": "Воспроизвести в Караоке",
+        "searchLyrics": "Поиск текста песни",
+        "soramimi": "Сорамими (空耳)",
+        "source": "Источник",
+        "translations": "Переводы",
         "unknownArtist": "Неизвестный исполнитель",
+        "unshare": "Отменить общий доступ",
         "updatedAt": "Обновлено",
+        "withWordTiming": "с таймингом по словам",
         "youtubeId": "ID YouTube"
       },
       "songs": {
+        "allSongs": "Все песни",
+        "deleteAll": "Удалить все песни",
+        "export": "Экспорт медиатеки",
         "import": "Импорт",
-        "noSongs": "Нет песен в кэше"
+        "noSongs": "Нет песен в кэше",
+        "noSongsToExport": "Нет песен для экспорта"
       },
       "statusBar": {
         "loggedInAs": "Вы вошли как {{username}}",
@@ -2078,18 +2126,18 @@
     },
     "appleMenu": {
       "aboutThisComputer": "Об этом компьютере",
-      "softwareUpdate": "Обновление ПО…",
-      "systemPreferences": "Системные настройки…",
-      "controlPanels": "Панель управления…",
       "appletStore": "Applet Store…",
-      "recentItems": "Недавние объекты",
-      "noRecentApps": "Нет недавних программ",
-      "noRecentDocuments": "Нет недавних документов",
+      "controlPanels": "Панель управления…",
+      "createAccount": "Создать учётную запись…",
+      "logOut": "Завершить сеанс {{username}}…",
+      "login": "Войти…",
       "moreApps": "Другие программы…",
       "moreDocuments": "Другие документы…",
-      "createAccount": "Создать учётную запись…",
-      "login": "Войти…",
-      "logOut": "Завершить сеанс {{username}}…"
+      "noRecentApps": "Нет недавних программ",
+      "noRecentDocuments": "Нет недавних документов",
+      "recentItems": "Недавние объекты",
+      "softwareUpdate": "Обновление ПО…",
+      "systemPreferences": "Системные настройки…"
     },
     "auth": {
       "createAccount": "Создать аккаунт",
