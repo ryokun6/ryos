@@ -10,6 +10,9 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Detect dev mode for memory optimizations
+const isDev = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
+
 // https://vite.dev/config/
 export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
@@ -23,6 +26,10 @@ export default defineConfig({
   },
   // Explicit cache directory for better memory management
   cacheDir: 'node_modules/.vite',
+  // Disable CSS source maps in dev to reduce memory usage (~30% reduction)
+  css: {
+    devSourcemap: false,
+  },
   server: {
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
     cors: { origin: ["*"] },
@@ -39,12 +46,16 @@ export default defineConfig({
         "**/public/**", // 500+ static files don't need HMR watching
         "**/node_modules/**",
         "**/.git/**",
+        "**/scripts/**", // Build scripts don't need HMR
+        "**/*.md", // Documentation files
+        "**/*.json", // JSON data files (except vite.config imports)
+        "**/tests/**", // Test files don't need HMR
       ],
       // Use polling only when necessary (e.g., Docker/VM)
       usePolling: false,
     },
-    warmup: {
-      // Only warmup critical entry files to reduce memory overhead
+    // Disable warmup in dev to reduce memory - files are transformed on-demand
+    warmup: isDev ? undefined : {
       clientFiles: [
         "./src/main.tsx",
         "./src/App.tsx",
@@ -54,27 +65,50 @@ export default defineConfig({
   optimizeDeps: {
     // Don't wait for full crawl - allows faster initial dev startup
     holdUntilCrawlEnd: false,
-    // Force pre-bundle these deps to avoid slow unbundled ESM loading
+    // Limit entry points to reduce initial crawl scope and memory usage
+    entries: [
+      'src/main.tsx',
+      'src/App.tsx',
+    ],
+    // Force pre-bundle these core deps to avoid slow unbundled ESM loading
+    // Keep this list minimal - only include deps used on initial page load
     include: [
       "react",
       "react-dom",
       "zustand",
-      "framer-motion",
       "clsx",
       "tailwind-merge",
-      // Heavy deps - pre-bundle to avoid slow first load from many small ESM files
+      // framer-motion is used on initial load for animations
+      "framer-motion",
+    ],
+    // Exclude heavy deps from initial pre-bundling to reduce memory
+    // These will be bundled on-demand when their apps are opened
+    exclude: isDev ? [
+      // Audio libs - only needed when Soundboard/iPod/Synth/Karaoke opens
       "tone",
       "wavesurfer.js",
+      "audio-buffer-utils",
+      // 3D rendering - only needed when PC app opens
       "three",
-    ],
-    // Exclude large deps that are rarely changed to reduce memory
-    exclude: [],
+      // Rich text editor - only needed when TextEdit opens
+      "@tiptap/core",
+      "@tiptap/react",
+      "@tiptap/starter-kit",
+      "@tiptap/pm",
+      // AI SDK - only needed when Chats/IE opens
+      "ai",
+      "@ai-sdk/anthropic",
+      "@ai-sdk/google",
+      "@ai-sdk/openai",
+      "@ai-sdk/react",
+    ] : [],
   },
   plugins: [
     react(),
     tailwindcss(),
     // Only include Vercel and PWA plugins when not building for Tauri
-    ...(process.env.TAURI_ENV ? [] : [
+    // Skip PWA plugin entirely in dev mode to save ~50MB memory (Workbox config is heavy)
+    ...(process.env.TAURI_ENV ? [] : isDev ? [vercel()] : [
       vercel(),
       VitePWA({
       registerType: "autoUpdate",
