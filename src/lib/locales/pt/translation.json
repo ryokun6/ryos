@@ -2074,7 +2074,18 @@
       "soramimi": "Mondegreen"
     },
     "appleMenu": {
-      "aboutThisComputer": "Sobre Este Computador"
+      "aboutThisComputer": "Sobre Este Computador",
+      "softwareUpdate": "Atualização de Software…",
+      "systemPreferences": "Preferências do Sistema…",
+      "appletStore": "Applet Store…",
+      "recentItems": "Itens Recentes",
+      "noRecentApps": "Nenhuma app recente",
+      "noRecentDocuments": "Nenhum documento recente",
+      "moreApps": "Mais Apps…",
+      "moreDocuments": "Mais Documentos…",
+      "createAccount": "Criar Conta…",
+      "login": "Iniciar Sessão…",
+      "logOut": "Terminar Sessão de {{username}}…"
     },
     "auth": {
       "createAccount": "Criar Conta",

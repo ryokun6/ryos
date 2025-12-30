@@ -2074,7 +2074,18 @@
       "soramimi": "空耳"
     },
     "appleMenu": {
-      "aboutThisComputer": "このコンピュータについて"
+      "aboutThisComputer": "このコンピュータについて",
+      "softwareUpdate": "ソフトウェア・アップデート…",
+      "systemPreferences": "システム環境設定…",
+      "appletStore": "アプレットストア…",
+      "recentItems": "最近使った項目",
+      "noRecentApps": "最近使ったアプリはありません",
+      "noRecentDocuments": "最近使った書類はありません",
+      "moreApps": "その他のアプリ…",
+      "moreDocuments": "その他の書類…",
+      "createAccount": "アカウントを作成…",
+      "login": "ログイン…",
+      "logOut": "{{username}}をログアウト…"
     },
     "auth": {
       "createAccount": "アカウントを作成",

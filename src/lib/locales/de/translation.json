@@ -2074,7 +2074,18 @@
       "soramimi": "Verhörer"
     },
     "appleMenu": {
-      "aboutThisComputer": "Über diesen Computer"
+      "aboutThisComputer": "Über diesen Computer",
+      "softwareUpdate": "Softwareaktualisierung…",
+      "systemPreferences": "Systemeinstellungen…",
+      "appletStore": "Applet Store…",
+      "recentItems": "Benutzte Objekte",
+      "noRecentApps": "Keine kürzlich verwendeten Apps",
+      "noRecentDocuments": "Keine kürzlich verwendeten Dokumente",
+      "moreApps": "Mehr Apps…",
+      "moreDocuments": "Mehr Dokumente…",
+      "createAccount": "Account erstellen…",
+      "login": "Anmelden…",
+      "logOut": "{{username}} abmelden…"
     },
     "auth": {
       "createAccount": "Konto erstellen",

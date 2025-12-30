@@ -2074,7 +2074,18 @@
       "soramimi": "소라미미"
     },
     "appleMenu": {
-      "aboutThisComputer": "이 컴퓨터에 관하여"
+      "aboutThisComputer": "이 컴퓨터에 관하여",
+      "softwareUpdate": "소프트웨어 업데이트…",
+      "systemPreferences": "시스템 환경설정…",
+      "appletStore": "애플릿 스토어…",
+      "recentItems": "최근 사용 항목",
+      "noRecentApps": "최근 사용한 앱 없음",
+      "noRecentDocuments": "최근 사용한 문서 없음",
+      "moreApps": "더 많은 앱…",
+      "moreDocuments": "더 많은 문서…",
+      "createAccount": "계정 생성…",
+      "login": "로그인…",
+      "logOut": "{{username}} 로그아웃…"
     },
     "auth": {
       "createAccount": "계정 만들기",

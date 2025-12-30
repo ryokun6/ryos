@@ -2074,7 +2074,18 @@
       "soramimi": "Ослышка"
     },
     "appleMenu": {
-      "aboutThisComputer": "Об этом компьютере"
+      "aboutThisComputer": "Об этом компьютере",
+      "softwareUpdate": "Обновление ПО…",
+      "systemPreferences": "Системные настройки…",
+      "appletStore": "Applet Store…",
+      "recentItems": "Недавние объекты",
+      "noRecentApps": "Нет недавних программ",
+      "noRecentDocuments": "Нет недавних документов",
+      "moreApps": "Другие программы…",
+      "moreDocuments": "Другие документы…",
+      "createAccount": "Создать учётную запись…",
+      "login": "Войти…",
+      "logOut": "Завершить сеанс {{username}}…"
     },
     "auth": {
       "createAccount": "Создать аккаунт",
