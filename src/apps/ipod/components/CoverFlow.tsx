@@ -36,12 +36,12 @@ function CoverImage({
     : null;
   const coverUrl = formatKugouImageUrl(track?.cover) ?? youtubeThumbnail;
 
-  // Calculate 3D transform based on position
+  // Calculate 3D transform based on position - uses relative units (50cqmin = 50% of container's smaller dimension)
   const getTransform = (pos: number) => {
     if (pos === 0) {
       // Center cover - slightly larger and forward
       return {
-        x: 0,
+        x: "0cqmin",
         rotateY: 0,
         z: 20,
         scale: 1,
@@ -52,9 +52,9 @@ function CoverImage({
     const direction = pos > 0 ? 1 : -1;
     const absPos = Math.abs(pos);
     
-    // Side covers - similar scale, stacked with perspective rotation
+    // Side covers - spacing scales with container (25cqmin base + 18cqmin per position)
     return {
-      x: direction * (38 + absPos * 28),
+      x: `${direction * (25 + absPos * 18)}cqmin`,
       rotateY: direction * -65,
       z: -absPos * 10,
       scale: 0.95,
@@ -71,8 +71,9 @@ function CoverImage({
     <motion.div
       className="absolute"
       style={{
-        width: 85,
-        height: 85,
+        // Cover size scales with container - 55% of container's smaller dimension
+        width: "55cqmin",
+        height: "55cqmin",
         perspective: 400,
         transformStyle: "preserve-3d",
       }}
@@ -328,13 +329,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className="absolute inset-0 z-50 bg-gradient-to-b from-gray-900 via-black to-gray-900 border border-black border-2 rounded-[2px] overflow-hidden"
-          style={{
-            width: "100%",
-            height: "150px",
-            minHeight: "150px",
-            maxHeight: "150px",
-          }}
+          className="absolute inset-0 z-50 bg-gradient-to-b from-gray-900 via-black to-gray-900 overflow-hidden"
+          style={{ containerType: "size" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -352,7 +348,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           {/* Cover Flow container */}
           <motion.div
             ref={containerRef}
-            className="absolute inset-0 flex items-start justify-center cursor-grab active:cursor-grabbing"
+            className="absolute inset-0 flex items-center justify-center cursor-grab active:cursor-grabbing"
             onPanStart={handlePanStart}
             onPan={handlePan}
             onPanEnd={handlePanEnd}
@@ -375,10 +371,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           >
             {/* Covers */}
             <div 
-              className="relative flex items-center justify-center"
+              className="relative flex items-center justify-center w-full h-full"
               style={{ 
-                width: "100%", 
-                height: 130,
                 perspective: 400,
                 transformStyle: "preserve-3d",
               }}
@@ -395,19 +389,25 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             </div>
           </motion.div>
 
-          {/* Track info */}
+          {/* Track info - scales with container */}
           <motion.div
-            className="absolute left-0 right-0 text-center px-2 font-geneva-12"
-            style={{ bottom: "8px" }}
+            className="absolute left-0 right-0 text-center px-2"
+            style={{ bottom: "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="text-white text-[10px] truncate leading-tight">
+            <div 
+              className="text-white truncate leading-tight"
+              style={{ fontSize: "clamp(10px, 7cqmin, 18px)" }}
+            >
               {currentTrack?.title || "No track"}
             </div>
             {currentTrack?.artist && (
-              <div className="text-white/60 text-[8px] truncate leading-tight">
+              <div 
+                className="text-white/60 truncate leading-tight"
+                style={{ fontSize: "clamp(8px, 5cqmin, 14px)" }}
+              >
                 {currentTrack.artist}
               </div>
             )}

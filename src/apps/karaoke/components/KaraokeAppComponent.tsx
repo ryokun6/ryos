@@ -1109,9 +1109,9 @@ export function KaraokeAppComponent({
             </>
           )}
 
-          {/* CoverFlow overlay */}
+          {/* CoverFlow overlay - full height, below notitlebar, above video/toolbars */}
           {isCoverFlowOpen && tracks.length > 0 && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 z-40">
               <CoverFlow
                 ref={coverFlowRef}
                 tracks={tracks}
