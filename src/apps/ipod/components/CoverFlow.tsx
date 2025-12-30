@@ -28,12 +28,10 @@ function CoverImage({
   track, 
   position,
   ipodMode = true,
-  onTap,
 }: { 
   track: Track;
   position: number;
   ipodMode?: boolean;
-  onTap?: () => void;
 }) {
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   // Use higher resolution images for karaoke mode (non-iPod)
@@ -83,14 +81,13 @@ function CoverImage({
 
   return (
     <motion.div
-      className="absolute"
+      className="absolute pointer-events-none"
       style={{
         // Cover size scales with container
         width: `${coverSize}cqmin`,
         height: `${coverSize}cqmin`,
         perspective: 400,
         transformStyle: "preserve-3d",
-        cursor: "pointer",
       }}
       initial={{
         x: initialTransform.x,
@@ -113,10 +110,6 @@ function CoverImage({
         type: "spring",
         stiffness: 400,
         damping: 35,
-      }}
-      onTap={(e) => {
-        e.stopPropagation();
-        onTap?.();
       }}
     >
       {/* Cover art */}
@@ -378,6 +371,14 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             onPan={handlePan}
             onPanEnd={handlePanEnd}
             onWheel={handleWheel}
+            onClick={() => {
+              // Don't trigger click if long press was fired
+              if (longPressFiredRef.current) {
+                longPressFiredRef.current = false;
+                return;
+              }
+              selectCurrent();
+            }}
             onMouseDown={() => startLongPress()}
             onMouseUp={() => endLongPress()}
             onMouseLeave={() => endLongPress()}
@@ -397,27 +398,12 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               }}
             >
               <AnimatePresence mode="popLayout">
-                {visibleCovers.map(({ track, index, position }) => (
+                {visibleCovers.map(({ track, position }) => (
                   <CoverImage
                     key={track.id}
                     track={track}
                     position={position}
                     ipodMode={ipodMode}
-                    onTap={() => {
-                      // Don't trigger if long press was fired
-                      if (longPressFiredRef.current) {
-                        longPressFiredRef.current = false;
-                        return;
-                      }
-                      if (position === 0) {
-                        // Center cover - select/play the track
-                        onSelectTrack(index);
-                      } else {
-                        // Side cover - scroll to it
-                        setSelectedIndex(index);
-                        onRotation();
-                      }
-                    }}
                   />
                 ))}
               </AnimatePresence>
