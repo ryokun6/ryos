@@ -2077,7 +2077,11 @@
       "aboutThisComputer": "À propos de cet ordinateur",
       "softwareUpdate": "Mise à jour de logiciels…",
       "systemPreferences": "Préférences Système…",
-      "apps": "Applications",
+      "appletStore": "Applet Store…",
+      "recentItems": "Éléments récents",
+      "noRecentApps": "Aucune app récente",
+      "noRecentDocuments": "Aucun document récent",
+      "more": "Plus…",
       "createAccount": "Créer un compte…",
       "login": "Connexion…",
       "logOut": "Déconnecter {{username}}…"

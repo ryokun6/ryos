@@ -13,26 +13,26 @@ import {
 import { AboutFinderDialog } from "@/components/dialogs/AboutFinderDialog";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
-import { AnyApp } from "@/apps/base/types";
-import { AppId } from "@/config/appRegistry";
+import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { forceRefreshCache } from "@/utils/prefetch";
 
-interface AppleMenuProps {
-  apps: AnyApp[];
-}
-
-export function AppleMenu({ apps }: AppleMenuProps) {
+export function AppleMenu() {
   const { t } = useTranslation();
   const [aboutFinderOpen, setAboutFinderOpen] = useState(false);
   const launchApp = useLaunchApp();
   const currentTheme = useThemeStore((state) => state.current);
   const isMacOsxTheme = currentTheme === "macosx";
+
+  // Recent items from store
+  const recentApps = useAppStore((state) => state.recentApps);
+  const recentDocuments = useAppStore((state) => state.recentDocuments);
 
   // Auth state and handlers from useAuth
   const {
@@ -70,12 +70,12 @@ export function AppleMenu({ apps }: AppleMenuProps) {
 
   const isLoggedIn = !!(username && authToken);
 
-  // Filter out admin-only apps from the Apple menu
-  const visibleApps = apps.filter((app) => app.id !== "admin");
-
   const handleAppClick = (appId: string) => {
-    // Simply launch the app - the instance system will handle focus if already open
     launchApp(appId as AppId);
+  };
+
+  const handleDocumentClick = (path: string, appId: AppId) => {
+    launchApp(appId, { path });
   };
 
   const handleSoftwareUpdate = () => {
@@ -85,6 +85,15 @@ export function AppleMenu({ apps }: AppleMenuProps) {
   const handleSystemPreferences = () => {
     launchApp("control-panels" as AppId);
   };
+
+  const handleAppletStore = () => {
+    launchApp("applet-viewer" as AppId, { path: "", content: "" });
+  };
+
+  // Get top 5 recent apps
+  const topRecentApps = recentApps.slice(0, 5);
+  // Get top 5 recent documents
+  const topRecentDocuments = recentDocuments.slice(0, 5);
 
   return (
     <>
@@ -114,6 +123,8 @@ export function AppleMenu({ apps }: AppleMenuProps) {
             {t("common.appleMenu.aboutThisComputer")}
           </MenubarItem>
 
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+
           {/* Software Update */}
           <MenubarItem
             onClick={handleSoftwareUpdate}
@@ -130,34 +141,97 @@ export function AppleMenu({ apps }: AppleMenuProps) {
             {t("common.appleMenu.systemPreferences")}
           </MenubarItem>
 
+          {/* Applet Store */}
+          <MenubarItem
+            onClick={handleAppletStore}
+            className="text-md h-6 px-3"
+          >
+            {t("common.appleMenu.appletStore")}
+          </MenubarItem>
+
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-          {/* Apps submenu */}
+          {/* Recent Items submenu */}
           <MenubarSub>
             <MenubarSubTrigger className="text-md h-6 px-3">
-              {t("common.appleMenu.apps")}
+              {t("common.appleMenu.recentItems")}
             </MenubarSubTrigger>
-            <MenubarSubContent>
-              {visibleApps.map((app) => (
-                <MenubarItem
-                  key={app.id}
-                  onClick={() => handleAppClick(app.id)}
-                  className="text-md h-6 px-3 flex items-center gap-2"
-                >
-                  {typeof app.icon === "string" ? (
-                    <div className="w-4 h-4 flex items-center justify-center">
-                      {app.icon}
-                    </div>
-                  ) : (
-                    <ThemedIcon
-                      name={app.icon.src}
-                      alt={app.name}
-                      className="w-4 h-4 [image-rendering:pixelated]"
-                    />
+            <MenubarSubContent className="min-w-[200px]">
+              {/* Recent Apps section */}
+              {topRecentApps.length > 0 ? (
+                <>
+                  {topRecentApps.map((recent) => {
+                    const app = appRegistry[recent.appId];
+                    if (!app) return null;
+                    return (
+                      <MenubarItem
+                        key={`app-${recent.appId}-${recent.timestamp}`}
+                        onClick={() => handleAppClick(recent.appId)}
+                        className="text-md h-6 px-3 flex items-center gap-2"
+                      >
+                        {typeof app.icon === "string" ? (
+                          <div className="w-4 h-4 flex items-center justify-center">
+                            {app.icon}
+                          </div>
+                        ) : (
+                          <ThemedIcon
+                            name={app.icon.src}
+                            alt={app.name}
+                            className="w-4 h-4 [image-rendering:pixelated]"
+                          />
+                        )}
+                        {getTranslatedAppName(recent.appId)}
+                      </MenubarItem>
+                    );
+                  })}
+                  {recentApps.length > 5 && (
+                    <MenubarItem
+                      onClick={() => handleSystemPreferences()}
+                      className="text-md h-6 px-3 text-gray-500"
+                    >
+                      {t("common.appleMenu.more")}
+                    </MenubarItem>
                   )}
-                  {getTranslatedAppName(app.id as AppId)}
+                </>
+              ) : (
+                <MenubarItem disabled className="text-md h-6 px-3 text-gray-400">
+                  {t("common.appleMenu.noRecentApps")}
                 </MenubarItem>
-              ))}
+              )}
+
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+              {/* Recent Documents section */}
+              {topRecentDocuments.length > 0 ? (
+                <>
+                  {topRecentDocuments.map((recent) => (
+                    <MenubarItem
+                      key={`doc-${recent.path}-${recent.timestamp}`}
+                      onClick={() => handleDocumentClick(recent.path, recent.appId)}
+                      className="text-md h-6 px-3 flex items-center gap-2"
+                    >
+                      <ThemedIcon
+                        name="document.png"
+                        alt="Document"
+                        className="w-4 h-4 [image-rendering:pixelated]"
+                      />
+                      <span className="truncate max-w-[180px]">{recent.name}</span>
+                    </MenubarItem>
+                  ))}
+                  {recentDocuments.length > 5 && (
+                    <MenubarItem
+                      onClick={() => launchApp("finder" as AppId, { path: "/" })}
+                      className="text-md h-6 px-3 text-gray-500"
+                    >
+                      {t("common.appleMenu.more")}
+                    </MenubarItem>
+                  )}
+                </>
+              ) : (
+                <MenubarItem disabled className="text-md h-6 px-3 text-gray-400">
+                  {t("common.appleMenu.noRecentDocuments")}
+                </MenubarItem>
+              )}
             </MenubarSubContent>
           </MenubarSub>
 

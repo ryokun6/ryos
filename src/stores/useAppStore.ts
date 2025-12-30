@@ -20,6 +20,18 @@ export interface AppInstance extends AppState {
   isMinimized?: boolean;
 }
 
+export interface RecentApp {
+  appId: AppId;
+  timestamp: number;
+}
+
+export interface RecentDocument {
+  path: string;
+  name: string;
+  appId: AppId;
+  timestamp: number;
+}
+
 const getInitialState = (): AppManagerState => {
   const apps: { [appId: string]: AppState } = appIds.reduce(
     (acc: { [appId: string]: AppState }, id) => {
@@ -105,6 +117,13 @@ interface AppStoreState extends AppManagerState {
   ryOSBuildNumber: string | null;
   ryOSBuildTime: string | null;
   setRyOSVersion: (version: string, buildNumber: string, buildTime?: string) => void;
+
+  // Recent items
+  recentApps: RecentApp[];
+  recentDocuments: RecentDocument[];
+  addRecentApp: (appId: AppId) => void;
+  addRecentDocument: (path: string, name: string, appId: AppId) => void;
+  clearRecentItems: () => void;
 }
 
 const CURRENT_APP_STORE_VERSION = 3; // bump for instanceOrder unification
@@ -142,6 +161,29 @@ export const useAppStore = create<AppStoreState>()(
           ryOSBuildNumber: buildNumber,
           ryOSBuildTime: buildTime || null,
         }),
+
+      // Recent items
+      recentApps: [],
+      recentDocuments: [],
+      addRecentApp: (appId) =>
+        set((state) => {
+          // Remove existing entry for this app if present
+          const filtered = state.recentApps.filter((r) => r.appId !== appId);
+          // Add to front with current timestamp
+          const newRecent: RecentApp = { appId, timestamp: Date.now() };
+          // Keep only last 20 items
+          return { recentApps: [newRecent, ...filtered].slice(0, 20) };
+        }),
+      addRecentDocument: (path, name, appId) =>
+        set((state) => {
+          // Remove existing entry for this path if present
+          const filtered = state.recentDocuments.filter((r) => r.path !== path);
+          // Add to front with current timestamp
+          const newRecent: RecentDocument = { path, name, appId, timestamp: Date.now() };
+          // Keep only last 20 items
+          return { recentDocuments: [newRecent, ...filtered].slice(0, 20) };
+        }),
+      clearRecentItems: () => set({ recentApps: [], recentDocuments: [] }),
 
       updateWindowState: (appId, position, size) =>
         set((state) => ({
@@ -415,6 +457,16 @@ export const useAppStore = create<AppStoreState>()(
           };
         });
         if (createdId) {
+          // Track recent app
+          get().addRecentApp(appId);
+          
+          // Track recent document if initialData has a path
+          const dataWithPath = initialData as { path?: string; name?: string } | undefined;
+          if (dataWithPath?.path) {
+            const fileName = dataWithPath.name || dataWithPath.path.split("/").pop() || dataWithPath.path;
+            get().addRecentDocument(dataWithPath.path, fileName, appId);
+          }
+          
           window.dispatchEvent(
             new CustomEvent("instanceStateChange", {
               detail: {
@@ -772,6 +824,10 @@ export const useAppStore = create<AppStoreState>()(
         ryOSVersion: state.ryOSVersion,
         ryOSBuildNumber: state.ryOSBuildNumber,
         ryOSBuildTime: state.ryOSBuildTime,
+        
+        // Recent items
+        recentApps: state.recentApps,
+        recentDocuments: state.recentDocuments,
         
         // Instance management
         instances: Object.fromEntries(

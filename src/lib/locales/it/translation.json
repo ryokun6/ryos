@@ -2077,7 +2077,11 @@
       "aboutThisComputer": "Informazioni su questo computer",
       "softwareUpdate": "Aggiornamento Software…",
       "systemPreferences": "Preferenze di Sistema…",
-      "apps": "Applicazioni",
+      "appletStore": "Applet Store…",
+      "recentItems": "Elementi recenti",
+      "noRecentApps": "Nessuna app recente",
+      "noRecentDocuments": "Nessun documento recente",
+      "more": "Altro…",
       "createAccount": "Crea Account…",
       "login": "Accedi…",
       "logOut": "Esci da {{username}}…"

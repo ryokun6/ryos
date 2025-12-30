@@ -2077,7 +2077,11 @@
       "aboutThisComputer": "このコンピュータについて",
       "softwareUpdate": "ソフトウェア・アップデート…",
       "systemPreferences": "システム環境設定…",
-      "apps": "アプリケーション",
+      "appletStore": "アプレットストア…",
+      "recentItems": "最近使った項目",
+      "noRecentApps": "最近使ったアプリはありません",
+      "noRecentDocuments": "最近使った書類はありません",
+      "more": "その他…",
       "createAccount": "アカウントを作成…",
       "login": "ログイン…",
       "logOut": "{{username}}をログアウト…"

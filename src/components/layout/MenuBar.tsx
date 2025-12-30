@@ -1369,7 +1369,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         <Menubar 
           className="flex items-stretch border-none bg-transparent space-x-0 p-0 rounded-none h-full"
         >
-          <AppleMenu apps={apps} />
+          <AppleMenu />
           {hasActiveApp && children ? children : <DefaultMenuItems />}
         </Menubar>
       </ScrollableMenuWrapper>

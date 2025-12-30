@@ -147,7 +147,11 @@
       "aboutThisComputer": "About This Computer",
       "softwareUpdate": "Software Update…",
       "systemPreferences": "System Preferences…",
-      "apps": "Apps",
+      "appletStore": "Applet Store…",
+      "recentItems": "Recent Items",
+      "noRecentApps": "No Recent Apps",
+      "noRecentDocuments": "No Recent Documents",
+      "more": "More…",
       "createAccount": "Create Account…",
       "login": "Login…",
       "logOut": "Log Out {{username}}…"
