@@ -144,7 +144,13 @@
       "ryos98": "98"
     },
     "appleMenu": {
-      "aboutThisComputer": "About This Computer"
+      "aboutThisComputer": "About This Computer",
+      "softwareUpdate": "Software Update…",
+      "systemPreferences": "System Preferences…",
+      "apps": "Apps",
+      "createAccount": "Create Account…",
+      "login": "Login…",
+      "logOut": "Log Out {{username}}…"
     },
     "aboutThisMac": {
       "title": "About This Computer",

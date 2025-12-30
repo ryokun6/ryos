@@ -2074,7 +2074,13 @@
       "soramimi": "空耳"
     },
     "appleMenu": {
-      "aboutThisComputer": "關於此電腦"
+      "aboutThisComputer": "關於此電腦",
+      "softwareUpdate": "軟體更新…",
+      "systemPreferences": "系統偏好設定…",
+      "apps": "應用程式",
+      "createAccount": "建立帳戶…",
+      "login": "登入…",
+      "logOut": "登出 {{username}}…"
     },
     "auth": {
       "createAccount": "建立帳戶",
