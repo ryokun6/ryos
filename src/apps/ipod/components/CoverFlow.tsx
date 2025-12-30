@@ -365,7 +365,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           <div 
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to bottom, transparent 40%, rgba(30,30,30,0.5) 70%, rgba(50,50,50,0.3) 100%)",
+              background: "linear-gradient(to bottom, transparent 40%, rgba(38,38,38,0.5) 70%, rgba(64,64,64,0.3) 100%)",
               pointerEvents: "none",
             }}
           />
