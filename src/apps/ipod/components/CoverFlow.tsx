@@ -349,9 +349,9 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
         <motion.div
           className={`absolute inset-0 z-50 bg-black overflow-hidden ${ipodMode ? "ipod-force-font" : ""}`}
           style={{ containerType: "size" }}
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
+          exit={{ opacity: 0, scale: 1.05 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
         >
           {/* Reflective floor gradient - bottom only */}
