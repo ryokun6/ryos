@@ -31,14 +31,38 @@ const isEmojiIcon = (icon?: string): boolean => {
 
 // Helper to get icon path for a document based on its name/extension
 const getDocumentIconPath = (doc: RecentDocument): string => {
-  if (doc.icon) return doc.icon;
+  // If doc has a custom icon that's a path, use it
+  if (doc.icon && (doc.icon.startsWith("/") || doc.icon.startsWith("http"))) {
+    return doc.icon;
+  }
+  
   const name = doc.name.toLowerCase();
-  if (name.endsWith(".txt") || name.endsWith(".md")) {
+  
+  // Image files
+  if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/.test(name)) {
+    return "image.png";
+  }
+  
+  // Text/document files
+  if (/\.(txt|md|rtf)$/.test(name)) {
     return "file-text.png";
   }
-  if (name.endsWith(".html") || name.endsWith(".app")) {
-    return "file.png";
+  
+  // HTML/App files
+  if (/\.(html|htm|app)$/.test(name)) {
+    return "applet.png";
   }
+  
+  // Music files
+  if (/\.(mp3|wav|m4a|ogg|flac|aac)$/.test(name)) {
+    return "music.png";
+  }
+  
+  // Video files
+  if (/\.(mp4|mov|avi|mkv|webm)$/.test(name)) {
+    return "movies.png";
+  }
+  
   return "file.png";
 };
 
