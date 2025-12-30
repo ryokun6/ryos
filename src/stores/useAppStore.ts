@@ -462,8 +462,21 @@ export const useAppStore = create<AppStoreState>()(
           get().addRecentApp(appId);
           
           // Track recent document if initialData has a path
-          const dataWithPath = initialData as { path?: string; name?: string; icon?: string } | undefined;
-          if (dataWithPath?.path) {
+          // Skip folders - Finder opens directories, not files
+          // Also skip common system folder paths
+          const dataWithPath = initialData as { path?: string; name?: string; icon?: string; isDirectory?: boolean } | undefined;
+          const isFolder = 
+            appId === "finder" || 
+            dataWithPath?.isDirectory === true ||
+            // Common folder paths that shouldn't be tracked as documents
+            dataWithPath?.path === "/" ||
+            dataWithPath?.path === "/Applications" ||
+            dataWithPath?.path === "/Documents" ||
+            dataWithPath?.path === "/Desktop" ||
+            dataWithPath?.path === "/Applets" ||
+            dataWithPath?.path === "/Trash";
+          
+          if (dataWithPath?.path && !isFolder) {
             const fileName = dataWithPath.name || dataWithPath.path.split("/").pop() || dataWithPath.path;
             get().addRecentDocument(dataWithPath.path, fileName, appId, dataWithPath.icon);
           }
