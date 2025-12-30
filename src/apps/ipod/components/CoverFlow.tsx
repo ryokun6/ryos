@@ -28,17 +28,21 @@ function CoverImage({
   track, 
   position,
   ipodMode = true,
+  onClick,
 }: { 
   track: Track;
   position: number;
   ipodMode?: boolean;
+  onClick?: () => void;
 }) {
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
+  // Use higher resolution images for karaoke mode (non-iPod)
   const videoId = track?.url ? getYouTubeVideoId(track.url) : null;
   const youtubeThumbnail = videoId
-    ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+    ? `https://img.youtube.com/vi/${videoId}/${ipodMode ? "mqdefault" : "hqdefault"}.jpg`
     : null;
-  const coverUrl = formatKugouImageUrl(track?.cover) ?? youtubeThumbnail;
+  const kugouImageSize = ipodMode ? 400 : 800;
+  const coverUrl = formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
   // Cover size: larger for karaoke mode (non-iPod)
   const coverSize = ipodMode ? 55 : 70; // cqmin units
@@ -86,6 +90,7 @@ function CoverImage({
         height: `${coverSize}cqmin`,
         perspective: 400,
         transformStyle: "preserve-3d",
+        cursor: "pointer",
       }}
       initial={{
         x: initialTransform.x,
@@ -108,6 +113,10 @@ function CoverImage({
         type: "spring",
         stiffness: 400,
         damping: 35,
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
       }}
     >
       {/* Cover art */}
@@ -369,14 +378,6 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             onPan={handlePan}
             onPanEnd={handlePanEnd}
             onWheel={handleWheel}
-            onClick={() => {
-              // Don't trigger click if long press was fired or if we were swiping
-              if (longPressFiredRef.current) {
-                longPressFiredRef.current = false;
-                return;
-              }
-              selectCurrent();
-            }}
             onMouseDown={() => startLongPress()}
             onMouseUp={() => endLongPress()}
             onMouseLeave={() => endLongPress()}
@@ -396,12 +397,27 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               }}
             >
               <AnimatePresence mode="popLayout">
-                {visibleCovers.map(({ track, position }) => (
+                {visibleCovers.map(({ track, index, position }) => (
                   <CoverImage
                     key={track.id}
                     track={track}
                     position={position}
                     ipodMode={ipodMode}
+                    onClick={() => {
+                      // Don't trigger if long press was fired
+                      if (longPressFiredRef.current) {
+                        longPressFiredRef.current = false;
+                        return;
+                      }
+                      if (position === 0) {
+                        // Center cover - select/play the track
+                        onSelectTrack(index);
+                      } else {
+                        // Side cover - scroll to it
+                        setSelectedIndex(index);
+                        onRotation();
+                      }
+                    }}
                   />
                 ))}
               </AnimatePresence>
