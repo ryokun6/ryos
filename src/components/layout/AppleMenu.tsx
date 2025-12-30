@@ -75,7 +75,7 @@ export function AppleMenu() {
   };
 
   const handleDocumentClick = (path: string, appId: AppId) => {
-    launchApp(appId, { path });
+    launchApp(appId, { initialData: { path } });
   };
 
   const handleSoftwareUpdate = () => {
@@ -87,7 +87,7 @@ export function AppleMenu() {
   };
 
   const handleAppletStore = () => {
-    launchApp("applet-viewer" as AppId, { path: "", content: "" });
+    launchApp("applet-viewer" as AppId, { initialData: { path: "", content: "" } });
   };
 
   // Get top 5 recent apps
@@ -220,7 +220,7 @@ export function AppleMenu() {
                   ))}
                   {recentDocuments.length > 5 && (
                     <MenubarItem
-                      onClick={() => launchApp("finder" as AppId, { path: "/" })}
+                      onClick={() => launchApp("finder" as AppId, { initialPath: "/" })}
                       className="text-md h-6 px-3 text-gray-500"
                     >
                       {t("common.appleMenu.more")}
