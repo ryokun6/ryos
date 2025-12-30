@@ -10,7 +10,11 @@ interface IpodWheelProps {
   onWheelClick: (area: WheelArea) => void;
   onWheelRotation: (direction: RotationDirection) => void;
   onMenuButton: () => void;
+  onCenterLongPress?: () => void;
 }
+
+// Long press delay in milliseconds
+const LONG_PRESS_DELAY = 500;
 
 // How many degrees of wheel rotation should equal one scroll step
 const rotationStepDeg = 15; // increase this value to reduce sensitivity
@@ -25,6 +29,7 @@ export function IpodWheel({
   onWheelClick,
   onWheelRotation,
   onMenuButton,
+  onCenterLongPress,
 }: IpodWheelProps) {
   const { t } = useTranslation();
   const wheelRef = useRef<HTMLDivElement>(null);
@@ -51,6 +56,28 @@ export function IpodWheel({
   
   // Track if we're currently in a mouse drag to prevent button clicks
   const isInMouseDragRef = useRef(false);
+
+  // Long press handling for center button
+  const centerLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const centerLongPressFiredRef = useRef(false);
+
+  const clearCenterLongPress = () => {
+    if (centerLongPressTimerRef.current) {
+      clearTimeout(centerLongPressTimerRef.current);
+      centerLongPressTimerRef.current = null;
+    }
+  };
+
+  const startCenterLongPress = () => {
+    clearCenterLongPress();
+    centerLongPressFiredRef.current = false;
+    if (onCenterLongPress) {
+      centerLongPressTimerRef.current = setTimeout(() => {
+        centerLongPressFiredRef.current = true;
+        onCenterLongPress();
+      }, LONG_PRESS_DELAY);
+    }
+  };
 
   // Calculate angle (in degrees) from the center of the wheel – used for click areas
   const getAngleFromCenterDeg = (x: number, y: number): number => {
@@ -338,6 +365,11 @@ export function IpodWheel({
         tabIndex={0}
         aria-label={t("apps.ipod.ariaLabels.select")}
         onClick={() => {
+          // Don't trigger click if long press was fired
+          if (centerLongPressFiredRef.current) {
+            centerLongPressFiredRef.current = false;
+            return;
+          }
           if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
           onWheelClick("center");
         }}
@@ -347,6 +379,31 @@ export function IpodWheel({
             e.preventDefault();
             onWheelClick("center");
           }
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          startCenterLongPress();
+        }}
+        onMouseUp={() => {
+          clearCenterLongPress();
+        }}
+        onMouseLeave={() => {
+          clearCenterLongPress();
+        }}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          startCenterLongPress();
+          // Mark recent touch to prevent double firing
+          recentTouchRef.current = true;
+          setTimeout(() => {
+            recentTouchRef.current = false;
+          }, 500);
+        }}
+        onTouchEnd={() => {
+          clearCenterLongPress();
+        }}
+        onTouchCancel={() => {
+          clearCenterLongPress();
         }}
         className={cn(
           "ipod-wheel-center absolute w-16 h-16 rounded-full z-10 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none select-none no-select-gesture",
