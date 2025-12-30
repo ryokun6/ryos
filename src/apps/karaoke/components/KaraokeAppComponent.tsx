@@ -927,7 +927,6 @@ export function KaraokeAppComponent({
       onAdjustTiming={() => setIsSyncModeOpen(true)}
       tracks={tracks}
       currentIndex={currentIndex}
-      isCoverFlowOpen={isCoverFlowOpen}
       onToggleCoverFlow={handleToggleCoverFlow}
     />
   );

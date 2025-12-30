@@ -1636,7 +1636,6 @@ export function IpodAppComponent({
       onShareSong={handleShareSong}
       onRefreshLyrics={handleRefreshLyrics}
       onAdjustTiming={() => setIsSyncModeOpen(true)}
-      isCoverFlowOpen={isCoverFlowOpen}
       onToggleCoverFlow={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
     />
   );
