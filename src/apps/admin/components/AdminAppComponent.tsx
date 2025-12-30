@@ -32,6 +32,17 @@ import { useTranslation } from "react-i18next";
 import { listAllCachedSongMetadata, deleteSongMetadata, deleteAllSongMetadata, bulkImportSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
 import { getApiUrl } from "@/utils/platform";
 
+/**
+ * Format Kugou image URL with size and HTTPS
+ * Kugou URLs contain {size} placeholder that needs to be replaced
+ */
+function formatKugouImageUrl(imgUrl: string | undefined, size: number = 100): string | null {
+  if (!imgUrl) return null;
+  let url = imgUrl.replace("{size}", String(size));
+  url = url.replace(/^http:\/\//, "https://");
+  return url;
+}
+
 interface User {
   username: string;
   lastActive: number;
@@ -1181,7 +1192,7 @@ export function AdminAppComponent({
                               {/* Cover Image */}
                               <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-gray-200">
                                 <img
-                                  src={`https://i.ytimg.com/vi/${song.youtubeId}/default.jpg`}
+                                  src={formatKugouImageUrl(song.cover, 100) || `https://i.ytimg.com/vi/${song.youtubeId}/default.jpg`}
                                   alt={song.title}
                                   className="w-full h-full object-cover"
                                   loading="lazy"
