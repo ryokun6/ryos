@@ -147,6 +147,7 @@
       "aboutThisComputer": "About This Computer",
       "softwareUpdate": "Software Update…",
       "systemPreferences": "System Preferences…",
+      "controlPanels": "Control Panels…",
       "appletStore": "Applet Store…",
       "recentItems": "Recent Items",
       "noRecentApps": "No Recent Apps",
@@ -1991,11 +1992,14 @@
     },
     "control-panels": {
       "name": "Control Panels",
+      "nameForMacosX": "System Preferences",
       "description": "System settings",
       "menu": {
         "app": "App",
         "controlPanelsHelp": "Control Panels Help",
-        "aboutControlPanels": "About Control Panels"
+        "controlPanelsHelpForMacosX": "System Preferences Help",
+        "aboutControlPanels": "About Control Panels",
+        "aboutControlPanelsForMacosX": "About System Preferences"
       },
       "masterVolume": "Master Volume",
       "master": "Master",

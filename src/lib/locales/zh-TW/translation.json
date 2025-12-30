@@ -670,14 +670,17 @@
       "masterVolume": "主音量",
       "menu": {
         "aboutControlPanels": "關於控制台",
+        "aboutControlPanelsForMacosX": "關於系統偏好設定",
         "app": "App",
-        "controlPanelsHelp": "控制台輔助說明"
+        "controlPanelsHelp": "控制台輔助說明",
+        "controlPanelsHelpForMacosX": "系統偏好設定輔助說明"
       },
       "min": "分",
       "minute": "分鐘",
       "minutes": "分鐘",
       "mono": "黑白",
       "name": "控制台",
+      "nameForMacosX": "系統偏好設定",
       "openai": "OpenAI",
       "openaiVoice": "OpenAI 語音",
       "patterns": "樣式",
@@ -2077,6 +2080,7 @@
       "aboutThisComputer": "關於此電腦",
       "softwareUpdate": "軟體更新…",
       "systemPreferences": "系統偏好設定…",
+      "controlPanels": "控制台…",
       "appletStore": "小程式商店…",
       "recentItems": "最近使用過的項目",
       "noRecentApps": "沒有最近使用的 App",

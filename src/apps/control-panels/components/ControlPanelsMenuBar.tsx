@@ -30,6 +30,7 @@ export function ControlPanelsMenuBar({
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOsxTheme = currentTheme === "macosx";
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -56,7 +57,9 @@ export function ControlPanelsMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3"
           >
-            {t("apps.control-panels.menu.controlPanelsHelp")}
+            {isMacOsxTheme 
+              ? t("apps.control-panels.menu.controlPanelsHelpForMacosX") 
+              : t("apps.control-panels.menu.controlPanelsHelp")}
           </MenubarItem>
           <MenubarItem
             onSelect={() => setIsShareDialogOpen(true)}
@@ -69,7 +72,9 @@ export function ControlPanelsMenuBar({
             onClick={onShowAbout}
             className="text-md h-6 px-3"
           >
-            {t("apps.control-panels.menu.aboutControlPanels")}
+            {isMacOsxTheme 
+              ? t("apps.control-panels.menu.aboutControlPanelsForMacosX") 
+              : t("apps.control-panels.menu.aboutControlPanels")}
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
