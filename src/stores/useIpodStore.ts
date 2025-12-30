@@ -1172,16 +1172,17 @@ export const useIpodStore = create<IpodState>()(
               if (response.ok) {
                 const data = await response.json();
                 const fetchedSongs = data.songs || [];
-                const fetchedMap = new Map(
-                  fetchedSongs.map((s: {
-                    id: string;
-                    title?: string;
-                    artist?: string;
-                    album?: string;
-                    cover?: string;
-                    lyricOffset?: number;
-                    lyricsSource?: LyricsSource;
-                  }) => [s.id, s])
+                type FetchedSongMetadata = {
+                  id: string;
+                  title?: string;
+                  artist?: string;
+                  album?: string;
+                  cover?: string;
+                  lyricOffset?: number;
+                  lyricsSource?: LyricsSource;
+                };
+                const fetchedMap = new Map<string, FetchedSongMetadata>(
+                  fetchedSongs.map((s: FetchedSongMetadata) => [s.id, s])
                 );
 
                 // Update tracks with fetched metadata
