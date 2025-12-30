@@ -65,6 +65,7 @@ import {
 import {
   searchKugou,
   fetchLyricsFromKugou,
+  fetchCoverUrl,
 } from "./_kugou.js";
 
 import {
@@ -294,6 +295,9 @@ export default async function handler(req: Request) {
         const clientTitle = parsed.data.title;
         const clientArtist = parsed.data.artist;
         
+        // Return metadata in response (useful for one-call song setup)
+        const returnMetadata = parsed.data.returnMetadata;
+        
         // Optional: include translation/furigana/soramimi info to reduce round-trips
         const translateTo = parsed.data.translateTo;
         const includeFurigana = parsed.data.includeFurigana;
@@ -350,6 +354,21 @@ export default async function handler(req: Request) {
             song.lyricsSource?.title || song.title,
             song.lyricsSource?.artist || song.artist
           );
+          
+          // Fetch cover in background if missing (don't block the response)
+          if (!song.cover && song.lyricsSource?.hash && song.lyricsSource?.albumId) {
+            const coverSource = song.lyricsSource;
+            fetchCoverUrl(coverSource.hash, coverSource.albumId)
+              .then(async (cover) => {
+                if (cover) {
+                  await saveLyrics(redis, songId, song.lyrics!, song.lyricsSource, cover);
+                  logInfo(requestId, "Fetched missing cover in background");
+                }
+              })
+              .catch((err) => {
+                logInfo(requestId, "Failed to fetch missing cover", err);
+              });
+          }
           
           logInfo(requestId, `Response: 200 OK - Returning cached lyrics`, {
             parsedLinesCount: parsedLines.length,
@@ -433,6 +452,17 @@ export default async function handler(req: Request) {
             }
           }
           
+          // Include metadata if requested (useful for one-call song setup)
+          if (returnMetadata) {
+            response.metadata = {
+              title: song.lyricsSource?.title || song.title,
+              artist: song.lyricsSource?.artist || song.artist,
+              album: song.lyricsSource?.album || song.album,
+              cover: song.cover,
+              lyricsSource: song.lyricsSource,
+            };
+          }
+          
           return jsonResponse(response);
         }
 
@@ -480,25 +510,25 @@ export default async function handler(req: Request) {
         }
 
         logInfo(requestId, "Fetching lyrics from Kugou", { source: lyricsSource });
-        const rawLyrics = await fetchLyricsFromKugou(lyricsSource, requestId);
+        const kugouResult = await fetchLyricsFromKugou(lyricsSource, requestId);
 
-        if (!rawLyrics) {
+        if (!kugouResult) {
           return errorResponse("Failed to fetch lyrics", 404);
         }
 
         // Parse lyrics with consistent filtering (single source of truth)
         // NOTE: parsedLines is generated on-demand, NOT stored in Redis
         const parsedLines = parseLyricsContent(
-          { lrc: rawLyrics.lrc, krc: rawLyrics.krc },
+          { lrc: kugouResult.lyrics.lrc, krc: kugouResult.lyrics.krc },
           lyricsSource.title,
           lyricsSource.artist
         );
 
         // Save raw lyrics only (no parsedLines - it's derived data)
-        const lyrics: LyricsContent = rawLyrics;
+        const lyrics: LyricsContent = kugouResult.lyrics;
 
-        // Save to song document (only raw lrc/krc, parsedLines generated on-demand)
-        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource);
+        // Save to song document (lyrics + cover in metadata)
+        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource, kugouResult.cover);
         logInfo(requestId, `Lyrics saved to song document`, { 
           songId,
           hasLyricsStored: !!savedSong.lyrics,
@@ -560,6 +590,18 @@ export default async function handler(req: Request) {
             cached: false,
             targetLanguage: soramimiTargetLanguage,
             ...(shouldSkipChineseSoramimi ? { skipped: true, skipReason: "chinese_lyrics" } : {}),
+          };
+        }
+        
+        // Include metadata if requested (useful for one-call song setup)
+        // For fresh fetch, savedSong has the complete metadata
+        if (returnMetadata) {
+          response.metadata = {
+            title: savedSong.title,
+            artist: savedSong.artist,
+            album: savedSong.album,
+            cover: savedSong.cover,
+            lyricsSource: savedSong.lyricsSource,
           };
         }
         

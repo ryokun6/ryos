@@ -514,13 +514,14 @@ export function AdminAppComponent({
         title: string;
         artist?: string;
         album?: string;
+        cover?: string; // Cover is now in metadata
         lyricOffset?: number;
         lyricsSource?: CachedSongMetadata["lyricsSource"];
         createdBy?: string;
         createdAt: number;
         updatedAt: number;
         importOrder?: number;
-        lyrics?: { lrc?: string; krc?: string; cover?: string };
+        lyrics?: { lrc?: string; krc?: string };
         translations?: Record<string, string>;
         furigana?: Array<Array<{ text: string; reading?: string }>>;
         soramimi?: Array<Array<{ text: string; reading?: string }>>;
@@ -541,9 +542,13 @@ export function AdminAppComponent({
         };
 
         // Compress large content fields
+        // Include cover in lyrics for backwards compatibility with old import format
         if (song.lyrics) {
-          const lyricsJson = JSON.stringify(song.lyrics);
-          result.lyrics = lyricsJson.length > 500 ? await compressToBase64(lyricsJson) : song.lyrics;
+          const lyricsWithCover = song.cover 
+            ? { ...song.lyrics, cover: song.cover }
+            : song.lyrics;
+          const lyricsJson = JSON.stringify(lyricsWithCover);
+          result.lyrics = lyricsJson.length > 500 ? await compressToBase64(lyricsJson) : lyricsWithCover;
         }
         if (song.translations && Object.keys(song.translations).length > 0) {
           const translationsJson = JSON.stringify(song.translations);

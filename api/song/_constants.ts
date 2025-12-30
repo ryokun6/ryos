@@ -72,6 +72,8 @@ export const FetchLyricsSchema = z.object({
   // Allow client to pass title/artist for auto-search when song not in Redis yet
   title: z.string().max(500).optional(),
   artist: z.string().max(500).optional(),
+  // Return song metadata in response (useful for one-call song setup)
+  returnMetadata: z.boolean().optional(),
   // Optional: include translation/furigana/soramimi info in same request to reduce round-trips
   translateTo: z.string().max(10).optional(),
   includeFurigana: z.boolean().optional(),

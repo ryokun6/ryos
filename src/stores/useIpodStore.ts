@@ -989,51 +989,43 @@ export const useIpodStore = create<IpodState>()(
           } | undefined,
         };
 
-        // First, try searching Kugou for lyrics using the YouTube title
-        // If found with a good match, use Kugou's metadata (more accurate for songs)
+        // Single call to fetch-lyrics with returnMetadata: searches Kugou, fetches lyrics+cover, returns metadata
+        // This consolidates search + fetch into one call
         try {
-          const searchResponse = await fetch(getApiUrl(`/api/song/${videoId}`), {
+          const fetchResponse = await fetch(getApiUrl(`/api/song/${videoId}`), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              action: "search-lyrics",
-              query: rawTitle,
+              action: "fetch-lyrics",
+              title: rawTitle,
+              returnMetadata: true,
             }),
           });
 
-          if (searchResponse.ok) {
-            const searchData = await searchResponse.json();
-            const results = searchData.results || [];
+          if (fetchResponse.ok) {
+            const fetchData = await fetchResponse.json();
             
-            // If we have a result with a reasonable score (> 0.3), use its metadata
-            if (results.length > 0 && results[0].score > 0.3) {
-              const bestMatch = results[0];
-              console.log(`[iPod Store] Found Kugou match for ${videoId}:`, {
-                title: bestMatch.title,
-                artist: bestMatch.artist,
-                score: bestMatch.score,
+            // Use metadata from server (Kugou source) if available
+            if (fetchData.metadata?.lyricsSource) {
+              const meta = fetchData.metadata;
+              console.log(`[iPod Store] Got metadata from Kugou for ${videoId}:`, {
+                title: meta.title,
+                artist: meta.artist,
               });
               
-              trackInfo.title = bestMatch.title;
-              trackInfo.artist = bestMatch.artist;
-              trackInfo.album = bestMatch.album;
-              trackInfo.lyricsSource = {
-                hash: bestMatch.hash,
-                albumId: bestMatch.albumId,
-                title: bestMatch.title,
-                artist: bestMatch.artist,
-                album: bestMatch.album,
-              };
-            } else {
-              console.log(`[iPod Store] No good Kugou match for ${videoId}, falling back to AI parse`);
+              trackInfo.title = meta.title || trackInfo.title;
+              trackInfo.artist = meta.artist;
+              trackInfo.album = meta.album;
+              trackInfo.lyricsSource = meta.lyricsSource;
             }
           }
         } catch (error) {
-          console.warn(`[iPod Store] Failed to search Kugou for ${videoId}:`, error);
+          console.warn(`[iPod Store] Failed to fetch lyrics for ${videoId}:`, error);
         }
 
-        // If no Kugou match found, fall back to AI title parsing
+        // If no Kugou match found (no lyricsSource), fall back to AI title parsing
         if (!trackInfo.lyricsSource) {
+          console.log(`[iPod Store] No Kugou match for ${videoId}, falling back to AI parse`);
           try {
             // Call /api/parse-title
             const parseResponse = await fetch(getApiUrl("/api/parse-title"), {
