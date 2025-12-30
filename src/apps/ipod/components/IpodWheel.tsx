@@ -60,6 +60,7 @@ export function IpodWheel({
   // Long press handling for center button
   const centerLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const centerLongPressFiredRef = useRef(false);
+  const centerLongPressFiredAtRef = useRef<number>(0);
   const centerPressStartTimeRef = useRef<number>(0);
 
   const clearCenterLongPress = () => {
@@ -76,6 +77,7 @@ export function IpodWheel({
     if (onCenterLongPress) {
       centerLongPressTimerRef.current = setTimeout(() => {
         centerLongPressFiredRef.current = true;
+        centerLongPressFiredAtRef.current = Date.now();
         onCenterLongPress();
       }, LONG_PRESS_DELAY);
     }
@@ -85,6 +87,14 @@ export function IpodWheel({
     clearCenterLongPress();
     // If the long press fired, we need to prevent the click
     // The flag will be checked in onClick and reset there
+  };
+  
+  // Check if we should ignore a click (long press just fired)
+  const shouldIgnoreClick = () => {
+    if (centerLongPressFiredRef.current) return true;
+    // Also ignore clicks within 300ms of long press firing (iOS workaround)
+    if (centerLongPressFiredAtRef.current && Date.now() - centerLongPressFiredAtRef.current < 300) return true;
+    return false;
   };
 
   // Calculate angle (in degrees) from the center of the wheel – used for click areas
@@ -373,14 +383,15 @@ export function IpodWheel({
         tabIndex={0}
         aria-label={t("apps.ipod.ariaLabels.select")}
         onClick={(e) => {
-          // Don't trigger click if long press was fired
-          if (centerLongPressFiredRef.current) {
+          // Don't trigger click if long press was fired (with iOS workaround)
+          if (shouldIgnoreClick()) {
             e.preventDefault();
             e.stopPropagation();
-            // Reset the flag after a short delay to allow for the next interaction
+            // Reset the flags after a delay to allow for the next interaction
             setTimeout(() => {
               centerLongPressFiredRef.current = false;
-            }, 100);
+              centerLongPressFiredAtRef.current = 0;
+            }, 300);
             return;
           }
           if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
