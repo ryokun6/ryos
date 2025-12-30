@@ -28,12 +28,12 @@ function CoverImage({
   track, 
   position,
   ipodMode = true,
-  onClick,
+  onTap,
 }: { 
   track: Track;
   position: number;
   ipodMode?: boolean;
-  onClick?: () => void;
+  onTap?: () => void;
 }) {
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   // Use higher resolution images for karaoke mode (non-iPod)
@@ -114,9 +114,9 @@ function CoverImage({
         stiffness: 400,
         damping: 35,
       }}
-      onClick={(e) => {
+      onTap={(e) => {
         e.stopPropagation();
-        onClick?.();
+        onTap?.();
       }}
     >
       {/* Cover art */}
@@ -403,7 +403,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     track={track}
                     position={position}
                     ipodMode={ipodMode}
-                    onClick={() => {
+                    onTap={() => {
                       // Don't trigger if long press was fired
                       if (longPressFiredRef.current) {
                         longPressFiredRef.current = false;
