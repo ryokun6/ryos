@@ -76,7 +76,7 @@ function CoverImage({
       rotateY: direction * -60,
       z: -50 - absPos * 20,
       scale: sideScale,
-      opacity: Math.max(0, 1 - absPos * 0.3),
+      opacity: Math.max(0, 1 - Math.max(0, absPos - 1) * 0.4),
       zIndex: 5 - absPos,
     };
   };
@@ -149,6 +149,23 @@ function CoverImage({
           </div>
         )}
       </div>
+      
+      {/* Dark overlay on side covers - animates with cover */}
+      <motion.div
+        className={`absolute inset-0 pointer-events-none ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
+        style={{
+          background: position !== 0 
+            ? `linear-gradient(${position > 0 ? "to right" : "to left"}, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 100%)`
+            : "transparent",
+        }}
+        initial={{ opacity: position === 0 ? 0 : 1 }}
+        animate={{ opacity: position === 0 ? 0 : 1 }}
+        transition={{
+          type: "spring",
+          stiffness: 500,
+          damping: 50,
+        }}
+      />
       
       {/* Reflection */}
       <div
