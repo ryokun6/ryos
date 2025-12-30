@@ -1143,9 +1143,9 @@ export function KaraokeAppComponent({
             </>
           )}
 
-          {/* CoverFlow overlay - full height, below toolbar (z-[60]) and notitlebar (z-50) */}
+          {/* CoverFlow overlay - full height, below notitlebar (z-50) */}
           {isCoverFlowOpen && tracks.length > 0 && (
-            <div className="absolute inset-0 z-30">
+            <div className="absolute inset-0 z-40">
               <CoverFlow
                 ref={coverFlowRef}
                 tracks={tracks}
@@ -1203,12 +1203,12 @@ export function KaraokeAppComponent({
             )}
           </AnimatePresence>
 
-          {/* Control toolbar */}
+          {/* Control toolbar - hidden when CoverFlow is open */}
           <div
             data-toolbar
             className={cn(
               "absolute bottom-0 left-0 right-0 flex justify-center z-[60] transition-opacity duration-200",
-              showControls || anyMenuOpen || !isPlaying
+              (showControls || anyMenuOpen || !isPlaying) && !isCoverFlowOpen
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none"
             )}

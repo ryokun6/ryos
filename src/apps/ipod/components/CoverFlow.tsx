@@ -374,10 +374,12 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             onTouchCancel={() => endLongPress()}
             style={{ touchAction: "none", overflow: "visible" }}
           >
-            {/* Covers */}
+            {/* Covers - centered with slight upward offset for track info space */}
             <div 
-              className="relative flex items-center justify-center w-full h-full"
+              className="relative flex items-center justify-center w-full"
               style={{ 
+                height: "75%",
+                marginTop: "-5%",
                 perspective: 400,
                 transformStyle: "preserve-3d",
               }}
@@ -397,21 +399,21 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           {/* Track info - scales with container, uses iPod font */}
           <motion.div
             className="absolute left-0 right-0 text-center px-2 font-geneva-12"
-            style={{ bottom: "5cqmin" }}
+            style={{ bottom: "4cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
             <div 
               className="text-white truncate leading-tight"
-              style={{ fontSize: "clamp(10px, 7cqmin, 18px)" }}
+              style={{ fontSize: "clamp(9px, 6cqmin, 16px)" }}
             >
               {currentTrack?.title || "No track"}
             </div>
             {currentTrack?.artist && (
               <div 
                 className="text-white/60 truncate leading-tight"
-                style={{ fontSize: "clamp(8px, 5cqmin, 14px)" }}
+                style={{ fontSize: "clamp(7px, 4.5cqmin, 13px)" }}
               >
                 {currentTrack.artist}
               </div>
