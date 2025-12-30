@@ -42,22 +42,27 @@ function CoverImage({
   const kugouImageSize = ipodMode ? 400 : 800;
   const coverUrl = formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
-  // Cover size: larger for karaoke mode (non-iPod)
-  const coverSize = ipodMode ? 60 : 60; // cqmin units
+  // Cover size: larger for iPod mode (extends downward more)
+  const coverSize = ipodMode ? 65 : 60; // cqmin units
   // Side cover spacing adjusts based on cover size
-  const baseSpacing = ipodMode ? 28 : 28;
-  const positionSpacing = ipodMode ? 18 : 20;
+  const baseSpacing = ipodMode ? 26 : 18;
+  const positionSpacing = ipodMode ? 18 : 12;
+
+  // Scale values: no scaling for iPod mode, subtle for karaoke
+  const centerScale = 1.0;
+  const sideScale = ipodMode ? 1.0 : 0.9;
 
   // Calculate 3D transform based on position - uses relative units (cqmin = % of container's smaller dimension)
   const getTransform = (pos: number) => {
     if (pos === 0) {
-      // Center cover - slightly larger and forward
+      // Center cover - pushed forward in karaoke mode to appear larger
       return {
         x: "0cqmin",
         rotateY: 0,
-        z: 20,
-        scale: 1,
+        z: ipodMode ? 0 : 30,
+        scale: centerScale,
         opacity: 1,
+        zIndex: 10,
       };
     }
     
@@ -65,12 +70,14 @@ function CoverImage({
     const absPos = Math.abs(pos);
     
     // Side covers - spacing scales with container
+    // Push side covers back more to prevent clipping with center cover
     return {
       x: `${direction * (baseSpacing + absPos * positionSpacing)}cqmin`,
-      rotateY: direction * -65,
-      z: -absPos * 10,
-      scale: 0.95,
+      rotateY: direction * -60,
+      z: -50 - absPos * 20,
+      scale: sideScale,
       opacity: Math.max(0, 1 - absPos * 0.3),
+      zIndex: 5 - absPos,
     };
   };
 
@@ -86,7 +93,7 @@ function CoverImage({
         // Cover size scales with container
         width: `${coverSize}cqmin`,
         height: `${coverSize}cqmin`,
-        perspective: 400,
+        perspective: 300,
         transformStyle: "preserve-3d",
       }}
       initial={{
@@ -95,6 +102,7 @@ function CoverImage({
         z: initialTransform.z,
         scale: initialTransform.scale,
         opacity: 0,
+        zIndex: initialTransform.zIndex,
       }}
       animate={{
         x: transform.x,
@@ -102,19 +110,20 @@ function CoverImage({
         z: transform.z,
         scale: transform.scale,
         opacity: transform.opacity,
+        zIndex: transform.zIndex,
       }}
       exit={{
         opacity: 0,
       }}
       transition={{
         type: "spring",
-        stiffness: 400,
-        damping: 35,
+        stiffness: 500,
+        damping: 50,
       }}
     >
       {/* Cover art */}
       <div
-        className="w-full h-full rounded-lg shadow-xl overflow-hidden"
+        className={`w-full h-full shadow-xl overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
         style={{
           background: "#1a1a1a",
         }}
@@ -152,7 +161,7 @@ function CoverImage({
         <img
           src={coverUrl || ""}
           alt=""
-          className="w-full h-auto rounded-lg"
+          className={`w-full h-auto ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
           style={{
             transform: "scaleY(-1)",
             opacity: 0.3,
@@ -297,7 +306,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     clearLongPress();
     
     const deltaX = info.point.x - lastMoveX.current;
-    const threshold = 30; // Pixels to move before triggering navigation
+    const threshold = 20; // Pixels to move before triggering navigation
     
     if (Math.abs(deltaX) > threshold) {
       if (deltaX < 0) {
@@ -399,7 +408,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               style={{ 
                 height: "75%",
                 marginTop: ipodMode ? "-12%" : "-5%",
-                perspective: 400,
+                perspective: 300,
                 transformStyle: "preserve-3d",
               }}
             >
@@ -419,7 +428,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           {/* Track info - fixed size for iPod, responsive for Karaoke */}
           <motion.div
             className="absolute left-0 right-0 text-center px-2 font-geneva-12"
-            style={{ bottom: ipodMode ? "8px" : "5cqmin" }}
+            style={{ bottom: ipodMode ? "10px" : "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
