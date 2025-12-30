@@ -334,7 +334,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className="absolute inset-0 z-50 bg-gradient-to-b from-gray-900 via-black to-gray-900 overflow-hidden"
+          className="ipod-force-font absolute inset-0 z-50 bg-gradient-to-b from-gray-900 via-black to-gray-900 overflow-hidden"
           style={{ containerType: "size" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -394,9 +394,9 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             </div>
           </motion.div>
 
-          {/* Track info - scales with container */}
+          {/* Track info - scales with container, uses iPod font */}
           <motion.div
-            className="absolute left-0 right-0 text-center px-2"
+            className="absolute left-0 right-0 text-center px-2 font-geneva-12"
             style={{ bottom: "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
