@@ -973,6 +973,12 @@ export function IpodAppComponent({
     vibrate();
     registerActivity();
 
+    // Exit Cover Flow if open
+    if (isCoverFlowOpen) {
+      setIsCoverFlowOpen(false);
+      return;
+    }
+
     if (showVideo) toggleVideo();
 
     if (menuMode) {
@@ -1044,7 +1050,7 @@ export function IpodAppComponent({
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, t]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, t]);
 
   // Cover Flow handlers
   const handleCenterLongPress = useCallback(() => {
