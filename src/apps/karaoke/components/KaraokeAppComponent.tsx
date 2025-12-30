@@ -192,6 +192,8 @@ export function KaraokeAppComponent({
   // Long press refs for CoverFlow toggle
   const screenLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const screenLongPressFiredRef = useRef(false);
+  const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
+  const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels - cancel if moved more than this
 
   // Full screen additional state
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
@@ -949,11 +951,24 @@ export function KaraokeAppComponent({
       >
         <div
           className="relative w-full h-full bg-black select-none overflow-hidden @container"
-          onMouseMove={restartAutoHideTimer}
-          onMouseDown={() => {
+          onMouseMove={(e) => {
+            restartAutoHideTimer();
+            // Cancel long press if moved too far from start position
+            if (longPressStartPos.current && screenLongPressTimerRef.current) {
+              const dx = e.clientX - longPressStartPos.current.x;
+              const dy = e.clientY - longPressStartPos.current.y;
+              if (Math.abs(dx) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
+                clearTimeout(screenLongPressTimerRef.current);
+                screenLongPressTimerRef.current = null;
+                longPressStartPos.current = null;
+              }
+            }
+          }}
+          onMouseDown={(e) => {
             // Start long press timer for CoverFlow toggle
             if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
             screenLongPressFiredRef.current = false;
+            longPressStartPos.current = { x: e.clientX, y: e.clientY };
             screenLongPressTimerRef.current = setTimeout(() => {
               screenLongPressFiredRef.current = true;
               handleToggleCoverFlow();
@@ -964,32 +979,51 @@ export function KaraokeAppComponent({
               clearTimeout(screenLongPressTimerRef.current);
               screenLongPressTimerRef.current = null;
             }
+            longPressStartPos.current = null;
           }}
           onMouseLeave={() => {
             if (screenLongPressTimerRef.current) {
               clearTimeout(screenLongPressTimerRef.current);
               screenLongPressTimerRef.current = null;
             }
+            longPressStartPos.current = null;
           }}
-          onTouchStart={() => {
+          onTouchStart={(e) => {
             if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
             screenLongPressFiredRef.current = false;
+            const touch = e.touches[0];
+            longPressStartPos.current = { x: touch.clientX, y: touch.clientY };
             screenLongPressTimerRef.current = setTimeout(() => {
               screenLongPressFiredRef.current = true;
               handleToggleCoverFlow();
             }, 500);
+          }}
+          onTouchMove={(e) => {
+            // Cancel long press if moved too far from start position
+            if (longPressStartPos.current && screenLongPressTimerRef.current) {
+              const touch = e.touches[0];
+              const dx = touch.clientX - longPressStartPos.current.x;
+              const dy = touch.clientY - longPressStartPos.current.y;
+              if (Math.abs(dx) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
+                clearTimeout(screenLongPressTimerRef.current);
+                screenLongPressTimerRef.current = null;
+                longPressStartPos.current = null;
+              }
+            }
           }}
           onTouchEnd={() => {
             if (screenLongPressTimerRef.current) {
               clearTimeout(screenLongPressTimerRef.current);
               screenLongPressTimerRef.current = null;
             }
+            longPressStartPos.current = null;
           }}
           onTouchCancel={() => {
             if (screenLongPressTimerRef.current) {
               clearTimeout(screenLongPressTimerRef.current);
               screenLongPressTimerRef.current = null;
             }
+            longPressStartPos.current = null;
           }}
           onClick={() => {
             // Don't trigger click if long press was fired

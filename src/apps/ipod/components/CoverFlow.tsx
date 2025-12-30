@@ -271,10 +271,15 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const handlePanStart = useCallback((_: unknown, info: PanInfo) => {
     swipeStartX.current = info.point.x;
     lastMoveX.current = info.point.x;
-  }, []);
+    // Cancel long press when drag starts
+    clearLongPress();
+  }, [clearLongPress]);
 
   const handlePan = useCallback((_: unknown, info: PanInfo) => {
     if (lastMoveX.current === null) return;
+    
+    // Cancel long press on any pan movement
+    clearLongPress();
     
     const deltaX = info.point.x - lastMoveX.current;
     const threshold = 30; // Pixels to move before triggering navigation
@@ -287,7 +292,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
       }
       lastMoveX.current = info.point.x;
     }
-  }, [navigateNext, navigatePrevious]);
+  }, [navigateNext, navigatePrevious, clearLongPress]);
 
   const handlePanEnd = useCallback(() => {
     swipeStartX.current = null;
