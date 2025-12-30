@@ -984,6 +984,7 @@ export const useIpodStore = create<IpodState>()(
           title: rawTitle,
           artist: undefined as string | undefined,
           album: undefined as string | undefined,
+          cover: undefined as string | undefined,
           lyricsSource: undefined as {
             hash: string;
             albumId: string | number;
@@ -1015,11 +1016,13 @@ export const useIpodStore = create<IpodState>()(
               console.log(`[iPod Store] Got metadata from Kugou for ${videoId}:`, {
                 title: meta.title,
                 artist: meta.artist,
+                cover: meta.cover,
               });
               
               trackInfo.title = meta.title || trackInfo.title;
               trackInfo.artist = meta.artist;
               trackInfo.album = meta.album;
+              trackInfo.cover = meta.cover;
               trackInfo.lyricsSource = meta.lyricsSource;
             }
           }
@@ -1062,6 +1065,7 @@ export const useIpodStore = create<IpodState>()(
           title: trackInfo.title,
           artist: trackInfo.artist,
           album: trackInfo.album,
+          cover: trackInfo.cover,
           lyricOffset: 500, // Default 500ms offset for new tracks
           lyricsSource: trackInfo.lyricsSource,
         };
@@ -1096,7 +1100,7 @@ export const useIpodStore = create<IpodState>()(
           let tracksUpdated = 0;
 
           // Process existing tracks: update metadata if track exists on server
-          const updatedTracks = current.tracks.map((currentTrack) => {
+          let updatedTracks = current.tracks.map((currentTrack) => {
             const serverTrack = serverTrackMap.get(currentTrack.id);
             if (serverTrack) {
               // Track exists on server, check if metadata needs updating
@@ -1143,7 +1147,80 @@ export const useIpodStore = create<IpodState>()(
           newTracksAdded = tracksToAdd.length;
 
           // Combine new tracks (at top) with updated existing tracks
-          const finalTracks = [...tracksToAdd, ...updatedTracks];
+          let finalTracks = [...tracksToAdd, ...updatedTracks];
+
+          // Fetch metadata for tracks not in the default library
+          // These are user-added tracks that might have updated metadata in Redis
+          const tracksNotInDefaultLibrary = finalTracks.filter(
+            (track) => !serverTrackMap.has(track.id)
+          );
+
+          if (tracksNotInDefaultLibrary.length > 0) {
+            console.log(`[iPod Store] Fetching metadata for ${tracksNotInDefaultLibrary.length} tracks not in default library`);
+            
+            try {
+              // Batch fetch metadata for tracks not in default library
+              const idsToFetch = tracksNotInDefaultLibrary.map((t) => t.id).join(",");
+              const response = await fetch(
+                getApiUrl(`/api/song?ids=${encodeURIComponent(idsToFetch)}&include=metadata`),
+                {
+                  method: "GET",
+                  headers: { "Content-Type": "application/json" },
+                }
+              );
+
+              if (response.ok) {
+                const data = await response.json();
+                const fetchedSongs = data.songs || [];
+                const fetchedMap = new Map(
+                  fetchedSongs.map((s: {
+                    id: string;
+                    title?: string;
+                    artist?: string;
+                    album?: string;
+                    cover?: string;
+                    lyricOffset?: number;
+                    lyricsSource?: LyricsSource;
+                  }) => [s.id, s])
+                );
+
+                // Update tracks with fetched metadata
+                finalTracks = finalTracks.map((track) => {
+                  const fetched = fetchedMap.get(track.id);
+                  if (fetched) {
+                    // Check if any metadata has changed
+                    const hasChanges =
+                      (fetched.title && fetched.title !== track.title) ||
+                      (fetched.artist && fetched.artist !== track.artist) ||
+                      (fetched.album && fetched.album !== track.album) ||
+                      (fetched.cover && fetched.cover !== track.cover) ||
+                      (fetched.lyricOffset !== undefined && fetched.lyricOffset !== track.lyricOffset) ||
+                      (fetched.lyricsSource && !track.lyricsSource);
+
+                    if (hasChanges) {
+                      tracksUpdated++;
+                      return {
+                        ...track,
+                        // Update with server metadata, preserving existing values if server doesn't have them
+                        title: fetched.title || track.title,
+                        artist: fetched.artist ?? track.artist,
+                        album: fetched.album ?? track.album,
+                        cover: fetched.cover ?? track.cover,
+                        lyricOffset: fetched.lyricOffset ?? track.lyricOffset,
+                        // Only update lyricsSource if user doesn't have one
+                        ...(fetched.lyricsSource && !track.lyricsSource && {
+                          lyricsSource: fetched.lyricsSource,
+                        }),
+                      };
+                    }
+                  }
+                  return track;
+                });
+              }
+            } catch (error) {
+              console.warn(`[iPod Store] Failed to fetch metadata for user tracks:`, error);
+            }
+          }
 
           // Update store if there were any changes
           if (newTracksAdded > 0 || tracksUpdated > 0) {
