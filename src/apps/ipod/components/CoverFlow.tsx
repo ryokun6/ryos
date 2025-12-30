@@ -352,7 +352,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           initial={{ opacity: 0, scale: 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 1.05 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
         >
           {/* Reflective floor gradient - bottom only */}
           <div 
