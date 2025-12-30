@@ -21,7 +21,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
-import { forceRefreshCache } from "@/utils/prefetch";
 
 // Helper to check if an icon is an emoji
 const isEmojiIcon = (icon?: string): boolean => {
@@ -98,10 +97,6 @@ export function AppleMenu() {
     launchApp(appId, { initialData: { path } });
   };
 
-  const handleSoftwareUpdate = () => {
-    forceRefreshCache();
-  };
-
   const handleSystemPreferences = () => {
     launchApp("control-panels" as AppId);
   };
@@ -152,14 +147,6 @@ export function AppleMenu() {
           </MenubarItem>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-
-          {/* Software Update */}
-          <MenubarItem
-            onClick={handleSoftwareUpdate}
-            className="text-md h-6 px-3"
-          >
-            {t("common.appleMenu.softwareUpdate")}
-          </MenubarItem>
 
           {/* System Preferences */}
           <MenubarItem
