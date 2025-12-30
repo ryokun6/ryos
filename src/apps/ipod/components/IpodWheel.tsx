@@ -99,6 +99,7 @@ export function IpodWheel({
       // Reset touch state after a delay to block any synthetic click
       setTimeout(() => {
         centerTouchActiveRef.current = false;
+        centerTouchHandledRef.current = false;
       }, 400);
     }
   };
@@ -389,8 +390,8 @@ export function IpodWheel({
         tabIndex={0}
         aria-label={t("apps.ipod.ariaLabels.select")}
         onClick={(e) => {
-          // Block all clicks if touch is/was active (touch handles its own tap)
-          if (centerTouchActiveRef.current || centerTouchHandledRef.current) {
+          // Block clicks only during active touch (centerTouchActiveRef has 400ms timeout)
+          if (centerTouchActiveRef.current) {
             e.preventDefault();
             e.stopPropagation();
             return;
@@ -402,7 +403,7 @@ export function IpodWheel({
             centerLongPressFiredRef.current = false;
             return;
           }
-          if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
+          if (recentTouchRef.current || isInTouchDragRef.current) return;
           onWheelClick("center");
         }}
         onKeyDown={(e) => {
