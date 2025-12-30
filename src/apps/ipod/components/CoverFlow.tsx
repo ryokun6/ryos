@@ -401,22 +401,22 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
 
           {/* Track info - fixed size for iPod, responsive for Karaoke */}
           <motion.div
-            className={`absolute left-0 right-0 text-center px-2 ${ipodMode ? "font-geneva-12" : "font-chicago"}`}
+            className="absolute left-0 right-0 text-center px-2 font-geneva-12"
             style={{ bottom: ipodMode ? "8px" : "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
             <div 
-              className="text-white truncate leading-tight"
-              style={{ fontSize: ipodMode ? "10px" : "clamp(14px, 5cqmin, 24px)" }}
+              className={`text-white truncate leading-tight ${ipodMode ? "text-[10px]" : ""}`}
+              style={ipodMode ? undefined : { fontSize: "clamp(14px, 5cqmin, 24px)" }}
             >
               {currentTrack?.title || "No track"}
             </div>
             {currentTrack?.artist && (
               <div 
-                className="text-white/60 truncate leading-tight"
-                style={{ fontSize: ipodMode ? "8px" : "clamp(12px, 4cqmin, 18px)" }}
+                className={`text-white/60 truncate leading-tight ${ipodMode ? "text-[8px]" : ""}`}
+                style={ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }}
               >
                 {currentTrack.artist}
               </div>
