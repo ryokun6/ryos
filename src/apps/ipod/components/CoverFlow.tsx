@@ -353,7 +353,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className={`absolute inset-0 z-50 bg-black overflow-hidden ${ipodMode ? "ipod-force-font" : ""}`}
+          className={`absolute inset-0 z-50 bg-black overflow-hidden ${ipodMode ? "ipod-force-font" : "karaoke-force-font"}`}
           style={{ containerType: "size" }}
           initial={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
           animate={{ opacity: 1, scale: 1 }}

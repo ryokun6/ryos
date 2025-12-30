@@ -938,6 +938,23 @@
   font-size: unset !important;
 }
 
+/* Preserve Karaoke fonts in macOS theme */
+:root[data-os-theme="macosx"] .karaoke-force-font {
+  font-family: inherit !important;
+  font-size: 16px !important; /* Reset base font size */
+}
+
+:root[data-os-theme="macosx"] .karaoke-force-font * {
+  font-family: inherit !important;
+  font-size: unset !important; /* Reset macOS overrides */
+}
+
+/* Reset div and p font sizes within Karaoke */
+:root[data-os-theme="macosx"] .karaoke-force-font div,
+:root[data-os-theme="macosx"] .karaoke-force-font p {
+  font-size: unset !important;
+}
+
 :root[data-os-theme="macosx"] .ipod-force-font .font-chicago,
 :root[data-os-theme="macosx"] .font-chicago {
   font-family: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
