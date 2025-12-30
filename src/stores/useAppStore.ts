@@ -29,6 +29,7 @@ export interface RecentDocument {
   path: string;
   name: string;
   appId: AppId;
+  icon?: string;
   timestamp: number;
 }
 
@@ -122,7 +123,7 @@ interface AppStoreState extends AppManagerState {
   recentApps: RecentApp[];
   recentDocuments: RecentDocument[];
   addRecentApp: (appId: AppId) => void;
-  addRecentDocument: (path: string, name: string, appId: AppId) => void;
+  addRecentDocument: (path: string, name: string, appId: AppId, icon?: string) => void;
   clearRecentItems: () => void;
 }
 
@@ -174,12 +175,12 @@ export const useAppStore = create<AppStoreState>()(
           // Keep only last 20 items
           return { recentApps: [newRecent, ...filtered].slice(0, 20) };
         }),
-      addRecentDocument: (path, name, appId) =>
+      addRecentDocument: (path, name, appId, icon) =>
         set((state) => {
           // Remove existing entry for this path if present
           const filtered = state.recentDocuments.filter((r) => r.path !== path);
           // Add to front with current timestamp
-          const newRecent: RecentDocument = { path, name, appId, timestamp: Date.now() };
+          const newRecent: RecentDocument = { path, name, appId, icon, timestamp: Date.now() };
           // Keep only last 20 items
           return { recentDocuments: [newRecent, ...filtered].slice(0, 20) };
         }),
@@ -461,10 +462,10 @@ export const useAppStore = create<AppStoreState>()(
           get().addRecentApp(appId);
           
           // Track recent document if initialData has a path
-          const dataWithPath = initialData as { path?: string; name?: string } | undefined;
+          const dataWithPath = initialData as { path?: string; name?: string; icon?: string } | undefined;
           if (dataWithPath?.path) {
             const fileName = dataWithPath.name || dataWithPath.path.split("/").pop() || dataWithPath.path;
-            get().addRecentDocument(dataWithPath.path, fileName, appId);
+            get().addRecentDocument(dataWithPath.path, fileName, appId, dataWithPath.icon);
           }
           
           window.dispatchEvent(

@@ -2081,7 +2081,8 @@
       "recentItems": "Недавние объекты",
       "noRecentApps": "Нет недавних программ",
       "noRecentDocuments": "Нет недавних документов",
-      "more": "Ещё…",
+      "moreApps": "Другие программы…",
+      "moreDocuments": "Другие документы…",
       "createAccount": "Создать учётную запись…",
       "login": "Войти…",
       "logOut": "Завершить сеанс {{username}}…"

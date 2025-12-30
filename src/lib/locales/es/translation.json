@@ -2081,7 +2081,8 @@
       "recentItems": "Elementos Recientes",
       "noRecentApps": "No hay apps recientes",
       "noRecentDocuments": "No hay documentos recientes",
-      "more": "Más…",
+      "moreApps": "Más Apps…",
+      "moreDocuments": "Más Documentos…",
       "createAccount": "Crear Cuenta…",
       "login": "Iniciar Sesión…",
       "logOut": "Cerrar Sesión de {{username}}…"

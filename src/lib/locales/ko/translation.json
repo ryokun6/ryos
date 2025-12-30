@@ -2081,7 +2081,8 @@
       "recentItems": "최근 사용 항목",
       "noRecentApps": "최근 사용한 앱 없음",
       "noRecentDocuments": "최근 사용한 문서 없음",
-      "more": "더 보기…",
+      "moreApps": "더 많은 앱…",
+      "moreDocuments": "더 많은 문서…",
       "createAccount": "계정 생성…",
       "login": "로그인…",
       "logOut": "{{username}} 로그아웃…"

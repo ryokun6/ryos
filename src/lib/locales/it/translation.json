@@ -2081,7 +2081,8 @@
       "recentItems": "Elementi recenti",
       "noRecentApps": "Nessuna app recente",
       "noRecentDocuments": "Nessun documento recente",
-      "more": "Altro…",
+      "moreApps": "Altre App…",
+      "moreDocuments": "Altri Documenti…",
       "createAccount": "Crea Account…",
       "login": "Accedi…",
       "logOut": "Esci da {{username}}…"

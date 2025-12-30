@@ -151,7 +151,8 @@
       "recentItems": "Recent Items",
       "noRecentApps": "No Recent Apps",
       "noRecentDocuments": "No Recent Documents",
-      "more": "More…",
+      "moreApps": "More Apps…",
+      "moreDocuments": "More Documents…",
       "createAccount": "Create Account…",
       "login": "Login…",
       "logOut": "Log Out {{username}}…"

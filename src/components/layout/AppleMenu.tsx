@@ -16,12 +16,32 @@ import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAppStore, RecentDocument } from "@/stores/useAppStore";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { forceRefreshCache } from "@/utils/prefetch";
+
+// Helper to check if an icon is an emoji
+const isEmojiIcon = (icon?: string): boolean => {
+  if (!icon) return false;
+  if (icon.startsWith("/") || icon.startsWith("http")) return false;
+  return icon.length <= 10;
+};
+
+// Helper to get icon path for a document based on its name/extension
+const getDocumentIconPath = (doc: RecentDocument): string => {
+  if (doc.icon) return doc.icon;
+  const name = doc.name.toLowerCase();
+  if (name.endsWith(".txt") || name.endsWith(".md")) {
+    return "file-text.png";
+  }
+  if (name.endsWith(".html") || name.endsWith(".app")) {
+    return "file.png";
+  }
+  return "file.png";
+};
 
 export function AppleMenu() {
   const { t } = useTranslation();
@@ -88,6 +108,14 @@ export function AppleMenu() {
 
   const handleAppletStore = () => {
     launchApp("applet-viewer" as AppId, { initialData: { path: "", content: "" } });
+  };
+
+  const handleMoreApps = () => {
+    launchApp("finder" as AppId, { initialPath: "/Applications" });
+  };
+
+  const handleMoreDocuments = () => {
+    launchApp("finder" as AppId, { initialPath: "/Documents" });
   };
 
   // Get top 5 recent apps
@@ -159,79 +187,86 @@ export function AppleMenu() {
             <MenubarSubContent className="min-w-[200px]">
               {/* Recent Apps section */}
               {topRecentApps.length > 0 ? (
-                <>
-                  {topRecentApps.map((recent) => {
-                    const app = appRegistry[recent.appId];
-                    if (!app) return null;
-                    return (
-                      <MenubarItem
-                        key={`app-${recent.appId}-${recent.timestamp}`}
-                        onClick={() => handleAppClick(recent.appId)}
-                        className="text-md h-6 px-3 flex items-center gap-2"
-                      >
-                        {typeof app.icon === "string" ? (
-                          <div className="w-4 h-4 flex items-center justify-center">
-                            {app.icon}
-                          </div>
-                        ) : (
-                          <ThemedIcon
-                            name={app.icon.src}
-                            alt={app.name}
-                            className="w-4 h-4 [image-rendering:pixelated]"
-                          />
-                        )}
-                        {getTranslatedAppName(recent.appId)}
-                      </MenubarItem>
-                    );
-                  })}
-                  {recentApps.length > 5 && (
+                topRecentApps.map((recent) => {
+                  const app = appRegistry[recent.appId];
+                  if (!app) return null;
+                  return (
                     <MenubarItem
-                      onClick={() => handleSystemPreferences()}
-                      className="text-md h-6 px-3 text-gray-500"
+                      key={`app-${recent.appId}-${recent.timestamp}`}
+                      onClick={() => handleAppClick(recent.appId)}
+                      className="text-md h-6 px-3 flex items-center gap-2"
                     >
-                      {t("common.appleMenu.more")}
+                      {typeof app.icon === "string" ? (
+                        <div className="w-4 h-4 flex items-center justify-center">
+                          {app.icon}
+                        </div>
+                      ) : (
+                        <ThemedIcon
+                          name={app.icon.src}
+                          alt={app.name}
+                          className="w-4 h-4 [image-rendering:pixelated]"
+                        />
+                      )}
+                      {getTranslatedAppName(recent.appId)}
                     </MenubarItem>
-                  )}
-                </>
+                  );
+                })
               ) : (
                 <MenubarItem disabled className="text-md h-6 px-3 text-gray-400">
                   {t("common.appleMenu.noRecentApps")}
                 </MenubarItem>
               )}
+              
+              {/* More Apps - always shown */}
+              <MenubarItem
+                onClick={handleMoreApps}
+                className="text-md h-6 px-3"
+              >
+                {t("common.appleMenu.moreApps")}
+              </MenubarItem>
 
               <MenubarSeparator className="h-[2px] bg-black my-1" />
 
               {/* Recent Documents section */}
               {topRecentDocuments.length > 0 ? (
-                <>
-                  {topRecentDocuments.map((recent) => (
+                topRecentDocuments.map((recent) => {
+                  const iconPath = getDocumentIconPath(recent);
+                  const isEmoji = isEmojiIcon(recent.icon);
+                  
+                  return (
                     <MenubarItem
                       key={`doc-${recent.path}-${recent.timestamp}`}
                       onClick={() => handleDocumentClick(recent.path, recent.appId)}
                       className="text-md h-6 px-3 flex items-center gap-2"
                     >
-                      <ThemedIcon
-                        name="document.png"
-                        alt="Document"
-                        className="w-4 h-4 [image-rendering:pixelated]"
-                      />
+                      {isEmoji ? (
+                        <span className="w-4 h-4 flex items-center justify-center text-sm">
+                          {recent.icon}
+                        </span>
+                      ) : (
+                        <ThemedIcon
+                          name={iconPath}
+                          alt="Document"
+                          className="w-4 h-4 [image-rendering:pixelated]"
+                        />
+                      )}
                       <span className="truncate max-w-[180px]">{recent.name}</span>
                     </MenubarItem>
-                  ))}
-                  {recentDocuments.length > 5 && (
-                    <MenubarItem
-                      onClick={() => launchApp("finder" as AppId, { initialPath: "/" })}
-                      className="text-md h-6 px-3 text-gray-500"
-                    >
-                      {t("common.appleMenu.more")}
-                    </MenubarItem>
-                  )}
-                </>
+                  );
+                })
               ) : (
                 <MenubarItem disabled className="text-md h-6 px-3 text-gray-400">
                   {t("common.appleMenu.noRecentDocuments")}
                 </MenubarItem>
               )}
+              
+              {/* More Documents - always shown */}
+              <MenubarItem
+                onClick={handleMoreDocuments}
+                className="text-md h-6 px-3"
+              >
+                {t("common.appleMenu.moreDocuments")}
+              </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>
 

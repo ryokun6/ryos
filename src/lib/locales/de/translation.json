@@ -2081,7 +2081,8 @@
       "recentItems": "Benutzte Objekte",
       "noRecentApps": "Keine kürzlich verwendeten Apps",
       "noRecentDocuments": "Keine kürzlich verwendeten Dokumente",
-      "more": "Mehr…",
+      "moreApps": "Mehr Apps…",
+      "moreDocuments": "Mehr Dokumente…",
       "createAccount": "Account erstellen…",
       "login": "Anmelden…",
       "logOut": "{{username}} abmelden…"
