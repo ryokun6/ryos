@@ -3,6 +3,9 @@ import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
 
+// Long press delay in milliseconds
+const LONG_PRESS_DELAY = 500;
+
 interface CoverFlowProps {
   tracks: Track[];
   currentIndex: number;
@@ -166,6 +169,37 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const swipeStartX = useRef<number | null>(null);
   const lastMoveX = useRef<number | null>(null);
   
+  // Long press handling for exit
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressFiredRef = useRef(false);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const startLongPress = useCallback(() => {
+    clearLongPress();
+    longPressFiredRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      onExit();
+    }, LONG_PRESS_DELAY);
+  }, [onExit, clearLongPress]);
+
+  const endLongPress = useCallback(() => {
+    clearLongPress();
+  }, [clearLongPress]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearLongPress();
+    };
+  }, [clearLongPress]);
+
   // Reset selected index when opening
   useEffect(() => {
     if (isVisible) {
@@ -323,6 +357,20 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             onPan={handlePan}
             onPanEnd={handlePanEnd}
             onWheel={handleWheel}
+            onClick={() => {
+              // Don't trigger click if long press was fired or if we were swiping
+              if (longPressFiredRef.current) {
+                longPressFiredRef.current = false;
+                return;
+              }
+              selectCurrent();
+            }}
+            onMouseDown={() => startLongPress()}
+            onMouseUp={() => endLongPress()}
+            onMouseLeave={() => endLongPress()}
+            onTouchStart={() => startLongPress()}
+            onTouchEnd={() => endLongPress()}
+            onTouchCancel={() => endLongPress()}
             style={{ touchAction: "none", overflow: "visible" }}
           >
             {/* Covers */}

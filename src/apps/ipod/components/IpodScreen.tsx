@@ -378,8 +378,8 @@ export function IpodScreen({
         </div>
       </div>
 
-      {/* Content area */}
-      <div className="relative h-[calc(100%-26px)]">
+      {/* Content area - z-30 only when video is not showing so it can receive events */}
+      <div className={cn("relative h-[calc(100%-26px)]", !showVideo && "z-30")}>
         <AnimatePresence initial={false} custom={menuDirection} mode="sync">
           {menuMode ? (
             <motion.div

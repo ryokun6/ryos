@@ -214,6 +214,10 @@ export function IpodAppComponent({
   const skipOperationRef = useRef(false);
   const coverFlowRef = useRef<CoverFlowRef | null>(null);
   
+  // Screen long press for CoverFlow toggle
+  const screenLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const screenLongPressFiredRef = useRef(false);
+  
   // Track switching state to prevent race conditions
   const isTrackSwitchingRef = useRef(false);
   const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1058,7 +1062,7 @@ export function IpodAppComponent({
     playClickSound();
     vibrate();
     registerActivity();
-    
+
     if (isCoverFlowOpen) {
       // Exit cover flow
       setIsCoverFlowOpen(false);
@@ -1677,7 +1681,51 @@ export function IpodAppComponent({
             }}
           >
             {/* Screen container with Cover Flow overlay */}
-            <div className="relative w-full" style={{ height: "150px", minHeight: "150px", maxHeight: "150px" }}>
+            <div 
+              className="relative w-full" 
+              style={{ height: "150px", minHeight: "150px", maxHeight: "150px" }}
+              onMouseDown={(e) => {
+                // Start long press timer for CoverFlow toggle
+                if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
+                screenLongPressFiredRef.current = false;
+                screenLongPressTimerRef.current = setTimeout(() => {
+                  screenLongPressFiredRef.current = true;
+                  handleCenterLongPress();
+                }, 500);
+              }}
+              onMouseUp={() => {
+                if (screenLongPressTimerRef.current) {
+                  clearTimeout(screenLongPressTimerRef.current);
+                  screenLongPressTimerRef.current = null;
+                }
+              }}
+              onMouseLeave={() => {
+                if (screenLongPressTimerRef.current) {
+                  clearTimeout(screenLongPressTimerRef.current);
+                  screenLongPressTimerRef.current = null;
+                }
+              }}
+              onTouchStart={() => {
+                if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
+                screenLongPressFiredRef.current = false;
+                screenLongPressTimerRef.current = setTimeout(() => {
+                  screenLongPressFiredRef.current = true;
+                  handleCenterLongPress();
+                }, 500);
+              }}
+              onTouchEnd={() => {
+                if (screenLongPressTimerRef.current) {
+                  clearTimeout(screenLongPressTimerRef.current);
+                  screenLongPressTimerRef.current = null;
+                }
+              }}
+              onTouchCancel={() => {
+                if (screenLongPressTimerRef.current) {
+                  clearTimeout(screenLongPressTimerRef.current);
+                  screenLongPressTimerRef.current = null;
+                }
+              }}
+            >
               <IpodScreen
                 currentTrack={tracks[currentIndex] || null}
                 isPlaying={isPlaying && !isFullScreen}
