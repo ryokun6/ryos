@@ -32,6 +32,17 @@ import { useTranslation } from "react-i18next";
 import { listAllCachedSongMetadata, deleteSongMetadata, deleteAllSongMetadata, bulkImportSongMetadata, CachedSongMetadata } from "@/utils/songMetadataCache";
 import { getApiUrl } from "@/utils/platform";
 
+/**
+ * Format Kugou image URL with size and HTTPS
+ * Kugou URLs contain {size} placeholder that needs to be replaced
+ */
+function formatKugouImageUrl(imgUrl: string | undefined, size: number = 100): string | null {
+  if (!imgUrl) return null;
+  let url = imgUrl.replace("{size}", String(size));
+  url = url.replace(/^http:\/\//, "https://");
+  return url;
+}
+
 interface User {
   username: string;
   lastActive: number;
@@ -1164,71 +1175,59 @@ export function AdminAppComponent({
                     </div>
                   ) : (
                     <>
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="text-[10px] border-none font-normal">
-                            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
-                              {t("apps.admin.tableHeaders.title", "Title")}
-                            </TableHead>
-                            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
-                              {t("apps.admin.tableHeaders.artist", "Artist")}
-                            </TableHead>
-                            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
-                              {t("apps.admin.tableHeaders.addedBy", "Added By")}
-                            </TableHead>
-                            <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
-                              {t("apps.admin.tableHeaders.added", "Added")}
-                            </TableHead>
-                            <TableHead className="font-normal bg-gray-100/50 h-[28px] w-8"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody className="text-[11px]">
-                          {songs
-                            .filter((song) =>
-                              songSearch.length === 0 ||
-                              song.title.toLowerCase().includes(songSearch.toLowerCase()) ||
-                              (song.artist?.toLowerCase().includes(songSearch.toLowerCase()) ?? false)
-                            )
-                            .slice(0, visibleSongsCount)
-                            .map((song) => (
-                              <TableRow
-                                key={song.youtubeId}
-                                className="border-none hover:bg-gray-100/50 transition-colors cursor-pointer odd:bg-gray-200/50 group"
-                                onClick={() => setSelectedSongId(song.youtubeId)}
+                      <div className="divide-y divide-gray-200">
+                        {songs
+                          .filter((song) =>
+                            songSearch.length === 0 ||
+                            song.title.toLowerCase().includes(songSearch.toLowerCase()) ||
+                            (song.artist?.toLowerCase().includes(songSearch.toLowerCase()) ?? false)
+                          )
+                          .slice(0, visibleSongsCount)
+                          .map((song) => (
+                            <div
+                              key={song.youtubeId}
+                              className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100/50 transition-colors cursor-pointer group"
+                              onClick={() => setSelectedSongId(song.youtubeId)}
+                            >
+                              {/* Cover Image */}
+                              <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-gray-200">
+                                <img
+                                  src={formatKugouImageUrl(song.cover, 100) || `https://i.ytimg.com/vi/${song.youtubeId}/default.jpg`}
+                                  alt={song.title}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                              {/* Title and Artist */}
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[12px] font-medium truncate" title={song.title}>
+                                  {song.title}
+                                </div>
+                                <div className="text-[11px] text-neutral-500 truncate" title={song.artist}>
+                                  {song.artist || "-"}
+                                </div>
+                              </div>
+                              {/* Created By */}
+                              {song.createdBy && (
+                                <span className="text-[10px] text-neutral-400 flex-shrink-0">
+                                  {song.createdBy}
+                                </span>
+                              )}
+                              {/* Delete Button */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  promptDelete("song", song.youtubeId, song.title);
+                                }}
+                                className="h-6 w-6 p-0 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                               >
-                                <TableCell className="max-w-[180px]">
-                                  <span className="truncate block" title={song.title}>
-                                    {song.title}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="max-w-[120px]">
-                                  <span className="truncate block" title={song.artist}>
-                                    {song.artist || "-"}
-                                  </span>
-                                </TableCell>
-                                <TableCell>
-                                  {song.createdBy || "-"}
-                                </TableCell>
-                                <TableCell className="whitespace-nowrap">
-                                  {formatRelativeTime(song.createdAt)}
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      promptDelete("song", song.youtubeId, song.title);
-                                    }}
-                                    className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ))}
+                      </div>
                       {songs.filter((song) =>
                         songSearch.length === 0 ||
                         song.title.toLowerCase().includes(songSearch.toLowerCase()) ||
