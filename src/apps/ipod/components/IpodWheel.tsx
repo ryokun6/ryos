@@ -60,8 +60,8 @@ export function IpodWheel({
   // Long press handling for center button
   const centerLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const centerLongPressFiredRef = useRef(false);
-  const centerLongPressFiredAtRef = useRef<number>(0);
-  const centerPressStartTimeRef = useRef<number>(0);
+  const centerTouchActiveRef = useRef(false);
+  const centerTouchHandledRef = useRef(false);
 
   const clearCenterLongPress = () => {
     if (centerLongPressTimerRef.current) {
@@ -70,31 +70,37 @@ export function IpodWheel({
     }
   };
 
-  const startCenterLongPress = () => {
+  const startCenterLongPress = (isTouch: boolean) => {
     clearCenterLongPress();
     centerLongPressFiredRef.current = false;
-    centerPressStartTimeRef.current = Date.now();
+    if (isTouch) {
+      centerTouchActiveRef.current = true;
+      centerTouchHandledRef.current = false;
+    }
     if (onCenterLongPress) {
       centerLongPressTimerRef.current = setTimeout(() => {
         centerLongPressFiredRef.current = true;
-        centerLongPressFiredAtRef.current = Date.now();
+        centerTouchHandledRef.current = true;
         onCenterLongPress();
       }, LONG_PRESS_DELAY);
     }
   };
 
-  const endCenterLongPress = () => {
+  const endCenterLongPress = (isTouch: boolean, triggerClick: boolean = false) => {
     clearCenterLongPress();
-    // If the long press fired, we need to prevent the click
-    // The flag will be checked in onClick and reset there
-  };
-  
-  // Check if we should ignore a click (long press just fired)
-  const shouldIgnoreClick = () => {
-    if (centerLongPressFiredRef.current) return true;
-    // Also ignore clicks within 300ms of long press firing (iOS workaround)
-    if (centerLongPressFiredAtRef.current && Date.now() - centerLongPressFiredAtRef.current < 300) return true;
-    return false;
+    
+    // For touch events, handle the tap here instead of relying on onClick
+    if (isTouch && triggerClick && !centerLongPressFiredRef.current && !centerTouchHandledRef.current) {
+      centerTouchHandledRef.current = true;
+      onWheelClick("center");
+    }
+    
+    if (isTouch) {
+      // Reset touch state after a delay to block any synthetic click
+      setTimeout(() => {
+        centerTouchActiveRef.current = false;
+      }, 400);
+    }
   };
 
   // Calculate angle (in degrees) from the center of the wheel – used for click areas
@@ -383,15 +389,17 @@ export function IpodWheel({
         tabIndex={0}
         aria-label={t("apps.ipod.ariaLabels.select")}
         onClick={(e) => {
-          // Don't trigger click if long press was fired (with iOS workaround)
-          if (shouldIgnoreClick()) {
+          // Block all clicks if touch is/was active (touch handles its own tap)
+          if (centerTouchActiveRef.current || centerTouchHandledRef.current) {
             e.preventDefault();
             e.stopPropagation();
-            // Reset the flags after a delay to allow for the next interaction
-            setTimeout(() => {
-              centerLongPressFiredRef.current = false;
-              centerLongPressFiredAtRef.current = 0;
-            }, 300);
+            return;
+          }
+          // Don't trigger click if long press was fired
+          if (centerLongPressFiredRef.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            centerLongPressFiredRef.current = false;
             return;
           }
           if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
@@ -406,27 +414,24 @@ export function IpodWheel({
         }}
         onMouseDown={(e) => {
           e.stopPropagation();
-          startCenterLongPress();
+          startCenterLongPress(false);
         }}
         onMouseUp={() => {
-          endCenterLongPress();
+          endCenterLongPress(false);
         }}
         onMouseLeave={() => {
-          endCenterLongPress();
+          endCenterLongPress(false);
         }}
         onTouchStart={(e) => {
           e.stopPropagation();
-          startCenterLongPress();
+          startCenterLongPress(true);
         }}
         onTouchEnd={(e) => {
-          endCenterLongPress();
-          // If long press fired, prevent click event
-          if (centerLongPressFiredRef.current) {
-            e.preventDefault();
-          }
+          e.preventDefault(); // Always prevent to avoid synthetic click
+          endCenterLongPress(true, true); // Pass true to trigger click if appropriate
         }}
         onTouchCancel={() => {
-          endCenterLongPress();
+          endCenterLongPress(true, false);
         }}
         className={cn(
           "ipod-wheel-center absolute w-16 h-16 rounded-full z-10 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none select-none no-select-gesture",
