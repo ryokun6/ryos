@@ -63,6 +63,7 @@ function CoverImage({
         scale: centerScale,
         opacity: 1,
         zIndex: 10,
+        isCenter: true,
       };
     }
     
@@ -71,13 +72,15 @@ function CoverImage({
     
     // Side covers - spacing scales with container
     // Push side covers back more to prevent clipping with center cover
+    // Opacity 1 for direct neighbors (absPos === 1), fade out the rest
     return {
       x: `${direction * (baseSpacing + absPos * positionSpacing)}cqmin`,
       rotateY: direction * -60,
       z: -50 - absPos * 20,
       scale: sideScale,
-      opacity: Math.max(0, 1 - absPos * 0.3),
+      opacity: absPos === 1 ? 1 : Math.max(0, 1 - (absPos - 1) * 0.3),
       zIndex: 5 - absPos,
+      isCenter: false,
     };
   };
 
@@ -123,9 +126,11 @@ function CoverImage({
     >
       {/* Cover art */}
       <div
-        className={`w-full h-full shadow-xl overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
+        className={`w-full h-full overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
         style={{
           background: "#1a1a1a",
+          filter: transform.isCenter ? "brightness(1)" : "brightness(0.4)",
+          transition: "filter 0.3s ease-out",
         }}
       >
         {coverUrl ? (
