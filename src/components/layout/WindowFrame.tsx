@@ -156,9 +156,6 @@ export function WindowFrame({
   // Hover state for notitlebar material (shows titlebar on hover/interaction)
   const [isTitlebarHovered, setIsTitlebarHovered] = useState(false);
   const titlebarHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Track touch start for tap detection (to distinguish taps from swipes/gestures)
-  const titlebarTouchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
-
   // Start auto-hide timer for notitlebar windows
   const startTitlebarAutoHideTimer = useCallback(() => {
     if (titlebarHideTimeoutRef.current) {
@@ -176,38 +173,6 @@ export function WindowFrame({
     setIsTitlebarHovered(true);
     startTitlebarAutoHideTimer();
   }, [startTitlebarAutoHideTimer]);
-
-  // Handle touch start for notitlebar tap detection
-  const handleNoTitlebarTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!isNoTitlebar) return;
-    const touch = e.touches[0];
-    titlebarTouchStartRef.current = {
-      x: touch.clientX,
-      y: touch.clientY,
-      time: Date.now(),
-    };
-  }, [isNoTitlebar]);
-
-  // Handle touch end for notitlebar tap detection - only show titlebar on actual taps
-  const handleNoTitlebarTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!isNoTitlebar || !titlebarTouchStartRef.current) return;
-    
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - titlebarTouchStartRef.current.x;
-    const dy = touch.clientY - titlebarTouchStartRef.current.y;
-    const deltaTime = Date.now() - titlebarTouchStartRef.current.time;
-    
-    // Only show titlebar if it was a tap (minimal movement, quick touch)
-    const TAP_THRESHOLD = 15; // pixels
-    const TAP_MAX_TIME = 300; // ms
-    const isTap = Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD && deltaTime < TAP_MAX_TIME;
-    
-    if (isTap) {
-      showTitlebarWithAutoHide();
-    }
-    
-    titlebarTouchStartRef.current = null;
-  }, [isNoTitlebar, showTitlebarWithAutoHide]);
 
   // Cleanup titlebar hide timeout
   useEffect(() => {
@@ -1156,8 +1121,6 @@ export function WindowFrame({
               clearTimeout(titlebarHideTimeoutRef.current);
             }
           } : undefined}
-          onTouchStart={isNoTitlebar ? handleNoTitlebarTouchStart : undefined}
-          onTouchEnd={isNoTitlebar ? handleNoTitlebarTouchEnd : undefined}
         >
           {/* Title bar */}
           {isXpTheme ? (
@@ -1277,7 +1240,6 @@ export function WindowFrame({
                       background: "linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 100%)",
                       borderBottom: "none",
                       opacity: isTitlebarHovered ? 1 : 0,
-                      // Always interactive so titlebar can be dragged even when visually hidden
                     }
                   : isForeground
                   ? {
