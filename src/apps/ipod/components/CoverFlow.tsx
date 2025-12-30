@@ -354,18 +354,18 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className={`absolute inset-0 z-50 bg-gradient-to-b from-gray-900 via-black to-gray-900 overflow-hidden ${ipodMode ? "ipod-force-font" : ""}`}
+          className={`absolute inset-0 z-50 bg-black overflow-hidden ${ipodMode ? "ipod-force-font" : ""}`}
           style={{ containerType: "size" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
         >
-          {/* Reflective floor effect */}
+          {/* Reflective floor gradient - bottom only */}
           <div 
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to bottom, transparent 50%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.05) 100%)",
+              background: "linear-gradient(to bottom, transparent 40%, rgba(30,30,30,0.5) 70%, rgba(50,50,50,0.3) 100%)",
               pointerEvents: "none",
             }}
           />
