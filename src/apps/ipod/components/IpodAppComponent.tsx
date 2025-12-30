@@ -1684,7 +1684,7 @@ export function IpodAppComponent({
             <div 
               className="relative w-full" 
               style={{ height: "150px", minHeight: "150px", maxHeight: "150px" }}
-              onMouseDown={(e) => {
+              onMouseDown={() => {
                 // Start long press timer for CoverFlow toggle
                 if (screenLongPressTimerRef.current) clearTimeout(screenLongPressTimerRef.current);
                 screenLongPressFiredRef.current = false;
