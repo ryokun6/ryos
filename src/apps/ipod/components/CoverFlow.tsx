@@ -182,6 +182,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   // Track swipe state
   const swipeStartX = useRef<number | null>(null);
   const lastMoveX = useRef<number | null>(null);
+  const isPanningRef = useRef(false);
   
   // Long press handling for exit
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -284,6 +285,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const handlePanStart = useCallback((_: unknown, info: PanInfo) => {
     swipeStartX.current = info.point.x;
     lastMoveX.current = info.point.x;
+    isPanningRef.current = true;
     // Cancel long press when drag starts
     clearLongPress();
   }, [clearLongPress]);
@@ -310,6 +312,10 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const handlePanEnd = useCallback(() => {
     swipeStartX.current = null;
     lastMoveX.current = null;
+    // Reset panning flag after a short delay to allow click event to check it
+    setTimeout(() => {
+      isPanningRef.current = false;
+    }, 50);
   }, []);
 
   // Handle wheel scroll
@@ -372,8 +378,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             onPanEnd={handlePanEnd}
             onWheel={handleWheel}
             onClick={() => {
-              // Don't trigger click if long press was fired
-              if (longPressFiredRef.current) {
+              // Don't select if panning or long press was fired
+              if (isPanningRef.current || longPressFiredRef.current) {
                 longPressFiredRef.current = false;
                 return;
               }
