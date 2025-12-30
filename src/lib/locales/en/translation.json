@@ -1350,6 +1350,7 @@
         "backlight": "Backlight",
         "lcdFilter": "LCD Filter",
         "video": "Video",
+        "coverFlow": "Cover Flow",
         "classic": "Classic",
         "black": "Black",
         "u2": "U2",

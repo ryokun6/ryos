@@ -17,6 +17,7 @@ import { IpodWheel } from "./IpodWheel";
 import { PipPlayer } from "./PipPlayer";
 import { FullScreenPortal } from "./FullScreenPortal";
 import { LyricsDisplay } from "./LyricsDisplay";
+import { CoverFlow, CoverFlowRef } from "./CoverFlow";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { useIpodStore, Track, getEffectiveTranslationLanguage, flushPendingLyricOffsetSave } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
@@ -200,6 +201,9 @@ export function IpodAppComponent({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
+  
+  // Cover Flow state
+  const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -208,6 +212,7 @@ export function IpodAppComponent({
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
   const lastTrackedSongRef = useRef<{ trackId: string; elapsedTime: number } | null>(null);
   const skipOperationRef = useRef(false);
+  const coverFlowRef = useRef<CoverFlowRef | null>(null);
   
   // Track switching state to prevent race conditions
   const isTrackSwitchingRef = useRef(false);
@@ -1041,6 +1046,52 @@ export function IpodAppComponent({
     }
   }, [playClickSound, vibrate, registerActivity, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, t]);
 
+  // Cover Flow handlers
+  const handleCenterLongPress = useCallback(() => {
+    // Toggle cover flow on long press of center button
+    playClickSound();
+    vibrate();
+    registerActivity();
+    
+    if (isCoverFlowOpen) {
+      // Exit cover flow
+      setIsCoverFlowOpen(false);
+    } else if (!menuMode && tracks.length > 0) {
+      // Enter cover flow only when in Now Playing mode
+      setIsCoverFlowOpen(true);
+    }
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, menuMode, tracks.length]);
+
+  const handleCoverFlowSelect = useCallback((index: number) => {
+    playClickSound();
+    vibrate();
+    registerActivity();
+    
+    // Switch to the selected track
+    const track = tracks[index];
+    if (track) {
+      startTrackSwitch();
+      setCurrentSongId(track.id);
+      setIsPlaying(true);
+      setIsCoverFlowOpen(false);
+      
+      // Show video for the new track
+      if (!showVideo) {
+        toggleVideo();
+      }
+    }
+  }, [playClickSound, vibrate, registerActivity, tracks, startTrackSwitch, setCurrentSongId, setIsPlaying, showVideo, toggleVideo]);
+
+  const handleCoverFlowExit = useCallback(() => {
+    playClickSound();
+    vibrate();
+    setIsCoverFlowOpen(false);
+  }, [playClickSound, vibrate]);
+
+  const handleCoverFlowRotation = useCallback(() => {
+    playScrollSound();
+  }, [playScrollSound]);
+
   // Wheel click handler
   const handleWheelClick = useCallback(
     (area: WheelArea) => {
@@ -1081,6 +1132,12 @@ export function IpodAppComponent({
           }
           break;
         case "center":
+          // Handle Cover Flow selection
+          if (isCoverFlowOpen && coverFlowRef.current) {
+            coverFlowRef.current.selectCurrent();
+            return;
+          }
+          
           if (menuMode) {
             const currentMenu = menuHistory[menuHistory.length - 1];
             if (currentMenu?.items[selectedMenuItem]) {
@@ -1106,7 +1163,7 @@ export function IpodAppComponent({
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch]
+    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen]
   );
 
   // Wheel rotation handler
@@ -1114,6 +1171,16 @@ export function IpodAppComponent({
     (direction: RotationDirection) => {
       playScrollSound();
       registerActivity();
+
+      // Handle Cover Flow navigation
+      if (isCoverFlowOpen && coverFlowRef.current) {
+        if (direction === "clockwise") {
+          coverFlowRef.current.navigateNext();
+        } else {
+          coverFlowRef.current.navigatePrevious();
+        }
+        return;
+      }
 
       if (menuMode) {
         const currentMenu = menuHistory[menuHistory.length - 1];
@@ -1146,7 +1213,7 @@ export function IpodAppComponent({
         );
       }
     },
-    [playScrollSound, registerActivity, menuMode, menuHistory, isFullScreen, showStatus]
+    [playScrollSound, registerActivity, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen]
   );
 
   // Scaling
@@ -1557,6 +1624,8 @@ export function IpodAppComponent({
       onShareSong={handleShareSong}
       onRefreshLyrics={handleRefreshLyrics}
       onAdjustTiming={() => setIsSyncModeOpen(true)}
+      isCoverFlowOpen={isCoverFlowOpen}
+      onToggleCoverFlow={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
     />
   );
 
@@ -1601,75 +1670,90 @@ export function IpodAppComponent({
               backfaceVisibility: "hidden",
             }}
           >
-            <IpodScreen
-              currentTrack={tracks[currentIndex] || null}
-              isPlaying={isPlaying && !isFullScreen}
-              elapsedTime={elapsedTime}
-              totalTime={totalTime}
-              menuMode={menuMode}
-              menuHistory={menuHistory}
-              selectedMenuItem={selectedMenuItem}
-              onSelectMenuItem={setSelectedMenuItem}
-              currentIndex={currentIndex}
-              tracksLength={tracks.length}
-              backlightOn={backlightOn}
-              menuDirection={menuDirection}
-              onMenuItemAction={handleMenuItemAction}
-              showVideo={showVideo}
-              playerRef={playerRef}
-              handleTrackEnd={handleTrackEnd}
-              handleProgress={handleProgress}
-              handleDuration={handleDuration}
-              handlePlay={handlePlay}
-              handlePause={handlePause}
-              handleReady={handleReady}
-              loopCurrent={loopCurrent}
-              statusMessage={statusMessage}
-              onToggleVideo={toggleVideo}
-              lcdFilterOn={lcdFilterOn}
-              ipodVolume={ipodVolume}
-              showStatusCallback={showStatus}
-              showLyrics={showLyrics}
-              lyricsAlignment={lyricsAlignment}
-              koreanDisplay={koreanDisplay}
-              japaneseFurigana={japaneseFurigana}
-              lyricOffset={lyricOffset ?? 0}
-              adjustLyricOffset={(delta) =>
-                useIpodStore.getState().adjustLyricOffset(currentIndex, delta)
-              }
-              registerActivity={registerActivity}
-              isFullScreen={isFullScreen}
-              lyricsControls={fullScreenLyricsControls}
-              furiganaMap={furiganaMap}
-              soramimiMap={soramimiMap}
-              activityState={activityState}
-              onNextTrack={() => {
-                if (isOffline) {
-                  showOfflineStatus();
-                } else {
-                  skipOperationRef.current = true;
-                  startTrackSwitch();
-                  nextTrack();
-                  showStatus("⏭");
+            {/* Screen container with Cover Flow overlay */}
+            <div className="relative w-full" style={{ height: "150px", minHeight: "150px", maxHeight: "150px" }}>
+              <IpodScreen
+                currentTrack={tracks[currentIndex] || null}
+                isPlaying={isPlaying && !isFullScreen}
+                elapsedTime={elapsedTime}
+                totalTime={totalTime}
+                menuMode={menuMode}
+                menuHistory={menuHistory}
+                selectedMenuItem={selectedMenuItem}
+                onSelectMenuItem={setSelectedMenuItem}
+                currentIndex={currentIndex}
+                tracksLength={tracks.length}
+                backlightOn={backlightOn}
+                menuDirection={menuDirection}
+                onMenuItemAction={handleMenuItemAction}
+                showVideo={showVideo}
+                playerRef={playerRef}
+                handleTrackEnd={handleTrackEnd}
+                handleProgress={handleProgress}
+                handleDuration={handleDuration}
+                handlePlay={handlePlay}
+                handlePause={handlePause}
+                handleReady={handleReady}
+                loopCurrent={loopCurrent}
+                statusMessage={statusMessage}
+                onToggleVideo={toggleVideo}
+                lcdFilterOn={lcdFilterOn}
+                ipodVolume={ipodVolume}
+                showStatusCallback={showStatus}
+                showLyrics={showLyrics}
+                lyricsAlignment={lyricsAlignment}
+                koreanDisplay={koreanDisplay}
+                japaneseFurigana={japaneseFurigana}
+                lyricOffset={lyricOffset ?? 0}
+                adjustLyricOffset={(delta) =>
+                  useIpodStore.getState().adjustLyricOffset(currentIndex, delta)
                 }
-              }}
-              onPreviousTrack={() => {
-                if (isOffline) {
-                  showOfflineStatus();
-                } else {
-                  skipOperationRef.current = true;
-                  startTrackSwitch();
-                  previousTrack();
-                  showStatus("⏮");
-                }
-              }}
-            />
+                registerActivity={registerActivity}
+                isFullScreen={isFullScreen}
+                lyricsControls={fullScreenLyricsControls}
+                furiganaMap={furiganaMap}
+                soramimiMap={soramimiMap}
+                activityState={activityState}
+                onNextTrack={() => {
+                  if (isOffline) {
+                    showOfflineStatus();
+                  } else {
+                    skipOperationRef.current = true;
+                    startTrackSwitch();
+                    nextTrack();
+                    showStatus("⏭");
+                  }
+                }}
+                onPreviousTrack={() => {
+                  if (isOffline) {
+                    showOfflineStatus();
+                  } else {
+                    skipOperationRef.current = true;
+                    startTrackSwitch();
+                    previousTrack();
+                    showStatus("⏮");
+                  }
+                }}
+              />
+
+              {/* Cover Flow overlay - positioned within screen bounds */}
+              <CoverFlow
+                ref={coverFlowRef}
+                tracks={tracks}
+                currentIndex={currentIndex}
+                onSelectTrack={handleCoverFlowSelect}
+                onExit={handleCoverFlowExit}
+                onRotation={handleCoverFlowRotation}
+                isVisible={isCoverFlowOpen}
+              />
+            </div>
 
             <IpodWheel
               theme={theme}
               onWheelClick={handleWheelClick}
               onWheelRotation={handleWheelRotation}
               onMenuButton={handleMenuButton}
+              onCenterLongPress={handleCenterLongPress}
             />
           </div>
         </div>

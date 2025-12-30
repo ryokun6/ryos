@@ -74,6 +74,19 @@ export function getYouTubeVideoId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+/**
+ * Replace {size} placeholder in Kugou image URL with actual size
+ * Kugou image URLs contain {size} that needs to be replaced with: 100, 150, 240, 400, etc.
+ * Also ensures HTTPS is used to avoid mixed content issues
+ */
+export function formatKugouImageUrl(imgUrl: string | undefined, size: number = 400): string | null {
+  if (!imgUrl) return null;
+  let url = imgUrl.replace("{size}", String(size));
+  // Ensure HTTPS
+  url = url.replace(/^http:\/\//, "https://");
+  return url;
+}
+
 // Helper to get translation badge from code
 export function getTranslationBadge(code: string | null): string | null {
   if (!code) return null;
