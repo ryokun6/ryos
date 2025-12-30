@@ -27,9 +27,11 @@ export interface CoverFlowRef {
 function CoverImage({ 
   track, 
   position,
+  ipodMode = true,
 }: { 
   track: Track;
   position: number;
+  ipodMode?: boolean;
 }) {
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   const videoId = track?.url ? getYouTubeVideoId(track.url) : null;
@@ -38,7 +40,13 @@ function CoverImage({
     : null;
   const coverUrl = formatKugouImageUrl(track?.cover) ?? youtubeThumbnail;
 
-  // Calculate 3D transform based on position - uses relative units (50cqmin = 50% of container's smaller dimension)
+  // Cover size: larger for karaoke mode (non-iPod)
+  const coverSize = ipodMode ? 55 : 70; // cqmin units
+  // Side cover spacing adjusts based on cover size
+  const baseSpacing = ipodMode ? 25 : 32;
+  const positionSpacing = ipodMode ? 18 : 22;
+
+  // Calculate 3D transform based on position - uses relative units (cqmin = % of container's smaller dimension)
   const getTransform = (pos: number) => {
     if (pos === 0) {
       // Center cover - slightly larger and forward
@@ -54,9 +62,9 @@ function CoverImage({
     const direction = pos > 0 ? 1 : -1;
     const absPos = Math.abs(pos);
     
-    // Side covers - spacing scales with container (25cqmin base + 18cqmin per position)
+    // Side covers - spacing scales with container
     return {
-      x: `${direction * (25 + absPos * 18)}cqmin`,
+      x: `${direction * (baseSpacing + absPos * positionSpacing)}cqmin`,
       rotateY: direction * -65,
       z: -absPos * 10,
       scale: 0.95,
@@ -73,9 +81,9 @@ function CoverImage({
     <motion.div
       className="absolute"
       style={{
-        // Cover size scales with container - 55% of container's smaller dimension
-        width: "55cqmin",
-        height: "55cqmin",
+        // Cover size scales with container
+        width: `${coverSize}cqmin`,
+        height: `${coverSize}cqmin`,
         perspective: 400,
         transformStyle: "preserve-3d",
       }}
@@ -393,6 +401,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     key={track.id}
                     track={track}
                     position={position}
+                    ipodMode={ipodMode}
                   />
                 ))}
               </AnimatePresence>
