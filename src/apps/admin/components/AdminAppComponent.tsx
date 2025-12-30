@@ -1207,6 +1207,12 @@ export function AdminAppComponent({
                                   {song.artist || "-"}
                                 </div>
                               </div>
+                              {/* Created By */}
+                              {song.createdBy && (
+                                <span className="text-[10px] text-neutral-400 flex-shrink-0">
+                                  {song.createdBy}
+                                </span>
+                              )}
                               {/* Delete Button */}
                               <Button
                                 variant="ghost"
