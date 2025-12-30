@@ -129,7 +129,7 @@ function CoverImage({
         className={`w-full h-full overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
         style={{
           background: "#1a1a1a",
-          filter: transform.isCenter ? "brightness(1)" : "brightness(0.4)",
+          filter: transform.isCenter ? "brightness(1)" : "brightness(0.7)",
           transition: "filter 0.3s ease-out",
         }}
       >
