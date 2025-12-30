@@ -672,7 +672,8 @@
         "aboutControlPanels": "À propos des panneaux de configuration",
         "aboutControlPanelsForMacosX": "À propos de Préférences Système",
         "app": "App",
-        "controlPanelsHelp": "Aide Panneaux de configuration"
+        "controlPanelsHelp": "Aide Panneaux de configuration",
+        "controlPanelsHelpForMacosX": "Aide Préférences Système"
       },
       "min": "min",
       "minute": "minute",
@@ -2079,6 +2080,7 @@
       "aboutThisComputer": "À propos de cet ordinateur",
       "softwareUpdate": "Mise à jour de logiciels…",
       "systemPreferences": "Préférences Système…",
+      "controlPanels": "Panneau de configuration…",
       "appletStore": "Applet Store…",
       "recentItems": "Éléments récents",
       "noRecentApps": "Aucune app récente",

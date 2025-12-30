@@ -670,8 +670,10 @@
       "masterVolume": "Gesamtlautstärke",
       "menu": {
         "aboutControlPanels": "Über Systemsteuerung",
+        "aboutControlPanelsForMacosX": "Über Systemeinstellungen",
         "app": "App",
-        "controlPanelsHelp": "Hilfe zur Systemsteuerung"
+        "controlPanelsHelp": "Hilfe zur Systemsteuerung",
+        "controlPanelsHelpForMacosX": "Systemeinstellungen Hilfe"
       },
       "min": "min",
       "minute": "Minute",
@@ -2078,6 +2080,7 @@
       "aboutThisComputer": "Über diesen Computer",
       "softwareUpdate": "Softwareaktualisierung…",
       "systemPreferences": "Systemeinstellungen…",
+      "controlPanels": "Systemsteuerung…",
       "appletStore": "Applet Store…",
       "recentItems": "Benutzte Objekte",
       "noRecentApps": "Keine kürzlich verwendeten Apps",
