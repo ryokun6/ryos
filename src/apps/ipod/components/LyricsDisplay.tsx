@@ -1512,7 +1512,7 @@ export function LyricsDisplay({
       className={`absolute inset-x-0 mx-auto top-0 left-0 right-0 bottom-0 w-full h-full overflow-hidden flex flex-col items-center justify-end ${gapClass} z-40 select-none no-select-gesture px-2 ${bottomPaddingClass} ${isOldSchoolKaraoke ? "lyrics-old-school" : ""}`}
       style={{
         ...(containerStyle || {}),
-        pointerEvents: interactive ? "auto" : "none",
+        pointerEvents: "none",
         WebkitUserSelect: "none",
         WebkitTouchCallout: "none",
       }}
@@ -1603,6 +1603,7 @@ export function LyricsDisplay({
                             style={{
                               textAlign: lineTextAlign as CanvasTextAlign,
                               width: "100%",
+                              pointerEvents: interactive ? "auto" : "none",
                               paddingLeft:
                                 alignment === LyricsAlignment.Alternating &&
                                 index === 0 &&

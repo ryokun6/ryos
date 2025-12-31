@@ -1099,16 +1099,20 @@ export function KaraokeAppComponent({
           <AnimatePresence>
             {currentTrack && !isPlaying && coverUrl && (
               <motion.div
-                className="absolute inset-0 z-5"
+                className="absolute inset-0 z-15 cursor-pointer"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePlay();
+                }}
               >
                 <motion.img
                   src={coverUrl}
                   alt={currentTrack.title}
-                  className="w-full h-full object-cover brightness-50"
+                  className="w-full h-full object-cover brightness-50 pointer-events-none"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -1491,13 +1495,40 @@ export function KaraokeAppComponent({
                     )}
                   </div>
 
+                  {/* Paused cover overlay */}
+                  <AnimatePresence>
+                    {currentTrack && !isPlaying && coverUrl && (
+                      <motion.div
+                        className="absolute inset-0 z-15 cursor-pointer"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePlay();
+                        }}
+                      >
+                        <motion.img
+                          src={coverUrl}
+                          alt={currentTrack.title}
+                          className="w-full h-full object-cover brightness-50 pointer-events-none"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   {/* Lyrics overlays - positioned relative to viewport, not video container */}
                   {showLyrics && currentTrack && (
                     <div className="fixed inset-0 bg-black/50 z-10 pointer-events-none" />
                   )}
 
                   {showLyrics && currentTrack && (
-                    <div className="absolute inset-0 z-20" data-lyrics>
+                    <div className="absolute inset-0 z-20 pointer-events-none" data-lyrics>
                       <LyricsDisplay
                         lines={lyricsControls.lines}
                         originalLines={lyricsControls.originalLines}

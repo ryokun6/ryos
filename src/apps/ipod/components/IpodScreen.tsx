@@ -296,16 +296,20 @@ export function IpodScreen({
             <AnimatePresence>
               {showVideo && !isPlaying && coverUrl && (
                 <motion.div
-                  className="absolute inset-0 z-5"
+                  className="absolute inset-0 z-15 cursor-pointer"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePlay();
+                  }}
                 >
                   <motion.img
                     src={coverUrl}
                     alt={currentTrack?.title}
-                    className="w-full h-full object-cover brightness-50"
+                    className="w-full h-full object-cover brightness-50 pointer-events-none"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}

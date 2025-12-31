@@ -1992,16 +1992,20 @@ export function IpodAppComponent({
                   <AnimatePresence>
                     {tracks[currentIndex] && !isPlaying && fullscreenCoverUrl && (
                       <motion.div
-                        className="absolute inset-0 z-5"
+                        className="absolute inset-0 z-15 cursor-pointer"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePlay();
+                        }}
                       >
                         <motion.img
                           src={fullscreenCoverUrl}
                           alt={tracks[currentIndex]?.title}
-                          className="w-full h-full object-cover brightness-50"
+                          className="w-full h-full object-cover brightness-50 pointer-events-none"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
@@ -2017,7 +2021,7 @@ export function IpodAppComponent({
                   )}
 
                   {showLyrics && tracks[currentIndex] && (
-                    <div className="absolute inset-0 z-20" data-lyrics>
+                    <div className="absolute inset-0 z-20 pointer-events-none" data-lyrics>
                       <LyricsDisplay
                         lines={fullScreenLyricsControls.lines}
                         originalLines={fullScreenLyricsControls.originalLines}
