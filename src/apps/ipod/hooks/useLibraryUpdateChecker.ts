@@ -50,6 +50,7 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           title: song.title,
           artist: song.artist,
           album: song.album ?? "",
+          cover: song.cover,
           lyricOffset: song.lyricOffset,
           lyricsSource: song.lyricsSource,
         }));
@@ -69,14 +70,21 @@ export function useLibraryUpdateChecker(isActive: boolean) {
         currentTracks.forEach((currentTrack) => {
           const serverTrack = serverTrackMap.get(currentTrack.id);
           if (serverTrack) {
+            // Check if lyricsSource should be updated (new or different hash)
+            const shouldUpdateLyricsSource =
+              serverTrack.lyricsSource && (
+                !currentTrack.lyricsSource ||
+                currentTrack.lyricsSource.hash !== serverTrack.lyricsSource.hash
+              );
+
             const hasChanges =
               currentTrack.title !== serverTrack.title ||
               currentTrack.artist !== serverTrack.artist ||
               currentTrack.album !== serverTrack.album ||
+              currentTrack.cover !== serverTrack.cover ||
               currentTrack.url !== serverTrack.url ||
               currentTrack.lyricOffset !== serverTrack.lyricOffset ||
-              // Check if server has lyricsSource but user doesn't
-              (serverTrack.lyricsSource && !currentTrack.lyricsSource);
+              shouldUpdateLyricsSource;
             if (hasChanges) tracksUpdated++;
           }
         });

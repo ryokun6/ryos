@@ -1114,8 +1114,12 @@ export const useIpodStore = create<IpodState>()(
 
               // Check if we should update lyricsSource:
               // - Server has lyricsSource but user doesn't have one yet
+              // - Server has a different lyricsSource (compare by hash)
               const shouldUpdateLyricsSource =
-                serverTrack.lyricsSource && !currentTrack.lyricsSource;
+                serverTrack.lyricsSource && (
+                  !currentTrack.lyricsSource ||
+                  currentTrack.lyricsSource.hash !== serverTrack.lyricsSource.hash
+                );
 
               if (hasMetadataChanges || shouldUpdateLyricsSource) {
                 tracksUpdated++;
@@ -1128,7 +1132,7 @@ export const useIpodStore = create<IpodState>()(
                   cover: serverTrack.cover,
                   url: serverTrack.url,
                   lyricOffset: serverTrack.lyricOffset,
-                  // Only set lyricsSource from server if user doesn't have one
+                  // Update lyricsSource from server if it's new or different
                   ...(shouldUpdateLyricsSource && {
                     lyricsSource: serverTrack.lyricsSource,
                   }),
@@ -1189,6 +1193,13 @@ export const useIpodStore = create<IpodState>()(
                 finalTracks = finalTracks.map((track) => {
                   const fetched = fetchedMap.get(track.id);
                   if (fetched) {
+                    // Check if lyricsSource should be updated (new or different hash)
+                    const shouldUpdateLyricsSource =
+                      fetched.lyricsSource && (
+                        !track.lyricsSource ||
+                        track.lyricsSource.hash !== fetched.lyricsSource.hash
+                      );
+
                     // Check if any metadata has changed
                     const hasChanges =
                       (fetched.title && fetched.title !== track.title) ||
@@ -1196,7 +1207,7 @@ export const useIpodStore = create<IpodState>()(
                       (fetched.album && fetched.album !== track.album) ||
                       (fetched.cover && fetched.cover !== track.cover) ||
                       (fetched.lyricOffset !== undefined && fetched.lyricOffset !== track.lyricOffset) ||
-                      (fetched.lyricsSource && !track.lyricsSource);
+                      shouldUpdateLyricsSource;
 
                     if (hasChanges) {
                       tracksUpdated++;
@@ -1208,8 +1219,8 @@ export const useIpodStore = create<IpodState>()(
                         album: fetched.album ?? track.album,
                         cover: fetched.cover ?? track.cover,
                         lyricOffset: fetched.lyricOffset ?? track.lyricOffset,
-                        // Only update lyricsSource if user doesn't have one
-                        ...(fetched.lyricsSource && !track.lyricsSource && {
+                        // Update lyricsSource from server if it's new or different
+                        ...(shouldUpdateLyricsSource && {
                           lyricsSource: fetched.lyricsSource,
                         }),
                       };
