@@ -406,13 +406,48 @@ import { streamText } from "ai";
 // AI generation timeout (90 seconds for full song streaming)
 const AI_TIMEOUT_MS = 90000;
 
+/**
+ * Map language codes to readable language names for the AI prompt.
+ * This ensures the AI understands the target language correctly.
+ */
+const LANGUAGE_NAMES: Record<string, string> = {
+  "en": "English",
+  "ja": "Japanese (日本語)",
+  "ko": "Korean (한국어)",
+  "zh-TW": "Traditional Chinese (繁體中文)",
+  "zh-CN": "Simplified Chinese (简体中文)",
+  "zh": "Chinese (中文)",
+  "es": "Spanish (Español)",
+  "fr": "French (Français)",
+  "de": "German (Deutsch)",
+  "pt": "Portuguese (Português)",
+  "it": "Italian (Italiano)",
+  "ru": "Russian (Русский)",
+};
+
+/**
+ * Get readable language name from language code.
+ * Falls back to the original code if not found in mapping.
+ */
+function getLanguageName(languageCode: string): string {
+  return LANGUAGE_NAMES[languageCode] || languageCode;
+}
+
 /** Generate the translation system prompt for a target language */
 export function getTranslationSystemPrompt(targetLanguage: string): string {
-  return `Translate lyrics to ${targetLanguage} (one line per input line).
+  const languageName = getLanguageName(targetLanguage);
+  return `Translate ALL lyrics to ${languageName} (one line per input line).
+
+IMPORTANT: Translate from ANY source language (Korean, Japanese, Chinese, English, etc.) to ${languageName}.
+- Korean (한국어) lyrics → translate to ${languageName}
+- Japanese (日本語) lyrics → translate to ${languageName}
+- Chinese (中文) lyrics → translate to ${languageName}
+- English lyrics → translate to ${languageName}
+- If a line is ALREADY in ${languageName}, keep it as-is.
+
 Output format: Number each line like "1: translation", "2: translation", etc.
-If already in ${targetLanguage}, return as-is.
 For instrumental lines (e.g., "---"), return original.
-Preserve punctuation from original (like contractions: I'm, don't, it's). Don't add new punctuation at end of lines. Preserve artistic intent and rhythm.
+Preserve artistic intent and rhythm. Don't add punctuation at end of lines.
 
 Example output format:
 1: First translated line
@@ -440,16 +475,8 @@ export async function streamTranslation(
     return { translations: [], success: true };
   }
 
-  const systemPrompt = `Translate lyrics to ${targetLanguage} (one line per input line).
-Output format: Number each line like "1: translation", "2: translation", etc.
-If already in ${targetLanguage}, return as-is.
-For instrumental lines (e.g., "---"), return original.
-Preserve punctuation from original (like contractions: I'm, don't, it's). Don't add new punctuation at end of lines. Preserve artistic intent and rhythm.
-
-Example output format:
-1: First translated line
-2: Second translated line
-3: Third translated line`;
+  // Use the shared prompt generator for consistency
+  const systemPrompt = getTranslationSystemPrompt(targetLanguage);
 
   // Use numbered lines for reliable parsing during streaming
   const textsToProcess = lines.map((line, i) => `${i + 1}: ${line.words}`).join("\n");

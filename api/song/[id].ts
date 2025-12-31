@@ -714,10 +714,7 @@ export default async function handler(req: Request) {
 
         const totalLines = parsedLines.length;
 
-        logInfo(requestId, `Starting translate SSE stream using createUIMessageStream`, { 
-          totalLines, 
-          language,
-        });
+        logInfo(requestId, `Starting translate SSE stream`, { totalLines, language });
 
         // Prepare lines for translation
         const lines: LyricLine[] = parsedLines.map(line => ({
