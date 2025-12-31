@@ -23,7 +23,7 @@ function AquaShineOverlay() {
 }
 
 // Spinning CD component using Framer Motion exclusively
-function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; size: string; isPlaying: boolean }) {
+function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string | null; size: string; isPlaying: boolean; onClick?: () => void }) {
   // Initialize with a random rotation (0-60 degrees)
   const initialRotation = useRef(Math.random() * 60);
   const rotation = useMotionValue(initialRotation.current);
@@ -72,6 +72,21 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
       className="absolute inset-0 flex items-center justify-center"
       style={{ width: size, height: size }}
     >
+      {/* Circular click zone */}
+      <div
+        className="absolute rounded-full"
+        style={{ 
+          width: "92%", 
+          height: "92%", 
+          cursor: onClick ? "pointer" : "default",
+          zIndex: 30,
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onClick?.();
+        }}
+      />
       {/* CD disc (spinning part) */}
       <motion.div
         className="absolute rounded-full"
@@ -200,18 +215,26 @@ export interface CoverFlowRef {
 }
 
 // Individual cover component - uses track's cover directly (fetched during sync)
-function CoverImage({ 
-  track, 
+function CoverImage({
+  track,
   position,
   ipodMode = true,
   showCD = false,
   isPlaying = false,
-}: { 
+  onTogglePlay,
+  selectedIndex,
+  currentIndex,
+  onSelectTrack,
+}: {
   track: Track;
   position: number;
   ipodMode?: boolean;
   showCD?: boolean;
   isPlaying?: boolean;
+  onTogglePlay?: () => void;
+  selectedIndex: number;
+  currentIndex: number;
+  onSelectTrack: (index: number) => void;
 }) {
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   // Use higher resolution images for karaoke mode (non-iPod)
@@ -221,6 +244,17 @@ function CoverImage({
     : null;
   const kugouImageSize = ipodMode ? 400 : 800;
   const coverUrl = formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
+
+  // Handle disc click - select track if different, otherwise toggle play/pause
+  const handleDiscClick = useCallback(() => {
+    if (selectedIndex !== currentIndex) {
+      // Different track - select and play it
+      onSelectTrack(selectedIndex);
+    } else {
+      // Same track - toggle play/pause
+      onTogglePlay?.();
+    }
+  }, [selectedIndex, currentIndex, onSelectTrack, onTogglePlay]);
 
   // Cover size: larger for iPod mode (extends downward more)
   const coverSize = ipodMode ? 65 : 60; // cqmin units
@@ -280,13 +314,14 @@ function CoverImage({
 
   return (
     <motion.div
-      className="absolute pointer-events-none"
+      className="absolute"
       style={{
         // Cover size scales with container
         width: `${coverSize}cqmin`,
         height: `${coverSize}cqmin`,
         perspective: 300,
         transformStyle: "preserve-3d",
+        pointerEvents: isCenter && showCD ? "auto" : "none",
       }}
       initial={{
         x: initialTransform.x,
@@ -315,30 +350,37 @@ function CoverImage({
         damping: 50,
       }}
     >
-      {/* CD (above the sleeve, animates up from below when shown) - only for center */}
-      {isCenter && (
-        <motion.div
-          className="absolute inset-0"
-          initial={{ opacity: 0, y: "30%" }}
-          animate={{
-            opacity: showCD ? 1 : 0,
-            y: showCD ? "0%" : "30%",
-          }}
-          transition={{ 
-            type: "spring",
-            stiffness: 200,
-            damping: 25,
-          }}
-        >
-          <SpinningCD coverUrl={coverUrl} size="100%" isPlaying={isPlaying && showCD} />
-        </motion.div>
-      )}
+      {/* CD (below the sleeve, animates up from below when shown) - only for center */}
+      <AnimatePresence>
+        {isCenter && showCD && (
+          <motion.div
+            key="spinning-cd"
+            className="absolute inset-0"
+            style={{ pointerEvents: "auto", zIndex: 0 }}
+            initial={{ opacity: 0, y: "30%" }}
+            animate={{
+              opacity: 1,
+              y: "0%",
+            }}
+            exit={{ opacity: 0, y: "30%" }}
+            transition={{ 
+              type: "spring",
+              stiffness: 200,
+              damping: 25,
+            }}
+          >
+            <SpinningCD coverUrl={coverUrl} size="100%" isPlaying={isPlaying} onClick={handleDiscClick} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Cover art / Sleeve - stays centered, moves down when CD is shown */}
       <motion.div
         className={`absolute inset-0 w-full h-full overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
         style={{
           background: "#1a1a1a",
+          pointerEvents: isCenter && showCD ? "none" : "auto",
+          zIndex: 10,
         }}
         initial={false}
         animate={{
@@ -635,26 +677,31 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           {/* Cover Flow container */}
           <motion.div
             ref={containerRef}
-            className="absolute inset-0 flex items-center justify-center cursor-grab active:cursor-grabbing"
-            onPanStart={handlePanStart}
-            onPan={handlePan}
-            onPanEnd={handlePanEnd}
-            onWheel={handleWheel}
+            className={`absolute inset-0 flex items-center justify-center ${showCD ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}
+            onPanStart={showCD ? undefined : handlePanStart}
+            onPan={showCD ? undefined : handlePan}
+            onPanEnd={showCD ? undefined : handlePanEnd}
+            onWheel={showCD ? undefined : handleWheel}
             onClick={() => {
               // Don't select if panning or long press was fired
               if (isPanningRef.current || longPressFiredRef.current) {
                 longPressFiredRef.current = false;
                 return;
               }
+              // When CD is shown, clicking outside the disc closes it
+              if (showCD) {
+                setShowCD(false);
+                return;
+              }
               selectCurrent();
             }}
-            onMouseDown={() => startLongPress()}
-            onMouseUp={() => endLongPress()}
-            onMouseLeave={() => endLongPress()}
-            onTouchStart={() => startLongPress()}
-            onTouchEnd={() => endLongPress()}
-            onTouchCancel={() => endLongPress()}
-            style={{ touchAction: "none", overflow: "visible" }}
+            onMouseDown={showCD ? undefined : () => startLongPress()}
+            onMouseUp={showCD ? undefined : () => endLongPress()}
+            onMouseLeave={showCD ? undefined : () => endLongPress()}
+            onTouchStart={showCD ? undefined : () => startLongPress()}
+            onTouchEnd={showCD ? undefined : () => endLongPress()}
+            onTouchCancel={showCD ? undefined : () => endLongPress()}
+            style={{ touchAction: showCD ? "auto" : "none", overflow: "visible" }}
           >
             {/* Covers - centered with slight upward offset for track info space */}
             <div 
@@ -675,6 +722,10 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     ipodMode={ipodMode}
                     showCD={showCD}
                     isPlaying={isPlaying && selectedIndex === currentIndex}
+                    onTogglePlay={onTogglePlay}
+                    selectedIndex={selectedIndex}
+                    currentIndex={currentIndex}
+                    onSelectTrack={onSelectTrack}
                   />
                 ))}
               </AnimatePresence>
