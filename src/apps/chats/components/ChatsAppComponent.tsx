@@ -638,7 +638,7 @@ export function ChatsAppComponent({
             <div className="relative flex flex-col flex-1 h-full bg-white/85">
               {/* Mobile chat title bar */}
               <div
-                className={`sticky top-0 z-10 flex items-center justify-between px-2 py-1 border-b ${
+                className={`sticky top-0 z-10 isolate flex items-center justify-between px-2 py-1 border-b ${
                   // Layer pinstripes with semi-transparent white via backgroundImage for macOS
                   isMacTheme ? "" : "bg-neutral-200/90 backdrop-blur-lg"
                 } ${
@@ -648,16 +648,19 @@ export function ChatsAppComponent({
                     ? ""
                     : "border-black"
                 }`}
-                style={
-                  isMacTheme
+                style={{
+                  // Force GPU compositing to fix Safari stacking context issues
+                  // when other windows trigger repaints (e.g., notitlebar hover)
+                  transform: "translateZ(0)",
+                  ...(isMacTheme
                     ? {
                         backgroundImage: "var(--os-pinstripe-window)",
                         opacity: 0.95,
                         borderBottom:
                           "var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))",
                       }
-                    : undefined
-                }
+                    : undefined),
+                }}
               >
                 <div className="flex items-center">
                   <Button
