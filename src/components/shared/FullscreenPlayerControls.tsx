@@ -13,6 +13,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useThemeStore } from "@/stores/useThemeStore";
+
+// Aqua-style shine overlays for macOS X theme (dark glass style)
+function AquaShineOverlays({ variant }: { variant: "compact" | "responsive" }) {
+  return (
+    <>
+      {/* Top shine */}
+      <div
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+        style={{
+          top: "2px",
+          height: "35%",
+          width: variant === "compact" ? "calc(100% - 24px)" : "calc(100% - 32px)",
+          borderRadius: "100px",
+          background: "linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0.02))",
+          filter: "blur(0.5px)",
+          zIndex: 2,
+        }}
+      />
+    </>
+  );
+}
 
 export interface TranslationLanguageOption {
   label: string;
@@ -97,6 +119,8 @@ export function FullscreenPlayerControls({
   portalContainer,
 }: FullscreenPlayerControlsProps) {
   const { t, i18n } = useTranslation();
+  const currentTheme = useThemeStore((s) => s.current);
+  const isMacTheme = currentTheme === "macosx";
 
   const translationBadge = getTranslationBadge(currentTranslationCode);
 
@@ -148,11 +172,41 @@ export function FullscreenPlayerControls({
   };
 
   // Common styles for each island segment
-  const segmentClasses = cn(
-    "border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 px-1 py-1 font-geneva-12",
-    variant === "responsive" && "md:gap-2",
-    bgOpacity === "35" ? "bg-neutral-800/35" : "bg-neutral-800/60"
-  );
+  const segmentClasses = isMacTheme
+    ? "relative overflow-hidden rounded-full shadow-lg flex items-center gap-1 px-1 py-1 font-geneva-12"
+    : cn(
+        "border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 px-1 py-1 font-geneva-12",
+        variant === "responsive" && "md:gap-2",
+        bgOpacity === "35" ? "bg-neutral-800/35" : "bg-neutral-800/60"
+      );
+
+  // Aqua segment inline styles
+  const aquaSegmentStyle: React.CSSProperties = isMacTheme
+    ? {
+        background: "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
+        boxShadow:
+          "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+      }
+    : {};
+
+  // Button classes for individual buttons
+  const buttonClasses = isMacTheme
+    ? cn(
+        buttonSize,
+        "flex items-center justify-center rounded-full transition-colors focus:outline-none relative z-10"
+      )
+    : cn(
+        buttonSize,
+        "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+      );
+
+  // Icon classes for macOS theme (white with dark shadow)
+  const iconClasses = isMacTheme
+    ? "text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+    : "";
+
+  const svgClasses = (baseClass?: string) =>
+    cn(baseClass, isMacTheme && "text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]");
 
   return (
     <div className={cn(
@@ -160,19 +214,17 @@ export function FullscreenPlayerControls({
       variant === "compact" ? "gap-2" : "gap-2 md:gap-3"
     )}>
       {/* Playback controls island */}
-      <div className={segmentClasses}>
+      <div className={segmentClasses} style={aquaSegmentStyle}>
+        {isMacTheme && <AquaShineOverlays variant={variant} />}
         {/* Previous */}
         <button
           type="button"
           onClick={handleClick(onPrevious)}
           aria-label={t("apps.ipod.ariaLabels.previousTrack")}
-          className={cn(
-            buttonSize,
-            "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-          )}
+          className={buttonClasses}
           title={t("apps.ipod.menu.previous")}
         >
-          <span className={iconSize}>⏮</span>
+          <span className={cn(iconSize, iconClasses)}>⏮</span>
         </button>
 
         {/* Play/Pause */}
@@ -180,13 +232,10 @@ export function FullscreenPlayerControls({
           type="button"
           onClick={handleClick(onPlayPause)}
           aria-label={t("apps.ipod.ariaLabels.playPause")}
-          className={cn(
-            buttonSize,
-            "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-          )}
+          className={buttonClasses}
           title={t("apps.ipod.ariaLabels.playPause")}
         >
-          <span className={iconSize}>{isPlaying ? "⏸" : "▶"}</span>
+          <span className={cn(iconSize, iconClasses)}>{isPlaying ? "⏸" : "▶"}</span>
         </button>
 
         {/* Next */}
@@ -194,31 +243,26 @@ export function FullscreenPlayerControls({
           type="button"
           onClick={handleClick(onNext)}
           aria-label={t("apps.ipod.ariaLabels.nextTrack")}
-          className={cn(
-            buttonSize,
-            "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-          )}
+          className={buttonClasses}
           title={t("apps.ipod.menu.next")}
         >
-          <span className={iconSize}>⏭</span>
+          <span className={cn(iconSize, iconClasses)}>⏭</span>
         </button>
       </div>
 
       {/* Lyrics controls island */}
-      <div className={segmentClasses}>
+      <div className={segmentClasses} style={aquaSegmentStyle}>
+        {isMacTheme && <AquaShineOverlays variant={variant} />}
         {/* Sync mode (lyrics timing) */}
         {onSyncMode && (
           <button
             type="button"
             onClick={handleClick(onSyncMode)}
             aria-label={t("apps.ipod.syncMode.title", "Sync Lyrics")}
-            className={cn(
-              buttonSize,
-              "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-            )}
+            className={buttonClasses}
             title={t("apps.ipod.syncMode.title", "Sync Lyrics")}
           >
-            <Clock className={variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4"} />
+            <Clock className={cn(variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4", svgClasses())} />
           </button>
         )}
 
@@ -227,10 +271,7 @@ export function FullscreenPlayerControls({
           type="button"
           onClick={handleClick(onAlignmentCycle)}
           aria-label={t("apps.ipod.ariaLabels.cycleLyricLayout")}
-          className={cn(
-            buttonSize,
-            "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-          )}
+          className={buttonClasses}
           title={t("apps.ipod.ariaLabels.cycleLyricLayout")}
         >
           {currentAlignment === "focusThree" ? (
@@ -245,7 +286,7 @@ export function FullscreenPlayerControls({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+              className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
             >
               <line x1="6" y1="6" x2="18" y2="6" />
               <line x1="4" y1="12" x2="20" y2="12" />
@@ -263,7 +304,7 @@ export function FullscreenPlayerControls({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+              className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
             >
               <line x1="6" y1="12" x2="18" y2="12" />
             </svg>
@@ -279,7 +320,7 @@ export function FullscreenPlayerControls({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+              className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
             >
               <line x1="4" y1="8" x2="13" y2="8" />
               <line x1="11" y1="16" x2="20" y2="16" />
@@ -292,15 +333,13 @@ export function FullscreenPlayerControls({
           type="button"
           onClick={handleClick(onFontCycle)}
           aria-label={t("apps.ipod.ariaLabels.cycleLyricFont")}
-          className={cn(
-            buttonSize,
-            "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-          )}
+          className={buttonClasses}
           title={t("apps.ipod.ariaLabels.cycleLyricFont")}
         >
           <span className={cn(
             smallIconSize,
-            getLyricsFontClassName(currentFont)
+            getLyricsFontClassName(currentFont),
+            iconClasses
           )}>
             {getFontLabel()}
           </span>
@@ -319,10 +358,7 @@ export function FullscreenPlayerControls({
                 onInteraction?.();
               }}
               aria-label={t("apps.ipod.ariaLabels.translateLyrics")}
-              className={cn(
-                buttonSize,
-                "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              )}
+              className={buttonClasses}
               title={t("apps.ipod.ariaLabels.translateLyrics")}
             >
               {translationBadge ? (
@@ -331,7 +367,8 @@ export function FullscreenPlayerControls({
                     "inline-flex items-center justify-center leading-none",
                     variant === "compact"
                       ? "w-[20px] h-[20px] text-sm"
-                      : "w-[24px] h-[24px] md:w-[28px] md:h-[28px] text-[16px] md:text-[18px]"
+                      : "w-[24px] h-[24px] md:w-[28px] md:h-[28px] text-[16px] md:text-[18px]",
+                    iconClasses
                   )}
                 >
                   {translationBadge}
@@ -339,7 +376,7 @@ export function FullscreenPlayerControls({
               ) : (
                 <Globe
                   size={svgSize}
-                  className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+                  className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
                 />
               )}
             </button>
@@ -394,13 +431,10 @@ export function FullscreenPlayerControls({
                   onInteraction?.();
                 }}
                 aria-label={t("apps.ipod.menu.pronunciation")}
-                className={cn(
-                  buttonSize,
-                  "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-                )}
+                className={buttonClasses}
                 title={t("apps.ipod.menu.pronunciation")}
               >
-                <span className={smallIconSize}>{getPronunciationGlyph()}</span>
+                <span className={cn(smallIconSize, iconClasses)}>{getPronunciationGlyph()}</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -511,22 +545,20 @@ export function FullscreenPlayerControls({
 
       {/* Close/Expand island */}
       {(onFullscreen || onClose) && (
-        <div className={segmentClasses}>
+        <div className={segmentClasses} style={aquaSegmentStyle}>
+          {isMacTheme && <AquaShineOverlays variant={variant} />}
           {/* Fullscreen button (for non-fullscreen mode) */}
           {onFullscreen && (
             <button
               type="button"
               onClick={handleClick(onFullscreen)}
-              className={cn(
-                buttonSize,
-                "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              )}
+              className={buttonClasses}
               aria-label={t("apps.ipod.ariaLabels.enterFullscreen")}
               title={t("apps.ipod.ariaLabels.enterFullscreen")}
             >
               <Maximize2
                 size={svgSize}
-                className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+                className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
               />
             </button>
           )}
@@ -536,16 +568,13 @@ export function FullscreenPlayerControls({
             <button
               type="button"
               onClick={handleClick(onClose)}
-              className={cn(
-                buttonSize,
-                "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-              )}
+              className={buttonClasses}
               aria-label={t("apps.ipod.ariaLabels.closeFullscreen")}
               title={t("common.dialog.close")}
             >
               <X
                 size={svgSize}
-                className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+                className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
               />
             </button>
           )}
