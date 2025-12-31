@@ -1108,7 +1108,7 @@ export function KaraokeAppComponent({
                 <motion.img
                   src={coverUrl}
                   alt={currentTrack.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover brightness-50"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
