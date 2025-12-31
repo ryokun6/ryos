@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { motion, AnimatePresence, PanInfo, useMotionValue, animate } from "framer-motion";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
 import { Disc, Play, Pause } from "lucide-react";
@@ -22,48 +22,58 @@ function AquaShineOverlay() {
   );
 }
 
-// Spinning CD component
+// Spinning CD component using Framer Motion exclusively
 function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; size: string; isPlaying: boolean }) {
-  // Track rotation angle for smooth pause/resume
-  const [rotation, setRotation] = useState(0);
-  const animationRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number | null>(null);
+  // Initialize with a random rotation (0-60 degrees)
+  const initialRotation = useRef(Math.random() * 60);
+  const rotation = useMotionValue(initialRotation.current);
+  const animationRef = useRef<ReturnType<typeof animate> | null>(null);
 
   useEffect(() => {
     if (isPlaying) {
-      const animate = (time: number) => {
-        if (lastTimeRef.current === null) {
-          lastTimeRef.current = time;
-        }
-        const delta = time - lastTimeRef.current;
-        lastTimeRef.current = time;
-        // Rotate 360 degrees in 3 seconds = 120 degrees per second
-        setRotation((prev) => (prev + (delta / 1000) * 120) % 360);
-        animationRef.current = requestAnimationFrame(animate);
-      };
-      animationRef.current = requestAnimationFrame(animate);
+      // Start with ramp up, then continuous rotation
+      const startRotation = rotation.get();
+      // First do a ramp-up rotation
+      animate(rotation, startRotation + 90, {
+        duration: 0.8,
+        ease: "easeIn",
+        onComplete: () => {
+          // Then continue with linear rotation
+          const currentRotation = rotation.get();
+          animationRef.current = animate(rotation, currentRotation + 360 * 1000, {
+            duration: 3000,
+            ease: "linear",
+          });
+        },
+      });
     } else {
+      // Stop current animation and ease out to a stop
       if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+        animationRef.current.stop();
         animationRef.current = null;
       }
-      lastTimeRef.current = null;
+      // Animate a small additional rotation with easeOut for smooth stop
+      const currentRotation = rotation.get();
+      animate(rotation, currentRotation + 45, {
+        duration: 1,
+        ease: "easeOut",
+      });
     }
-
+    
     return () => {
       if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+        animationRef.current.stop();
       }
     };
-  }, [isPlaying]);
+  }, [isPlaying, rotation]);
 
   return (
     <div 
       className="absolute inset-0 flex items-center justify-center"
       style={{ width: size, height: size }}
     >
-      {/* CD disc */}
-      <div
+      {/* CD disc (spinning part) */}
+      <motion.div
         className="absolute rounded-full"
         style={{
           width: "92%",
@@ -72,16 +82,16 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
             radial-gradient(circle at 50% 50%, 
               transparent 0%, 
               transparent 15%, 
-              rgba(30, 30, 30, 1) 15.5%,
-              rgba(40, 40, 40, 1) 16%,
-              rgba(60, 60, 60, 1) 20%,
-              rgba(80, 80, 80, 1) 25%,
-              rgba(50, 50, 50, 1) 30%,
-              rgba(40, 40, 40, 1) 100%
+              rgba(15, 15, 15, 1) 15.5%,
+              rgba(20, 20, 20, 1) 16%,
+              rgba(25, 25, 25, 1) 20%,
+              rgba(35, 35, 35, 1) 25%,
+              rgba(20, 20, 20, 1) 30%,
+              rgba(15, 15, 15, 1) 100%
             )
           `,
           boxShadow: "inset 0 0 20px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4)",
-          transform: `rotate(${rotation}deg)`,
+          rotate: rotation,
         }}
       >
         {/* Album art on CD (circular mask) */}
@@ -89,10 +99,10 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
           <div
             className="absolute rounded-full overflow-hidden"
             style={{
-              top: "20%",
-              left: "20%",
-              width: "60%",
-              height: "60%",
+              top: "25%",
+              left: "25%",
+              width: "50%",
+              height: "50%",
             }}
           >
             <img
@@ -110,26 +120,10 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
           style={{
             top: "50%",
             left: "50%",
-            width: "16%",
-            height: "16%",
+            width: "8%",
+            height: "8%",
             transform: "translate(-50%, -50%)",
-            boxShadow: "inset 0 2px 4px rgba(255,255,255,0.1)",
-          }}
-        />
-        
-        {/* Shine overlay */}
-        <div
-          className="absolute inset-0 rounded-full pointer-events-none"
-          style={{
-            background: `
-              linear-gradient(
-                135deg,
-                rgba(255, 255, 255, 0.15) 0%,
-                transparent 40%,
-                transparent 60%,
-                rgba(255, 255, 255, 0.05) 100%
-              )
-            `,
+            boxShadow: "inset 0 1px 2px rgba(255,255,255,0.1)",
           }}
         />
         
@@ -148,7 +142,28 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
             `,
           }}
         />
-      </div>
+      </motion.div>
+      
+      {/* Shine overlay (fixed, doesn't spin) */}
+      <div
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          width: "92%",
+          height: "92%",
+          background: `
+            conic-gradient(
+              from 200deg at 50% 50%,
+              transparent 0deg,
+              rgba(255, 255, 255, 0.05) 40deg,
+              transparent 80deg,
+              transparent 180deg,
+              rgba(255, 255, 255, 0.03) 220deg,
+              transparent 260deg,
+              transparent 360deg
+            )
+          `,
+        }}
+      />
     </div>
   );
 }
@@ -233,7 +248,7 @@ function CoverImage({
     // Opacity 1 for direct neighbors (absPos === 1), fade out the rest
     // When showCD is true, push side covers further away and fade them more
     const cdSpacingMultiplier = showCD ? 1.3 : 1;
-    const cdOpacityMultiplier = showCD ? 0.4 : 1;
+    const cdOpacityMultiplier = showCD ? 0 : 1;
     const baseOpacity = absPos === 1 ? 1 : Math.max(0, 1 - (absPos - 1) * 0.3);
     
     return {
@@ -290,19 +305,19 @@ function CoverImage({
         damping: 50,
       }}
     >
-      {/* CD (above the sleeve, shifts up when shown) - only for center */}
+      {/* CD (above the sleeve, animates up from below when shown) - only for center */}
       {isCenter && (
         <motion.div
           className="absolute inset-0"
-          initial={false}
+          initial={{ opacity: 0, y: "30%" }}
           animate={{
             opacity: showCD ? 1 : 0,
-            y: showCD ? "0%" : "0%",
+            y: showCD ? "0%" : "30%",
           }}
           transition={{ 
             type: "spring",
-            stiffness: 300,
-            damping: 30,
+            stiffness: 200,
+            damping: 25,
           }}
         >
           <SpinningCD coverUrl={coverUrl} size="100%" isPlaying={isPlaying && showCD} />
@@ -314,21 +329,32 @@ function CoverImage({
         className={`absolute inset-0 w-full h-full overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
         style={{
           background: "#1a1a1a",
-          boxShadow: isCenter && showCD ? "0 4px 12px rgba(0,0,0,0.4)" : "none",
         }}
         initial={false}
         animate={{
-          y: isCenter && showCD ? "100%" : "0%",
-          filter: isCenter && showCD 
-            ? "brightness(0.5)" 
-            : transform.isCenter ? "brightness(1)" : "brightness(0.7)",
+          y: isCenter && showCD ? "105%" : "0%",
         }}
         transition={{
           type: "spring",
-          stiffness: 300,
-          damping: 30,
+          stiffness: 200,
+          damping: 25,
         }}
       >
+        {/* Brightness overlay */}
+        <motion.div
+          className="absolute inset-0 bg-black pointer-events-none z-10"
+          initial={false}
+          animate={{
+            opacity: isCenter && showCD 
+              ? 0.65 
+              : transform.isCenter ? 0 : 0.3,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 200,
+            damping: 25,
+          }}
+        />
         {coverUrl ? (
           <img
             src={coverUrl}
@@ -361,12 +387,12 @@ function CoverImage({
         initial={false}
         animate={{
           opacity: isCenter && showCD ? 0 : 1,
-          y: isCenter && showCD ? "100%" : "0%",
+          y: isCenter && showCD ? "105%" : "0%",
         }}
         transition={{
           type: "spring",
-          stiffness: 300,
-          damping: 30,
+          stiffness: 200,
+          damping: 25,
         }}
       >
         <img
@@ -638,7 +664,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     position={position}
                     ipodMode={ipodMode}
                     showCD={showCD}
-                    isPlaying={isPlaying}
+                    isPlaying={isPlaying && selectedIndex === currentIndex}
                   />
                 ))}
               </AnimatePresence>
@@ -732,8 +758,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               {!ipodMode && isMacTheme && <AquaShineOverlay />}
               <Disc 
                 className="w-full h-full relative z-10"
-                fill={showCD ? "currentColor" : "none"}
-                strokeWidth={showCD ? 0 : 2}
+                strokeWidth={showCD ? 2.5 : 2}
               />
             </button>
           </motion.div>
