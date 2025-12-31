@@ -90,7 +90,7 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
               rgba(15, 15, 15, 1) 100%
             )
           `,
-          boxShadow: "inset 0 0 20px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4)",
+          boxShadow: "inset 0 0 20px rgba(0,0,0,0.5)",
           rotate: rotation,
         }}
       >
@@ -143,6 +143,16 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
           }}
         />
       </motion.div>
+      
+      {/* Shadow (fixed, doesn't spin) */}
+      <div
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          width: "92%",
+          height: "92%",
+          boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+        }}
+      />
       
       {/* Shine overlay (fixed, doesn't spin) */}
       <div
