@@ -147,15 +147,20 @@ export function FullscreenPlayerControls({
     handler();
   };
 
+  // Common styles for each island segment
+  const segmentClasses = cn(
+    "border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 px-1 py-1 font-geneva-12",
+    variant === "responsive" && "md:gap-2",
+    bgOpacity === "35" ? "bg-neutral-800/35" : "bg-neutral-800/60"
+  );
+
   return (
-    <div className="relative ipod-force-font">
-      <div
-        className={cn(
-          "border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 px-1 py-1 font-geneva-12",
-          variant === "responsive" && "md:gap-2",
-          bgOpacity === "35" ? "bg-neutral-800/35" : "bg-neutral-800/60"
-        )}
-      >
+    <div className={cn(
+      "relative ipod-force-font flex items-center",
+      variant === "compact" ? "gap-2" : "gap-2 md:gap-3"
+    )}>
+      {/* Playback controls island */}
+      <div className={segmentClasses}>
         {/* Previous */}
         <button
           type="button"
@@ -197,7 +202,10 @@ export function FullscreenPlayerControls({
         >
           <span className={iconSize}>⏭</span>
         </button>
+      </div>
 
+      {/* Lyrics controls island */}
+      <div className={segmentClasses}>
         {/* Sync mode (lyrics timing) */}
         {onSyncMode && (
           <button
@@ -499,45 +507,50 @@ export function FullscreenPlayerControls({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-
-        {/* Fullscreen button (for non-fullscreen mode) */}
-        {onFullscreen && (
-          <button
-            type="button"
-            onClick={handleClick(onFullscreen)}
-            className={cn(
-              buttonSize,
-              "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-            )}
-            aria-label={t("apps.ipod.ariaLabels.enterFullscreen")}
-            title={t("apps.ipod.ariaLabels.enterFullscreen")}
-          >
-            <Maximize2
-              size={svgSize}
-              className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
-            />
-          </button>
-        )}
-
-        {/* Close button (for fullscreen mode) */}
-        {onClose && (
-          <button
-            type="button"
-            onClick={handleClick(onClose)}
-            className={cn(
-              buttonSize,
-              "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
-            )}
-            aria-label={t("apps.ipod.ariaLabels.closeFullscreen")}
-            title={t("common.dialog.close")}
-          >
-            <X
-              size={svgSize}
-              className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
-            />
-          </button>
-        )}
       </div>
+
+      {/* Close/Expand island */}
+      {(onFullscreen || onClose) && (
+        <div className={segmentClasses}>
+          {/* Fullscreen button (for non-fullscreen mode) */}
+          {onFullscreen && (
+            <button
+              type="button"
+              onClick={handleClick(onFullscreen)}
+              className={cn(
+                buttonSize,
+                "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+              )}
+              aria-label={t("apps.ipod.ariaLabels.enterFullscreen")}
+              title={t("apps.ipod.ariaLabels.enterFullscreen")}
+            >
+              <Maximize2
+                size={svgSize}
+                className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+              />
+            </button>
+          )}
+
+          {/* Close button (for fullscreen mode) */}
+          {onClose && (
+            <button
+              type="button"
+              onClick={handleClick(onClose)}
+              className={cn(
+                buttonSize,
+                "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+              )}
+              aria-label={t("apps.ipod.ariaLabels.closeFullscreen")}
+              title={t("common.dialog.close")}
+            >
+              <X
+                size={svgSize}
+                className={variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined}
+              />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
