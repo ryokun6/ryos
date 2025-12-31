@@ -90,7 +90,7 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
               rgba(15, 15, 15, 1) 100%
             )
           `,
-          boxShadow: "inset 0 0 20px rgba(0,0,0,0.5)",
+          boxShadow: "inset 0 0 10px rgba(0,0,0,0.25)",
           rotate: rotation,
         }}
       >
@@ -99,10 +99,10 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
           <div
             className="absolute rounded-full overflow-hidden"
             style={{
-              top: "25%",
-              left: "25%",
-              width: "50%",
-              height: "50%",
+              top: "30%",
+              left: "30%",
+              width: "40%",
+              height: "40%",
             }}
           >
             <img
@@ -120,8 +120,8 @@ function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; si
           style={{
             top: "50%",
             left: "50%",
-            width: "8%",
-            height: "8%",
+            width: "5%",
+            height: "5%",
             transform: "translate(-50%, -50%)",
             boxShadow: "inset 0 1px 2px rgba(255,255,255,0.1)",
           }}
