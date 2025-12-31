@@ -102,7 +102,7 @@ export function IpodScreen({
     const youtubeThumbnail = videoId
       ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
       : null;
-    return formatKugouImageUrl(currentTrack.cover, 1080) ?? youtubeThumbnail;
+    return formatKugouImageUrl(currentTrack.cover, 400) ?? youtubeThumbnail;
   }, [currentTrack]);
 
   // Reset refs when menu items change
