@@ -127,7 +127,7 @@ export const config = {
 };
 
 // Fetch song metadata from Redis song library
-async function getSongFromRedis(videoId: string): Promise<{ title: string; artist: string | null } | null> {
+async function getSongFromRedis(videoId: string): Promise<{ title: string; artist: string | null; cover: string | null } | null> {
   try {
     // Skip if no Redis credentials
     if (!process.env.REDIS_KV_REST_API_URL || !process.env.REDIS_KV_REST_API_TOKEN) {
@@ -151,10 +151,23 @@ async function getSongFromRedis(videoId: string): Promise<{ title: string; artis
     return {
       title: meta.title,
       artist: meta.artist || null,
+      cover: meta.cover || null,
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * Format Kugou image URL by replacing {size} placeholder
+ * Ensures HTTPS is used to avoid mixed content issues
+ */
+function formatKugouImageUrl(imgUrl: string | null, size: number = 400): string | null {
+  if (!imgUrl) return null;
+  let url = imgUrl.replace("{size}", String(size));
+  // Ensure HTTPS
+  url = url.replace(/^http:\/\//, "https://");
+  return url;
 }
 
 // Simple title parser - extracts artist and title from common YouTube formats
@@ -258,15 +271,17 @@ export default async function middleware(request: Request) {
     matched = true;
   }
 
-  // iPod URLs: /ipod/{videoId} - use YouTube thumbnail and fetch title
+  // iPod URLs: /ipod/{videoId} - use song cover (if available) or YouTube thumbnail
   const ipodMatch = pathname.match(/^\/ipod\/([a-zA-Z0-9_-]+)$/);
   if (ipodMatch) {
     const videoId = ipodMatch[1];
-    imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    const youtubeThumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
     
     // First try to get song info from Redis library, then fall back to YouTube
-    const songInfo = await getSongFromRedis(videoId) || await getYouTubeInfo(videoId);
+    const songInfo = await getSongFromRedis(videoId);
     if (songInfo) {
+      // Use song cover at 400 size if available, otherwise fall back to YouTube thumbnail
+      imageUrl = formatKugouImageUrl(songInfo.cover, 400) || youtubeThumbnail;
       if (songInfo.artist) {
         title = `${songInfo.title} - ${songInfo.artist}`;
         description = `Listen on ryOS iPod`;
@@ -275,28 +290,50 @@ export default async function middleware(request: Request) {
         description = "Listen on ryOS iPod";
       }
     } else {
-      title = "Shared Song - ryOS";
-      description = "Listen on ryOS iPod";
+      const ytInfo = await getYouTubeInfo(videoId);
+      imageUrl = youtubeThumbnail;
+      if (ytInfo) {
+        if (ytInfo.artist) {
+          title = `${ytInfo.title} - ${ytInfo.artist}`;
+          description = `Listen on ryOS iPod`;
+        } else {
+          title = ytInfo.title;
+          description = "Listen on ryOS iPod";
+        }
+      } else {
+        title = "Shared Song - ryOS";
+        description = "Listen on ryOS iPod";
+      }
     }
     matched = true;
   }
 
-  // Karaoke URLs: /karaoke/{videoId} - use YouTube thumbnail and fetch title
+  // Karaoke URLs: /karaoke/{videoId} - use song cover (if available) or YouTube thumbnail
   const karaokeMatch = pathname.match(/^\/karaoke\/([a-zA-Z0-9_-]+)$/);
   if (karaokeMatch) {
     const videoId = karaokeMatch[1];
-    imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    const youtubeThumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
     
     // First try to get song info from Redis library, then fall back to YouTube
-    const songInfo = await getSongFromRedis(videoId) || await getYouTubeInfo(videoId);
+    const songInfo = await getSongFromRedis(videoId);
     if (songInfo) {
+      // Use song cover at 400 size if available, otherwise fall back to YouTube thumbnail
+      imageUrl = formatKugouImageUrl(songInfo.cover, 400) || youtubeThumbnail;
       // Format: "Sing [Title] - [Artist] on ryOS" or "Sing [Title] on ryOS"
       const songDisplay = songInfo.artist ? `${songInfo.title} - ${songInfo.artist}` : songInfo.title;
       title = `Sing ${songDisplay} on ryOS`;
       description = `Sing along on ryOS Karaoke`;
     } else {
-      title = "Sing on ryOS Karaoke";
-      description = "Sing along on ryOS Karaoke";
+      const ytInfo = await getYouTubeInfo(videoId);
+      imageUrl = youtubeThumbnail;
+      if (ytInfo) {
+        const songDisplay = ytInfo.artist ? `${ytInfo.title} - ${ytInfo.artist}` : ytInfo.title;
+        title = `Sing ${songDisplay} on ryOS`;
+        description = `Sing along on ryOS Karaoke`;
+      } else {
+        title = "Sing on ryOS Karaoke";
+        description = "Sing along on ryOS Karaoke";
+      }
     }
     matched = true;
   }
