@@ -436,11 +436,18 @@ function getLanguageName(languageCode: string): string {
 /** Generate the translation system prompt for a target language */
 export function getTranslationSystemPrompt(targetLanguage: string): string {
   const languageName = getLanguageName(targetLanguage);
-  return `Translate lyrics to ${languageName} (one line per input line).
+  return `Translate ALL lyrics to ${languageName} (one line per input line).
+
+IMPORTANT: Translate from ANY source language (Korean, Japanese, Chinese, English, etc.) to ${languageName}.
+- Korean (한국어) lyrics → translate to ${languageName}
+- Japanese (日本語) lyrics → translate to ${languageName}
+- Chinese (中文) lyrics → translate to ${languageName}
+- English lyrics → translate to ${languageName}
+- If a line is ALREADY in ${languageName}, keep it as-is.
+
 Output format: Number each line like "1: translation", "2: translation", etc.
-If already in ${languageName}, return as-is.
 For instrumental lines (e.g., "---"), return original.
-Preserve punctuation from original (like contractions: I'm, don't, it's). Don't add new punctuation at end of lines. Preserve artistic intent and rhythm.
+Preserve artistic intent and rhythm. Don't add punctuation at end of lines.
 
 Example output format:
 1: First translated line
