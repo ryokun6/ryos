@@ -2,9 +2,113 @@ import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardR
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
+import { Disc } from "lucide-react";
 
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
+
+// Spinning CD component
+function SpinningCD({ coverUrl, size }: { coverUrl: string | null; size: string }) {
+  return (
+    <div 
+      className="absolute inset-0 flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      {/* CD disc */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: "92%",
+          height: "92%",
+          background: `
+            radial-gradient(circle at 50% 50%, 
+              transparent 0%, 
+              transparent 15%, 
+              rgba(30, 30, 30, 1) 15.5%,
+              rgba(40, 40, 40, 1) 16%,
+              rgba(60, 60, 60, 1) 20%,
+              rgba(80, 80, 80, 1) 25%,
+              rgba(50, 50, 50, 1) 30%,
+              rgba(40, 40, 40, 1) 100%
+            )
+          `,
+          boxShadow: "inset 0 0 20px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4)",
+        }}
+        animate={{ rotate: 360 }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+      >
+        {/* Album art on CD (circular mask) */}
+        {coverUrl && (
+          <div
+            className="absolute rounded-full overflow-hidden"
+            style={{
+              top: "20%",
+              left: "20%",
+              width: "60%",
+              height: "60%",
+            }}
+          >
+            <img
+              src={coverUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+          </div>
+        )}
+        
+        {/* Center hole */}
+        <div
+          className="absolute rounded-full bg-black"
+          style={{
+            top: "50%",
+            left: "50%",
+            width: "16%",
+            height: "16%",
+            transform: "translate(-50%, -50%)",
+            boxShadow: "inset 0 2px 4px rgba(255,255,255,0.1)",
+          }}
+        />
+        
+        {/* Shine overlay */}
+        <div
+          className="absolute inset-0 rounded-full pointer-events-none"
+          style={{
+            background: `
+              linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.15) 0%,
+                transparent 40%,
+                transparent 60%,
+                rgba(255, 255, 255, 0.05) 100%
+              )
+            `,
+          }}
+        />
+        
+        {/* Track grooves effect */}
+        <div
+          className="absolute inset-0 rounded-full pointer-events-none"
+          style={{
+            background: `
+              repeating-radial-gradient(
+                circle at center,
+                transparent 0px,
+                transparent 2px,
+                rgba(0, 0, 0, 0.03) 2px,
+                rgba(0, 0, 0, 0.03) 4px
+              )
+            `,
+          }}
+        />
+      </motion.div>
+    </div>
+  );
+}
 
 interface CoverFlowProps {
   tracks: Track[];
@@ -28,10 +132,12 @@ function CoverImage({
   track, 
   position,
   ipodMode = true,
+  showCD = false,
 }: { 
   track: Track;
   position: number;
   ipodMode?: boolean;
+  showCD?: boolean;
 }) {
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   // Use higher resolution images for karaoke mode (non-iPod)
@@ -51,6 +157,8 @@ function CoverImage({
   // Scale values: no scaling for iPod mode, subtle for karaoke
   const centerScale = 1.0;
   const sideScale = ipodMode ? 1.0 : 0.9;
+  
+  const isCenter = position === 0;
 
   // Calculate 3D transform based on position - uses relative units (cqmin = % of container's smaller dimension)
   const getTransform = (pos: number) => {
@@ -124,13 +232,37 @@ function CoverImage({
         damping: 50,
       }}
     >
-      {/* Cover art */}
-      <div
-        className={`w-full h-full overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
+      {/* CD (behind the sleeve) - only for center */}
+      {isCenter && (
+        <motion.div
+          className="absolute inset-0"
+          initial={false}
+          animate={{
+            opacity: showCD ? 1 : 0,
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <SpinningCD coverUrl={coverUrl} size="100%" />
+        </motion.div>
+      )}
+      
+      {/* Cover art / Sleeve */}
+      <motion.div
+        className={`absolute inset-0 w-full h-full overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
         style={{
           background: "#1a1a1a",
           filter: transform.isCenter ? "brightness(1)" : "brightness(0.7)",
-          transition: "filter 0.3s ease-out",
+          boxShadow: isCenter && showCD ? "4px 0 12px rgba(0,0,0,0.4)" : "none",
+        }}
+        initial={false}
+        animate={{
+          x: isCenter && showCD ? "40%" : "0%",
+          rotateY: isCenter && showCD ? -15 : 0,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
         }}
       >
         {coverUrl ? (
@@ -153,14 +285,24 @@ function CoverImage({
             </svg>
           </div>
         )}
-      </div>
+      </motion.div>
       
-      {/* Reflection */}
-      <div
+      {/* Reflection - only when CD is not shown */}
+      <motion.div
         className="absolute w-full pointer-events-none"
         style={{
           height: "50%",
           top: "100%",
+        }}
+        initial={false}
+        animate={{
+          opacity: isCenter && showCD ? 0 : 1,
+          x: isCenter && showCD ? "40%" : "0%",
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
         }}
       >
         <img
@@ -176,7 +318,7 @@ function CoverImage({
           }}
           draggable={false}
         />
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -191,6 +333,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   ipodMode = true,
 }, ref) {
   const [selectedIndex, setSelectedIndex] = useState(currentIndex);
+  const [showCD, setShowCD] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Track swipe state
@@ -242,6 +385,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
       const next = Math.min(tracks.length - 1, prev + 1);
       return next;
     });
+    setShowCD(false); // Hide CD when navigating
     onRotation();
   }, [tracks.length, onRotation]);
 
@@ -250,6 +394,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
       const next = Math.max(0, prev - 1);
       return next;
     });
+    setShowCD(false); // Hide CD when navigating
     onRotation();
   }, [onRotation]);
 
@@ -424,6 +569,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     track={track}
                     position={position}
                     ipodMode={ipodMode}
+                    showCD={showCD}
                   />
                 ))}
               </AnimatePresence>
@@ -432,26 +578,60 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
 
           {/* Track info - fixed size for iPod, responsive for Karaoke */}
           <motion.div
-            className="absolute left-0 right-0 text-center px-2 font-geneva-12"
+            className="absolute left-0 right-0 px-2 font-geneva-12 flex items-center justify-center gap-2"
             style={{ bottom: ipodMode ? "10px" : "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <div 
-              className={`text-white truncate leading-tight ${ipodMode ? "text-[10px]" : ""}`}
-              style={ipodMode ? undefined : { fontSize: "clamp(14px, 5cqmin, 24px)" }}
+            {/* CD Toggle Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCD(!showCD);
+              }}
+              className={`flex-shrink-0 rounded-full p-1 transition-all ${
+                showCD 
+                  ? "bg-white/20 text-white" 
+                  : "bg-white/10 text-white/50 hover:bg-white/15 hover:text-white/70"
+              }`}
+              style={{
+                width: ipodMode ? "18px" : "clamp(24px, 6cqmin, 36px)",
+                height: ipodMode ? "18px" : "clamp(24px, 6cqmin, 36px)",
+              }}
+              title={showCD ? "Hide CD" : "Show CD"}
             >
-              {currentTrack?.title || "No track"}
-            </div>
-            {currentTrack?.artist && (
+              <Disc 
+                className="w-full h-full"
+                strokeWidth={showCD ? 2.5 : 2}
+              />
+            </button>
+            
+            {/* Track info */}
+            <div className="text-center min-w-0 flex-1">
               <div 
-                className={`text-white/60 truncate leading-tight ${ipodMode ? "text-[8px]" : ""}`}
-                style={ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }}
+                className={`text-white truncate leading-tight ${ipodMode ? "text-[10px]" : ""}`}
+                style={ipodMode ? undefined : { fontSize: "clamp(14px, 5cqmin, 24px)" }}
               >
-                {currentTrack.artist}
+                {currentTrack?.title || "No track"}
               </div>
-            )}
+              {currentTrack?.artist && (
+                <div 
+                  className={`text-white/60 truncate leading-tight ${ipodMode ? "text-[8px]" : ""}`}
+                  style={ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }}
+                >
+                  {currentTrack.artist}
+                </div>
+              )}
+            </div>
+            
+            {/* Spacer to balance the layout */}
+            <div 
+              className="flex-shrink-0"
+              style={{
+                width: ipodMode ? "18px" : "clamp(24px, 6cqmin, 36px)",
+              }}
+            />
           </motion.div>
         </motion.div>
       )}
