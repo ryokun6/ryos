@@ -377,7 +377,9 @@ export function buildChineseTranslationFromKrc(
 
     const chineseLine = embeddedChinese[rawLine.rawIndex] || "";
     const chineseIsMetadata = !chineseLine || shouldSkipLine(chineseLine, title, artist);
-    const textToUse = chineseIsMetadata ? rawLine.words : simplifiedToTraditional(chineseLine);
+    // Always convert to Traditional Chinese - both the translation and the fallback (original lyrics)
+    // since KRC files from Kugou are in Simplified Chinese
+    const textToUse = simplifiedToTraditional(chineseIsMetadata ? rawLine.words : chineseLine);
 
     resultLines.push(`${msToLrcTimeInternal(rawLine.startTimeMs)}${textToUse}`);
   }
