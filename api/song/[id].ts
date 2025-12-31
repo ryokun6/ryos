@@ -714,11 +714,6 @@ export default async function handler(req: Request) {
 
         const totalLines = parsedLines.length;
 
-        logInfo(requestId, `Starting translate SSE stream using createUIMessageStream`, { 
-          totalLines, 
-          language,
-        });
-
         // Prepare lines for translation
         const lines: LyricLine[] = parsedLines.map(line => ({
           words: line.words,
@@ -727,6 +722,14 @@ export default async function handler(req: Request) {
 
         // Build numbered text input for AI
         const textsToProcess = lines.map((line, i) => `${i + 1}: ${line.words}`).join("\n");
+
+        // Log sample of lines being sent to AI (for debugging Korean translation issues)
+        const sampleLines = lines.slice(0, 5).map((l, i) => `${i + 1}: ${l.words}`);
+        logInfo(requestId, `Starting translate SSE stream using createUIMessageStream`, { 
+          totalLines, 
+          language,
+          sampleLines,
+        });
 
         // Use AI SDK's createUIMessageStream for proper streaming
         const allTranslations: string[] = new Array(totalLines).fill("");
@@ -793,11 +796,21 @@ export default async function handler(req: Request) {
             }
 
             // Fill in any missing translations with original text
+            let missedCount = 0;
             for (let i = 0; i < totalLines; i++) {
               if (!allTranslations[i]) {
                 allTranslations[i] = lines[i].words;
+                missedCount++;
               }
             }
+
+            // Log sample of results (for debugging Korean translation issues)
+            const sampleResults = allTranslations.slice(0, 5).map((t, i) => ({ original: lines[i].words, translated: t }));
+            logInfo(requestId, `Translation AI completed`, { 
+              completedCount: completedLines, 
+              missedCount,
+              sampleResults,
+            });
 
             // Save to Redis
             try {
