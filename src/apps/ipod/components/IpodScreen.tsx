@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import {
   ScrollingText,
   StatusDisplay,
 } from "./screen";
+import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { IpodScreenProps } from "../types";
 
 // Animation variants for menu transitions
@@ -93,6 +94,16 @@ export function IpodScreen({
 
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
+
+  // Cover URL for paused state overlay
+  const coverUrl = useMemo(() => {
+    if (!currentTrack) return null;
+    const videoId = getYouTubeVideoId(currentTrack.url);
+    const youtubeThumbnail = videoId
+      ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+      : null;
+    return formatKugouImageUrl(currentTrack.cover, 1080) ?? youtubeThumbnail;
+  }, [currentTrack]);
 
   // Reset refs when menu items change
   const resetItemRefs = (count: number) => {
@@ -281,6 +292,28 @@ export function IpodScreen({
             {showVideo && shouldShowLyrics && (
               <div className="absolute inset-0 bg-black/30 z-25" />
             )}
+            {/* Paused cover overlay */}
+            <AnimatePresence>
+              {showVideo && !isPlaying && coverUrl && (
+                <motion.div
+                  className="absolute inset-0 z-26"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <motion.img
+                    src={coverUrl}
+                    alt={currentTrack?.title}
+                    className="w-full h-full object-cover"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
             {/* Transparent overlay to capture clicks */}
             {showVideo && (
               <div
@@ -329,6 +362,7 @@ export function IpodScreen({
             </AnimatePresence>
 
             {/* Lyrics Overlay */}
+            <div className="absolute inset-0 z-20 pointer-events-none">
             <LyricsDisplay
               lines={lyricsControls.lines}
               originalLines={lyricsControls.originalLines}
@@ -357,6 +391,7 @@ export function IpodScreen({
               soramimiMap={soramimiMap}
               currentTimeMs={(elapsedTime + lyricOffset / 1000) * 1000}
             />
+            </div>
           </div>
         </div>
       )}

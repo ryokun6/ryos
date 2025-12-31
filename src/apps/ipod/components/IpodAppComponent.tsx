@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
 import { AppProps, IpodInitialData } from "../../base/types";
@@ -39,7 +39,7 @@ import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { BACKLIGHT_TIMEOUT_MS, SEEK_AMOUNT_SECONDS } from "../constants";
+import { BACKLIGHT_TIMEOUT_MS, SEEK_AMOUNT_SECONDS, getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { WheelArea, RotationDirection } from "../types";
 import { useActivityState } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
@@ -1326,6 +1326,16 @@ export function IpodAppComponent({
   const currentTrack = tracks[currentIndex];
   const lyricsSourceOverride = currentTrack?.lyricsSource;
 
+  // Cover URL for paused state overlay in fullscreen
+  const fullscreenCoverUrl = useMemo(() => {
+    if (!currentTrack) return null;
+    const videoId = getYouTubeVideoId(currentTrack.url);
+    const youtubeThumbnail = videoId
+      ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+      : null;
+    return formatKugouImageUrl(currentTrack.cover, 1080) ?? youtubeThumbnail;
+  }, [currentTrack]);
+
   const handleRefreshLyrics = useCallback(() => {
     if (tracks.length > 0 && currentIndex >= 0) setIsLyricsSearchDialogOpen(true);
   }, [tracks, currentIndex]);
@@ -1977,6 +1987,29 @@ export function IpodAppComponent({
                       </div>
                     )}
                   </div>
+
+                  {/* Paused cover overlay */}
+                  <AnimatePresence>
+                    {tracks[currentIndex] && !isPlaying && fullscreenCoverUrl && (
+                      <motion.div
+                        className="absolute inset-0 z-30"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <motion.img
+                          src={fullscreenCoverUrl}
+                          alt={tracks[currentIndex]?.title}
+                          className="w-full h-full object-cover"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* Lyrics overlays - positioned relative to viewport, not video container */}
                   {showLyrics && tracks[currentIndex] && (

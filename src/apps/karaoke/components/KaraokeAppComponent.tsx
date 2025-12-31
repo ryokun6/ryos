@@ -31,7 +31,7 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
-import { TRANSLATION_LANGUAGES } from "@/apps/ipod/constants";
+import { TRANSLATION_LANGUAGES, getYouTubeVideoId, formatKugouImageUrl } from "@/apps/ipod/constants";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
@@ -218,6 +218,16 @@ export function KaraokeAppComponent({
   // Current track
   const currentTrack: Track | null = tracks[currentIndex] || null;
   const lyricsSourceOverride = currentTrack?.lyricsSource;
+
+  // Cover URL for paused state overlay
+  const coverUrl = useMemo(() => {
+    if (!currentTrack) return null;
+    const videoId = getYouTubeVideoId(currentTrack.url);
+    const youtubeThumbnail = videoId
+      ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+      : null;
+    return formatKugouImageUrl(currentTrack.cover, 1080) ?? youtubeThumbnail;
+  }, [currentTrack]);
 
   // Lyrics hook
   const selectedMatchForLyrics = useMemo(() => {
@@ -1085,11 +1095,34 @@ export function KaraokeAppComponent({
             </div>
           )}
 
+          {/* Paused cover overlay */}
+          <AnimatePresence>
+            {currentTrack && !isPlaying && coverUrl && (
+              <motion.div
+                className="absolute inset-0 z-30"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.img
+                  src={coverUrl}
+                  alt={currentTrack.title}
+                  className="w-full h-full object-cover"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Lyrics overlay */}
           {showLyrics && currentTrack && (
             <>
-              <div className="absolute inset-0 bg-black/50 pointer-events-none" />
-              <div className="absolute inset-0 pointer-events-none karaoke-force-font">
+              <div className="absolute inset-0 z-10 bg-black/50 pointer-events-none" />
+              <div className="absolute inset-0 z-20 pointer-events-none karaoke-force-font">
               <LyricsDisplay
                         lines={lyricsControls.lines}
                         originalLines={lyricsControls.originalLines}
