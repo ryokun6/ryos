@@ -1842,6 +1842,8 @@ export function IpodAppComponent({
                 onExit={handleCoverFlowExit}
                 onRotation={handleCoverFlowRotation}
                 isVisible={isCoverFlowOpen}
+                isPlaying={isPlaying}
+                onTogglePlay={togglePlay}
               />
             </div>
 

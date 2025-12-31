@@ -2,20 +2,68 @@ import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardR
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
-import { Disc } from "lucide-react";
+import { Disc, Play, Pause } from "lucide-react";
+import { useThemeStore } from "@/stores/useThemeStore";
 
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
 
+// Aqua-style shine overlay for macOS X theme buttons
+function AquaShineOverlay() {
+  return (
+    <div
+      className="pointer-events-none absolute top-[3px] left-1/2 -translate-x-1/2 rounded-full"
+      style={{
+        width: "45%",
+        height: "35%",
+        background: "linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0))",
+      }}
+    />
+  );
+}
+
 // Spinning CD component
-function SpinningCD({ coverUrl, size }: { coverUrl: string | null; size: string }) {
+function SpinningCD({ coverUrl, size, isPlaying }: { coverUrl: string | null; size: string; isPlaying: boolean }) {
+  // Track rotation angle for smooth pause/resume
+  const [rotation, setRotation] = useState(0);
+  const animationRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (isPlaying) {
+      const animate = (time: number) => {
+        if (lastTimeRef.current === null) {
+          lastTimeRef.current = time;
+        }
+        const delta = time - lastTimeRef.current;
+        lastTimeRef.current = time;
+        // Rotate 360 degrees in 3 seconds = 120 degrees per second
+        setRotation((prev) => (prev + (delta / 1000) * 120) % 360);
+        animationRef.current = requestAnimationFrame(animate);
+      };
+      animationRef.current = requestAnimationFrame(animate);
+    } else {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      lastTimeRef.current = null;
+    }
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isPlaying]);
+
   return (
     <div 
       className="absolute inset-0 flex items-center justify-center"
       style={{ width: size, height: size }}
     >
       {/* CD disc */}
-      <motion.div
+      <div
         className="absolute rounded-full"
         style={{
           width: "92%",
@@ -33,12 +81,7 @@ function SpinningCD({ coverUrl, size }: { coverUrl: string | null; size: string 
             )
           `,
           boxShadow: "inset 0 0 20px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4)",
-        }}
-        animate={{ rotate: 360 }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: "linear",
+          transform: `rotate(${rotation}deg)`,
         }}
       >
         {/* Album art on CD (circular mask) */}
@@ -105,7 +148,7 @@ function SpinningCD({ coverUrl, size }: { coverUrl: string | null; size: string 
             `,
           }}
         />
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -119,6 +162,10 @@ interface CoverFlowProps {
   isVisible: boolean;
   /** Use iPod-specific styling (fixed sizes, ipod-force-font) */
   ipodMode?: boolean;
+  /** Whether the track is currently playing (for CD spin animation) */
+  isPlaying?: boolean;
+  /** Callback to toggle play/pause */
+  onTogglePlay?: () => void;
 }
 
 export interface CoverFlowRef {
@@ -133,11 +180,13 @@ function CoverImage({
   position,
   ipodMode = true,
   showCD = false,
+  isPlaying = false,
 }: { 
   track: Track;
   position: number;
   ipodMode?: boolean;
   showCD?: boolean;
+  isPlaying?: boolean;
 }) {
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   // Use higher resolution images for karaoke mode (non-iPod)
@@ -166,6 +215,7 @@ function CoverImage({
       // Center cover - pushed forward in karaoke mode to appear larger
       return {
         x: "0cqmin",
+        y: "0cqmin",
         rotateY: 0,
         z: ipodMode ? 0 : 30,
         scale: centerScale,
@@ -181,12 +231,18 @@ function CoverImage({
     // Side covers - spacing scales with container
     // Push side covers back more to prevent clipping with center cover
     // Opacity 1 for direct neighbors (absPos === 1), fade out the rest
+    // When showCD is true, push side covers further away and fade them more
+    const cdSpacingMultiplier = showCD ? 1.3 : 1;
+    const cdOpacityMultiplier = showCD ? 0.4 : 1;
+    const baseOpacity = absPos === 1 ? 1 : Math.max(0, 1 - (absPos - 1) * 0.3);
+    
     return {
-      x: `${direction * (baseSpacing + absPos * positionSpacing)}cqmin`,
+      x: `${direction * (baseSpacing + absPos * positionSpacing) * cdSpacingMultiplier}cqmin`,
+      y: "0cqmin",
       rotateY: direction * -60,
-      z: -50 - absPos * 20,
-      scale: sideScale,
-      opacity: absPos === 1 ? 1 : Math.max(0, 1 - (absPos - 1) * 0.3),
+      z: showCD ? -100 - absPos * 30 : -50 - absPos * 20,
+      scale: showCD ? sideScale * 0.85 : sideScale,
+      opacity: baseOpacity * cdOpacityMultiplier,
       zIndex: 5 - absPos,
       isCenter: false,
     };
@@ -209,6 +265,7 @@ function CoverImage({
       }}
       initial={{
         x: initialTransform.x,
+        y: initialTransform.y,
         rotateY: initialTransform.rotateY,
         z: initialTransform.z,
         scale: initialTransform.scale,
@@ -217,6 +274,7 @@ function CoverImage({
       }}
       animate={{
         x: transform.x,
+        y: transform.y,
         rotateY: transform.rotateY,
         z: transform.z,
         scale: transform.scale,
@@ -232,32 +290,38 @@ function CoverImage({
         damping: 50,
       }}
     >
-      {/* CD (behind the sleeve) - only for center */}
+      {/* CD (above the sleeve, shifts up when shown) - only for center */}
       {isCenter && (
         <motion.div
           className="absolute inset-0"
           initial={false}
           animate={{
             opacity: showCD ? 1 : 0,
+            y: showCD ? "0%" : "0%",
           }}
-          transition={{ duration: 0.3 }}
+          transition={{ 
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+          }}
         >
-          <SpinningCD coverUrl={coverUrl} size="100%" />
+          <SpinningCD coverUrl={coverUrl} size="100%" isPlaying={isPlaying && showCD} />
         </motion.div>
       )}
       
-      {/* Cover art / Sleeve */}
+      {/* Cover art / Sleeve - stays centered, moves down when CD is shown */}
       <motion.div
         className={`absolute inset-0 w-full h-full overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
         style={{
           background: "#1a1a1a",
-          filter: transform.isCenter ? "brightness(1)" : "brightness(0.7)",
-          boxShadow: isCenter && showCD ? "4px 0 12px rgba(0,0,0,0.4)" : "none",
+          boxShadow: isCenter && showCD ? "0 4px 12px rgba(0,0,0,0.4)" : "none",
         }}
         initial={false}
         animate={{
-          x: isCenter && showCD ? "40%" : "0%",
-          rotateY: isCenter && showCD ? -15 : 0,
+          y: isCenter && showCD ? "100%" : "0%",
+          filter: isCenter && showCD 
+            ? "brightness(0.5)" 
+            : transform.isCenter ? "brightness(1)" : "brightness(0.7)",
         }}
         transition={{
           type: "spring",
@@ -287,7 +351,7 @@ function CoverImage({
         )}
       </motion.div>
       
-      {/* Reflection - only when CD is not shown */}
+      {/* Reflection - moves down with cover when CD is shown */}
       <motion.div
         className="absolute w-full pointer-events-none"
         style={{
@@ -297,7 +361,7 @@ function CoverImage({
         initial={false}
         animate={{
           opacity: isCenter && showCD ? 0 : 1,
-          x: isCenter && showCD ? "40%" : "0%",
+          y: isCenter && showCD ? "100%" : "0%",
         }}
         transition={{
           type: "spring",
@@ -331,10 +395,14 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   onRotation,
   isVisible,
   ipodMode = true,
+  isPlaying = false,
+  onTogglePlay,
 }, ref) {
   const [selectedIndex, setSelectedIndex] = useState(currentIndex);
   const [showCD, setShowCD] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const currentTheme = useThemeStore((s) => s.current);
+  const isMacTheme = currentTheme === "macosx";
   
   // Track swipe state
   const swipeStartX = useRef<number | null>(null);
@@ -557,7 +625,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               className="relative flex items-center justify-center w-full"
               style={{ 
                 height: "75%",
-                marginTop: ipodMode ? "-12%" : "-5%",
+                marginTop: ipodMode ? "-8%" : "-2%",
                 perspective: 300,
                 transformStyle: "preserve-3d",
               }}
@@ -570,6 +638,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     position={position}
                     ipodMode={ipodMode}
                     showCD={showCD}
+                    isPlaying={isPlaying}
                   />
                 ))}
               </AnimatePresence>
@@ -578,33 +647,41 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
 
           {/* Track info - fixed size for iPod, responsive for Karaoke */}
           <motion.div
-            className="absolute left-0 right-0 px-2 font-geneva-12 flex items-center justify-center gap-2"
+            className={`absolute left-0 right-0 font-geneva-12 flex items-center justify-center gap-2 ${
+              ipodMode ? "px-2" : "px-6"
+            }`}
             style={{ bottom: ipodMode ? "10px" : "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            {/* CD Toggle Button */}
+            {/* Play/Pause Button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setShowCD(!showCD);
+                onTogglePlay?.();
               }}
-              className={`flex-shrink-0 rounded-full p-1 transition-all ${
-                showCD 
-                  ? "bg-white/20 text-white" 
-                  : "bg-white/10 text-white/50 hover:bg-white/15 hover:text-white/70"
+              className={`relative flex-shrink-0 rounded-full transition-all text-white/80 hover:text-white hover:brightness-110 ${
+                ipodMode ? "p-1 bg-white/10" : "p-3"
               }`}
               style={{
-                width: ipodMode ? "18px" : "clamp(24px, 6cqmin, 36px)",
-                height: ipodMode ? "18px" : "clamp(24px, 6cqmin, 36px)",
+                width: ipodMode ? "18px" : "clamp(32px, 8cqmin, 48px)",
+                height: ipodMode ? "18px" : "clamp(32px, 8cqmin, 48px)",
+                ...(!ipodMode && isMacTheme ? {
+                  background: "linear-gradient(to bottom, rgba(50, 50, 50, 0.7), rgba(25, 25, 25, 0.7))",
+                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+                } : !ipodMode ? {
+                  background: "rgba(255, 255, 255, 0.08)",
+                } : {}),
               }}
-              title={showCD ? "Hide CD" : "Show CD"}
+              title={isPlaying ? "Pause" : "Play"}
             >
-              <Disc 
-                className="w-full h-full"
-                strokeWidth={showCD ? 2.5 : 2}
-              />
+              {!ipodMode && isMacTheme && <AquaShineOverlay />}
+              {isPlaying ? (
+                <Pause className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
+              ) : (
+                <Play className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
+              )}
             </button>
             
             {/* Track info */}
@@ -625,13 +702,40 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               )}
             </div>
             
-            {/* Spacer to balance the layout */}
-            <div 
-              className="flex-shrink-0"
-              style={{
-                width: ipodMode ? "18px" : "clamp(24px, 6cqmin, 36px)",
+            {/* CD Toggle Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCD(!showCD);
               }}
-            />
+              className={`relative flex-shrink-0 rounded-full transition-all hover:brightness-110 ${
+                ipodMode ? "p-1" : "p-3"
+              } ${
+                ipodMode ? (showCD ? "bg-white/20 text-white" : "bg-white/10 text-white/70") : ""
+              } ${
+                !ipodMode ? (showCD ? "text-white" : "text-white/80 hover:text-white") : ""
+              }`}
+              style={{
+                width: ipodMode ? "18px" : "clamp(32px, 8cqmin, 48px)",
+                height: ipodMode ? "18px" : "clamp(32px, 8cqmin, 48px)",
+                ...(!ipodMode && isMacTheme ? {
+                  background: showCD 
+                    ? "linear-gradient(to bottom, rgba(70, 70, 70, 0.8), rgba(40, 40, 40, 0.8))"
+                    : "linear-gradient(to bottom, rgba(50, 50, 50, 0.7), rgba(25, 25, 25, 0.7))",
+                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+                } : !ipodMode ? {
+                  background: showCD ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.08)",
+                } : {}),
+              }}
+              title={showCD ? "Hide CD" : "Show CD"}
+            >
+              {!ipodMode && isMacTheme && <AquaShineOverlay />}
+              <Disc 
+                className="w-full h-full relative z-10"
+                fill={showCD ? "currentColor" : "none"}
+                strokeWidth={showCD ? 0 : 2}
+              />
+            </button>
           </motion.div>
         </motion.div>
       )}

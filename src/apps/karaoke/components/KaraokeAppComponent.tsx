@@ -1218,6 +1218,8 @@ export function KaraokeAppComponent({
                 onRotation={handleCoverFlowRotation}
                 isVisible={isCoverFlowOpen}
                 ipodMode={false}
+                isPlaying={isPlaying}
+                onTogglePlay={togglePlay}
               />
             </div>
           )}
