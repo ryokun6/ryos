@@ -159,8 +159,8 @@ export const IE_HTML_GENERATION_INSTRUCTIONS = `
 ## Output Format
 - Output ONLY raw HTML – no markdown code blocks, no chat, no comments before or after
 - Begin with title comment: <!-- TITLE: Your Generated Page Title -->
-- Generate a COMPLETE standalone HTML page with full doctype, html, head, and body tags
-- Single self-contained file: all styles in <style> tag, all scripts in <script> tag
+- Body content only – no doctype, html, head, or body tags (system wraps it)
+- Single self-contained file: styles in <style> tag, scripts in <script> tag
 - Never import external files or scripts (except CDN libraries like Three.js if needed)
 
 ## Styling
@@ -171,8 +171,8 @@ export const IE_HTML_GENERATION_INSTRUCTIONS = `
 - Consider what technology and design tools would have been available in that era
 
 ## Layout
-- Design for the browser viewport – this is a full webpage, not a small applet window
-- Create immersive, era-appropriate layouts
+- Design for the browser viewport – this is a full webpage in an iframe, not a small applet window
+- Create immersive, era-appropriate layouts that fill the viewport
 - Include appropriate navigation, headers, and content sections for the era
 - Make it feel like an authentic website from that time period
 
