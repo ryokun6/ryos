@@ -202,11 +202,11 @@ export function FullscreenPlayerControls({
 
   // Icon classes for macOS theme (white with dark shadow)
   const iconClasses = isMacTheme
-    ? "text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+    ? "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
     : "";
 
   const svgClasses = (baseClass?: string) =>
-    cn(baseClass, isMacTheme && "text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]");
+    cn(baseClass, isMacTheme && "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]");
 
   return (
     <div className={cn(
