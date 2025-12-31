@@ -1227,8 +1227,12 @@ export function WindowFrame({
               className={cn(
                 "title-bar flex items-center h-6 min-h-[1.25rem] mx-0 mb-0 px-[0.1rem] py-[0.1rem] select-none cursor-move user-select-none z-50 draggable-area",
                 // For notitlebar: absolute positioning, no shrink, transition opacity
+                // Also disable pointer events when hidden so taps pass through to content
                 isNoTitlebar 
-                  ? "absolute top-0 left-0 right-0 transition-opacity duration-200" 
+                  ? cn(
+                      "absolute top-0 left-0 right-0 transition-opacity duration-200",
+                      !isTitlebarHovered && "pointer-events-none"
+                    )
                   : "shrink-0",
                 effectiveTransparentBackground && !isNoTitlebar && "mt-0"
               )}
