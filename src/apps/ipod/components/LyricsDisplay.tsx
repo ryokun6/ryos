@@ -546,7 +546,7 @@ function StaticWordRendering({
       {renderItems.map((item) => (
           <span
             key={item.key}
-            className="lyrics-word-highlight"
+            className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
             onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.startTimeMs); } : undefined}
           >
             <span 
@@ -831,7 +831,7 @@ function WordTimingHighlight({
       {renderItems.map((item, idx) => (
         <span
           key={item.key}
-          className="lyrics-word-highlight"
+          className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
           onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.word.startTimeMs); } : undefined}
         >
           {/* Base layer: dimmed or old-school white with black outline */}
@@ -1632,7 +1632,7 @@ export function LyricsDisplay({
                               );
                               return (
                             <div
-                              className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "lyrics-line-clickable" : ""}`}
+                              className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer lyrics-line-clickable" : ""}`}
                               style={
                                 // For old-school karaoke non-word-timed lines, apply stroke and color
                                 isOldSchoolKaraoke && !hasWordTimings
