@@ -296,7 +296,7 @@ export function IpodScreen({
             <AnimatePresence>
               {showVideo && !isPlaying && coverUrl && (
                 <motion.div
-                  className="absolute inset-0 z-26"
+                  className="absolute inset-0 z-5"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}

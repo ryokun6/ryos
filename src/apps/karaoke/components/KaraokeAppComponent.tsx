@@ -1099,7 +1099,7 @@ export function KaraokeAppComponent({
           <AnimatePresence>
             {currentTrack && !isPlaying && coverUrl && (
               <motion.div
-                className="absolute inset-0 z-30"
+                className="absolute inset-0 z-5"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
