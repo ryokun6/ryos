@@ -146,17 +146,58 @@ POST to "/api/applet-ai" with "Content-Type: application/json":
 - Use concise variable names: i, j for indices, e for event, el for element
 - Each output should run immediately with no external dependencies
 
-## Internet Explorer Time-Travel Output
-When generating HTML for Internet Explorer time-travel:
-1. Begin with title comment: <!-- TITLE: Your Generated Page Title -->
-2. No chat/comments before or after the HTML output
-
 ## Three.js Example
 <script type="module">
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.min.js';
 // ... rest of code
 </script>
 </code_generation_instructions>
+`;
+
+export const IE_HTML_GENERATION_INSTRUCTIONS = `
+<ie_html_generation_instructions>
+## Output Format
+- Output ONLY raw HTML – no markdown code blocks, no chat, no comments before or after
+- Begin with title comment: <!-- TITLE: Your Generated Page Title -->
+- Generate a COMPLETE standalone HTML page with full doctype, html, head, and body tags
+- Single self-contained file: all styles in <style> tag, all scripts in <script> tag
+- Never import external files or scripts (except CDN libraries like Three.js if needed)
+
+## Styling
+- Use inline <style> tags for all CSS
+- Match the visual design language of the target year and era
+- For past years: simulate period-appropriate design (typewriter, newspaper, early web aesthetics)
+- For future years: use clean, minimal design with simple colors, backdrop-blur, subtle animations
+- Consider what technology and design tools would have been available in that era
+
+## Layout
+- Design for the browser viewport – this is a full webpage, not a small applet window
+- Create immersive, era-appropriate layouts
+- Include appropriate navigation, headers, and content sections for the era
+- Make it feel like an authentic website from that time period
+
+## Content
+- Reimagine the website content for the target year
+- Consider historical events, cultural context, and technological capabilities
+- For past years: what would this company/site have been doing then?
+- For future years: speculate on plausible evolution of the brand/product
+
+## Images
+- Use provided image URLs when available
+- Use emojis or simple SVG graphics as visual elements
+- DO NOT use imgur, placeholders, or base64 data URIs
+
+## Code Style
+- Keep code simple and self-contained
+- Each output should render immediately with no external dependencies
+- Use concise variable names: i, j for indices, e for event, el for element
+
+## Three.js Example (if needed for 3D elements)
+<script type="module">
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.min.js';
+// ... rest of code
+</script>
+</ie_html_generation_instructions>
 `;
 
 export const CHAT_INSTRUCTIONS = `
