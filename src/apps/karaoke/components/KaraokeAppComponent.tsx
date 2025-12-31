@@ -214,6 +214,10 @@ export function KaraokeAppComponent({
   const ua = navigator.userAgent;
   const isIOS = /iP(hone|od|ad)/.test(ua);
   const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
+  const isIOSSafari = isIOS && isSafari;
+
+  // Track user interaction for autoplay guard (iOS Safari blocks autoplay until user interacts)
+  const userHasInteractedRef = useRef(false);
 
   // Current track
   const currentTrack: Track | null = tracks[currentIndex] || null;
@@ -358,6 +362,7 @@ export function KaraokeAppComponent({
   // Register activity (for full screen portal)
   const registerActivity = useCallback(() => {
     restartAutoHideTimer();
+    userHasInteractedRef.current = true;
   }, [restartAutoHideTimer]);
 
   // Helper to mark track switch start and schedule end
@@ -384,6 +389,8 @@ export function KaraokeAppComponent({
   }, [isOffline, showOfflineStatus, previousTrack, showStatus, startTrackSwitch]);
 
   const handlePlayPause = useCallback(() => {
+    // Mark user interaction for autoplay guard
+    userHasInteractedRef.current = true;
     if (isOffline) {
       showOfflineStatus();
     } else {
@@ -577,6 +584,22 @@ export function KaraokeAppComponent({
       setIsPlaying(false);
     }
   }, [isFullScreen]);
+
+  // Watchdog for blocked autoplay on iOS Safari
+  // If isPlaying is true but elapsed time hasn't changed, the player needs user interaction
+  useEffect(() => {
+    if (!isPlaying || !isIOSSafari || userHasInteractedRef.current) return;
+
+    const startElapsed = elapsedTime;
+    const timer = setTimeout(() => {
+      if (useKaraokeStore.getState().isPlaying && elapsedTime === startElapsed) {
+        setIsPlaying(false);
+        showStatus("⏸");
+      }
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [isPlaying, elapsedTime, setIsPlaying, showStatus, isIOSSafari]);
 
   // Seek time (delta)
   const seekTime = useCallback(
@@ -830,6 +853,8 @@ export function KaraokeAppComponent({
 
       if (e.key === " ") {
         e.preventDefault();
+        // Mark user interaction for autoplay guard
+        userHasInteractedRef.current = true;
         if (isOffline) {
           showOfflineStatus();
         } else {
@@ -1040,6 +1065,8 @@ export function KaraokeAppComponent({
               screenLongPressFiredRef.current = false;
               return;
             }
+            // Mark user interaction for autoplay guard
+            userHasInteractedRef.current = true;
             if (isOffline) {
               showOfflineStatus();
             } else if (currentTrack && !isCoverFlowOpen) {
