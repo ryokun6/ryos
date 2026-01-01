@@ -1629,9 +1629,9 @@
 
 /* System 7: use Geneva-12 for toasts */
 .os-theme-system7 .toaster {
-  font-family: var(--font-geneva-12) !important;
-  -webkit-font-smoothing: antialiased !important;
-  font-smooth: always !important;
+  font-family: var(--font-geneva-12);
+  -webkit-font-smoothing: antialiased;
+  font-smooth: always;
 }
 
 /* macOS: Style toast containers with semi-transparent pinstripes like dock */
