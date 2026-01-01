@@ -12,6 +12,12 @@ import { useTranslation } from "react-i18next";
 import { getTranslatedAppName, type AppId } from "@/utils/i18n";
 import { useAppStore } from "@/stores/useAppStore";
 
+// Map appId to doc URL path (most are same, but some have different names)
+const APP_DOC_NAMES: Partial<Record<AppId, string>> = {
+  pc: "virtual-pc",
+  "applet-viewer": "applet-store",
+};
+
 interface HelpCardProps {
   icon: string;
   title: string;
@@ -86,8 +92,14 @@ export function HelpDialog({
   const displayAppName = appId ? getTranslatedAppName(appId) : appName || "";
 
   const handleViewDocs = () => {
+    // Get the doc name for this app (use mapping or fall back to appId)
+    const docName = appId ? (APP_DOC_NAMES[appId] || appId) : "";
+    const docsUrl = docName
+      ? `https://os.ryo.lu/docs/${docName}`
+      : "https://os.ryo.lu/docs";
+
     launchApp("internet-explorer", {
-      url: "https://os.ryo.lu/docs",
+      url: docsUrl,
       year: "current",
     });
     onOpenChange(false);
