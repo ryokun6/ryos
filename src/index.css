@@ -881,17 +881,23 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   
   /* macOS X theme: add dock height (56px) */
   .os-theme-macosx [data-sonner-toaster][data-y-position="bottom"] {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+    bottom: calc(
+      env(safe-area-inset-bottom, 0px) + var(--os-dock-base-height, 0px) + 16px
+    ) !important;
   }
   
   /* Windows XP theme: add taskbar height (30px) */
   .os-theme-xp [data-sonner-toaster][data-y-position="bottom"] {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 46px) !important;
+    bottom: calc(
+      env(safe-area-inset-bottom, 0px) + var(--os-taskbar-height, 0px) + 16px
+    ) !important;
   }
   
   /* Windows 98 theme: add taskbar height (30px) */
   .os-theme-win98 [data-sonner-toaster][data-y-position="bottom"] {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 46px) !important;
+    bottom: calc(
+      env(safe-area-inset-bottom, 0px) + var(--os-taskbar-height, 0px) + 16px
+    ) !important;
   }
 }
 

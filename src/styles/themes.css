@@ -23,6 +23,8 @@
   --os-color-text-primary: #000000;
   --os-color-text-secondary: #666666;
   --os-color-text-disabled: #999999;
+  --os-taskbar-height: 0px;
+  --os-dock-base-height: 0px;
   --os-metrics-border-width: 2px;
   --os-metrics-radius: 0.5rem;
   --os-metrics-titlebar-height: 1.5rem;

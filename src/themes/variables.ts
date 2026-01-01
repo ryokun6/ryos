@@ -36,6 +36,8 @@ export function themeToCssVariables(theme: OsTheme): Record<string, string> {
     "--os-metrics-titlebar-height": theme.metrics.titleBarHeight,
     "--os-metrics-menubar-height": toPx(theme.metadata.menuBarHeight),
     "--os-window-shadow": theme.metrics.windowShadow,
+    "--os-taskbar-height": toPx(theme.metadata.taskbarHeight),
+    "--os-dock-base-height": toPx(theme.metadata.baseDockHeight),
   };
 
   // Optional / theme-specific values
