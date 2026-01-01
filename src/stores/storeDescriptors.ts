@@ -73,7 +73,7 @@ export const storeDescriptors: StoreDescriptor[] = [
   {
     key: "dock-storage",
     file: "src/stores/useDockStore.ts",
-    version: 0,
+    version: 1,
     storage: "localStorage",
     category: "ui",
     sync: { eligible: true, defaultEnabled: true },
@@ -82,7 +82,7 @@ export const storeDescriptors: StoreDescriptor[] = [
   {
     key: "ryos:finder",
     file: "src/stores/useFinderStore.ts",
-    version: 0,
+    version: 1,
     storage: "localStorage",
     category: "ui",
     sync: { eligible: true, defaultEnabled: true },

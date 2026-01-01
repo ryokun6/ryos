@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 
 // Dock item can be an app or a file/applet
 export interface DockItem {
@@ -21,7 +21,7 @@ const DEFAULT_PINNED_ITEMS: DockItem[] = [
   { type: "app", id: "karaoke" },
 ];
 
-interface DockStoreState {
+interface DockStoreState extends PersistedStoreMeta {
   pinnedItems: DockItem[];
   scale: number; // Dock icon scale (0.5 to 1.5)
   hiding: boolean; // Whether dock auto-hides
@@ -37,13 +37,17 @@ interface DockStoreState {
   reset: () => void;
 }
 
+const STORE_NAME = "dock-storage";
+const STORE_VERSION = 1;
+
 export const useDockStore = create<DockStoreState>()(
-  persist(
+  createPersistedStore(
     (set, get) => ({
       pinnedItems: DEFAULT_PINNED_ITEMS,
       scale: 1, // Default scale
       hiding: false, // Default: dock always visible
       magnification: true, // Default: magnification enabled
+      _updatedAt: Date.now(),
 
       addItem: (item: DockItem, insertIndex?: number) => {
         const { pinnedItems } = get();
@@ -71,7 +75,7 @@ export const useDockStore = create<DockStoreState>()(
             ? Math.max(minIndex, Math.min(insertIndex, newItems.length))
             : newItems.length;
           newItems.splice(index, 0, item);
-          return { pinnedItems: newItems };
+          return { pinnedItems: newItems, _updatedAt: Date.now() };
         });
 
         return true;
@@ -85,6 +89,7 @@ export const useDockStore = create<DockStoreState>()(
 
         set((state) => ({
           pinnedItems: state.pinnedItems.filter((item) => item.id !== id),
+          _updatedAt: Date.now(),
         }));
 
         return true;
@@ -109,7 +114,7 @@ export const useDockStore = create<DockStoreState>()(
           if (removed) {
             newItems.splice(toIndex, 0, removed);
           }
-          return { pinnedItems: newItems };
+          return { pinnedItems: newItems, _updatedAt: Date.now() };
         });
       },
 
@@ -120,24 +125,37 @@ export const useDockStore = create<DockStoreState>()(
       setScale: (scale: number) => {
         // Clamp scale between 0.5 and 1.5
         const clampedScale = Math.max(0.5, Math.min(1.5, scale));
-        set({ scale: clampedScale });
+        set({ scale: clampedScale, _updatedAt: Date.now() });
       },
 
       setHiding: (hiding: boolean) => {
-        set({ hiding });
+        set({ hiding, _updatedAt: Date.now() });
       },
 
       setMagnification: (magnification: boolean) => {
-        set({ magnification });
+        set({ magnification, _updatedAt: Date.now() });
       },
 
       reset: () => {
-        set({ pinnedItems: DEFAULT_PINNED_ITEMS, scale: 1, hiding: false, magnification: true });
+        set({
+          pinnedItems: DEFAULT_PINNED_ITEMS,
+          scale: 1,
+          hiding: false,
+          magnification: true,
+          _updatedAt: Date.now(),
+        });
       },
     }),
     {
-      name: "dock-storage",
-      storage: createJSONStorage(() => localStorage),
+      name: STORE_NAME,
+      version: STORE_VERSION,
+      partialize: (state) => ({
+        pinnedItems: state.pinnedItems,
+        scale: state.scale,
+        hiding: state.hiding,
+        magnification: state.magnification,
+        _updatedAt: state._updatedAt,
+      }),
     }
   )
 );

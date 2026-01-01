@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 import { useAppStore } from "@/stores/useAppStore";
 
 import type {
@@ -17,7 +17,7 @@ export interface FinderInstance {
   selectedFile: string | null;
 }
 
-interface FinderStoreState {
+interface FinderStoreState extends PersistedStoreMeta {
   instances: Record<string, FinderInstance>;
 
   // Per-path view preferences
@@ -38,11 +38,13 @@ interface FinderStoreState {
 }
 
 const STORE_NAME = "ryos:finder";
+const STORE_VERSION = 1;
 
 export const useFinderStore = create<FinderStoreState>()(
-  persist(
+  createPersistedStore(
     (set, get) => ({
       instances: {},
+      _updatedAt: Date.now(),
 
       pathViewPreferences: {},
       setViewTypeForPath: (path, type) =>
@@ -51,6 +53,7 @@ export const useFinderStore = create<FinderStoreState>()(
             ...state.pathViewPreferences,
             [path]: type,
           },
+          _updatedAt: Date.now(),
         })),
       getViewTypeForPath: (path) => {
         const state = get();
@@ -90,6 +93,7 @@ export const useFinderStore = create<FinderStoreState>()(
                 selectedFile: null,
               },
             },
+            _updatedAt: Date.now(),
           };
         }),
 
@@ -97,7 +101,7 @@ export const useFinderStore = create<FinderStoreState>()(
         set((state) => {
           const newInstances = { ...state.instances };
           delete newInstances[instanceId];
-          return { instances: newInstances };
+          return { instances: newInstances, _updatedAt: Date.now() };
         }),
 
       updateInstance: (instanceId, updates) =>
@@ -111,6 +115,7 @@ export const useFinderStore = create<FinderStoreState>()(
                 ...updates,
               },
             },
+            _updatedAt: Date.now(),
           };
         }),
 
@@ -131,10 +136,11 @@ export const useFinderStore = create<FinderStoreState>()(
     }),
     {
       name: STORE_NAME,
-      storage: createJSONStorage(() => localStorage),
+      version: STORE_VERSION,
       partialize: (state) => ({
         instances: state.instances,
         pathViewPreferences: state.pathViewPreferences,
+        _updatedAt: state._updatedAt,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -162,6 +168,10 @@ export const useFinderStore = create<FinderStoreState>()(
             pathViewPreferences?: Record<string, ViewType>;
           };
           if (!anyState.pathViewPreferences) anyState.pathViewPreferences = {};
+
+          if (!state._updatedAt) {
+            (state as unknown as { _updatedAt: number })._updatedAt = Date.now();
+          }
         }
       },
     }
