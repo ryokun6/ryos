@@ -974,8 +974,8 @@
 
 /* Preserve karaoke activity indicator size on macOS theme */
 .os-theme-macosx .karaoke-activity-indicator {
-  width: clamp(24px, 6cqmin, 64px) !important;
-  height: clamp(24px, 6cqmin, 64px) !important;
+  width: clamp(24px, 6cqmin, 64px);
+  height: clamp(24px, 6cqmin, 64px);
 }
 
 /* Outside iPod, Karaoke, and Videos LCD, font-geneva-12 uses macOS system fonts */
