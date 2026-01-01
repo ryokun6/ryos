@@ -1926,7 +1926,7 @@ export function ControlPanelsAppComponent({
                     </div>
                     <Switch
                       checked={syncSettings.autoSync}
-                      disabled={!syncSettings.enabled}
+                      disabled={!syncSettings.enabled || !authToken || !username}
                       onCheckedChange={(v) => syncSettings.setAutoSync(v)}
                     />
                   </div>
@@ -1940,7 +1940,7 @@ export function ControlPanelsAppComponent({
                     </div>
                     <Switch
                       checked={syncSettings.includeMedia}
-                      disabled={!syncSettings.enabled}
+                      disabled={!syncSettings.enabled || !authToken || !username}
                       onCheckedChange={(v) => syncSettings.setIncludeMedia(v)}
                     />
                   </div>
@@ -1954,7 +1954,7 @@ export function ControlPanelsAppComponent({
                     </div>
                     <Switch
                       checked={syncSettings.includeFiles}
-                      disabled={!syncSettings.enabled}
+                      disabled={!syncSettings.enabled || !authToken || !username}
                       onCheckedChange={(v) => syncSettings.setIncludeFiles(v)}
                     />
                   </div>
