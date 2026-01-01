@@ -1,0 +1,433 @@
+# Changelog
+
+_Auto-generated from git history on 2026-01-01T19:05:53.551Z. Run `bun run generate:changelog` to refresh. Default window: last 12 month(s), max 15 per category. Override with --months, --per-month, or --all. Merge commits are skipped. Major keywords: feat, feature, add, introduce, implement, create, launch, upgrade, refactor, redesign, breaking, perf, optimize, improve, enhance, upgrade, bump, release. Minor keywords: fix, chore, docs, doc, test, tests, tweak, refine, cleanup, style, ci, build, revert._
+
+## January 2026
+
+- **Major**
+  - add automated changelog generation
+  - Add comprehensive documentation for utility API endpoints
+  - Add comprehensive AI endpoints documentation
+  - add comprehensive Media API documentation
+  - Add comprehensive documentation for the Chat API endpoint
+  - Add Chat Rooms API documentation
+  - enhance documentation generation with skip and force options
+  - enhance documentation navigation and generation
+  - enhance documentation support and routing
+  - add /docs route with architecture documentation
+  - add onPlayTrackInPlace callback for improved track playback in CoverFlow
+- **Minor**
+  - adjust changelog defaults and usage hints
+  - tune changelog classification and summaries
+  - summarize changelog output
+  - Fix h4 headers not rendering in docs
+  - Reorganize docs hierarchy for better clarity
+  - Fix sidebar: update app doc naming and alignment
+  - Fix sidebar alignment for items without toggles
+  - Update documentation links to use clean URLs
+  - Restructure docs with hierarchical DeepWiki-style navigation
+  - Generate HTML documentation for new API subpages
+  - resolve docs route not working on Vercel deployment
+  - update documentation routing regex for improved matching
+  - update prebuild script to include documentation generation and bump version information
+  - resolve linter errors in documentation generation scripts
+  - remove inner scrollers, use natural page scroll
+  - _… 17 more minor change(s) in git log_
+
+## December 2025
+
+- **Major**
+  - implement IE HTML generation instructions and update system prompt
+  - enhance CoverFlow interactivity with track selection and CD click handling
+  - optimize SpinningCD animation and improve CoverFlow layout
+  - enhance CoverFlow with play/pause functionality and CD animation
+  - add CD toggle with spinning disc animation in CoverFlow
+  - enhance chat title bar styling for better Safari compatibility
+  - add autoplay guard to Karaoke for iOS Safari playback sync
+  - add logging for translation AI input/output
+  - improve translation prompt to explicitly translate Korean lyrics
+  - Enhance lyrics display interactivity with cursor pointer
+  - Enhance overlay interactions and pointer events in iPod and Karaoke components
+  - Add macOS X theme support to FullscreenPlayerControls
+  - Refactor FullscreenPlayerControls for improved layout and styling
+  - Enhance useLibraryUpdateChecker and useIpodStore to support cover image and lyrics source updates
+  - Enhance CoverFlow component with improved opacity calculation and dark overlay animation
+  - _… 301 more major change(s) in git log_
+- **Minor**
+  - refine SpinningCD component dimensions and shadow effect
+  - update version information and refine CoverFlow shadow styling
+  - remove debug logging for translation
+  - map language codes to readable names in translation prompt
+  - Use song cover as meta image for karaoke/ipod URLs
+  - convert fallback lyrics to Traditional Chinese in KRC translation builder
+  - Update cover image resolution in iPod and Karaoke components
+  - Update icon opacity for macOS theme in FullscreenPlayerControls
+  - Update z-index values for overlay components in iPod and Karaoke apps
+  - Apply brightness adjustment to cover images in iPod and Karaoke components
+  - Update version information and enhance paused state overlays in iPod and Karaoke components
+  - Update version information and adjust FullscreenPlayerControls width for improved layout
+  - Fix tap events passing through hidden titlebar in notitlebar windows
+  - Reduce brightness contrast on CoverFlow side covers
+  - Refine CoverFlow component with updated opacity and filter effects
+  - _… 468 more minor change(s) in git log_
+
+## November 2025
+
+- **Major**
+  - Refactor Chats with Ryo help content and descriptions
+  - Refactor Chats with Ryo description
+  - Add QR code generation and offline handling improvements
+  - Enhance asset prefetching by adding static assets support
+  - Refactor rate limiting logic in speech API to use a consistent identifier
+  - Enhance caching strategy and macOS theme styles
+  - Refactor reloadPage function to handle service worker unregistration
+  - Enhance toast styling and animations for various themes
+  - Enhance toast positioning and styling in the UI
+  - Refactor caching strategy in vite.config.ts for improved asset management
+  - Enhance routing configuration and adjust load signal timing
+  - Add chunk load error handling and enhance forceRefreshCache logic
+  - Refactor prefetch logic to unify version checking and update handling
+  - Enhance version handling and update caching strategy
+  - Refactor PrefetchToast and enhance version handling in prefetch logic
+  - _… 93 more major change(s) in git log_
+- **Minor**
+  - Update help item descriptions and titles
+  - Remove redundant iOS browser restriction text
+  - Adjust ipod control for ios playback (#431)
+  - Show applet name instead of id (#430)
+  - Include file path in system states (#429)
+  - Update search replace tool for applets (#428)
+  - Simplify file saving logic in useAiChat hook
+  - Remove redundant directory check in useAiChat
+  - Ensure /Documents directory exists before writing files
+  - Simplify write tool for documents and applets
+  - Remove deprecated tools and update documentation
+  - Rename iPod/Library to Music and Store/Applets to Applets Store
+  - Fix iPod translation off switch (#426)
+  - Checkpoint before follow-up message
+  - Reorder video entries in ipod-videos.json
+  - _… 90 more minor change(s) in git log_
+
+## October 2025
+
+- **Major**
+  - Improve AI prompt instructions for app generation
+  - Upgrade Zod from v3 to v4
+  - Enhance MacDock component with emoji scaling and layout adjustments
+  - Refactor chat and file management functionality in ryOS
+  - Enhance useLaunchApp hook with applet viewer instance management
+  - Enhance AppletViewerMenuBar with instance management and window menu
+  - Enhance applet viewer with import and export functionality
+  - Implement display name logic for Finder applets in FileList component
+  - Enhance font handling for macOSX theme in applet viewer and HTML preview
+  - Enhance applet viewer with new sharing functionality and improved user guidance
+  - Enhance applet viewer with improved content handling and user interaction
+  - Refactor FileIcon and FileList components for improved rendering and styling
+  - Implement interaction listeners for iframe in applet viewer
+  - Add icon support for generated HTML applets
+  - Enhance applet viewer functionality and window management
+  - _… 9 more major change(s) in git log_
+- **Minor**
+  - Hide login message when user is logged in
+  - Remove auth token from system state
+  - Use useMemo for chat transport and dynamic headers
+  - Verify backup restore with applets (#335)
+  - Adjust font size for emoji rendering in MacDock component
+  - Refine font handling for macOSX theme in applet viewer and HTML preview
+  - Update app icons and file handling for applets
+  - Update applet design guidelines for enhanced clarity and responsiveness
+  - Update applet design guidelines for improved responsiveness
+  - Clarify applet design guidelines in HTML generation instructions
+  - Update app filtering and enhance file synchronization
+
+## September 2025
+
+- **Major**
+  - Enhance TextEdit functionality with fallback mechanism for instance management
+  - upgrade zod to ^3.25.76 to satisfy AI SDK peer dependencies
+  - Enhance useAiChat hook with automatic message handling and improved logging
+  - Enhance ToolInvocationMessage to display song details
+  - Add JoyRide video to ipod-videos (#314)
+  - Add Asics by Fredi Casso to ipod-videos
+  - Add recording engineer and digital editing to skip prefixes
+  - Add more prefixes to skip in LRC parsing
+  - Add lyrics translation request persistence
+  - Add two new videos to ipod-videos.json
+  - Add force refresh for lyrics (#301)
+  - Add BIGBANG FOREVER WITH U video (#300)
+- **Minor**
+  - Prioritize English names in metadata parsing (#323)
+  - Revert "Merge: Switch parse-title API to use Gemini Flash"
+  - Switch from OpenAI to Google Gemini for title parsing
+  - Use messages array for AI prompts (#321)
+  - Set default AI model to claude-4.5 (#320)
+  - update default AI model to gpt-5
+  - update default AI model to gpt-5-mini
+  - undo changes from 723c7eaa (clean up vite.config.ts and vercel.json configuration)
+  - clean up vite.config.ts and vercel.json configuration
+  - Update AI models and set GPT-5 as default
+  - Update dependencies and refactor AI chat integration
+  - Remove duplicate entry for Crush's OVERLAP (#310)
+  - Remove rate limiting from lyrics translation API
+  - Use persistent translation language preference
+  - Correctly display active language in translation dropdown
+  - _… 3 more minor change(s) in git log_
+
+## August 2025
+
+- **Major**
+  - Add ILLIT's "時よ止まれ" music video to iPod videos collection
+  - Add Crush's "OVERLAP" music video to iPod videos collection
+  - Add new video entry for "2-5-1" by Crush to ipod-videos.json
+  - Add allow-pointer-lock to CSP sandbox directive
+  - Add sandbox attribute to iframe for enhanced security
+  - Add Crush's "UP ALL NITE" video to iPod videos collection
+  - Refactor FileIcon label styling for improved consistency and clarity in Finder context
+  - Improve file list grid layout with responsive auto-fit columns
+  - Improve file icon label styling for Finder context
+  - Improve FileIcon and FileList layout and responsiveness
+  - Improve Finder UI responsiveness and layout for different view types
+  - Add 404 page redirect to homepage in vercel.json
+  - Refactor DEFAULT_VIDEOS in useVideoStore to reorder and restore previously removed video entries, enhancing the video selection available in the application.
+  - Implement mobile/touch support in Dock component by disabling magnification for coarse pointers and no hover. Added state management for magnification and adjusted icon sizing accordingly, enhancing user experience across devices.
+  - Add Trash icon logic to Dock component using files store for dynamic icon retrieval. This enhances the visual representation of the Trash in the Dock, improving user experience.
+  - _… 66 more major change(s) in git log_
+- **Minor**
+  - Update default AI model to GPT-4.1 (#299)
+  - Replace default wallpaper with aqua water photo across themes
+  - Update iframe sandbox to allow forms and popups
+  - Checkpoint before follow-up message
+  - Use createPortal to render TimeMachineView modal in document body
+  - Remember finder view types and set defaults (#286)
+  - Fix finder icon alignment for two items (#285)
+  - Fix file list layout and remove unnecessary FileIcon style
+  - Fix file list grid layout for consistent item sizing and centering
+  - Fix FileIcon alignment and text centering in Finder context
+  - Adjust FileIcon layout and styling for better Finder context rendering
+  - Fix FileIcon and FileList layout and styling adjustments
+  - Fix file icon label styling and remove unnecessary max-width constraint
+  - Update manifest.json with new generation timestamp
+  - Update macOS icon for improved visual consistency
+  - _… 39 more minor change(s) in git log_
+
+## July 2025
+
+- **Major**
+  - Refactor link preview rendering for both user and assistant messages
+  - Add HTML entity decoding for toast message previews
+  - Enhance username validation for chat rooms
+  - Implement server-side Ryo reply generation and update chat handling
+  - Refactor urgent message animations in ChatMessages component
+  - Refactor animation properties in ChatMessages component for urgent messages
+  - Enhance ChatMessages component with urgent message handling
+  - Refactor Sonner component for improved code consistency
+  - Refactor Sonner component styling for theme-aware typography
+  - Enhance username handling in Redis operations
+  - Add chat burst rate limiting for public rooms
+  - Add aquarium handling in TerminalAppComponent
+  - Refactor ChatMessages and ChatsApp components for improved message handling
+  - Improve bubble and large fish animations in EmojiAquarium
+  - Refactor decorative elements in EmojiAquarium component
+  - _… 142 more major change(s) in git log_
+- **Minor**
+  - Conditionally apply top margin for chat message content based on URL status (#249)
+  - Simplify border color logic in LinkPreview component
+  - Update LinkPreview border colors based on theme
+  - Reposition link previews after message bubble for better layout
+  - Remove disableCodeView prop and related logic from HtmlPreview component
+  - Remove HTML preview and related code from ChatMessages component
+  - Disable code view in room view with new disableCodeView prop
+  - Update useVideoStore.ts
+  - Update music metadata parser instructions and add new video entry
+  - Update video store with new default video and increment version
+  - Update package.json to add new scripts and change package manager
+  - Remove deprecated scripts for chat data management and token migration
+  - Fix resize handling for mobile and desktop across different scenarios (#243)
+  - Fix mobile macosx theme window occlusion (#242)
+  - Update border-radius for macOS chat bubbles to enhance visual consistency
+  - _… 198 more minor change(s) in git log_
+
+## June 2025
+
+- **Major**
+  - Implement user-specific token management in chat API
+  - Add API headers with username and auth token to AI chat requests
+  - Add declare keyword to AI rate limit constants in type definition
+  - Refactor auth handling in chat API to prioritize headers and improve logging
+  - Implement multi-token authentication with token-to-username mapping (#162)
+  - Improve file metadata restoration with existing UUID preservation (#161)
+  - Implement user authentication during signup if username exists
+  - Enhance chat functionality with message sending and tooltips
+  - Enhance error handling in ChatMessages component
+  - Refactor rate limiting and password management in chat components
+  - Add rate limiting and input validation for chat rooms
+  - Add login and logout commands (#159)
+  - Add tooltip for new chat button in ChatRoomSidebar component
+  - Refactor logout button logic in ControlPanelsAppComponent for clarity
+  - Implement password management in ChatsAppComponent and ControlPanelsAppComponent
+  - _… 52 more major change(s) in git log_
+- **Minor**
+  - Decode HTML entities in chat messages to improve rendering accuracy
+  - Fix rate limit type casting for AI message count check
+  - Allow ryo to bypass authentication and rate limiting checks
+  - Support multi-token auth with header and improved token validation
+  - Update auth token handling in API (#163)
+  - Update login prompt text in ControlPanelsAppComponent for clarity
+  - Update styling and simplify logout options in chat components
+  - Remove unused debugMode prop from ChatsMenuBar component for cleaner code.
+  - Preserve username and auth token during app reset (#158)
+  - Automatically close login dialog on successful authentication (#157)
+  - Close username dialog after verification in useAuth hook (#156)
+  - Update button text from "Create Account" to "Login" in ControlPanelsAppComponent for improved clarity. Clean up unused props related to sign-up functionality.
+  - Remove unused token refresh and status components from ChatsAppComponent and ChatsMenuBar for cleaner code and improved readability.
+  - Changes from background composer bc-320c80b9-4564-4210-a003-b533a0a423fe
+  - Remove unused verify token input state from ChatsAppComponent
+  - _… 38 more minor change(s) in git log_
+
+## May 2025
+
+- **Major**
+  - Enhance BatteryIndicator component: Add charging state management and animation effect for visual feedback during charging.
+  - Enhance iPod library management: Increase song limit displayed in prompts from 60 to 100, update video data to include "Hold On" by The Internet, and streamline library update logic by removing deprecated functions.
+  - Refactor synth preset management in useChatSynth: Improve error handling for invalid presets, ensure safe disposal of existing synth components, and streamline the creation of new synth instances based on audio readiness.
+  - Refactor iPod library management: Introduce auto-update feature for syncing library with server, remove reset library functionality, and update video data structure to include versioning.
+  - Refactor IpodScreen layout: adjust title bar styles and restructure components for better alignment and spacing
+  - Add BatteryIndicator component to IpodScreen for displaying battery level
+  - Add custom scrollbar implementation to iPod menu and update styles to hide default scrollbars
+  - Enhance IpodWheel component to prevent button clicks during touch drag interactions
+  - Add "I'll Be Good" by JayDon to iPod videos list Output: Add "I'll Be Good" by JayDon to iPod videos list
+  - Enhance chat API with admin validation for room and message management
+  - Add Redis-based authentication validation to chat API and enhance error handling
+  - Add generateToken action to chat rooms API and integrate auth token management in chat hooks
+  - Add authentication token generation and validation to chat rooms API
+  - Add new LOVIN' YOU video to iPod list
+  - Add BoA song to top of iPod videos
+  - _… 344 more major change(s) in git log_
+- **Minor**
+  - Match scrollbar transition with screen
+  - match scrollbar and screen backlight
+  - Update lyric offsets in ipod-videos.json for improved synchronization across multiple tracks.
+  - Update lyric offsets in ipod-videos.json for improved synchronization and add "詞：" to skip prefixes in lrcParser.ts for better parsing accuracy.
+  - Remove "GANMA" by 劉柏辛 from ipod-videos.json to streamline video data entries.
+  - Update default voice settings in speech API: Adjust stability to 0.3, similarity boost to 0.8, and increase speed to 1.1 for improved audio output quality.
+  - Update iPod library management: Increment version to 8, add new video entries for "Hold On" by The Internet and "GANMA" by 劉柏辛, and enhance library update logic to prioritize new tracks at the top of the list.
+  - Update iPod library management: Enhance library update checker to support track metadata updates, improve sync functionality, and update video data versioning to 7. Modify artist names in video entries for consistency.
+  - Remove unnecessary dependency from useEffect in IpodScreen to optimize performance and reduce re-renders.
+  - Fix scrollbar calculations in IpodScreen: Adjust thumb height and position to account for track's extended bounds, ensuring accurate scrollbar behavior.
+  - Update ipod-videos.json: Add album information for existing videos and include new entries for "Come" by Namie Amuro and "Self Control" by Frank Ocean.
+  - Update BatteryIndicator fallback value in IpodScreen to 100% for improved accuracy
+  - Adjust IpodScreen title bar component: reduce width of elements for improved layout consistency
+  - Remove unused derived state for lyrics translation in IpodAppComponent
+  - Here's the commit message:
+  - _… 234 more minor change(s) in git log_
+
+## April 2025
+
+- **Major**
+  - Refactor InternetExplorerAppComponent to improve share link handling and event management
+  - Enhance Base64 encoding and decoding in InternetExplorerAppComponent and ShareLinkDialog
+  - Refactor TimeMachineView component to improve year navigation logic
+  - Refactor Internet Explorer store to streamline initial state management and remove commented-out code
+  - Add "Share App..." functionality to multiple menu bars for improved user experience
+  - Enhance InternetExplorerAppComponent with updateApp event handling for share links
+  - Refactor AppManager and InternetExplorerAppComponent to enhance shared URL handling and initial data management
+  - Add logging for URL path checks in AppManager and update share link format in ShareLinkDialog
+  - Refactor clipboard handling in ShareLinkDialog for improved reliability and user feedback
+  - Refactor AppManager and InternetExplorerAppComponent to remove unused code and streamline event handling
+  - Implement shared URL handling and share dialog in Internet Explorer app
+  - Enhance Internet Explorer app functionality with shared URL support and improved navigation
+  - Enhance InternetExplorerAppComponent with caching and navigation improvements
+  - Refactor TimeMachineView navigation direction logic for clarity
+  - Refactor app window toggle logic for improved foreground management
+  - _… 133 more major change(s) in git log_
+- **Minor**
+  - Remove duplicate app entries in project structure
+  - Update README with new apps and features in project structure
+  - Update InternetExplorerAppComponent.tsx
+  - Swap functionality of "Share Page..." and "Open Time Machine" in InternetExplorerMenuBar for improved user experience. Added a separator for better visual distinction between menu items.
+  - Update Toaster offset calculation in App component for better compatibility with safe area insets
+  - Remove share link API and refactor share link handling in Internet Explorer app
+  - Update help items in Chats and Photo Booth apps for clarity and new features
+  - Update IPOD_DEFAULT_VIDEOS with new tracks and adjust store version
+  - Update video wallpaper paths to local storage for improved performance
+  - Update game asset paths and images in storage.ts for improved resource management
+  - Update button styles in TimeMachineView for improved visibility and consistency
+  - Update performanceCheck.ts
+  - Update DEFAULT_FAVORITES in useInternetExplorerStore to include Maya website
+  - mobile layout
+  - Update TimeMachineView layout to improve timeline area height for better responsiveness
+  - _… 90 more minor change(s) in git log_
+
+## March 2025
+
+- **Major**
+  - Enhance ChatMessages and ChatsAppComponent for improved message handling and styling
+  - Enhance ChatMessages component with improved message handling and lifecycle tracking
+  - Add profanity filtering to chat room and user creation
+  - Enhance ChatMessages component with user color coding and message styling
+  - Implement sound and vibration notifications for new human messages in ChatMessages component
+  - Enhance room management in ChatsAppComponent by implementing join/leave functionality. Added a helper function to handle room actions and updated the room selection handler to manage transitions between rooms effectively. Introduced cleanup logic to leave rooms on component unmount, improving user experience and resource management.
+  - Refactor imports in ChatsAppComponent to streamline code structure by removing unused useLayoutEffect hook. This change enhances clarity and maintainability of the component.
+  - Enhance ChatsAppComponent with polling for room data and user count display
+  - Refactor UI components in ChatsAppComponent and BoardList for improved layout and styling
+  - Enhance sidebar functionality in ChatsAppComponent and ChatsMenuBar
+  - Implement caching for room messages in ChatsAppComponent
+  - Implement caching for chat rooms and last opened room ID in ChatsAppComponent
+  - Refactor ChatMessages and ChatsAppComponent for enhanced message handling and animation
+  - Enhance ChatMessages and ChatsAppComponent with room view functionality
+  - Enhance chat room creation and message retrieval functionality
+  - _… 231 more major change(s) in git log_
+- **Minor**
+  - Update default model in chat API and refactor ChatMessages component for improved scrolling behavior
+  - Integrate Pusher for real-time chat updates
+  - Update chat.ts
+  - Update maxDuration in chat-rooms.js from 30 to 15 to optimize API runtime configuration.
+  - Update ChatsAppComponent.tsx
+  - Update message fetching logic in handleGetMessages to retrieve the last 20 messages instead of 15, enhancing message visibility for users.
+  - Update background color in ChatRoomSidebar for improved visual consistency across components
+  - Update header in ChatRoomSidebar to reflect 'Chats' instead of 'Rooms' for improved clarity and consistency in terminology.
+  - Update default user color in ChatMessages component for improved visual consistency
+  - Update user count display logic in ChatRoomSidebar to show online status based on user count. This change enhances visibility by ensuring the user count is always displayed when greater than zero, improving user awareness of room activity.
+  - Remove unused props from ChatsAppComponent and ChatsMenuBar to streamline component structure. This change enhances clarity and maintainability by eliminating unnecessary destructured properties.
+  - Remove immediate message fetching on room entry in ChatsAppComponent to streamline polling setup. This change enhances performance by relying solely on the established polling interval for message updates.
+  - Update ChatsAppComponent and ChatsMenuBar for improved user experience
+  - Update ChatsAppComponent to dynamically set window title based on selected chat room
+  - Remove chat room API implementation and update fetch URLs in components
+  - _… 171 more minor change(s) in git log_
+
+## February 2025
+
+- **Major**
+  - Add Firefox-specific CSS for textedit
+  - Improve line description formatting in TextEdit markup
+  - Add app control markup parsing and execution
+  - Enhance TextEdit message rendering and processing
+  - Optimize TextEdit markup processing and streaming behavior
+  - Improve TextEdit markup parsing and message handling
+  - Bump @radix-ui/react-dialog to latest version (1.1.6)
+  - Improve dialog overlay pointer events and interaction
+  - Enhance double-tap handling for window maximization
+  - Add system state context to chat interactions
+  - Implement advanced window maximization and touch interactions
+  - Add mobile swipe navigation for app switching
+  - Refactor WindowFrame component with reduced resize handle sizes
+  - Optimize TextEdit context processing for mobile and desktop performance
+  - Refactor chat clearing mechanism with improved error handling
+  - _… 132 more major change(s) in git log_
+- **Minor**
+  - Update default games list and PC emulator title
+  - Refine TextEdit markup line description generation
+  - Update system state and app list display
+  - dialog pointer-events
+  - Revert @radix-ui/react-dialog to previous version (1.1.5)
+  - Reset chat container styles during chat clearing
+  - Update chat nudge response to include system context
+  - Move SystemState interface to dedicated utility file
+  - Clear chat input state after resetting messages
+  - Update TextEdit markup parsing guidelines with best practices
+  - Remove document edit parsing and related functionality
+  - Update GitHub repository references across multiple apps
+  - I apolog
+  - Update UI text and global font size
+  - Migrate file system to IndexedDB and enhance storage management
+  - _… 74 more minor change(s) in git log_

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog - ryOS Docs</title>
+  <link rel="icon" href="/icons/mac-192.png">
+  <style>
+    @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
+    @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geneva", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #fff;
+      color: #000;
+    }
+    a { color: #00f; }
+    a:hover { text-decoration: none; }
+    code, pre { font-family: "Monaco", monospace; font-size: 11px; }
+    code { background: #f0f0f0; padding: 1px 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    
+    /* Layout */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0 16px; height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; display: block; }
+    .header-left span { font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right a { text-decoration: none; color: #333; }
+    .header-right a:hover { color: #000; }
+    .header-right .github { display: flex; align-items: center; gap: 4px; }
+    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
+    
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      border-right: 1px solid #ccc;
+      padding: 12px;
+      position: sticky; top: 40px;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block; padding: 4px 8px; margin: 2px 0;
+      text-decoration: none; color: #333;
+      font-size: 11px;
+    }
+    .sidebar a:hover { background: #f0f0f0; }
+    .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-spacer { width: 8px; flex-shrink: 0; } /* Same width as toggle arrow */
+    .nav-no-toggle { cursor: default; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
+    
+    .content { flex: 1; padding: 24px 32px; min-width: 0; }
+    
+    /* Typography */
+    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    h2 { font-size: 14px; margin: 24px 0 12px; }
+    h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    
+    /* Navigation */
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .nav a { text-decoration: none; color: #333; }
+    .nav a:hover { color: #000; }
+    
+    /* Mobile menu button */
+    .menu-btn { 
+      display: none; 
+      background: transparent; 
+      border: 0; 
+      padding: 4px; 
+      cursor: pointer; 
+      line-height: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      color: inherit;
+    }
+    .menu-btn svg { display: block; width: 18px; height: 18px; pointer-events: none; }
+    @media screen and (max-width: 768px) {
+      .menu-btn { 
+        display: -webkit-flex !important;
+        display: flex !important; 
+        -webkit-align-items: center;
+        align-items: center; 
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+      .header-left img { display: none !important; }
+      .sidebar { 
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
+        background: #fff; z-index: 20;
+        transition: left 0.2s;
+      }
+      .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+        <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
+        <span>ryOS</span>
+      </a>
+      <span style="color:#999">/</span>
+      <span style="color:#666">Docs</span>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="/" class="launch">Launch</a>
+    </div>
+  </header>
+  
+  <div class="container">
+    <nav class="sidebar">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/overview" class="">1. Overview</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
+    <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
+    <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
+    <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
+    <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
+    <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
+    <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
+    <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
+    <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
+    <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
+    <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
+    <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
+    <a href="/docs/videos" class="nav-child ">5.13 Videos</a>
+    <a href="/docs/minesweeper" class="nav-child ">5.14 Minesweeper</a>
+    <a href="/docs/virtual-pc" class="nav-child ">5.15 Virtual PC</a>
+    <a href="/docs/admin" class="nav-child ">5.16 Admin</a>
+    <a href="/docs/applet-store" class="nav-child ">5.17 Applet Store</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/changelog" class="active">9. Changelog</a>
+  </div>
+</div>
+    </nav>
+    
+    <main class="content">
+      <article>
+        <h1>Changelog</h1>
+<p>_Auto-generated from git history on 2026-01-01T19:05:53.551Z. Run <code>bun run generate:changelog</code> to refresh. Default window: last 12 month(s), max 15 per category. Override with --months, --per-month, or --all. Merge commits are skipped. Major keywords: feat, feature, add, introduce, implement, create, launch, upgrade, refactor, redesign, breaking, perf, optimize, improve, enhance, upgrade, bump, release. Minor keywords: fix, chore, docs, doc, test, tests, tweak, refine, cleanup, style, ci, build, revert._</p>
+<h2>January 2026</h2>
+<ul><li><strong>Major</strong><ul><li>add automated changelog generation</li><li>Add comprehensive documentation for utility API endpoints</li><li>Add comprehensive AI endpoints documentation</li><li>add comprehensive Media API documentation</li><li>Add comprehensive documentation for the Chat API endpoint</li><li>Add Chat Rooms API documentation</li><li>enhance documentation generation with skip and force options</li><li>enhance documentation navigation and generation</li><li>enhance documentation support and routing</li><li>add /docs route with architecture documentation</li><li>add onPlayTrackInPlace callback for improved track playback in CoverFlow</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>adjust changelog defaults and usage hints</li><li>tune changelog classification and summaries</li><li>summarize changelog output</li><li>Fix h4 headers not rendering in docs</li><li>Reorganize docs hierarchy for better clarity</li><li>Fix sidebar: update app doc naming and alignment</li><li>Fix sidebar alignment for items without toggles</li><li>Update documentation links to use clean URLs</li><li>Restructure docs with hierarchical DeepWiki-style navigation</li><li>Generate HTML documentation for new API subpages</li><li>resolve docs route not working on Vercel deployment</li><li>update documentation routing regex for improved matching</li><li>update prebuild script to include documentation generation and bump version information</li><li>resolve linter errors in documentation generation scripts</li><li>remove inner scrollers, use natural page scroll</li><li>_… 17 more minor change(s) in git log_</li></ul></li></ul>
+<h2>December 2025</h2>
+<ul><li><strong>Major</strong><ul><li>implement IE HTML generation instructions and update system prompt</li><li>enhance CoverFlow interactivity with track selection and CD click handling</li><li>optimize SpinningCD animation and improve CoverFlow layout</li><li>enhance CoverFlow with play/pause functionality and CD animation</li><li>add CD toggle with spinning disc animation in CoverFlow</li><li>enhance chat title bar styling for better Safari compatibility</li><li>add autoplay guard to Karaoke for iOS Safari playback sync</li><li>add logging for translation AI input/output</li><li>improve translation prompt to explicitly translate Korean lyrics</li><li>Enhance lyrics display interactivity with cursor pointer</li><li>Enhance overlay interactions and pointer events in iPod and Karaoke components</li><li>Add macOS X theme support to FullscreenPlayerControls</li><li>Refactor FullscreenPlayerControls for improved layout and styling</li><li>Enhance useLibraryUpdateChecker and useIpodStore to support cover image and lyrics source updates</li><li>Enhance CoverFlow component with improved opacity calculation and dark overlay animation</li><li>_… 301 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>refine SpinningCD component dimensions and shadow effect</li><li>update version information and refine CoverFlow shadow styling</li><li>remove debug logging for translation</li><li>map language codes to readable names in translation prompt</li><li>Use song cover as meta image for karaoke/ipod URLs</li><li>convert fallback lyrics to Traditional Chinese in KRC translation builder</li><li>Update cover image resolution in iPod and Karaoke components</li><li>Update icon opacity for macOS theme in FullscreenPlayerControls</li><li>Update z-index values for overlay components in iPod and Karaoke apps</li><li>Apply brightness adjustment to cover images in iPod and Karaoke components</li><li>Update version information and enhance paused state overlays in iPod and Karaoke components</li><li>Update version information and adjust FullscreenPlayerControls width for improved layout</li><li>Fix tap events passing through hidden titlebar in notitlebar windows</li><li>Reduce brightness contrast on CoverFlow side covers</li><li>Refine CoverFlow component with updated opacity and filter effects</li><li>_… 468 more minor change(s) in git log_</li></ul></li></ul>
+<h2>November 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Refactor Chats with Ryo help content and descriptions</li><li>Refactor Chats with Ryo description</li><li>Add QR code generation and offline handling improvements</li><li>Enhance asset prefetching by adding static assets support</li><li>Refactor rate limiting logic in speech API to use a consistent identifier</li><li>Enhance caching strategy and macOS theme styles</li><li>Refactor reloadPage function to handle service worker unregistration</li><li>Enhance toast styling and animations for various themes</li><li>Enhance toast positioning and styling in the UI</li><li>Refactor caching strategy in vite.config.ts for improved asset management</li><li>Enhance routing configuration and adjust load signal timing</li><li>Add chunk load error handling and enhance forceRefreshCache logic</li><li>Refactor prefetch logic to unify version checking and update handling</li><li>Enhance version handling and update caching strategy</li><li>Refactor PrefetchToast and enhance version handling in prefetch logic</li><li>_… 93 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Update help item descriptions and titles</li><li>Remove redundant iOS browser restriction text</li><li>Adjust ipod control for ios playback (#431)</li><li>Show applet name instead of id (#430)</li><li>Include file path in system states (#429)</li><li>Update search replace tool for applets (#428)</li><li>Simplify file saving logic in useAiChat hook</li><li>Remove redundant directory check in useAiChat</li><li>Ensure /Documents directory exists before writing files</li><li>Simplify write tool for documents and applets</li><li>Remove deprecated tools and update documentation</li><li>Rename iPod/Library to Music and Store/Applets to Applets Store</li><li>Fix iPod translation off switch (#426)</li><li>Checkpoint before follow-up message</li><li>Reorder video entries in ipod-videos.json</li><li>_… 90 more minor change(s) in git log_</li></ul></li></ul>
+<h2>October 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Improve AI prompt instructions for app generation</li><li>Upgrade Zod from v3 to v4</li><li>Enhance MacDock component with emoji scaling and layout adjustments</li><li>Refactor chat and file management functionality in ryOS</li><li>Enhance useLaunchApp hook with applet viewer instance management</li><li>Enhance AppletViewerMenuBar with instance management and window menu</li><li>Enhance applet viewer with import and export functionality</li><li>Implement display name logic for Finder applets in FileList component</li><li>Enhance font handling for macOSX theme in applet viewer and HTML preview</li><li>Enhance applet viewer with new sharing functionality and improved user guidance</li><li>Enhance applet viewer with improved content handling and user interaction</li><li>Refactor FileIcon and FileList components for improved rendering and styling</li><li>Implement interaction listeners for iframe in applet viewer</li><li>Add icon support for generated HTML applets</li><li>Enhance applet viewer functionality and window management</li><li>_… 9 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Hide login message when user is logged in</li><li>Remove auth token from system state</li><li>Use useMemo for chat transport and dynamic headers</li><li>Verify backup restore with applets (#335)</li><li>Adjust font size for emoji rendering in MacDock component</li><li>Refine font handling for macOSX theme in applet viewer and HTML preview</li><li>Update app icons and file handling for applets</li><li>Update applet design guidelines for enhanced clarity and responsiveness</li><li>Update applet design guidelines for improved responsiveness</li><li>Clarify applet design guidelines in HTML generation instructions</li><li>Update app filtering and enhance file synchronization</li></ul></li></ul>
+<h2>September 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Enhance TextEdit functionality with fallback mechanism for instance management</li><li>upgrade zod to ^3.25.76 to satisfy AI SDK peer dependencies</li><li>Enhance useAiChat hook with automatic message handling and improved logging</li><li>Enhance ToolInvocationMessage to display song details</li><li>Add JoyRide video to ipod-videos (#314)</li><li>Add Asics by Fredi Casso to ipod-videos</li><li>Add recording engineer and digital editing to skip prefixes</li><li>Add more prefixes to skip in LRC parsing</li><li>Add lyrics translation request persistence</li><li>Add two new videos to ipod-videos.json</li><li>Add force refresh for lyrics (#301)</li><li>Add BIGBANG FOREVER WITH U video (#300)</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Prioritize English names in metadata parsing (#323)</li><li>Revert "Merge: Switch parse-title API to use Gemini Flash"</li><li>Switch from OpenAI to Google Gemini for title parsing</li><li>Use messages array for AI prompts (#321)</li><li>Set default AI model to claude-4.5 (#320)</li><li>update default AI model to gpt-5</li><li>update default AI model to gpt-5-mini</li><li>undo changes from 723c7eaa (clean up vite.config.ts and vercel.json configuration)</li><li>clean up vite.config.ts and vercel.json configuration</li><li>Update AI models and set GPT-5 as default</li><li>Update dependencies and refactor AI chat integration</li><li>Remove duplicate entry for Crush's OVERLAP (#310)</li><li>Remove rate limiting from lyrics translation API</li><li>Use persistent translation language preference</li><li>Correctly display active language in translation dropdown</li><li>_… 3 more minor change(s) in git log_</li></ul></li></ul>
+<h2>August 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Add ILLIT's "時よ止まれ" music video to iPod videos collection</li><li>Add Crush's "OVERLAP" music video to iPod videos collection</li><li>Add new video entry for "2-5-1" by Crush to ipod-videos.json</li><li>Add allow-pointer-lock to CSP sandbox directive</li><li>Add sandbox attribute to iframe for enhanced security</li><li>Add Crush's "UP ALL NITE" video to iPod videos collection</li><li>Refactor FileIcon label styling for improved consistency and clarity in Finder context</li><li>Improve file list grid layout with responsive auto-fit columns</li><li>Improve file icon label styling for Finder context</li><li>Improve FileIcon and FileList layout and responsiveness</li><li>Improve Finder UI responsiveness and layout for different view types</li><li>Add 404 page redirect to homepage in vercel.json</li><li>Refactor DEFAULT_VIDEOS in useVideoStore to reorder and restore previously removed video entries, enhancing the video selection available in the application.</li><li>Implement mobile/touch support in Dock component by disabling magnification for coarse pointers and no hover. Added state management for magnification and adjusted icon sizing accordingly, enhancing user experience across devices.</li><li>Add Trash icon logic to Dock component using files store for dynamic icon retrieval. This enhances the visual representation of the Trash in the Dock, improving user experience.</li><li>_… 66 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Update default AI model to GPT-4.1 (#299)</li><li>Replace default wallpaper with aqua water photo across themes</li><li>Update iframe sandbox to allow forms and popups</li><li>Checkpoint before follow-up message</li><li>Use createPortal to render TimeMachineView modal in document body</li><li>Remember finder view types and set defaults (#286)</li><li>Fix finder icon alignment for two items (#285)</li><li>Fix file list layout and remove unnecessary FileIcon style</li><li>Fix file list grid layout for consistent item sizing and centering</li><li>Fix FileIcon alignment and text centering in Finder context</li><li>Adjust FileIcon layout and styling for better Finder context rendering</li><li>Fix FileIcon and FileList layout and styling adjustments</li><li>Fix file icon label styling and remove unnecessary max-width constraint</li><li>Update manifest.json with new generation timestamp</li><li>Update macOS icon for improved visual consistency</li><li>_… 39 more minor change(s) in git log_</li></ul></li></ul>
+<h2>July 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Refactor link preview rendering for both user and assistant messages</li><li>Add HTML entity decoding for toast message previews</li><li>Enhance username validation for chat rooms</li><li>Implement server-side Ryo reply generation and update chat handling</li><li>Refactor urgent message animations in ChatMessages component</li><li>Refactor animation properties in ChatMessages component for urgent messages</li><li>Enhance ChatMessages component with urgent message handling</li><li>Refactor Sonner component for improved code consistency</li><li>Refactor Sonner component styling for theme-aware typography</li><li>Enhance username handling in Redis operations</li><li>Add chat burst rate limiting for public rooms</li><li>Add aquarium handling in TerminalAppComponent</li><li>Refactor ChatMessages and ChatsApp components for improved message handling</li><li>Improve bubble and large fish animations in EmojiAquarium</li><li>Refactor decorative elements in EmojiAquarium component</li><li>_… 142 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Conditionally apply top margin for chat message content based on URL status (#249)</li><li>Simplify border color logic in LinkPreview component</li><li>Update LinkPreview border colors based on theme</li><li>Reposition link previews after message bubble for better layout</li><li>Remove disableCodeView prop and related logic from HtmlPreview component</li><li>Remove HTML preview and related code from ChatMessages component</li><li>Disable code view in room view with new disableCodeView prop</li><li>Update useVideoStore.ts</li><li>Update music metadata parser instructions and add new video entry</li><li>Update video store with new default video and increment version</li><li>Update package.json to add new scripts and change package manager</li><li>Remove deprecated scripts for chat data management and token migration</li><li>Fix resize handling for mobile and desktop across different scenarios (#243)</li><li>Fix mobile macosx theme window occlusion (#242)</li><li>Update border-radius for macOS chat bubbles to enhance visual consistency</li><li>_… 198 more minor change(s) in git log_</li></ul></li></ul>
+<h2>June 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Implement user-specific token management in chat API</li><li>Add API headers with username and auth token to AI chat requests</li><li>Add declare keyword to AI rate limit constants in type definition</li><li>Refactor auth handling in chat API to prioritize headers and improve logging</li><li>Implement multi-token authentication with token-to-username mapping (#162)</li><li>Improve file metadata restoration with existing UUID preservation (#161)</li><li>Implement user authentication during signup if username exists</li><li>Enhance chat functionality with message sending and tooltips</li><li>Enhance error handling in ChatMessages component</li><li>Refactor rate limiting and password management in chat components</li><li>Add rate limiting and input validation for chat rooms</li><li>Add login and logout commands (#159)</li><li>Add tooltip for new chat button in ChatRoomSidebar component</li><li>Refactor logout button logic in ControlPanelsAppComponent for clarity</li><li>Implement password management in ChatsAppComponent and ControlPanelsAppComponent</li><li>_… 52 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Decode HTML entities in chat messages to improve rendering accuracy</li><li>Fix rate limit type casting for AI message count check</li><li>Allow ryo to bypass authentication and rate limiting checks</li><li>Support multi-token auth with header and improved token validation</li><li>Update auth token handling in API (#163)</li><li>Update login prompt text in ControlPanelsAppComponent for clarity</li><li>Update styling and simplify logout options in chat components</li><li>Remove unused debugMode prop from ChatsMenuBar component for cleaner code.</li><li>Preserve username and auth token during app reset (#158)</li><li>Automatically close login dialog on successful authentication (#157)</li><li>Close username dialog after verification in useAuth hook (#156)</li><li>Update button text from "Create Account" to "Login" in ControlPanelsAppComponent for improved clarity. Clean up unused props related to sign-up functionality.</li><li>Remove unused token refresh and status components from ChatsAppComponent and ChatsMenuBar for cleaner code and improved readability.</li><li>Changes from background composer bc-320c80b9-4564-4210-a003-b533a0a423fe</li><li>Remove unused verify token input state from ChatsAppComponent</li><li>_… 38 more minor change(s) in git log_</li></ul></li></ul>
+<h2>May 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Enhance BatteryIndicator component: Add charging state management and animation effect for visual feedback during charging.</li><li>Enhance iPod library management: Increase song limit displayed in prompts from 60 to 100, update video data to include "Hold On" by The Internet, and streamline library update logic by removing deprecated functions.</li><li>Refactor synth preset management in useChatSynth: Improve error handling for invalid presets, ensure safe disposal of existing synth components, and streamline the creation of new synth instances based on audio readiness.</li><li>Refactor iPod library management: Introduce auto-update feature for syncing library with server, remove reset library functionality, and update video data structure to include versioning.</li><li>Refactor IpodScreen layout: adjust title bar styles and restructure components for better alignment and spacing</li><li>Add BatteryIndicator component to IpodScreen for displaying battery level</li><li>Add custom scrollbar implementation to iPod menu and update styles to hide default scrollbars</li><li>Enhance IpodWheel component to prevent button clicks during touch drag interactions</li><li>Add "I'll Be Good" by JayDon to iPod videos list Output: Add "I'll Be Good" by JayDon to iPod videos list</li><li>Enhance chat API with admin validation for room and message management</li><li>Add Redis-based authentication validation to chat API and enhance error handling</li><li>Add generateToken action to chat rooms API and integrate auth token management in chat hooks</li><li>Add authentication token generation and validation to chat rooms API</li><li>Add new LOVIN' YOU video to iPod list</li><li>Add BoA song to top of iPod videos</li><li>_… 344 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Match scrollbar transition with screen</li><li>match scrollbar and screen backlight</li><li>Update lyric offsets in ipod-videos.json for improved synchronization across multiple tracks.</li><li>Update lyric offsets in ipod-videos.json for improved synchronization and add "詞：" to skip prefixes in lrcParser.ts for better parsing accuracy.</li><li>Remove "GANMA" by 劉柏辛 from ipod-videos.json to streamline video data entries.</li><li>Update default voice settings in speech API: Adjust stability to 0.3, similarity boost to 0.8, and increase speed to 1.1 for improved audio output quality.</li><li>Update iPod library management: Increment version to 8, add new video entries for "Hold On" by The Internet and "GANMA" by 劉柏辛, and enhance library update logic to prioritize new tracks at the top of the list.</li><li>Update iPod library management: Enhance library update checker to support track metadata updates, improve sync functionality, and update video data versioning to 7. Modify artist names in video entries for consistency.</li><li>Remove unnecessary dependency from useEffect in IpodScreen to optimize performance and reduce re-renders.</li><li>Fix scrollbar calculations in IpodScreen: Adjust thumb height and position to account for track's extended bounds, ensuring accurate scrollbar behavior.</li><li>Update ipod-videos.json: Add album information for existing videos and include new entries for "Come" by Namie Amuro and "Self Control" by Frank Ocean.</li><li>Update BatteryIndicator fallback value in IpodScreen to 100% for improved accuracy</li><li>Adjust IpodScreen title bar component: reduce width of elements for improved layout consistency</li><li>Remove unused derived state for lyrics translation in IpodAppComponent</li><li>Here's the commit message:</li><li>_… 234 more minor change(s) in git log_</li></ul></li></ul>
+<h2>April 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Refactor InternetExplorerAppComponent to improve share link handling and event management</li><li>Enhance Base64 encoding and decoding in InternetExplorerAppComponent and ShareLinkDialog</li><li>Refactor TimeMachineView component to improve year navigation logic</li><li>Refactor Internet Explorer store to streamline initial state management and remove commented-out code</li><li>Add "Share App..." functionality to multiple menu bars for improved user experience</li><li>Enhance InternetExplorerAppComponent with updateApp event handling for share links</li><li>Refactor AppManager and InternetExplorerAppComponent to enhance shared URL handling and initial data management</li><li>Add logging for URL path checks in AppManager and update share link format in ShareLinkDialog</li><li>Refactor clipboard handling in ShareLinkDialog for improved reliability and user feedback</li><li>Refactor AppManager and InternetExplorerAppComponent to remove unused code and streamline event handling</li><li>Implement shared URL handling and share dialog in Internet Explorer app</li><li>Enhance Internet Explorer app functionality with shared URL support and improved navigation</li><li>Enhance InternetExplorerAppComponent with caching and navigation improvements</li><li>Refactor TimeMachineView navigation direction logic for clarity</li><li>Refactor app window toggle logic for improved foreground management</li><li>_… 133 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Remove duplicate app entries in project structure</li><li>Update README with new apps and features in project structure</li><li>Update InternetExplorerAppComponent.tsx</li><li>Swap functionality of "Share Page..." and "Open Time Machine" in InternetExplorerMenuBar for improved user experience. Added a separator for better visual distinction between menu items.</li><li>Update Toaster offset calculation in App component for better compatibility with safe area insets</li><li>Remove share link API and refactor share link handling in Internet Explorer app</li><li>Update help items in Chats and Photo Booth apps for clarity and new features</li><li>Update IPOD_DEFAULT_VIDEOS with new tracks and adjust store version</li><li>Update video wallpaper paths to local storage for improved performance</li><li>Update game asset paths and images in storage.ts for improved resource management</li><li>Update button styles in TimeMachineView for improved visibility and consistency</li><li>Update performanceCheck.ts</li><li>Update DEFAULT_FAVORITES in useInternetExplorerStore to include Maya website</li><li>mobile layout</li><li>Update TimeMachineView layout to improve timeline area height for better responsiveness</li><li>_… 90 more minor change(s) in git log_</li></ul></li></ul>
+<h2>March 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Enhance ChatMessages and ChatsAppComponent for improved message handling and styling</li><li>Enhance ChatMessages component with improved message handling and lifecycle tracking</li><li>Add profanity filtering to chat room and user creation</li><li>Enhance ChatMessages component with user color coding and message styling</li><li>Implement sound and vibration notifications for new human messages in ChatMessages component</li><li>Enhance room management in ChatsAppComponent by implementing join/leave functionality. Added a helper function to handle room actions and updated the room selection handler to manage transitions between rooms effectively. Introduced cleanup logic to leave rooms on component unmount, improving user experience and resource management.</li><li>Refactor imports in ChatsAppComponent to streamline code structure by removing unused useLayoutEffect hook. This change enhances clarity and maintainability of the component.</li><li>Enhance ChatsAppComponent with polling for room data and user count display</li><li>Refactor UI components in ChatsAppComponent and BoardList for improved layout and styling</li><li>Enhance sidebar functionality in ChatsAppComponent and ChatsMenuBar</li><li>Implement caching for room messages in ChatsAppComponent</li><li>Implement caching for chat rooms and last opened room ID in ChatsAppComponent</li><li>Refactor ChatMessages and ChatsAppComponent for enhanced message handling and animation</li><li>Enhance ChatMessages and ChatsAppComponent with room view functionality</li><li>Enhance chat room creation and message retrieval functionality</li><li>_… 231 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Update default model in chat API and refactor ChatMessages component for improved scrolling behavior</li><li>Integrate Pusher for real-time chat updates</li><li>Update chat.ts</li><li>Update maxDuration in chat-rooms.js from 30 to 15 to optimize API runtime configuration.</li><li>Update ChatsAppComponent.tsx</li><li>Update message fetching logic in handleGetMessages to retrieve the last 20 messages instead of 15, enhancing message visibility for users.</li><li>Update background color in ChatRoomSidebar for improved visual consistency across components</li><li>Update header in ChatRoomSidebar to reflect 'Chats' instead of 'Rooms' for improved clarity and consistency in terminology.</li><li>Update default user color in ChatMessages component for improved visual consistency</li><li>Update user count display logic in ChatRoomSidebar to show online status based on user count. This change enhances visibility by ensuring the user count is always displayed when greater than zero, improving user awareness of room activity.</li><li>Remove unused props from ChatsAppComponent and ChatsMenuBar to streamline component structure. This change enhances clarity and maintainability by eliminating unnecessary destructured properties.</li><li>Remove immediate message fetching on room entry in ChatsAppComponent to streamline polling setup. This change enhances performance by relying solely on the established polling interval for message updates.</li><li>Update ChatsAppComponent and ChatsMenuBar for improved user experience</li><li>Update ChatsAppComponent to dynamically set window title based on selected chat room</li><li>Remove chat room API implementation and update fetch URLs in components</li><li>_… 171 more minor change(s) in git log_</li></ul></li></ul>
+<h2>February 2025</h2>
+<ul><li><strong>Major</strong><ul><li>Add Firefox-specific CSS for textedit</li><li>Improve line description formatting in TextEdit markup</li><li>Add app control markup parsing and execution</li><li>Enhance TextEdit message rendering and processing</li><li>Optimize TextEdit markup processing and streaming behavior</li><li>Improve TextEdit markup parsing and message handling</li><li>Bump @radix-ui/react-dialog to latest version (1.1.6)</li><li>Improve dialog overlay pointer events and interaction</li><li>Enhance double-tap handling for window maximization</li><li>Add system state context to chat interactions</li><li>Implement advanced window maximization and touch interactions</li><li>Add mobile swipe navigation for app switching</li><li>Refactor WindowFrame component with reduced resize handle sizes</li><li>Optimize TextEdit context processing for mobile and desktop performance</li><li>Refactor chat clearing mechanism with improved error handling</li><li>_… 132 more major change(s) in git log_</li></ul></li></ul>
+<ul><li><strong>Minor</strong><ul><li>Update default games list and PC emulator title</li><li>Refine TextEdit markup line description generation</li><li>Update system state and app list display</li><li>dialog pointer-events</li><li>Revert @radix-ui/react-dialog to previous version (1.1.5)</li><li>Reset chat container styles during chat clearing</li><li>Update chat nudge response to include system context</li><li>Move SystemState interface to dedicated utility file</li><li>Clear chat input state after resetting messages</li><li>Update TextEdit markup parsing guidelines with best practices</li><li>Remove document edit parsing and related functionality</li><li>Update GitHub repository references across multiple apps</li><li>I apolog</li><li>Update UI text and global font size</li><li>Migrate file system to IndexedDB and enhance storage management</li><li>_… 74 more minor change(s) in git log_</li></ul></li></ul>
+
+      </article>
+      
+      <nav class="nav">
+        <a href="/docs/i18n">← i18n & Hooks</a>
+        <span></span>
+      </nav>
+      
+    </main>
+  </div>
+  
+  <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const menuBtn = document.querySelector('.menu-btn');
+      const clickedMenuBtn = menuBtn && menuBtn.contains(e.target);
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>
