@@ -2178,6 +2178,7 @@
       "enterFilenameToSave": "保存するファイル名を入力するか、閉じる前に削除してください。",
       "help": "ヘルプ",
       "informationAboutApp": "アプリケーションについての情報",
+      "viewDocs": "ドキュメントを見る",
       "keepNewDocument": "新規書類を保持",
       "madeBy": "作成者：",
       "openInGitHub": "GitHubで開く",

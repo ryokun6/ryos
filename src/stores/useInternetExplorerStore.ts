@@ -121,6 +121,13 @@ export const DEFAULT_FAVORITES: Favorite[] = [
     isDirectory: false,
   },
   {
+    title: "ryOS Docs",
+    url: "https://os.ryo.lu/docs",
+    favicon: "https://www.google.com/s2/favicons?domain=os.ryo.lu&sz=32",
+    year: "current",
+    isDirectory: false,
+  },
+  {
     title: "NewJeans",
     url: "https://newjeans.jp",
     favicon: "https://www.google.com/s2/favicons?domain=newjeans.jp&sz=32",
@@ -128,16 +135,16 @@ export const DEFAULT_FAVORITES: Favorite[] = [
     isDirectory: false,
   },
   {
-    title: "ISOCITY",
-    url: "https://iso-city.com",
-    favicon: "https://www.google.com/s2/favicons?domain=iso-city.com&sz=32",
-    year: "current",
-    isDirectory: false,
-  },
-  {
     title: "Friends",
     isDirectory: true, // Mark as directory
     children: [
+      {
+        title: "ISOCITY",
+        url: "https://iso-city.com",
+        favicon: "https://www.google.com/s2/favicons?domain=iso-city.com&sz=32",
+        year: "current",
+        isDirectory: false,
+      },
       {
         title: "Ian",
         url: "https://shaoruu.io",
@@ -342,7 +349,7 @@ export const DEFAULT_FAVORITES: Favorite[] = [
 ];
 
 // Define the current version for the store
-const CURRENT_IE_STORE_VERSION = 4;
+const CURRENT_IE_STORE_VERSION = 5;
 
 // Helper function to classify year into navigation mode
 function classifyYear(year: string): NavigationMode {

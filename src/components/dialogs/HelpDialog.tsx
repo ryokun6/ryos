@@ -5,10 +5,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName, type AppId } from "@/utils/i18n";
+import { useAppStore } from "@/stores/useAppStore";
 
 interface HelpCardProps {
   icon: string;
@@ -77,9 +79,19 @@ export function HelpDialog({
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacTheme = currentTheme === "macosx";
+  const openApp = useAppStore((state) => state.openApp);
 
   // Use localized app name if appId is provided, otherwise fall back to appName
   const displayAppName = appId ? getTranslatedAppName(appId) : appName || "";
+
+  const handleViewDocs = () => {
+    openApp("internet-explorer", {
+      initialUrl: "https://os.ryo.lu/docs",
+      initialYear: "current",
+    });
+    onOpenChange(false);
+  };
 
   const dialogContent = (
     <div className={isXpTheme ? "p-2 px-4" : "p-6 pt-4"}>
@@ -115,23 +127,43 @@ export function HelpDialog({
       >
         {isXpTheme ? (
           <>
-            <DialogHeader>{t("common.dialog.help")}</DialogHeader>
+            <DialogHeader className="flex flex-row items-center justify-between">
+              <span>{t("common.dialog.help")}</span>
+              <button className="button" onClick={handleViewDocs}>
+                {t("common.dialog.viewDocs")}
+              </button>
+            </DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
-        ) : currentTheme === "macosx" ? (
+        ) : isMacTheme ? (
           <>
-            <DialogHeader>{t("common.dialog.help")}</DialogHeader>
+            <DialogHeader className="flex flex-row items-center justify-between pr-8">
+              <span>{t("common.dialog.help")}</span>
+              <button
+                className="aqua-button primary text-[12px] px-3 py-1"
+                onClick={handleViewDocs}
+              >
+                {t("common.dialog.viewDocs")}
+              </button>
+            </DialogHeader>
             {dialogContent}
           </>
         ) : (
           <>
-            <DialogHeader>
+            <DialogHeader className="flex flex-row items-center justify-between pr-8">
               <DialogTitle className="font-normal text-[16px]">
                 {t("common.dialog.help")}
               </DialogTitle>
               <DialogDescription className="sr-only">
                 {t("common.dialog.informationAboutApp")}
               </DialogDescription>
+              <Button
+                variant="retro"
+                className="text-[11px] px-3 py-1 h-auto"
+                onClick={handleViewDocs}
+              >
+                {t("common.dialog.viewDocs")}
+              </Button>
             </DialogHeader>
             {dialogContent}
           </>
