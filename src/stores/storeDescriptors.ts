@@ -213,6 +213,15 @@ export const storeDescriptors: StoreDescriptor[] = [
     notes: "Photo references only; image blobs managed elsewhere.",
   },
   {
+    key: "ryos:paint",
+    file: "src/stores/usePaintStore.ts",
+    version: 1,
+    storage: "localStorage",
+    category: "settings",
+    sync: { eligible: true, defaultEnabled: true },
+    notes: "Paint last file path reference only; no content stored.",
+  },
+  {
     key: "ryos:textedit",
     file: "src/stores/useTextEditStore.ts",
     version: 1,
