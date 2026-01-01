@@ -1,6 +1,7 @@
 import { buildLocalSnapshots } from "./registry";
 import type { SnapshotEnvelope } from "./types";
 import { pushSnapshots, pullSnapshots, deleteRemoteSnapshots } from "./client";
+import { mergeSnapshots } from "./utils";
 
 /**
  * Build a local snapshot envelope for sync.
@@ -55,6 +56,30 @@ export async function deleteRemoteSyncData(
       return { ok: false, status: resp.status, error: resp.statusText || "delete_failed" };
     }
     return { ok: true, status: resp.status };
+  } catch (err) {
+    return { ok: false, status: 0, error: (err as Error).message };
+  }
+}
+
+export async function syncOnce(
+  deviceId: string,
+  auth?: AuthHeaders
+): Promise<{ ok: boolean; status: number; merged?: unknown[]; error?: string }> {
+  try {
+    const envelope = await buildLocalSnapshotEnvelope(deviceId);
+    // Pull remote first to avoid overwriting newer data when offline edits happen
+    const remoteResp = await pullSnapshots(auth);
+    const merged = mergeSnapshots(envelope.snapshots as any, remoteResp.snapshots as any);
+    const mergedEnvelope: SnapshotEnvelope = {
+      deviceId,
+      generatedAt: Date.now(),
+      snapshots: merged,
+    };
+    const pushResp = await pushSnapshots(mergedEnvelope, auth);
+    if (!pushResp.ok) {
+      return { ok: false, status: pushResp.status, error: pushResp.statusText || "push_failed" };
+    }
+    return { ok: true, status: pushResp.status, merged };
   } catch (err) {
     return { ok: false, status: 0, error: (err as Error).message };
   }
