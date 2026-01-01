@@ -84,8 +84,8 @@
 .os-theme-xp [role="menuitemradio"],
 .os-theme-xp [role="option"] {
   font-family: var(--os-font-ui) !important;
-  font-smooth: antialiased !important;
-  -webkit-font-smoothing: antialiased !important;
+  font-smooth: antialiased;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Reset XP/Win98 button styles for menubar triggers - they should look like plain text */
