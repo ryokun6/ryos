@@ -10,6 +10,8 @@ interface ThemeState {
 
 // Dynamically manage loading/unloading of legacy Windows CSS (xp.css variants)
 let legacyCssLink: HTMLLinkElement | null = null;
+let appliedThemeClass: string | null = null;
+const THEME_CLASS_PREFIX = "os-theme-";
 
 async function ensureLegacyCss(theme: OsThemeId) {
   // Only xp and win98 use xp.css
@@ -52,6 +54,14 @@ function applyThemeGlobals(theme: OsThemeId) {
   if (typeof document === "undefined") return;
   const resolved = getTheme(theme);
   document.documentElement.dataset.osTheme = theme;
+
+  // Maintain a single theme class for scoped styling opportunities.
+  if (appliedThemeClass) {
+    document.documentElement.classList.remove(appliedThemeClass);
+  }
+  appliedThemeClass = `${THEME_CLASS_PREFIX}${theme}`;
+  document.documentElement.classList.add(appliedThemeClass);
+
   applyThemeCssVariables(resolved);
   ensureLegacyCss(theme);
 }
