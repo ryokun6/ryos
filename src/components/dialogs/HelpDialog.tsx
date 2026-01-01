@@ -95,22 +95,44 @@ export function HelpDialog({
 
   const dialogContent = (
     <div className={isXpTheme ? "p-2 px-4" : "p-6 pt-4"}>
-      <p
-        className={cn(
-          "text-2xl mb-4",
-          isXpTheme
-            ? "font-['Pixelated_MS_Sans_Serif',Arial]"
-            : "font-apple-garamond"
+      <div className="flex items-center justify-between mb-4">
+        <p
+          className={cn(
+            "text-2xl",
+            isXpTheme
+              ? "font-['Pixelated_MS_Sans_Serif',Arial]"
+              : "font-apple-garamond"
+          )}
+          style={{
+            fontFamily: isXpTheme
+              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+              : undefined,
+            fontSize: isXpTheme ? "18px" : undefined,
+          }}
+        >
+          {t("common.dialog.welcomeTo", { appName: displayAppName })}
+        </p>
+        {isMacTheme ? (
+          <button
+            className="aqua-button primary text-[12px] px-3 py-1"
+            onClick={handleViewDocs}
+          >
+            {t("common.dialog.viewDocs")}
+          </button>
+        ) : isXpTheme ? (
+          <button className="button" onClick={handleViewDocs}>
+            {t("common.dialog.viewDocs")}
+          </button>
+        ) : (
+          <Button
+            variant="retro"
+            className="text-[11px] px-3 py-1 h-auto"
+            onClick={handleViewDocs}
+          >
+            {t("common.dialog.viewDocs")}
+          </Button>
         )}
-        style={{
-          fontFamily: isXpTheme
-            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-            : undefined,
-          fontSize: isXpTheme ? "18px" : undefined,
-        }}
-      >
-        {t("common.dialog.welcomeTo", { appName: displayAppName })}
-      </p>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {helpItems.map((item) => (
           <HelpCard key={item.title} {...item} />
@@ -127,43 +149,23 @@ export function HelpDialog({
       >
         {isXpTheme ? (
           <>
-            <DialogHeader className="flex flex-row items-center justify-between">
-              <span>{t("common.dialog.help")}</span>
-              <button className="button" onClick={handleViewDocs}>
-                {t("common.dialog.viewDocs")}
-              </button>
-            </DialogHeader>
+            <DialogHeader>{t("common.dialog.help")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : isMacTheme ? (
           <>
-            <DialogHeader className="flex flex-row items-center justify-between pr-8">
-              <span>{t("common.dialog.help")}</span>
-              <button
-                className="aqua-button primary text-[12px] px-3 py-1"
-                onClick={handleViewDocs}
-              >
-                {t("common.dialog.viewDocs")}
-              </button>
-            </DialogHeader>
+            <DialogHeader>{t("common.dialog.help")}</DialogHeader>
             {dialogContent}
           </>
         ) : (
           <>
-            <DialogHeader className="flex flex-row items-center justify-between pr-8">
+            <DialogHeader>
               <DialogTitle className="font-normal text-[16px]">
                 {t("common.dialog.help")}
               </DialogTitle>
               <DialogDescription className="sr-only">
                 {t("common.dialog.informationAboutApp")}
               </DialogDescription>
-              <Button
-                variant="retro"
-                className="text-[11px] px-3 py-1 h-auto"
-                onClick={handleViewDocs}
-              >
-                {t("common.dialog.viewDocs")}
-              </Button>
             </DialogHeader>
             {dialogContent}
           </>
