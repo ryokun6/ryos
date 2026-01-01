@@ -25,6 +25,8 @@ interface TerminalStoreState {
   setIsInVimMode: (isInVimMode: boolean) => void;
   vimFile: { name: string; content: string } | null;
   setVimFile: (file: { name: string; content: string } | null) => void;
+  vimFilePath: string | null;
+  setVimFilePath: (path: string | null) => void;
   vimPosition: number;
   setVimPosition: (position: number | ((prev: number) => number)) => void;
   vimCursorLine: number;
@@ -35,6 +37,12 @@ interface TerminalStoreState {
   setVimMode: (mode: "normal" | "command" | "insert") => void;
   vimClipboard: string;
   setVimClipboard: (content: string) => void;
+  vimOriginalContent: string;
+  setVimOriginalContent: (content: string) => void;
+  vimIsDirty: boolean;
+  setVimIsDirty: (dirty: boolean) => void;
+  vimIsNewFile: boolean;
+  setVimIsNewFile: (isNew: boolean) => void;
 }
 
 const STORE_VERSION = 1;
@@ -76,6 +84,8 @@ export const useTerminalStore = create<TerminalStoreState>()(
       setIsInVimMode: (isInVimMode) => set({ isInVimMode }),
       vimFile: null,
       setVimFile: (file) => set({ vimFile: file }),
+      vimFilePath: null,
+      setVimFilePath: (path) => set({ vimFilePath: path }),
       vimPosition: 0,
       setVimPosition: (position) => 
         set((state) => ({
@@ -95,6 +105,12 @@ export const useTerminalStore = create<TerminalStoreState>()(
       setVimMode: (mode) => set({ vimMode: mode }),
       vimClipboard: "",
       setVimClipboard: (content) => set({ vimClipboard: content }),
+      vimOriginalContent: "",
+      setVimOriginalContent: (content) => set({ vimOriginalContent: content }),
+      vimIsDirty: false,
+      setVimIsDirty: (dirty) => set({ vimIsDirty: dirty }),
+      vimIsNewFile: false,
+      setVimIsNewFile: (isNew) => set({ vimIsNewFile: isNew }),
     }),
     {
       name: STORE_NAME,

@@ -7,6 +7,8 @@ interface VimEditorProps {
   vimCursorLine: number;
   vimCursorColumn: number;
   vimMode: VimState["mode"];
+  isDirty?: boolean;
+  isNewFile?: boolean;
 }
 
 export function VimEditor({
@@ -15,6 +17,8 @@ export function VimEditor({
   vimCursorLine,
   vimCursorColumn,
   vimMode,
+  isDirty = false,
+  isNewFile = false,
 }: VimEditorProps) {
   const lines = file.content.split("\n");
   const maxVisibleLines = 20; // Show up to 20 lines at a time
@@ -79,7 +83,13 @@ export function VimEditor({
             : "COMMAND"}
         </div>
         <div className="flex-1 bg-white/10 px-2 py-1 flex items-center justify-between">
-          <span className="flex-1 mx-2">[{file.name}]</span>
+          <span className="flex-1 mx-2">
+            [{file.name}]
+            <span className="ml-2 text-gray-200 text-xs">
+              {isNewFile ? "[New]" : ""}
+              {isDirty ? " [+]" : ""}
+            </span>
+          </span>
           <span>{percentage}%</span>
           <span className="ml-4 mr-2">
             {vimCursorLine + 1}:{vimCursorColumn + 1}
