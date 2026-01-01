@@ -360,7 +360,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-family: var(--os-font-ui);
   }
 
-  :root[data-os-theme="system7"] .file-icon-label {
+  :is(:root[data-os-theme="system7"], .os-theme-system7) .file-icon-label {
     font-family: var(--font-geneva-12);
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
@@ -880,36 +880,36 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
   
   /* macOS X theme: add dock height (56px) */
-  :root[data-os-theme="macosx"] [data-sonner-toaster][data-y-position="bottom"] {
+  :is(:root[data-os-theme="macosx"], .os-theme-macosx) [data-sonner-toaster][data-y-position="bottom"] {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
   }
   
   /* Windows XP theme: add taskbar height (30px) */
-  :root[data-os-theme="xp"] [data-sonner-toaster][data-y-position="bottom"] {
+  :is(:root[data-os-theme="xp"], .os-theme-xp) [data-sonner-toaster][data-y-position="bottom"] {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 46px) !important;
   }
   
   /* Windows 98 theme: add taskbar height (30px) */
-  :root[data-os-theme="win98"] [data-sonner-toaster][data-y-position="bottom"] {
+  :is(:root[data-os-theme="win98"], .os-theme-win98) [data-sonner-toaster][data-y-position="bottom"] {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 46px) !important;
   }
 }
 
 /* System 7 theme: square corners, black border, drop shadow, smaller body text */
-:root[data-os-theme="system7"] [data-sonner-toast] {
+:is(:root[data-os-theme="system7"], .os-theme-system7) [data-sonner-toast] {
   border-radius: 0 !important;
   border: 1px solid #000 !important;
   box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* Smaller body text for System 7 toasts */
-:root[data-os-theme="system7"] [data-sonner-toast] .text-sm,
-:root[data-os-theme="system7"] [data-sonner-toast] [data-content] {
+:is(:root[data-os-theme="system7"], .os-theme-system7) [data-sonner-toast] .text-sm,
+:is(:root[data-os-theme="system7"], .os-theme-system7) [data-sonner-toast] [data-content] {
   font-size: 12px !important;
 }
 
 /* Retro button style for System 7 toasts */
-:root[data-os-theme="system7"] [data-sonner-toast] button {
+:is(:root[data-os-theme="system7"], .os-theme-system7) [data-sonner-toast] button {
   font-size: 12px !important;
   border: 5px solid transparent !important;
   border-image: url('/assets/button.svg') 30 stretch !important;
@@ -919,14 +919,14 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   color: #000 !important;
 }
 
-:root[data-os-theme="system7"] [data-sonner-toast] button:active {
+:is(:root[data-os-theme="system7"], .os-theme-system7) [data-sonner-toast] button:active {
   border-image: url('/assets/button-default.svg') 60 stretch !important;
 }
 
 
 
 /* Windows XP theme: yellow XP background, no shadows, rounded corners */
-:root[data-os-theme="xp"] [data-sonner-toast] {
+:is(:root[data-os-theme="xp"], .os-theme-xp) [data-sonner-toast] {
   background: #ECE9D8 !important;
   border-radius: 4px !important;
   border: 1px solid rgba(0, 0, 0, 0.7) !important;
@@ -934,10 +934,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   color: #000 !important;
 }
 
-:root[data-os-theme="xp"] [data-sonner-toast] [data-title],
-:root[data-os-theme="xp"] [data-sonner-toast] [data-description],
-:root[data-os-theme="xp"] [data-sonner-toast] .text-sm,
-:root[data-os-theme="xp"] [data-sonner-toast] [data-content] {
+:is(:root[data-os-theme="xp"], .os-theme-xp) [data-sonner-toast] [data-title],
+:is(:root[data-os-theme="xp"], .os-theme-xp) [data-sonner-toast] [data-description],
+:is(:root[data-os-theme="xp"], .os-theme-xp) [data-sonner-toast] .text-sm,
+:is(:root[data-os-theme="xp"], .os-theme-xp) [data-sonner-toast] [data-content] {
   color: #000 !important;
   font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
   font-size: 11px !important;
@@ -945,7 +945,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   font-smooth: never !important;
 }
 
-:root[data-os-theme="xp"] [data-sonner-toast] button {
+:is(:root[data-os-theme="xp"], .os-theme-xp) [data-sonner-toast] button {
   font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
   font-size: 11px !important;
   background: #ECE9D8 !important;
@@ -958,12 +958,12 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   font-smooth: never !important;
 }
 
-:root[data-os-theme="xp"] [data-sonner-toast] button:active {
+:is(:root[data-os-theme="xp"], .os-theme-xp) [data-sonner-toast] button:active {
   box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px #888, inset -2px -2px #dfdfdf !important;
 }
 
 /* Windows 98 theme: silver background, classic beveled 3D effect */
-:root[data-os-theme="win98"] [data-sonner-toast] {
+:is(:root[data-os-theme="win98"], .os-theme-win98) [data-sonner-toast] {
   background: #C0C0C0 !important;
   border-radius: 0 !important;
   border: none !important;
@@ -971,17 +971,17 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   color: #000 !important;
 }
 
-:root[data-os-theme="win98"] [data-sonner-toast] [data-title],
-:root[data-os-theme="win98"] [data-sonner-toast] [data-description],
-:root[data-os-theme="win98"] [data-sonner-toast] .text-sm,
-:root[data-os-theme="win98"] [data-sonner-toast] [data-content] {
+:is(:root[data-os-theme="win98"], .os-theme-win98) [data-sonner-toast] [data-title],
+:is(:root[data-os-theme="win98"], .os-theme-win98) [data-sonner-toast] [data-description],
+:is(:root[data-os-theme="win98"], .os-theme-win98) [data-sonner-toast] .text-sm,
+:is(:root[data-os-theme="win98"], .os-theme-win98) [data-sonner-toast] [data-content] {
   color: #000 !important;
   font-size: 12px !important;
   -webkit-font-smoothing: none !important;
   font-smooth: never !important;
 }
 
-:root[data-os-theme="win98"] [data-sonner-toast] button {
+:is(:root[data-os-theme="win98"], .os-theme-win98) [data-sonner-toast] button {
   font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
   font-size: 11px !important;
   background: #C0C0C0 !important;
@@ -994,7 +994,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   font-smooth: never !important;
 }
 
-:root[data-os-theme="win98"] [data-sonner-toast] button:active {
+:is(:root[data-os-theme="win98"], .os-theme-win98) [data-sonner-toast] button:active {
   box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px grey, inset -2px -2px #dfdfdf !important;
 }
 
@@ -1053,10 +1053,10 @@ ruby.lyrics-furigana {
 /* Use !important to override macOS theme's blanket font-size rules */
 /* Inherit opacity and text-shadow from parent lyrics for consistency */
 rt.lyrics-furigana-rt,
-:root[data-os-theme="macosx"] rt.lyrics-furigana-rt,
-:root[data-os-theme="system7"] rt.lyrics-furigana-rt,
-:root[data-os-theme="win98"] rt.lyrics-furigana-rt,
-:root[data-os-theme="xp"] rt.lyrics-furigana-rt {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) rt.lyrics-furigana-rt,
+:is(:root[data-os-theme="system7"], .os-theme-system7) rt.lyrics-furigana-rt,
+:is(:root[data-os-theme="win98"], .os-theme-win98) rt.lyrics-furigana-rt,
+:is(:root[data-os-theme="xp"], .os-theme-xp) rt.lyrics-furigana-rt {
   font-size: 50% !important;
   line-height: 1 !important;
   font-weight: normal !important;

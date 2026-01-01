@@ -87,35 +87,35 @@
 }
 
 /* Reset XP/Win98 button styles for menubar triggers - they should look like plain text */
-:root[data-os-theme="xp"] .menubar-trigger,
-:root[data-os-theme="win98"] .menubar-trigger {
+.os-theme-xp .menubar-trigger,
+.os-theme-win98 .menubar-trigger {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
 }
 
-:root[data-os-theme="xp"] .menubar-trigger:active,
-:root[data-os-theme="win98"] .menubar-trigger:active {
+.os-theme-xp .menubar-trigger:active,
+.os-theme-win98 .menubar-trigger:active {
   background: transparent !important;
   box-shadow: none !important;
 }
 
 /* Reset XP/Win98 button styles for iPod/Karaoke fullscreen toolbar buttons */
-:root[data-os-theme="xp"] .ipod-force-font button,
-:root[data-os-theme="xp"] .karaoke-force-font button,
-:root[data-os-theme="win98"] .ipod-force-font button,
-:root[data-os-theme="win98"] .karaoke-force-font button {
+.os-theme-xp .ipod-force-font button,
+.os-theme-xp .karaoke-force-font button,
+.os-theme-win98 .ipod-force-font button,
+.os-theme-win98 .karaoke-force-font button {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 9999px !important;
 }
 
-:root[data-os-theme="xp"] .ipod-force-font button:active,
-:root[data-os-theme="xp"] .karaoke-force-font button:active,
-:root[data-os-theme="win98"] .ipod-force-font button:active,
-:root[data-os-theme="win98"] .karaoke-force-font button:active {
+.os-theme-xp .ipod-force-font button:active,
+.os-theme-xp .karaoke-force-font button:active,
+.os-theme-win98 .ipod-force-font button:active,
+.os-theme-win98 .karaoke-force-font button:active {
   background: rgba(255, 255, 255, 0.1) !important;
   box-shadow: none !important;
 }
@@ -263,40 +263,40 @@
 }
 
 /* macOS Theme Font Overrides */
-:root[data-os-theme="macosx"] body {
+.os-theme-macosx body {
   font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] * {
+.os-theme-macosx * {
   font-family: inherit;
 }
 
 /* Ensure all UI elements in macOS theme use proper antialiasing */
-:root[data-os-theme="macosx"] input,
-:root[data-os-theme="macosx"] label,
-:root[data-os-theme="macosx"] button,
-:root[data-os-theme="macosx"] select,
-:root[data-os-theme="macosx"] textarea,
-:root[data-os-theme="macosx"] .menubar,
-:root[data-os-theme="macosx"] .window,
-:root[data-os-theme="macosx"] .title-bar {
+.os-theme-macosx input,
+.os-theme-macosx label,
+.os-theme-macosx button,
+.os-theme-macosx select,
+.os-theme-macosx textarea,
+.os-theme-macosx .menubar,
+.os-theme-macosx .window,
+.os-theme-macosx .title-bar {
   font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
 
 /* Ensure Terminal inputs use monospace (Monaco) instead of Lucida Grande on macOS */
-:root[data-os-theme="macosx"] .terminal-input {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-input {
   font-family: "Monaco", "ArkPixel", "SerenityOS-Emoji", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
 
 /* macOS specific font sizes and gloss effect */
-:root[data-os-theme="macosx"] .menubar {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .menubar {
   font-size: 14px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   font-weight: 500 !important;
@@ -307,7 +307,7 @@
 }
 
 /* Add gloss effect to macOS menubar */
-:root[data-os-theme="macosx"] .menubar::before {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .menubar::before {
   content: "";
   position: absolute;
   top: 0;
@@ -324,7 +324,7 @@
 }
 
 /* macOS menubar buttons should have regular weight and padding */
-:root[data-os-theme="macosx"] .menubar button {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .menubar button {
   font-weight: normal !important;
   padding-top: 0.25rem !important;
   padding-bottom: 0.25rem !important;
@@ -332,54 +332,54 @@
   z-index: 2;
 }
 
-:root[data-os-theme="macosx"] .title-bar {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .title-bar {
   font-size: 13px !important;
   font-weight: 500 !important;
 }
 
-:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab) {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) button:not(.aqua-button):not(.aqua-tab) {
   font-size: 13px !important;
   font-weight: normal !important;
 }
 
-:root[data-os-theme="macosx"] input,
-:root[data-os-theme="macosx"] select,
-:root[data-os-theme="macosx"] textarea {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) input,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) select,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) textarea {
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] label {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) label {
   font-size: 11px !important;
 }
 
-:root[data-os-theme="macosx"] .window-body {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .window-body {
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] p,
-:root[data-os-theme="macosx"] div {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) p,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) div {
   font-size: 13px !important;
 }
 
 /* Allow Terminal to use its own font size in macOS theme */
 /* Use CSS custom property to override !important rules */
-:root[data-os-theme="macosx"] div.terminal-content,
-:root[data-os-theme="macosx"] .terminal-content div,
-:root[data-os-theme="macosx"] .terminal-content p,
-:root[data-os-theme="macosx"] .terminal-content span,
-:root[data-os-theme="macosx"] .terminal-content pre,
-:root[data-os-theme="macosx"] .terminal-content code,
-:root[data-os-theme="macosx"] .terminal-content input,
-:root[data-os-theme="macosx"] .terminal-content label,
-:root[data-os-theme="macosx"] .terminal-content button,
-:root[data-os-theme="macosx"] .terminal-content form,
-:root[data-os-theme="macosx"] .terminal-tool-invocation,
-:root[data-os-theme="macosx"] .terminal-tool-invocation div,
-:root[data-os-theme="macosx"] .terminal-tool-invocation span {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) div.terminal-content,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-content div,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-content p,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-content span,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-content pre,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-content code,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-content input,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-content label,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-content button,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-content form,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-tool-invocation,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-tool-invocation div,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .terminal-tool-invocation span {
   font-size: var(--terminal-font-size, 12px) !important;
 }
 
-:root[data-os-theme="macosx"] .synth-force-font {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .synth-force-font {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, sans-serif !important;
@@ -387,15 +387,15 @@
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
-:root[data-os-theme="macosx"] .synth-force-font p,
-:root[data-os-theme="macosx"] .synth-force-font div {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .synth-force-font p,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .synth-force-font div {
   font-size: inherit !important;
 }
 
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .synth-force-font
   button:not(.aqua-button):not(.aqua-tab),
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .synth-force-font
   button:not(.aqua-button):not(.aqua-tab)
   span {
@@ -407,28 +407,28 @@
 
 /* Preserve bookmark bar button text size in Internet Explorer */
 /* Target bookmark buttons with highest specificity */
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   button.whitespace-nowrap.hover\:bg-gray-200.font-geneva-12.text-\[10px\] {
   font-size: 10px !important;
 }
 
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   button.whitespace-nowrap.hover\:bg-gray-200.font-geneva-12.text-\[10px\]
   span {
   font-size: 10px !important;
 }
 
 /* Also override any text-sm class on these buttons */
-:root[data-os-theme="macosx"] button.text-sm.font-geneva-12 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) button.text-sm.font-geneva-12 {
   font-size: 10px !important;
 }
 
-:root[data-os-theme="macosx"] button.text-sm.font-geneva-12 span {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) button.text-sm.font-geneva-12 span {
   font-size: 10px !important;
 }
 
 /* Chat meta (username/timestamp) override BEFORE generic Control Panels override anchor */
-:root[data-os-theme="macosx"] .chat-messages-meta {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-messages-meta {
   font-size: 11px !important;
   line-height: 1.1 !important;
   padding-bottom: 0.5rem !important;
@@ -436,8 +436,8 @@
 }
 
 /* Control Panels sub text override - higher specificity */
-:root[data-os-theme="macosx"] p.text-\[11px\].text-gray-600.font-geneva-12,
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) p.text-\[11px\].text-gray-600.font-geneva-12,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .text-\[11px\].text-gray-600.font-geneva-12:not(
     .ipod-force-font .font-geneva-12
   ):not(.videos-lcd .font-geneva-12) {
@@ -446,7 +446,7 @@
 
 /* Preserve LCD display styling in Videos app - keep original pixel fonts */
 /* But use Aqua Kana for player control buttons */
-:root[data-os-theme="macosx"] .videos-player-controls button.font-geneva-12 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-player-controls button.font-geneva-12 {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, sans-serif !important;
@@ -454,33 +454,33 @@
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
-:root[data-os-theme="macosx"] .videos-lcd .font-geneva-12.text-\[10px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .font-geneva-12.text-\[10px\] {
   font-family: Geneva-12, monospace !important;
 }
 
-:root[data-os-theme="macosx"] .videos-lcd .font-geneva-12 .text-xl {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .font-geneva-12 .text-xl {
   font-size: 1.25rem !important;
   font-family: Geneva-12, monospace !important;
 }
 
-:root[data-os-theme="macosx"] .videos-lcd .text-xl {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .text-xl {
   font-size: 1.25rem !important;
   font-family: Geneva-12, monospace !important;
 }
 
 /* Ensure AnimatedNumber components inherit correct size */
-:root[data-os-theme="macosx"] .videos-lcd .text-xl * {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .text-xl * {
   font-size: inherit !important;
   font-family: inherit !important;
 }
 
-:root[data-os-theme="macosx"] .videos-lcd .font-geneva-12.text-\[18px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .font-geneva-12.text-\[18px\] {
   font-size: 18px !important;
   font-family: Geneva-12, monospace !important;
 }
 
 /* Videos LCD macOS X color scheme (inspired by Minesweeper LCD) */
-:root[data-os-theme="macosx"] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) {
   --videos-lcd-bg: #8a9a8a;
   --videos-lcd-text: #1a2a1a;
   --videos-lcd-text-muted: #2d3b2d;
@@ -489,7 +489,7 @@
   --videos-lcd-border-light: #f0f0f064;
 }
 
-:root[data-os-theme="macosx"] .videos-lcd {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd {
   background: var(--videos-lcd-bg) !important;
   color: var(--videos-lcd-text) !important;
   border: 1px solid var(--videos-lcd-border-dark) !important;
@@ -500,28 +500,28 @@
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2) !important;
 }
 
-:root[data-os-theme="macosx"] .videos-lcd .font-geneva-12.text-\[10px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .font-geneva-12.text-\[10px\] {
   color: var(--videos-lcd-text-muted) !important;
 }
 
-:root[data-os-theme="macosx"] .videos-lcd .text-xl {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .text-xl {
   color: var(--videos-lcd-text) !important;
 }
 
 /* Override animated title colors */
-:root[data-os-theme="macosx"] .videos-lcd .animated-title-text {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .animated-title-text {
   color: var(--videos-lcd-text) !important;
 }
 
 /* Fade edges tuned for LCD background instead of black */
-:root[data-os-theme="macosx"] .videos-lcd .videos-lcd-fade-left {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .videos-lcd-fade-left {
   background-image: linear-gradient(
     to right,
     var(--videos-lcd-bg),
     rgba(0, 0, 0, 0)
   ) !important;
 }
-:root[data-os-theme="macosx"] .videos-lcd .videos-lcd-fade-right {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-lcd .videos-lcd-fade-right {
   background-image: linear-gradient(
     to left,
     var(--videos-lcd-bg),
@@ -530,7 +530,7 @@
 }
 
 /* macOS select styling - similar to aqua buttons */
-:root[data-os-theme="macosx"] select {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) select {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
@@ -569,8 +569,8 @@
 }
 
 /* Top shine/gloss for macOS select */
-:root[data-os-theme="macosx"] select:before,
-:root[data-os-theme="macosx"] .macos-select-trigger:before {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) select:before,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macos-select-trigger:before {
   content: "";
   position: absolute;
   left: 1px;
@@ -588,7 +588,7 @@
 }
 
 /* Arrow indicator for macOS select */
-:root[data-os-theme="macosx"] .macos-select-trigger:after {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macos-select-trigger:after {
   content: "";
   position: absolute;
   right: 10px;
@@ -604,7 +604,7 @@
 }
 
 /* Suppress arrow for aqua-select-styled buttons that opt out */
-:root[data-os-theme="macosx"] .macos-select-trigger.no-chevron::after {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macos-select-trigger.no-chevron::after {
   content: none !important;
   background: none !important;
   width: 0 !important;
@@ -612,41 +612,41 @@
 }
 
 /* Default border radius for standalone aqua-select buttons */
-:root[data-os-theme="macosx"] .aqua-select-btn {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-select-btn {
   border-radius: 6px !important;
 }
 
 /* Ensure the gloss effect matches the border radius for standalone buttons */
-:root[data-os-theme="macosx"] .aqua-select-btn:before {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-select-btn:before {
   border-radius: 5px 5px 0 0 !important;
 }
 
 /* Button group styling for aqua-select buttons: only first/last rounded */
-:root[data-os-theme="macosx"] .aqua-select-group .aqua-select-btn {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-select-group .aqua-select-btn {
   border-radius: 0 !important;
 }
-:root[data-os-theme="macosx"] .aqua-select-group .aqua-select-btn:first-child {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-select-group .aqua-select-btn:first-child {
   border-top-left-radius: 6px !important;
   border-bottom-left-radius: 6px !important;
 }
-:root[data-os-theme="macosx"] .aqua-select-group .aqua-select-btn:last-child {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-select-group .aqua-select-btn:last-child {
   border-top-right-radius: 6px !important;
   border-bottom-right-radius: 6px !important;
 }
 
 /* Match aqua select top gloss ::before to grouped corners */
-:root[data-os-theme="macosx"] .aqua-select-group .aqua-select-btn::before {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-select-group .aqua-select-btn::before {
   /* middle buttons: no top rounding */
   border-top-left-radius: 0 !important;
   border-top-right-radius: 0 !important;
 }
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .aqua-select-group
   .aqua-select-btn:first-child::before {
   border-top-left-radius: 6px !important;
   border-top-right-radius: 0 !important;
 }
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .aqua-select-group
   .aqua-select-btn:last-child::before {
   border-top-left-radius: 0 !important;
@@ -654,20 +654,20 @@
 }
 
 /* Compact Aqua select button widths for grouped playback controls */
-:root[data-os-theme="macosx"] .aqua-select-btn.aqua-compact {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-select-btn.aqua-compact {
   min-width: 36px !important;
   padding-left: 6px !important;
   padding-right: 6px !important;
 }
 
-:root[data-os-theme="macosx"] .aqua-select-btn.aqua-compact-wide {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-select-btn.aqua-compact-wide {
   min-width: 42px !important;
   padding-left: 6px !important;
   padding-right: 6px !important;
 }
 
 /* Selected state visual for Aqua select buttons (darker gradient + stronger outline) */
-:root[data-os-theme="macosx"] .aqua-select-btn.aqua-selected {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-select-btn.aqua-selected {
   background: linear-gradient(
     rgb(145 153 156 / 91%),
     rgb(184 188 192 / 80%)
@@ -676,13 +676,13 @@
     0 0 0 1px rgba(0, 0, 0, 0.42) !important;
 }
 
-:root[data-os-theme="macosx"] select:focus {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) select:focus {
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 3px var(--os-color-selection-glow);
   outline: none;
 }
 
-:root[data-os-theme="macosx"] select:active {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) select:active {
   background: linear-gradient(
     rgba(140, 140, 140, 0.625),
     rgba(235, 235, 235, 0.625)
@@ -692,7 +692,7 @@
 }
 
 /* System 7 specific select styling with retro borders */
-:root[data-os-theme="system7"] select {
+:is(:root[data-os-theme="system7"], .os-theme-system7) select {
   font-family: "ChicagoKare", Geneva, -apple-system, BlinkMacSystemFont,
     sans-serif !important;
   font-size: 12px !important;
@@ -706,7 +706,7 @@
   box-shadow: inset -1px -1px #000000, inset 1px 1px #dfdfdf;
 }
 
-:root[data-os-theme="system7"] select:focus {
+:is(:root[data-os-theme="system7"], .os-theme-system7) select:focus {
   outline: 1px dotted #000000;
   outline-offset: -2px;
 }
@@ -714,33 +714,33 @@
 /* Yosemite-style traffic lights - clean and simple */
 
 /* macOS Titlebar Border Styling */
-:root[data-os-theme="macosx"] .window.is-foreground .title-bar:not(.absolute) {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .window.is-foreground .title-bar:not(.absolute) {
   border-bottom: var(--os-metrics-titlebar-border-width) solid
     var(--os-color-titlebar-border) !important;
 }
 
 /* Inactive window styling for macOS */
-:root[data-os-theme="macosx"] .window:not(.is-foreground) .title-bar:not(.absolute) {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .window:not(.is-foreground) .title-bar:not(.absolute) {
   border-bottom: var(--os-metrics-titlebar-border-width) solid
     var(--os-color-titlebar-border-inactive) !important;
 }
 
 /* No border for notitlebar windows (absolute positioned title bars) */
-:root[data-os-theme="macosx"] .window .title-bar.absolute {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .window .title-bar.absolute {
   border-bottom: none !important;
 }
 
-:root[data-os-theme="macosx"] .window {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .window {
   border: var(--os-metrics-border-width) solid var(--os-color-window-border) !important;
 }
 
-:root[data-os-theme="macosx"] .window:not(.is-foreground) {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .window:not(.is-foreground) {
   border: var(--os-metrics-border-width) solid
     var(--os-color-window-border-inactive) !important;
 }
 
 /* Inactive selection palette for background windows (macOS) */
-:root[data-os-theme="macosx"] .window:not(.is-foreground) {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .window:not(.is-foreground) {
   /* Use neutral gray selection when the window is not foreground */
   --os-color-selection-bg: rgba(131, 131, 131, 0.697);
   --os-color-selection-text: #fff;
@@ -753,46 +753,46 @@
 }
 
 /* Preserve iPod fonts in macOS theme */
-:root[data-os-theme="macosx"] .ipod-force-font {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font {
   font-family: inherit !important;
   font-size: 16px !important; /* Reset base font size */
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font * {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font * {
   font-family: inherit !important;
   font-size: unset !important; /* Reset macOS overrides */
 }
 
 /* Preserve small rt font size in toolbar buttons */
-:root[data-os-theme="macosx"] .ipod-force-font button rt {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font button rt {
   font-size: 9px !important;
 }
 
 /* Reset div and p font sizes within iPod */
-:root[data-os-theme="macosx"] .ipod-force-font div,
-:root[data-os-theme="macosx"] .ipod-force-font p {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font div,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font p {
   font-size: unset !important;
 }
 
 /* Preserve Karaoke fonts in macOS theme */
-:root[data-os-theme="macosx"] .karaoke-force-font {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font {
   font-family: inherit !important;
   font-size: 16px !important; /* Reset base font size */
 }
 
-:root[data-os-theme="macosx"] .karaoke-force-font * {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font * {
   font-family: inherit !important;
   font-size: unset !important; /* Reset macOS overrides */
 }
 
 /* Reset div and p font sizes within Karaoke */
-:root[data-os-theme="macosx"] .karaoke-force-font div,
-:root[data-os-theme="macosx"] .karaoke-force-font p {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font div,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font p {
   font-size: unset !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .font-chicago,
-:root[data-os-theme="macosx"] .font-chicago {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-chicago,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .font-chicago {
   font-family: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
     -apple-system, sans-serif !important;
   -webkit-font-smoothing: none !important;
@@ -800,39 +800,39 @@
 }
 
 /* Preserve Chicago font sizes */
-:root[data-os-theme="macosx"] .ipod-force-font .font-chicago.text-xs {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-chicago.text-xs {
   font-size: 0.75rem !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .font-chicago.text-\[12px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-chicago.text-\[12px\] {
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .font-chicago.text-\[16px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-chicago.text-\[16px\] {
   font-size: 16px !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .font-chicago.text-\[20px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-chicago.text-\[20px\] {
   font-size: 20px !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .font-chicago.text-xl {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-chicago.text-xl {
   font-size: 1.25rem !important;
 }
 
 /* Preserve responsive Chicago font sizes */
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .ipod-force-font
   .font-chicago.text-\[min\(5vw\,5vh\)\] {
   font-size: min(5vw, 5vh) !important;
 }
 
 /* Preserve fullscreen lyrics responsive font size */
-:root[data-os-theme="macosx"] .ipod-force-font .text-\[min\(8vw\,8vh\)\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-\[min\(8vw\,8vh\)\] {
   font-size: min(8vw, 8vh) !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .font-geneva-12 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-geneva-12 {
   font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
     -apple-system, sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
@@ -840,7 +840,7 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] .synth-force-font .font-geneva-12 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .synth-force-font .font-geneva-12 {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, sans-serif !important;
@@ -851,7 +851,7 @@
 
 /* Preserve rounded lyrics font inside iPod fullscreen on macOS theme */
 /* VAGRounded is the bundled font, with CJK fallbacks for non-Latin characters */
-:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-lyrics-rounded {
   font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
     "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
   font-weight: normal !important;
@@ -863,7 +863,7 @@
 
 /* Preserve rounded lyrics font inside Karaoke app on macOS theme */
 /* VAGRounded is the bundled font, with CJK fallbacks for non-Latin characters */
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .font-lyrics-rounded {
   font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
     "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
   font-weight: normal !important;
@@ -874,7 +874,7 @@
 }
 
 /* Preserve serif lyrics font inside iPod fullscreen on macOS theme */
-:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-lyrics-serif {
   font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
     "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
   font-weight: 700 !important;
@@ -884,7 +884,7 @@
 }
 
 /* Preserve serif lyrics font inside Karaoke app on macOS theme */
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .font-lyrics-serif {
   font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
     "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
   font-weight: 700 !important;
@@ -894,7 +894,7 @@
 }
 
 /* Preserve sans-serif lyrics font inside iPod fullscreen on macOS theme */
-:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-sans {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-lyrics-sans {
   font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans",
     "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
     "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
@@ -906,7 +906,7 @@
 }
 
 /* Preserve sans-serif lyrics font inside Karaoke app on macOS theme */
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-sans {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .font-lyrics-sans {
   font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans",
     "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
     "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
@@ -918,66 +918,66 @@
 }
 
 /* Bold furigana for serif and sans-serif lyrics fonts on macOS theme */
-:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
-:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-sans rt.lyrics-furigana-rt,
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-sans rt.lyrics-furigana-rt {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-lyrics-sans rt.lyrics-furigana-rt,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .font-lyrics-sans rt.lyrics-furigana-rt {
   font-weight: 700 !important;
 }
 
 /* Korean ruby for rounded font inherits font with matching weight on macOS theme */
-:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-rounded rt.lyrics-korean-rt,
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-rounded rt.lyrics-korean-rt {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .font-lyrics-rounded rt.lyrics-korean-rt,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .font-lyrics-rounded rt.lyrics-korean-rt {
   font-family: inherit !important;
   font-weight: 700 !important;
 }
 
 /* Preserve karaoke lyrics font size on macOS theme (uses container query units) */
-:root[data-os-theme="macosx"] .karaoke-force-font .karaoke-lyrics-text {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .karaoke-lyrics-text {
   font-size: clamp(32px, 8cqw, 96px) !important;
 }
 
 /* Preserve lyrics translation sizes on macOS theme */
-:root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-ipod {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .lyrics-translation-ipod {
   font-size: 10px !important;
   margin-top: 0.2em !important;
 }
 
-:root[data-os-theme="macosx"] .karaoke-force-font .lyrics-translation-karaoke {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .lyrics-translation-karaoke {
   font-size: clamp(14px, 4cqw, 60px) !important;
   margin-top: 0.2em !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-fullscreen,
-:root[data-os-theme="macosx"] .karaoke-force-font .lyrics-translation-fullscreen {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .lyrics-translation-fullscreen,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .lyrics-translation-fullscreen {
   font-size: clamp(14px, min(5vw, 5vh), 60px) !important;
   margin-top: 0.2em !important;
 }
 
 /* Old-school karaoke container needs larger gap between lines due to text-stroke */
-:root[data-os-theme="macosx"] .lyrics-old-school {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .lyrics-old-school {
   gap: clamp(0.5rem, 4cqw, 1.5rem) !important;
 }
 
 /* Preserve fullscreen lyrics text clamped sizing on macOS theme */
-:root[data-os-theme="macosx"] .ipod-force-font .fullscreen-lyrics-text,
-:root[data-os-theme="macosx"] .karaoke-force-font .fullscreen-lyrics-text {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .fullscreen-lyrics-text,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-force-font .fullscreen-lyrics-text {
   font-size: clamp(32px, min(10vw, 10vh), 120px) !important;
 }
 
 /* Preserve karaoke status text size on macOS theme */
-:root[data-os-theme="macosx"] .karaoke-status-text {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-status-text {
   font-size: clamp(18px, 5cqmin, 48px) !important;
 }
 
 /* Preserve karaoke activity indicator size on macOS theme */
-:root[data-os-theme="macosx"] .karaoke-activity-indicator {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .karaoke-activity-indicator {
   width: clamp(24px, 6cqmin, 64px) !important;
   height: clamp(24px, 6cqmin, 64px) !important;
 }
 
 /* Outside iPod, Karaoke, and Videos LCD, font-geneva-12 uses macOS system fonts */
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .font-geneva-12:not(.ipod-force-font .font-geneva-12):not(
     .karaoke-force-font .font-geneva-12
   ):not(.videos-lcd .font-geneva-12):not(
@@ -991,150 +991,150 @@
 }
 
 /* Preserve Videos StatusDisplay Geneva font and sizing */
-:root[data-os-theme="macosx"] .videos-status .font-geneva-12 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-status .font-geneva-12 {
   font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
     -apple-system, sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: always !important;
 }
 
-:root[data-os-theme="macosx"] .videos-status .text-xl {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .videos-status .text-xl {
   font-size: 1.25rem !important;
 }
 
 /* Preserve specific iPod font sizes */
-:root[data-os-theme="macosx"] .ipod-force-font .text-xs {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-xs {
   font-size: 0.75rem !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-sm {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-sm {
   font-size: 0.875rem !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-base {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-base {
   font-size: 1rem !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-lg {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-lg {
   font-size: 1.125rem !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-xl {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-xl {
   font-size: 1.25rem !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-2xl {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-2xl {
   font-size: 1.5rem !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-3xl {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-3xl {
   font-size: 1.875rem !important;
 }
 
 /* Preserve specific pixel-based font sizes used in iPod */
-:root[data-os-theme="macosx"] .ipod-force-font .text-\[12px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-\[12px\] {
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-\[16px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-\[16px\] {
   font-size: 16px !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-\[18px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-\[18px\] {
   font-size: 18px !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-\[20px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-\[20px\] {
   font-size: 20px !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-\[24px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-\[24px\] {
   font-size: 24px !important;
 }
 
 /* Preserve arbitrary text sizes in iPod components (CoverFlow, etc.) */
-:root[data-os-theme="macosx"] .ipod-force-font .text-\[8px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-\[8px\] {
   font-size: 8px !important;
 }
 
-:root[data-os-theme="macosx"] .ipod-force-font .text-\[10px\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-\[10px\] {
   font-size: 10px !important;
 }
 
 /* Preserve large desktop Hangul glyph size in iPod fullscreen */
 @media (min-width: 768px) {
-  :root[data-os-theme="macosx"] .ipod-force-font .md\:text-\[20px\] {
+  :is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .md\:text-\[20px\] {
     font-size: 20px !important;
   }
 }
 
 /* Ensure responsive fullscreen lyrics beat the base Geneva-12 size rule */
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .ipod-force-font
   .font-geneva-12.text-\[min\(8vw\,8vh\)\] {
   font-size: min(8vw, 8vh) !important;
 }
 
 /* Larger option for fullscreen lyrics */
-:root[data-os-theme="macosx"] .ipod-force-font .text-\[min\(10vw\,10vh\)\] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .ipod-force-font .text-\[min\(10vw\,10vh\)\] {
   font-size: min(10vw, 10vh) !important;
 }
 
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .ipod-force-font
   .font-geneva-12.text-\[min\(10vw\,10vh\)\] {
   font-size: min(10vw, 10vh) !important;
 }
 
 /* macOS dropdown menu item hover/focus styles */
-:root[data-os-theme="macosx"] [role="menuitem"]:focus,
-:root[data-os-theme="macosx"] [role="menuitemcheckbox"]:focus,
-:root[data-os-theme="macosx"] [role="menuitemradio"]:focus,
-:root[data-os-theme="macosx"] [role="option"]:focus,
-:root[data-os-theme="macosx"] [role="option"][data-highlighted] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="menuitem"]:focus,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="menuitemcheckbox"]:focus,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="menuitemradio"]:focus,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="option"]:focus,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="option"][data-highlighted] {
   background-color: var(--os-color-selection-bg) !important;
   color: var(--os-color-selection-text) !important;
   outline: none !important;
 }
 
 /* Override the 11px font size for dropdown menu items */
-:root[data-os-theme="macosx"] [role="menuitem"],
-:root[data-os-theme="macosx"] [role="menuitemcheckbox"],
-:root[data-os-theme="macosx"] [role="menuitemradio"],
-:root[data-os-theme="macosx"] [role="option"] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="menuitem"],
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="menuitemcheckbox"],
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="menuitemradio"],
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="option"] {
   font-size: 13px !important;
 }
 
 /* Make Apple icon white when menubar trigger is open */
-:root[data-os-theme="macosx"] [data-state="open"] img[alt="Apple Menu"] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [data-state="open"] img[alt="Apple Menu"] {
   filter: brightness(0) invert(1) !important;
 }
 
 /* Enhanced shadow for macOS foreground windows */
-:root[data-os-theme="macosx"] .shadow-os-window.is-foreground {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .shadow-os-window.is-foreground {
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
 }
 
 /* Lighter shadow for macOS background windows */
-:root[data-os-theme="macosx"] .shadow-os-window:not(.is-foreground) {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .shadow-os-window:not(.is-foreground) {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* macOS Theme Dialog Styling */
-:root[data-os-theme="macosx"] .macosx-dialog {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macosx-dialog {
   border-radius: 7.2px !important;
 }
 
-:root[data-os-theme="macosx"] .macosx-dialog.rounded-none {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macosx-dialog.rounded-none {
   border-radius: 0 !important;
 }
 
 /* Use Apple Garamond for ryOS branding in macOSX dialogs */
-:root[data-os-theme="macosx"] .macosx-dialog .font-mondwest {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macosx-dialog .font-mondwest {
   font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", serif !important;
 }
 
-:root[data-os-theme="macosx"] .macosx-dialog-header {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macosx-dialog-header {
   border-radius: 7.2px 7.2px 0px 0px !important;
 }
 
@@ -1263,25 +1263,25 @@
 }
 
 /* Remove default Tabs background for macOS */
-:root[data-os-theme="macosx"] [role="tablist"].aqua-tab-bar {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="tablist"].aqua-tab-bar {
   background: transparent !important;
 }
 
-:root[data-os-theme="macosx"] [data-radix-tabs-root] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [data-radix-tabs-root] {
   background: transparent !important;
 }
 
 /* Remove any white backgrounds from Tabs component */
-:root[data-os-theme="macosx"] [data-radix-tabs-root] > * {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [data-radix-tabs-root] > * {
   background: transparent !important;
 }
 
-:root[data-os-theme="macosx"] [role="tablist"] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) [role="tablist"] {
   background: transparent !important;
 }
 
 /* Specifically target the TabsList component container */
-:root[data-os-theme="macosx"] .aqua-tab-bar:not(.aqua-tab) {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-tab-bar:not(.aqua-tab) {
   background: transparent !important;
 }
 
@@ -1293,29 +1293,29 @@
 }
 
 /* AboutDialog title styling for macOS theme */
-:root[data-os-theme="macosx"] .font-apple-garamond {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .font-apple-garamond {
   font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
   font-size: 1.5rem !important;
 }
 
 /* Ensure AboutDialog title doesn't get overridden by general div styles */
-:root[data-os-theme="macosx"] .font-apple-garamond.text-2xl {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .font-apple-garamond.text-2xl {
   font-size: 1.5rem !important;
   font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
 }
 
 /* AboutDialog body text styling for macOS theme */
-:root[data-os-theme="macosx"] .macosx-dialog p {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macosx-dialog p {
   font-size: 13px !important;
 }
 
-:root[data-os-theme="macosx"] .macosx-dialog .text-gray-500 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macosx-dialog .text-gray-500 {
   font-size: 11px !important;
 }
 
 /* Status bar specific sizing - force 10px and prevent global overrides */
-:root[data-os-theme="macosx"] .os-status-bar,
-:root[data-os-theme="macosx"] .os-status-bar-text {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-status-bar,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-status-bar-text {
   font-size: 11px !important;
   line-height: 1.2 !important;
   font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
@@ -1323,14 +1323,14 @@
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
-:root[data-os-theme="macosx"] .os-status-bar * {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-status-bar * {
   font-size: inherit !important;
   -webkit-font-smoothing: inherit !important;
   font-smooth: inherit !important;
 }
 /* Avoid geneva-12 macOS upscale by removing that class; ensure consistency if present */
-:root[data-os-theme="macosx"] .os-status-bar .font-geneva-12,
-:root[data-os-theme="macosx"] .os-status-bar-text .font-geneva-12 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-status-bar .font-geneva-12,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-status-bar-text .font-geneva-12 {
   font-size: 11px !important;
   font-family: inherit !important;
 }
@@ -1339,7 +1339,7 @@
 /* macOS Aqua Switch & Slider overrides                */
 /* Make thumbs visually identical to .aqua-button primary/secondary */
 /* -------------------------------------------------- */
-:root[data-os-theme="macosx"] .os-switch {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-switch {
   position: relative;
   border-radius: 9999px;
   background: linear-gradient(#d0d0d0, #f5f5f5);
@@ -1353,15 +1353,15 @@
 }
 
 /* Track when ON stays neutral; only thumb indicates state */
-:root[data-os-theme="macosx"] .os-switch[data-state="checked"] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-switch[data-state="checked"] {
   background: linear-gradient(#d0d0d0, #f5f5f5);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12),
     0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 /* Base thumb shape */
-:root[data-os-theme="macosx"] .os-switch-thumb,
-:root[data-os-theme="macosx"] .os-slider-thumb {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-switch-thumb,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-slider-thumb {
   position: relative;
   height: 14px;
   width: 14px;
@@ -1376,8 +1376,8 @@
 }
 
 /* Primary (ON / active) gradient & shadow identical to .aqua-button.primary */
-:root[data-os-theme="macosx"] .os-switch[data-state="checked"] .os-switch-thumb,
-:root[data-os-theme="macosx"] .os-slider-thumb {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-switch[data-state="checked"] .os-switch-thumb,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-slider-thumb {
   background: linear-gradient(
     rgba(0, 65, 184, 0.625),
     rgba(45, 115, 199, 0.625),
@@ -1389,7 +1389,7 @@
 }
 
 /* Secondary (OFF) identical to .aqua-button.secondary */
-:root[data-os-theme="macosx"]
+:is(:root[data-os-theme="macosx"], .os-theme-macosx)
   .os-switch:not([data-state="checked"])
   .os-switch-thumb {
   background: linear-gradient(
@@ -1401,8 +1401,8 @@
 }
 
 /* Shine (top) pseudo element */
-:root[data-os-theme="macosx"] .os-switch-thumb:before,
-:root[data-os-theme="macosx"] .os-slider-thumb:before {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-switch-thumb:before,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-slider-thumb:before {
   content: "";
   position: absolute;
   inset: 1px 1px auto 1px;
@@ -1419,8 +1419,8 @@
 }
 
 /* Bottom glow */
-:root[data-os-theme="macosx"] .os-switch-thumb:after,
-:root[data-os-theme="macosx"] .os-slider-thumb:after {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-switch-thumb:after,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-slider-thumb:after {
   content: "";
   position: absolute;
   inset: auto 1px 1px 1px;
@@ -1438,7 +1438,7 @@
 }
 
 /* Slider track */
-:root[data-os-theme="macosx"] .os-slider-track {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-slider-track {
   background: linear-gradient(
     to right,
     #d0d0d0,
@@ -1451,7 +1451,7 @@
   position: relative;
 }
 
-:root[data-os-theme="macosx"] .os-slider-range {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-slider-range {
   background: linear-gradient(
     to right,
     #bdbdbd,
@@ -1460,15 +1460,15 @@
 }
 
 /* Slider tick/label text - preserve explicit sizes */
-:root[data-os-theme="macosx"] .os-slider-labels,
-:root[data-os-theme="macosx"] .os-slider-labels span {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-slider-labels,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .os-slider-labels span {
   font-size: 11px !important;
 }
 
 /* -------------------------------------------------- */
 /* macOS Chat bubble aqua style */
 /* -------------------------------------------------- */
-:root[data-os-theme="macosx"] .chat-bubble {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble {
   position: relative;
   border-radius: 16px !important; /* match aqua-button */
   /* Enhanced shadow with subtle outer lift and multi-layer inset stroke similar to traffic lights */
@@ -1496,12 +1496,12 @@
 /* -------------------------------------------------- */
 /* System 7 chat bubble typography tweaks */
 /* -------------------------------------------------- */
-:root[data-os-theme="system7"] .chat-bubble {
+:is(:root[data-os-theme="system7"], .os-theme-system7) .chat-bubble {
   line-height: 1.35 !important;
 }
 
 /* Top shine: reuse semi-transparent white so underlying role color shows */
-:root[data-os-theme="macosx"] .chat-bubble:before {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble:before {
   /* top adjusted from 1px to 2px */
   content: "";
   position: absolute;
@@ -1520,7 +1520,7 @@
 }
 
 /* Bottom glow */
-:root[data-os-theme="macosx"] .chat-bubble:after {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble:after {
   content: "";
   position: absolute;
   left: 0px;
@@ -1538,47 +1538,47 @@
 }
 
 /* Ensure inner text stays above shine */
-:root[data-os-theme="macosx"] .chat-bubble > * {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble > * {
   position: relative;
   z-index: 2;
 }
 
 /* macOS chat bubble background overrides (medium Aqua shades, lightened one level) */
-:root[data-os-theme="macosx"] .chat-bubble.bg-yellow-100 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-yellow-100 {
   background-color: #fde68a !important; /* amber-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-blue-100 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-blue-100 {
   background-color: #bfdbfe !important; /* blue-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-pink-200 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-pink-200 {
   background-color: #fbcfe8 !important; /* pink-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-purple-200 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-purple-200 {
   background-color: #e9d5ff !important; /* purple-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-indigo-200 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-indigo-200 {
   background-color: #c7d2fe !important; /* indigo-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-teal-100 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-teal-100 {
   background-color: #99f6e4 !important; /* teal-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-lime-100 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-lime-100 {
   background-color: #d9f99d !important; /* lime-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-amber-100 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-amber-100 {
   background-color: #fde68a !important; /* amber-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-cyan-100 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-cyan-100 {
   background-color: #a5f3fc !important; /* cyan-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-rose-100 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-rose-100 {
   background-color: #fecdd3 !important; /* rose-200 */
 }
-:root[data-os-theme="macosx"] .chat-bubble.bg-gray-100 {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .chat-bubble.bg-gray-100 {
   background-color: #e5e7eb !important; /* gray-200 */
 }
 
-:root[data-os-theme="macosx"] .macosx-link-preview.chat-bubble:before {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .macosx-link-preview.chat-bubble:before {
   top: 2px; /* extend shine to very top when image flush */
   left: 8px;
   right: 8px;
@@ -1588,7 +1588,7 @@
 }
 
 /* macOS Memory/Progress bar styling */
-:root[data-os-theme="macosx"] .aqua-progress {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-progress {
   position: relative;
   background: linear-gradient(#d0d0d0, #f5f5f5); /* match switch track */
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18),
@@ -1597,7 +1597,7 @@
   overflow: hidden;
 }
 
-:root[data-os-theme="macosx"] .aqua-progress-fill {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .aqua-progress-fill {
   position: relative;
   height: 100%;
   border-radius: 9999px; /* fully rounded */
@@ -1626,14 +1626,14 @@
 }
 
 /* System 7: use Geneva-12 for toasts */
-:root[data-os-theme="system7"] .toaster {
+:is(:root[data-os-theme="system7"], .os-theme-system7) .toaster {
   font-family: var(--font-geneva-12) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: always !important;
 }
 
 /* macOS: Style toast containers with semi-transparent pinstripes like dock */
-:root[data-os-theme="macosx"] .toaster [data-sonner-toast] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster [data-sonner-toast] {
   background: rgba(248, 248, 248, 0.75) !important;
   background-image: var(--os-pinstripe-menubar) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
@@ -1643,14 +1643,14 @@
 }
 
 /* Ensure toast text is readable on semi-transparent background */
-:root[data-os-theme="macosx"] .toaster [data-sonner-toast] [data-title],
-:root[data-os-theme="macosx"] .toaster [data-sonner-toast] [data-description] {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster [data-sonner-toast] [data-title],
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster [data-sonner-toast] [data-description] {
   color: rgba(0, 0, 0, 0.9) !important;
 }
 
 /* macOS: Style toast buttons with aqua button */
-:root[data-os-theme="macosx"] .toaster [data-button],
-:root[data-os-theme="macosx"] .toaster button:not([data-close-button]) {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster [data-button],
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster button:not([data-close-button]) {
   line-height: 1;
   height: 28px;
   padding: 0 16px;
@@ -1683,18 +1683,18 @@
   z-index: 3;
 }
 
-:root[data-os-theme="macosx"] .toaster [data-button]:focus,
-:root[data-os-theme="macosx"] .toaster [data-button]:active,
-:root[data-os-theme="macosx"] .toaster button:not([data-close-button]):focus,
-:root[data-os-theme="macosx"] .toaster button:not([data-close-button]):active {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster [data-button]:focus,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster [data-button]:active,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster button:not([data-close-button]):focus,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster button:not([data-close-button]):active {
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
     inset 0 1px 3px rgba(0, 17, 49, 0.8),
     inset 0 2px 3px 1px rgba(0, 78, 187, 0.75), 0 0 3px rgba(52, 106, 227, 0.5);
 }
 
 /* Top shine for toast buttons */
-:root[data-os-theme="macosx"] .toaster [data-button]:before,
-:root[data-os-theme="macosx"] .toaster button:not([data-close-button]):before {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster [data-button]:before,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster button:not([data-close-button]):before {
   content: "";
   position: absolute;
   left: 50%;
@@ -1714,8 +1714,8 @@
 }
 
 /* Bottom glow for toast buttons */
-:root[data-os-theme="macosx"] .toaster [data-button]:after,
-:root[data-os-theme="macosx"] .toaster button:not([data-close-button]):after {
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster [data-button]:after,
+:is(:root[data-os-theme="macosx"], .os-theme-macosx) .toaster button:not([data-close-button]):after {
   content: "";
   position: absolute;
   left: 50%;
