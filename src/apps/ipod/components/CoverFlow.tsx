@@ -378,11 +378,12 @@ function CoverImage({
       
       {/* Cover art / Sleeve - stays centered, moves down when CD is shown */}
       <motion.div
-        className={`absolute inset-0 w-full h-full overflow-hidden ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
+        className="absolute inset-0 w-full h-full overflow-hidden"
         style={{
           background: "#1a1a1a",
           pointerEvents: isCenter && showCD ? "none" : "auto",
           zIndex: 10,
+          borderRadius: "1%",
         }}
         initial={false}
         animate={{
@@ -452,13 +453,14 @@ function CoverImage({
         <img
           src={coverUrl || ""}
           alt=""
-          className={`w-full h-auto ${ipodMode ? "rounded-lg" : "rounded-sm"}`}
+          className="w-full h-auto"
           style={{
             transform: "scaleY(-1)",
             opacity: 0.3,
             maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             display: coverUrl ? "block" : "none",
+            borderRadius: "1%",
           }}
           draggable={false}
         />
