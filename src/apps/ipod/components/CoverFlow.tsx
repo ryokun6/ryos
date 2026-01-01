@@ -740,45 +740,45 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             className={`absolute left-0 right-0 font-geneva-12 flex items-center justify-center gap-2 ${
               ipodMode ? "px-2" : "px-6"
             }`}
-            style={{ bottom: ipodMode ? "10px" : "5cqmin" }}
+            style={{ bottom: ipodMode ? "4px" : "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            {/* Play/Pause Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                // If viewing a different track, play it without exiting CoverFlow
-                if (selectedIndex !== currentIndex) {
-                  onPlayTrackInPlace?.(selectedIndex);
-                } else {
-                  // Same track - just toggle play/pause
-                  onTogglePlay?.();
-                }
-              }}
-              className={`relative flex-shrink-0 rounded-full transition-all text-white/80 hover:text-white hover:brightness-110 ${
-                ipodMode ? "p-1 bg-white/10" : "p-3"
-              }`}
-              style={{
-                width: ipodMode ? "18px" : "clamp(40px, 8cqmin, 48px)",
-                height: ipodMode ? "18px" : "clamp(40px, 8cqmin, 48px)",
-                ...(!ipodMode && isMacTheme ? {
-                  background: "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
-                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                } : !ipodMode ? {
-                  background: "rgba(255, 255, 255, 0.08)",
-                } : {}),
-              }}
-              title={isPlaying && selectedIndex === currentIndex ? "Pause" : "Play"}
-            >
-              {!ipodMode && isMacTheme && <AquaShineOverlay />}
-              {isPlaying && selectedIndex === currentIndex ? (
-                <Pause className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
-              ) : (
-                <Play className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
-              )}
-            </button>
+            {/* Play/Pause Button - hidden in iPod mode */}
+            {!ipodMode && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // If viewing a different track, play it without exiting CoverFlow
+                  if (selectedIndex !== currentIndex) {
+                    onPlayTrackInPlace?.(selectedIndex);
+                  } else {
+                    // Same track - just toggle play/pause
+                    onTogglePlay?.();
+                  }
+                }}
+                className="relative flex-shrink-0 rounded-full transition-all text-white/80 hover:text-white hover:brightness-110 p-3"
+                style={{
+                  width: "clamp(40px, 8cqmin, 48px)",
+                  height: "clamp(40px, 8cqmin, 48px)",
+                  ...(isMacTheme ? {
+                    background: "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                  } : {
+                    background: "rgba(255, 255, 255, 0.08)",
+                  }),
+                }}
+                title={isPlaying && selectedIndex === currentIndex ? "Pause" : "Play"}
+              >
+                {isMacTheme && <AquaShineOverlay />}
+                {isPlaying && selectedIndex === currentIndex ? (
+                  <Pause className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
+                ) : (
+                  <Play className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
+                )}
+              </button>
+            )}
             
             {/* Track info */}
             <div className="text-center min-w-0 flex-1">
@@ -798,39 +798,37 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               )}
             </div>
             
-            {/* CD Toggle Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowCD(!showCD);
-              }}
-              className={`relative flex-shrink-0 rounded-full transition-all hover:brightness-110 ${
-                ipodMode ? "p-1" : "p-3"
-              } ${
-                ipodMode ? (showCD ? "bg-white/20 text-white" : "bg-white/10 text-white/70") : ""
-              } ${
-                !ipodMode ? (showCD ? "text-white" : "text-white/80 hover:text-white") : ""
-              }`}
-              style={{
-                width: ipodMode ? "18px" : "clamp(40px, 8cqmin, 48px)",
-                height: ipodMode ? "18px" : "clamp(40px, 8cqmin, 48px)",
-                ...(!ipodMode && isMacTheme ? {
-                  background: showCD 
-                    ? "linear-gradient(to bottom, rgba(80, 80, 80, 0.7), rgba(50, 50, 50, 0.6))"
-                    : "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
-                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                } : !ipodMode ? {
-                  background: showCD ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.08)",
-                } : {}),
-              }}
-              title={showCD ? "Hide CD" : "Show CD"}
-            >
-              {!ipodMode && isMacTheme && <AquaShineOverlay />}
-              <Disc 
-                className="w-full h-full relative z-10"
-                strokeWidth={showCD ? 2.5 : 2}
-              />
-            </button>
+            {/* CD Toggle Button - hidden in iPod mode */}
+            {!ipodMode && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCD(!showCD);
+                }}
+                className={`relative flex-shrink-0 rounded-full transition-all hover:brightness-110 p-3 ${
+                  showCD ? "text-white" : "text-white/80 hover:text-white"
+                }`}
+                style={{
+                  width: "clamp(40px, 8cqmin, 48px)",
+                  height: "clamp(40px, 8cqmin, 48px)",
+                  ...(isMacTheme ? {
+                    background: showCD 
+                      ? "linear-gradient(to bottom, rgba(80, 80, 80, 0.7), rgba(50, 50, 50, 0.6))"
+                      : "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                  } : {
+                    background: showCD ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.08)",
+                  }),
+                }}
+                title={showCD ? "Hide CD" : "Show CD"}
+              >
+                {isMacTheme && <AquaShineOverlay />}
+                <Disc 
+                  className="w-full h-full relative z-10"
+                  strokeWidth={showCD ? 2.5 : 2}
+                />
+              </button>
+            )}
           </motion.div>
         </motion.div>
       )}
