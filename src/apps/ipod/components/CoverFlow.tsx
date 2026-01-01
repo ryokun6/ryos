@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardR
 import { motion, AnimatePresence, PanInfo, useMotionValue, animate } from "framer-motion";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
-import { Disc, Play, Pause } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import { useThemeStore } from "@/stores/useThemeStore";
 
 // Long press delay in milliseconds
@@ -12,9 +12,9 @@ const LONG_PRESS_DELAY = 500;
 function AquaShineOverlay() {
   return (
     <div
-      className="pointer-events-none absolute top-[3px] left-1/2 -translate-x-1/2 rounded-full"
+      className="pointer-events-none absolute top-[3px] blur-[0.5px] left-1/2 -translate-x-1/2 rounded-full"
       style={{
-        width: "45%",
+        width: "40%",
         height: "35%",
         background: "linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0))",
       }}
@@ -76,8 +76,8 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
       <div
         className="absolute rounded-full"
         style={{ 
-          width: "92%", 
-          height: "92%", 
+          width: "98%", 
+          height: "98%", 
           cursor: onClick ? "pointer" : "default",
           zIndex: 30,
         }}
@@ -91,8 +91,8 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
       <motion.div
         className="absolute rounded-full"
         style={{
-          width: "92%",
-          height: "92%",
+          width: "98%",
+          height: "98%",
           background: `
             radial-gradient(circle at 50% 50%, 
               transparent 0%, 
@@ -163,8 +163,8 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
       <div
         className="absolute rounded-full pointer-events-none"
         style={{
-          width: "92%",
-          height: "92%",
+          width: "98%",
+          height: "98%",
           boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
         }}
       />
@@ -173,8 +173,8 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
       <div
         className="absolute rounded-full pointer-events-none"
         style={{
-          width: "92%",
-          height: "92%",
+          width: "98%",
+          height: "98%",
           background: `
             conic-gradient(
               from 200deg at 50% 50%,
@@ -367,7 +367,7 @@ function CoverImage({
               opacity: 1,
               y: "0%",
             }}
-            exit={{ opacity: 1, y: "30%" }}
+            exit={{ opacity: 1, y: "15%" }}
             transition={{ 
               y: { type: "spring", stiffness: 200, damping: 25 },
               opacity: { duration: 0.15, ease: "easeOut" },
@@ -822,13 +822,20 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     background: showCD ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.08)",
                   }),
                 }}
-                title={showCD ? "Hide CD" : "Show CD"}
+                title={showCD ? "Hide Media" : "Show Media"}
               >
                 {isMacTheme && <AquaShineOverlay />}
-                <Disc 
+                <svg
                   className="w-full h-full relative z-10"
-                  strokeWidth={showCD ? 2.5 : 2}
-                />
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 7a3 3 0 100 6 3 3 0 000-6z"
+                  />
+                </svg>
               </button>
             )}
           </motion.div>
