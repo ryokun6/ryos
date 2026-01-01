@@ -933,11 +933,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
 /* Windows XP theme: yellow XP background, no shadows, rounded corners */
 .os-theme-xp [data-sonner-toast] {
-  background: #ECE9D8 !important;
+  background: var(--os-color-window-bg) !important;
   border-radius: 4px !important;
-  border: 1px solid rgba(0, 0, 0, 0.7) !important;
+  border: 1px solid var(--os-color-window-border, rgba(0, 0, 0, 0.7)) !important;
   box-shadow: none !important;
-  color: #000 !important;
+  color: var(--os-color-text-primary, #000) !important;
 }
 
 .os-theme-xp [data-sonner-toast] [data-title],
@@ -954,11 +954,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 .os-theme-xp [data-sonner-toast] button {
   font-family: var(--os-font-ui) !important;
   font-size: 11px !important;
-  background: #ECE9D8 !important;
+  background: var(--os-color-window-bg) !important;
   border: none !important;
   border-radius: 0 !important;
   box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #888, inset 2px 2px #dfdfdf !important;
-  color: #000 !important;
+  color: var(--os-color-text-primary, #000) !important;
   padding: 4px 12px !important;
   -webkit-font-smoothing: none !important;
   font-smooth: never !important;
@@ -970,11 +970,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
 /* Windows 98 theme: silver background, classic beveled 3D effect */
 .os-theme-win98 [data-sonner-toast] {
-  background: #C0C0C0 !important;
+  background: var(--os-color-window-bg) !important;
   border-radius: 0 !important;
   border: none !important;
   box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf !important;
-  color: #000 !important;
+  color: var(--os-color-text-primary, #000) !important;
 }
 
 .os-theme-win98 [data-sonner-toast] [data-title],
@@ -990,11 +990,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 .os-theme-win98 [data-sonner-toast] button {
   font-family: var(--os-font-ui) !important;
   font-size: 11px !important;
-  background: #C0C0C0 !important;
+  background: var(--os-color-window-bg) !important;
   border: none !important;
   border-radius: 0 !important;
   box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf !important;
-  color: #000 !important;
+  color: var(--os-color-text-primary, #000) !important;
   padding: 4px 12px !important;
   -webkit-font-smoothing: none !important;
   font-smooth: never !important;
