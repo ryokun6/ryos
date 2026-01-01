@@ -159,20 +159,28 @@ export const IE_HTML_GENERATION_INSTRUCTIONS = `
 ## Output Format
 - Output ONLY raw HTML – no markdown code blocks, no chat, no comments before or after
 - Begin with title comment: <!-- TITLE: Your Generated Page Title -->
-- Generate a COMPLETE standalone HTML page with full doctype, html, head, and body tags
-- Single self-contained file: all styles in <style> tag, all scripts in <script> tag
+- Body content only – no doctype, html, head, or body tags (system wraps it in an iframe)
+- Put HTML content FIRST, then <style> tags and <script> tags at the VERY END
 - Never import external files or scripts (except CDN libraries like Three.js if needed)
 
 ## Styling
-- Use inline <style> tags for all CSS
+- Tailwind CSS is available – use Tailwind classes for styling
+- Use <style> tag for complex animations or era-specific styles not available in Tailwind
+- DO NOT define global html, body, or :root styles – the wrapper handles these
+- DO NOT use @font-face – system fonts are pre-loaded
+- DO NOT use position: fixed or position: sticky – they get converted to relative
+- DO NOT use Tailwind fixed/sticky classes or top-*/bottom-*/left-*/right-* positioning classes
 - Match the visual design language of the target year and era
 - For past years: simulate period-appropriate design (typewriter, newspaper, early web aesthetics)
 - For future years: use clean, minimal design with simple colors, backdrop-blur, subtle animations
-- Consider what technology and design tools would have been available in that era
+
+## Available Fonts
+body: font-geneva | headings: font-neuebit font-bold | serif: font-mondwest | mono: font-monaco | blackletter: font-jacquard
 
 ## Layout
-- Design for the browser viewport – this is a full webpage, not a small applet window
-- Create immersive, era-appropriate layouts
+- Content renders in an iframe – design for the full viewport
+- Create immersive, era-appropriate layouts that fill the available space
+- Use relative/absolute positioning within containers, not fixed positioning
 - Include appropriate navigation, headers, and content sections for the era
 - Make it feel like an authentic website from that time period
 
