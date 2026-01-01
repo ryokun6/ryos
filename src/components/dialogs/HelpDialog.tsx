@@ -87,8 +87,8 @@ export function HelpDialog({
 
   const handleViewDocs = () => {
     launchApp("internet-explorer", {
-      initialUrl: "https://os.ryo.lu/docs",
-      initialYear: "current",
+      url: "https://os.ryo.lu/docs",
+      year: "current",
     });
     onOpenChange(false);
   };
