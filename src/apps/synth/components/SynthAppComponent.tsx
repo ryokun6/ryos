@@ -620,16 +620,11 @@ export function SynthAppComponent({
 
     try {
       const result = await initPromiseRef.current;
-      let pendingNote: string | null = null;
-      let pendingWasReleased = false;
       let pendingPressed = false;
-      let pendingDidAttack = false;
       if (result && pendingInitNoteRef.current && synthRef.current) {
         const initNote = pendingInitNoteRef.current;
         pendingInitNoteRef.current = null;
-        pendingNote = initNote;
         const wasReleasedBeforeInit = releasedBeforeInitRef.current.has(initNote);
-        pendingWasReleased = wasReleasedBeforeInit;
         if (wasReleasedBeforeInit) {
           releasedBeforeInitRef.current.delete(initNote);
         }
@@ -640,14 +635,12 @@ export function SynthAppComponent({
             const now = Tone.context.currentTime;
             activeShiftedNotesRef.current[initNote] = shifted;
             synthRef.current.triggerAttack(shifted, now);
-            pendingDidAttack = true;
           }
         } else if (wasReleasedBeforeInit) {
           const shifted = shiftNoteByOctave(initNote, octaveOffsetRef.current);
           const now = Tone.context.currentTime;
           // Provide short feedback for quick tap during init without getting stuck
           synthRef.current.triggerAttackRelease(shifted, 0.08, now);
-          pendingDidAttack = true;
         }
       }
       return result;
