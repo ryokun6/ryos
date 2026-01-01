@@ -169,6 +169,8 @@
     }
   ],
   "rewrites": [
+    { "source": "/docs", "destination": "/" },
+    { "source": "/docs/:path*", "destination": "/" },
     { "source": "/videos/:video", "destination": "/" },
     { "source": "/ipod/:track", "destination": "/" },
     { "source": "/karaoke/:track", "destination": "/" },
