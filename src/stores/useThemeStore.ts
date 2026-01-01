@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { OsThemeId } from "@/themes/types";
-import { applyThemeCssVariables, getTheme } from "@/themes";
+import { applyThemeCssVariables, getTheme, getThemeClassName } from "@/themes";
 
 interface ThemeState {
   current: OsThemeId;
@@ -11,7 +11,6 @@ interface ThemeState {
 // Dynamically manage loading/unloading of legacy Windows CSS (xp.css variants)
 let legacyCssLink: HTMLLinkElement | null = null;
 let appliedThemeClass: string | null = null;
-const THEME_CLASS_PREFIX = "os-theme-";
 
 async function ensureLegacyCss(theme: OsThemeId) {
   // Only xp and win98 use xp.css
@@ -59,7 +58,7 @@ function applyThemeGlobals(theme: OsThemeId) {
   if (appliedThemeClass) {
     document.documentElement.classList.remove(appliedThemeClass);
   }
-  appliedThemeClass = `${THEME_CLASS_PREFIX}${theme}`;
+  appliedThemeClass = getThemeClassName(theme);
   document.documentElement.classList.add(appliedThemeClass);
 
   applyThemeCssVariables(resolved);

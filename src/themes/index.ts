@@ -5,6 +5,8 @@ import { win98 } from "./win98";
 import { OsTheme, OsThemeId, ThemeMetadata } from "./types";
 import { applyThemeCssVariables, themeToCssVariables } from "./variables";
 
+const THEME_CLASS_PREFIX = "os-theme-";
+
 export const themes: Record<OsThemeId, OsTheme> = {
   system7,
   macosx,
@@ -37,6 +39,10 @@ export function isWindowsTheme(id: OsThemeId): boolean {
  */
 export function isMacTheme(id: OsThemeId): boolean {
   return themes[id].metadata.isMac;
+}
+
+export function getThemeClassName(id: OsThemeId): string {
+  return `${THEME_CLASS_PREFIX}${id}`;
 }
 
 export type { OsTheme, OsThemeId, ThemeMetadata } from "./types";
