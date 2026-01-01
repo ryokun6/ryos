@@ -78,3 +78,17 @@ export function snapshotArrayToMap(
   }
   return map;
 }
+
+export function mergeSnapshots(
+  local: StoreSnapshot[],
+  remote: StoreSnapshot[]
+): StoreSnapshot[] {
+  const merged = snapshotArrayToMap(local);
+  for (const snap of remote) {
+    const existing = merged[snap.storeKey];
+    if (!existing || snap.updatedAt > existing.updatedAt) {
+      merged[snap.storeKey] = snap;
+    }
+  }
+  return Object.values(merged);
+}
