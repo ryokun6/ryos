@@ -43,6 +43,8 @@ import { themes } from "@/themes";
 import { OsThemeId } from "@/themes/types";
 import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore, type LanguageCode } from "@/stores/useLanguageStore";
+import { useSyncSettingsStore } from "@/stores/useSyncSettingsStore";
+import { useSyncController } from "@/hooks/useSyncController";
 import { useTranslation } from "react-i18next";
 
 interface StoreItem {
@@ -327,6 +329,8 @@ export function ControlPanelsAppComponent({
   // Language state
   const { current: currentLanguage, setLanguage } = useLanguageStore();
   const { t } = useTranslation();
+  const syncSettings = useSyncSettingsStore();
+  const { syncNow, isSyncing, lastSyncAt, lastError, deviceId } = useSyncController();
 
   // Use auth hook
   const {
@@ -1876,6 +1880,82 @@ export function ControlPanelsAppComponent({
                     {t("apps.control-panels.checkForUpdates")}
                   </Button>
                   <VersionDisplay />
+                </div>
+
+                <div className="space-y-3 rounded-md border border-border/60 bg-white/40 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-geneva-12 font-medium">Cloud Sync</span>
+                      <span className="text-[11px] text-gray-600 font-geneva-12">
+                        Sync settings and media metadata across devices (opt-in)
+                      </span>
+                    </div>
+                    <Switch
+                      checked={syncSettings.enabled}
+                      onCheckedChange={(v) => syncSettings.setEnabled(v)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-geneva-12">Auto Sync</span>
+                      <span className="text-[11px] text-gray-600 font-geneva-12">
+                        Background sync every few minutes
+                      </span>
+                    </div>
+                    <Switch
+                      checked={syncSettings.autoSync}
+                      disabled={!syncSettings.enabled}
+                      onCheckedChange={(v) => syncSettings.setAutoSync(v)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-geneva-12">Include Media</span>
+                      <span className="text-[11px] text-gray-600 font-geneva-12">
+                        Soundboard, videos, karaoke, synth, iPod metadata
+                      </span>
+                    </div>
+                    <Switch
+                      checked={syncSettings.includeMedia}
+                      disabled={!syncSettings.enabled}
+                      onCheckedChange={(v) => syncSettings.setIncludeMedia(v)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-geneva-12">Include Files (metadata)</span>
+                      <span className="text-[11px] text-gray-600 font-geneva-12">
+                        Future use; currently off by default
+                      </span>
+                    </div>
+                    <Switch
+                      checked={syncSettings.includeFiles}
+                      disabled={!syncSettings.enabled}
+                      onCheckedChange={(v) => syncSettings.setIncludeFiles(v)}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="retro"
+                      className="flex-1"
+                      disabled={!syncSettings.enabled || isSyncing || !authToken || !username}
+                      onClick={() => syncNow()}
+                    >
+                      {isSyncing ? "Syncing…" : "Sync Now"}
+                    </Button>
+                    <div className="text-[11px] text-gray-600 font-geneva-12">
+                      <div>Device: {deviceId.slice(0, 8)}</div>
+                      <div>
+                        Last sync:{" "}
+                        {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "Never"}
+                      </div>
+                      {lastError && <div className="text-red-600">Error: {lastError}</div>}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
