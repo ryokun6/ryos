@@ -135,7 +135,7 @@ export const storeDescriptors: StoreDescriptor[] = [
   {
     key: "applet-storage",
     file: "src/stores/useAppletStore.ts",
-    version: 0,
+    version: 1,
     storage: "localStorage",
     category: "ui",
     sync: { eligible: true, defaultEnabled: true },
@@ -184,7 +184,7 @@ export const storeDescriptors: StoreDescriptor[] = [
   {
     key: "ryos:textedit",
     file: "src/stores/useTextEditStore.ts",
-    version: 0,
+    version: 1,
     storage: "localStorage",
     category: "ui",
     sync: { eligible: true, defaultEnabled: true },
