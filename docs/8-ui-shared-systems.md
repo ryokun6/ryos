@@ -37,5 +37,5 @@ All components are theme-aware, automatically adapting to the active system them
 
 ## Subsections
 
-- [UI Components](8.1-ui-components.html) - Core UI component library including shadcn components and custom primitives
-- [Internationalization](8.2-i18n-hooks.html) - i18n hooks and translation system supporting 9 languages
+- [UI Components](/docs/ui-components) - Core UI component library including shadcn components and custom primitives
+- [Internationalization](/docs/i18n-hooks) - i18n hooks and translation system supporting 9 languages

@@ -31,6 +31,6 @@ Apps receive common props via the `AppProps` interface, including `isWindowOpen`
 
 ## Subsections
 
-- [Window Management](3.1-window-management.html) - Window rendering, positioning, and frame components
-- [State Management](3.2-state-management.html) - Zustand stores and data persistence
-- [Theme System](3.3-theme-system.html) - Themes, appearance, and visual customization
+- [Window Management](/docs/window-management) - Window rendering, positioning, and frame components
+- [State Management](/docs/state-management) - Zustand stores and data persistence
+- [Theme System](/docs/theme-system) - Themes, appearance, and visual customization

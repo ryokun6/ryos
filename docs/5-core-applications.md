@@ -6,23 +6,23 @@ ryOS includes 17 built-in applications, each designed to replicate classic deskt
 
 | App | Description | Category |
 |-----|-------------|----------|
-| [Finder](apps-finder.html) | Browse and manage files in a virtual file system | File Management |
-| [TextEdit](apps-textedit.html) | Rich text editor with markdown support | Productivity |
-| [Paint](apps-paint.html) | Image drawing and editing tool | Creativity |
-| [Photo Booth](apps-photo-booth.html) | Take photos with fun effects | Creativity |
-| [iPod](apps-ipod.html) | Music player with YouTube integration & synced lyrics | Media |
-| [Karaoke](apps-karaoke.html) | Karaoke player with synced lyrics display | Media |
-| [Videos](apps-videos.html) | Video player for watching media | Media |
-| [Soundboard](apps-soundboard.html) | Record and play sound effects | Audio |
-| [Synth](apps-synth.html) | Virtual synthesizer with 3D waveform visualization | Audio |
-| [Terminal](apps-terminal.html) | Command line interface with AI integration | Development |
-| [Chats](apps-chats.html) | Chat with Ryo AI assistant and join chat rooms | Communication |
-| [Internet Explorer](apps-internet-explorer.html) | Web browser with AI-powered content generation | Web |
-| [Applet Store](apps-applet-viewer.html) | Browse and run user-created HTML applets | Utilities |
-| [Control Panels](apps-control-panels.html) | System settings for themes, wallpapers, and audio | System |
-| [Minesweeper](apps-minesweeper.html) | Classic puzzle game | Games |
-| [Virtual PC](apps-pc.html) | 3D PC simulation experience | Entertainment |
-| [Admin](apps-admin.html) | System administration panel (admin only) | System |
+| [Finder](/docs/finder) | Browse and manage files in a virtual file system | File Management |
+| [TextEdit](/docs/textedit) | Rich text editor with markdown support | Productivity |
+| [Paint](/docs/paint) | Image drawing and editing tool | Creativity |
+| [Photo Booth](/docs/photo-booth) | Take photos with fun effects | Creativity |
+| [iPod](/docs/ipod) | Music player with YouTube integration & synced lyrics | Media |
+| [Karaoke](/docs/karaoke) | Karaoke player with synced lyrics display | Media |
+| [Videos](/docs/videos) | Video player for watching media | Media |
+| [Soundboard](/docs/soundboard) | Record and play sound effects | Audio |
+| [Synth](/docs/synth) | Virtual synthesizer with 3D waveform visualization | Audio |
+| [Terminal](/docs/terminal) | Command line interface with AI integration | Development |
+| [Chats](/docs/chats) | Chat with Ryo AI assistant and join chat rooms | Communication |
+| [Internet Explorer](/docs/internet-explorer) | Web browser with AI-powered content generation | Web |
+| [Applet Store](/docs/applet-store) | Browse and run user-created HTML applets | Utilities |
+| [Control Panels](/docs/control-panels) | System settings for themes, wallpapers, and audio | System |
+| [Minesweeper](/docs/minesweeper) | Classic puzzle game | Games |
+| [Virtual PC](/docs/virtual-pc) | 3D PC simulation experience | Entertainment |
+| [Admin](/docs/admin) | System administration panel (admin only) | System |
 
 ## App Architecture
 
