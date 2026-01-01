@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 
 export interface Video {
   id: string;
@@ -125,7 +125,7 @@ export const DEFAULT_VIDEOS: Video[] = [
   },
 ];
 
-interface VideoStoreState {
+interface VideoStoreState extends PersistedStoreMeta {
   videos: Video[];
   currentVideoId: string | null;
   loopAll: boolean;
@@ -154,10 +154,11 @@ const getInitialState = () => ({
   loopCurrent: false,
   isShuffled: false,
   isPlaying: false,
+  _updatedAt: Date.now(),
 });
 
 export const useVideoStore = create<VideoStoreState>()(
-  persist(
+  createPersistedStore(
     (set, get) => ({
       ...getInitialState(),
 
@@ -180,6 +181,7 @@ export const useVideoStore = create<VideoStoreState>()(
           return {
             videos: newVideos,
             currentVideoId,
+            _updatedAt: Date.now(),
           };
         });
       },
@@ -190,13 +192,14 @@ export const useVideoStore = create<VideoStoreState>()(
             videoId && state.videos.find((v) => v.id === videoId)
               ? videoId
               : null;
-          return { currentVideoId: validVideoId };
+          return { currentVideoId: validVideoId, _updatedAt: Date.now() };
         }),
-      setLoopAll: (val) => set({ loopAll: val }),
-      setLoopCurrent: (val) => set({ loopCurrent: val }),
-      setIsShuffled: (val) => set({ isShuffled: val }),
-      togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
-      setIsPlaying: (val) => set({ isPlaying: val }),
+      setLoopAll: (val) => set({ loopAll: val, _updatedAt: Date.now() }),
+      setLoopCurrent: (val) => set({ loopCurrent: val, _updatedAt: Date.now() }),
+      setIsShuffled: (val) => set({ isShuffled: val, _updatedAt: Date.now() }),
+      togglePlay: () =>
+        set((state) => ({ isPlaying: !state.isPlaying, _updatedAt: Date.now() })),
+      setIsPlaying: (val) => set({ isPlaying: val, _updatedAt: Date.now() }),
 
       // Derived state helpers
       getCurrentIndex: () => {
@@ -229,6 +232,7 @@ export const useVideoStore = create<VideoStoreState>()(
         loopAll: state.loopAll,
         loopCurrent: state.loopCurrent,
         isShuffled: state.isShuffled,
+        _updatedAt: state._updatedAt,
       }),
     }
   )
