@@ -17,6 +17,8 @@ import { usePcStore } from "@/stores/usePcStore";
 import { useSynthStore } from "@/stores/useSynthStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { useSyncSettingsStore } from "@/stores/useSyncSettingsStore";
+import { useIpodStore } from "@/stores/useIpodStore";
 
 type SnapshotBuilder = () => Promise<StoreSnapshot>;
 
@@ -263,6 +265,45 @@ const synthConfig: SnapshotConfig = {
   },
 };
 
+// iPod store snapshot (metadata only, excludes lyrics content)
+const ipodConfig: SnapshotConfig = {
+  key: "ryos:ipod",
+  version: 28, // keep in sync with useIpodStore
+  buildPayload: async () => {
+    const s = useIpodStore.getState();
+    const payload = {
+      tracks: s.tracks.map((t) => ({
+        id: t.id,
+        url: t.url,
+        title: t.title,
+        artist: t.artist,
+        album: t.album,
+        cover: t.cover,
+        lyricOffset: t.lyricOffset,
+        lyricsSource: t.lyricsSource,
+      })),
+      currentSongId: s.currentSongId,
+      loopCurrent: s.loopCurrent,
+      loopAll: s.loopAll,
+      isShuffled: s.isShuffled,
+      showLyrics: s.showLyrics,
+      lyricsAlignment: s.lyricsAlignment,
+      lyricsFont: s.lyricsFont,
+      romanization: s.romanization,
+      lyricsTranslationLanguage: s.lyricsTranslationLanguage,
+      theme: s.theme,
+      lcdFilterOn: s.lcdFilterOn,
+      backlightOn: s.backlightOn,
+      showVideo: s.showVideo,
+      libraryState: s.libraryState,
+      lastKnownVersion: s.lastKnownVersion,
+      playbackHistory: s.playbackHistory,
+      historyPosition: s.historyPosition,
+    };
+    return buildSnapshot(ipodConfig.key, ipodConfig.version, Date.now(), payload);
+  },
+};
+
 const ieConfig: SnapshotConfig = {
   key: "ryos:internet-explorer",
   version: 4,
@@ -318,6 +359,7 @@ const configs: SnapshotConfig[] = [
   soundboardConfig,
   videoConfig,
   karaokeConfig,
+  ipodConfig,
   pcConfig,
   synthConfig,
   ieConfig,
