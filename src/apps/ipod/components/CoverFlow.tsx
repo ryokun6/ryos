@@ -321,7 +321,7 @@ function CoverImage({
         // Cover size scales with container
         width: `${coverSize}cqmin`,
         height: `${coverSize}cqmin`,
-        perspective: 300,
+        perspective: `${coverSize * 2.5}cqmin`,
         transformStyle: "preserve-3d",
         pointerEvents: isCenter && showCD ? "auto" : "none",
       }}
@@ -712,7 +712,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               style={{ 
                 height: "75%",
                 marginTop: ipodMode ? "-8%" : "-2%",
-                perspective: 300,
+                perspective: `${(ipodMode ? 65 : 60) * 2.5}cqmin`,
                 transformStyle: "preserve-3d",
               }}
             >
