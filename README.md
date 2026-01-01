@@ -83,6 +83,8 @@ bun run build        # Build for production
 bun run lint         # Run ESLint
 bun run preview      # Preview production build
 vercel dev           # Run with Vercel dev server (recommended)
+bun run generate:changelog  # Generate monthly changelog markdown/docs
+bun run generate:docs       # Generate app docs and static docs site
 ```
 
 ## License
