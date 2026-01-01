@@ -130,6 +130,28 @@ const languageConfig: SnapshotConfig = {
   },
 };
 
+const syncSettingsConfig: SnapshotConfig = {
+  key: "ryos:sync-settings",
+  version: 1,
+  buildPayload: async () => {
+    const s = useSyncSettingsStore.getState();
+    const payload = {
+      enabled: s.enabled,
+      autoSync: s.autoSync,
+      includeMedia: s.includeMedia,
+      includeFiles: s.includeFiles,
+      lastSyncAt: s.lastSyncAt,
+      lastError: s.lastError,
+    };
+    return buildSnapshot(
+      syncSettingsConfig.key,
+      syncSettingsConfig.version,
+      s._updatedAt ?? Date.now(),
+      payload
+    );
+  },
+};
+
 const textEditConfig: SnapshotConfig = {
   key: "ryos:textedit",
   version: 1,
@@ -286,6 +308,7 @@ const appStoreConfig: SnapshotConfig = {
 const configs: SnapshotConfig[] = [
   themeConfig,
   languageConfig,
+  syncSettingsConfig,
   audioConfig,
   displayConfig,
   dockConfig,

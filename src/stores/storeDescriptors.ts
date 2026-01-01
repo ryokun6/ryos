@@ -231,6 +231,15 @@ export const storeDescriptors: StoreDescriptor[] = [
     notes: "Paint last file path reference only; no content stored.",
   },
   {
+    key: "ryos:sync-settings",
+    file: "src/stores/useSyncSettingsStore.ts",
+    version: 1,
+    storage: "localStorage",
+    category: "settings",
+    sync: { eligible: true, defaultEnabled: false },
+    notes: "User opt-in flags for cloud sync scope and auto-sync.",
+  },
+  {
     key: "ryos:textedit",
     file: "src/stores/useTextEditStore.ts",
     version: 1,
