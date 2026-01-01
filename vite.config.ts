@@ -13,6 +13,9 @@ const __dirname = path.dirname(__filename);
 // Detect dev mode for memory optimizations
 const isDev = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
 
+// Browserslist warns if caniuse-lite is stale; suppress when up-to-date
+process.env.BROWSERSLIST_IGNORE_OLD_DATA ??= "1";
+
 // https://vite.dev/config/
 export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
@@ -446,7 +449,7 @@ export default defineConfig({
     },
     sourcemap: false,
     minify: true,
-    // Reduce chunk size warnings threshold
-    chunkSizeWarningLimit: 1000,
+    // Main bundle includes core shell + app registry; keep warnings meaningful
+    chunkSizeWarningLimit: 2500,
   },
 });

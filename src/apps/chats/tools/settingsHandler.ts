@@ -8,6 +8,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
 import i18n from "@/lib/i18n";
+import { forceRefreshCache } from "@/utils/prefetch";
 import type { ToolContext } from "./types";
 
 export interface SettingsInput {
@@ -110,9 +111,7 @@ export const handleSettings = (
 
   // Check for updates
   if (checkForUpdates) {
-    import("@/utils/prefetch").then(({ forceRefreshCache }) => {
-      forceRefreshCache();
-    });
+    forceRefreshCache();
     changes.push(i18n.t("apps.chats.toolCalls.settingsCheckingForUpdates"));
     console.log("[ToolCall] Checking for updates...");
   }
