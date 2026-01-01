@@ -2,6 +2,7 @@ import WaveSurfer from "wavesurfer.js";
 
 export interface SoundSlot {
   audioData: string | null;
+  audioFormat?: 'webm' | 'mp4' | 'wav' | 'mpeg';
   waveform?: WaveSurfer;
   emoji?: string;
   title?: string;

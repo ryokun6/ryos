@@ -15,6 +15,8 @@ import { checkOfflineAndShowError } from "@/utils/offline";
 export function useTtsQueue(endpoint: string = "/api/speech") {
   // Lazily instantiated AudioContext shared by this hook instance
   const ctxRef = useRef<AudioContext | null>(null);
+  // Track last AudioContext to detect context changes
+  const lastCtxRef = useRef<AudioContext | null>(null);
   // Absolute start-time for the *next* clip in the queue (in AudioContext time)
   const nextStartRef = useRef(0);
   // Keep track of in-flight requests so we can cancel them if needed
@@ -28,6 +30,8 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const scheduleChainRef = useRef<Promise<void>>(Promise.resolve());
   // Flag to signal stop across async boundaries
   const isStoppedRef = useRef(false);
+  // Track the stop timeout to clear on unmount or multiple stop() calls
+  const stopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Parallel request limiting
   const MAX_PARALLEL_REQUESTS = 3;
@@ -66,6 +70,12 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const ensureContext = () => {
     // Always use the shared global context
     ctxRef.current = getAudioContext();
+    // Detect context change and reset timeline
+    if (ctxRef.current !== lastCtxRef.current) {
+      console.debug("[TTS] AudioContext changed, resetting timeline");
+      lastCtxRef.current = ctxRef.current;
+      nextStartRef.current = ctxRef.current.currentTime;
+    }
     // (Re)create gain node if needed or context changed
     if (
       !gainNodeRef.current ||
@@ -216,8 +226,9 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
           const audioBuf = await ctx.decodeAudioData(arrayBuf);
 
-          const now = ctx.currentTime;
-          const start = Math.max(now, nextStartRef.current);
+          // Recalculate timing RIGHT before scheduling (after async decode)
+          const freshNow = ctx.currentTime;
+          const start = Math.max(freshNow, nextStartRef.current);
 
           const src = ctx.createBufferSource();
           src.buffer = audioBuf;
@@ -271,50 +282,59 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     pendingRequestsRef.current = [];
     activeRequestsCountRef.current = 0;
 
-    // Stop and disconnect any sources that are currently playing
-    playingSourcesRef.current.forEach((src) => {
-      try {
-        src.stop();
-      } catch {
-        /* ignore */
-      }
-      try {
-        src.disconnect();
-      } catch {
-        /* ignore if already disconnected */
-      }
-    });
-    playingSourcesRef.current.clear();
-    setIsSpeaking(false);
-    if (ctxRef.current) {
-      nextStartRef.current = ctxRef.current.currentTime;
+    // Micro-fade before stopping to avoid clicks
+    if (gainNodeRef.current && ctxRef.current) {
+      const ctx = ctxRef.current;
+      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, ctx.currentTime);
+      gainNodeRef.current.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.01);
     }
+
+    // Clear any pending stop timeout
+    if (stopTimeoutRef.current) {
+      clearTimeout(stopTimeoutRef.current);
+    }
+
+    // Small delay before stopping sources to allow fade
+    stopTimeoutRef.current = setTimeout(() => {
+      // Stop and disconnect any sources that are currently playing
+      playingSourcesRef.current.forEach((src) => {
+        try {
+          src.stop();
+        } catch {
+          /* ignore */
+        }
+        try {
+          src.disconnect();
+        } catch {
+          /* ignore if already disconnected */
+        }
+      });
+      playingSourcesRef.current.clear();
+      setIsSpeaking(false);
+      if (ctxRef.current) {
+        nextStartRef.current = ctxRef.current.currentTime;
+      }
+    }, 15);
   }, []);
 
   // Clean up when the component using the hook unmounts
   useEffect(() => {
     return () => {
+      if (stopTimeoutRef.current) {
+        clearTimeout(stopTimeoutRef.current);
+      }
       stop();
       // preserve AudioContext across hot reloads instead of closing
     };
   }, [stop]);
 
-  // Effect to handle AudioContext resumption on window focus
+  // Update gain when speechVolume or masterVolume changes (use ramping to avoid clicks)
   useEffect(() => {
-    const handleFocus = async () => {
-      await resumeAudioContext();
-    };
-
-    window.addEventListener("focus", handleFocus);
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, []);
-
-  // Update gain when speechVolume or masterVolume changes
-  useEffect(() => {
-    if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = speechVolume * masterVolume;
+    if (gainNodeRef.current && ctxRef.current) {
+      const ctx = ctxRef.current;
+      const targetVolume = speechVolume * masterVolume;
+      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, ctx.currentTime);
+      gainNodeRef.current.gain.linearRampToValueAtTime(targetVolume, ctx.currentTime + 0.05);
     }
   }, [speechVolume, masterVolume]);
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useVibration } from "./useVibration";
+import { resumeAudioContext } from "@/lib/audioContext";
 
 // Global synth instance and state
 let globalSynthRef: {
@@ -254,6 +255,9 @@ export function useChatSynth() {
 
   // Initialize Tone.js context and create the synth instance
   const initializeAudio = useCallback(async () => {
+    // Ensure shared AudioContext is ready first for cross-app consistency
+    await resumeAudioContext();
+
     // If the underlying AudioContext was closed (iOS tends to do this when the
     // tab is backgrounded for a while) we need a completely fresh Tone
     // context. Tone.start() below will create it, but any cached synth nodes
@@ -328,6 +332,9 @@ export function useChatSynth() {
         console.warn("Tone.js context did not start or is suspended.");
         // Attempt to resume the context and recreate synth if successful
         if (Tone.context.state === "suspended") {
+          // Use shared AudioContext resumption first for consistency
+          await resumeAudioContext();
+          // Then resume Tone.js context
           await Tone.context.resume();
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore – Tone.context.state may still be 'running' after resume()
@@ -353,58 +360,33 @@ export function useChatSynth() {
 
   // Effect to handle initial audio setup via user interaction
   useEffect(() => {
-    // Attempt initialization immediately if context might already be running
-    // Check if the context is in a state where it *could* become running
-    if (
-      Tone.context.state === "running" ||
-      Tone.context.state === "suspended"
-    ) {
-      initializeAudio();
-    }
+    // NOTE: Do NOT call initializeAudio() directly here without a user gesture.
+    // On Safari/iOS, audio context creation will fail silently without user interaction.
 
     const handleInteraction = () => {
       initializeAudio();
       // Clean up listeners after first interaction
       window.removeEventListener("click", handleInteraction);
       window.removeEventListener("keydown", handleInteraction);
+      window.removeEventListener("touchstart", handleInteraction);
     };
 
     // Add listeners if not already initialized
     if (!isAudioReady) {
       window.addEventListener("click", handleInteraction, { once: true });
       window.addEventListener("keydown", handleInteraction, { once: true });
+      window.addEventListener("touchstart", handleInteraction, { once: true });
     }
 
     return () => {
       window.removeEventListener("click", handleInteraction);
       window.removeEventListener("keydown", handleInteraction);
+      window.removeEventListener("touchstart", handleInteraction);
     };
   }, [initializeAudio, isAudioReady]); // Depend on initializeAudio and isAudioReady
 
-  // Effect to handle visibility change and window focus
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        if (Tone.context.state !== "running") {
-          initializeAudio();
-        }
-      }
-    };
-
-    const handleFocus = () => {
-      if (Tone.context.state !== "running") {
-        initializeAudio();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, [initializeAudio]);
+  // NOTE: Visibility/focus handlers are handled centrally by @/lib/audioContext
+  // to prevent race conditions. Do not add duplicate listeners here.
 
   // Effect to handle preset changes when reusing synth
   useEffect(() => {
@@ -438,7 +420,7 @@ export function useChatSynth() {
 
   // Function to change the synth preset
   const changePreset = useCallback(
-    (newPresetKey: string) => {
+    async (newPresetKey: string) => {
       if (!SYNTH_PRESETS[newPresetKey]) {
         console.error(`Invalid preset key: ${newPresetKey}`);
         return;
@@ -463,13 +445,18 @@ export function useChatSynth() {
 
       console.log("Changing preset to", newPresetKey);
 
-      // Safely dispose of existing synth
+      // Safely dispose of existing synth with delay for release tails
       if (synthRef.current) {
         try {
           // Stop all active notes first
           synthRef.current.synth.releaseAll();
 
-          // Disconnect and dispose in reverse order of creation
+          // Wait for release tails to complete before disposing
+          // This prevents cutting off sounds abruptly during preset changes
+          const releaseTime = 500; // ms - covers longest release envelope
+          await new Promise((resolve) => setTimeout(resolve, releaseTime));
+
+          // Now safe to disconnect and dispose in reverse order of creation
           if (synthRef.current.filter) {
             synthRef.current.filter.disconnect();
             synthRef.current.filter.dispose();
@@ -519,7 +506,7 @@ export function useChatSynth() {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (synthPreset && synthPreset !== currentPresetKey) {
-      changePreset(synthPreset);
+      void changePreset(synthPreset);
     }
     // We intentionally leave changePreset out of the dependency list to avoid
     // re-creating the callback; it is memoised and stable for the lifetime of

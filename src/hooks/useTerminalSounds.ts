@@ -752,18 +752,7 @@ export function useTerminalSounds() {
   // For cowsay moo sound
   const mooSynthRef = useRef<Tone.Synth | null>(null);
 
-  const resumeAudioContext = async () => {
-    if (Tone.context.state === "suspended") {
-      try {
-        await Tone.context.resume();
-        console.debug("Audio context resumed");
-      } catch (error) {
-        console.error("Failed to resume audio context:", error);
-      }
-    }
-  };
-
-  // New shared function to initialize Tone.js once
+  // Shared function to initialize Tone.js once
   const initializeToneOnce = async () => {
     // If the underlying AudioContext has been closed (can happen on iOS when the
     // page is backgrounded for a while) we need to reset Tone with a fresh
@@ -824,33 +813,16 @@ export function useTerminalSounds() {
     return true;
   };
 
-  // Add event listeners for visibility change and focus
+  // Initialize Tone.js on first user interaction
   useEffect(() => {
     const handleFirstInteraction = () => {
       initializeToneOnce();
       window.removeEventListener("click", handleFirstInteraction);
     };
     window.addEventListener("click", handleFirstInteraction);
-    
-    // Handle page visibility change (when app is switched to/from background)
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === "visible") {
-        await resumeAudioContext();
-      }
-    };
-
-    // Handle window focus (when app regains focus)
-    const handleFocus = async () => {
-      await resumeAudioContext();
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleFocus);
 
     return () => {
       window.removeEventListener("click", handleFirstInteraction);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleFocus);
     };
   }, []);
 

@@ -2,9 +2,23 @@ import { useCallback, useEffect, useRef } from "react";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 
+// Mobile detection for performance tuning
+const isMobileDevice =
+  typeof navigator !== "undefined" &&
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+
+// Mobile Safari handles 8-16 concurrent sources efficiently, desktop can handle more
+const MAX_CONCURRENT_SOURCES = isMobileDevice ? 16 : 32;
+// Limit cache size to prevent memory issues on mobile
+const MAX_CACHE_SIZE = isMobileDevice ? 15 : 30;
+
 // Global audio context and cache
 const audioBufferCache = new Map<string, AudioBuffer>();
 const activeSources = new Set<AudioBufferSourceNode>();
+// Pending load deduplication - prevent duplicate fetches for the same sound
+const pendingLoads = new Map<string, Promise<AudioBuffer>>();
 
 // Track the AudioContext instance we last saw so we can invalidate caches if a
 // new one is created by the shared helper.
@@ -18,6 +32,7 @@ const preloadSound = async (soundPath: string): Promise<AudioBuffer> => {
   const currentCtx = getAudioContext();
   if (currentCtx !== lastCtx) {
     audioBufferCache.clear();
+    pendingLoads.clear();
     lastCtx = currentCtx;
   }
 
@@ -25,16 +40,35 @@ const preloadSound = async (soundPath: string): Promise<AudioBuffer> => {
     return audioBufferCache.get(soundPath)!;
   }
 
-  try {
-    const response = await fetch(soundPath);
-    const arrayBuffer = await response.arrayBuffer();
-    const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer);
-    audioBufferCache.set(soundPath, audioBuffer);
-    return audioBuffer;
-  } catch (error) {
-    console.error("Error loading sound:", error);
-    throw error;
+  // Check if there's already a pending load for this sound
+  if (pendingLoads.has(soundPath)) {
+    return pendingLoads.get(soundPath)!;
   }
+
+  // Create the load promise and store it
+  const loadPromise = (async () => {
+    try {
+      const response = await fetch(soundPath);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer);
+      // LRU-style eviction: remove oldest entry if cache is full
+      if (audioBufferCache.size >= MAX_CACHE_SIZE) {
+        const firstKey = audioBufferCache.keys().next().value;
+        if (firstKey) audioBufferCache.delete(firstKey);
+      }
+      audioBufferCache.set(soundPath, audioBuffer);
+      return audioBuffer;
+    } catch (error) {
+      console.error("Error loading sound:", error);
+      throw error;
+    } finally {
+      // Remove from pending loads when done (success or failure)
+      pendingLoads.delete(soundPath);
+    }
+  })();
+
+  pendingLoads.set(soundPath, loadPromise);
+  return loadPromise;
 };
 
 // Preload multiple sounds at once
@@ -50,10 +84,11 @@ export function useSound(soundPath: string, volume: number = 0.3) {
   const uiVolume = useAudioSettingsStore((s) => s.uiVolume);
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
 
+  // Create gain node only once on mount
   useEffect(() => {
     // Create gain node for volume control
     gainNodeRef.current = getAudioContext().createGain();
-    gainNodeRef.current.gain.value = volume * uiVolume * masterVolume; // Apply masterVolume
+    gainNodeRef.current.gain.value = volume * uiVolume * masterVolume;
 
     // Connect to destination
     gainNodeRef.current.connect(getAudioContext().destination);
@@ -66,12 +101,26 @@ export function useSound(soundPath: string, volume: number = 0.3) {
       instanceSourcesRef.current.forEach((source) => {
         try {
           source.stop();
+          source.disconnect();
         } catch {
           // Source may have already ended
         }
       });
       instanceSourcesRef.current.clear();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only create gain node once on mount
+
+  // Separate effect to update gain value when volumes change (with ramping)
+  useEffect(() => {
+    if (gainNodeRef.current && gainNodeRef.current.context.state !== "closed") {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+      const targetVolume = volume * uiVolume * masterVolume;
+      // Use a short ramp to avoid clicks
+      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, now);
+      gainNodeRef.current.gain.linearRampToValueAtTime(targetVolume, now + 0.01);
+    }
   }, [volume, uiVolume, masterVolume]);
 
   // Internal function to create and play a source
@@ -115,7 +164,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
       gainNodeRef.current.gain.setValueAtTime(targetVolume, getAudioContext().currentTime);
 
       // If too many concurrent sources are active, skip to avoid audio congestion
-      if (activeSources.size > 32) {
+      if (activeSources.size > MAX_CONCURRENT_SOURCES) {
         console.debug("Skipping sound – too many concurrent sources");
         return null;
       }
@@ -129,6 +178,11 @@ export function useSound(soundPath: string, volume: number = 0.3) {
 
       // Clean up when done (only for non-looping sounds)
       source.onended = () => {
+        try {
+          source.disconnect();
+        } catch {
+          // Source may have already been disconnected
+        }
         activeSources.delete(source);
         instanceSourcesRef.current.delete(source);
       };
@@ -142,20 +196,25 @@ export function useSound(soundPath: string, volume: number = 0.3) {
 
   // Stop all currently playing sounds from this hook instance
   const stop = useCallback(() => {
-    // Immediately cut gain to 0 for instant silence
+    // Add micro-fade before stop to avoid clicks
     if (gainNodeRef.current) {
-      gainNodeRef.current.gain.setValueAtTime(0, getAudioContext().currentTime);
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, now);
+      gainNodeRef.current.gain.linearRampToValueAtTime(0, now + 0.01);
     }
-    // Then stop all sources
-    instanceSourcesRef.current.forEach((source) => {
-      try {
-        source.stop();
-        source.disconnect();
-      } catch {
-        // Source may have already ended
-      }
-    });
-    instanceSourcesRef.current.clear();
+    // Stop sources after a short delay to allow the fade to complete
+    setTimeout(() => {
+      instanceSourcesRef.current.forEach((source) => {
+        try {
+          source.stop();
+          source.disconnect();
+        } catch {
+          // Source may have already ended
+        }
+      });
+      instanceSourcesRef.current.clear();
+    }, 15);
   }, []);
 
   const play = useCallback(async () => {
@@ -172,33 +231,33 @@ export function useSound(soundPath: string, volume: number = 0.3) {
   const fadeOut = useCallback(
     (duration: number = 0.5) => {
       if (gainNodeRef.current) {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        // Use current gain value as starting point
         gainNodeRef.current.gain.setValueAtTime(
-          volume,
-          getAudioContext().currentTime
+          gainNodeRef.current.gain.value,
+          now
         );
-        gainNodeRef.current.gain.linearRampToValueAtTime(
-          0,
-          getAudioContext().currentTime + duration
-        );
+        gainNodeRef.current.gain.linearRampToValueAtTime(0, now + duration);
       }
     },
-    [volume]
+    []
   );
 
   const fadeIn = useCallback(
     (duration: number = 0.5) => {
       if (gainNodeRef.current) {
-        gainNodeRef.current.gain.setValueAtTime(
-          0,
-          getAudioContext().currentTime
-        );
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const targetVolume = volume * uiVolume * masterVolume;
+        gainNodeRef.current.gain.setValueAtTime(0, now);
         gainNodeRef.current.gain.linearRampToValueAtTime(
-          volume,
-          getAudioContext().currentTime + duration
+          targetVolume,
+          now + duration
         );
       }
     },
-    [volume]
+    [volume, uiVolume, masterVolume]
   );
 
   return { play, playLoop, stop, fadeOut, fadeIn };
@@ -240,7 +299,16 @@ export const Sounds = {
 // Lazily preload sounds after the first user interaction (click or touch)
 if (typeof document !== "undefined") {
   const handleFirstInteraction = () => {
-    preloadSounds(Object.values(Sounds));
+    // On mobile, only preload essential sounds to conserve memory
+    const soundsToPreload = isMobileDevice
+      ? [
+          Sounds.BUTTON_CLICK,
+          Sounds.WINDOW_OPEN,
+          Sounds.WINDOW_CLOSE,
+          Sounds.MENU_OPEN,
+        ]
+      : Object.values(Sounds);
+    preloadSounds(soundsToPreload);
     // Remove listeners after first invocation to avoid repeated work
     document.removeEventListener("click", handleFirstInteraction);
     document.removeEventListener("touchstart", handleFirstInteraction);

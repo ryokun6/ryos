@@ -20,6 +20,7 @@ import { useTranslation } from "react-i18next";
 
 interface ImportedSlot {
   audioData: string | null;
+  audioFormat?: 'webm' | 'mp4' | 'wav' | 'mpeg';
   emoji?: string;
   title?: string;
 }
@@ -113,10 +114,13 @@ export function SoundboardAppComponent({
   const [showEmojis, setShowEmojis] = useState(true);
   const activeSlotRef = useRef<number | null>(null);
 
-  const handleRecordingComplete = (base64Data: string) => {
+  const handleRecordingComplete = (base64Data: string, format: string) => {
     const activeSlot = activeSlotRef.current;
     if (activeSlot !== null && activeBoardId) {
-      updateSlot(activeSlot, { audioData: base64Data });
+      updateSlot(activeSlot, { 
+        audioData: base64Data, 
+        audioFormat: format as 'webm' | 'mp4' | 'wav' | 'mpeg' 
+      });
     }
   };
 
@@ -224,6 +228,7 @@ export function SoundboardAppComponent({
             slots: (board.slots || Array(9).fill(null)).map(
               (slot: ImportedSlot) => ({
                 audioData: slot.audioData,
+                audioFormat: slot.audioFormat,
                 emoji: slot.emoji,
                 title: slot.title,
               })
@@ -251,6 +256,7 @@ export function SoundboardAppComponent({
         name: b.name,
         slots: b.slots.map((slot) => ({
           audioData: slot.audioData,
+          audioFormat: slot.audioFormat,
           emoji: slot.emoji,
           title: slot.title,
         })),
@@ -284,6 +290,7 @@ export function SoundboardAppComponent({
           slots: (board.slots || Array(9).fill(null)).map(
             (slot: ImportedSlot) => ({
               audioData: slot.audioData,
+              audioFormat: slot.audioFormat,
               emoji: slot.emoji,
               title: slot.title,
             })
@@ -313,6 +320,7 @@ export function SoundboardAppComponent({
           slots: (board.slots || Array(9).fill(null)).map(
             (slot: ImportedSlot) => ({
               audioData: slot.audioData,
+              audioFormat: slot.audioFormat,
               emoji: slot.emoji,
               title: slot.title,
             })

@@ -1,9 +1,16 @@
 // Dynamic waveform creation & lightweight audio helpers optimized for mobile Safari
 
+import { resumeAudioContext } from "@/lib/audioContext";
+
 export const createWaveform = async (
   container: HTMLElement,
-  base64Data: string
+  base64Data: string,
+  format?: string
 ): Promise<import("wavesurfer.js").default> => {
+  // Ensure shared audio context is ready before WaveSurfer creates its own
+  // This helps avoid Safari's AudioContext limit issues by ensuring our main context is active
+  await resumeAudioContext();
+
   // Dynamically import WaveSurfer to avoid adding it to the initial bundle
   const { default: WaveSurfer } = await import("wavesurfer.js");
 
@@ -13,7 +20,8 @@ export const createWaveform = async (
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i);
   }
-  const mimeType = getSupportedMimeType();
+  // Use provided format or detect from current browser
+  const mimeType = format ? `audio/${format}` : getSupportedMimeType();
   const blob = new Blob([bytes], { type: mimeType });
 
   const wavesurfer = WaveSurfer.create({
@@ -53,9 +61,9 @@ export const createWaveform = async (
   });
 };
 
-export const createAudioFromBase64 = (base64Data: string): HTMLAudioElement => {
-  // Use data URL directly to avoid manual byte copy loops for short clips
-  const mimeType = getSupportedMimeType();
+export const createAudioFromBase64 = (base64Data: string, format?: string): HTMLAudioElement => {
+  // Use provided format or detect from current browser
+  const mimeType = format ? `audio/${format}` : getSupportedMimeType();
   // Some browsers (older) may choke on very large data URIs; these clips are short
   return new Audio(`data:${mimeType};base64,${base64Data}`);
 };

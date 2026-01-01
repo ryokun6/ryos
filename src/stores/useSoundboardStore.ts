@@ -91,6 +91,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
             slots: (boardData.slots || Array(9).fill(null)).map(
               (slotData: Partial<SoundSlot>) => ({
                 audioData: slotData?.audioData || null,
+                audioFormat: slotData?.audioFormat || undefined,
                 emoji: slotData?.emoji || undefined,
                 title: slotData?.title || undefined,
               })
@@ -179,6 +180,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
       deleteSlot: (boardId, slotIndex) => {
         get().updateSlot(boardId, slotIndex, {
           audioData: null,
+          audioFormat: undefined,
           emoji: undefined,
           title: undefined,
         });

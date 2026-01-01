@@ -7,12 +7,13 @@ import { useTranslation } from "react-i18next";
 interface WaveformProps {
   className?: string;
   audioData: string | null;
+  audioFormat?: string;
   onWaveformCreate?: (waveform: WaveSurfer) => void;
   isPlaying?: boolean;
 }
 
 export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
-  ({ className = "", audioData, onWaveformCreate, isPlaying = false }, ref) => {
+  ({ className = "", audioData, audioFormat, onWaveformCreate, isPlaying = false }, ref) => {
     const { t } = useTranslation();
     const waveformRef = useRef<WaveSurfer | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -42,7 +43,7 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
         currentContainer.innerHTML = ""; // Clear container
 
         try {
-          const wavesurfer = await createWaveform(currentContainer, audioData);
+          const wavesurfer = await createWaveform(currentContainer, audioData, audioFormat);
 
           if (isMounted) {
             wavesurfer.setMuted(true);
@@ -84,7 +85,7 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
         isMounted = false;
         cleanup(); // Cleanup on unmount
       };
-    }, [audioData, onWaveformCreate, isPlaying]); // isPlaying is now a dependency
+    }, [audioData, audioFormat, onWaveformCreate, isPlaying]); // isPlaying is now a dependency
 
     return (
       <div

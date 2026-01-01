@@ -90,7 +90,8 @@ export const useSoundboard = () => {
       // Optionally stop other sounds if only one can play at a time
       // audioRefs.current.forEach((audio, i) => { ... });
 
-      const audio = createAudioFromBase64(slot.audioData);
+      // Pass the stored format for cross-browser compatibility
+      const audio = createAudioFromBase64(slot.audioData, slot.audioFormat);
       audioRefs.current[index] = audio;
       updateSlotState(index, true, false); // isPlaying: true, isRecording: false
 

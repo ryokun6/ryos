@@ -54,6 +54,7 @@ export function SoundSlot({
           <>
             <Waveform
               audioData={slot.audioData}
+              audioFormat={slot.audioFormat}
               isPlaying={isPlaying}
               className="z-10"
             />

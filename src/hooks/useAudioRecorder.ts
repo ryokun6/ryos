@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { getSupportedMimeType, base64FromBlob } from "../utils/audio";
 
 interface UseAudioRecorderProps {
-  onRecordingComplete: (base64Data: string) => void;
+  onRecordingComplete: (base64Data: string, format: string) => void;
   selectedDeviceId: string;
   setRecordingState: (isRecording: boolean) => void;
 }
@@ -41,7 +41,9 @@ export const useAudioRecorder = ({
       mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         const base64Data = await base64FromBlob(blob);
-        onRecordingComplete(base64Data);
+        // Extract format from mimeType (e.g., "audio/webm" -> "webm")
+        const format = mimeType.split('/')[1];
+        onRecordingComplete(base64Data, format);
         // Cleanup media stream
         stream.getTracks().forEach((track) => track.stop());
         mediaRecorderRef.current = null; // Clear media recorder reference
