@@ -40,6 +40,9 @@ const MAJOR_KEYWORDS = [
   "optimize",
   "improve",
   "enhance",
+  "upgrade",
+  "bump",
+  "release",
 ];
 
 const MINOR_KEYWORDS = [
@@ -126,6 +129,8 @@ function normalizeMessage(message: string): string {
   cleaned = cleaned.replace(/^[a-z]+(\([^)]+\))?!?:\s*/i, "");
   // Remove leading bullet markers if present
   cleaned = cleaned.replace(/^[-*]\s+/, "");
+  // Normalize whitespace and collapse multiple spaces
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
   return cleaned.trim();
 }
 

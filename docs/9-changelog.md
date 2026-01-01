@@ -1,6 +1,6 @@
 # Changelog
 
-_Auto-generated from git history on 2026-01-01T19:02:23.598Z. Run `bun run generate:changelog` to refresh. Default window: last 12 month(s), max 20 per category. Merge commits are skipped. Major keywords: feat, feature, add, introduce, implement, create, launch, upgrade, refactor, redesign, breaking, perf, optimize, improve, enhance. Minor keywords: fix, chore, docs, doc, test, tests, tweak, refine, cleanup, style, ci, build, revert._
+_Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run generate:changelog` to refresh. Default window: last 12 month(s), max 20 per category. Merge commits are skipped. Major keywords: feat, feature, add, introduce, implement, create, launch, upgrade, refactor, redesign, breaking, perf, optimize, improve, enhance, upgrade, bump, release. Minor keywords: fix, chore, docs, doc, test, tests, tweak, refine, cleanup, style, ci, build, revert._
 
 ## January 2026
 
@@ -17,6 +17,7 @@ _Auto-generated from git history on 2026-01-01T19:02:23.598Z. Run `bun run gener
   - add /docs route with architecture documentation
   - add onPlayTrackInPlace callback for improved track playback in CoverFlow
 - **Minor**
+  - summarize changelog output
   - Fix h4 headers not rendering in docs
   - Reorganize docs hierarchy for better clarity
   - Fix sidebar: update app doc naming and alignment
@@ -36,8 +37,7 @@ _Auto-generated from git history on 2026-01-01T19:02:23.598Z. Run `bun run gener
   - restore CD exit animation to slide behind cover
   - use easeOut for opacity transitions instead of spring
   - refine border radius in CoverFlow component for improved aesthetics
-  - refine perspective calculations in CoverFlow for better visual consistency
-  - _… 9 more minor change(s) in git log_
+  - _… 10 more minor change(s) in git log_
 
 ## December 2025
 
@@ -62,7 +62,7 @@ _Auto-generated from git history on 2026-01-01T19:02:23.598Z. Run `bun run gener
   - Add theme-aware translations for Control Panels in Portuguese locale
   - Add theme-aware translations for Control Panels in Spanish locale
   - improve document icon detection for recent items
-  - _… 294 more major change(s) in git log_
+  - _… 296 more major change(s) in git log_
 - **Minor**
   - refine SpinningCD component dimensions and shadow effect
   - update version information and refine CoverFlow shadow styling
@@ -84,7 +84,7 @@ _Auto-generated from git history on 2026-01-01T19:02:23.598Z. Run `bun run gener
   - correct German Control Panels name for non-macOS themes
   - remove Software Update menu item
   - skip folders from recent documents tracking
-  - _… 465 more minor change(s) in git log_
+  - _… 463 more minor change(s) in git log_
 
 ## November 2025
 
@@ -496,6 +496,7 @@ _Auto-generated from git history on 2026-01-01T19:02:23.598Z. Run `bun run gener
   - Enhance TextEdit message rendering and processing
   - Optimize TextEdit markup processing and streaming behavior
   - Improve TextEdit markup parsing and message handling
+  - Bump @radix-ui/react-dialog to latest version (1.1.6)
   - Improve dialog overlay pointer events and interaction
   - Enhance double-tap handling for window maximization
   - Add system state context to chat interactions
@@ -509,15 +510,13 @@ _Auto-generated from git history on 2026-01-01T19:02:23.598Z. Run `bun run gener
   - Improve TextEdit markup parsing with advanced debugging and error handling
   - Enhance TextEdit document editing with robust markup parsing and processing
   - Improve document edit parsing and prevent duplicate content
-  - Enhance TextEdit content parsing with markdown support
-  - _… 126 more major change(s) in git log_
+  - _… 127 more major change(s) in git log_
 - **Minor**
   - Update default games list and PC emulator title
   - Refine TextEdit markup line description generation
   - Update system state and app list display
   - dialog pointer-events
   - Revert @radix-ui/react-dialog to previous version (1.1.5)
-  - Bump @radix-ui/react-dialog to latest version (1.1.6)
   - Reset chat container styles during chat clearing
   - Update chat nudge response to include system context
   - Move SystemState interface to dedicated utility file
@@ -532,4 +531,5 @@ _Auto-generated from git history on 2026-01-01T19:02:23.598Z. Run `bun run gener
   - Update useFileSystem.ts
   - Remove temporary dosbox submodules
   - Update README.md with version and feature refinements
-  - _… 70 more minor change(s) in git log_
+  - Refine video player and default video list
+  - _… 69 more minor change(s) in git log_
