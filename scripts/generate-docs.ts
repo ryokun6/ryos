@@ -263,18 +263,18 @@ function generateSidebar(doc: DocEntry, allDocs: DocEntry[]): string {
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: ${svgTransform};">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/${d.id}.html" class="${doc.id === "apps" ? "active" : ""}">${d.title}</a>
+    <a href="/docs/${d.id}" class="${doc.id === "apps" ? "active" : ""}">${d.title}</a>
   </button>
   <div class="nav-children" style="display: ${childrenDisplay};">
     ${sortedAppDocs.map((appDoc) => 
-      `<a href="/docs/${appDoc.id}.html" class="nav-child ${appDoc.id === doc.id ? "active" : ""}">${appDoc.title}</a>`
+      `<a href="/docs/${appDoc.id}" class="nav-child ${appDoc.id === doc.id ? "active" : ""}">${appDoc.title}</a>`
     ).join("\n    ")}
   </div>
 </div>
       `.trim());
     } else {
       // Regular doc item
-      items.push(`<a href="/docs/${d.id}.html" class="${d.id === doc.id ? "active" : ""}">${d.title}</a>`);
+      items.push(`<a href="/docs/${d.id}" class="${d.id === doc.id ? "active" : ""}">${d.title}</a>`);
     }
   }
   
@@ -449,8 +449,8 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
       </article>
       
       <nav class="nav">
-        ${prev ? `<a href="/docs/${prev.id}.html">← ${prev.title}</a>` : "<span></span>"}
-        ${next ? `<a href="/docs/${next.id}.html">${next.title} →</a>` : "<span></span>"}
+        ${prev ? `<a href="/docs/${prev.id}">← ${prev.title}</a>` : "<span></span>"}
+        ${next ? `<a href="/docs/${next.id}">${next.title} →</a>` : "<span></span>"}
       </nav>
       
     </main>
@@ -525,7 +525,7 @@ async function generate() {
 
   // Generate index redirect
   const indexHtml = `<!DOCTYPE html>
-<html><head><meta http-equiv="refresh" content="0;url=/docs/overview.html"></head></html>`;
+<html><head><meta http-equiv="refresh" content="0;url=/docs/overview"></head></html>`;
   await Bun.write(join(OUTPUT_DIR, "index.html"), indexHtml);
 
   console.log(`[docs] Generated ${docs.length} pages in ${OUTPUT_DIR}/`);

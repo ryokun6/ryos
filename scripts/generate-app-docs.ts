@@ -79,14 +79,27 @@ interface AppInfo {
 /**
  * Check if API key is available
  */
-function checkApiKey(): void {
+function checkApiKey(): boolean {
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    console.error("❌ Error: GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set");
-    console.error("\nPlease set it with:");
-    console.error("  export GOOGLE_GENERATIVE_AI_API_KEY=your_api_key");
-    console.error("\nOr add it to your .env file");
-    process.exit(1);
+    return false;
   }
+  return true;
+}
+
+/**
+ * Check if all doc files already exist
+ */
+async function allDocsExist(): Promise<boolean> {
+  for (const appId of APP_IDS) {
+    const docFileName = `apps-${appId}.md`;
+    const docFilePath = join(OUTPUT_DIR, docFileName);
+    try {
+      await stat(docFilePath);
+    } catch {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -582,8 +595,23 @@ Environment:
     process.exit(0);
   }
 
-  if (!dryRun) {
-    checkApiKey();
+  const hasApiKey = checkApiKey();
+
+  // If no API key and not forcing regeneration, check if all docs exist
+  // If they do, we can skip gracefully (docs are already committed to git)
+  if (!dryRun && !hasApiKey) {
+    const docsExist = await allDocsExist();
+    if (docsExist && !force) {
+      console.log("ℹ️  All documentation files already exist, skipping generation");
+      console.log("   (Set GOOGLE_GENERATIVE_AI_API_KEY to regenerate docs)");
+      return;
+    } else if (force || !docsExist) {
+      console.error("❌ Error: GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set");
+      console.error("\nPlease set it with:");
+      console.error("  export GOOGLE_GENERATIVE_AI_API_KEY=your_api_key");
+      console.error("\nOr add it to your .env file");
+      process.exit(1);
+    }
   }
 
   console.log("🤖 Generating App Documentation using Gemini 2.5 Flash");

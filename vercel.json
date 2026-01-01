@@ -1,5 +1,7 @@
 {
   "devCommand": "bun run dev",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "headers": [
     {
       "source": "/api/(.*)",
@@ -191,7 +193,8 @@
     { "source": "/control-panels", "destination": "/" }
   ],
   "redirects": [
-    { "source": "/docs", "destination": "/docs/overview.html", "permanent": false },
+    { "source": "/docs", "destination": "/docs/overview", "permanent": false },
+    { "source": "/docs/", "destination": "/docs/overview", "permanent": false },
     { "source": "/404", "destination": "/", "permanent": false }
   ]
 }
