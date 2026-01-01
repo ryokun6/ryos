@@ -301,9 +301,9 @@ function generateSidebar(currentDoc: DocEntry, allDocs: DocEntry[]): string {
   </div>
 </div>`.trim());
     } else {
-      // No children - simple link
+      // No children - simple link with indent to align with toggle items
       const displayNum = doc.sectionNum ? `${doc.sectionNum}. ` : "";
-      items.push(`<a href="/docs/${doc.id}" class="${doc.id === currentDoc.id ? "active" : ""}">${displayNum}${doc.title}</a>`);
+      items.push(`<a href="/docs/${doc.id}" class="nav-item ${doc.id === currentDoc.id ? "active" : ""}">${displayNum}${doc.title}</a>`);
     }
   }
 
@@ -379,6 +379,7 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     .sidebar a.active { background: #000; color: #fff; }
     
     /* Tree hierarchy styles */
+    .nav-item { padding-left: 20px !important; } /* Align with toggle items (8px icon + 4px gap + 8px padding) */
     .nav-group { margin: 4px 0; }
     .nav-toggle {
       display: flex; align-items: center; gap: 4px;
