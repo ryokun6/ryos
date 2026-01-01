@@ -406,6 +406,7 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     
     /* Typography */
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
     h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
