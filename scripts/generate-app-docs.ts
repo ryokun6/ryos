@@ -5,9 +5,10 @@
  * Reads app metadata and source code, then uses Gemini to generate comprehensive doc pages.
  * 
  * Usage:
- *   bun run scripts/generate-app-docs.ts                    # Generate all app docs
+ *   bun run scripts/generate-app-docs.ts                    # Generate all app docs (skip existing)
  *   bun run scripts/generate-app-docs.ts --app ipod         # Generate docs for specific app
  *   bun run scripts/generate-app-docs.ts --dry-run          # Preview without generating
+ *   bun run scripts/generate-app-docs.ts --force            # Regenerate all docs even if they exist
  */
 
 import { readFile, readdir, stat, writeFile } from "fs/promises";
@@ -446,7 +447,7 @@ Write the documentation in a clear, professional tone. Use markdown formatting p
 /**
  * Generate documentation for a single app
  */
-async function generateAppDocumentation(appId: string, dryRun: boolean = false): Promise<void> {
+async function generateAppDocumentation(appId: string, dryRun: boolean = false, force: boolean = false): Promise<void> {
   console.log(`\n📱 Processing app: ${appId}`);
 
   // Read app metadata
@@ -502,8 +503,23 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false):
 
   appInfo.description = descriptions[appId] || `A ${metadata.name} application for ryOS`;
 
+  // Check if doc file already exists
+  const docFileName = `apps-${appId}.md`;
+  const docFilePath = join(OUTPUT_DIR, docFileName);
+  
+  let docExists = false;
+  try {
+    await stat(docFilePath);
+    docExists = true;
+  } catch {
+    // File doesn't exist, will generate
+  }
+
   if (dryRun) {
     console.log(`🔍 Dry-run: Would generate doc for ${appId}`);
+    if (docExists) {
+      console.log(`   ℹ️  Doc file already exists: ${docFileName}`);
+    }
     console.log(`   - Name: ${metadata.name}`);
     console.log(`   - Help items: ${helpItems.length}`);
     console.log(`   - Components: ${componentFiles.length}`);
@@ -512,14 +528,22 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false):
     return;
   }
 
+  // Skip generation if file exists and force is not set
+  if (docExists && !force) {
+    console.log(`   ⏭️  Skipping ${docFileName} (already exists, use --force to regenerate)`);
+    return;
+  }
+
   // Generate doc content
-  console.log(`   Generating documentation...`);
+  if (docExists && force) {
+    console.log(`   🔄 Regenerating documentation...`);
+  } else {
+    console.log(`   Generating documentation...`);
+  }
+  
   const docContent = await generateAppDoc(appInfo, componentContent);
 
   // Write doc file
-  const docFileName = `apps-${appId}.md`;
-  const docFilePath = join(OUTPUT_DIR, docFileName);
-  
   await writeFile(docFilePath, docContent + "\n", "utf-8");
   
   console.log(`   ✅ Generated: ${docFileName}`);
@@ -531,6 +555,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false):
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
+  const force = args.includes("--force");
   const appArg = args.find((arg) => arg.startsWith("--app="))?.split("=")[1] || 
                  (args.includes("--app") && args[args.indexOf("--app") + 1]) || 
                  undefined;
@@ -542,12 +567,14 @@ Usage: bun run scripts/generate-app-docs.ts [options]
 Options:
   --app=<appId>         Generate docs for specific app only
   --dry-run             Preview what would be generated without creating files
+  --force               Regenerate docs even if they already exist
   --help, -h            Show this help message
 
 Examples:
   bun run scripts/generate-app-docs.ts
   bun run scripts/generate-app-docs.ts --app ipod
   bun run scripts/generate-app-docs.ts --dry-run
+  bun run scripts/generate-app-docs.ts --force
 
 Environment:
   GOOGLE_GENERATIVE_AI_API_KEY  Required: Your Google Gemini API key
@@ -566,6 +593,10 @@ Environment:
 
   if (dryRun) {
     console.log("🔍 Dry-run mode: No documentation will be generated\n");
+  } else if (force) {
+    console.log("🔄 Force mode: Will regenerate all documentation files\n");
+  } else {
+    console.log("ℹ️  Skipping existing documentation files (use --force to regenerate)\n");
   }
 
   let successCount = 0;
@@ -579,7 +610,7 @@ Environment:
     }
 
     try {
-      await generateAppDocumentation(appId, dryRun);
+      await generateAppDocumentation(appId, dryRun, force);
       successCount++;
       
       // Small delay to avoid rate limiting
