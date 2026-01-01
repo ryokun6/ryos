@@ -128,6 +128,10 @@ export const resumeAudioContext = async (): Promise<void> => {
 let visibilityHandler: (() => void) | null = null;
 let focusHandler: (() => void) | null = null;
 let deviceChangeHandler: (() => void) | null = null;
+let pageshowHandler: ((event: PageTransitionEvent) => void) | null = null;
+let userGestureHandler: (() => void) | null = null;
+// Track if we've already handled the first user gesture
+let userGestureHandled = false;
 
 function setupAudioContextListeners() {
   if (typeof document !== "undefined" && typeof window !== "undefined") {
@@ -138,6 +142,14 @@ function setupAudioContextListeners() {
     if (focusHandler) {
       window.removeEventListener("focus", focusHandler);
     }
+    if (pageshowHandler) {
+      window.removeEventListener("pageshow", pageshowHandler);
+    }
+    if (userGestureHandler) {
+      window.removeEventListener("pointerdown", userGestureHandler);
+      window.removeEventListener("keydown", userGestureHandler);
+      window.removeEventListener("touchstart", userGestureHandler);
+    }
 
     visibilityHandler = () => {
       if (document.visibilityState === "visible") {
@@ -145,9 +157,44 @@ function setupAudioContextListeners() {
       }
     };
     focusHandler = () => void resumeAudioContext();
+
+    // Safari's bfcache (back-forward cache) can restore pages without firing
+    // visibilitychange or focus events. The pageshow event with persisted=true
+    // indicates the page was restored from bfcache.
+    pageshowHandler = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        console.debug("[audioContext] Page restored from bfcache, resuming context");
+        void resumeAudioContext();
+      }
+    };
+
+    // User gesture handler - Safari (especially iOS) requires audio context
+    // resume to be tied to a user gesture. We listen for common user interactions
+    // and resume the context. After the first successful resume triggered by a
+    // user gesture, we keep the listeners active because Safari can suspend the
+    // context again when returning from background.
+    userGestureHandler = () => {
+      // Skip if context is already running to avoid unnecessary async operations
+      if (audioContext?.state === "running") {
+        return;
+      }
+      // Only log on first gesture
+      if (!userGestureHandled) {
+        console.debug("[audioContext] User gesture detected, resuming context");
+        userGestureHandled = true;
+      }
+      void resumeAudioContext();
+    };
     
     document.addEventListener("visibilitychange", visibilityHandler);
     window.addEventListener("focus", focusHandler);
+    window.addEventListener("pageshow", pageshowHandler);
+
+    // User gesture listeners - these help Safari resume audio context
+    // We use passive: true for better scroll performance on touch devices
+    window.addEventListener("pointerdown", userGestureHandler, { passive: true });
+    window.addEventListener("keydown", userGestureHandler, { passive: true });
+    window.addEventListener("touchstart", userGestureHandler, { passive: true });
 
     // Handle Bluetooth/AirPlay device switching
     if (typeof navigator !== "undefined" && navigator.mediaDevices) {
@@ -182,6 +229,16 @@ if (import.meta.hot) {
       window.removeEventListener("focus", focusHandler);
       focusHandler = null;
     }
+    if (pageshowHandler) {
+      window.removeEventListener("pageshow", pageshowHandler);
+      pageshowHandler = null;
+    }
+    if (userGestureHandler) {
+      window.removeEventListener("pointerdown", userGestureHandler);
+      window.removeEventListener("keydown", userGestureHandler);
+      window.removeEventListener("touchstart", userGestureHandler);
+      userGestureHandler = null;
+    }
     if (deviceChangeHandler && navigator.mediaDevices) {
       navigator.mediaDevices.removeEventListener(
         "devicechange",
@@ -189,6 +246,8 @@ if (import.meta.hot) {
       );
       deviceChangeHandler = null;
     }
+    // Reset user gesture tracking for HMR
+    userGestureHandled = false;
     console.debug("[audioContext] HMR cleanup: removed listeners");
   });
 }
