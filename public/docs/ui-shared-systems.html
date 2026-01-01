@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Theme System - ryOS Docs</title>
+  <title>UI Components and Shared Systems - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -180,17 +180,17 @@
     <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/application-framework" class="">3. Application Framework</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
     <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
-    <a href="/docs/theme-system" class="nav-child active">3.3 Theme System</a>
+    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
   </div>
 </div>
 <a href="/docs/storage-file-system" class="">4. File System</a>
@@ -233,14 +233,14 @@
     <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
+    <a href="/docs/ui-shared-systems" class="active">8. UI Components and Shared Systems</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
     <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
@@ -249,35 +249,34 @@
     
     <main class="content">
       <article>
-        <h1>Theme System</h1>
-<p>ryOS supports 4 themes emulating classic operating systems.</p>
-<h2>Available Themes</h2>
-<table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>macOS</td><td>Glossy buttons, traffic lights, pinstripe</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>Black & white, dotted titlebar</td></tr><tr><td><code>xp</code></td><td>XP</td><td>Windows</td><td>Luna blue chrome, rounded corners</td></tr><tr><td><code>win98</code></td><td>98</td><td>Windows</td><td>3D face, blue titlebar</td></tr></tbody></table>
-<h2>Theme Metadata</h2>
-<pre><code>interface ThemeMetadata {
-  isWindows: boolean;
-  isMac: boolean;
-  hasDock: boolean;             // macOS X only
-  hasTaskbar: boolean;          // Windows themes
-  hasMenuBar: boolean;          // Mac themes
-  titleBarControlsPosition: "left" | "right";
-  menuBarHeight: number;        // 0, 25, or 30px
-  taskbarHeight: number;        // 0 or 30px
-  baseDockHeight: number;       // 0 or 56px
-}</code></pre>
-<h2>CSS Custom Properties</h2>
-<pre><code>:root[data-os-theme="macosx"] {
-  --os-font-ui: "Lucida Grande", ...;
-  --os-color-window-bg: white;
-  --os-color-titlebar-active-bg: linear-gradient(...);
-  --os-metrics-radius: 0.5rem;
-  --os-window-shadow: 0 3px 10px rgba(0,0,0,0.3);
-}</code></pre>
+        <h1>UI Components and Shared Systems</h1>
+<p>Overview of shared UI components and system-wide utilities that power the ryOS desktop environment.</p>
+<h2>Overview</h2>
+<p>The ryOS component architecture is organized into distinct categories, each serving specific purposes across the desktop environment. Components are built with React and TypeScript, leveraging Tailwind CSS for styling and shadcn/ui as the foundation for consistent, accessible UI elements. The system emphasizes reusability, theme-aware components, and cross-app compatibility.</p>
+<p>The component library is structured hierarchically: base UI components provide fundamental building blocks, layout components handle window management and desktop structure, dialog components manage modal interactions, and shared components offer cross-application utilities. This organization ensures consistent behavior and appearance across all 17 built-in applications while maintaining flexibility for app-specific customizations.</p>
+<h2>Component Categories</h2>
+<table><thead><tr><th>Category</th><th>Description</th><th>Location</th></tr></thead><tbody><tr><td>UI Components</td><td>shadcn-based components and custom primitives</td><td><code>src/components/ui/</code></td></tr><tr><td>Layout Components</td><td>Window frames, desktop layout, menu bars</td><td><code>src/components/layout/</code></td></tr><tr><td>Dialog Components</td><td>Modal dialogs, alerts, and system dialogs</td><td><code>src/components/dialogs/</code></td></tr><tr><td>Shared Components</td><td>Cross-app utilities and themed components</td><td><code>src/components/shared/</code></td></tr></tbody></table>
+<h2>Technologies</h2>
+<ul><li><strong>React 19</strong> with TypeScript for type-safe component development</li></ul>
+<ul><li><strong>Tailwind CSS</strong> for utility-first styling and theme support</li></ul>
+<ul><li><strong>shadcn/ui</strong> component library for accessible, customizable UI primitives</li></ul>
+<ul><li><strong>Framer Motion</strong> for animations and transitions</li></ul>
+<h2>Component Architecture</h2>
+<p>The UI system follows a layered approach:</p>
+<ol><li><strong>Base Layer</strong>: shadcn/ui components (button, dialog, input, select, etc.) provide accessible, themeable primitives</li></ol>
+<ol><li><strong>Custom Layer</strong>: Specialized components (activity-indicator, audio-bars, dial, playback-bars) extend functionality for app-specific needs</li></ol>
+<ol><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li></ol>
+<ol><li><strong>Application Layer</strong>: Dialog and shared components provide common patterns used across multiple apps</li></ol>
+<p>All components are theme-aware, automatically adapting to the active system theme (System 7, Mac OS X, Windows XP, Windows 98) through the theme system.</p>
+<h2>Subsections</h2>
+<ul><li><a href="8.1-ui-components.html">UI Components</a> - Core UI component library including shadcn components and custom primitives</li></ul>
+<ul><li><a href="8.2-i18n-hooks.html">Internationalization</a> - i18n hooks and translation system supporting 9 languages</li></ul>
+
       </article>
       
       <nav class="nav">
-        <a href="/docs/state-management">← State Management</a>
-        <a href="/docs/storage-file-system">File System →</a>
+        <a href="/docs/chat-rooms-api">← Chat Rooms API</a>
+        <a href="/docs/ui-components">Components →</a>
       </nav>
       
     </main>

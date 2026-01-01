@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API Layer - ryOS Docs</title>
+  <title>Chat System - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -41,10 +41,10 @@
     .header-right .github { display: flex; align-items: center; gap: 4px; }
     .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
     
-    .container { display: flex; max-width: 960px; margin: 0 auto; }
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
     
     .sidebar {
-      width: 180px; flex-shrink: 0;
+      width: 220px; flex-shrink: 0;
       border-right: 1px solid #ccc;
       padding: 12px;
       position: sticky; top: 40px;
@@ -54,6 +54,7 @@
     .sidebar a {
       display: block; padding: 4px 8px; margin: 2px 0;
       text-decoration: none; color: #333;
+      font-size: 11px;
     }
     .sidebar a:hover { background: #f0f0f0; }
     .sidebar a.active { background: #000; color: #fff; }
@@ -67,9 +68,11 @@
     }
     .nav-toggle:hover { background: #f0f0f0; }
     .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
-    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
     .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
-    .nav-child { padding-left: 8px; font-size: 11px; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
     
     .content { flex: 1; padding: 24px 32px; min-width: 0; }
     
@@ -78,7 +81,7 @@
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
     p { margin: 8px 0; }
-    ul { margin: 8px 0 8px 20px; }
+    ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
     
     /* Tables */
@@ -90,7 +93,6 @@
     .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
     .nav a { text-decoration: none; color: #333; }
     .nav a:hover { color: #000; }
-    
     
     /* Mobile menu button */
     .menu-btn { 
@@ -117,8 +119,8 @@
       }
       .header-left img { display: none !important; }
       .sidebar { 
-        position: fixed; left: -200px; top: 40px; 
-        width: 200px; height: calc(100vh - 40px);
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
         background: #fff; z-index: 20;
         transition: left 0.2s;
       }
@@ -151,77 +153,131 @@
   
   <div class="container">
     <nav class="sidebar">
-      <a href="/docs/overview" class="">Overview</a>
-<a href="/docs/state-management" class="">State Management</a>
-<a href="/docs/window-manager" class="">Window Manager</a>
-<a href="/docs/api-layer" class="active">API Layer</a>
-<a href="/docs/theme-system" class="">Theme System</a>
-<a href="/docs/components" class="">Components</a>
-<a href="/docs/chat-system" class="">Chat System</a>
-<a href="/docs/file-system" class="">File System</a>
-<a href="/docs/ai-integration" class="">AI Integration</a>
-<a href="/docs/build-system" class="">Build System</a>
-<a href="/docs/i18n-hooks" class="">i18n & Hooks</a>
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/overview" class="">1. Overview</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/build-system" class="nav-child ">1.1 Build System</a>
+  </div>
+</div>
 <div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/apps" class="">Apps</a>
+    <a href="/docs/ai-integration" class="">2. AI Integration</a>
   </button>
   <div class="nav-children" style="display: none;">
-    <a href="/docs/apps-admin" class="nav-child ">Admin</a>
-    <a href="/docs/apps-applet-viewer" class="nav-child ">Applet Store</a>
-    <a href="/docs/apps-chats" class="nav-child ">Chats</a>
-    <a href="/docs/apps-control-panels" class="nav-child ">Control Panels</a>
-    <a href="/docs/apps-finder" class="nav-child ">Finder</a>
-    <a href="/docs/apps-internet-explorer" class="nav-child ">Internet Explorer</a>
-    <a href="/docs/apps-ipod" class="nav-child ">iPod</a>
-    <a href="/docs/apps-karaoke" class="nav-child ">Karaoke</a>
-    <a href="/docs/apps-minesweeper" class="nav-child ">Minesweeper</a>
-    <a href="/docs/apps-paint" class="nav-child ">Paint</a>
-    <a href="/docs/apps-photo-booth" class="nav-child ">Photo Booth</a>
-    <a href="/docs/apps-soundboard" class="nav-child ">Soundboard</a>
-    <a href="/docs/apps-synth" class="nav-child ">Synth</a>
-    <a href="/docs/apps-terminal" class="nav-child ">Terminal</a>
-    <a href="/docs/apps-textedit" class="nav-child ">TextEdit</a>
-    <a href="/docs/apps-videos" class="nav-child ">Videos</a>
-    <a href="/docs/apps-pc" class="nav-child ">Virtual PC</a>
+    <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
+    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
+    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
+    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
   </div>
 </div>
-<a href="/docs/api-ai-endpoints" class="">AI Endpoints</a>
-<a href="/docs/api-chat-rooms" class="">Chat Rooms API</a>
-<a href="/docs/api-chat" class="">Chat API</a>
-<a href="/docs/api-media" class="">Media API</a>
-<a href="/docs/api-song" class="">Song API</a>
-<a href="/docs/api-utilities" class="">Utility APIs</a>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">3. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+  </div>
+</div>
+<a href="/docs/storage-file-system" class="">4. File System</a>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
+    <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
+    <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
+    <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
+    <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
+    <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
+    <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
+    <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
+    <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
+    <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
+    <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
+    <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
+    <a href="/docs/videos" class="nav-child ">5.13 Videos</a>
+    <a href="/docs/minesweeper" class="nav-child ">5.14 Minesweeper</a>
+    <a href="/docs/virtual-pc" class="nav-child ">5.15 Virtual PC</a>
+    <a href="/docs/admin" class="nav-child ">5.16 Admin</a>
+    <a href="/docs/applet-store" class="nav-child ">5.17 Applet Store</a>
+  </div>
+</div>
+<a href="/docs/audio-system" class="">6. Audio System</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/real-time-communication" class="active">7. Chat System</a>
+  </button>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+  </div>
+</div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>API Layer</h1>
-<p>ryOS uses Vercel Serverless Functions with Edge runtime.</p>
-<h2>API Documentation</h2>
-<table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="api-chat.html">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="api-song.html">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="api-chat-rooms.html">Chat Rooms API</a></td><td>Real-time chat rooms with Pusher/Redis</td></tr><tr><td><a href="api-ai-endpoints.html">AI Endpoints</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="api-media.html">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="api-utilities.html">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr></tbody></table>
-<h2>AI Endpoints</h2>
-<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>Main AI chat with tool calling</td></tr><tr><td><code>/api/applet-ai</code></td><td>Applet text + image generation</td></tr><tr><td><code>/api/ie-generate</code></td><td>Time-travel page generation</td></tr><tr><td><code>/api/parse-title</code></td><td>Music metadata extraction</td></tr></tbody></table>
-<h2>Media Endpoints</h2>
-<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/song/</code></td><td>Song library CRUD</td></tr><tr><td><code>/api/song/[id]</code></td><td>Individual song operations</td></tr><tr><td><code>/api/speech</code></td><td>Text-to-speech</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>Speech-to-text</td></tr><tr><td><code>/api/youtube-search</code></td><td>YouTube music search</td></tr></tbody></table>
-<h2>Communication Endpoints</h2>
-<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat-rooms</code></td><td>Real-time chat room management</td></tr></tbody></table>
-<h2>Utility Endpoints</h2>
-<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/link-preview</code></td><td>URL metadata extraction</td></tr><tr><td><code>/api/iframe-check</code></td><td>Embeddability checking</td></tr><tr><td><code>/api/share-applet</code></td><td>Applet sharing</td></tr><tr><td><code>/api/admin</code></td><td>Admin operations</td></tr></tbody></table>
-<h2>Authentication</h2>
-<pre><code>Authorization: Bearer {token}
-X-Username: {username}</code></pre>
-<p>Token-based with 90-day expiration.</p>
-<h2>AI Providers</h2>
-<table><thead><tr><th>Provider</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td>gpt-5, gpt-5.1, gpt-4o, gpt-4.1</td></tr><tr><td>Anthropic</td><td>claude-4.5, claude-4, claude-3.7</td></tr><tr><td>Google</td><td>gemini-2.5-pro, gemini-2.5-flash</td></tr></tbody></table>
+        <h1>Chat System</h1>
+<p>Real-time messaging with AI integration.</p>
+<h2>Technology Stack</h2>
+<table><thead><tr><th>Component</th><th>Technology</th></tr></thead><tbody><tr><td>Real-time</td><td>Pusher (WebSocket)</td></tr><tr><td>Storage</td><td>Redis (Upstash)</td></tr><tr><td>Backend</td><td>Vercel Serverless</td></tr><tr><td>AI</td><td>Google Gemini 2.5 Flash</td></tr><tr><td>Frontend</td><td>Zustand + Vercel AI SDK v5</td></tr></tbody></table>
+<h2>Room Types</h2>
+<pre><code>type RoomType = "public" | "private";
+
+interface Room {
+  id: string;           // 128-bit hex ID
+  name: string;
+  type: RoomType;
+  userCount: number;
+  members?: string[];   // Private rooms only
+}</code></pre>
+<h2>Redis Key Structure</h2>
+<pre><code>chat:room:{roomId}           # Room data
+chat:messages:{roomId}       # Message list (max 100)
+chat:users:{username}        # User profiles
+chat:presencez:{roomId}      # Active users (ZSET)
+chat:token:user:{user}:{tok} # Auth tokens</code></pre>
+<h2>AI Integration (@Ryo)</h2>
+<ul><li><strong>Direct Chat:</strong> Full tool calling, system state awareness</li></ul>
+<ul><li><strong>@Ryo Mentions:</strong> Context from recent messages, short responses</li></ul>
+
       </article>
       
       <nav class="nav">
-        <a href="/docs/window-manager">← Window Manager</a>
-        <a href="/docs/theme-system">Theme System →</a>
+        <a href="/docs/audio-system">← Audio System</a>
+        <a href="/docs/chat-rooms-api">Chat Rooms API →</a>
       </nav>
       
     </main>

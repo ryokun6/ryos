@@ -2,6 +2,12 @@
 /**
  * Generate static HTML documentation pages from markdown files.
  * Outputs directly to public/docs/ for static serving.
+ * 
+ * Supports hierarchical navigation with numbered sections:
+ * - 1-overview.md (main section)
+ * - 1.1-architecture.md (subsection)
+ * - 1.2-desktop.md (subsection)
+ * - 2-ai-integration.md (main section)
  */
 import { readdir, readFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -49,7 +55,6 @@ function markdownToHtml(md: string, appContext?: string): string {
   html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>");
 
   // Process lists - handle both unordered (*, -, +) and ordered (1., 2., etc.) lists with nesting
-  // Must process BEFORE bold/italic to avoid conflicts with * marker
   html = html.replace(/(\n|^)(([*+-]|\d+\.)\s+.+(\n(?: {2,4}([*+-]|\d+\.)\s+.+| {2,4}[^*\d\-+].+))*)/g, (match, prefix, listContent) => {
     const lines = listContent.split('\n').filter((l: string) => l.trim());
     if (lines.length === 0) return match;
@@ -74,7 +79,6 @@ function markdownToHtml(md: string, appContext?: string): string {
       const trimmed = line.trim();
       if (!trimmed) continue;
 
-      // Match list item markers
       const ulMatch = line.match(/^(\s*)([*+-])\s+(.+)$/);
       const olMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/);
 
@@ -84,12 +88,10 @@ function markdownToHtml(md: string, appContext?: string): string {
         const content = match[3];
         const type = ulMatch ? 'ul' : 'ol';
 
-        // Find the correct parent list for this indent level
         while (listStack.length > 0 && indent <= listStack[listStack.length - 1].indent) {
           listStack.pop();
         }
 
-        // Determine parent items array based on stack
         if (listStack.length === 0) {
           currentParent = rootItems;
         } else {
@@ -101,20 +103,16 @@ function markdownToHtml(md: string, appContext?: string): string {
           }
         }
 
-        // Create new item
         const item: ListItem = { content, children: [], type };
 
-        // If we need a new list context (type change or indent increase)
         if (listStack.length === 0 || listStack[listStack.length - 1].type !== type || indent > listStack[listStack.length - 1].indent) {
           listStack.push({ type, indent, items: [item] });
           currentParent.push(item);
         } else {
-          // Same list level - just add item to existing list context
           listStack[listStack.length - 1].items.push(item);
           currentParent.push(item);
         }
       } else if (listStack.length > 0) {
-        // Continuation line - add to last item of deepest list
         const lastList = listStack[listStack.length - 1];
         if (lastList.items.length > 0) {
           const lastItem = lastList.items[lastList.items.length - 1];
@@ -123,7 +121,6 @@ function markdownToHtml(md: string, appContext?: string): string {
       }
     }
 
-    // Build HTML from tree structure
     function renderItems(items: ListItem[]): string {
       if (items.length === 0) return '';
       
@@ -133,7 +130,6 @@ function markdownToHtml(md: string, appContext?: string): string {
 
       for (const item of items) {
         if (currentType !== null && currentType !== item.type) {
-          // Type changed - render current group and start new one
           const tag = currentType === 'ul' ? 'ul' : 'ol';
           result += `<${tag}>${currentGroup.map(i => `<li>${i.content}${renderItems(i.children)}</li>`).join('')}</${tag}>`;
           currentGroup = [];
@@ -142,7 +138,6 @@ function markdownToHtml(md: string, appContext?: string): string {
         currentGroup.push(item);
       }
 
-      // Render final group
       if (currentType !== null && currentGroup.length > 0) {
         const tag = currentType === 'ul' ? 'ul' : 'ol';
         result += `<${tag}>${currentGroup.map(i => `<li>${i.content}${renderItems(i.children)}</li>`).join('')}</${tag}>`;
@@ -154,7 +149,7 @@ function markdownToHtml(md: string, appContext?: string): string {
     return prefix + renderItems(rootItems) + '\n';
   });
 
-  // Bold and italic - process after lists to avoid conflicts with list markers
+  // Bold and italic
   html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
 
@@ -162,39 +157,27 @@ function markdownToHtml(md: string, appContext?: string): string {
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
   // Convert file path references to GitHub links
-  // Handle file paths mentioned in <code> tags (inline code) - these are the most common case
   html = html.replace(/<code>([^<]*)<\/code>/g, (match, content) => {
     if (match.includes('http') || match.includes('github.com') || match.includes('href=')) return match;
     
-    // Match file paths with extensions - handle both full paths (src/...) and relative paths (components/...)
-    // First try to match full paths with base directory
     let filePathMatch = content.match(/(src\/|api\/|scripts\/|docs\/|public\/)([a-zA-Z0-9_\-/.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
     
     let fullPath: string | null = null;
     
     if (filePathMatch) {
-      // Has base path like src/ or api/
       fullPath = filePathMatch[1] + filePathMatch[2];
     } else {
-      // Try to match relative paths without base directory
       filePathMatch = content.match(/([a-zA-Z0-9_\-/]+)\/([a-zA-Z0-9_\-/.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
       if (filePathMatch && filePathMatch[1] && filePathMatch[2]) {
-        // Relative path without base - need to determine correct base path
         const folder = filePathMatch[1];
         const filename = filePathMatch[2];
-        
-        // Extract the first segment of the path to determine folder type (handle nested paths like "components/screen")
         const firstSegment = folder.split('/')[0];
         
-        // Check if this looks like an app-specific component (components/, hooks/, utils/ folders)
         if (appContext && (firstSegment === 'components' || firstSegment === 'hooks' || firstSegment === 'utils' || firstSegment === 'tools' || firstSegment === 'commands' || firstSegment === 'extensions')) {
-          // App-specific file - prepend src/apps/{appName}/
           fullPath = `src/apps/${appContext}/${folder}/${filename}`;
         } else if (firstSegment === 'stores' || firstSegment === 'lib' || firstSegment.startsWith('contexts') || firstSegment.startsWith('types')) {
-          // Shared src-level file
           fullPath = `src/${folder}/${filename}`;
         } else {
-          // Default assumption - try src/ first (covers most cases)
           fullPath = `src/${folder}/${filename}`;
         }
       }
@@ -213,7 +196,7 @@ function markdownToHtml(md: string, appContext?: string): string {
   // Horizontal rules
   html = html.replace(/^---$/gm, "<hr>");
 
-  // Paragraphs - process last, wrapping text blocks that aren't already HTML
+  // Paragraphs
   html = html.split("\n\n").map((block) => {
     block = block.trim();
     if (!block) return "";
@@ -234,50 +217,96 @@ interface DocEntry {
   id: string;
   title: string;
   html: string;
-  isAppDoc?: boolean;
+  filename: string;
+  sectionNum: string;      // e.g., "1", "1.1", "2", "2.1"
+  parentSection?: string;  // e.g., "1" for "1.1"
+  children: DocEntry[];
 }
 
-function generateSidebar(doc: DocEntry, allDocs: DocEntry[]): string {
-  // Separate main docs from app docs
-  const mainDocs = allDocs.filter((d) => !d.isAppDoc);
-  const appDocs = allDocs.filter((d) => d.isAppDoc);
+// Parse section number from filename (e.g., "1-overview.md" -> "1", "1.1-architecture.md" -> "1.1")
+function parseSectionNumber(filename: string): string {
+  const match = filename.match(/^(\d+(?:\.\d+)?)-/);
+  return match ? match[1] : "";
+}
+
+// Get parent section (e.g., "1.1" -> "1", "2.3" -> "2")
+function getParentSection(sectionNum: string): string | undefined {
+  if (sectionNum.includes('.')) {
+    return sectionNum.split('.')[0];
+  }
+  return undefined;
+}
+
+// Sort by section number (1, 1.1, 1.2, 2, 2.1, etc.)
+function sortBySectionNumber(a: DocEntry, b: DocEntry): number {
+  const partsA = a.sectionNum.split('.').map(Number);
+  const partsB = b.sectionNum.split('.').map(Number);
   
-  // Build sidebar items
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const numA = partsA[i] ?? 0;
+    const numB = partsB[i] ?? 0;
+    if (numA !== numB) return numA - numB;
+  }
+  return 0;
+}
+
+function generateSidebar(currentDoc: DocEntry, allDocs: DocEntry[]): string {
+  // Build tree structure
+  const rootDocs: DocEntry[] = [];
+  const childMap = new Map<string, DocEntry[]>();
+
+  // First pass: identify root docs and build child map
+  for (const doc of allDocs) {
+    if (doc.parentSection) {
+      const children = childMap.get(doc.parentSection) || [];
+      children.push(doc);
+      childMap.set(doc.parentSection, children);
+    } else {
+      rootDocs.push(doc);
+    }
+  }
+
+  // Sort children
+  for (const [key, children] of childMap) {
+    childMap.set(key, children.sort(sortBySectionNumber));
+  }
+
+  // Build sidebar HTML
   const items: string[] = [];
-  
-  for (const d of mainDocs) {
-    if (d.id === "apps" && appDocs.length > 0) {
-      // This is the Apps parent - create a collapsible group
-      const isCurrentPage = doc.id === "apps" || doc.isAppDoc;
-      const isExpanded = isCurrentPage ? "expanded" : "";
-      const childrenDisplay = isCurrentPage ? "block" : "none";
-      const svgTransform = isCurrentPage ? "rotate(90deg)" : "rotate(0deg)";
-      const ariaExpanded = isCurrentPage ? "true" : "false";
-      
-      // Sort app docs by title for consistent ordering
-      const sortedAppDocs = [...appDocs].sort((a, b) => a.title.localeCompare(b.title));
-      
+
+  for (const doc of rootDocs.sort(sortBySectionNumber)) {
+    const children = childMap.get(doc.sectionNum) || [];
+    
+    if (children.length > 0) {
+      // Has children - create collapsible group
+      const isCurrentSection = currentDoc.sectionNum === doc.sectionNum || 
+                               currentDoc.parentSection === doc.sectionNum;
+      const isExpanded = isCurrentSection ? "expanded" : "";
+      const childrenDisplay = isCurrentSection ? "block" : "none";
+      const svgTransform = isCurrentSection ? "rotate(90deg)" : "rotate(0deg)";
+      const ariaExpanded = isCurrentSection ? "true" : "false";
+
       items.push(`
 <div class="nav-group ${isExpanded}">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="${ariaExpanded}">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: ${svgTransform};">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/${d.id}" class="${doc.id === "apps" ? "active" : ""}">${d.title}</a>
+    <a href="/docs/${doc.id}" class="${currentDoc.id === doc.id ? "active" : ""}">${doc.sectionNum}. ${doc.title}</a>
   </button>
   <div class="nav-children" style="display: ${childrenDisplay};">
-    ${sortedAppDocs.map((appDoc) => 
-      `<a href="/docs/${appDoc.id}" class="nav-child ${appDoc.id === doc.id ? "active" : ""}">${appDoc.title}</a>`
+    ${children.map(child => 
+      `<a href="/docs/${child.id}" class="nav-child ${child.id === currentDoc.id ? "active" : ""}">${child.sectionNum} ${child.title}</a>`
     ).join("\n    ")}
   </div>
-</div>
-      `.trim());
+</div>`.trim());
     } else {
-      // Regular doc item
-      items.push(`<a href="/docs/${d.id}" class="${d.id === doc.id ? "active" : ""}">${d.title}</a>`);
+      // No children - simple link
+      const displayNum = doc.sectionNum ? `${doc.sectionNum}. ` : "";
+      items.push(`<a href="/docs/${doc.id}" class="${doc.id === currentDoc.id ? "active" : ""}">${displayNum}${doc.title}</a>`);
     }
   }
-  
+
   return items.join("\n");
 }
 
@@ -286,6 +315,7 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
   const next = currentIndex < allDocs.length - 1 ? allDocs[currentIndex + 1] : null;
 
   const sidebar = generateSidebar(doc, allDocs);
+  const displayTitle = doc.sectionNum ? `${doc.sectionNum}. ${doc.title}` : doc.title;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -330,10 +360,10 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     .header-right .github { display: flex; align-items: center; gap: 4px; }
     .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
     
-    .container { display: flex; max-width: 960px; margin: 0 auto; }
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
     
     .sidebar {
-      width: 180px; flex-shrink: 0;
+      width: 220px; flex-shrink: 0;
       border-right: 1px solid #ccc;
       padding: 12px;
       position: sticky; top: 40px;
@@ -343,6 +373,7 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     .sidebar a {
       display: block; padding: 4px 8px; margin: 2px 0;
       text-decoration: none; color: #333;
+      font-size: 11px;
     }
     .sidebar a:hover { background: #f0f0f0; }
     .sidebar a.active { background: #000; color: #fff; }
@@ -356,9 +387,11 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     }
     .nav-toggle:hover { background: #f0f0f0; }
     .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
-    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
     .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
-    .nav-child { padding-left: 8px; font-size: 11px; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
     
     .content { flex: 1; padding: 24px 32px; min-width: 0; }
     
@@ -367,7 +400,7 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
     p { margin: 8px 0; }
-    ul { margin: 8px 0 8px 20px; }
+    ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
     
     /* Tables */
@@ -379,7 +412,6 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
     .nav a { text-decoration: none; color: #333; }
     .nav a:hover { color: #000; }
-    
     
     /* Mobile menu button */
     .menu-btn { 
@@ -406,8 +438,8 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
       }
       .header-left img { display: none !important; }
       .sidebar { 
-        position: fixed; left: -200px; top: 40px; 
-        width: 200px; height: calc(100vh - 40px);
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
         background: #fff; z-index: 20;
         transition: left 0.2s;
       }
@@ -500,22 +532,32 @@ async function generate() {
   for (const file of mdFiles) {
     const content = await readFile(join(DOCS_DIR, file), "utf-8");
     const titleMatch = content.match(/^# (.+)$/m);
-    const title = titleMatch ? titleMatch[1] : file.replace(/^\d+-/, "").replace(".md", "");
-    const id = file.replace(/^\d+-/, "").replace(".md", "");
-    const isAppDoc = file.startsWith("apps-") && file !== "12-apps.md";
+    const sectionNum = parseSectionNumber(file);
+    const title = titleMatch ? titleMatch[1] : file.replace(/^\d+(?:\.\d+)?-/, "").replace(".md", "");
+    const id = file.replace(/^\d+(?:\.\d+)?-/, "").replace(".md", "");
+    const parentSection = getParentSection(sectionNum);
     
-    // Extract app name from filename for context (e.g., "apps-chats.md" -> "chats")
+    // Extract app name from filename for context
     let appContext: string | undefined;
-    if (isAppDoc) {
-      const appNameMatch = file.match(/^apps-(.+)\.md$/);
-      if (appNameMatch) {
-        appContext = appNameMatch[1];
-      }
+    const appNameMatch = file.match(/apps?-(.+)\.md$/);
+    if (appNameMatch) {
+      appContext = appNameMatch[1];
     }
     
     const html = markdownToHtml(content, appContext);
-    docs.push({ id, title, html, isAppDoc });
+    docs.push({ 
+      id, 
+      title, 
+      html, 
+      filename: file, 
+      sectionNum,
+      parentSection,
+      children: []
+    });
   }
+
+  // Sort docs by section number
+  docs.sort(sortBySectionNumber);
 
   // Generate individual pages
   for (let i = 0; i < docs.length; i++) {
@@ -523,9 +565,10 @@ async function generate() {
     await Bun.write(join(OUTPUT_DIR, `${docs[i].id}.html`), pageHtml);
   }
 
-  // Generate index redirect
+  // Generate index redirect to first doc
+  const firstDoc = docs[0];
   const indexHtml = `<!DOCTYPE html>
-<html><head><meta http-equiv="refresh" content="0;url=/docs/overview"></head></html>`;
+<html><head><meta http-equiv="refresh" content="0;url=/docs/${firstDoc?.id || 'overview'}"></head></html>`;
   await Bun.write(join(OUTPUT_DIR, "index.html"), indexHtml);
 
   console.log(`[docs] Generated ${docs.length} pages in ${OUTPUT_DIR}/`);

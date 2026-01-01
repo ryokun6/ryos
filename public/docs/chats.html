@@ -41,10 +41,10 @@
     .header-right .github { display: flex; align-items: center; gap: 4px; }
     .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
     
-    .container { display: flex; max-width: 960px; margin: 0 auto; }
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
     
     .sidebar {
-      width: 180px; flex-shrink: 0;
+      width: 220px; flex-shrink: 0;
       border-right: 1px solid #ccc;
       padding: 12px;
       position: sticky; top: 40px;
@@ -54,6 +54,7 @@
     .sidebar a {
       display: block; padding: 4px 8px; margin: 2px 0;
       text-decoration: none; color: #333;
+      font-size: 11px;
     }
     .sidebar a:hover { background: #f0f0f0; }
     .sidebar a.active { background: #000; color: #fff; }
@@ -67,9 +68,11 @@
     }
     .nav-toggle:hover { background: #f0f0f0; }
     .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
-    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
     .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
-    .nav-child { padding-left: 8px; font-size: 11px; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
     
     .content { flex: 1; padding: 24px 32px; min-width: 0; }
     
@@ -78,7 +81,7 @@
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
     p { margin: 8px 0; }
-    ul { margin: 8px 0 8px 20px; }
+    ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
     
     /* Tables */
@@ -90,7 +93,6 @@
     .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
     .nav a { text-decoration: none; color: #333; }
     .nav a:hover { color: #000; }
-    
     
     /* Mobile menu button */
     .menu-btn { 
@@ -117,8 +119,8 @@
       }
       .header-left img { display: none !important; }
       .sidebar { 
-        position: fixed; left: -200px; top: 40px; 
-        width: 200px; height: calc(100vh - 40px);
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
         background: #fff; z-index: 20;
         transition: left 0.2s;
       }
@@ -151,50 +153,98 @@
   
   <div class="container">
     <nav class="sidebar">
-      <a href="/docs/overview" class="">Overview</a>
-<a href="/docs/state-management" class="">State Management</a>
-<a href="/docs/window-manager" class="">Window Manager</a>
-<a href="/docs/api-layer" class="">API Layer</a>
-<a href="/docs/theme-system" class="">Theme System</a>
-<a href="/docs/components" class="">Components</a>
-<a href="/docs/chat-system" class="">Chat System</a>
-<a href="/docs/file-system" class="">File System</a>
-<a href="/docs/ai-integration" class="">AI Integration</a>
-<a href="/docs/build-system" class="">Build System</a>
-<a href="/docs/i18n-hooks" class="">i18n & Hooks</a>
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/overview" class="">1. Overview</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/build-system" class="nav-child ">1.1 Build System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ai-integration" class="">2. AI Integration</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
+    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
+    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
+    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">3. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+  </div>
+</div>
+<a href="/docs/storage-file-system" class="">4. File System</a>
 <div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/apps" class="">Apps</a>
+    <a href="/docs/core-applications" class="">5. Apps</a>
   </button>
   <div class="nav-children" style="display: block;">
-    <a href="/docs/apps-admin" class="nav-child ">Admin</a>
-    <a href="/docs/apps-applet-viewer" class="nav-child ">Applet Store</a>
-    <a href="/docs/apps-chats" class="nav-child active">Chats</a>
-    <a href="/docs/apps-control-panels" class="nav-child ">Control Panels</a>
-    <a href="/docs/apps-finder" class="nav-child ">Finder</a>
-    <a href="/docs/apps-internet-explorer" class="nav-child ">Internet Explorer</a>
-    <a href="/docs/apps-ipod" class="nav-child ">iPod</a>
-    <a href="/docs/apps-karaoke" class="nav-child ">Karaoke</a>
-    <a href="/docs/apps-minesweeper" class="nav-child ">Minesweeper</a>
-    <a href="/docs/apps-paint" class="nav-child ">Paint</a>
-    <a href="/docs/apps-photo-booth" class="nav-child ">Photo Booth</a>
-    <a href="/docs/apps-soundboard" class="nav-child ">Soundboard</a>
-    <a href="/docs/apps-synth" class="nav-child ">Synth</a>
-    <a href="/docs/apps-terminal" class="nav-child ">Terminal</a>
-    <a href="/docs/apps-textedit" class="nav-child ">TextEdit</a>
-    <a href="/docs/apps-videos" class="nav-child ">Videos</a>
-    <a href="/docs/apps-pc" class="nav-child ">Virtual PC</a>
+    <a href="/docs/chats" class="nav-child active">5.1 Chats</a>
+    <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
+    <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
+    <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
+    <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
+    <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
+    <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
+    <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
+    <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
+    <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
+    <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
+    <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
+    <a href="/docs/videos" class="nav-child ">5.13 Videos</a>
+    <a href="/docs/minesweeper" class="nav-child ">5.14 Minesweeper</a>
+    <a href="/docs/virtual-pc" class="nav-child ">5.15 Virtual PC</a>
+    <a href="/docs/admin" class="nav-child ">5.16 Admin</a>
+    <a href="/docs/applet-store" class="nav-child ">5.17 Applet Store</a>
   </div>
 </div>
-<a href="/docs/api-ai-endpoints" class="">AI Endpoints</a>
-<a href="/docs/api-chat-rooms" class="">Chat Rooms API</a>
-<a href="/docs/api-chat" class="">Chat API</a>
-<a href="/docs/api-media" class="">Media API</a>
-<a href="/docs/api-song" class="">Song API</a>
-<a href="/docs/api-utilities" class="">Utility APIs</a>
+<a href="/docs/audio-system" class="">6. Audio System</a>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/real-time-communication" class="">7. Chat System</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+  </div>
+</div>
     </nav>
     
     <main class="content">
@@ -228,19 +278,19 @@ To launch the Chats app, simply click its icon in the ryOS dock or navigate to i
 <ul><li><strong>Minimum size:</strong> 300×320px</li></ul>
 <h3>Component Architecture</h3>
 The app consists of 7 component file(s):
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatMessages.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatMessages.tsx</a></code></li></ul>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/TokenStatus.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TokenStatus.tsx</a></code></li></ul>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/CreateRoomDialog.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/CreateRoomDialog.tsx</a></code></li></ul>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatRoomSidebar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatRoomSidebar.tsx</a></code></li></ul>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatsMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatsMenuBar.tsx</a></code></li></ul>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatInput.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatInput.tsx</a></code></li></ul>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatsAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatsAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/ChatMessages.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatMessages.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/TokenStatus.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TokenStatus.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/CreateRoomDialog.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/CreateRoomDialog.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/ChatRoomSidebar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatRoomSidebar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/ChatsMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatsMenuBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/ChatInput.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatInput.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/ChatsAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatsAppComponent.tsx</a></code></li></ul>
 <h3>Hooks & Utilities</h3>
 <strong>Custom Hooks:</strong>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useTokenRefresh.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useTokenRefresh.ts</a></code></li></ul>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useRyoChat.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useRyoChat.ts</a></code></li></ul>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useChatRoom.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useChatRoom.ts</a></code></li></ul>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useAiChat.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useAiChat.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useTokenRefresh.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useTokenRefresh.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useRyoChat.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useRyoChat.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useChatRoom.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useChatRoom.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useAiChat.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useAiChat.ts</a></code></li></ul>
 <h3>State Management</h3>
 The Chats app leverages a Zustand store, specifically <code>useChatsStore</code>, for managing global application state related to chat messages, room information, and other UI states. Local component state is also utilized where appropriate for temporary UI interactions.
 <h2>Related Apps</h2>
@@ -248,8 +298,8 @@ The Chats app leverages a Zustand store, specifically <code>useChatsStore</code>
       </article>
       
       <nav class="nav">
-        <a href="/docs/apps-applet-viewer">← Applet Store</a>
-        <a href="/docs/apps-control-panels">Control Panels →</a>
+        <a href="/docs/core-applications">← Apps</a>
+        <a href="/docs/internet-explorer">Internet Explorer →</a>
       </nav>
       
     </main>
