@@ -62,9 +62,9 @@
 .os-theme-win98 [role="menuitemcheckbox"],
 .os-theme-win98 [role="menuitemradio"],
 .os-theme-win98 [role="option"] {
-  font-family: var(--os-font-ui) !important;
-  font-smooth: antialiased !important;
-  -webkit-font-smoothing: antialiased !important;
+  font-family: var(--os-font-ui);
+  font-smooth: antialiased;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Inactive selection palette for background windows (Windows XP) */
