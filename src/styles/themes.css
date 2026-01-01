@@ -267,8 +267,8 @@
 /* macOS Theme Font Overrides */
 .os-theme-macosx body {
   font-family: var(--os-font-ui) !important;
-  -webkit-font-smoothing: antialiased !important;
-  font-smooth: auto !important;
+  -webkit-font-smoothing: antialiased;
+  font-smooth: auto;
   font-size: 12px !important;
 }
 
@@ -286,15 +286,15 @@
 .os-theme-macosx .window,
 .os-theme-macosx .title-bar {
   font-family: var(--os-font-ui) !important;
-  -webkit-font-smoothing: antialiased !important;
-  font-smooth: auto !important;
+  -webkit-font-smoothing: antialiased;
+  font-smooth: auto;
 }
 
 /* Ensure Terminal inputs use monospace (Monaco) instead of Lucida Grande on macOS */
 .os-theme-macosx .terminal-input {
   font-family: "Monaco", "ArkPixel", "SerenityOS-Emoji", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace !important;
-  -webkit-font-smoothing: antialiased !important;
-  font-smooth: auto !important;
+  -webkit-font-smoothing: antialiased;
+  font-smooth: auto;
 }
 
 /* macOS specific font sizes and gloss effect */
