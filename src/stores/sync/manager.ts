@@ -12,6 +12,7 @@ const MEDIA_KEYS = new Set([
   "ryos:karaoke",
   "ryos:synth",
   "ryos:pc",
+  "ryos:ipod",
 ]);
 
 const FILE_KEYS = new Set([
