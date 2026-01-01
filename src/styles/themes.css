@@ -756,24 +756,24 @@
 
 /* Preserve iPod fonts in macOS theme */
 .os-theme-macosx .ipod-force-font {
-  font-family: inherit !important;
-  font-size: 16px !important; /* Reset base font size */
+  font-family: inherit;
+  font-size: 16px; /* Reset base font size */
 }
 
 .os-theme-macosx .ipod-force-font * {
-  font-family: inherit !important;
-  font-size: unset !important; /* Reset macOS overrides */
+  font-family: inherit;
+  font-size: unset;
 }
 
 /* Preserve small rt font size in toolbar buttons */
 .os-theme-macosx .ipod-force-font button rt {
-  font-size: 9px !important;
+  font-size: 9px;
 }
 
 /* Reset div and p font sizes within iPod */
 .os-theme-macosx .ipod-force-font div,
 .os-theme-macosx .ipod-force-font p {
-  font-size: unset !important;
+  font-size: unset;
 }
 
 /* Preserve Karaoke fonts in macOS theme */
@@ -796,9 +796,9 @@
 .os-theme-macosx .ipod-force-font .font-chicago,
 .os-theme-macosx .font-chicago {
   font-family: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
-    -apple-system, sans-serif !important;
-  -webkit-font-smoothing: none !important;
-  font-smooth: never !important;
+    -apple-system, sans-serif;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 /* Preserve Chicago font sizes */
