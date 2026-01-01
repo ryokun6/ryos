@@ -65,3 +65,16 @@ export async function buildSnapshot<Payload>(
     payload,
   };
 }
+
+export function snapshotArrayToMap(
+  snapshots: StoreSnapshot[]
+): Record<string, StoreSnapshot> {
+  const map: Record<string, StoreSnapshot> = {};
+  for (const snap of snapshots) {
+    const existing = map[snap.storeKey];
+    if (!existing || snap.updatedAt > existing.updatedAt) {
+      map[snap.storeKey] = snap;
+    }
+  }
+  return map;
+}
