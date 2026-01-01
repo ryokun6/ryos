@@ -1776,7 +1776,7 @@ export function TerminalAppComponent({
               // If password provided, attempt authentication first
               if (passwordArg) {
                 const authResp = await fetch(
-                  "/api/chat-rooms?action=authenticateWithPassword",
+                "/api/chat-rooms/auth/login",
                   {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

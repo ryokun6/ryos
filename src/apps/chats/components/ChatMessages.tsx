@@ -510,7 +510,7 @@ function ChatMessagesContent({
     if (!serverMessageId) return;
 
     // Use DELETE method with proper authentication headers (matching deleteRoom pattern)
-    const url = `/api/chat-rooms?action=deleteMessage&roomId=${roomId}&messageId=${serverMessageId}`;
+    const url = `/api/chat-rooms/rooms/${roomId}/messages/${serverMessageId}`;
 
     // Build headers with authentication
     const headers: HeadersInit = {

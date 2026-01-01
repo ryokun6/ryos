@@ -10,6 +10,8 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { getApiUrl } from "@/utils/platform";
 
+const CHAT_ROOMS_ROOMS = "/api/chat-rooms/rooms";
+
 // Helper function to get system state for AI chat
 const getSystemState = () => {
   const appStore = useAppStore.getState();
@@ -163,15 +165,18 @@ export function useRyoChat({
         headers["X-Username"] = username;
       }
 
-      await fetch(getApiUrl(`/api/chat-rooms?action=generateRyoReply`), {
+      await fetch(
+        getApiUrl(`${CHAT_ROOMS_ROOMS}/${currentRoomId || ""}/ai-reply`),
+        {
         method: "POST",
         headers,
         body: JSON.stringify({
-          roomId: currentRoomId,
-          prompt: messageContent,
-          systemState: systemStateWithChat,
-        }),
-      });
+            roomId: currentRoomId,
+            prompt: messageContent,
+            systemState: systemStateWithChat,
+          }),
+        }
+      );
 
       onScrollToBottom();
     },
