@@ -12,6 +12,7 @@
  *   bun run scripts/generate-changelog.ts --months 18   # change month window
  *   bun run scripts/generate-changelog.ts --per-month 8 # limit bullets per category/month
  *   bun run scripts/generate-changelog.ts --all         # full history, no per-month truncation
+ *   bun run scripts/generate-changelog.ts --help        # show usage
  */
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
@@ -75,11 +76,13 @@ interface Options {
   months: number;
   all: boolean;
   perMonthLimit: number;
+  help: boolean;
 }
 
 function parseArgs(): Options {
   const args = process.argv.slice(2);
   const all = args.includes("--all");
+  const help = args.includes("--help") || args.includes("-h");
 
   const monthsFlagIndex = args.findIndex((arg) => arg === "--months");
   let months = DEFAULT_MONTHS;
@@ -121,7 +124,7 @@ function parseArgs(): Options {
     }
   }
 
-  return { months, all, perMonthLimit };
+  return { months, all, perMonthLimit, help };
 }
 
 function normalizeMessage(message: string): string {
@@ -290,6 +293,20 @@ function renderMarkdown(entries: CommitEntry[], options: Options): string {
 
 function main() {
   const options = parseArgs();
+  if (options.help) {
+    console.log(`Generate changelog docs from git history.
+
+Usage:
+  bun run scripts/generate-changelog.ts [--months N] [--per-month N] [--all]
+
+Flags:
+  --months N       Number of recent months to include (default ${DEFAULT_MONTHS})
+  --per-month N    Max items per category per month (default ${DEFAULT_PER_MONTH_LIMIT})
+  --all            Use full git history (disables per-month truncation)
+  --help, -h       Show this help message
+`);
+    return;
+  }
   const entries = buildChangelog(options);
   const markdown = renderMarkdown(entries, options);
   writeFileSync(OUTPUT_PATH, markdown, "utf-8");

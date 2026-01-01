@@ -1,6 +1,6 @@
 # Changelog
 
-_Auto-generated from git history on 2026-01-01T19:04:48.461Z. Run `bun run generate:changelog` to refresh. Default window: last 12 month(s), max 15 per category. Override with --months, --per-month, or --all. Merge commits are skipped. Major keywords: feat, feature, add, introduce, implement, create, launch, upgrade, refactor, redesign, breaking, perf, optimize, improve, enhance, upgrade, bump, release. Minor keywords: fix, chore, docs, doc, test, tests, tweak, refine, cleanup, style, ci, build, revert._
+_Auto-generated from git history on 2026-01-01T19:05:53.551Z. Run `bun run generate:changelog` to refresh. Default window: last 12 month(s), max 15 per category. Override with --months, --per-month, or --all. Merge commits are skipped. Major keywords: feat, feature, add, introduce, implement, create, launch, upgrade, refactor, redesign, breaking, perf, optimize, improve, enhance, upgrade, bump, release. Minor keywords: fix, chore, docs, doc, test, tests, tweak, refine, cleanup, style, ci, build, revert._
 
 ## January 2026
 
@@ -17,6 +17,7 @@ _Auto-generated from git history on 2026-01-01T19:04:48.461Z. Run `bun run gener
   - add /docs route with architecture documentation
   - add onPlayTrackInPlace callback for improved track playback in CoverFlow
 - **Minor**
+  - adjust changelog defaults and usage hints
   - tune changelog classification and summaries
   - summarize changelog output
   - Fix h4 headers not rendering in docs
@@ -31,8 +32,7 @@ _Auto-generated from git history on 2026-01-01T19:04:48.461Z. Run `bun run gener
   - update prebuild script to include documentation generation and bump version information
   - resolve linter errors in documentation generation scripts
   - remove inner scrollers, use natural page scroll
-  - make docs page mobile-friendly with vertical scrolling
-  - _… 16 more minor change(s) in git log_
+  - _… 17 more minor change(s) in git log_
 
 ## December 2025
 
