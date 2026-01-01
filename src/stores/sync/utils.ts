@@ -4,6 +4,22 @@ const DEFAULT_HASH_ALGO: HashAlgorithm = "SHA-256";
 
 const encoder = new TextEncoder();
 
+// Stable stringify to ensure deterministic hashes across environments
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((v) => stableStringify(v)).join(",")}]`;
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
+    a.localeCompare(b)
+  );
+  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`).join(",")}}`;
+}
+
 function bufferToHex(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   const hex: string[] = [];
@@ -28,7 +44,7 @@ export async function hashPayload(
   payload: unknown,
   algo: HashAlgorithm = DEFAULT_HASH_ALGO
 ): Promise<string> {
-  const data = JSON.stringify(payload ?? null);
+  const data = stableStringify(payload ?? null);
   if (typeof crypto !== "undefined" && "subtle" in crypto && crypto.subtle) {
     return hashWithSubtle(data, algo);
   }
