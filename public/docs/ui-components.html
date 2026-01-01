@@ -93,6 +93,18 @@
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -284,6 +296,20 @@
 <p>The component library is structured hierarchically: base UI components provide fundamental building blocks, layout components handle window management and desktop structure, dialog components manage modal interactions, and shared components offer cross-application utilities. This organization ensures consistent behavior and appearance across all 17 built-in applications while maintaining flexibility for app-specific customizations.</p>
 <h2>Component Categories</h2>
 <table><thead><tr><th>Category</th><th>Description</th><th>Location</th></tr></thead><tbody><tr><td>UI Components</td><td>shadcn-based components and custom primitives</td><td><code>src/components/ui/</code></td></tr><tr><td>Layout Components</td><td>Window frames, desktop layout, menu bars</td><td><code>src/components/layout/</code></td></tr><tr><td>Dialog Components</td><td>Modal dialogs, alerts, and system dialogs</td><td><code>src/components/dialogs/</code></td></tr><tr><td>Shared Components</td><td>Cross-app utilities and themed components</td><td><code>src/components/shared/</code></td></tr></tbody></table>
+<pre class="mermaid">graph LR
+    subgraph src/components
+        UI[ui/]
+        Layout[layout/]
+        Dialogs[dialogs/]
+        Shared[shared/]
+    end
+    
+    UI --> |primitives| Layout
+    UI --> |primitives| Dialogs
+    UI --> |primitives| Shared
+    Layout --> |frames| Apps[src/apps/]
+    Dialogs --> |modals| Apps
+    Shared --> |utilities| Apps</pre>
 <h2>Technologies</h2>
 <ul><li><strong>React 19</strong> with TypeScript for type-safe component development</li></ul>
 <ul><li><strong>Tailwind CSS</strong> for utility-first styling and theme support</li></ul>
@@ -295,6 +321,34 @@
 <ol><li><strong>Custom Layer</strong>: Specialized components (activity-indicator, audio-bars, dial, playback-bars) extend functionality for app-specific needs</li></ol>
 <ol><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li></ol>
 <ol><li><strong>Application Layer</strong>: Dialog and shared components provide common patterns used across multiple apps</li></ol>
+<pre class="mermaid">graph TD
+    subgraph Layer 4: Application
+        D1[Dialog Components]
+        D2[Shared Components]
+    end
+    
+    subgraph Layer 3: Layout
+        C1[WindowFrame]
+        C2[MenuBar]
+        C3[Desktop]
+        C4[Dock]
+    end
+    
+    subgraph Layer 2: Custom
+        B1[activity-indicator]
+        B2[audio-bars]
+        B3[dial]
+        B4[playback-bars]
+    end
+    
+    subgraph Layer 1: Base
+        A1[shadcn/ui]
+        A2[button, dialog, input, select, ...]
+    end
+    
+    A1 --> B1 & B2 & B3 & B4
+    B1 & B2 & B3 & B4 --> C1 & C2 & C3 & C4
+    C1 & C2 & C3 & C4 --> D1 & D2</pre>
 <p>All components are theme-aware, automatically adapting to the active system theme (System 7, Mac OS X, Windows XP, Windows 98) through the theme system.</p>
 <h2>Subsections</h2>
 <ul><li><a href="/docs/component-library">Component Library</a> - Core UI component library including shadcn components and custom primitives</li></ul>
@@ -337,6 +391,26 @@
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

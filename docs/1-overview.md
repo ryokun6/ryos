@@ -2,6 +2,41 @@
 
 ryOS is a modern web-based desktop environment inspired by classic macOS and Windows, built with React, TypeScript, and AI.
 
+```mermaid
+graph TB
+    subgraph Presentation["Presentation Layer"]
+        Apps[17 App Modules]
+        UI[UI Components]
+        Themes[4 Themes]
+    end
+    
+    subgraph State["State Management"]
+        Zustand[Zustand Stores]
+        Contexts[React Contexts]
+    end
+    
+    subgraph Data["Data Layer"]
+        IndexedDB[(IndexedDB)]
+        LocalStorage[(LocalStorage)]
+        API[Vercel API]
+    end
+    
+    subgraph External["External Services"]
+        AI[AI Providers]
+        Pusher[Real-time]
+        Redis[(Redis)]
+    end
+    
+    Apps --> Zustand
+    UI --> Zustand
+    Zustand --> IndexedDB
+    Zustand --> LocalStorage
+    Zustand --> API
+    API --> AI
+    API --> Redis
+    Apps --> Pusher
+```
+
 ## Tech Stack
 
 | Category | Technologies |
@@ -17,6 +52,45 @@ ryOS is a modern web-based desktop environment inspired by classic macOS and Win
 | Build | Vite, Bun |
 | Desktop | Tauri (macOS, Windows, Linux) |
 | Deployment | Vercel |
+
+```mermaid
+graph LR
+    subgraph Client["Client (Browser/Tauri)"]
+        React[React 19]
+        Tailwind[Tailwind CSS]
+        Zustand[Zustand]
+        ToneJS[Tone.js]
+        ThreeJS[Three.js]
+    end
+    
+    subgraph Build["Build Tools"]
+        Vite[Vite]
+        Bun[Bun]
+        Tauri[Tauri]
+    end
+    
+    subgraph Backend["Backend (Vercel)"]
+        AISDK[Vercel AI SDK]
+        APIRoutes[API Routes]
+    end
+    
+    subgraph Services["Cloud Services"]
+        OpenAI[OpenAI]
+        Anthropic[Anthropic]
+        Google[Google AI]
+        PusherSvc[Pusher]
+        Upstash[Upstash Redis]
+    end
+    
+    React --> Vite
+    Vite --> Tauri
+    APIRoutes --> AISDK
+    AISDK --> OpenAI
+    AISDK --> Anthropic
+    AISDK --> Google
+    APIRoutes --> Upstash
+    React --> PusherSvc
+```
 
 ## Project Structure
 

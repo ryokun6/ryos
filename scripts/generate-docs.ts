@@ -24,11 +24,16 @@ function markdownToHtml(md: string, appContext?: string): string {
   const escapeHtml = (str: string) =>
     str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  // Extract code blocks first
+  // Extract code blocks first (handle mermaid specially)
   const codeBlocks: string[] = [];
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, _lang, code) => {
-    const escaped = escapeHtml(code.trimEnd());
-    codeBlocks.push(`<pre><code>${escaped}</code></pre>`);
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    if (lang === 'mermaid') {
+      // Mermaid diagrams - render as div for client-side rendering
+      codeBlocks.push(`<pre class="mermaid">${code.trimEnd()}</pre>`);
+    } else {
+      const escaped = escapeHtml(code.trimEnd());
+      codeBlocks.push(`<pre><code>${escaped}</code></pre>`);
+    }
     return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
   });
 
@@ -419,6 +424,18 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -539,6 +556,26 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

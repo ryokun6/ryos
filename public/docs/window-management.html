@@ -93,6 +93,18 @@
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -295,8 +307,39 @@
   createdAt: number;        // For stable ordering
   initialData?: unknown;    // App-specific data
 }</code></pre>
+<h3>Window State Transitions</h3>
+<pre class="mermaid">stateDiagram-v2
+    [*] --> Loading: launchApp()
+    Loading --> Normal: App loaded
+    Normal --> Minimized: minimize()
+    Minimized --> Normal: restore()
+    Normal --> Maximized: maximize()
+    Maximized --> Normal: restore()
+    Normal --> Foreground: bringToFront()
+    Foreground --> Background: Another window focused
+    Background --> Foreground: bringToFront()
+    Normal --> [*]: closeApp()
+    Minimized --> [*]: closeApp()
+    Maximized --> [*]: closeApp()</pre>
 <h2>Z-Index Management</h2>
 <p>Z-index is calculated from position in <code>instanceOrder</code> array. The end of the array is the foreground (top) window.</p>
+<pre class="mermaid">graph TB
+    subgraph instanceOrder["instanceOrder Array"]
+        direction TB
+        A["[0] finder-1"] --> B["[1] textedit-2"]
+        B --> C["[2] ipod-3"]
+        C --> D["[3] chats-4 ← foreground"]
+    end
+    
+    subgraph zIndex["Z-Index Stack (visual)"]
+        direction TB
+        Z4["z:103 chats-4 (top)"]
+        Z3["z:102 ipod-3"]
+        Z2["z:101 textedit-2"]
+        Z1["z:100 finder-1 (bottom)"]
+    end
+    
+    instanceOrder -.->|"z = BASE + index"| zIndex</pre>
 <h2>Window Constraints</h2>
 <table><thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>minSize</code></td><td><code>{ width, height }</code></td><td>Minimum window dimensions</td></tr><tr><td><code>maxSize</code></td><td><code>{ width, height }</code></td><td>Maximum window dimensions</td></tr><tr><td><code>defaultSize</code></td><td><code>{ width, height }</code></td><td>Initial window size</td></tr><tr><td><code>mobileDefaultSize</code></td><td><code>{ width, height }</code></td><td>Size on mobile devices</td></tr><tr><td><code>mobileSquare</code></td><td><code>boolean</code></td><td>If true, height = width on mobile</td></tr></tbody></table>
 <h2>Multi-Instance Apps</h2>
@@ -341,6 +384,26 @@
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

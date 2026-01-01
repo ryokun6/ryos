@@ -93,6 +93,18 @@
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -281,6 +293,33 @@
 <p>Overview of ryOS audio capabilities and architecture.</p>
 <h2>Technologies</h2>
 <table><thead><tr><th>Technology</th><th>Usage</th></tr></thead><tbody><tr><td>Web Audio API</td><td>Core audio processing, centralized AudioContext management, UI sound playback</td></tr><tr><td>Tone.js</td><td>Synthesizer app with polyphonic synthesis, effects chain, and real-time audio generation</td></tr><tr><td>WaveSurfer.js</td><td>Waveform visualization for recorded sounds in Soundboard app</td></tr><tr><td>MediaRecorder API</td><td>Audio recording functionality for Soundboard app</td></tr><tr><td>ReactPlayer</td><td>YouTube video/audio playback in iPod app</td></tr></tbody></table>
+<h2>Architecture Overview</h2>
+<pre class="mermaid">graph TB
+    subgraph Sources["Audio Sources"]
+        iPod["iPod App<br/>(ReactPlayer)"]
+        Soundboard["Soundboard<br/>(HTMLAudioElement)"]
+        UI["UI Sounds<br/>(useSound)"]
+        Synth["Synthesizer<br/>(Tone.js)"]
+    end
+    
+    subgraph Processing["Audio Processing"]
+        GainNode["Gain Nodes<br/>(Volume Control)"]
+        Effects["Effects Chain<br/>(Reverb, Delay, etc.)"]
+    end
+    
+    subgraph Context["Shared AudioContext"]
+        AC["AudioContext"]
+    end
+    
+    subgraph Output["Output"]
+        Dest["Audio Destination<br/>(Speakers)"]
+    end
+    
+    iPod --> GainNode
+    Soundboard --> GainNode
+    UI --> GainNode
+    Synth --> Effects --> GainNode
+    GainNode --> AC --> Dest</pre>
 <h2>Audio Playback</h2>
 <p>ryOS provides multiple audio playback mechanisms:</p>
 <ul><li><strong>iPod App</strong>: Uses ReactPlayer for YouTube video/audio playback with volume control, seeking, and playback state management. Supports fullscreen playback with synchronized lyrics display.</li></ul>
@@ -312,6 +351,17 @@
 <ul><li><strong>TTS Settings</strong>:<ul><li>TTS model selection (OpenAI, ElevenLabs, or null)</li><li>Voice selection</li><li>Synthesizer preset</li></ul></li></ul>
 <p>All settings are persisted to localStorage via Zustand's persist middleware.</p>
 <h2>Audio Context Management</h2>
+<pre class="mermaid">stateDiagram-v2
+    [*] --> Running: Create Context
+    Running --> Suspended: Tab Hidden / iOS Background
+    Suspended --> Running: User Interaction / Tab Focus
+    Running --> Closed: iOS Safari Force Close
+    Closed --> Running: Recreate Context
+    Suspended --> Closed: Context Interrupted
+    
+    note right of Running: Audio plays normally
+    note right of Suspended: Audio paused, auto-resume on interaction
+    note right of Closed: Must recreate AudioContext instance</pre>
 <p>The audio system uses a centralized AudioContext (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioContext.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/audioContext.ts</a></code>) to:</p>
 <ul><li><strong>Single Context</strong>: Maintains one shared AudioContext instance across the application</li></ul>
 <ul><li><strong>Auto-Resume</strong>: Automatically resumes suspended contexts on user interaction, tab focus, or device changes</li></ul>
@@ -356,6 +406,26 @@
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

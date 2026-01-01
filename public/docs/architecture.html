@@ -93,6 +93,18 @@
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -283,6 +295,29 @@
 <ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
 <ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
 <ul><li><strong>Development:</strong> Local with HMR</li></ul>
+<pre class="mermaid">graph LR
+    subgraph Source
+        A[Source Code]
+    end
+    
+    subgraph Build["Vite + Bun"]
+        B[Bundle & Optimize]
+    end
+    
+    subgraph Targets
+        C[Web PWA]
+        D[Desktop]
+        E[Dev Server]
+    end
+    
+    A --> B
+    B --> C
+    B --> D
+    B --> E
+    
+    C --> F[Vercel CDN]
+    D --> G[Tauri - macOS/Windows/Linux]
+    E --> H[localhost + HMR]</pre>
 <h2>Chunk Splitting</h2>
 <strong>Core Chunks (Immediate):</strong>
 <pre><code>react: ["react", "react-dom"]
@@ -291,6 +326,36 @@ zustand: ["zustand"]
 motion: ["framer-motion"]</code></pre>
 <strong>Deferred Chunks:</strong>
 <table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
+<pre class="mermaid">graph TD
+    subgraph Core["Core Chunks (Immediate)"]
+        R[react]
+        UI[ui-core]
+        Z[zustand]
+        M[motion]
+    end
+    
+    subgraph Deferred["Deferred Chunks (Lazy)"]
+        AU[audio]
+        TT[tiptap]
+        TH[three]
+        AI[ai-sdk]
+    end
+    
+    subgraph Apps
+        SB[Soundboard]
+        IP[iPod]
+        TE[TextEdit]
+        PC[Virtual PC]
+        CH[Chats]
+        IE[Internet Explorer]
+    end
+    
+    SB -.-> AU
+    IP -.-> AU
+    TE -.-> TT
+    PC -.-> TH
+    CH -.-> AI
+    IE -.-> AI</pre>
 <h2>PWA Caching</h2>
 <table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
       </article>
@@ -330,6 +395,26 @@ motion: ["framer-motion"]</code></pre>
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

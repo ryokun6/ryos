@@ -17,6 +17,23 @@ The component library is structured hierarchically: base UI components provide f
 | Dialog Components | Modal dialogs, alerts, and system dialogs | `src/components/dialogs/` |
 | Shared Components | Cross-app utilities and themed components | `src/components/shared/` |
 
+```mermaid
+graph LR
+    subgraph src/components
+        UI[ui/]
+        Layout[layout/]
+        Dialogs[dialogs/]
+        Shared[shared/]
+    end
+    
+    UI --> |primitives| Layout
+    UI --> |primitives| Dialogs
+    UI --> |primitives| Shared
+    Layout --> |frames| Apps[src/apps/]
+    Dialogs --> |modals| Apps
+    Shared --> |utilities| Apps
+```
+
 ## Technologies
 
 - **React 19** with TypeScript for type-safe component development
@@ -32,6 +49,37 @@ The UI system follows a layered approach:
 2. **Custom Layer**: Specialized components (activity-indicator, audio-bars, dial, playback-bars) extend functionality for app-specific needs
 3. **Layout Layer**: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure
 4. **Application Layer**: Dialog and shared components provide common patterns used across multiple apps
+
+```mermaid
+graph TD
+    subgraph Layer 4: Application
+        D1[Dialog Components]
+        D2[Shared Components]
+    end
+    
+    subgraph Layer 3: Layout
+        C1[WindowFrame]
+        C2[MenuBar]
+        C3[Desktop]
+        C4[Dock]
+    end
+    
+    subgraph Layer 2: Custom
+        B1[activity-indicator]
+        B2[audio-bars]
+        B3[dial]
+        B4[playback-bars]
+    end
+    
+    subgraph Layer 1: Base
+        A1[shadcn/ui]
+        A2[button, dialog, input, select, ...]
+    end
+    
+    A1 --> B1 & B2 & B3 & B4
+    B1 & B2 & B3 & B4 --> C1 & C2 & C3 & C4
+    C1 & C2 & C3 & C4 --> D1 & D2
+```
 
 All components are theme-aware, automatically adapting to the active system theme (System 7, Mac OS X, Windows XP, Windows 98) through the theme system.
 

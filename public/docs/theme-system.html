@@ -93,6 +93,18 @@
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -281,6 +293,14 @@
 <p>ryOS supports 4 themes emulating classic operating systems.</p>
 <h2>Available Themes</h2>
 <table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>macOS</td><td>Glossy buttons, traffic lights, pinstripe</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>Black & white, dotted titlebar</td></tr><tr><td><code>xp</code></td><td>XP</td><td>Windows</td><td>Luna blue chrome, rounded corners</td></tr><tr><td><code>win98</code></td><td>98</td><td>Windows</td><td>3D face, blue titlebar</td></tr></tbody></table>
+<h3>Theme Application Flow</h3>
+<pre class="mermaid">flowchart LR
+    A[User Selection] --> B[Theme Store]
+    B --> C["data-os-theme attribute"]
+    C --> D[CSS Variables]
+    D --> E[Window Frame]
+    D --> F[Menu Bar]
+    D --> G[Dock/Taskbar]</pre>
 <h2>Theme Metadata</h2>
 <pre><code>interface ThemeMetadata {
   isWindows: boolean;
@@ -293,6 +313,16 @@
   taskbarHeight: number;        // 0 or 30px
   baseDockHeight: number;       // 0 or 56px
 }</code></pre>
+<h3>Platform-Specific UI Components</h3>
+<pre class="mermaid">graph TD
+    subgraph Mac["Mac Themes (macOS X, System 7)"]
+        M1[Menu Bar] --> M2[Traffic Light Controls - Left]
+        M1 --> M3[Dock]
+    end
+    subgraph Win["Windows Themes (XP, 98)"]
+        W1[Taskbar] --> W2[Window Controls - Right]
+        W1 --> W3[Start Menu]
+    end</pre>
 <h2>CSS Custom Properties</h2>
 <pre><code>:root[data-os-theme="macosx"] {
   --os-font-ui: "Lucida Grande", ...;
@@ -338,6 +368,26 @@
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

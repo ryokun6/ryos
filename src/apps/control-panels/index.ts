@@ -26,11 +26,6 @@ export const helpItems = [
     description: "Export or restore all settings and files",
   },
   {
-    icon: "🌐",
-    title: "Language",
-    description: "Select your preferred language for ryOS interface",
-  },
-  {
     icon: "⚙️",
     title: "System",
     description: "Reset preferences or format the virtual file system",

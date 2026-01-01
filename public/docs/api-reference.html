@@ -93,6 +93,18 @@
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -279,6 +291,18 @@
       <article>
         <h1>API Reference</h1>
 <p>ryOS uses Vercel Serverless Functions with Edge runtime for all backend APIs.</p>
+<h2>API Request Flow</h2>
+<pre class="mermaid">graph LR
+    Client[Client App] --> Auth{Auth Check}
+    Auth -->|Valid| Router[API Router]
+    Auth -->|Invalid| Error[401 Error]
+    Router --> Edge[Edge Runtime]
+    Edge --> Services[External Services]
+    Services --> AI[AI Providers]
+    Services --> DB[(Redis/KV)]
+    Services --> Media[Media APIs]
+    Edge --> Response[JSON Response]
+    Response --> Client</pre>
 <h2>Endpoint Documentation</h2>
 <table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="/docs/chat-api">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="/docs/song-api">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="/docs/media-api">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="/docs/chat-rooms-api">Chat Rooms API</a></td><td>Real-time chat rooms with Pusher/Redis</td></tr><tr><td><a href="/docs/ai-generation-apis">AI Generation APIs</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="/docs/utility-apis">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr></tbody></table>
 <h2>Quick Reference</h2>
@@ -290,6 +314,30 @@
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat-rooms</code></td><td>Real-time chat room management</td></tr></tbody></table>
 <h3>Utility Endpoints</h3>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/link-preview</code></td><td>URL metadata extraction</td></tr><tr><td><code>/api/iframe-check</code></td><td>Embeddability checking</td></tr><tr><td><code>/api/share-applet</code></td><td>Applet sharing</td></tr><tr><td><code>/api/admin</code></td><td>Admin operations</td></tr></tbody></table>
+<h3>Endpoint Categories Overview</h3>
+<pre class="mermaid">graph TD
+    API["/api/*"]
+    API --> AI[AI Services]
+    API --> Media[Media Services]
+    API --> Comm[Communication]
+    API --> Util[Utilities]
+    
+    AI --> chat["/chat"]
+    AI --> applet["/applet-ai"]
+    AI --> ie["/ie-generate"]
+    AI --> parse["/parse-title"]
+    
+    Media --> song["/song/*"]
+    Media --> speech["/speech"]
+    Media --> transcribe["/audio-transcribe"]
+    Media --> yt["/youtube-search"]
+    
+    Comm --> rooms["/chat-rooms"]
+    
+    Util --> preview["/link-preview"]
+    Util --> iframe["/iframe-check"]
+    Util --> share["/share-applet"]
+    Util --> admin["/admin"]</pre>
 <h2>Authentication</h2>
 <pre><code>Authorization: Bearer {token}
 X-Username: {username}</code></pre>
@@ -333,6 +381,26 @@ X-Username: {username}</code></pre>
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

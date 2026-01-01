@@ -93,6 +93,18 @@
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -283,6 +295,29 @@
 <p>The ryOS application framework is built around three core pillars: <strong>Window Management</strong>, <strong>State Management</strong>, and <strong>Theme System</strong>. Together, these systems enable apps to have native desktop-like behavior including multiple windows, window positioning, resizing, minimizing, and theming that adapts to different operating system aesthetics.</p>
 <p>Apps in ryOS are organized as self-contained modules in <code>src/apps/[app-name]/</code>, each exporting a standardized app definition that includes the app component, metadata, and configuration. The framework handles window lifecycle, state persistence, and theme-aware rendering automatically, while apps focus on their specific functionality.</p>
 <p>The framework supports multiple window instances per app (multi-window), allowing users to open several windows of the same application simultaneously. Window state, including position and size, is persisted across sessions. Apps can also define custom window constraints, menu bars, and help content that integrates seamlessly with the system.</p>
+<pre class="mermaid">graph TD
+    subgraph Framework["Application Framework"]
+        WM[Window Management]
+        SM[State Management]
+        TS[Theme System]
+    end
+
+    subgraph Apps["App Modules"]
+        APP1[App Component]
+        APP2[App Definition]
+        APP3[App Menu Bar]
+    end
+
+    WM -->|renders| WF[WindowFrame]
+    SM -->|persists| STORE[(Zustand Store)]
+    TS -->|applies| THEME[Theme Context]
+
+    WF --> APP1
+    STORE --> APP1
+    THEME --> APP1
+
+    APP2 -->|registers| WM
+    APP3 -->|integrates| WF</pre>
 <h2>Key Components</h2>
 <table><thead><tr><th>Component</th><th>Purpose</th></tr></thead><tbody><tr><td>Window Management</td><td>Handles window rendering, positioning, resizing, minimizing, maximizing, and multi-instance support through the <code>WindowFrame</code> component and <code>useWindowManager</code> hook</td></tr><tr><td>State Management</td><td>Manages app state, window instances, foreground ordering, and persistence using Zustand stores with localStorage integration</td></tr><tr><td>Theme System</td><td>Provides OS-themed appearance (macOS X, System 7, Windows XP, Windows 98) with theme-aware components, colors, fonts, and layout metadata</td></tr></tbody></table>
 <h2>App Structure</h2>
@@ -292,6 +327,33 @@
 <ul><li><strong>App Definition</strong>: <code>index.tsx</code> or <code>index.ts</code> - Exports the app definition object conforming to <code>BaseApp</code> interface, including component, metadata, help items, and window constraints</li></ul>
 <ul><li><strong>Optional Folders</strong>: <code>hooks/</code>, <code>utils/</code>, <code>types/</code>, <code>components/</code> - App-specific logic, utilities, types, and sub-components</li></ul>
 <p>Apps receive common props via the <code>AppProps</code> interface, including <code>isWindowOpen</code>, <code>onClose</code>, <code>isForeground</code>, <code>instanceId</code>, and <code>initialData</code>. The <code>WindowFrame</code> component handles all window chrome, controls, and interactions, while apps focus on their content and functionality.</p>
+<pre class="mermaid">graph TD
+    subgraph AppModule["src/apps/[app-name]/"]
+        INDEX[index.tsx<br/>App Definition]
+        MAIN["[AppName]AppComponent.tsx"]
+        MENU["[AppName]MenuBar.tsx"]
+        HOOKS[hooks/]
+        UTILS[utils/]
+        COMPS[components/]
+    end
+
+    INDEX -->|exports| DEF{BaseApp Interface}
+    DEF -->|component| MAIN
+    DEF -->|metadata| META[id, name, icon]
+    DEF -->|constraints| CONS[minWidth, minHeight]
+    DEF -->|helpItems| HELP[Help Content]
+
+    MAIN -->|renders| WF[WindowFrame]
+    MAIN -->|uses| MENU
+    MAIN -->|imports| HOOKS
+    MAIN -->|imports| UTILS
+    MAIN -->|imports| COMPS
+
+    WF -->|receives| PROPS[AppProps]
+    PROPS -->|isWindowOpen| P1[ ]
+    PROPS -->|onClose| P2[ ]
+    PROPS -->|isForeground| P3[ ]
+    PROPS -->|instanceId| P4[ ]</pre>
 <h2>Subsections</h2>
 <ul><li><a href="/docs/window-management">Window Management</a> - Window rendering, positioning, and frame components</li></ul>
 <ul><li><a href="/docs/state-management">State Management</a> - Zustand stores and data persistence</li></ul>
@@ -334,6 +396,26 @@
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

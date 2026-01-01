@@ -12,6 +12,37 @@ Overview of ryOS audio capabilities and architecture.
 | MediaRecorder API | Audio recording functionality for Soundboard app |
 | ReactPlayer | YouTube video/audio playback in iPod app |
 
+## Architecture Overview
+
+```mermaid
+graph TB
+    subgraph Sources["Audio Sources"]
+        iPod["iPod App<br/>(ReactPlayer)"]
+        Soundboard["Soundboard<br/>(HTMLAudioElement)"]
+        UI["UI Sounds<br/>(useSound)"]
+        Synth["Synthesizer<br/>(Tone.js)"]
+    end
+    
+    subgraph Processing["Audio Processing"]
+        GainNode["Gain Nodes<br/>(Volume Control)"]
+        Effects["Effects Chain<br/>(Reverb, Delay, etc.)"]
+    end
+    
+    subgraph Context["Shared AudioContext"]
+        AC["AudioContext"]
+    end
+    
+    subgraph Output["Output"]
+        Dest["Audio Destination<br/>(Speakers)"]
+    end
+    
+    iPod --> GainNode
+    Soundboard --> GainNode
+    UI --> GainNode
+    Synth --> Effects --> GainNode
+    GainNode --> AC --> Dest
+```
+
 ## Audio Playback
 
 ryOS provides multiple audio playback mechanisms:
@@ -87,6 +118,20 @@ Audio settings are managed centrally via `useAudioSettingsStore`:
 All settings are persisted to localStorage via Zustand's persist middleware.
 
 ## Audio Context Management
+
+```mermaid
+stateDiagram-v2
+    [*] --> Running: Create Context
+    Running --> Suspended: Tab Hidden / iOS Background
+    Suspended --> Running: User Interaction / Tab Focus
+    Running --> Closed: iOS Safari Force Close
+    Closed --> Running: Recreate Context
+    Suspended --> Closed: Context Interrupted
+    
+    note right of Running: Audio plays normally
+    note right of Suspended: Audio paused, auto-resume on interaction
+    note right of Closed: Must recreate AudioContext instance
+```
 
 The audio system uses a centralized AudioContext (`src/lib/audioContext.ts`) to:
 

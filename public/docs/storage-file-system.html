@@ -93,6 +93,18 @@
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -282,8 +294,49 @@
 <h2>Two-Layer Architecture</h2>
 <ul><li><strong>Metadata Layer</strong> (Zustand + localStorage): paths, names, types, UUIDs</li></ul>
 <ul><li><strong>Content Layer</strong> (IndexedDB): actual file content indexed by UUID</li></ul>
+<pre class="mermaid">graph TB
+    subgraph Application["Application Layer"]
+        App[React Components]
+        Store[useFileSystemStore]
+    end
+    
+    subgraph Metadata["Metadata Layer"]
+        Zustand[(Zustand State)]
+        LocalStorage[(localStorage)]
+    end
+    
+    subgraph Content["Content Layer"]
+        IDB[(IndexedDB)]
+    end
+    
+    App --> Store
+    Store --> Zustand
+    Zustand <--> LocalStorage
+    Store -->|"UUID lookup"| IDB
+    
+    Zustand -->|"paths, names, types"| Store
+    IDB -->|"file content"| Store</pre>
 <h2>Directory Structure</h2>
 <table><thead><tr><th>Path</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>/</code></td><td>Root</td><td>Root directory</td></tr><tr><td><code>/Applications</code></td><td>Virtual</td><td>Apps from registry</td></tr><tr><td><code>/Documents</code></td><td>Physical</td><td>User documents</td></tr><tr><td><code>/Images</code></td><td>Physical</td><td>User images</td></tr><tr><td><code>/Music</code></td><td>Virtual</td><td>iPod library</td></tr><tr><td><code>/Videos</code></td><td>Virtual</td><td>Video library</td></tr><tr><td><code>/Sites</code></td><td>Virtual</td><td>IE favorites</td></tr><tr><td><code>/Applets</code></td><td>Physical</td><td>HTML applets</td></tr><tr><td><code>/Trash</code></td><td>Special</td><td>Deleted items</td></tr><tr><td><code>/Desktop</code></td><td>Physical</td><td>Shortcuts</td></tr></tbody></table>
+<pre class="mermaid">graph TD
+    Root["/"] --> Apps["/Applications<br/>Virtual"]
+    Root --> Docs["/Documents<br/>Physical"]
+    Root --> Imgs["/Images<br/>Physical"]
+    Root --> Music["/Music<br/>Virtual"]
+    Root --> Videos["/Videos<br/>Virtual"]
+    Root --> Sites["/Sites<br/>Virtual"]
+    Root --> Applets["/Applets<br/>Physical"]
+    Root --> Trash["/Trash<br/>Special"]
+    Root --> Desktop["/Desktop<br/>Physical"]
+    
+    Apps -.->|"from registry"| AppReg[(App Registry)]
+    Music -.->|"from store"| iPod[(iPod Library)]
+    Videos -.->|"from store"| VidLib[(Video Library)]
+    
+    Docs -->|"stored in"| IDB[(IndexedDB)]
+    Imgs -->|"stored in"| IDB
+    Applets -->|"stored in"| IDB
+    Desktop -->|"stored in"| IDB</pre>
 <h2>File Metadata</h2>
 <pre><code>interface FileSystemItem {
   path: string;        // Unique identifier
@@ -334,6 +387,26 @@
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

@@ -2,6 +2,22 @@
 
 ryOS uses Vercel Serverless Functions with Edge runtime for all backend APIs.
 
+## API Request Flow
+
+```mermaid
+graph LR
+    Client[Client App] --> Auth{Auth Check}
+    Auth -->|Valid| Router[API Router]
+    Auth -->|Invalid| Error[401 Error]
+    Router --> Edge[Edge Runtime]
+    Edge --> Services[External Services]
+    Services --> AI[AI Providers]
+    Services --> DB[(Redis/KV)]
+    Services --> Media[Media APIs]
+    Edge --> Response[JSON Response]
+    Response --> Client
+```
+
 ## Endpoint Documentation
 
 | Endpoint Group | Description |
@@ -48,6 +64,34 @@ ryOS uses Vercel Serverless Functions with Edge runtime for all backend APIs.
 | `/api/iframe-check` | Embeddability checking |
 | `/api/share-applet` | Applet sharing |
 | `/api/admin` | Admin operations |
+
+### Endpoint Categories Overview
+
+```mermaid
+graph TD
+    API["/api/*"]
+    API --> AI[AI Services]
+    API --> Media[Media Services]
+    API --> Comm[Communication]
+    API --> Util[Utilities]
+    
+    AI --> chat["/chat"]
+    AI --> applet["/applet-ai"]
+    AI --> ie["/ie-generate"]
+    AI --> parse["/parse-title"]
+    
+    Media --> song["/song/*"]
+    Media --> speech["/speech"]
+    Media --> transcribe["/audio-transcribe"]
+    Media --> yt["/youtube-search"]
+    
+    Comm --> rooms["/chat-rooms"]
+    
+    Util --> preview["/link-preview"]
+    Util --> iframe["/iframe-check"]
+    Util --> share["/share-applet"]
+    Util --> admin["/admin"]
+```
 
 ## Authentication
 

@@ -93,6 +93,18 @@
     th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0f0f0; font-weight: bold; }
     
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
     /* Collapsible details */
     details { margin: 8px 0; }
     details summary { 
@@ -281,6 +293,35 @@
 <p>ryOS uses Zustand for state management with 21 stores following consistent patterns.</p>
 <h2>Store Inventory</h2>
 <table><thead><tr><th>Store</th><th>Purpose</th><th>Persistence Key</th></tr></thead><tbody><tr><td><code>useAppStore</code></td><td>Window/instance management, boot state</td><td><code>ryos:app-store</code></td></tr><tr><td><code>useFilesStore</code></td><td>Virtual filesystem metadata</td><td><code>ryos:files</code></td></tr><tr><td><code>useChatsStore</code></td><td>Chat rooms, messages, auth</td><td><code>ryos:chats</code></td></tr><tr><td><code>useIpodStore</code></td><td>Music library, playback</td><td><code>ryos:ipod</code></td></tr><tr><td><code>useThemeStore</code></td><td>OS theme selection</td><td>Manual localStorage</td></tr><tr><td><code>useDisplaySettingsStore</code></td><td>Wallpaper, shaders</td><td><code>ryos:display-settings</code></td></tr><tr><td><code>useDockStore</code></td><td>Dock pinned items</td><td><code>dock-storage</code></td></tr><tr><td><code>useAudioSettingsStore</code></td><td>Volume, TTS settings</td><td><code>ryos:audio-settings</code></td></tr><tr><td><code>useVideoStore</code></td><td>Video library, playback</td><td><code>ryos:videos</code></td></tr><tr><td><code>useTerminalStore</code></td><td>Command history, vim state</td><td><code>ryos:terminal</code></td></tr><tr><td><code>useSynthStore</code></td><td>Synthesizer presets</td><td><code>ryos:synth</code></td></tr></tbody></table>
+<h3>Store Architecture</h3>
+<pre class="mermaid">graph TD
+    subgraph Core["Core System"]
+        AppStore[useAppStore<br/>Windows & Boot]
+        ThemeStore[useThemeStore<br/>Theme]
+        DisplayStore[useDisplaySettingsStore<br/>Wallpaper & Shaders]
+        AudioStore[useAudioSettingsStore<br/>Volume & TTS]
+        DockStore[useDockStore<br/>Pinned Items]
+    end
+
+    subgraph Media["Media Apps"]
+        IpodStore[useIpodStore<br/>Music Library]
+        VideoStore[useVideoStore<br/>Video Library]
+        SynthStore[useSynthStore<br/>Synth Presets]
+    end
+
+    subgraph Social["Communication"]
+        ChatsStore[useChatsStore<br/>Chat & Auth]
+    end
+
+    subgraph Productivity["Productivity"]
+        FilesStore[useFilesStore<br/>Virtual FS]
+        TerminalStore[useTerminalStore<br/>CLI State]
+    end
+
+    AppStore --> |manages| Media
+    AppStore --> |manages| Social
+    AppStore --> |manages| Productivity
+    ChatsStore -.-> |auth| IpodStore</pre>
 <h2>Store Pattern</h2>
 <pre><code>import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -309,7 +350,38 @@ export const useMyStore = create&lt;StoreState&gt;()(
 <ul><li><code>useKaraokeStore</code> → reads from <code>useIpodStore</code> (shared music library)</li></ul>
 <ul><li><code>useTextEditStore</code> → reads from <code>useAppStore</code> (foreground instance)</li></ul>
 <ul><li><code>useIpodStore</code> → reads from <code>useChatsStore</code> (auth credentials)</li></ul>
+<pre class="mermaid">flowchart LR
+    subgraph Components["React Components"]
+        C1[IpodApp]
+        C2[KaraokeApp]
+        C3[TextEditApp]
+    end
 
+    subgraph Stores["Zustand Stores"]
+        S1[useIpodStore]
+        S2[useKaraokeStore]
+        S3[useTextEditStore]
+        S4[useChatsStore]
+        S5[useAppStore]
+    end
+
+    subgraph Persist["localStorage"]
+        P1[(ryos:ipod)]
+        P2[(ryos:chats)]
+        P3[(ryos:app-store)]
+    end
+
+    C1 <--> S1
+    C2 <--> S2
+    C3 <--> S3
+
+    S2 -.-> |music library| S1
+    S3 -.-> |foreground instance| S5
+    S1 -.-> |auth credentials| S4
+
+    S1 --> P1
+    S4 --> P2
+    S5 --> P3</pre>
       </article>
       
       <nav class="nav">
@@ -347,6 +419,26 @@ export const useMyStore = create&lt;StoreState&gt;()(
       if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
         sidebar.classList.remove('open');
       }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
     });
   </script>
 </body>

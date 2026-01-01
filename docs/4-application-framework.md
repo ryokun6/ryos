@@ -10,6 +10,32 @@ Apps in ryOS are organized as self-contained modules in `src/apps/[app-name]/`, 
 
 The framework supports multiple window instances per app (multi-window), allowing users to open several windows of the same application simultaneously. Window state, including position and size, is persisted across sessions. Apps can also define custom window constraints, menu bars, and help content that integrates seamlessly with the system.
 
+```mermaid
+graph TD
+    subgraph Framework["Application Framework"]
+        WM[Window Management]
+        SM[State Management]
+        TS[Theme System]
+    end
+
+    subgraph Apps["App Modules"]
+        APP1[App Component]
+        APP2[App Definition]
+        APP3[App Menu Bar]
+    end
+
+    WM -->|renders| WF[WindowFrame]
+    SM -->|persists| STORE[(Zustand Store)]
+    TS -->|applies| THEME[Theme Context]
+
+    WF --> APP1
+    STORE --> APP1
+    THEME --> APP1
+
+    APP2 -->|registers| WM
+    APP3 -->|integrates| WF
+```
+
 ## Key Components
 
 | Component | Purpose |
@@ -28,6 +54,36 @@ Apps follow a standardized structure and naming convention. Each app is defined 
 - **Optional Folders**: `hooks/`, `utils/`, `types/`, `components/` - App-specific logic, utilities, types, and sub-components
 
 Apps receive common props via the `AppProps` interface, including `isWindowOpen`, `onClose`, `isForeground`, `instanceId`, and `initialData`. The `WindowFrame` component handles all window chrome, controls, and interactions, while apps focus on their content and functionality.
+
+```mermaid
+graph TD
+    subgraph AppModule["src/apps/[app-name]/"]
+        INDEX[index.tsx<br/>App Definition]
+        MAIN["[AppName]AppComponent.tsx"]
+        MENU["[AppName]MenuBar.tsx"]
+        HOOKS[hooks/]
+        UTILS[utils/]
+        COMPS[components/]
+    end
+
+    INDEX -->|exports| DEF{BaseApp Interface}
+    DEF -->|component| MAIN
+    DEF -->|metadata| META[id, name, icon]
+    DEF -->|constraints| CONS[minWidth, minHeight]
+    DEF -->|helpItems| HELP[Help Content]
+
+    MAIN -->|renders| WF[WindowFrame]
+    MAIN -->|uses| MENU
+    MAIN -->|imports| HOOKS
+    MAIN -->|imports| UTILS
+    MAIN -->|imports| COMPS
+
+    WF -->|receives| PROPS[AppProps]
+    PROPS -->|isWindowOpen| P1[ ]
+    PROPS -->|onClose| P2[ ]
+    PROPS -->|isForeground| P3[ ]
+    PROPS -->|instanceId| P4[ ]
+```
 
 ## Subsections
 
