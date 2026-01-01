@@ -188,7 +188,7 @@ export const storeDescriptors: StoreDescriptor[] = [
   {
     key: "ryos:ipod",
     file: "src/stores/useIpodStore.ts",
-    version: 0,
+    version: 28,
     storage: "localStorage",
     category: "media",
     sync: { eligible: true, defaultEnabled: false },
