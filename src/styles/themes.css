@@ -987,9 +987,9 @@
   ):not(.synth-force-font .font-geneva-12):not(.videos-status .font-geneva-12) {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
-  -webkit-font-smoothing: antialiased !important;
-  font-smooth: auto !important;
+    BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-smooth: auto;
 }
 
 /* Preserve Videos StatusDisplay Geneva font and sizing */
