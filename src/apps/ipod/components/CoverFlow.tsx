@@ -367,7 +367,7 @@ function CoverImage({
               opacity: 1,
               y: "0%",
             }}
-            exit={{ opacity: 0, y: "30%" }}
+            exit={{ y: "30%" }}
             transition={{ 
               y: { type: "spring", stiffness: 200, damping: 25 },
               opacity: { duration: 0.15, ease: "easeOut" },
