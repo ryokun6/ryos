@@ -139,6 +139,9 @@ export async function syncWithSettings(
   if (!settings.enabled) {
     return { ok: false, status: 0, error: "sync_disabled" };
   }
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { ok: false, status: 0, error: "offline" };
+  }
   const deviceId = getOrCreateDeviceId();
   return syncOnce(deviceId, auth);
 }
