@@ -347,7 +347,7 @@
 .os-theme-macosx input,
 .os-theme-macosx select,
 .os-theme-macosx textarea {
-  font-size: 12px !important;
+  font-size: 12px;
 }
 
 .os-theme-macosx label {
@@ -535,8 +535,8 @@
 .os-theme-macosx select {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
-  font-size: 14px !important;
+    BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+  font-size: 14px;
   line-height: 1;
   height: 22px;
   padding: 2px 24px 2px 8px;
