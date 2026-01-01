@@ -155,6 +155,15 @@ export const storeDescriptors: StoreDescriptor[] = [
     notes: "Slots may include base64 audioData; consider size caps before syncing.",
   },
   {
+    key: "ryos:synth",
+    file: "src/stores/useSynthStore.ts",
+    version: 1,
+    storage: "localStorage",
+    category: "media",
+    sync: { eligible: true, defaultEnabled: false },
+    notes: "User synth presets and label preferences; lightweight settings.",
+  },
+  {
     key: "ryos:internet-explorer",
     file: "src/stores/useInternetExplorerStore.ts",
     version: 4,
@@ -162,6 +171,19 @@ export const storeDescriptors: StoreDescriptor[] = [
     category: "ui",
     sync: { eligible: true, defaultEnabled: false },
     notes: "Cache/history for IE app; size may grow, consider caps.",
+  },
+  {
+    key: "ryos:terminal",
+    file: "src/stores/useTerminalStore.ts",
+    version: 1,
+    storage: "localStorage",
+    category: "ui",
+    sync: {
+      eligible: false,
+      defaultEnabled: false,
+      notes: "Contains command history; keep local-only unless explicitly enabled.",
+    },
+    notes: "Terminal command history and path; privacy-sensitive.",
   },
   {
     key: "ryos:ipod",
