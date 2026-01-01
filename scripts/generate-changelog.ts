@@ -8,9 +8,10 @@
  * - Writes docs/9-changelog.md so it appears in the docs navigation.
  *
  * Usage:
- *   bun run scripts/generate-changelog.ts            # default window (last 12 months)
- *   bun run scripts/generate-changelog.ts --months 18
- *   bun run scripts/generate-changelog.ts --all      # full history
+ *   bun run scripts/generate-changelog.ts               # default window (last 12 months, 15 per category)
+ *   bun run scripts/generate-changelog.ts --months 18   # change month window
+ *   bun run scripts/generate-changelog.ts --per-month 8 # limit bullets per category/month
+ *   bun run scripts/generate-changelog.ts --all         # full history, no per-month truncation
  */
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
@@ -22,7 +23,7 @@ const ROOT_DIR = join(__dirname, "..");
 const OUTPUT_PATH = join(ROOT_DIR, "docs", "9-changelog.md");
 
 const DEFAULT_MONTHS = 12;
-const DEFAULT_PER_MONTH_LIMIT = 20;
+const DEFAULT_PER_MONTH_LIMIT = 15;
 
 const MAJOR_KEYWORDS = [
   "feat",
@@ -243,7 +244,7 @@ function renderMarkdown(entries: CommitEntry[], options: Options): string {
   lines.push(
     `_Auto-generated from git history on ${new Date().toISOString()}. ` +
     `Run \`bun run generate:changelog\` to refresh. ` +
-    `${options.all ? "Using full history." : `Default window: last ${options.months} month(s), max ${options.perMonthLimit} per category.`} ` +
+    `${options.all ? "Using full history." : `Default window: last ${options.months} month(s), max ${options.perMonthLimit} per category. Override with --months, --per-month, or --all.`} ` +
     `Merge commits are skipped. Major keywords: ${MAJOR_KEYWORDS.join(", ")}. Minor keywords: ${MINOR_KEYWORDS.join(", ")}._`
   );
   lines.push("");

@@ -1,6 +1,6 @@
 # Changelog
 
-_Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run generate:changelog` to refresh. Default window: last 12 month(s), max 20 per category. Merge commits are skipped. Major keywords: feat, feature, add, introduce, implement, create, launch, upgrade, refactor, redesign, breaking, perf, optimize, improve, enhance, upgrade, bump, release. Minor keywords: fix, chore, docs, doc, test, tests, tweak, refine, cleanup, style, ci, build, revert._
+_Auto-generated from git history on 2026-01-01T19:04:48.461Z. Run `bun run generate:changelog` to refresh. Default window: last 12 month(s), max 15 per category. Override with --months, --per-month, or --all. Merge commits are skipped. Major keywords: feat, feature, add, introduce, implement, create, launch, upgrade, refactor, redesign, breaking, perf, optimize, improve, enhance, upgrade, bump, release. Minor keywords: fix, chore, docs, doc, test, tests, tweak, refine, cleanup, style, ci, build, revert._
 
 ## January 2026
 
@@ -17,6 +17,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - add /docs route with architecture documentation
   - add onPlayTrackInPlace callback for improved track playback in CoverFlow
 - **Minor**
+  - tune changelog classification and summaries
   - summarize changelog output
   - Fix h4 headers not rendering in docs
   - Reorganize docs hierarchy for better clarity
@@ -31,13 +32,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - resolve linter errors in documentation generation scripts
   - remove inner scrollers, use natural page scroll
   - make docs page mobile-friendly with vertical scrolling
-  - rewrite docs page with System 7-inspired styling
-  - update styles and improve media display
-  - keep CD opacity at 1 during exit animation
-  - restore CD exit animation to slide behind cover
-  - use easeOut for opacity transitions instead of spring
-  - refine border radius in CoverFlow component for improved aesthetics
-  - _… 10 more minor change(s) in git log_
+  - _… 16 more minor change(s) in git log_
 
 ## December 2025
 
@@ -57,12 +52,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Refactor FullscreenPlayerControls for improved layout and styling
   - Enhance useLibraryUpdateChecker and useIpodStore to support cover image and lyrics source updates
   - Enhance CoverFlow component with improved opacity calculation and dark overlay animation
-  - Enhance AdminAppComponent and SongDetailPanel with scroll functionality and improved translations
-  - Add theme-aware translations for Control Panels in Traditional Chinese
-  - Add theme-aware translations for Control Panels in Portuguese locale
-  - Add theme-aware translations for Control Panels in Spanish locale
-  - improve document icon detection for recent items
-  - _… 296 more major change(s) in git log_
+  - _… 301 more major change(s) in git log_
 - **Minor**
   - refine SpinningCD component dimensions and shadow effect
   - update version information and refine CoverFlow shadow styling
@@ -79,12 +69,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Fix tap events passing through hidden titlebar in notitlebar windows
   - Reduce brightness contrast on CoverFlow side covers
   - Refine CoverFlow component with updated opacity and filter effects
-  - Refine CoverFlow component with updated spacing and opacity adjustments
-  - Update version information and enhance CoverFlow component
-  - correct German Control Panels name for non-macOS themes
-  - remove Software Update menu item
-  - skip folders from recent documents tracking
-  - _… 463 more minor change(s) in git log_
+  - _… 468 more minor change(s) in git log_
 
 ## November 2025
 
@@ -104,12 +89,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Refactor prefetch logic to unify version checking and update handling
   - Enhance version handling and update caching strategy
   - Refactor PrefetchToast and enhance version handling in prefetch logic
-  - Enhance ControlPanelsAppComponent with version display and cache refresh button
-  - Refactor prefetch logic and toast notifications
-  - Refactor prefetch logic and update build version
-  - Refactor prefetch to handle version updates and clear caches (#419)
-  - Enhance prefetching and cache management with update notifications
-  - _… 88 more major change(s) in git log_
+  - _… 93 more major change(s) in git log_
 - **Minor**
   - Update help item descriptions and titles
   - Remove redundant iOS browser restriction text
@@ -126,12 +106,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Fix iPod translation off switch (#426)
   - Checkpoint before follow-up message
   - Reorder video entries in ipod-videos.json
-  - Reload html on missing js bundles (#424)
-  - Remove icon cache busting and update prefetching
-  - Fix server worker for offline app start (#422)
-  - Update versioning details in version.json and .version
-  - Update version.json with new build details
-  - _… 85 more minor change(s) in git log_
+  - _… 90 more minor change(s) in git log_
 
 ## October 2025
 
@@ -151,12 +126,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Implement interaction listeners for iframe in applet viewer
   - Add icon support for generated HTML applets
   - Enhance applet viewer functionality and window management
-  - Add toast notifications for applet save
-  - Enhance HTML generation for ryOS Applets and introduce applet saving functionality
-  - Add prompt to never reveal AI details
-  - Improve AI prompt instructions for Chinese responses
-  - Add core priority instructions to AI prompts
-  - _… 4 more major change(s) in git log_
+  - _… 9 more major change(s) in git log_
 - **Minor**
   - Hide login message when user is logged in
   - Remove auth token from system state
@@ -201,9 +171,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Remove rate limiting from lyrics translation API
   - Use persistent translation language preference
   - Correctly display active language in translation dropdown
-  - Update lyric offset and add empty album for CORTIS FaSHioN
-  - Adjust alternating lyrics display delay
-  - Increase lyrics translation timeout to 120 seconds
+  - _… 3 more minor change(s) in git log_
 
 ## August 2025
 
@@ -223,12 +191,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Refactor DEFAULT_VIDEOS in useVideoStore to reorder and restore previously removed video entries, enhancing the video selection available in the application.
   - Implement mobile/touch support in Dock component by disabling magnification for coarse pointers and no hover. Added state management for magnification and adjusted icon sizing accordingly, enhancing user experience across devices.
   - Add Trash icon logic to Dock component using files store for dynamic icon retrieval. This enhances the visual representation of the Trash in the Dock, improving user experience.
-  - Enhance Dock component by adding logic to focus on existing Finder instances or launch new ones based on the target path. This improves user experience by streamlining Finder access from the Dock.
-  - Implement macOS X app display logic on Desktop component to show only the iPod app icon when the theme is set to macOS X, improving theme-specific user experience.
-  - Implement initial view preference in FinderAppComponent and update Dock component to launch Finder with specified view type. This enhances user experience by maintaining consistent view settings across sessions.
-  - Enhance Dock component functionality by adding new app focus/launch logic and improving layout with a dynamic divider. Updated pinned app list and introduced visual indicators for open apps.
-  - Refactor Dock component to enhance icon scaling and improve mouse interaction dynamics with Framer Motion. Introduced dynamic sizing for icons and optimized layout animations for better performance.
-  - _… 61 more major change(s) in git log_
+  - _… 66 more major change(s) in git log_
 - **Minor**
   - Update default AI model to GPT-4.1 (#299)
   - Replace default wallpaper with aqua water photo across themes
@@ -245,12 +208,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Fix file icon label styling and remove unnecessary max-width constraint
   - Update manifest.json with new generation timestamp
   - Update macOS icon for improved visual consistency
-  - Replace isMobileDevice with isTouchDevice for better device detection (#282)
-  - Update Dock component to allow vertical overflow, enhancing content visibility on mobile devices.
-  - Enable horizontal scrolling for mobile dock (#280)
-  - Update Dock component to use app names from appRegistry for icon labels, improving clarity and user experience when displaying applications.
-  - Relax rate limits for global and per-host checks in iframe-check API, enhancing performance for proxy requests. Improved response formatting for rate limit errors and adjusted font override styles for better readability.
-  - _… 34 more minor change(s) in git log_
+  - _… 39 more minor change(s) in git log_
 
 ## July 2025
 
@@ -270,12 +228,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Refactor ChatMessages and ChatsApp components for improved message handling
   - Improve bubble and large fish animations in EmojiAquarium
   - Refactor decorative elements in EmojiAquarium component
-  - Refactor ChatMessagesContent to conditionally render EmojiAquarium
-  - Enhance EmojiAquarium responsiveness and visual elements
-  - Enhance EmojiAquarium integration in chat messages
-  - Add emoji aquarium feature to chat
-  - Refactor WindowFrame component to enhance button structure and styling
-  - _… 137 more major change(s) in git log_
+  - _… 142 more major change(s) in git log_
 - **Minor**
   - Conditionally apply top margin for chat message content based on URL status (#249)
   - Simplify border color logic in LinkPreview component
@@ -292,12 +245,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Fix resize handling for mobile and desktop across different scenarios (#243)
   - Fix mobile macosx theme window occlusion (#242)
   - Update border-radius for macOS chat bubbles to enhance visual consistency
-  - Update tablist margin in custom CSS for improved layout consistency
-  - Update EmojiAquarium.tsx
-  - Update themes.css
-  - Fix large fish positioning in EmojiAquarium component
-  - Remove unnecessary repeatType property from animation configuration
-  - _… 193 more minor change(s) in git log_
+  - _… 198 more minor change(s) in git log_
 
 ## June 2025
 
@@ -317,12 +265,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Add tooltip for new chat button in ChatRoomSidebar component
   - Refactor logout button logic in ControlPanelsAppComponent for clarity
   - Implement password management in ChatsAppComponent and ControlPanelsAppComponent
-  - Add logout confirmation dialog and update menu items in chat components
-  - Refactor authentication messages and update login prompts across chat components
-  - Enhance CreateRoomDialog and LoginDialog components for improved layout and consistency
-  - Refactor LoginDialog component for improved readability and consistency
-  - Add new password and token verification props to ControlPanelsAppComponent
-  - _… 47 more major change(s) in git log_
+  - _… 52 more major change(s) in git log_
 - **Minor**
   - Decode HTML entities in chat messages to improve rendering accuracy
   - Fix rate limit type casting for AI message count check
@@ -339,12 +282,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Remove unused token refresh and status components from ChatsAppComponent and ChatsMenuBar for cleaner code and improved readability.
   - Changes from background composer bc-320c80b9-4564-4210-a003-b533a0a423fe
   - Remove unused verify token input state from ChatsAppComponent
-  - Update logout visibility in ChatsMenuBar to include debug mode check
-  - Update username display format in ControlPanelsAppComponent to include '@' prefix for clarity
-  - Update CreateRoomDialog for improved user experience
-  - Update ChatRoomSidebar to replace Plus icon with SquarePen icon
-  - Update speech volume settings in useAppStore and adjust ducking factor in useTtsQueue hook
-  - _… 33 more minor change(s) in git log_
+  - _… 38 more minor change(s) in git log_
 
 ## May 2025
 
@@ -364,12 +302,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Add authentication token generation and validation to chat rooms API
   - Add new LOVIN' YOU video to iPod list
   - Add BoA song to top of iPod videos
-  - Refactor text size in IpodWheel component for improved UI consistency. Adjusted font size from 14px to 12px for better alignment and visual appeal.
-  - Refactor handleTouchEnd function in IpodWheel component to use a parameter name that indicates it is unused. This improves code clarity and maintains consistency in touch event handling.
-  - Enhance touch interaction handling in IpodWheel component. Added touch state tracking to differentiate between taps and drags, preventing double firing of events after touch interactions. Improved touch event processing by checking if the touch is within the center button area.
-  - Refactor IpodAppComponent and IpodScreen for improved readability and UI consistency. Adjusted formatting of state management and updated play/pause icons for better visual alignment.
-  - Add new top videos to iPod dataset
-  - _… 339 more major change(s) in git log_
+  - _… 344 more major change(s) in git log_
 - **Minor**
   - Match scrollbar transition with screen
   - match scrollbar and screen backlight
@@ -386,12 +319,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Adjust IpodScreen title bar component: reduce width of elements for improved layout consistency
   - Remove unused derived state for lyrics translation in IpodAppComponent
   - Here's the commit message:
-  - Update aiPrompts.ts
-  - Update ipod-videos.json
-  - Pass user auth info when ryo posts
-  - Update rate-limit.js
-  - Include auth token in Terminal system state
-  - _… 229 more minor change(s) in git log_
+  - _… 234 more minor change(s) in git log_
 
 ## April 2025
 
@@ -411,12 +339,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Enhance InternetExplorerAppComponent with caching and navigation improvements
   - Refactor TimeMachineView navigation direction logic for clarity
   - Refactor app window toggle logic for improved foreground management
-  - Enhance app components with skipInitialSound prop for sound control
-  - Refactor vercel.json routes and remove unused service worker
-  - Add Cache-Control headers for static assets in vercel.json
-  - Enhance iframe year validation and refine TimeMachineView animations
-  - Refactor year index change function in TimeMachineView for clarity
-  - _… 128 more major change(s) in git log_
+  - _… 133 more major change(s) in git log_
 - **Minor**
   - Remove duplicate app entries in project structure
   - Update README with new apps and features in project structure
@@ -433,12 +356,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Update DEFAULT_FAVORITES in useInternetExplorerStore to include Maya website
   - mobile layout
   - Update TimeMachineView layout to improve timeline area height for better responsiveness
-  - Refine TimeMachineView layout for better responsiveness and overflow handling
-  - Update TimeMachineView layout for improved spacing and responsiveness
-  - mobile layout optimizations
-  - Update TimeMachineView to ensure minimum height for overlay component
-  - Update TimeMachineView to ensure full-screen height for overlay
-  - _… 85 more minor change(s) in git log_
+  - _… 90 more minor change(s) in git log_
 
 ## March 2025
 
@@ -458,12 +376,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Refactor ChatMessages and ChatsAppComponent for enhanced message handling and animation
   - Enhance ChatMessages and ChatsAppComponent with room view functionality
   - Enhance chat room creation and message retrieval functionality
-  - Refactor ChatMessages and ChatsAppComponent to simplify state management
-  - Refactor ChatMessages and ChatsAppComponent for improved animation handling and code cleanup
-  - Enhance ChatMessages and ChatsAppComponent for improved animation handling
-  - Add initial load handling and animation improvements in ChatMessages component
-  - Add room selection and management features in ChatsMenuBar
-  - _… 226 more major change(s) in git log_
+  - _… 231 more major change(s) in git log_
 - **Minor**
   - Update default model in chat API and refactor ChatMessages component for improved scrolling behavior
   - Integrate Pusher for real-time chat updates
@@ -480,12 +393,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Update ChatsAppComponent and ChatsMenuBar for improved user experience
   - Update ChatsAppComponent to dynamically set window title based on selected chat room
   - Remove chat room API implementation and update fetch URLs in components
-  - Remove chat room API implementation from api/chatRooms.ts
-  - Update chat room API to use Node.js runtime and improve response formatting
-  - Update chat room API runtime configuration to use edge environment
-  - Remove unused variable from ChatsAppComponent to enhance code clarity
-  - Update dependencies and clean up unused variables
-  - _… 166 more minor change(s) in git log_
+  - _… 171 more minor change(s) in git log_
 
 ## February 2025
 
@@ -505,12 +413,7 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - Refactor WindowFrame component with reduced resize handle sizes
   - Optimize TextEdit context processing for mobile and desktop performance
   - Refactor chat clearing mechanism with improved error handling
-  - Optimize chat message processing and clear chats workflow
-  - Enhance markdown parsing with advanced formatting preservation and detection
-  - Improve TextEdit markup parsing with advanced debugging and error handling
-  - Enhance TextEdit document editing with robust markup parsing and processing
-  - Improve document edit parsing and prevent duplicate content
-  - _… 127 more major change(s) in git log_
+  - _… 132 more major change(s) in git log_
 - **Minor**
   - Update default games list and PC emulator title
   - Refine TextEdit markup line description generation
@@ -527,9 +430,4 @@ _Auto-generated from git history on 2026-01-01T19:03:36.578Z. Run `bun run gener
   - I apolog
   - Update UI text and global font size
   - Migrate file system to IndexedDB and enhance storage management
-  - Update chat.ts
-  - Update useFileSystem.ts
-  - Remove temporary dosbox submodules
-  - Update README.md with version and feature refinements
-  - Refine video player and default video list
-  - _… 69 more minor change(s) in git log_
+  - _… 74 more minor change(s) in git log_
