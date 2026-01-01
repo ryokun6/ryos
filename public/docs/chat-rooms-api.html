@@ -60,8 +60,9 @@
     .sidebar a.active { background: #000; color: #fff; }
     
     /* Tree hierarchy styles */
-    .nav-item { padding-left: 20px !important; } /* Align with toggle items (8px icon + 4px gap + 8px padding) */
     .nav-group { margin: 4px 0; }
+    .nav-spacer { width: 8px; flex-shrink: 0; } /* Same width as toggle arrow */
+    .nav-no-toggle { cursor: default; }
     .nav-toggle {
       display: flex; align-items: center; gap: 4px;
       background: none; border: none; padding: 0; width: 100%;
@@ -194,7 +195,12 @@
     <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
   </div>
 </div>
-<a href="/docs/storage-file-system" class="nav-item ">4. File System</a>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/storage-file-system" class="">4. File System</a>
+  </div>
+</div>
 <div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
@@ -222,7 +228,12 @@
     <a href="/docs/applet-store" class="nav-child ">5.17 Applet Store</a>
   </div>
 </div>
-<a href="/docs/audio-system" class="nav-item ">6. Audio System</a>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">6. Audio System</a>
+  </div>
+</div>
 <div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">

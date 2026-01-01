@@ -20,26 +20,28 @@ const DOCS_DIR = "docs";
 const APPS_DIR = "src/apps";
 const OUTPUT_DIR = DOCS_DIR;
 
-// App IDs from config
-const APP_IDS = [
-  "finder",
-  "soundboard",
-  "internet-explorer",
-  "chats",
-  "textedit",
-  "paint",
-  "photo-booth",
-  "minesweeper",
-  "videos",
-  "ipod",
-  "karaoke",
-  "synth",
-  "pc",
-  "terminal",
-  "applet-viewer",
-  "control-panels",
-  "admin",
-] as const;
+// App IDs with their section numbers (under section 5)
+const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
+  "chats": { sectionNum: "5.1", docName: "chats" },
+  "internet-explorer": { sectionNum: "5.2", docName: "internet-explorer" },
+  "ipod": { sectionNum: "5.3", docName: "ipod" },
+  "karaoke": { sectionNum: "5.4", docName: "karaoke" },
+  "textedit": { sectionNum: "5.5", docName: "textedit" },
+  "finder": { sectionNum: "5.6", docName: "finder" },
+  "paint": { sectionNum: "5.7", docName: "paint" },
+  "photo-booth": { sectionNum: "5.8", docName: "photo-booth" },
+  "terminal": { sectionNum: "5.9", docName: "terminal" },
+  "control-panels": { sectionNum: "5.10", docName: "control-panels" },
+  "soundboard": { sectionNum: "5.11", docName: "soundboard" },
+  "synth": { sectionNum: "5.12", docName: "synth" },
+  "videos": { sectionNum: "5.13", docName: "videos" },
+  "minesweeper": { sectionNum: "5.14", docName: "minesweeper" },
+  "pc": { sectionNum: "5.15", docName: "virtual-pc" },
+  "admin": { sectionNum: "5.16", docName: "admin" },
+  "applet-viewer": { sectionNum: "5.17", docName: "applet-store" },
+};
+
+const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
 
 interface AppMetadata {
   name: string;
@@ -91,7 +93,8 @@ function checkApiKey(): boolean {
  */
 async function allDocsExist(): Promise<boolean> {
   for (const appId of APP_IDS) {
-    const docFileName = `apps-${appId}.md`;
+    const config = APP_CONFIGS[appId];
+    const docFileName = `${config.sectionNum}-${config.docName}.md`;
     const docFilePath = join(OUTPUT_DIR, docFileName);
     try {
       await stat(docFilePath);
@@ -517,7 +520,8 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
   appInfo.description = descriptions[appId] || `A ${metadata.name} application for ryOS`;
 
   // Check if doc file already exists
-  const docFileName = `apps-${appId}.md`;
+  const config = APP_CONFIGS[appId];
+  const docFileName = `${config.sectionNum}-${config.docName}.md`;
   const docFilePath = join(OUTPUT_DIR, docFileName);
   
   let docExists = false;

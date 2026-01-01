@@ -301,9 +301,15 @@ function generateSidebar(currentDoc: DocEntry, allDocs: DocEntry[]): string {
   </div>
 </div>`.trim());
     } else {
-      // No children - simple link with indent to align with toggle items
+      // No children - use same structure as toggle but with spacer instead of arrow
       const displayNum = doc.sectionNum ? `${doc.sectionNum}. ` : "";
-      items.push(`<a href="/docs/${doc.id}" class="nav-item ${doc.id === currentDoc.id ? "active" : ""}">${displayNum}${doc.title}</a>`);
+      items.push(`
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/${doc.id}" class="${doc.id === currentDoc.id ? "active" : ""}">${displayNum}${doc.title}</a>
+  </div>
+</div>`.trim());
     }
   }
 
@@ -379,8 +385,9 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     .sidebar a.active { background: #000; color: #fff; }
     
     /* Tree hierarchy styles */
-    .nav-item { padding-left: 20px !important; } /* Align with toggle items (8px icon + 4px gap + 8px padding) */
     .nav-group { margin: 4px 0; }
+    .nav-spacer { width: 8px; flex-shrink: 0; } /* Same width as toggle arrow */
+    .nav-no-toggle { cursor: default; }
     .nav-toggle {
       display: flex; align-items: center; gap: 4px;
       background: none; border: none; padding: 0; width: 100%;
