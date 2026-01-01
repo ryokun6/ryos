@@ -87,7 +87,7 @@ export function CreateRoomDialog({
     setIsSearching(true);
     try {
       const response = await fetch(
-        `/api/chat-rooms?action=getUsers&search=${encodeURIComponent(query)}`
+        `/api/chat-rooms/users?search=${encodeURIComponent(query)}`
       );
       if (response.ok) {
         const data = await response.json();

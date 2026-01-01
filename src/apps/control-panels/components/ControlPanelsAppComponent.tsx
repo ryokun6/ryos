@@ -418,7 +418,7 @@ export function ControlPanelsAppComponent({
         return;
       }
 
-      const response = await fetch(getApiUrl("/api/chat-rooms?action=logoutAllDevices"), {
+      const response = await fetch(getApiUrl("/api/chat-rooms/auth/logout/all"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

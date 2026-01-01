@@ -206,7 +206,7 @@ export function AdminAppComponent({
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/chat-rooms?action=getRooms&username=${encodeURIComponent(username)}`,
+        `/api/chat-rooms/rooms?username=${encodeURIComponent(username)}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -233,7 +233,7 @@ export function AdminAppComponent({
       setIsLoading(true);
       try {
         const response = await fetch(
-          `/api/chat-rooms?action=getMessages&roomId=${encodeURIComponent(roomId)}&limit=200`,
+          `/api/chat-rooms/rooms/${encodeURIComponent(roomId)}/messages?limit=200`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,

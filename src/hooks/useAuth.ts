@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 
+const CHAT_ROOMS_AUTH_LOGIN = "/api/chat-rooms/auth/login";
+const CHAT_ROOMS_AUTH_VERIFY = "/api/chat-rooms/auth/token/verify";
+
 export function useAuth() {
   const {
     username,
@@ -131,21 +134,18 @@ export function useAuth() {
           }
 
           // Authenticate with password
-          const response = await fetch(
-            "/api/chat-rooms?action=authenticateWithPassword",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-              },
-              body: JSON.stringify({
-                username: targetUsername,
-                password: input.trim(),
-                ...(authToken ? { oldToken: authToken } : {}),
-              }),
-            }
-          );
+          const response = await fetch(CHAT_ROOMS_AUTH_LOGIN, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            },
+            body: JSON.stringify({
+              username: targetUsername,
+              password: input.trim(),
+              ...(authToken ? { oldToken: authToken } : {}),
+            }),
+          });
 
           if (!response.ok) {
             const data = await response.json();
@@ -182,17 +182,14 @@ export function useAuth() {
           }
 
           // Test the token using the dedicated verification endpoint
-          const testResponse = await fetch(
-            "/api/chat-rooms?action=verifyToken",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${input.trim()}`,
-              },
-              body: JSON.stringify({}),
-            }
-          );
+          const testResponse = await fetch(CHAT_ROOMS_AUTH_VERIFY, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${input.trim()}`,
+            },
+            body: JSON.stringify({}),
+          });
 
           if (!testResponse.ok) {
             if (testResponse.status === 401) {
