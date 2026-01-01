@@ -345,6 +345,14 @@ export function ControlPanelsAppComponent({
     }
   };
 
+  const syncStatus = (() => {
+    if (!authToken || !username) return { label: "Not logged in", tone: "text-red-600" };
+    if (!syncSettings.enabled) return { label: "Disabled", tone: "text-gray-600" };
+    if (isSyncing) return { label: "Syncing…", tone: "text-blue-600" };
+    if (lastError) return { label: `Error: ${lastError}`, tone: "text-red-600" };
+    return { label: lastSyncAt ? `Last sync: ${new Date(lastSyncAt).toLocaleString()}` : "Never synced", tone: "text-green-600" };
+  })();
+
   // Use auth hook
   const {
     username,
@@ -1968,13 +1976,9 @@ export function ControlPanelsAppComponent({
                     >
                       {isSyncing ? "Syncing…" : "Sync Now"}
                     </Button>
-                    <div className="text-[11px] text-gray-600 font-geneva-12">
-                      <div>Device: {deviceId.slice(0, 8)}</div>
-                      <div>
-                        Last sync:{" "}
-                        {lastSyncAt ? new Date(lastSyncAt).toLocaleString() : "Never"}
-                      </div>
-                      {lastError && <div className="text-red-600">Error: {lastError}</div>}
+                    <div className={`text-[11px] font-geneva-12 ${syncStatus.tone}`}>
+                      <div className="text-gray-600">Device: {deviceId.slice(0, 8)}</div>
+                      <div>{syncStatus.label}</div>
                     </div>
                   </div>
                 </div>
