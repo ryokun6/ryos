@@ -3,6 +3,7 @@ import type { SnapshotEnvelope } from "./types";
 import { pushSnapshots, pullSnapshots, deleteRemoteSnapshots } from "./client";
 import { mergeSnapshots, snapshotArrayToMap } from "./utils";
 import { useSyncSettingsStore } from "@/stores/useSyncSettingsStore";
+import { getOrCreateDeviceId } from "./device";
 
 // Snapshot filter helpers ----------------------------------------------------
 const MEDIA_KEYS = new Set([
@@ -125,4 +126,15 @@ export async function syncOnce(
   } catch (err) {
     return { ok: false, status: 0, error: (err as Error).message };
   }
+}
+
+export async function syncWithSettings(
+  auth?: AuthHeaders
+): Promise<{ ok: boolean; status: number; merged?: unknown[]; error?: string }> {
+  const settings = useSyncSettingsStore.getState();
+  if (!settings.enabled) {
+    return { ok: false, status: 0, error: "sync_disabled" };
+  }
+  const deviceId = getOrCreateDeviceId();
+  return syncOnce(deviceId, auth);
 }
