@@ -347,9 +347,7 @@ export const useMyStore = create&lt;StoreState&gt;()(
   )
 );</code></pre>
 <h2>Cross-Store Communication</h2>
-<ul><li><code>useKaraokeStore</code> → reads from <code>useIpodStore</code> (shared music library)</li></ul>
-<ul><li><code>useTextEditStore</code> → reads from <code>useAppStore</code> (foreground instance)</li></ul>
-<ul><li><code>useIpodStore</code> → reads from <code>useChatsStore</code> (auth credentials)</li></ul>
+<ul><li><code>useKaraokeStore</code> → reads from <code>useIpodStore</code> (shared music library)</li><li><code>useTextEditStore</code> → reads from <code>useAppStore</code> (foreground instance)</li><li><code>useIpodStore</code> → reads from <code>useChatsStore</code> (auth credentials)</li></ul>
 <pre class="mermaid">flowchart LR
     subgraph Components["React Components"]
         C1[IpodApp]

@@ -60,99 +60,50 @@ function markdownToHtml(md: string, appContext?: string): string {
   html = html.replace(/^## (.+)$/gm, "<h2>$1</h2>");
   html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>");
 
-  // Process lists - handle both unordered (*, -, +) and ordered (1., 2., etc.) lists with nesting
-  html = html.replace(/(\n|^)(([*+-]|\d+\.)\s+.+(\n(?: {2,4}([*+-]|\d+\.)\s+.+| {2,4}[^*\d\-+].+))*)/g, (match, prefix, listContent) => {
-    const lines = listContent.split('\n').filter((l: string) => l.trim());
-    if (lines.length === 0) return match;
-
-    interface ListItem {
-      content: string;
-      children: ListItem[];
-      type: 'ul' | 'ol';
-    }
-
-    interface ListContext {
-      type: 'ul' | 'ol';
-      indent: number;
-      items: ListItem[];
-    }
-
-    const listStack: ListContext[] = [];
-    const rootItems: ListItem[] = [];
-    let currentParent: ListItem[] = rootItems;
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-
-      const ulMatch = line.match(/^(\s*)([*+-])\s+(.+)$/);
-      const olMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/);
-
-      if (ulMatch || olMatch) {
-        const match = ulMatch || olMatch!;
-        const indent = match[1].length;
-        const content = match[3];
-        const type = ulMatch ? 'ul' : 'ol';
-
-        while (listStack.length > 0 && indent <= listStack[listStack.length - 1].indent) {
-          listStack.pop();
-        }
-
-        if (listStack.length === 0) {
-          currentParent = rootItems;
-        } else {
-          const lastList = listStack[listStack.length - 1];
-          if (lastList.items.length > 0) {
-            currentParent = lastList.items[lastList.items.length - 1].children;
-          } else {
-            currentParent = [];
-          }
-        }
-
-        const item: ListItem = { content, children: [], type };
-
-        if (listStack.length === 0 || listStack[listStack.length - 1].type !== type || indent > listStack[listStack.length - 1].indent) {
-          listStack.push({ type, indent, items: [item] });
-          currentParent.push(item);
-        } else {
-          listStack[listStack.length - 1].items.push(item);
-          currentParent.push(item);
-        }
-      } else if (listStack.length > 0) {
-        const lastList = listStack[listStack.length - 1];
-        if (lastList.items.length > 0) {
-          const lastItem = lastList.items[lastList.items.length - 1];
-          lastItem.content += ' ' + trimmed;
-        }
+  // Process lists - handle both unordered (*, -, +) and ordered (1., 2., etc.) lists
+  // First pass: convert individual list items to temporary markers
+  const listItems: { type: 'ul' | 'ol'; content: string; indent: number }[] = [];
+  
+  // Collect all list items with their positions
+  html = html.replace(/^(\s*)([*+-])\s+(.+)$/gm, (match, indent, marker, content) => {
+    const idx = listItems.length;
+    listItems.push({ type: 'ul', content, indent: indent.length });
+    return `__LIST_ITEM_${idx}__`;
+  });
+  
+  html = html.replace(/^(\s*)(\d+)\.\s+(.+)$/gm, (match, indent, num, content) => {
+    const idx = listItems.length;
+    listItems.push({ type: 'ol', content, indent: indent.length });
+    return `__LIST_ITEM_${idx}__`;
+  });
+  
+  // Second pass: group consecutive list items of the same type
+  html = html.replace(/(__LIST_ITEM_\d+__\n?)+/g, (match) => {
+    const indices = [...match.matchAll(/__LIST_ITEM_(\d+)__/g)].map(m => parseInt(m[1]));
+    if (indices.length === 0) return match;
+    
+    // Group items by type, creating new lists when type changes
+    let result = '';
+    let currentType: 'ul' | 'ol' | null = null;
+    let currentItems: string[] = [];
+    
+    for (const idx of indices) {
+      const item = listItems[idx];
+      if (currentType !== null && currentType !== item.type) {
+        // Flush current list
+        result += `<${currentType}>${currentItems.map(c => `<li>${c}</li>`).join('')}</${currentType}>\n`;
+        currentItems = [];
       }
+      currentType = item.type;
+      currentItems.push(item.content);
     }
-
-    function renderItems(items: ListItem[]): string {
-      if (items.length === 0) return '';
-      
-      let result = '';
-      let currentType: 'ul' | 'ol' | null = null;
-      let currentGroup: ListItem[] = [];
-
-      for (const item of items) {
-        if (currentType !== null && currentType !== item.type) {
-          const tag = currentType === 'ul' ? 'ul' : 'ol';
-          result += `<${tag}>${currentGroup.map(i => `<li>${i.content}${renderItems(i.children)}</li>`).join('')}</${tag}>`;
-          currentGroup = [];
-        }
-        currentType = item.type;
-        currentGroup.push(item);
-      }
-
-      if (currentType !== null && currentGroup.length > 0) {
-        const tag = currentType === 'ul' ? 'ul' : 'ol';
-        result += `<${tag}>${currentGroup.map(i => `<li>${i.content}${renderItems(i.children)}</li>`).join('')}</${tag}>`;
-      }
-
-      return result;
+    
+    // Flush remaining items
+    if (currentType !== null && currentItems.length > 0) {
+      result += `<${currentType}>${currentItems.map(c => `<li>${c}</li>`).join('')}</${currentType}>\n`;
     }
-
-    return prefix + renderItems(rootItems) + '\n';
+    
+    return result;
   });
 
   // Bold and italic

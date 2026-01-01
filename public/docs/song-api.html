@@ -292,8 +292,7 @@
         <h1>Song API</h1>
 <p>The Song API provides endpoints for managing a music library in ryOS, including CRUD operations for songs, lyrics fetching from KuGou, AI-powered translations, Japanese furigana annotations, and "soramimi" (空耳) phonetic readings.</p>
 <h2>Overview</h2>
-<p>Songs are identified by their YouTube video ID (11 characters). The API stores: <ul><li><strong>Metadata</strong> (lightweight ~300 bytes): title, artist, album, cover, timestamps</li></ul></p>
-<ul><li><strong>Content</strong> (heavy ~5-50KB): lyrics, translations, furigana, soramimi annotations</li></ul>
+<p>Songs are identified by their YouTube video ID (11 characters). The API stores: <ul><li><strong>Metadata</strong> (lightweight ~300 bytes): title, artist, album, cover, timestamps</li><li><strong>Content</strong> (heavy ~5-50KB): lyrics, translations, furigana, soramimi annotations</li></ul></p>
 <p>Data is stored in Redis (Upstash) with split storage to avoid exceeding request size limits when listing songs.</p>
 <h2>Endpoints</h2>
 <table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/song</code></td><td>List songs with optional filtering</td></tr><tr><td>POST</td><td><code>/api/song</code></td><td>Create song or bulk import</td></tr><tr><td>DELETE</td><td><code>/api/song</code></td><td>Delete all songs (admin only)</td></tr><tr><td>GET</td><td><code>/api/song/{id}</code></td><td>Get song by ID</td></tr><tr><td>POST</td><td><code>/api/song/{id}</code></td><td>Update song or perform action</td></tr><tr><td>DELETE</td><td><code>/api/song/{id}</code></td><td>Delete song (admin only)</td></tr></tbody></table>
@@ -614,23 +613,16 @@ X-Username: &lt;username&gt;</code></pre>
 <table><thead><tr><th>Format</th><th>Description</th></tr></thead><tbody><tr><td><strong>LRC</strong></td><td>Standard timestamped lyrics: <code>[00:00.00]Lyrics text</code></td></tr><tr><td><strong>KRC</strong></td><td>Word-level timing: <code>[0,1000]<0,500,0>Word<500,500,0>Word</code></td></tr></tbody></table>
 <p>KRC format provides karaoke-style word-by-word timing with embedded translations.</p>
 <h3>Line Filtering</h3>
-<p>Lines are automatically filtered to remove: <ul><li>Credit/metadata lines (作词, 作曲, Produced by, etc.)</li></ul></p>
-<ul><li>Title/artist header lines</li></ul>
-<ul><li>Empty parenthetical content</li></ul>
+<p>Lines are automatically filtered to remove: <ul><li>Credit/metadata lines (作词, 作曲, Produced by, etc.)</li><li>Title/artist header lines</li><li>Empty parenthetical content</li></ul></p>
 <h3>Chinese Conversion</h3>
-<ul><li>Lyrics from KuGou are in Simplified Chinese</li></ul>
-<ul><li>Automatically converted to Traditional Chinese for display</li></ul>
-<ul><li>Japanese lyrics are detected and preserved without conversion</li></ul>
+<ul><li>Lyrics from KuGou are in Simplified Chinese</li><li>Automatically converted to Traditional Chinese for display</li><li>Japanese lyrics are detected and preserved without conversion</li></ul>
 <h3>Embedded Translations</h3>
 <p>KRC files may contain embedded Chinese translations in a base64-encoded <code>[language:]</code> tag. These are automatically extracted for Traditional Chinese translation requests, bypassing AI generation.</p>
 <hr>
 <h2>Furigana Generation</h2>
 <p>Furigana (振り仮名) are reading annotations for Japanese kanji.</p>
 <h3>Process</h3>
-<ol><li>Lines containing kanji are identified</li></ol>
-<ol><li>Non-kanji lines get plain text segments immediately</li></ol>
-<ol><li>AI generates readings in <code><kanji:reading></code> format</li></ol>
-<ol><li>Readings are parsed into segments: <code>[{text: "私", reading: "わたし"}]</code></li></ol>
+<ol><li>Lines containing kanji are identified</li><li>Non-kanji lines get plain text segments immediately</li><li>AI generates readings in <code><kanji:reading></code> format</li><li>Readings are parsed into segments: <code>[{text: "私", reading: "わたし"}]</code></li></ol>
 <h3>Output Format</h3>
 <pre><code>[
   [
@@ -646,9 +638,8 @@ X-Username: &lt;username&gt;</code></pre>
 <h3>Target Languages</h3>
 <table><thead><tr><th>Language</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>zh-TW</code></td><td>Traditional Chinese characters</td><td>사랑 → 思浪 (sounds like "sarang")</td></tr><tr><td><code>en</code></td><td>English phonetics</td><td>사랑 → "saw wrong"</td></tr></tbody></table>
 <h3>Process</h3>
-<ol><li>Non-English lines are identified</li></ol>
-<ol><li>English lines are passed through unchanged</li></ol>
-<ol><li>AI generates readings considering:<ul><li>Phonetic accuracy (sound must be close)</li><li>Semantic meaning (prefer meaningful characters)</li><li>Furigana annotations (if provided for Japanese)</li></ul></li></ol>
+<ol><li>Non-English lines are identified</li><li>English lines are passed through unchanged</li><li>AI generates readings considering:</li></ol>
+<ul><li>Phonetic accuracy (sound must be close)</li><li>Semantic meaning (prefer meaningful characters)</li><li>Furigana annotations (if provided for Japanese)</li></ul>
 <h3>Output Format</h3>
 <pre><code>[
   [
@@ -793,9 +784,7 @@ const importRes = await fetch('/api/song', {
 });</code></pre>
 <hr>
 <h2>Related Endpoints</h2>
-<ul><li><a href="/docs/api-auth.md">Authentication API</a> - User authentication</li></ul>
-<ul><li><a href="/docs/api-chat.md">Chat API</a> - Chat functionality</li></ul>
-
+<ul><li><a href="/docs/api-auth.md">Authentication API</a> - User authentication</li><li><a href="/docs/api-chat.md">Chat API</a> - Chat functionality</li></ul>
       </article>
       
       <nav class="nav">

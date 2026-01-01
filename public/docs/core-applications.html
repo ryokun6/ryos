@@ -296,48 +296,26 @@
 <h2>App Architecture</h2>
 <p>All apps follow a consistent architecture pattern:</p>
 <h3>Component Structure</h3>
-<ul><li><strong>App Component</strong> (<code>[AppName]AppComponent.tsx</code>): Main app UI component</li></ul>
-<ul><li><strong>Menu Bar</strong> (<code>[AppName]MenuBar.tsx</code>): App-specific menu bar with commands</li></ul>
-<ul><li><strong>Sub-components</strong>: App-specific UI components organized by feature</li></ul>
+<ul><li><strong>App Component</strong> (<code>[AppName]AppComponent.tsx</code>): Main app UI component</li><li><strong>Menu Bar</strong> (<code>[AppName]MenuBar.tsx</code>): App-specific menu bar with commands</li><li><strong>Sub-components</strong>: App-specific UI components organized by feature</li></ul>
 <h3>State Management</h3>
-<ul><li>Apps use <strong>Zustand stores</strong> for global state (e.g., <code>useIpodStore</code>, <code>useSoundboardStore</code>)</li></ul>
-<ul><li>Local component state for UI-specific concerns</li></ul>
-<ul><li>IndexedDB persistence for user data (songs, soundboards, etc.)</li></ul>
+<ul><li>Apps use <strong>Zustand stores</strong> for global state (e.g., <code>useIpodStore</code>, <code>useSoundboardStore</code>)</li><li>Local component state for UI-specific concerns</li><li>IndexedDB persistence for user data (songs, soundboards, etc.)</li></ul>
 <h3>Window Configuration</h3>
 Each app defines window constraints:
-<ul><li><code>defaultSize</code>: Initial window dimensions</li></ul>
-<ul><li><code>minSize</code> / <code>maxSize</code>: Resize constraints</li></ul>
-<ul><li><code>mobileDefaultSize</code>: Mobile-specific sizing</li></ul>
-<ul><li><code>mobileSquare</code>: Square aspect ratio for mobile</li></ul>
+<ul><li><code>defaultSize</code>: Initial window dimensions</li><li><code>minSize</code> / <code>maxSize</code>: Resize constraints</li><li><code>mobileDefaultSize</code>: Mobile-specific sizing</li><li><code>mobileSquare</code>: Square aspect ratio for mobile</li></ul>
 <h3>Lazy Loading</h3>
 Most apps are lazy-loaded for performance:
-<ul><li>Finder loads eagerly (critical path)</li></ul>
-<ul><li>Other apps load on-demand when opened</li></ul>
-<ul><li>Reduces initial bundle size</li></ul>
+<ul><li>Finder loads eagerly (critical path)</li><li>Other apps load on-demand when opened</li><li>Reduces initial bundle size</li></ul>
 <h2>Key Features by Category</h2>
 <h3>File Management</h3>
-<ul><li><strong>Virtual File System</strong>: IndexedDB-backed with lazy loading</li></ul>
-<ul><li><strong>File Operations</strong>: Create, rename, move, delete files and folders</li></ul>
-<ul><li><strong>Quick Access</strong>: Jump to Documents, Applications, Trash</li></ul>
+<ul><li><strong>Virtual File System</strong>: IndexedDB-backed with lazy loading</li><li><strong>File Operations</strong>: Create, rename, move, delete files and folders</li><li><strong>Quick Access</strong>: Jump to Documents, Applications, Trash</li></ul>
 <h3>Media Playback</h3>
-<ul><li><strong>Audio</strong>: Tone.js, WaveSurfer.js, Web Audio API integration</li></ul>
-<ul><li><strong>Video</strong>: React Player for YouTube and local video playback</li></ul>
-<ul><li><strong>Lyrics</strong>: Synced lyrics with translations, furigana, romaji, pinyin</li></ul>
+<ul><li><strong>Audio</strong>: Tone.js, WaveSurfer.js, Web Audio API integration</li><li><strong>Video</strong>: React Player for YouTube and local video playback</li><li><strong>Lyrics</strong>: Synced lyrics with translations, furigana, romaji, pinyin</li></ul>
 <h3>AI Integration</h3>
-<ul><li><strong>Ryo Assistant</strong>: Chat interface with tool calling capabilities</li></ul>
-<ul><li><strong>Code Generation</strong>: Generate HTML applets from natural language</li></ul>
-<ul><li><strong>App Control</strong>: Launch apps, switch themes, control playback via AI</li></ul>
-<ul><li><strong>Content Generation</strong>: AI-powered web content generation in IE</li></ul>
+<ul><li><strong>Ryo Assistant</strong>: Chat interface with tool calling capabilities</li><li><strong>Code Generation</strong>: Generate HTML applets from natural language</li><li><strong>App Control</strong>: Launch apps, switch themes, control playback via AI</li><li><strong>Content Generation</strong>: AI-powered web content generation in IE</li></ul>
 <h3>Creativity Tools</h3>
-<ul><li><strong>Paint</strong>: Canvas-based drawing with filters and patterns</li></ul>
-<ul><li><strong>Photo Booth</strong>: Webcam integration with visual effects</li></ul>
-<ul><li><strong>TextEdit</strong>: Rich text editing with TipTap, markdown support</li></ul>
+<ul><li><strong>Paint</strong>: Canvas-based drawing with filters and patterns</li><li><strong>Photo Booth</strong>: Webcam integration with visual effects</li><li><strong>TextEdit</strong>: Rich text editing with TipTap, markdown support</li></ul>
 <h2>App-Specific Documentation</h2>
-<p>Click on any app name above to view detailed documentation for that application, including: <ul><li>Feature overview and capabilities</li></ul></p>
-<ul><li>User guide and tips</li></ul>
-<ul><li>Technical implementation details</li></ul>
-<ul><li>Component architecture</li></ul>
-<ul><li>State management patterns</li></ul>
+<p>Click on any app name above to view detailed documentation for that application, including: <ul><li>Feature overview and capabilities</li><li>User guide and tips</li><li>Technical implementation details</li><li>Component architecture</li><li>State management patterns</li></ul></p>
       </article>
       
       <nav class="nav">

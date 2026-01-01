@@ -640,10 +640,7 @@ export const stream = true;     // Enable streaming</code></pre>
 <h2>Related Endpoints</h2>
 <table><thead><tr><th>Endpoint</th><th>Documentation</th><th>Description</th></tr></thead><tbody><tr><td><code>/api/applet-ai</code></td><td>-</td><td>Applet text + image generation</td></tr><tr><td><code>/api/ie-generate</code></td><td>-</td><td>Time-travel page generation</td></tr><tr><td><code>/api/speech</code></td><td>-</td><td>Text-to-speech synthesis</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>-</td><td>Speech-to-text transcription</td></tr><tr><td><code>/api/youtube-search</code></td><td>-</td><td>YouTube music search</td></tr><tr><td><code>/api/song/</code></td><td>-</td><td>Song library CRUD operations</td></tr></tbody></table>
 <h2>System Prompt Structure</h2>
-<p>The Chat API uses a layered system prompt approach:</p>
-<ol><li><strong>Static System Prompt</strong> (cached for performance):<ul><li>Core priority instructions</li><li>Ryo persona instructions</li><li>Answer style guidelines</li><li>Chat instructions</li><li>Tool usage instructions</li><li>Code generation instructions</li></ul></li></ol>
-<ol><li><strong>Dynamic System Prompt</strong> (per-request):<ul><li>User context (username, OS, locale)</li><li>Time information (Ryo's time + user's local time)</li><li>Running applications</li><li>Media playback state</li><li>Browser state</li><li>TextEdit documents</li><li>Chat room context (if applicable)</li></ul></li></ol>
-
+<p>The Chat API uses a layered system prompt approach: <ol><li><strong>Static System Prompt</strong> (cached for performance):</li></ol> <ul><li>Core priority instructions</li><li>Ryo persona instructions</li><li>Answer style guidelines</li><li>Chat instructions</li><li>Tool usage instructions</li><li>Code generation instructions</li></ul> <ol><li><strong>Dynamic System Prompt</strong> (per-request):</li></ol> <ul><li>User context (username, OS, locale)</li><li>Time information (Ryo's time + user's local time)</li><li>Running applications</li><li>Media playback state</li><li>Browser state</li><li>TextEdit documents</li><li>Chat room context (if applicable)</li></ul></p>
       </article>
       
       <nav class="nav">

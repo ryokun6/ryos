@@ -312,8 +312,7 @@
 <strong>Error Responses:</strong>
 <table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td>Missing or invalid URL</td></tr><tr><td>403</td><td>Unauthorized origin</td></tr><tr><td>405</td><td>Method not allowed</td></tr><tr><td>408</td><td>Request timeout</td></tr><tr><td>429</td><td>Rate limit exceeded</td></tr><tr><td>503</td><td>Network error</td></tr></tbody></table>
 <h3>Rate Limits</h3>
-<ul><li><strong>Global limit:</strong> 10 requests per minute per IP</li></ul>
-<ul><li><strong>Per-host limit:</strong> 5 requests per minute per IP per target hostname</li></ul>
+<ul><li><strong>Global limit:</strong> 10 requests per minute per IP</li><li><strong>Per-host limit:</strong> 5 requests per minute per IP per target hostname</li></ul>
 <h3>Example</h3>
 <pre><code>// Fetch link preview
 const response = await fetch('/api/link-preview?url=https://github.com');
@@ -328,10 +327,7 @@ console.log(metadata);
 //   siteName: "GitHub"
 // }</code></pre>
 <h3>Notes</h3>
-<ul><li>YouTube URLs are handled specially using the oEmbed API for reliable metadata</li></ul>
-<ul><li>Responses are cached for 1 hour (<code>Cache-Control: public, max-age=3600</code>)</li></ul>
-<ul><li>HTML entities in metadata are automatically decoded</li></ul>
-<ul><li>Relative image URLs are converted to absolute URLs</li></ul>
+<ul><li>YouTube URLs are handled specially using the oEmbed API for reliable metadata</li><li>Responses are cached for 1 hour (<code>Cache-Control: public, max-age=3600</code>)</li><li>HTML entities in metadata are automatically decoded</li><li>Relative image URLs are converted to absolute URLs</li></ul>
 <hr>
 <h2>iFrame Check</h2>
 <p>Checks if a URL allows iframe embedding and optionally proxies content to bypass embedding restrictions. Also supports retrieving cached historical versions of pages.</p>
@@ -355,10 +351,7 @@ console.log(metadata);
   "title": "Page Title"
 }</code></pre>
 <h4><code>proxy</code> Mode (Default)</h4>
-<p>Proxies the content with embedding-blocking headers removed. Injects: <ul><li><code><base></code> tag for relative URL resolution</li></ul></p>
-<ul><li>Click interceptor script for navigation handling</li></ul>
-<ul><li>History API patch for cross-origin compatibility</li></ul>
-<ul><li>Font override styles (unless theme is "macosx")</li></ul>
+<p>Proxies the content with embedding-blocking headers removed. Injects: <ul><li><code><base></code> tag for relative URL resolution</li><li>Click interceptor script for navigation handling</li><li>History API patch for cross-origin compatibility</li><li>Font override styles (unless theme is "macosx")</li></ul></p>
 <strong>Response:</strong> The proxied HTML content with modified headers.
 <strong>Custom Response Headers:</strong>
 <table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Proxied-Page-Title</code></td><td>URL-encoded page title (if available)</td></tr><tr><td><code>X-Wayback-Cache</code></td><td>"HIT" if content was served from Wayback cache</td></tr></tbody></table>
@@ -379,10 +372,7 @@ console.log(metadata);
   "years": ["current", "2020", "2015", "2010", "1999", "500 BC"]
 }</code></pre>
 <h3>Auto-Proxy Domains</h3>
-<p>The following domains are automatically proxied regardless of mode: <ul><li><code>wikipedia.org</code> (and subdomains)</li></ul></p>
-<ul><li><code>wikimedia.org</code> (and subdomains)</li></ul>
-<ul><li><code>wikipedia.com</code></li></ul>
-<ul><li><code>cursor.com</code></li></ul>
+<p>The following domains are automatically proxied regardless of mode: <ul><li><code>wikipedia.org</code> (and subdomains)</li><li><code>wikimedia.org</code> (and subdomains)</li><li><code>wikipedia.com</code></li><li><code>cursor.com</code></li></ul></p>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Mode</th><th>Global Limit</th><th>Per-Host Limit</th></tr></thead><tbody><tr><td><code>check</code> / <code>proxy</code></td><td>300/min per IP</td><td>100/min per IP per host</td></tr><tr><td><code>ai</code> / <code>list-cache</code></td><td>120/min per IP</td><td>N/A</td></tr></tbody></table>
 <h3>Example</h3>
@@ -595,9 +585,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
   "success": true
 }</code></pre>
 <strong>Effects:</strong>
-<ul><li>Deletes user record</li></ul>
-<ul><li>Deletes password hash</li></ul>
-<ul><li>Invalidates all authentication tokens</li></ul>
+<ul><li>Deletes user record</li><li>Deletes password hash</li><li>Invalidates all authentication tokens</li></ul>
 <h4><code>banUser</code> Action</h4>
 <p>Ban a user from the chat system (cannot ban admin "ryo").</p>
 <strong>Request:</strong>
@@ -611,9 +599,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
   "success": true
 }</code></pre>
 <strong>Effects:</strong>
-<ul><li>Sets <code>banned: true</code> on user record</li></ul>
-<ul><li>Stores ban reason and timestamp</li></ul>
-<ul><li>Invalidates all authentication tokens (forces logout)</li></ul>
+<ul><li>Sets <code>banned: true</code> on user record</li><li>Stores ban reason and timestamp</li><li>Invalidates all authentication tokens (forces logout)</li></ul>
 <h4><code>unbanUser</code> Action</h4>
 <p>Remove ban from a user.</p>
 <strong>Request:</strong>
@@ -670,10 +656,7 @@ await fetch('/api/admin', {
 <h2>CORS</h2>
 <p>All utility APIs implement CORS with origin validation. Allowed origins are configured server-side. Requests from unauthorized origins receive <code>403 Forbidden</code>.</p>
 <h2>Related</h2>
-<ul><li><a href="./04-api-layer.md">API Layer Overview</a> - General API architecture</li></ul>
-<ul><li><a href="./07-chat-system.md">Chat System</a> - Chat room APIs</li></ul>
-<ul><li><a href="./09-ai-integration.md">AI Integration</a> - AI-powered features</li></ul>
-
+<ul><li><a href="./04-api-layer.md">API Layer Overview</a> - General API architecture</li><li><a href="./07-chat-system.md">Chat System</a> - Chat room APIs</li><li><a href="./09-ai-integration.md">AI Integration</a> - AI-powered features</li></ul>
       </article>
       
       <nav class="nav">

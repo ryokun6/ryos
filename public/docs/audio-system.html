@@ -321,34 +321,15 @@
     Synth --> Effects --> GainNode
     GainNode --> AC --> Dest</pre>
 <h2>Audio Playback</h2>
-<p>ryOS provides multiple audio playback mechanisms:</p>
-<ul><li><strong>iPod App</strong>: Uses ReactPlayer for YouTube video/audio playback with volume control, seeking, and playback state management. Supports fullscreen playback with synchronized lyrics display.</li></ul>
-<ul><li><strong>Soundboard App</strong>: Plays recorded audio clips using HTMLAudioElement. Supports multiple audio formats (WebM, MP4, WAV, MPEG) with base64-encoded storage. Includes waveform visualization using WaveSurfer.js.</li></ul>
-<ul><li><strong>UI Sounds</strong>: The <code>useSound</code> hook provides Web Audio API-based playback for interface feedback sounds (window operations, button clicks, menu interactions). Features include:<ul><li>AudioBuffer caching for performance</li><li>Concurrent source limiting (16 on mobile, 32 on desktop)</li><li>Volume control with master and UI volume multipliers</li><li>Fade in/out capabilities</li><li>Automatic AudioContext resumption</li></ul></li></ul>
+<p>ryOS provides multiple audio playback mechanisms: <ul><li><strong>iPod App</strong>: Uses ReactPlayer for YouTube video/audio playback with volume control, seeking, and playback state management. Supports fullscreen playback with synchronized lyrics display.</li><li><strong>Soundboard App</strong>: Plays recorded audio clips using HTMLAudioElement. Supports multiple audio formats (WebM, MP4, WAV, MPEG) with base64-encoded storage. Includes waveform visualization using WaveSurfer.js.</li><li><strong>UI Sounds</strong>: The <code>useSound</code> hook provides Web Audio API-based playback for interface feedback sounds (window operations, button clicks, menu interactions). Features include:</li><li>AudioBuffer caching for performance</li><li>Concurrent source limiting (16 on mobile, 32 on desktop)</li><li>Volume control with master and UI volume multipliers</li><li>Fade in/out capabilities</li><li>Automatic AudioContext resumption</li></ul></p>
 <h2>Synthesizer</h2>
-<p>The Synthesizer app (<code>src/apps/synth/</code>) provides a full-featured music synthesizer built with Tone.js:</p>
-<ul><li><strong>Oscillators</strong>: Supports sine, square, triangle, and sawtooth waveforms</li></ul>
-<ul><li><strong>Polyphonic Synthesis</strong>: Tone.PolySynth enables multiple simultaneous notes</li></ul>
-<ul><li><strong>Effects Chain</strong>: <ul><li>Reverb (decay, wet mix)</li><li>Feedback Delay</li><li>Distortion</li><li>Chorus</li><li>Phaser</li><li>BitCrusher</li><li>Gain control</li></ul></li></ul>
-<ul><li><strong>ADSR Envelope</strong>: Attack, Decay, Sustain, Release controls for note shaping</li></ul>
-<ul><li><strong>Preset System</strong>: Save and load custom synthesizer configurations</li></ul>
-<ul><li><strong>Keyboard Support</strong>: Virtual piano keyboard with octave shifting, keyboard mapping, and touch/mouse support</li></ul>
-<ul><li><strong>Visualization</strong>: 3D waveform visualization using Tone.Analyser</li></ul>
+<p>The Synthesizer app (<code>src/apps/synth/</code>) provides a full-featured music synthesizer built with Tone.js: <ul><li><strong>Oscillators</strong>: Supports sine, square, triangle, and sawtooth waveforms</li><li><strong>Polyphonic Synthesis</strong>: Tone.PolySynth enables multiple simultaneous notes</li><li><strong>Effects Chain</strong>: </li><li>Reverb (decay, wet mix)</li><li>Feedback Delay</li><li>Distortion</li><li>Chorus</li><li>Phaser</li><li>BitCrusher</li><li>Gain control</li><li><strong>ADSR Envelope</strong>: Attack, Decay, Sustain, Release controls for note shaping</li><li><strong>Preset System</strong>: Save and load custom synthesizer configurations</li><li><strong>Keyboard Support</strong>: Virtual piano keyboard with octave shifting, keyboard mapping, and touch/mouse support</li><li><strong>Visualization</strong>: 3D waveform visualization using Tone.Analyser</li></ul></p>
 <p>The synthesizer uses a simplified effects chain on mobile Safari to avoid audio blocking issues, while desktop uses the full effects chain.</p>
 <h2>Sound Recording</h2>
-<p>The Soundboard app (<code>src/apps/soundboard/</code>) provides audio recording capabilities:</p>
-<ul><li><strong>MediaRecorder API</strong>: Records audio from user's microphone</li></ul>
-<ul><li><strong>Format Support</strong>: Automatically detects and uses browser-supported formats (WebM for Chrome/Firefox, MP4 for Safari)</li></ul>
-<ul><li><strong>Device Selection</strong>: Supports selecting specific audio input devices</li></ul>
-<ul><li><strong>Base64 Storage</strong>: Recorded audio is stored as base64-encoded data in the app's state</li></ul>
-<ul><li><strong>Waveform Visualization</strong>: Uses WaveSurfer.js to display audio waveforms for recorded clips</li></ul>
-<ul><li><strong>Recording State Management</strong>: Tracks recording state per sound slot with visual feedback</li></ul>
+<p>The Soundboard app (<code>src/apps/soundboard/</code>) provides audio recording capabilities: <ul><li><strong>MediaRecorder API</strong>: Records audio from user's microphone</li><li><strong>Format Support</strong>: Automatically detects and uses browser-supported formats (WebM for Chrome/Firefox, MP4 for Safari)</li><li><strong>Device Selection</strong>: Supports selecting specific audio input devices</li><li><strong>Base64 Storage</strong>: Recorded audio is stored as base64-encoded data in the app's state</li><li><strong>Waveform Visualization</strong>: Uses WaveSurfer.js to display audio waveforms for recorded clips</li><li><strong>Recording State Management</strong>: Tracks recording state per sound slot with visual feedback</li></ul></p>
 <p>The <code>useAudioRecorder</code> hook manages recording lifecycle, permission handling, and format conversion.</p>
 <h2>Audio Settings</h2>
-<p>Audio settings are managed centrally via <code>useAudioSettingsStore</code>:</p>
-<ul><li><strong>Volume Controls</strong>:<ul><li>Master volume (global multiplier)</li><li>UI volume (interface sounds)</li><li>Chat synth volume (text-to-speech synthesis)</li><li>Speech volume (voice input/output)</li><li>iPod volume (music player)</li></ul></li></ul>
-<ul><li><strong>Feature Toggles</strong>:<ul><li>UI sounds enabled/disabled</li><li>Terminal sounds enabled/disabled</li><li>Typing synthesis enabled/disabled</li><li>Speech enabled/disabled</li><li>Keep talking mode</li></ul></li></ul>
-<ul><li><strong>TTS Settings</strong>:<ul><li>TTS model selection (OpenAI, ElevenLabs, or null)</li><li>Voice selection</li><li>Synthesizer preset</li></ul></li></ul>
+<p>Audio settings are managed centrally via <code>useAudioSettingsStore</code>: <ul><li><strong>Volume Controls</strong>:</li><li>Master volume (global multiplier)</li><li>UI volume (interface sounds)</li><li>Chat synth volume (text-to-speech synthesis)</li><li>Speech volume (voice input/output)</li><li>iPod volume (music player)</li><li><strong>Feature Toggles</strong>:</li><li>UI sounds enabled/disabled</li><li>Terminal sounds enabled/disabled</li><li>Typing synthesis enabled/disabled</li><li>Speech enabled/disabled</li><li>Keep talking mode</li><li><strong>TTS Settings</strong>:</li><li>TTS model selection (OpenAI, ElevenLabs, or null)</li><li>Voice selection</li><li>Synthesizer preset</li></ul></p>
 <p>All settings are persisted to localStorage via Zustand's persist middleware.</p>
 <h2>Audio Context Management</h2>
 <pre class="mermaid">stateDiagram-v2
@@ -362,12 +343,7 @@
     note right of Running: Audio plays normally
     note right of Suspended: Audio paused, auto-resume on interaction
     note right of Closed: Must recreate AudioContext instance</pre>
-<p>The audio system uses a centralized AudioContext (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioContext.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/audioContext.ts</a></code>) to:</p>
-<ul><li><strong>Single Context</strong>: Maintains one shared AudioContext instance across the application</li></ul>
-<ul><li><strong>Auto-Resume</strong>: Automatically resumes suspended contexts on user interaction, tab focus, or device changes</li></ul>
-<ul><li><strong>Context Recreation</strong>: Recreates closed contexts (e.g., after iOS Safari backgrounding)</li></ul>
-<ul><li><strong>State Management</strong>: Tracks context state and notifies listeners of context changes</li></ul>
-<ul><li><strong>Mobile Optimization</strong>: Handles iOS Safari quirks including suspended/interrupted states</li></ul>
+<p>The audio system uses a centralized AudioContext (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioContext.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/audioContext.ts</a></code>) to: <ul><li><strong>Single Context</strong>: Maintains one shared AudioContext instance across the application</li><li><strong>Auto-Resume</strong>: Automatically resumes suspended contexts on user interaction, tab focus, or device changes</li><li><strong>Context Recreation</strong>: Recreates closed contexts (e.g., after iOS Safari backgrounding)</li><li><strong>State Management</strong>: Tracks context state and notifies listeners of context changes</li><li><strong>Mobile Optimization</strong>: Handles iOS Safari quirks including suspended/interrupted states</li></ul></p>
 <p>This centralized approach prevents AudioContext limit issues and ensures consistent audio behavior across all apps.</p>
       </article>
       

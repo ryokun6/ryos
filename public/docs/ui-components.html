@@ -311,16 +311,9 @@
     Dialogs --> |modals| Apps
     Shared --> |utilities| Apps</pre>
 <h2>Technologies</h2>
-<ul><li><strong>React 19</strong> with TypeScript for type-safe component development</li></ul>
-<ul><li><strong>Tailwind CSS</strong> for utility-first styling and theme support</li></ul>
-<ul><li><strong>shadcn/ui</strong> component library for accessible, customizable UI primitives</li></ul>
-<ul><li><strong>Framer Motion</strong> for animations and transitions</li></ul>
+<ul><li><strong>React 19</strong> with TypeScript for type-safe component development</li><li><strong>Tailwind CSS</strong> for utility-first styling and theme support</li><li><strong>shadcn/ui</strong> component library for accessible, customizable UI primitives</li><li><strong>Framer Motion</strong> for animations and transitions</li></ul>
 <h2>Component Architecture</h2>
-<p>The UI system follows a layered approach:</p>
-<ol><li><strong>Base Layer</strong>: shadcn/ui components (button, dialog, input, select, etc.) provide accessible, themeable primitives</li></ol>
-<ol><li><strong>Custom Layer</strong>: Specialized components (activity-indicator, audio-bars, dial, playback-bars) extend functionality for app-specific needs</li></ol>
-<ol><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li></ol>
-<ol><li><strong>Application Layer</strong>: Dialog and shared components provide common patterns used across multiple apps</li></ol>
+<p>The UI system follows a layered approach: <ol><li><strong>Base Layer</strong>: shadcn/ui components (button, dialog, input, select, etc.) provide accessible, themeable primitives</li><li><strong>Custom Layer</strong>: Specialized components (activity-indicator, audio-bars, dial, playback-bars) extend functionality for app-specific needs</li><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li><li><strong>Application Layer</strong>: Dialog and shared components provide common patterns used across multiple apps</li></ol></p>
 <pre class="mermaid">graph TD
     subgraph Layer 4: Application
         D1[Dialog Components]
@@ -351,9 +344,7 @@
     C1 & C2 & C3 & C4 --> D1 & D2</pre>
 <p>All components are theme-aware, automatically adapting to the active system theme (System 7, Mac OS X, Windows XP, Windows 98) through the theme system.</p>
 <h2>Subsections</h2>
-<ul><li><a href="/docs/component-library">Component Library</a> - Core UI component library including shadcn components and custom primitives</li></ul>
-<ul><li><a href="/docs/i18n">Internationalization</a> - i18n hooks and translation system supporting 9 languages</li></ul>
-
+<ul><li><a href="/docs/component-library">Component Library</a> - Core UI component library including shadcn components and custom primitives</li><li><a href="/docs/i18n">Internationalization</a> - i18n hooks and translation system supporting 9 languages</li></ul>
       </article>
       
       <nav class="nav">

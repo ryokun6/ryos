@@ -336,14 +336,9 @@
 <table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Image MIME type (e.g., <code>image/png</code>)</td></tr><tr><td><code>X-Image-Description</code></td><td>Optional description of generated image</td></tr></tbody></table>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>User Type</th><th>Text Requests</th><th>Image Requests</th><th>Window</th></tr></thead><tbody><tr><td>Anonymous</td><td>15/hour</td><td>1/hour</td><td>1 hour</td></tr><tr><td>Authenticated</td><td>50/hour</td><td>12/hour</td><td>1 hour</td></tr></tbody></table>
-<p>Rate limit headers included in responses:</p>
-<ul><li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li></ul>
-<ul><li><code>X-RateLimit-Remaining</code>: Requests remaining</li></ul>
-<ul><li><code>X-RateLimit-Reset</code>: Seconds until reset</li></ul>
-<ul><li><code>Retry-After</code>: Seconds to wait (on 429)</li></ul>
+<p>Rate limit headers included in responses: <ul><li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li><li><code>X-RateLimit-Remaining</code>: Requests remaining</li><li><code>X-RateLimit-Reset</code>: Seconds until reset</li><li><code>Retry-After</code>: Seconds to wait (on 429)</li></ul></p>
 <h3>Models</h3>
-<ul><li><strong>Text</strong>: <code>gemini-2.5-flash</code></li></ul>
-<ul><li><strong>Image</strong>: <code>gemini-2.5-flash-image-preview</code></li></ul>
+<ul><li><strong>Text</strong>: <code>gemini-2.5-flash</code></li><li><strong>Image</strong>: <code>gemini-2.5-flash-image-preview</code></li></ul>
 <h3>Example</h3>
 <strong>Text Generation</strong>
 <pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
@@ -407,10 +402,7 @@
 <table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
 <h3>Response</h3>
 <p>Returns a streaming response (<code>text/event-stream</code>) containing the generated HTML page. The response follows the AI SDK's UI message stream format.</p>
-<p>Generated HTML includes: <ul><li>Era-appropriate styling and typography</li></ul></p>
-<ul><li>Historical or futuristic design elements</li></ul>
-<ul><li><code><!-- TITLE: ... --></code> comment with page title</li></ul>
-<ul><li>Complete, self-contained HTML document</li></ul>
+<p>Generated HTML includes: <ul><li>Era-appropriate styling and typography</li><li>Historical or futuristic design elements</li><li><code><!-- TITLE: ... --></code> comment with page title</li><li>Complete, self-contained HTML document</li></ul></p>
 <p>Results are cached in Redis for future retrieval.</p>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>3 requests</td><td>1 minute</td></tr><tr><td>Budget</td><td>10 requests</td><td>5 hours</td></tr></tbody></table>
@@ -419,18 +411,11 @@
 <h3>Design Guidelines</h3>
 <p>The AI applies different design principles based on the target year:</p>
 <strong>Future Years</strong> (after current year):
-<ul><li>Bold, creative speculation about design trends</li></ul>
-<ul><li>Embraces backdrop-blur, simple animations</li></ul>
-<ul><li>Uses emojis or simple SVGs for icons</li></ul>
-<ul><li>Considers potential technological breakthroughs</li></ul>
+<ul><li>Bold, creative speculation about design trends</li><li>Embraces backdrop-blur, simple animations</li><li>Uses emojis or simple SVGs for icons</li><li>Considers potential technological breakthroughs</li></ul>
 <strong>Past Years</strong> (before current year):
-<ul><li>Matches historical design era (Art Deco, Web 1.0, etc.)</li></ul>
-<ul><li>Considers available technology of the time</li></ul>
-<ul><li>Simulates period-appropriate materials and textures</li></ul>
-<ul><li>May output as print, newspaper, telegram, etc. for very old dates</li></ul>
+<ul><li>Matches historical design era (Art Deco, Web 1.0, etc.)</li><li>Considers available technology of the time</li><li>Simulates period-appropriate materials and textures</li><li>May output as print, newspaper, telegram, etc. for very old dates</li></ul>
 <strong>Current Year</strong>:
-<ul><li>Reflects current website state accurately</li></ul>
-<ul><li>Up-to-date styling and branding</li></ul>
+<ul><li>Reflects current website state accurately</li><li>Up-to-date styling and branding</li></ul>
 <h3>Example</h3>
 <pre><code>curl -X POST "https://os.ryo.lu/api/ie-generate?url=apple.com&amp;year=1984" \
   -H "Content-Type: application/json" \
@@ -497,11 +482,7 @@
 <table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>No title provided</code></td><td>Missing or invalid title field</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Burst or daily limit exceeded</td></tr><tr><td>500</td><td><code>Error parsing title</code></td><td>AI parsing failed</td></tr></tbody></table>
 <hr>
 <h2>Related</h2>
-<ul><li><strong><a href="./07-chat-system.md">Chat API</a></strong> - Main AI chat endpoint with tool calling</li></ul>
-<ul><li><strong><a href="./09-ai-integration.md">AI Integration</a></strong> - AI providers and available tools</li></ul>
-<ul><li><strong><a href="./04-api-layer.md">API Layer</a></strong> - Overview of all ryOS API endpoints</li></ul>
-<ul><li><strong><a href="./apps-chats.md">Chats App</a></strong> - Frontend chat application documentation</li></ul>
-
+<ul><li><strong><a href="./07-chat-system.md">Chat API</a></strong> - Main AI chat endpoint with tool calling</li><li><strong><a href="./09-ai-integration.md">AI Integration</a></strong> - AI providers and available tools</li><li><strong><a href="./04-api-layer.md">API Layer</a></strong> - Overview of all ryOS API endpoints</li><li><strong><a href="./apps-chats.md">Chats App</a></strong> - Frontend chat application documentation</li></ul>
       </article>
       
       <nav class="nav">

@@ -299,10 +299,7 @@
 <pre><code>X-Username: &lt;username&gt;
 Authorization: Bearer &lt;token&gt;</code></pre>
 <h3>Token Lifecycle</h3>
-<ul><li><strong>Generation</strong>: Tokens are generated on user creation or via <code>generateToken</code></li></ul>
-<ul><li><strong>Expiration</strong>: Tokens expire after 90 days (<code>USER_EXPIRATION_TIME</code>)</li></ul>
-<ul><li><strong>Grace Period</strong>: Expired tokens can be refreshed within 30 days (<code>TOKEN_GRACE_PERIOD</code>)</li></ul>
-<ul><li><strong>Refresh</strong>: Use <code>refreshToken</code> to get a new token before/after expiration</li></ul>
+<ul><li><strong>Generation</strong>: Tokens are generated on user creation or via <code>generateToken</code></li><li><strong>Expiration</strong>: Tokens expire after 90 days (<code>USER_EXPIRATION_TIME</code>)</li><li><strong>Grace Period</strong>: Expired tokens can be refreshed within 30 days (<code>TOKEN_GRACE_PERIOD</code>)</li><li><strong>Refresh</strong>: Use <code>refreshToken</code> to get a new token before/after expiration</li></ul>
 <h3>Password Authentication</h3>
 <p>Users can optionally set a password for account recovery:</p>
 <pre><code>// Set password (requires auth)
@@ -383,8 +380,7 @@ Body: { roomId: "abc123", username: "alice" }
 POST /api/chat-rooms?action=switchRoom
 Body: { previousRoomId: "abc123", nextRoomId: "def456", username: "alice" }</code></pre>
 <h3>Deleting Rooms</h3>
-<ul><li><strong>Public rooms</strong>: Admin only</li></ul>
-<ul><li><strong>Private rooms</strong>: Any member can leave; room is deleted when ≤1 member remains</li></ul>
+<ul><li><strong>Public rooms</strong>: Admin only</li><li><strong>Private rooms</strong>: Any member can leave; room is deleted when ≤1 member remains</li></ul>
 <pre><code>DELETE /api/chat-rooms?action=deleteRoom&amp;roomId=abc123
 Headers: { X-Username: "ryo", Authorization: "Bearer &lt;token&gt;" }</code></pre>
 <h2>Messages</h2>
@@ -393,14 +389,9 @@ Headers: { X-Username: "ryo", Authorization: "Bearer &lt;token&gt;" }</code></pr
 Headers: { X-Username: "alice", Authorization: "Bearer &lt;token&gt;" }
 Body: { roomId: "abc123", username: "alice", content: "Hello world!" }</code></pre>
 <strong>Rate Limiting</strong> (public rooms only):
-<ul><li>Short burst: 3 messages per 10 seconds</li></ul>
-<ul><li>Long burst: 20 messages per 60 seconds</li></ul>
-<ul><li>Minimum interval: 2 seconds between messages</li></ul>
+<ul><li>Short burst: 3 messages per 10 seconds</li><li>Long burst: 20 messages per 60 seconds</li><li>Minimum interval: 2 seconds between messages</li></ul>
 <strong>Content Validation</strong>:
-<ul><li>Maximum length: Configured via <code>MAX_MESSAGE_LENGTH</code></li></ul>
-<ul><li>Profanity filtering with URL preservation</li></ul>
-<ul><li>HTML escaping for XSS prevention</li></ul>
-<ul><li>Duplicate message detection</li></ul>
+<ul><li>Maximum length: Configured via <code>MAX_MESSAGE_LENGTH</code></li><li>Profanity filtering with URL preservation</li><li>HTML escaping for XSS prevention</li><li>Duplicate message detection</li></ul>
 <h3>Getting Messages</h3>
 <pre><code>// Single room (default limit: 20, max: 500)
 GET /api/chat-rooms?action=getMessages&amp;roomId=abc123&amp;limit=50
@@ -454,9 +445,11 @@ userChannel.bind('room-created', (data) =&gt; console.log('Invited to room:', da
 <h2>Presence</h2>
 <p>User presence is tracked using Redis Sorted Sets (ZSETs) with timestamps as scores.</p>
 <h3>How It Works</h3>
-<ol><li>When a user joins/sends a message, their presence is updated: <pre><code>   ZADD chat:presencez:{roomId} {timestamp} {username}</code></pre></li></ol>
-<ol><li>Active users are retrieved by pruning expired entries: <pre><code>   ZREMRANGEBYSCORE chat:presencez:{roomId} 0 {cutoffTimestamp}
-   ZRANGE chat:presencez:{roomId} 0 -1</code></pre></li></ol>
+<ol><li>When a user joins/sends a message, their presence is updated:</li></ol>
+   <pre><code>   ZADD chat:presencez:{roomId} {timestamp} {username}</code></pre>
+<ol><li>Active users are retrieved by pruning expired entries:</li></ol>
+   <pre><code>   ZREMRANGEBYSCORE chat:presencez:{roomId} 0 {cutoffTimestamp}
+   ZRANGE chat:presencez:{roomId} 0 -1</code></pre>
 <ol><li>Users are considered "offline" after 24 hours of inactivity</li></ol>
 <h3>Presence Operations</h3>
 <pre><code>// Set/refresh presence
@@ -554,11 +547,7 @@ const { token: newToken } = await res.json();</code></pre>
 <pre><code>export const runtime = "nodejs";
 export const maxDuration = 15; // seconds</code></pre>
 <h2>Related</h2>
-<ul><li><a href="/docs/README.md">ryOS Documentation</a></li></ul>
-<ul><li><a href="/api/_utils/">API Utils</a> - Shared utilities for authentication, validation, logging</li></ul>
-<ul><li><a href="https://pusher.com/docs">Pusher Documentation</a></li></ul>
-<ul><li><a href="https://upstash.com/docs/redis/overall/getstarted">Upstash Redis</a></li></ul>
-
+<ul><li><a href="/docs/README.md">ryOS Documentation</a></li><li><a href="/api/_utils/">API Utils</a> - Shared utilities for authentication, validation, logging</li><li><a href="https://pusher.com/docs">Pusher Documentation</a></li><li><a href="https://upstash.com/docs/redis/overall/getstarted">Upstash Redis</a></li></ul>
       </article>
       
       <nav class="nav">
