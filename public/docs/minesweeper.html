@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build System - ryOS Docs</title>
+  <title>Minesweeper - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -155,15 +156,15 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
-    <a href="/docs/build-system" class="nav-child active">1.1 Build System</a>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -171,34 +172,21 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ai-integration" class="">2. AI Integration</a>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
-    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
-    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
-    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
-    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
-    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/application-framework" class="">3. Application Framework</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
-    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
-    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
   </div>
 </div>
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/storage-file-system" class="">4. File System</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -206,9 +194,22 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/core-applications" class="">5. Apps</a>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
   </button>
   <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
+  </div>
+</div>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
@@ -222,7 +223,7 @@
     <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
     <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
     <a href="/docs/videos" class="nav-child ">5.13 Videos</a>
-    <a href="/docs/minesweeper" class="nav-child ">5.14 Minesweeper</a>
+    <a href="/docs/minesweeper" class="nav-child active">5.14 Minesweeper</a>
     <a href="/docs/virtual-pc" class="nav-child ">5.15 Virtual PC</a>
     <a href="/docs/admin" class="nav-child ">5.16 Admin</a>
     <a href="/docs/applet-store" class="nav-child ">5.17 Applet Store</a>
@@ -231,7 +232,13 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/audio-system" class="">6. Audio System</a>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -239,49 +246,61 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/real-time-communication" class="">7. Chat System</a>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
   </button>
   <div class="nav-children" style="display: none;">
-    <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
-    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>Build System</h1>
-<p>Vite + Bun build system with multiple deployment targets.</p>
-<h2>Deployment Targets</h2>
-<ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
-<ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
-<ul><li><strong>Development:</strong> Local with HMR</li></ul>
-<h2>Chunk Splitting</h2>
-<strong>Core Chunks (Immediate):</strong>
-<pre><code>react: ["react", "react-dom"]
-"ui-core": ["@radix-ui/react-dialog", ...]
-zustand: ["zustand"]
-motion: ["framer-motion"]</code></pre>
-<strong>Deferred Chunks:</strong>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
-<h2>PWA Caching</h2>
-<table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
+        <h1>Minesweeper</h1>
+<p>Minesweeper is a classic puzzle game available in ryOS, challenging users to locate hidden mines on a grid without detonating them. It provides a quick and engaging mental exercise directly within your web-based desktop environment.</p>
+<h2>Overview</h2>
+<p>Minesweeper offers the familiar and addictive gameplay experience of the timeless puzzle game. The core objective is to uncover all safe cells on the board while avoiding the hidden mines. Players use logic and deduction, guided by numbers on revealed cells that indicate how many mines are adjacent to them.</p>
+<p>Designed for both casual players and those seeking a quick mental workout, Minesweeper integrates seamlessly into the ryOS environment. Its intuitive controls are optimized for both desktop and mobile interfaces, ensuring a smooth experience regardless of the device. The app tracks game progress with a timer and a mine counter, adding a competitive element for players aiming to improve their times.</p>
+<h2>Features</h2>
+<ul><li><strong>Classic Minesweeper Gameplay:</strong> Engage in the traditional game where you strategically reveal cells and use numerical clues to deduce mine locations.</li></ul>
+<ul><li><strong>Intuitive Control Scheme:</strong><ul><li><strong>Desktop Controls:</strong> Left-click to reveal a cell, right-click to flag a suspected mine, and double-click a revealed number to automatically reveal its unflagged neighbors.</li><li><strong>Mobile Controls:</strong> Tap a cell to reveal it, and long-press a cell to flag or unflag a mine.</li></ul></li></ul>
+<ul><li><strong>Real-time Game Tracking:</strong> A dedicated top bar displays the elapsed game time and the count of remaining unflagged mines.</li></ul>
+<ul><li><strong>Easy Game Restart:</strong> Quickly begin a new game at any point by clicking the smiley face button on the top bar or selecting <code>Game ▸ New</code> from the menu.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+Launch Minesweeper from your ryOS app launcher. The game starts immediately with a new board. Begin by clicking or tapping cells to reveal them and start your deduction process.
+<h3>Key Actions</h3>
+<ul><li><strong>Reveal a Cell:</strong> Click the left mouse button (desktop) or tap (mobile) on any unrevealed cell. If it's a mine, the game ends. If it's a number, it indicates how many mines are in the 8 surrounding cells.</li></ul>
+<ul><li><strong>Flag a Mine:</strong> To mark a cell you suspect contains a mine, right-click (desktop) or long-press (mobile) on it. This places a flag, preventing accidental revelation and helping you keep track.</li></ul>
+<ul><li><strong>Auto-Reveal Neighbors:</strong> Once you've confidently flagged all the mines adjacent to a revealed number cell, you can double-click that number (desktop only) to automatically reveal all its unflagged neighbors. This is a powerful shortcut for clearing safe areas quickly.</li></ul>
+<ul><li><strong>Restart Game:</strong> If you want to start a fresh board, simply click the smiley face icon in the top bar or navigate to <code>Game ▸ New</code> in the application menu.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>Use flags strategically to narrow down potential mine locations. Flagging a cell you're unsure about is safer than revealing it.</li></ul>
+<ul><li>The double-click auto-reveal feature is crucial for efficient play on desktop. Master its use to speed up your game times.</li></ul>
+<ul><li>Don't hesitate to restart if you find yourself in a tricky spot or make a mistake; the game is designed for quick, repeated plays.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 305×400px</li></ul>
+<ul><li>Minimum size: 305×400px</li></ul>
+<ul><li>Maximum size: 305×400px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 2 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/MinesweeperAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/MinesweeperAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/MinesweeperMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/MinesweeperMenuBar.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<p>No custom hooks or utilities.</p>
+<h3>State Management</h3>
+The Minesweeper app primarily manages its game state using local component state, leveraging React's <code>useState</code> hook for tracking the game board, cell properties (revealed, flagged, mine status), game status (active, won, lost), and the timer. It also integrates with ryOS-wide state management via <code>useThemeStore</code> for theme synchronization and <code>useTranslation</code> for internationalization, ensuring a consistent user experience within the desktop environment.
+<h2>Related Apps</h2>
+<ul><li><strong>Solitaire:</strong> Another classic single-player puzzle game found in ryOS, offering a different kind of mental challenge.</li></ul>
+<ul><li><strong>Calculator:</strong> A simple utility app, similar to Minesweeper in its direct, focused functionality and quick accessibility.</li></ul>
+
       </article>
       
       <nav class="nav">
-        <a href="/docs/overview">← Overview</a>
-        <a href="/docs/ai-integration">AI Integration →</a>
+        <a href="/docs/videos">← Videos</a>
+        <a href="/docs/virtual-pc">Virtual PC →</a>
       </nav>
       
     </main>

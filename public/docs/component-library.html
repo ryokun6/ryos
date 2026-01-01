@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build System - ryOS Docs</title>
+  <title>Components - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -155,15 +156,15 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
-    <a href="/docs/build-system" class="nav-child active">1.1 Build System</a>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -171,34 +172,34 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ai-integration" class="">2. AI Integration</a>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
-    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
-    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
-    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
-    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
-    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/application-framework" class="">3. Application Framework</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
-    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
-    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
   </div>
 </div>
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/storage-file-system" class="">4. File System</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -231,57 +232,47 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/audio-system" class="">6. Audio System</a>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/real-time-communication" class="">7. Chat System</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
   </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
-    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/component-library" class="nav-child active">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>Build System</h1>
-<p>Vite + Bun build system with multiple deployment targets.</p>
-<h2>Deployment Targets</h2>
-<ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
-<ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
-<ul><li><strong>Development:</strong> Local with HMR</li></ul>
-<h2>Chunk Splitting</h2>
-<strong>Core Chunks (Immediate):</strong>
-<pre><code>react: ["react", "react-dom"]
-"ui-core": ["@radix-ui/react-dialog", ...]
-zustand: ["zustand"]
-motion: ["framer-motion"]</code></pre>
-<strong>Deferred Chunks:</strong>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
-<h2>PWA Caching</h2>
-<table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
+        <h1>Components</h1>
+<p>Built on React with Tailwind CSS and shadcn/ui.</p>
+<h2>UI Components (src/components/ui/)</h2>
+<strong>shadcn Components:</strong>
+<ul><li>button, dialog, dropdown-menu, menubar</li></ul>
+<ul><li>input, select, slider, switch, checkbox</li></ul>
+<ul><li>scroll-area, tabs, tooltip, table</li></ul>
+<strong>Custom Components:</strong>
+<table><thead><tr><th>Component</th><th>Purpose</th></tr></thead><tbody><tr><td><code>activity-indicator</code></td><td>macOS-style spinner</td></tr><tr><td><code>audio-bars</code></td><td>Audio visualization</td></tr><tr><td><code>dial</code></td><td>Rotary knob for synthesizer</td></tr><tr><td><code>playback-bars</code></td><td>Equalizer animation</td></tr><tr><td><code>right-click-menu</code></td><td>Context menu wrapper</td></tr></tbody></table>
+<h2>Layout Components</h2>
+<table><thead><tr><th>Component</th><th>Purpose</th></tr></thead><tbody><tr><td><code>WindowFrame.tsx</code></td><td>Window chrome/container</td></tr><tr><td><code>MenuBar.tsx</code></td><td>System menu/taskbar</td></tr><tr><td><code>Desktop.tsx</code></td><td>Desktop icon management</td></tr><tr><td><code>Dock.tsx</code></td><td>macOS dock</td></tr><tr><td><code>StartMenu.tsx</code></td><td>Windows Start menu</td></tr><tr><td><code>ExposeView.tsx</code></td><td>Mission Control</td></tr></tbody></table>
       </article>
       
       <nav class="nav">
-        <a href="/docs/overview">← Overview</a>
-        <a href="/docs/ai-integration">AI Integration →</a>
+        <a href="/docs/ui-components">← UI Components and Shared Systems</a>
+        <a href="/docs/i18n">i18n & Hooks →</a>
       </nav>
       
     </main>

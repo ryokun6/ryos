@@ -1,0 +1,693 @@
+# Utility APIs
+
+ryOS provides several utility API endpoints for common operations like fetching link previews, checking iframe embeddability, sharing applets, and admin operations. These endpoints are implemented as Vercel Edge Functions for optimal performance.
+
+## Link Preview
+
+Fetches metadata from URLs for rich link previews. Supports Open Graph, Twitter Cards, and standard meta tags with special handling for YouTube URLs.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/link-preview` | Fetch URL metadata for previews |
+
+### Request
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | The URL to fetch metadata from (must be HTTP or HTTPS) |
+
+### Response
+
+**Success Response (200):**
+
+```json
+{
+  "url": "https://example.com/page",
+  "title": "Page Title",
+  "description": "Page description from meta tags",
+  "image": "https://example.com/og-image.jpg",
+  "siteName": "Example Site"
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | string | The original URL |
+| `title` | string? | Page title (from `<title>`, og:title, or twitter:title) |
+| `description` | string? | Page description (from og:description, twitter:description, or meta description) |
+| `image` | string? | Preview image URL (from og:image or twitter:image) |
+| `siteName` | string? | Site name (from og:site_name or hostname) |
+
+**Error Responses:**
+
+| Status | Description |
+|--------|-------------|
+| 400 | Missing or invalid URL |
+| 403 | Unauthorized origin |
+| 405 | Method not allowed |
+| 408 | Request timeout |
+| 429 | Rate limit exceeded |
+| 503 | Network error |
+
+### Rate Limits
+
+- **Global limit:** 10 requests per minute per IP
+- **Per-host limit:** 5 requests per minute per IP per target hostname
+
+### Example
+
+```typescript
+// Fetch link preview
+const response = await fetch('/api/link-preview?url=https://github.com');
+const metadata = await response.json();
+
+console.log(metadata);
+// {
+//   url: "https://github.com",
+//   title: "GitHub: Let's build from here",
+//   description: "GitHub is where over 100 million developers...",
+//   image: "https://github.githubassets.com/images/modules/site/social-cards/campaign-social.png",
+//   siteName: "GitHub"
+// }
+```
+
+### Notes
+
+- YouTube URLs are handled specially using the oEmbed API for reliable metadata
+- Responses are cached for 1 hour (`Cache-Control: public, max-age=3600`)
+- HTML entities in metadata are automatically decoded
+- Relative image URLs are converted to absolute URLs
+
+---
+
+## iFrame Check
+
+Checks if a URL allows iframe embedding and optionally proxies content to bypass embedding restrictions. Also supports retrieving cached historical versions of pages.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/iframe-check` | Check iframe embeddability or proxy content |
+
+### Request
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | The URL to check or proxy |
+| `mode` | string | No | Operation mode: `check`, `proxy`, `ai`, or `list-cache` (default: `proxy`) |
+| `year` | string | No | Year for Wayback Machine or AI cache (e.g., "2020", "1000 BC") |
+| `month` | string | No | Month for Wayback Machine (e.g., "01" for January) |
+| `theme` | string | No | Theme name - font overrides are skipped for "macosx" theme |
+
+### Modes
+
+#### `check` Mode
+
+Performs a header-only check to determine if the URL allows iframe embedding.
+
+**Response (200):**
+
+```json
+{
+  "allowed": true,
+  "reason": null,
+  "title": "Page Title"
+}
+```
+
+```json
+{
+  "allowed": false,
+  "reason": "X-Frame-Options: DENY",
+  "title": "Page Title"
+}
+```
+
+#### `proxy` Mode (Default)
+
+Proxies the content with embedding-blocking headers removed. Injects:
+- `<base>` tag for relative URL resolution
+- Click interceptor script for navigation handling
+- History API patch for cross-origin compatibility
+- Font override styles (unless theme is "macosx")
+
+**Response:** The proxied HTML content with modified headers.
+
+**Custom Response Headers:**
+
+| Header | Description |
+|--------|-------------|
+| `X-Proxied-Page-Title` | URL-encoded page title (if available) |
+| `X-Wayback-Cache` | "HIT" if content was served from Wayback cache |
+
+#### `ai` Mode
+
+Retrieves AI-generated historical page versions from cache.
+
+**Additional Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `year` | string | Yes | Historical year (e.g., "1995", "500 BC", "1 CE", "current") |
+
+**Response (200) - Cache Hit:**
+
+Returns the cached HTML content with header `X-AI-Cache: HIT`.
+
+**Response (404) - Cache Miss:**
+
+```json
+{
+  "aiCache": false
+}
+```
+
+#### `list-cache` Mode
+
+Lists all available cached years (both AI-generated and Wayback Machine) for a URL.
+
+**Response (200):**
+
+```json
+{
+  "years": ["current", "2020", "2015", "2010", "1999", "500 BC"]
+}
+```
+
+### Auto-Proxy Domains
+
+The following domains are automatically proxied regardless of mode:
+- `wikipedia.org` (and subdomains)
+- `wikimedia.org` (and subdomains)
+- `wikipedia.com`
+- `cursor.com`
+
+### Rate Limits
+
+| Mode | Global Limit | Per-Host Limit |
+|------|--------------|----------------|
+| `check` / `proxy` | 300/min per IP | 100/min per IP per host |
+| `ai` / `list-cache` | 120/min per IP | N/A |
+
+### Example
+
+```typescript
+// Check if URL can be embedded
+const checkResponse = await fetch('/api/iframe-check?url=https://example.com&mode=check');
+const { allowed, reason } = await checkResponse.json();
+
+if (!allowed) {
+  // Use proxy mode instead
+  const iframeSrc = `/api/iframe-check?url=https://example.com&mode=proxy`;
+  iframe.src = iframeSrc;
+}
+
+// List cached historical versions
+const cacheResponse = await fetch('/api/iframe-check?url=https://example.com&mode=list-cache');
+const { years } = await cacheResponse.json();
+// years: ["2020", "2015", "2010"]
+
+// Load Wayback Machine version
+const waybackSrc = `/api/iframe-check?url=https://example.com&mode=proxy&year=2015&month=06`;
+```
+
+---
+
+## Share Applet
+
+Manages sharing of user-created applets (mini HTML/JS applications). Supports creating, retrieving, updating, and deleting shared applets.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/share-applet` | Retrieve applet by ID or list all applets |
+| POST | `/api/share-applet` | Save or update an applet |
+| DELETE | `/api/share-applet` | Delete an applet (admin only) |
+| PATCH | `/api/share-applet` | Update applet metadata (admin only) |
+
+### Authentication
+
+Most operations require authentication via headers:
+
+| Header | Description |
+|--------|-------------|
+| `Authorization` | Bearer token: `Bearer <token>` |
+| `X-Username` | Username of the authenticated user |
+
+### GET - Retrieve Applet
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | No* | Applet ID to retrieve |
+| `list` | string | No* | Set to `"true"` to list all applets |
+
+*One of `id` or `list=true` is required.
+
+**Response - Single Applet (200):**
+
+```json
+{
+  "content": "<html>...</html>",
+  "title": "My Applet",
+  "name": "my-applet",
+  "icon": "🎮",
+  "windowWidth": 400,
+  "windowHeight": 300,
+  "createdAt": 1704067200000,
+  "createdBy": "username",
+  "featured": false
+}
+```
+
+**Response - List Applets (200):**
+
+```json
+{
+  "applets": [
+    {
+      "id": "abc123...",
+      "title": "Featured Applet",
+      "name": "featured-applet",
+      "icon": "⭐",
+      "createdAt": 1704067200000,
+      "featured": true,
+      "createdBy": "ryo"
+    },
+    {
+      "id": "def456...",
+      "title": "My Applet",
+      "name": "my-applet",
+      "icon": "🎮",
+      "createdAt": 1704000000000,
+      "featured": false,
+      "createdBy": "user123"
+    }
+  ]
+}
+```
+
+### POST - Save Applet
+
+Requires authentication.
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `content` | string | Yes | HTML content of the applet |
+| `title` | string | No | Display title |
+| `name` | string | No | Applet name/slug |
+| `icon` | string | No | Emoji or icon |
+| `windowWidth` | number | No | Default window width |
+| `windowHeight` | number | No | Default window height |
+| `shareId` | string | No | Existing ID to update (author must match) |
+
+**Response (200):**
+
+```json
+{
+  "id": "abc123def456...",
+  "shareUrl": "https://os.ryo.lu/applet-viewer/abc123def456...",
+  "updated": false,
+  "createdAt": 1704067200000
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique applet ID (32 characters) |
+| `shareUrl` | string | Full URL to view the applet |
+| `updated` | boolean | Whether an existing applet was updated |
+| `createdAt` | number | Timestamp of creation/update |
+
+### DELETE - Delete Applet (Admin Only)
+
+Requires admin authentication (user "ryo" with valid token).
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Applet ID to delete |
+
+**Response (200):**
+
+```json
+{
+  "success": true
+}
+```
+
+### PATCH - Update Applet (Admin Only)
+
+Currently only supports updating the featured status.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Applet ID to update |
+
+**Request Body:**
+
+```json
+{
+  "featured": true
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "featured": true
+}
+```
+
+### Example
+
+```typescript
+// Save a new applet
+const response = await fetch('/api/share-applet', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    'X-Username': username
+  },
+  body: JSON.stringify({
+    content: '<html><body><h1>Hello World</h1></body></html>',
+    title: 'Hello World Applet',
+    icon: '👋',
+    windowWidth: 400,
+    windowHeight: 300
+  })
+});
+
+const { id, shareUrl } = await response.json();
+console.log(`Applet shared at: ${shareUrl}`);
+
+// Retrieve an applet
+const applet = await fetch(`/api/share-applet?id=${id}`).then(r => r.json());
+
+// List all applets
+const { applets } = await fetch('/api/share-applet?list=true').then(r => r.json());
+```
+
+---
+
+## Admin API
+
+Administrative endpoints for user management in the chat system. All operations require admin authentication (user "ryo" with valid token).
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/admin` | Query users and statistics |
+| POST | `/api/admin` | Perform admin actions |
+
+### Authentication
+
+All admin endpoints require:
+
+| Header | Description |
+|--------|-------------|
+| `Authorization` | Bearer token: `Bearer <token>` |
+| `X-Username` | Must be `"ryo"` |
+
+Unauthorized requests return `403 Forbidden`.
+
+### GET Operations
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `action` | string | Yes | Operation to perform |
+| `username` | string | For some actions | Target username |
+| `limit` | number | No | Result limit (default: 50) |
+
+#### `getStats` Action
+
+Get system-wide statistics.
+
+**Response:**
+
+```json
+{
+  "totalUsers": 150,
+  "totalRooms": 12,
+  "totalMessages": 5430
+}
+```
+
+#### `getAllUsers` Action
+
+List all registered users.
+
+**Response:**
+
+```json
+{
+  "users": [
+    {
+      "username": "alice",
+      "lastActive": 1704067200000,
+      "banned": false
+    },
+    {
+      "username": "bob",
+      "lastActive": 1704000000000,
+      "banned": true
+    }
+  ]
+}
+```
+
+#### `getUserProfile` Action
+
+Get detailed profile for a specific user.
+
+**Additional Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | Target username |
+
+**Response:**
+
+```json
+{
+  "username": "alice",
+  "lastActive": 1704067200000,
+  "banned": false,
+  "banReason": null,
+  "bannedAt": null,
+  "messageCount": 42,
+  "rooms": [
+    { "id": "general", "name": "General Chat" },
+    { "id": "random", "name": "Random" }
+  ]
+}
+```
+
+#### `getUserMessages` Action
+
+Get recent messages from a specific user.
+
+**Additional Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | Target username |
+| `limit` | number | No | Maximum messages to return (default: 50) |
+
+**Response:**
+
+```json
+{
+  "messages": [
+    {
+      "id": "msg123",
+      "roomId": "general",
+      "roomName": "General Chat",
+      "content": "Hello everyone!",
+      "timestamp": 1704067200000
+    }
+  ]
+}
+```
+
+### POST Operations
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `action` | string | Yes | Operation to perform |
+| `targetUsername` | string | Yes | User to act on |
+| `reason` | string | No | Reason for action (for bans) |
+
+#### `deleteUser` Action
+
+Permanently delete a user account (cannot delete admin "ryo").
+
+**Request:**
+
+```json
+{
+  "action": "deleteUser",
+  "targetUsername": "spammer"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true
+}
+```
+
+**Effects:**
+- Deletes user record
+- Deletes password hash
+- Invalidates all authentication tokens
+
+#### `banUser` Action
+
+Ban a user from the chat system (cannot ban admin "ryo").
+
+**Request:**
+
+```json
+{
+  "action": "banUser",
+  "targetUsername": "troublemaker",
+  "reason": "Spamming in chat"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true
+}
+```
+
+**Effects:**
+- Sets `banned: true` on user record
+- Stores ban reason and timestamp
+- Invalidates all authentication tokens (forces logout)
+
+#### `unbanUser` Action
+
+Remove ban from a user.
+
+**Request:**
+
+```json
+{
+  "action": "unbanUser",
+  "targetUsername": "reformed-user"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true
+}
+```
+
+### Example
+
+```typescript
+const adminHeaders = {
+  'Authorization': `Bearer ${adminToken}`,
+  'X-Username': 'ryo'
+};
+
+// Get system statistics
+const stats = await fetch('/api/admin?action=getStats', {
+  headers: adminHeaders
+}).then(r => r.json());
+
+// Get all users
+const { users } = await fetch('/api/admin?action=getAllUsers', {
+  headers: adminHeaders
+}).then(r => r.json());
+
+// Get user profile
+const profile = await fetch('/api/admin?action=getUserProfile&username=alice', {
+  headers: adminHeaders
+}).then(r => r.json());
+
+// Ban a user
+await fetch('/api/admin', {
+  method: 'POST',
+  headers: {
+    ...adminHeaders,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    action: 'banUser',
+    targetUsername: 'spammer',
+    reason: 'Repeated spam violations'
+  })
+});
+```
+
+---
+
+## Error Handling
+
+All utility APIs return consistent error responses:
+
+```json
+{
+  "error": "Error message description"
+}
+```
+
+**Common HTTP Status Codes:**
+
+| Status | Description |
+|--------|-------------|
+| 400 | Bad request (missing/invalid parameters) |
+| 401 | Unauthorized (authentication required) |
+| 403 | Forbidden (insufficient permissions or blocked origin) |
+| 404 | Not found |
+| 405 | Method not allowed |
+| 408 | Request timeout |
+| 429 | Rate limit exceeded |
+| 500 | Internal server error |
+| 503 | Service unavailable |
+
+## CORS
+
+All utility APIs implement CORS with origin validation. Allowed origins are configured server-side. Requests from unauthorized origins receive `403 Forbidden`.
+
+## Related
+
+- [API Layer Overview](./04-api-layer.md) - General API architecture
+- [Chat System](./07-chat-system.md) - Chat room APIs
+- [AI Integration](./09-ai-integration.md) - AI-powered features

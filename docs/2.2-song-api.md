@@ -1,0 +1,812 @@
+# Song API
+
+The Song API provides endpoints for managing a music library in ryOS, including CRUD operations for songs, lyrics fetching from KuGou, AI-powered translations, Japanese furigana annotations, and "soramimi" (空耳) phonetic readings.
+
+## Overview
+
+Songs are identified by their YouTube video ID (11 characters). The API stores:
+- **Metadata** (lightweight ~300 bytes): title, artist, album, cover, timestamps
+- **Content** (heavy ~5-50KB): lyrics, translations, furigana, soramimi annotations
+
+Data is stored in Redis (Upstash) with split storage to avoid exceeding request size limits when listing songs.
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/song` | List songs with optional filtering |
+| POST | `/api/song` | Create song or bulk import |
+| DELETE | `/api/song` | Delete all songs (admin only) |
+| GET | `/api/song/{id}` | Get song by ID |
+| POST | `/api/song/{id}` | Update song or perform action |
+| DELETE | `/api/song/{id}` | Delete song (admin only) |
+
+## Authentication
+
+Authentication uses a combination of Bearer token and username header:
+
+```http
+Authorization: Bearer <auth_token>
+X-Username: <username>
+```
+
+### Permission Levels
+
+| Operation | Required Permission |
+|-----------|-------------------|
+| List songs | None |
+| Create song | Authenticated |
+| Update own song | Authenticated (owner) |
+| Update any song | Admin only |
+| Delete song | Admin only |
+| Bulk import | Admin only |
+| Delete all songs | Admin only |
+
+The admin user is `ryo` (case-insensitive).
+
+---
+
+## Collection Endpoints
+
+### GET /api/song
+
+List all songs or filter by specific criteria.
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `createdBy` | string | Filter by creator username |
+| `ids` | string | Comma-separated list of song IDs for batch fetch |
+| `include` | string | Comma-separated: `metadata`, `lyrics`, `translations`, `furigana`, `soramimi` (default: `metadata`) |
+
+#### Response
+
+```json
+{
+  "songs": [
+    {
+      "id": "dQw4w9WgXcQ",
+      "title": "Never Gonna Give You Up",
+      "artist": "Rick Astley",
+      "album": "Whenever You Need Somebody",
+      "cover": "https://...",
+      "lyricOffset": 0,
+      "lyricsSource": {
+        "hash": "abc123",
+        "albumId": "12345",
+        "title": "Never Gonna Give You Up",
+        "artist": "Rick Astley",
+        "album": "Whenever You Need Somebody"
+      },
+      "createdBy": "ryo",
+      "createdAt": 1704067200000,
+      "updatedAt": 1704067200000,
+      "importOrder": 0
+    }
+  ]
+}
+```
+
+### POST /api/song
+
+Create a single song or perform bulk import.
+
+#### Single Song Creation
+
+```json
+{
+  "id": "dQw4w9WgXcQ",
+  "title": "Never Gonna Give You Up",
+  "artist": "Rick Astley",
+  "album": "Whenever You Need Somebody",
+  "lyricOffset": 0,
+  "lyricsSource": {
+    "hash": "abc123",
+    "albumId": "12345",
+    "title": "Never Gonna Give You Up",
+    "artist": "Rick Astley"
+  }
+}
+```
+
+#### Bulk Import (Admin Only)
+
+```json
+{
+  "action": "import",
+  "songs": [
+    {
+      "id": "dQw4w9WgXcQ",
+      "title": "Song Title",
+      "artist": "Artist Name",
+      "album": "Album Name",
+      "lyricOffset": 0,
+      "lyricsSource": { ... },
+      "lyrics": { "lrc": "...", "krc": "..." },
+      "translations": { "zh-TW": "..." },
+      "furigana": [[{ "text": "歌詞", "reading": "かし" }]],
+      "soramimi": [[{ "text": "歌詞", "reading": "割詞" }]],
+      "createdBy": "ryo",
+      "createdAt": 1704067200000,
+      "updatedAt": 1704067200000,
+      "importOrder": 0
+    }
+  ]
+}
+```
+
+Content fields (`lyrics`, `translations`, `furigana`, `soramimi`, `soramimiByLang`) can be compressed using gzip and base64 encoded with a `gzip:` prefix.
+
+#### Response
+
+```json
+{
+  "success": true,
+  "id": "dQw4w9WgXcQ",
+  "isUpdate": false,
+  "createdBy": "username"
+}
+```
+
+For bulk import:
+
+```json
+{
+  "success": true,
+  "imported": 10,
+  "updated": 5,
+  "withContent": 15,
+  "total": 15
+}
+```
+
+### DELETE /api/song
+
+Delete all songs (admin only).
+
+#### Response
+
+```json
+{
+  "success": true,
+  "deleted": 42
+}
+```
+
+---
+
+## Individual Song Endpoints
+
+### GET /api/song/{id}
+
+Retrieve a song by its YouTube video ID.
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `include` | string | Comma-separated: `metadata`, `lyrics`, `translations`, `furigana`, `soramimi` (default: `metadata`) |
+
+#### Response
+
+```json
+{
+  "id": "dQw4w9WgXcQ",
+  "title": "Song Title",
+  "artist": "Artist Name",
+  "lyrics": {
+    "lrc": "[00:00.00]First line...",
+    "krc": "[0,1000]<0,500,0>First<500,500,0>line...",
+    "parsedLines": [
+      {
+        "startTimeMs": "0",
+        "words": "First line",
+        "wordTimings": [
+          { "text": "First", "startTimeMs": 0, "durationMs": 500 },
+          { "text": "line", "startTimeMs": 500, "durationMs": 500 }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "zh-TW": "[00:00.00]第一行..."
+  },
+  "furigana": [
+    [{ "text": "歌詞", "reading": "かし" }, { "text": "です" }]
+  ],
+  "soramimi": [
+    [{ "text": "歌詞", "reading": "割詞" }]
+  ],
+  "soramimiByLang": {
+    "zh-TW": [[{ "text": "歌詞", "reading": "割詞" }]],
+    "en": [[{ "text": "歌詞", "reading": "ka shi" }]]
+  }
+}
+```
+
+### POST /api/song/{id}
+
+Update song metadata or perform an action.
+
+#### Actions
+
+| Action | Description | Auth Required |
+|--------|-------------|---------------|
+| (none) | Update metadata | Yes (owner) |
+| `search-lyrics` | Search KuGou for lyrics | No |
+| `fetch-lyrics` | Fetch lyrics from KuGou | First fetch: No, Force refresh: Yes |
+| `translate-stream` | Generate translation (SSE) | First: No, Force: Yes |
+| `furigana-stream` | Generate furigana (SSE) | First: No, Force: Yes |
+| `soramimi-stream` | Generate soramimi (SSE) | First: No, Force: Yes |
+| `clear-cached-data` | Clear cached annotations | No |
+| `unshare` | Clear createdBy field | Admin only |
+
+---
+
+## Action: search-lyrics
+
+Search for matching lyrics on KuGou.
+
+#### Request
+
+```json
+{
+  "action": "search-lyrics",
+  "query": "周杰倫 晴天"
+}
+```
+
+If `query` is omitted, uses the song's title and artist.
+
+#### Response
+
+```json
+{
+  "results": [
+    {
+      "title": "晴天",
+      "artist": "周杰倫",
+      "album": "葉惠美",
+      "hash": "abc123def456",
+      "albumId": "12345",
+      "score": 0.95
+    }
+  ]
+}
+```
+
+---
+
+## Action: fetch-lyrics
+
+Fetch lyrics from KuGou using a lyrics source.
+
+#### Request
+
+```json
+{
+  "action": "fetch-lyrics",
+  "lyricsSource": {
+    "hash": "abc123def456",
+    "albumId": "12345",
+    "title": "晴天",
+    "artist": "周杰倫"
+  },
+  "force": false,
+  "title": "Song Title",
+  "artist": "Artist Name",
+  "returnMetadata": true,
+  "translateTo": "en",
+  "includeFurigana": true,
+  "includeSoramimi": true,
+  "soramimiTargetLanguage": "zh-TW"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lyricsSource` | object | KuGou source (from search results) |
+| `force` | boolean | Force refresh even if cached |
+| `title` | string | Optional title for auto-search |
+| `artist` | string | Optional artist for auto-search |
+| `returnMetadata` | boolean | Include metadata in response |
+| `translateTo` | string | Language code to check translation status |
+| `includeFurigana` | boolean | Include furigana status in response |
+| `includeSoramimi` | boolean | Include soramimi status in response |
+| `soramimiTargetLanguage` | string | `zh-TW` or `en` (default: `zh-TW`) |
+
+#### Response
+
+```json
+{
+  "lyrics": {
+    "parsedLines": [
+      { "startTimeMs": "0", "words": "First line" }
+    ]
+  },
+  "cached": true,
+  "translation": {
+    "totalLines": 50,
+    "cached": true,
+    "lrc": "[00:00.00]Translated line..."
+  },
+  "furigana": {
+    "totalLines": 50,
+    "cached": false
+  },
+  "soramimi": {
+    "totalLines": 50,
+    "cached": false,
+    "targetLanguage": "zh-TW"
+  },
+  "metadata": {
+    "title": "晴天",
+    "artist": "周杰倫",
+    "album": "葉惠美",
+    "cover": "https://...",
+    "lyricsSource": { ... }
+  }
+}
+```
+
+---
+
+## Action: translate-stream
+
+Generate AI translation with Server-Sent Events (SSE) streaming.
+
+#### Request
+
+```json
+{
+  "action": "translate-stream",
+  "language": "en",
+  "force": false
+}
+```
+
+#### Response (SSE)
+
+If cached:
+```json
+{"type": "cached", "translation": "[00:00.00]First line..."}
+```
+
+If generating:
+```json
+{"type": "data-start", "data": {"totalLines": 50, "message": "Translation started"}}
+{"type": "data-line", "data": {"lineIndex": 0, "translation": "First line", "progress": 2}}
+{"type": "data-line", "data": {"lineIndex": 1, "translation": "Second line", "progress": 4}}
+...
+{"type": "data-complete", "data": {"totalLines": 50, "successCount": 50, "translations": [...], "success": true}}
+```
+
+---
+
+## Action: furigana-stream
+
+Generate furigana (Japanese reading annotations) with SSE streaming.
+
+#### Request
+
+```json
+{
+  "action": "furigana-stream",
+  "force": false
+}
+```
+
+#### Response (SSE)
+
+If cached:
+```json
+{"type": "cached", "furigana": [[{"text": "歌詞", "reading": "かし"}]]}
+```
+
+If generating:
+```json
+{"type": "data-start", "data": {"totalLines": 50, "message": "Furigana generation started"}}
+{"type": "data-line", "data": {"lineIndex": 0, "furigana": [{"text": "私", "reading": "わたし"}], "progress": 2}}
+...
+{"type": "data-complete", "data": {"totalLines": 50, "successCount": 50, "furigana": [...], "success": true}}
+```
+
+---
+
+## Action: soramimi-stream
+
+Generate soramimi (空耳 - phonetic misheard lyrics) with SSE streaming.
+
+Soramimi creates Chinese or English phonetic readings that sound like the original lyrics but can be read as meaningful text in the target language.
+
+#### Request
+
+```json
+{
+  "action": "soramimi-stream",
+  "force": false,
+  "targetLanguage": "zh-TW",
+  "furigana": [[{"text": "私", "reading": "わたし"}]]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `force` | boolean | Force regeneration |
+| `targetLanguage` | string | `zh-TW` (Chinese) or `en` (English) |
+| `furigana` | array | Optional furigana to help AI know kanji pronunciation |
+
+#### Response (SSE)
+
+```json
+{"type": "data-start", "data": {"totalLines": 50, "message": "AI processing started"}}
+{"type": "data-line", "data": {"lineIndex": 0, "soramimi": [{"text": "私", "reading": "娃她惜"}], "progress": 2}}
+...
+{"type": "data-complete", "data": {"totalLines": 50, "successCount": 50, "soramimi": [...], "success": true}}
+```
+
+**Note**: Chinese soramimi is automatically skipped for Chinese lyrics (returns `{"skipped": true, "skipReason": "chinese_lyrics"}`).
+
+---
+
+## Action: clear-cached-data
+
+Clear cached translations, furigana, and/or soramimi.
+
+#### Request
+
+```json
+{
+  "action": "clear-cached-data",
+  "clearTranslations": true,
+  "clearFurigana": true,
+  "clearSoramimi": true
+}
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "cleared": ["translations", "furigana", "soramimi"]
+}
+```
+
+---
+
+## Update Metadata
+
+Default POST action (no `action` field) updates song metadata.
+
+#### Request
+
+```json
+{
+  "title": "New Title",
+  "artist": "New Artist",
+  "album": "New Album",
+  "lyricOffset": 1000,
+  "lyricsSource": { ... },
+  "clearTranslations": false,
+  "clearFurigana": false,
+  "clearSoramimi": false,
+  "clearLyrics": false,
+  "isShare": true
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lyricOffset` | number | Offset in ms (-300000 to 300000) |
+| `clearTranslations` | boolean | Clear cached translations |
+| `clearFurigana` | boolean | Clear cached furigana |
+| `clearSoramimi` | boolean | Clear cached soramimi |
+| `clearLyrics` | boolean | Clear lyrics content |
+| `isShare` | boolean | Set createdBy to current user |
+
+#### Response
+
+```json
+{
+  "success": true,
+  "id": "dQw4w9WgXcQ",
+  "isUpdate": true,
+  "createdBy": "username"
+}
+```
+
+---
+
+## DELETE /api/song/{id}
+
+Delete a song (admin only).
+
+#### Response
+
+```json
+{
+  "success": true,
+  "deleted": true
+}
+```
+
+---
+
+## Lyrics Processing
+
+### Lyrics Formats
+
+The API supports two lyrics formats from KuGou:
+
+| Format | Description |
+|--------|-------------|
+| **LRC** | Standard timestamped lyrics: `[00:00.00]Lyrics text` |
+| **KRC** | Word-level timing: `[0,1000]<0,500,0>Word<500,500,0>Word` |
+
+KRC format provides karaoke-style word-by-word timing with embedded translations.
+
+### Line Filtering
+
+Lines are automatically filtered to remove:
+- Credit/metadata lines (作词, 作曲, Produced by, etc.)
+- Title/artist header lines
+- Empty parenthetical content
+
+### Chinese Conversion
+
+- Lyrics from KuGou are in Simplified Chinese
+- Automatically converted to Traditional Chinese for display
+- Japanese lyrics are detected and preserved without conversion
+
+### Embedded Translations
+
+KRC files may contain embedded Chinese translations in a base64-encoded `[language:]` tag. These are automatically extracted for Traditional Chinese translation requests, bypassing AI generation.
+
+---
+
+## Furigana Generation
+
+Furigana (振り仮名) are reading annotations for Japanese kanji.
+
+### Process
+
+1. Lines containing kanji are identified
+2. Non-kanji lines get plain text segments immediately
+3. AI generates readings in `<kanji:reading>` format
+4. Readings are parsed into segments: `[{text: "私", reading: "わたし"}]`
+
+### Output Format
+
+```json
+[
+  [
+    { "text": "私", "reading": "わたし" },
+    { "text": "は" },
+    { "text": "走", "reading": "はし" },
+    { "text": "る" }
+  ]
+]
+```
+
+---
+
+## Soramimi Generation
+
+Soramimi (空耳, "sky ear") creates phonetic readings in Chinese or English that sound like foreign lyrics.
+
+### Target Languages
+
+| Language | Description | Example |
+|----------|-------------|---------|
+| `zh-TW` | Traditional Chinese characters | 사랑 → 思浪 (sounds like "sarang") |
+| `en` | English phonetics | 사랑 → "saw wrong" |
+
+### Process
+
+1. Non-English lines are identified
+2. English lines are passed through unchanged
+3. AI generates readings considering:
+   - Phonetic accuracy (sound must be close)
+   - Semantic meaning (prefer meaningful characters)
+   - Furigana annotations (if provided for Japanese)
+
+### Output Format
+
+```json
+[
+  [
+    { "text": "사랑", "reading": "思浪" },
+    { "text": "해요", "reading": "海喲" }
+  ]
+]
+```
+
+---
+
+## Data Types
+
+### LyricsSource
+
+```typescript
+interface LyricsSource {
+  hash: string;           // KuGou song hash
+  albumId: string | number;
+  title: string;
+  artist: string;
+  album?: string;
+}
+```
+
+### SongMetadata
+
+```typescript
+interface SongMetadata {
+  id: string;              // YouTube video ID (11 chars)
+  title: string;
+  artist?: string;
+  album?: string;
+  cover?: string;          // Cover image URL
+  lyricOffset?: number;    // Timing offset in ms
+  lyricsSource?: LyricsSource;
+  createdBy?: string;
+  createdAt: number;       // Unix timestamp
+  updatedAt: number;
+  importOrder?: number;    // For stable sorting
+}
+```
+
+### FuriganaSegment
+
+```typescript
+interface FuriganaSegment {
+  text: string;            // Original text
+  reading?: string;        // Hiragana reading (furigana) or phonetic reading (soramimi)
+}
+```
+
+### ParsedLyricLine
+
+```typescript
+interface ParsedLyricLine {
+  startTimeMs: string;
+  words: string;
+  wordTimings?: WordTiming[];
+}
+
+interface WordTiming {
+  text: string;
+  startTimeMs: number;
+  durationMs: number;
+}
+```
+
+---
+
+## Error Responses
+
+All errors follow this format:
+
+```json
+{
+  "error": "Error message"
+}
+```
+
+| Status | Description |
+|--------|-------------|
+| 400 | Bad request (invalid parameters) |
+| 401 | Unauthorized (auth required) |
+| 403 | Forbidden (permission denied) |
+| 404 | Song not found |
+| 405 | Method not allowed |
+| 500 | Internal server error |
+
+---
+
+## Example Usage
+
+### Create a song and fetch lyrics
+
+```typescript
+// 1. Create the song
+const createRes = await fetch('/api/song', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    'X-Username': username
+  },
+  body: JSON.stringify({
+    id: 'dQw4w9WgXcQ',
+    title: 'Never Gonna Give You Up',
+    artist: 'Rick Astley'
+  })
+});
+
+// 2. Search for lyrics
+const searchRes = await fetch('/api/song/dQw4w9WgXcQ', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'search-lyrics',
+    query: 'Rick Astley Never Gonna Give You Up'
+  })
+});
+const { results } = await searchRes.json();
+
+// 3. Fetch lyrics with the best match
+const lyricsRes = await fetch('/api/song/dQw4w9WgXcQ', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'fetch-lyrics',
+    lyricsSource: results[0],
+    returnMetadata: true
+  })
+});
+```
+
+### Stream translation with SSE
+
+```typescript
+const response = await fetch('/api/song/dQw4w9WgXcQ', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'translate-stream',
+    language: 'zh-TW'
+  })
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  
+  const chunk = decoder.decode(value);
+  const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+  
+  for (const line of lines) {
+    const data = JSON.parse(line.slice(6));
+    
+    if (data.type === 'data-line') {
+      console.log(`Line ${data.data.lineIndex}: ${data.data.translation}`);
+    } else if (data.type === 'data-complete') {
+      console.log('Translation complete!');
+    }
+  }
+}
+```
+
+### Bulk export and import
+
+```typescript
+// Export all songs with full content
+const exportRes = await fetch('/api/song?include=metadata,lyrics,translations,furigana,soramimi');
+const { songs } = await exportRes.json();
+
+// Import songs (admin only)
+const importRes = await fetch('/api/song', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${adminToken}`,
+    'X-Username': 'ryo'
+  },
+  body: JSON.stringify({
+    action: 'import',
+    songs: songs
+  })
+});
+```
+
+---
+
+## Related Endpoints
+
+- [Authentication API](/docs/api-auth.md) - User authentication
+- [Chat API](/docs/api-chat.md) - Chat functionality

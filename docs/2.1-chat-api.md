@@ -1,0 +1,533 @@
+# Chat API
+
+The main AI chat endpoint for ryOS that powers the Chats application. This endpoint handles conversational AI interactions with the "Ryo" persona, supports multiple AI providers, and includes extensive tool calling capabilities for controlling the ryOS system.
+
+## Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/chat` | Main AI chat with streaming responses and tool calling |
+
+## Request
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes* | Bearer token for authentication (`Bearer {token}`) |
+| `X-Username` | Yes* | Username for the authenticated user |
+| `Content-Type` | Yes | Must be `application/json` |
+
+*Required for authenticated users. Anonymous users are allowed with reduced rate limits.
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model` | string | No | Override the AI model (takes precedence over body parameter) |
+
+### Body
+
+```typescript
+interface ChatRequest {
+  // Array of conversation messages
+  messages: UIMessage[];
+  
+  // AI model to use (optional, defaults to "gpt-5.1")
+  model?: SupportedModel;
+  
+  // System state context (optional but recommended)
+  systemState?: SystemState;
+}
+
+interface UIMessage {
+  role: "user" | "assistant" | "system";
+  content: string | MessageContent[];
+}
+
+interface MessageContent {
+  type: "text" | "image";
+  text?: string;
+  image?: string; // base64 or URL
+}
+
+interface SystemState {
+  // User identity
+  username?: string | null;
+  userOS?: string; // e.g., "iOS", "Android", "macOS", "Windows", "Linux"
+  locale?: string; // e.g., "en", "zh-TW", "ja", "ko"
+  
+  // User's local time (from browser)
+  userLocalTime?: {
+    timeString: string;
+    dateString: string;
+    timeZone: string;
+  };
+  
+  // Running applications context
+  runningApps?: {
+    foreground: AppInstance | null;
+    background: AppInstance[];
+  };
+  
+  // Internet Explorer state
+  internetExplorer: {
+    url: string;
+    year: string;
+    currentPageTitle: string | null;
+    aiGeneratedMarkdown?: string | null;
+  };
+  
+  // Video player state
+  video: {
+    currentVideo: TrackInfo | null;
+    isPlaying: boolean;
+  };
+  
+  // iPod state (optional)
+  ipod?: {
+    currentTrack: TrackInfo | null;
+    isPlaying: boolean;
+    currentLyrics?: {
+      lines: Array<{ startTimeMs: string; words: string }>;
+    } | null;
+  };
+  
+  // Karaoke state (optional)
+  karaoke?: {
+    currentTrack: TrackInfo | null;
+    isPlaying: boolean;
+  };
+  
+  // TextEdit state (optional)
+  textEdit?: {
+    instances: Array<{
+      instanceId: string;
+      filePath: string | null;
+      title: string;
+      contentMarkdown?: string | null;
+      hasUnsavedChanges: boolean;
+    }>;
+  };
+  
+  // Chat room context (for chat room @mentions)
+  chatRoomContext?: {
+    roomId: string;
+    recentMessages: string;
+    mentionedMessage: string;
+  };
+}
+
+interface AppInstance {
+  instanceId: string;
+  appId: string;
+  title?: string;
+  appletPath?: string;
+  appletId?: string;
+}
+
+interface TrackInfo {
+  id: string;
+  title: string;
+  artist?: string;
+}
+```
+
+## Response
+
+The endpoint returns a **Server-Sent Events (SSE)** stream using the Vercel AI SDK's UI message stream format.
+
+### Stream Format
+
+The response uses `Content-Type: text/event-stream` and streams data in the following format:
+
+```
+data: {"type":"text-delta","textDelta":"Hello"}
+data: {"type":"text-delta","textDelta":" there"}
+data: {"type":"tool-call","toolCallId":"...","toolName":"launchApp","args":{...}}
+data: {"type":"tool-result","toolCallId":"...","result":{...}}
+data: {"type":"finish","finishReason":"stop"}
+```
+
+### Error Responses
+
+| Status | Error | Description |
+|--------|-------|-------------|
+| 400 | `Invalid messages format` | Messages array is missing or malformed |
+| 400 | `Unsupported model` | Requested model is not supported |
+| 400 | `Invalid JSON` | Request body is not valid JSON |
+| 401 | `authentication_failed` | Invalid or missing authentication token |
+| 403 | `Unauthorized` | Request origin not allowed |
+| 405 | `Method not allowed` | Only POST requests are accepted |
+| 429 | `rate_limit_exceeded` | Rate limit exceeded for the user |
+| 500 | `Internal Server Error` | Server-side error |
+
+#### Rate Limit Error Response
+
+```typescript
+interface RateLimitError {
+  error: "rate_limit_exceeded";
+  isAuthenticated: boolean;
+  count: number;
+  limit: number;
+  message: string;
+}
+```
+
+## AI Models
+
+### Supported Models
+
+| Model ID | Provider | Underlying Model |
+|----------|----------|------------------|
+| `gpt-5.1` | OpenAI | gpt-5.1 (default) |
+| `gpt-5` | OpenAI | gpt-5 |
+| `gpt-5-mini` | OpenAI | gpt-5-mini |
+| `gpt-4o` | OpenAI | gpt-4o |
+| `gpt-4.1` | OpenAI | gpt-4.1 |
+| `gpt-4.1-mini` | OpenAI | gpt-4.1-mini |
+| `claude-4.5` | Anthropic | claude-sonnet-4-5 |
+| `claude-4` | Anthropic | claude-4-sonnet-20250514 |
+| `claude-3.7` | Anthropic | claude-3-7-sonnet-20250219 |
+| `claude-3.5` | Anthropic | claude-3-5-sonnet-20241022 |
+| `gemini-2.5-pro` | Google | gemini-2.5-pro |
+| `gemini-2.5-flash` | Google | gemini-2.5-flash |
+| `gemini-3-pro-preview` | Google | gemini-3-pro-preview |
+
+### Model Selection
+
+```typescript
+// Priority: Query param > Body param > Default
+const model = queryModel || bodyModel || "gpt-5.1";
+```
+
+## Rate Limiting
+
+| User Type | Limit | Window |
+|-----------|-------|--------|
+| Authenticated | 25 messages | 5 hours |
+| Anonymous | 3 messages | 5 hours |
+
+Anonymous users are identified by IP address. The special user "ryo" (with valid token) has unlimited access.
+
+## Tool Calling
+
+The Chat API supports extensive tool calling for controlling ryOS applications and system features.
+
+### Application Control
+
+#### `launchApp`
+Launch an application in ryOS.
+
+```typescript
+{
+  id: AppId;           // Required: App to launch
+  url?: string;        // For internet-explorer: URL to load
+  year?: string;       // For internet-explorer: Time-travel year
+}
+
+// Available AppIds:
+type AppId = 
+  | "finder" | "soundboard" | "internet-explorer" | "chats"
+  | "textedit" | "paint" | "photo-booth" | "minesweeper"
+  | "videos" | "ipod" | "karaoke" | "synth" | "pc"
+  | "terminal" | "applet-viewer" | "control-panels" | "admin";
+```
+
+#### `closeApp`
+Close an application.
+
+```typescript
+{
+  id: AppId;  // App to close
+}
+```
+
+### Media Control
+
+#### `ipodControl`
+Control iPod playback.
+
+```typescript
+{
+  action: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
+  id?: string;              // YouTube ID or URL (for addAndPlay/playKnown)
+  title?: string;           // Track title (for playKnown)
+  artist?: string;          // Artist name (for playKnown)
+  enableVideo?: boolean;    // Enable video playback
+  enableFullscreen?: boolean;
+  enableTranslation?: string; // Language code for lyrics translation
+}
+```
+
+#### `karaokeControl`
+Control Karaoke playback (same schema as iPod, without `enableVideo`).
+
+```typescript
+{
+  action: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
+  id?: string;
+  title?: string;
+  artist?: string;
+  enableFullscreen?: boolean;
+  enableTranslation?: string;
+}
+```
+
+#### `searchSongs`
+Search for songs on YouTube.
+
+```typescript
+// Input
+{
+  query: string;       // Search query (1-200 chars)
+  maxResults?: number; // 1-10, default 5
+}
+
+// Output
+{
+  results: Array<{
+    videoId: string;
+    title: string;
+    channelTitle: string;
+    publishedAt: string;
+  }>;
+  message: string;
+  hint: string;
+}
+```
+
+### Virtual File System
+
+#### `list`
+List items from the virtual file system.
+
+```typescript
+{
+  path: "/Applets" | "/Documents" | "/Applications" | "/Music" | "/Applets Store";
+  query?: string;  // Search filter (for Applets Store)
+  limit?: number;  // Max results 1-50 (for Applets Store)
+}
+```
+
+#### `open`
+Open a file or launch an app.
+
+```typescript
+{
+  path: string;  // e.g., "/Applets/Calculator.app", "/Documents/notes.md"
+}
+```
+
+#### `read`
+Read file contents.
+
+```typescript
+{
+  path: string;  // Path to file in /Applets, /Documents, or /Applets Store
+}
+```
+
+#### `write`
+Create or modify documents.
+
+```typescript
+{
+  path: string;     // e.g., "/Documents/notes.md"
+  content: string;  // Document content
+  mode?: "overwrite" | "append" | "prepend";
+}
+```
+
+#### `edit`
+Make targeted edits to existing files.
+
+```typescript
+{
+  path: string;       // File path
+  old_string: string; // Text to replace (must be unique)
+  new_string: string; // Replacement text
+}
+```
+
+### HTML/Applet Generation
+
+#### `generateHtml`
+Generate an HTML applet for ryOS.
+
+```typescript
+// Input
+{
+  html: string;    // HTML content (body only)
+  title?: string;  // Applet title
+  icon?: string;   // Emoji icon
+}
+
+// Output (executed server-side)
+{
+  html: string;
+  title: string;
+  icon: string;
+}
+```
+
+### System Settings
+
+#### `settings`
+Change system preferences.
+
+```typescript
+{
+  language?: "en" | "zh-TW" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru";
+  theme?: "system7" | "macosx" | "xp" | "win98";
+  masterVolume?: number;     // 0-1
+  speechEnabled?: boolean;   // Text-to-speech
+  checkForUpdates?: boolean; // Trigger update check
+}
+```
+
+### Special Tools
+
+#### `aquarium`
+Render an emoji aquarium in the chat bubble.
+
+```typescript
+{}  // No parameters
+```
+
+## Example Usage
+
+### Basic Chat Request
+
+```typescript
+const response = await fetch('/api/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`,
+    'X-Username': 'myusername'
+  },
+  body: JSON.stringify({
+    messages: [
+      { role: 'user', content: 'Hello, Ryo!' }
+    ],
+    model: 'claude-4',
+    systemState: {
+      username: 'myusername',
+      locale: 'en',
+      internetExplorer: { url: '', year: 'current', currentPageTitle: null },
+      video: { currentVideo: null, isPlaying: false }
+    }
+  })
+});
+
+// Handle SSE stream
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  
+  const chunk = decoder.decode(value);
+  // Process SSE events...
+}
+```
+
+### Using with Vercel AI SDK
+
+```typescript
+import { useChat } from 'ai/react';
+
+function ChatComponent() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: '/api/chat',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-Username': username
+    },
+    body: {
+      model: 'gpt-5.1',
+      systemState: { /* ... */ }
+    }
+  });
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input value={input} onChange={handleInputChange} />
+      <button type="submit">Send</button>
+    </form>
+  );
+}
+```
+
+### Playing a Song via Tool Calling
+
+The AI will automatically use tools when appropriate:
+
+```typescript
+// User message: "Play Never Gonna Give You Up"
+
+// AI will:
+// 1. Call list({ path: "/Music" }) to check library
+// 2. If not found, call searchSongs({ query: "Never Gonna Give You Up" })
+// 3. Call ipodControl({ action: "addAndPlay", id: "dQw4w9WgXcQ" })
+```
+
+## Configuration
+
+### Runtime Settings
+
+```typescript
+export const maxDuration = 80;  // Max streaming duration (seconds)
+export const runtime = "edge";  // Edge runtime
+export const stream = true;     // Enable streaming
+```
+
+### Model Configuration
+
+```typescript
+const result = streamText({
+  model: selectedModel,
+  messages: enrichedMessages,
+  tools: { /* ... */ },
+  temperature: 0.7,
+  maxOutputTokens: 48000,
+  stopWhen: stepCountIs(10),  // Max 10 tool-calling steps
+  experimental_transform: smoothStream({
+    chunking: /[\u4E00-\u9FFF]|\S+\s+/,  // CJK-aware chunking
+  })
+});
+```
+
+## Related Endpoints
+
+| Endpoint | Documentation | Description |
+|----------|---------------|-------------|
+| `/api/applet-ai` | - | Applet text + image generation |
+| `/api/ie-generate` | - | Time-travel page generation |
+| `/api/speech` | - | Text-to-speech synthesis |
+| `/api/audio-transcribe` | - | Speech-to-text transcription |
+| `/api/youtube-search` | - | YouTube music search |
+| `/api/song/` | - | Song library CRUD operations |
+
+## System Prompt Structure
+
+The Chat API uses a layered system prompt approach:
+
+1. **Static System Prompt** (cached for performance):
+   - Core priority instructions
+   - Ryo persona instructions
+   - Answer style guidelines
+   - Chat instructions
+   - Tool usage instructions
+   - Code generation instructions
+
+2. **Dynamic System Prompt** (per-request):
+   - User context (username, OS, locale)
+   - Time information (Ryo's time + user's local time)
+   - Running applications
+   - Media playback state
+   - Browser state
+   - TextEdit documents
+   - Chat room context (if applicable)

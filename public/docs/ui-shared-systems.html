@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build System - ryOS Docs</title>
+  <title>UI Components and Shared Systems - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -155,15 +155,15 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
-    <a href="/docs/build-system" class="nav-child active">1.1 Build System</a>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/build-system" class="nav-child ">1.1 Build System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -245,14 +245,14 @@
     <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
+    <a href="/docs/ui-shared-systems" class="active">8. UI Components and Shared Systems</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
     <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
@@ -261,27 +261,34 @@
     
     <main class="content">
       <article>
-        <h1>Build System</h1>
-<p>Vite + Bun build system with multiple deployment targets.</p>
-<h2>Deployment Targets</h2>
-<ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
-<ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
-<ul><li><strong>Development:</strong> Local with HMR</li></ul>
-<h2>Chunk Splitting</h2>
-<strong>Core Chunks (Immediate):</strong>
-<pre><code>react: ["react", "react-dom"]
-"ui-core": ["@radix-ui/react-dialog", ...]
-zustand: ["zustand"]
-motion: ["framer-motion"]</code></pre>
-<strong>Deferred Chunks:</strong>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
-<h2>PWA Caching</h2>
-<table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
+        <h1>UI Components and Shared Systems</h1>
+<p>Overview of shared UI components and system-wide utilities that power the ryOS desktop environment.</p>
+<h2>Overview</h2>
+<p>The ryOS component architecture is organized into distinct categories, each serving specific purposes across the desktop environment. Components are built with React and TypeScript, leveraging Tailwind CSS for styling and shadcn/ui as the foundation for consistent, accessible UI elements. The system emphasizes reusability, theme-aware components, and cross-app compatibility.</p>
+<p>The component library is structured hierarchically: base UI components provide fundamental building blocks, layout components handle window management and desktop structure, dialog components manage modal interactions, and shared components offer cross-application utilities. This organization ensures consistent behavior and appearance across all 17 built-in applications while maintaining flexibility for app-specific customizations.</p>
+<h2>Component Categories</h2>
+<table><thead><tr><th>Category</th><th>Description</th><th>Location</th></tr></thead><tbody><tr><td>UI Components</td><td>shadcn-based components and custom primitives</td><td><code>src/components/ui/</code></td></tr><tr><td>Layout Components</td><td>Window frames, desktop layout, menu bars</td><td><code>src/components/layout/</code></td></tr><tr><td>Dialog Components</td><td>Modal dialogs, alerts, and system dialogs</td><td><code>src/components/dialogs/</code></td></tr><tr><td>Shared Components</td><td>Cross-app utilities and themed components</td><td><code>src/components/shared/</code></td></tr></tbody></table>
+<h2>Technologies</h2>
+<ul><li><strong>React 19</strong> with TypeScript for type-safe component development</li></ul>
+<ul><li><strong>Tailwind CSS</strong> for utility-first styling and theme support</li></ul>
+<ul><li><strong>shadcn/ui</strong> component library for accessible, customizable UI primitives</li></ul>
+<ul><li><strong>Framer Motion</strong> for animations and transitions</li></ul>
+<h2>Component Architecture</h2>
+<p>The UI system follows a layered approach:</p>
+<ol><li><strong>Base Layer</strong>: shadcn/ui components (button, dialog, input, select, etc.) provide accessible, themeable primitives</li></ol>
+<ol><li><strong>Custom Layer</strong>: Specialized components (activity-indicator, audio-bars, dial, playback-bars) extend functionality for app-specific needs</li></ol>
+<ol><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li></ol>
+<ol><li><strong>Application Layer</strong>: Dialog and shared components provide common patterns used across multiple apps</li></ol>
+<p>All components are theme-aware, automatically adapting to the active system theme (System 7, Mac OS X, Windows XP, Windows 98) through the theme system.</p>
+<h2>Subsections</h2>
+<ul><li><a href="/docs/ui-components">UI Components</a> - Core UI component library including shadcn components and custom primitives</li></ul>
+<ul><li><a href="/docs/i18n-hooks">Internationalization</a> - i18n hooks and translation system supporting 9 languages</li></ul>
+
       </article>
       
       <nav class="nav">
-        <a href="/docs/overview">← Overview</a>
-        <a href="/docs/ai-integration">AI Integration →</a>
+        <a href="/docs/chat-rooms-api">← Chat Rooms API</a>
+        <a href="/docs/ui-components">Components →</a>
       </nav>
       
     </main>

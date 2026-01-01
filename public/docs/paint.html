@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build System - ryOS Docs</title>
+  <title>Paint - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -155,15 +156,15 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
-    <a href="/docs/build-system" class="nav-child active">1.1 Build System</a>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -171,34 +172,21 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ai-integration" class="">2. AI Integration</a>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
-    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
-    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
-    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
-    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
-    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/application-framework" class="">3. Application Framework</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
-    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
-    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
   </div>
 </div>
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/storage-file-system" class="">4. File System</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -206,16 +194,29 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/core-applications" class="">5. Apps</a>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
   </button>
   <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
+  </div>
+</div>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
     <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
     <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
     <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
-    <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
+    <a href="/docs/paint" class="nav-child active">5.7 Paint</a>
     <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
     <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
     <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
@@ -231,7 +232,13 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/audio-system" class="">6. Audio System</a>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -239,49 +246,70 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/real-time-communication" class="">7. Chat System</a>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
   </button>
   <div class="nav-children" style="display: none;">
-    <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
-    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>Build System</h1>
-<p>Vite + Bun build system with multiple deployment targets.</p>
-<h2>Deployment Targets</h2>
-<ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
-<ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
-<ul><li><strong>Development:</strong> Local with HMR</li></ul>
-<h2>Chunk Splitting</h2>
-<strong>Core Chunks (Immediate):</strong>
-<pre><code>react: ["react", "react-dom"]
-"ui-core": ["@radix-ui/react-dialog", ...]
-zustand: ["zustand"]
-motion: ["framer-motion"]</code></pre>
-<strong>Deferred Chunks:</strong>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
-<h2>PWA Caching</h2>
-<table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
+        <h1>Paint</h1>
+<p>Paint (v1.0.4) is a core ryOS application designed for creative expression and basic image manipulation. It provides a familiar canvas-based interface for drawing, editing, and applying effects to digital images, making digital art accessible for all ryOS users.</p>
+<h2>Overview</h2>
+<p>Paint serves as a versatile image creation and editing tool within the ryOS environment. Users can leverage its intuitive interface to sketch ideas, create simple graphics, or perform quick edits on existing images. Its focus is on accessibility and ease of use, making it suitable for both casual users and those needing a straightforward tool for visual tasks.</p>
+<p>The application supports fundamental drawing operations, comprehensive color management, and a selection of artistic filters. From freehand drawing with various brushes to filling areas with unique patterns, Paint offers a robust yet approachable experience for digital artistry and basic photo enhancements.</p>
+<h2>Features</h2>
+<ul><li><strong>Intuitive Drawing Tools</strong>: A comprehensive toolbar on the left provides various drawing implements, including pencils, brushes, shapes (lines, rectangles, circles), and more, to bring your ideas to life on the canvas.</li></ul>
+<ul><li><strong>Vibrant Color Palette</strong>: Easily select and apply colors from a dedicated palette located below the tools, allowing for precise control over your artwork's hues and fills.</li></ul>
+<ul><li><strong>Creative Patterns</strong>: Enhance your designs by choosing from a diverse range of patterns in the bottom palette to fill shapes and areas, adding texture and visual interest to your artwork.</li></ul>
+<ul><li><strong>Image Filters</strong>: Transform your images with a suite of built-in filters like Invert, Grayscale, and Brightness adjustments, accessible via the <code>Filters</code> menu for quick visual effects.</li></ul>
+<ul><li><strong>Undo/Redo Functionality</strong>: Effortlessly correct mistakes and experiment with confidence using the undo feature, ensuring a smooth and forgiving creative workflow.</li></ul>
+<ul><li><strong>Flexible Saving Options</strong>: Save your creations to the ryOS file system, either preserving the current file using <code>File > Save</code> or saving a new version with a different name using <code>File > Save As</code>.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch Paint, locate its icon in the ryOS application launcher or open an image file associated with Paint. Once open, you'll be presented with a blank canvas, ready for your artistic endeavors. Select a tool, pick a color, and start drawing!
+<h3>Key Actions</h3>
+<ul><li><strong>Drawing</strong>: Select a tool from the left-hand toolbar (e.g., Pencil, Brush, Line, Rectangle) and click/drag on the canvas to draw. Adjust stroke width using the settings panel.</li></ul>
+<ul><li><strong>Choosing Colors</strong>: Click on a color swatch in the color palette located below the tools to set your active drawing color for lines, fills, or text.</li></ul>
+<ul><li><strong>Applying Patterns</strong>: Select a pattern from the bottom palette to use it for filling shapes or areas with predefined textures.</li></ul>
+<ul><li><strong>Undoing Actions</strong>: If you make a mistake, navigate to <code>Edit > Undo</code> in the menu bar or use the keyboard shortcut <code>⌘Z</code> to revert your last action.</li></ul>
+<ul><li><strong>Saving Your Work</strong>: To save your current artwork, go to <code>File > Save</code>. If you wish to save it under a new name or in a different location, use <code>File > Save As</code>.</li></ul>
+<ul><li><strong>Applying Filters</strong>: Explore various visual effects by selecting options from the <code>Filters</code> menu, such as <code>Invert</code>, <code>Grayscale</code>, or <code>Brightness</code>, to quickly alter your image's appearance.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>Use <code>⌘Z</code> to quickly undo your last drawing or editing action.</li></ul>
+<ul><li>Experiment with different brush sizes using the stroke settings to vary your line thickness and create diverse visual effects.</li></ul>
+<ul><li>Combine patterns with different foreground and background colors for unique textural designs.</li></ul>
+<ul><li>Before applying a filter, consider saving your current progress using <code>File > Save As</code> to easily revert if you don't like the result, preserving your original artwork.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 713×480px</li></ul>
+<ul><li>Minimum size: 400×400px</li></ul>
+<ul><li>Maximum size: 713×535px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 8 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/PaintToolbar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintToolbar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/PaintFiltersMenu.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintFiltersMenu.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/PaintColorPalette.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintColorPalette.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/PaintStrokeSettings.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintStrokeSettings.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/PaintCanvas.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintCanvas.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/PaintAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/PaintMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintMenuBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/PaintPatternPalette.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintPatternPalette.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<p>No custom hooks or utilities.</p>
+<h3>State Management</h3>
+Paint manages its application state using a combination of local React component state (e.g., <code>useState</code> for selected tools, patterns, stroke width, and undo/redo capabilities) and global state managed through Zustand stores (<code>usePaintStore</code> for application-specific global state and <code>useAppStore</code> for general ryOS application management).
+<h2>Related Apps</h2>
+<p>Paint works well alongside the <strong>Finder</strong> app for managing and organizing your saved image files, and <strong>Photos</strong> for viewing and quick touch-ups of more complex images.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/overview">← Overview</a>
-        <a href="/docs/ai-integration">AI Integration →</a>
+        <a href="/docs/finder">← Finder</a>
+        <a href="/docs/photo-booth">Photo Booth →</a>
       </nav>
       
     </main>

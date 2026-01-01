@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Integration - ryOS Docs</title>
+  <title>iPod - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -186,7 +186,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="active">3. AI Integration</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -202,17 +202,17 @@
     <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/core-applications" class="">5. Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
-    <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
+    <a href="/docs/ipod" class="nav-child active">5.3 iPod</a>
     <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
     <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
     <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
@@ -257,17 +257,62 @@
     
     <main class="content">
       <article>
-        <h1>AI Integration</h1>
-<p>Multi-provider AI with tool calling support.</p>
-<h2>Providers</h2>
-<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td>gpt-5, gpt-5.1, gpt-4o</td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td>claude-4.5, claude-4, claude-3.7</td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td>gemini-2.5-pro, gemini-2.5-flash</td></tr></tbody></table>
-<h2>Available Tools</h2>
-<table><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody><tr><td><code>launchApp</code></td><td>Open applications</td></tr><tr><td><code>closeApp</code></td><td>Close applications</td></tr><tr><td><code>ipodControl</code></td><td>Music playback control</td></tr><tr><td><code>karaokeControl</code></td><td>Karaoke playback</td></tr><tr><td><code>generateHtml</code></td><td>Create HTML applets</td></tr><tr><td><code>list</code></td><td>List VFS items</td></tr><tr><td><code>open</code></td><td>Open files/apps</td></tr><tr><td><code>read</code></td><td>Read file contents</td></tr><tr><td><code>write</code></td><td>Create/modify documents</td></tr><tr><td><code>edit</code></td><td>Edit existing files</td></tr><tr><td><code>searchSongs</code></td><td>YouTube music search</td></tr><tr><td><code>settings</code></td><td>System settings</td></tr></tbody></table>
+        <h1>iPod</h1>
+<p>The iPod app for ryOS brings the classic 1st generation iPod experience to your web desktop. It allows you to manage and play music from YouTube, complete with iconic features like the click wheel, cover flow, and synchronized lyrics, all within a familiar retro interface.</p>
+<h2>Overview</h2>
+<p>The ryOS iPod app reimagines the nostalgic charm of a classic portable music player, seamlessly integrated with modern web capabilities. It's designed for users who appreciate a focused, distraction-free music listening experience, reminiscent of early 2000s tech. Users can curate their music library by adding tracks directly from YouTube, enjoying a blend of retro aesthetics and contemporary content.</p>
+<p>Beyond basic playback, the iPod app offers a rich interactive experience. Navigate your music collection with an intuitive click wheel, visually browse albums with Cover Flow, and enhance your listening with real-time synced lyrics. It's perfect for casual listening, focused work sessions with background music, or simply reliving a beloved piece of technology within the ryOS environment.</p>
+<h2>Features</h2>
+<p>The iPod app (v1.0) provides a rich set of features designed to emulate and enhance the classic iPod experience:</p>
+<ul><li><strong>Music Management & Discovery:</strong><ul><li>🎵 <strong>Add Songs from YouTube:</strong> Easily expand your music library by pasting YouTube URLs directly into the app.</li><li><strong>Dynamic Library:</strong> Your added music forms a personalized library, accessible through the classic iPod interface.</li></ul></li></ul>
+<ul><li><strong>Intuitive Navigation & Interface:</strong><ul><li>🔄 <strong>Click Wheel Navigation:</strong> Experience authentic iPod navigation using the interactive click wheel to browse menus, artists, albums, and songs.</li><li><strong>Cover Flow:</strong> Visually explore your music collection with the iconic Cover Flow interface, displaying album art in a dynamic 3D carousel.</li><li><strong>Customizable Display:</strong> Adjust backlight settings and themes to personalize your iPod's look.</li><li>📺 <strong>Fullscreen Video Playback:</strong> Switch to a fullscreen view for an immersive video experience when available.</li></ul></li></ul>
+<ul><li><strong>Enhanced Playback Experience:</strong><ul><li>⏯️ <strong>Comprehensive Playback Controls:</strong> Full control over your music, including play, pause, skip forward/backward, and volume adjustments.</li><li>⚙️ <strong>Advanced Playback Modes:</strong> Utilize shuffle and repeat functionalities for individual songs or entire playlists.</li><li>🎤 <strong>Synced Lyrics & Language Support:</strong> View synchronized lyrics with advanced features like translations, furigana (for Japanese), romaji, and pinyin (for Chinese), enhancing language learning or appreciation.</li></ul></li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To begin using the iPod app, simply launch it from your ryOS desktop. The app will open to its default menu screen, replicating the classic iPod interface. Use the interactive click wheel to navigate through options and start building your music library.
+<h3>Key Actions</h3>
+<ul><li><strong>Adding Music:</strong> Select the "Add Songs" option from the main menu and paste a YouTube URL into the prompt to import a new track into your library.</li></ul>
+<ul><li><strong>Browsing Your Library:</strong> Navigate to "Music" using the click wheel to explore your saved songs, artists, and albums. Use Cover Flow for a visually engaging browsing experience.</li></ul>
+<ul><li><strong>Controlling Playback:</strong> While a song is playing, use the central play/pause button, and the skip buttons on the click wheel to manage your listening.</li></ul>
+<ul><li><strong>Accessing Lyrics:</strong> During playback, select the lyrics option to view synchronized lyrics, with options for translations and phonetic aids.</li></ul>
+<ul><li><strong>Adjusting Settings:</strong> Access display and playback mode settings through the main menu to customize your iPod's appearance and playback behavior.</li></ul>
+<h3>Tips & Shortcuts</h3>
+The click wheel is your primary interaction method; treat it like a physical iPod wheel for navigation. The central button acts as 'select,' while the outer ring allows scrolling through lists and options. Look for visual cues on the screen to understand current menu options and selected items.
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 300×480px</li></ul>
+<ul><li>Minimum size: 300×480px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 14 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/LyricsDisplay.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/LyricsDisplay.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/FullScreenPortal.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/FullScreenPortal.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/PipPlayer.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PipPlayer.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/IpodAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/IpodAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/screen/BatteryIndicator.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/BatteryIndicator.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/screen/MenuListItem.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/MenuListItem.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/screen/StatusDisplay.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/StatusDisplay.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/screen/ScrollingText.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/ScrollingText.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/screen/Scrollbar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/Scrollbar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/screen/index.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/index.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/CoverFlow.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/CoverFlow.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/IpodMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/IpodMenuBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/IpodWheel.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/IpodWheel.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/IpodScreen.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/IpodScreen.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/index.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/index.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useLibraryUpdateChecker.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useLibraryUpdateChecker.ts</a></code></li></ul>
+<strong>Utilities:</strong>
+No dedicated utility files are listed for this application.
+<h3>State Management</h3>
+The iPod app leverages Zustand for robust state management, utilizing several stores including <code>useIpodStore</code> for core music library and playback state, <code>useAudioSettingsStore</code> for audio preferences, <code>useThemeStore</code> for visual themes, and <code>useAppStore</code> for general application-level settings. This ensures a consistent and reactive user experience across the application.
+<h2>Related Apps</h2>
+<p>The iPod app integrates well with ryOS's system-wide audio controls for volume management. Users might also find the 'Notes' app useful for jotting down song ideas or creating custom playlists for later use.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/utility-apis">← Utility APIs</a>
-        <a href="/docs/application-framework">Application Framework →</a>
+        <a href="/docs/internet-explorer">← Internet Explorer</a>
+        <a href="/docs/karaoke">Karaoke →</a>
       </nav>
       
     </main>

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Endpoints - ryOS Docs</title>
+  <link rel="icon" href="/icons/mac-192.png">
+  <style>
+    @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
+    @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geneva", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #fff;
+      color: #000;
+    }
+    a { color: #00f; }
+    a:hover { text-decoration: none; }
+    code, pre { font-family: "Monaco", monospace; font-size: 11px; }
+    code { background: #f0f0f0; padding: 1px 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    
+    /* Layout */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0 16px; height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; display: block; }
+    .header-left span { font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right a { text-decoration: none; color: #333; }
+    .header-right a:hover { color: #000; }
+    .header-right .github { display: flex; align-items: center; gap: 4px; }
+    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
+    
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      border-right: 1px solid #ccc;
+      padding: 12px;
+      position: sticky; top: 40px;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block; padding: 4px 8px; margin: 2px 0;
+      text-decoration: none; color: #333;
+      font-size: 11px;
+    }
+    .sidebar a:hover { background: #f0f0f0; }
+    .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-spacer { width: 8px; flex-shrink: 0; } /* Same width as toggle arrow */
+    .nav-no-toggle { cursor: default; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
+    
+    .content { flex: 1; padding: 24px 32px; min-width: 0; }
+    
+    /* Typography */
+    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    h2 { font-size: 14px; margin: 24px 0 12px; }
+    h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    
+    /* Navigation */
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .nav a { text-decoration: none; color: #333; }
+    .nav a:hover { color: #000; }
+    
+    /* Mobile menu button */
+    .menu-btn { 
+      display: none; 
+      background: transparent; 
+      border: 0; 
+      padding: 4px; 
+      cursor: pointer; 
+      line-height: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      color: inherit;
+    }
+    .menu-btn svg { display: block; width: 18px; height: 18px; pointer-events: none; }
+    @media screen and (max-width: 768px) {
+      .menu-btn { 
+        display: -webkit-flex !important;
+        display: flex !important; 
+        -webkit-align-items: center;
+        align-items: center; 
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+      .header-left img { display: none !important; }
+      .sidebar { 
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
+        background: #fff; z-index: 20;
+        transition: left 0.2s;
+      }
+      .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+        <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
+        <span>ryOS</span>
+      </a>
+      <span style="color:#999">/</span>
+      <span style="color:#666">Docs</span>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="/" class="launch">Launch</a>
+    </div>
+  </header>
+  
+  <div class="container">
+    <nav class="sidebar">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/overview" class="">1. Overview</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+  </div>
+</div>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
+  </button>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child active">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
+    <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
+    <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
+    <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
+    <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
+    <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
+    <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
+    <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
+    <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
+    <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
+    <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
+    <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
+    <a href="/docs/videos" class="nav-child ">5.13 Videos</a>
+    <a href="/docs/minesweeper" class="nav-child ">5.14 Minesweeper</a>
+    <a href="/docs/virtual-pc" class="nav-child ">5.15 Virtual PC</a>
+    <a href="/docs/admin" class="nav-child ">5.16 Admin</a>
+    <a href="/docs/applet-store" class="nav-child ">5.17 Applet Store</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
+  </div>
+</div>
+    </nav>
+    
+    <main class="content">
+      <article>
+        <h1>AI Endpoints</h1>
+<p>ryOS provides several AI-powered endpoints for content generation, separate from the main chat interface. These endpoints power specialized features like applet generation, time-travel web pages, and music metadata extraction.</p>
+<p>All AI endpoints run on Vercel Edge Functions with rate limiting and CORS protection.</p>
+<h2>Applet AI</h2>
+<p>The Applet AI endpoint powers intelligent responses within sandboxed HTML applets, supporting both text generation and AI image generation.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/applet-ai</code></td><td>Generate text responses or images for applets</td></tr></tbody></table>
+<h3>Request</h3>
+<pre><code>{
+  // Text prompt (required if no messages provided)
+  prompt?: string;           // max 4000 characters
+  
+  // Conversation history (alternative to prompt)
+  messages?: Array&lt;{
+    role: "user" | "assistant" | "system";
+    content?: string;        // max 4000 characters
+    attachments?: Array&lt;{    // max 4 per message, user messages only
+      mediaType: string;     // e.g., "image/png", "image/jpeg"
+      data: string;          // base64-encoded image data
+    }&gt;;
+  }&gt;;                        // max 12 messages
+  
+  // Optional applet context
+  context?: string;          // max 2000 characters
+  
+  // Generation parameters
+  temperature?: number;      // 0-1, default 0.6
+  mode?: "text" | "image";   // default "text"
+  
+  // Image attachments (mode="image" only)
+  images?: Array&lt;{           // max 4 images
+    mediaType: string;
+    data: string;            // base64-encoded
+  }&gt;;
+}</code></pre>
+<h3>Headers</h3>
+<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Optional</td><td><code>Bearer <token></code> for authenticated requests</td></tr><tr><td><code>X-Username</code></td><td>Optional</td><td>Username for rate limit tracking</td></tr><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
+<h3>Response</h3>
+<strong>Text Mode</strong> (<code>mode: "text"</code>)
+<pre><code>{
+  "reply": "Generated response text"
+}</code></pre>
+<strong>Image Mode</strong> (<code>mode: "image"</code>)
+<p>Returns binary image data with headers:</p>
+<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Image MIME type (e.g., <code>image/png</code>)</td></tr><tr><td><code>X-Image-Description</code></td><td>Optional description of generated image</td></tr></tbody></table>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>User Type</th><th>Text Requests</th><th>Image Requests</th><th>Window</th></tr></thead><tbody><tr><td>Anonymous</td><td>15/hour</td><td>1/hour</td><td>1 hour</td></tr><tr><td>Authenticated</td><td>50/hour</td><td>12/hour</td><td>1 hour</td></tr></tbody></table>
+<p>Rate limit headers included in responses:</p>
+<ul><li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li></ul>
+<ul><li><code>X-RateLimit-Remaining</code>: Requests remaining</li></ul>
+<ul><li><code>X-RateLimit-Reset</code>: Seconds until reset</li></ul>
+<ul><li><code>Retry-After</code>: Seconds to wait (on 429)</li></ul>
+<h3>Models</h3>
+<ul><li><strong>Text</strong>: <code>gemini-2.5-flash</code></li></ul>
+<ul><li><strong>Image</strong>: <code>gemini-2.5-flash-image-preview</code></li></ul>
+<h3>Example</h3>
+<strong>Text Generation</strong>
+<pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "What is the weather like today?",
+    "context": "Weather applet showing San Francisco",
+    "temperature": 0.7
+  }'</code></pre>
+<p>Response:</p>
+<pre><code>{
+  "reply": "I don't have access to real-time weather data, but based on San Francisco's typical climate..."
+}</code></pre>
+<strong>Image Generation</strong>
+<pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "image",
+    "prompt": "A pixel art sunset over mountains"
+  }' \
+  --output generated-image.png</code></pre>
+<strong>Conversation with Attachments</strong>
+<pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-token" \
+  -H "X-Username: yourname" \
+  -d '{
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is in this image?",
+        "attachments": [{
+          "mediaType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAA..."
+        }]
+      }
+    ]
+  }'</code></pre>
+<h3>Error Responses</h3>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request body</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>authentication_failed</code></td><td>Invalid or missing auth token</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded</td></tr><tr><td>500</td><td><code>Failed to generate response</code></td><td>AI generation error</td></tr><tr><td>502</td><td><code>The model did not return an image</code></td><td>Image generation failed</td></tr></tbody></table>
+<hr>
+<h2>Internet Explorer Generator</h2>
+<p>The Internet Explorer Generator creates "time-travel" web pages, reimagining how websites might have looked in different eras (past or future). It generates complete HTML pages styled to match historical design trends or speculative future aesthetics.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/ie-generate</code></td><td>Generate era-appropriate web page redesigns</td></tr></tbody></table>
+<h3>Request</h3>
+<strong>Query Parameters</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>Target URL to redesign</td></tr><tr><td><code>year</code></td><td>string</td><td>Target year for the design</td></tr><tr><td><code>model</code></td><td>string</td><td>AI model to use (optional)</td></tr></tbody></table>
+<strong>Request Body</strong>
+<pre><code>{
+  url?: string;              // Target URL (alternative to query param)
+  year?: string;             // Target year (alternative to query param)
+  messages?: Array&lt;{         // Conversation context
+    role: "user" | "assistant" | "system";
+    content: string;
+    // ... UIMessage fields
+  }&gt;;
+  model?: SupportedModel;    // AI model selection
+}</code></pre>
+<h3>Headers</h3>
+<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
+<h3>Response</h3>
+<p>Returns a streaming response (<code>text/event-stream</code>) containing the generated HTML page. The response follows the AI SDK's UI message stream format.</p>
+<p>Generated HTML includes: <ul><li>Era-appropriate styling and typography</li></ul></p>
+<ul><li>Historical or futuristic design elements</li></ul>
+<ul><li><code><!-- TITLE: ... --></code> comment with page title</li></ul>
+<ul><li>Complete, self-contained HTML document</li></ul>
+<p>Results are cached in Redis for future retrieval.</p>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>3 requests</td><td>1 minute</td></tr><tr><td>Budget</td><td>10 requests</td><td>5 hours</td></tr></tbody></table>
+<h3>Supported Models</h3>
+<table><thead><tr><th>Model</th><th>Provider</th></tr></thead><tbody><tr><td><code>gemini-2.5-pro</code></td><td>Google</td></tr><tr><td><code>gemini-2.5-flash</code></td><td>Google</td></tr><tr><td><code>claude-4.5</code></td><td>Anthropic</td></tr><tr><td><code>claude-4</code></td><td>Anthropic</td></tr><tr><td><code>gpt-5</code></td><td>OpenAI</td></tr><tr><td><code>gpt-5.1</code> (default)</td><td>OpenAI</td></tr><tr><td><code>gpt-4o</code></td><td>OpenAI</td></tr></tbody></table>
+<h3>Design Guidelines</h3>
+<p>The AI applies different design principles based on the target year:</p>
+<strong>Future Years</strong> (after current year):
+<ul><li>Bold, creative speculation about design trends</li></ul>
+<ul><li>Embraces backdrop-blur, simple animations</li></ul>
+<ul><li>Uses emojis or simple SVGs for icons</li></ul>
+<ul><li>Considers potential technological breakthroughs</li></ul>
+<strong>Past Years</strong> (before current year):
+<ul><li>Matches historical design era (Art Deco, Web 1.0, etc.)</li></ul>
+<ul><li>Considers available technology of the time</li></ul>
+<ul><li>Simulates period-appropriate materials and textures</li></ul>
+<ul><li>May output as print, newspaper, telegram, etc. for very old dates</li></ul>
+<strong>Current Year</strong>:
+<ul><li>Reflects current website state accurately</li></ul>
+<ul><li>Up-to-date styling and branding</li></ul>
+<h3>Example</h3>
+<pre><code>curl -X POST "https://os.ryo.lu/api/ie-generate?url=apple.com&amp;year=1984" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {
+        "role": "user",
+        "content": "Generate a page for Apple in 1984"
+      }
+    ]
+  }'</code></pre>
+<h3>Error Responses</h3>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid messages format</code></td><td>Malformed messages array</td></tr><tr><td>400</td><td><code>Unsupported model</code></td><td>Invalid model parameter</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Burst or budget limit exceeded</td></tr><tr><td>500</td><td><code>Internal Server Error</code></td><td>Generation failed</td></tr></tbody></table>
+<hr>
+<h2>Parse Title (Music Metadata)</h2>
+<p>The Parse Title endpoint uses AI to extract structured music metadata from YouTube video titles. It intelligently parses song titles, artist names, and album information from various title formats.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/parse-title</code></td><td>Extract music metadata from video titles</td></tr></tbody></table>
+<h3>Request</h3>
+<pre><code>{
+  title: string;           // Raw YouTube video title (required)
+  author_name?: string;    // YouTube channel name (optional, helps identify artist)
+}</code></pre>
+<h3>Headers</h3>
+<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
+<h3>Response</h3>
+<pre><code>{
+  title: string;           // Extracted song title (falls back to raw title)
+  artist?: string;         // Extracted artist name (if found)
+  album?: string;          // Extracted album name (if found)
+}</code></pre>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>15 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>500 requests</td><td>24 hours</td></tr></tbody></table>
+<h3>Model</h3>
+<p>Uses <code>gpt-4.1-mini</code> for efficient metadata parsing.</p>
+<h3>Language Handling</h3>
+<p>The parser prefers original language names over romanized/translated versions:</p>
+<table><thead><tr><th>Input</th><th>Output</th></tr></thead><tbody><tr><td><code>"Jay Chou - Sunny Day (周杰倫 - 晴天)"</code></td><td><code>{"title": "晴天", "artist": "周杰倫"}</code></td></tr><tr><td><code>"NewJeans (뉴진스) 'How Sweet' Official MV"</code></td><td><code>{"title": "How Sweet", "artist": "뉴진스"}</code></td></tr></tbody></table>
+<h3>Example</h3>
+<pre><code>curl -X POST https://os.ryo.lu/api/parse-title \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Daft Punk - Get Lucky (Official Audio) ft. Pharrell Williams, Nile Rodgers",
+    "author_name": "Daft Punk"
+  }'</code></pre>
+<p>Response:</p>
+<pre><code>{
+  "title": "Get Lucky",
+  "artist": "Daft Punk"
+}</code></pre>
+<strong>Complex Title Parsing</strong>
+<pre><code>curl -X POST https://os.ryo.lu/api/parse-title \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "[MV] IU(아이유) _ Blueming(블루밍)",
+    "author_name": "1theK (원더케이)"
+  }'</code></pre>
+<p>Response:</p>
+<pre><code>{
+  "title": "Blueming",
+  "artist": "아이유"
+}</code></pre>
+<h3>Error Responses</h3>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>No title provided</code></td><td>Missing or invalid title field</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Burst or daily limit exceeded</td></tr><tr><td>500</td><td><code>Error parsing title</code></td><td>AI parsing failed</td></tr></tbody></table>
+<hr>
+<h2>Related</h2>
+<ul><li><strong><a href="./07-chat-system.md">Chat API</a></strong> - Main AI chat endpoint with tool calling</li></ul>
+<ul><li><strong><a href="./09-ai-integration.md">AI Integration</a></strong> - AI providers and available tools</li></ul>
+<ul><li><strong><a href="./04-api-layer.md">API Layer</a></strong> - Overview of all ryOS API endpoints</li></ul>
+<ul><li><strong><a href="./apps-chats.md">Chats App</a></strong> - Frontend chat application documentation</li></ul>
+
+      </article>
+      
+      <nav class="nav">
+        <a href="/docs/chat-rooms-api">← Chat Rooms API</a>
+        <a href="/docs/utility-apis">Utility APIs →</a>
+      </nav>
+      
+    </main>
+  </div>
+  
+  <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const menuBtn = document.querySelector('.menu-btn');
+      const clickedMenuBtn = menuBtn && menuBtn.contains(e.target);
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>

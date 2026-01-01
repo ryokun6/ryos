@@ -1,0 +1,434 @@
+# Media API
+
+The Media API provides endpoints for text-to-speech synthesis, audio transcription, and YouTube music search. These endpoints power the audio-related features in ryOS applications like iPod, Karaoke, and voice input.
+
+All endpoints run on Vercel Edge runtime and implement rate limiting to prevent abuse.
+
+---
+
+## Text-to-Speech
+
+Convert text to spoken audio using OpenAI or ElevenLabs voice synthesis.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/speech` | Convert text to speech audio |
+
+### Request
+
+**Headers:**
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | `application/json` |
+| `Authorization` | No | `Bearer {token}` for authenticated requests |
+| `X-Username` | No | Username for rate limit tracking |
+
+**Body (JSON):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | `string` | Yes | Text to convert to speech |
+| `model` | `"openai" \| "elevenlabs"` | No | TTS provider (default: `"elevenlabs"`) |
+
+**OpenAI Options:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `voice` | `string` | `"alloy"` | OpenAI voice name |
+| `speed` | `number` | `1.1` | Speech speed multiplier |
+
+**ElevenLabs Options:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `voice_id` | `string` | `"kAyjEabBEu68HYYYRAHR"` | ElevenLabs voice ID |
+| `model_id` | `string` | `"eleven_turbo_v2_5"` | ElevenLabs model |
+| `output_format` | `string` | `"mp3_44100_128"` | Audio format |
+| `voice_settings` | `object` | See below | Voice customization |
+
+**Voice Settings Object:**
+
+```json
+{
+  "stability": 0.3,
+  "similarity_boost": 0.8,
+  "use_speaker_boost": true,
+  "speed": 1.1
+}
+```
+
+**Output Format Options:**
+
+- `mp3_44100_128` - MP3 at 44.1kHz, 128kbps
+- `mp3_22050_32` - MP3 at 22.05kHz, 32kbps
+- `pcm_16000` - PCM at 16kHz
+- `pcm_22050` - PCM at 22.05kHz
+- `pcm_24000` - PCM at 24kHz
+- `pcm_44100` - PCM at 44.1kHz
+- `ulaw_8000` - μ-law at 8kHz
+
+### Response
+
+**Success (200):**
+
+Returns audio stream with headers:
+
+| Header | Value |
+|--------|-------|
+| `Content-Type` | `audio/mpeg` |
+| `Content-Length` | Audio byte length |
+| `Cache-Control` | `no-store` |
+
+**Error (400):**
+
+```
+'text' is required
+```
+
+**Rate Limit (429):**
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "scope": "burst" | "daily",
+  "limit": 10,
+  "windowSeconds": 60,
+  "resetSeconds": 45,
+  "identifier": "username or anon:ip"
+}
+```
+
+### Rate Limits
+
+| Scope | Limit | Window |
+|-------|-------|--------|
+| Burst | 10 requests | 1 minute |
+| Daily | 50 requests | 24 hours |
+
+> Note: Authenticated admin users bypass rate limiting.
+
+### Example
+
+**Request:**
+
+```bash
+curl -X POST https://your-domain.com/api/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Hello, welcome to ryOS!",
+    "model": "elevenlabs",
+    "voice_id": "kAyjEabBEu68HYYYRAHR"
+  }' \
+  --output speech.mp3
+```
+
+**With OpenAI:**
+
+```bash
+curl -X POST https://your-domain.com/api/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Hello, welcome to ryOS!",
+    "model": "openai",
+    "voice": "nova",
+    "speed": 1.0
+  }' \
+  --output speech.mp3
+```
+
+---
+
+## Audio Transcription
+
+Transcribe audio files to text using OpenAI Whisper.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/audio-transcribe` | Transcribe audio to text |
+
+### Request
+
+**Headers:**
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | `multipart/form-data` |
+
+**Form Data:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `audio` | `File` | Yes | Audio file to transcribe |
+
+**File Constraints:**
+
+| Constraint | Value |
+|------------|-------|
+| Max Size | 2 MB |
+| Type | Must start with `audio/` |
+
+### Response
+
+**Success (200):**
+
+```json
+{
+  "text": "Transcribed text content here"
+}
+```
+
+**Error (400) - No file:**
+
+```json
+{
+  "error": "No audio file provided"
+}
+```
+
+**Error (400) - Invalid type:**
+
+```json
+{
+  "error": "Invalid file type. Must be an audio file."
+}
+```
+
+**Error (400) - Too large:**
+
+```json
+{
+  "error": "File exceeds maximum size of 2MB"
+}
+```
+
+**Rate Limit (429):**
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "scope": "burst" | "daily",
+  "limit": 10,
+  "windowSeconds": 60,
+  "resetSeconds": 45,
+  "identifier": "ip:xxx.xxx.xxx.xxx"
+}
+```
+
+### Rate Limits
+
+| Scope | Limit | Window |
+|-------|-------|--------|
+| Burst | 10 requests | 1 minute |
+| Daily | 50 requests | 24 hours |
+
+### Example
+
+**Request:**
+
+```bash
+curl -X POST https://your-domain.com/api/audio-transcribe \
+  -F "audio=@recording.webm"
+```
+
+**Response:**
+
+```json
+{
+  "text": "This is the transcribed text from the audio recording."
+}
+```
+
+**JavaScript (FormData):**
+
+```javascript
+const formData = new FormData();
+formData.append('audio', audioBlob, 'recording.webm');
+
+const response = await fetch('/api/audio-transcribe', {
+  method: 'POST',
+  body: formData,
+});
+
+const { text } = await response.json();
+console.log('Transcription:', text);
+```
+
+---
+
+## YouTube Search
+
+Search YouTube for music videos. Results are filtered to the Music category.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/youtube-search` | Search YouTube for music |
+
+### Request
+
+**Headers:**
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | `application/json` |
+
+**Body (JSON):**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `query` | `string` | Yes | - | Search query |
+| `maxResults` | `number` | No | `10` | Results to return (1-25) |
+
+### Response
+
+**Success (200):**
+
+```json
+{
+  "results": [
+    {
+      "videoId": "dQw4w9WgXcQ",
+      "title": "Rick Astley - Never Gonna Give You Up",
+      "channelTitle": "Rick Astley",
+      "thumbnail": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
+      "publishedAt": "2009-10-25T06:57:33Z"
+    }
+  ]
+}
+```
+
+**Result Item:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `videoId` | `string` | YouTube video ID |
+| `title` | `string` | Video title |
+| `channelTitle` | `string` | Channel name |
+| `thumbnail` | `string` | Thumbnail URL (medium quality preferred) |
+| `publishedAt` | `string` | ISO 8601 publish date |
+
+**Error (400) - Invalid body:**
+
+```json
+{
+  "error": "Invalid request body"
+}
+```
+
+**Error (403) - API access denied:**
+
+```json
+{
+  "error": "YouTube API access denied",
+  "code": 403,
+  "hint": "YouTube API access denied. Ensure the API key is valid and YouTube Data API v3 is enabled in Google Cloud Console."
+}
+```
+
+**Error (500) - Not configured:**
+
+```json
+{
+  "error": "YouTube API is not configured",
+  "hint": "Add YOUTUBE_API_KEY to your .env.local file and restart vercel dev"
+}
+```
+
+**Rate Limit (429):**
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "scope": "burst" | "daily"
+}
+```
+
+### Rate Limits
+
+| Scope | Limit | Window |
+|-------|-------|--------|
+| Burst | 20 requests | 1 minute |
+| Daily | 200 requests | 24 hours |
+
+### API Key Rotation
+
+The endpoint supports multiple YouTube API keys for quota rotation:
+
+- `YOUTUBE_API_KEY` - Primary key
+- `YOUTUBE_API_KEY_2` - Backup key
+
+When the primary key's quota is exceeded, requests automatically fall back to backup keys.
+
+### Example
+
+**Request:**
+
+```bash
+curl -X POST https://your-domain.com/api/youtube-search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Taylor Swift Shake It Off",
+    "maxResults": 5
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "results": [
+    {
+      "videoId": "nfWlot6h_JM",
+      "title": "Taylor Swift - Shake It Off",
+      "channelTitle": "TaylorSwiftVEVO",
+      "thumbnail": "https://i.ytimg.com/vi/nfWlot6h_JM/mqdefault.jpg",
+      "publishedAt": "2014-08-19T04:00:02Z"
+    }
+  ]
+}
+```
+
+**JavaScript:**
+
+```javascript
+const response = await fetch('/api/youtube-search', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    query: 'Daft Punk Around the World',
+    maxResults: 10,
+  }),
+});
+
+const { results } = await response.json();
+results.forEach(video => {
+  console.log(`${video.title} - ${video.channelTitle}`);
+});
+```
+
+---
+
+## Environment Variables
+
+| Variable | Required For | Description |
+|----------|--------------|-------------|
+| `OPENAI_API_KEY` | TTS (OpenAI), Transcription | OpenAI API key |
+| `ELEVENLABS_API_KEY` | TTS (ElevenLabs) | ElevenLabs API key |
+| `YOUTUBE_API_KEY` | YouTube Search | Primary YouTube Data API v3 key |
+| `YOUTUBE_API_KEY_2` | YouTube Search | Backup YouTube API key (optional) |
+| `REDIS_KV_REST_API_URL` | Rate Limiting | Upstash Redis URL |
+| `REDIS_KV_REST_API_TOKEN` | Rate Limiting | Upstash Redis token |
+
+---
+
+## Related
+
+- [Song API](/workspace/docs/apps-karaoke.md) - Song library management for karaoke
+- [Chat API](/workspace/docs/07-chat-system.md) - AI chat with voice integration
+- [AI Integration](/workspace/docs/09-ai-integration.md) - Overview of AI capabilities

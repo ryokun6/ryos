@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Integration - ryOS Docs</title>
+  <title>Finder - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -186,7 +186,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="active">3. AI Integration</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -202,20 +202,20 @@
     <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/core-applications" class="">5. Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
     <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
     <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
-    <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
+    <a href="/docs/finder" class="nav-child active">5.6 Finder</a>
     <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
     <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
     <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
@@ -257,17 +257,55 @@
     
     <main class="content">
       <article>
-        <h1>AI Integration</h1>
-<p>Multi-provider AI with tool calling support.</p>
-<h2>Providers</h2>
-<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td>gpt-5, gpt-5.1, gpt-4o</td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td>claude-4.5, claude-4, claude-3.7</td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td>gemini-2.5-pro, gemini-2.5-flash</td></tr></tbody></table>
-<h2>Available Tools</h2>
-<table><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody><tr><td><code>launchApp</code></td><td>Open applications</td></tr><tr><td><code>closeApp</code></td><td>Close applications</td></tr><tr><td><code>ipodControl</code></td><td>Music playback control</td></tr><tr><td><code>karaokeControl</code></td><td>Karaoke playback</td></tr><tr><td><code>generateHtml</code></td><td>Create HTML applets</td></tr><tr><td><code>list</code></td><td>List VFS items</td></tr><tr><td><code>open</code></td><td>Open files/apps</td></tr><tr><td><code>read</code></td><td>Read file contents</td></tr><tr><td><code>write</code></td><td>Create/modify documents</td></tr><tr><td><code>edit</code></td><td>Edit existing files</td></tr><tr><td><code>searchSongs</code></td><td>YouTube music search</td></tr><tr><td><code>settings</code></td><td>System settings</td></tr></tbody></table>
+        <h1>Finder</h1>
+<p>Finder is the core file management application for ryOS, providing users with a familiar interface to browse, organize, and manage their files within a secure, virtualized file system powered by IndexedDB. It serves as your primary interaction point for all documents, applications, and data stored within your ryOS environment.</p>
+<h2>Overview</h2>
+<p>The ryOS Finder app acts as the central hub for all file-related operations, offering an intuitive and efficient way to navigate your digital workspace. It allows users to explore a hierarchical file system, providing a desktop-like experience for managing personal and system files. By leveraging IndexedDB, Finder ensures that your data is persistently stored and quickly accessible across sessions, maintaining a consistent and reliable user experience. Designed for both simplicity and power, Finder streamlines file organization, from creating new directories to managing the trash, empowering users with essential tools for a productive workflow within ryOS.</p>
+<h2>Features</h2>
+<ul><li><strong>Intuitive Navigation:</strong><ul><li>Effortlessly move through directories using "Back" and "Forward" navigation buttons.</li><li>Quickly jump to any specific path using the address bar.</li><li>Access common and important locations like Documents, Applications, and Trash instantly via the "Go" menu.</li></ul></li></ul>
+<ul><li><strong>Comprehensive File Management:</strong><ul><li>Create new folders to effectively organize your content.</li><li>Rename files and folders with ease to maintain clarity.</li><li>Move items between directories using a simple drag-and-drop interface.</li><li>Delete files by dragging them to the Trash.</li><li>Permanently remove unwanted items by emptying the Trash.</li></ul></li></ul>
+<ul><li><strong>Flexible Viewing & Sorting:</strong><ul><li>Adjust the visual presentation of files and folders by switching between different icon sizes.</li><li>Sort items by various criteria, including Name, Kind (file type), Size, or Date modified, to quickly locate specific content.</li></ul></li></ul>
+<ul><li><strong>Quick Access & System Insights:</strong><ul><li>Directly jump to predefined system locations like Documents, Applications, or Trash from the "Go" menu.</li><li>Monitor your storage usage and item count directly in the window footer, providing real-time information about your file system.</li></ul></li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch the Finder app, simply click its icon in the ryOS Dock or locate it within the Applications folder. Upon opening, Finder will typically display your home directory, allowing you to immediately begin browsing and managing your files.
+<h3>Key Actions</h3>
+<ul><li><strong>Navigating:</strong> Use the <code>Back</code> (left arrow) and <code>Forward</code> (right arrow) buttons in the toolbar to revisit previous locations. For direct access, type a path into the address bar and press Enter, or utilize the <code>Go</code> menu to jump to system folders like <code>Documents</code>, <code>Applications</code>, or <code>Trash</code>.</li></ul>
+<ul><li><strong>Creating Folders:</strong> To create a new folder in the current directory, navigate to the <code>File</code> menu and select "New Folder", or right-click in an empty area of the file list and choose "New Folder" from the context menu.</li></ul>
+<ul><li><strong>Managing Items:</strong><ul><li><strong>Rename:</strong> Right-click on a file or folder and choose "Rename" to change its name.</li><li><strong>Move:</strong> Drag a file or folder from its current location and drop it into another folder to move it.</li><li><strong>Delete:</strong> Drag files or folders to the <code>Trash</code> icon in the Finder window's footer or the ryOS Dock to send them to the trash.</li></ul></li></ul>
+<ul><li><strong>Viewing and Sorting:</strong> Access the <code>View</code> menu or use the dedicated toolbar options to change the icon size (e.g., small, medium, large) or to sort items by <code>Name</code>, <code>Kind</code>, <code>Size</code>, or <code>Date</code> to organize your view.</li></ul>
+<ul><li><strong>Emptying Trash:</strong> To permanently delete items from your system, open the <code>Trash</code> folder, then select "Empty Trash" from the <code>File</code> menu or right-click on the Trash icon in the Dock.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li><strong>Drag & Drop Efficiency:</strong> Finder fully supports drag-and-drop functionality for moving, copying (if applicable), and deleting files, as well as interacting with other ryOS applications.</li></ul>
+<ul><li><strong>Context Menus:</strong> Right-clicking on files, folders, or empty space within the file list brings up context-sensitive menus, offering quick access to common actions like renaming, opening, or creating new items.</li></ul>
+<ul><li><strong>Address Bar Power:</strong> The address bar not only displays your current path but also allows you to type in full paths or even just folder names for quick navigation.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 400×300px</li></ul>
+<ul><li>Minimum size: 300×200px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 4 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/FinderAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/FinderAppComponent.tsx</a></code>: The primary application component, orchestrating the overall layout, managing global state, and integrating various sub-components.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/FileList.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/FileList.tsx</a></code>: Responsible for rendering the list of files and folders within the current directory, handling user interactions such as selection, drag-and-drop, and displaying file icons.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/FinderMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/FinderMenuBar.tsx</a></code>: Implements the application's menu bar, providing access to <code>File</code>, <code>Edit</code>, <code>View</code>, and <code>Go</code> menus, along with navigation controls.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/FileIcon.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/FileIcon.tsx</a></code>: A reusable presentational component dedicated to displaying individual file and folder icons, potentially with type-specific visual cues.</li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useFileSystem.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useFileSystem.ts</a></code>: This custom hook encapsulates the core logic for interacting with the IndexedDB-backed virtual file system. It provides a clean API for performing CRUD (Create, Read, Update, Delete) operations on files and folders, handling path resolution, and managing file system state.</li></ul>
+<strong>Utility Files:</strong>
+No custom utility files are explicitly defined for this app.
+<h3>State Management</h3>
+The Finder app employs a robust state management strategy combining global and local approaches:
+<ul><li><strong>Zustand Stores:</strong> It heavily utilizes Zustand for global state management, including <code>useFinderStore</code> for app-specific settings like the current path, view type, and sort order; <code>useFilesStore</code> for broader file-related data; <code>useAppStore</code> for overall application lifecycle; and <code>useThemeStore</code> for user interface theme preferences.</li></ul>
+<ul><li><strong>Local Component State:</strong> Standard React <code>useState</code> and <code>useRef</code> hooks are used within individual components (e.g., <code>FinderAppComponent</code>, <code>FileList</code>) to manage ephemeral UI state, such as dialog visibility, selected items, input field values, and other component-specific interactions.</li></ul>
+<ul><li><strong><code>useFileSystem</code> Hook:</strong> This custom hook acts as a specialized state manager for the file system itself, abstracting away the complexities of IndexedDB interactions and providing a consistent interface for file system manipulation.</li></ul>
+<h2>Related Apps</h2>
+<p>Finder integrates seamlessly with other ryOS applications; for instance, files can be opened by their respective default applications (e.g., a text file by the <code>Text Editor</code> app), and newly installed applications from the <code>App Store</code> automatically appear in the Applications folder.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/utility-apis">← Utility APIs</a>
-        <a href="/docs/application-framework">Application Framework →</a>
+        <a href="/docs/textedit">← TextEdit</a>
+        <a href="/docs/paint">Paint →</a>
       </nav>
       
     </main>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build System - ryOS Docs</title>
+  <title>Applet Store - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -155,15 +156,15 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
-    <a href="/docs/build-system" class="nav-child active">1.1 Build System</a>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -171,34 +172,21 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ai-integration" class="">2. AI Integration</a>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
-    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
-    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
-    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
-    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
-    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/application-framework" class="">3. Application Framework</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
-    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
-    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
   </div>
 </div>
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/storage-file-system" class="">4. File System</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -206,9 +194,22 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/core-applications" class="">5. Apps</a>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
   </button>
   <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
+  </div>
+</div>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
@@ -225,13 +226,19 @@
     <a href="/docs/minesweeper" class="nav-child ">5.14 Minesweeper</a>
     <a href="/docs/virtual-pc" class="nav-child ">5.15 Virtual PC</a>
     <a href="/docs/admin" class="nav-child ">5.16 Admin</a>
-    <a href="/docs/applet-store" class="nav-child ">5.17 Applet Store</a>
+    <a href="/docs/applet-store" class="nav-child active">5.17 Applet Store</a>
   </div>
 </div>
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/audio-system" class="">6. Audio System</a>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -239,49 +246,65 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/real-time-communication" class="">7. Chat System</a>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
   </button>
   <div class="nav-children" style="display: none;">
-    <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
-    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>Build System</h1>
-<p>Vite + Bun build system with multiple deployment targets.</p>
-<h2>Deployment Targets</h2>
-<ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
-<ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
-<ul><li><strong>Development:</strong> Local with HMR</li></ul>
-<h2>Chunk Splitting</h2>
-<strong>Core Chunks (Immediate):</strong>
-<pre><code>react: ["react", "react-dom"]
-"ui-core": ["@radix-ui/react-dialog", ...]
-zustand: ["zustand"]
-motion: ["framer-motion"]</code></pre>
-<strong>Deferred Chunks:</strong>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
-<h2>PWA Caching</h2>
-<table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
+        <h1>Applet Store</h1>
+<p>The Applet Store is your central hub for discovering, installing, and managing a diverse collection of user-created HTML applets within ryOS. It empowers you to personalize and extend your desktop environment with lightweight, custom applications from the community.</p>
+<h2>Overview</h2>
+<p>The Applet Store serves as the primary gateway to a vibrant ecosystem of mini-applications within ryOS. It provides users with an intuitive interface to browse, explore, and install a wide range of HTML applets contributed by the community. These applets can vary from simple utility tools and interactive widgets to more complex mini-applications, all designed to enhance your ryOS experience.</p>
+<p>Beyond just discovery, the Applet Store facilitates the seamless integration and execution of these applets, making them readily available on your ryOS desktop. It also offers powerful features for managing your installed applets, ensuring they are kept up-to-date, and enabling you to share your favorite finds with others in the ryOS community. Furthermore, the Applet Store integrates with ryOS Chat, allowing you to generate custom applets on demand, transforming your ideas into functional tools instantly.</p>
+<p>Whether you're looking to add a quick-access calculator, a personalized weather widget, or a unique game, the Applet Store makes it effortless to customize and expand the functionality of your ryOS desktop.</p>
+<h2>Features</h2>
+<ul><li><strong>Applet Discovery & Installation:</strong><ul><li><strong>Browse the Applet Store:</strong> Explore a diverse and growing catalog of user-created HTML applets contributed by the ryOS community.</li><li><strong>Install Applets:</strong> Easily install new applets with a single click, integrating them into your ryOS environment.</li><li><strong>View Applets:</strong> Open and run applets that you've installed from the store or saved from other sources like ryOS Chat.</li></ul></li></ul>
+<ul><li><strong>Applet Creation & Sharing:</strong><ul><li><strong>Create with ryOS Chat:</strong> Leverage the power of ryOS Chat to generate custom HTML applets based on your descriptions and ideas, getting working apps instantly.</li><li><strong>Share Applets:</strong> Distribute your favorite applets with other ryOS users using the built-in sharing functionality in the File menu.</li></ul></li></ul>
+<ul><li><strong>Applet Management:</strong><ul><li><strong>Open from Finder:</strong> Directly browse and open applet files saved on your ryOS file system, offering flexibility in managing your applet collection.</li><li><strong>Keep Updated:</strong> Periodically check for and install the latest versions of your installed applets to ensure you have the most recent features and bug fixes.</li></ul></li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch the Applet Store, locate its icon in your ryOS applications menu or dock and click it. Upon opening, you'll typically be presented with the main feed, showcasing a selection of popular and newly added applets ready for you to explore.
+<h3>Key Actions</h3>
+<ul><li><strong>Browsing and Installing Applets:</strong> Open the "Store" menu to discover new applets. You can browse categories or search for specific functionalities. Clicking on an applet will display its details, from where you can choose to install it.</li></ul>
+<ul><li><strong>Running Applets:</strong> Once an applet is installed or saved, you can run it directly from the Applet Store's interface or by selecting "View Applets" from the "File" menu to see your collection.</li></ul>
+<ul><li><strong>Creating Applets with ryOS Chat:</strong> To generate a custom applet, go to the "Store" menu and select "Create with ryOS Chat." This will open a chat interface where you can describe the applet you want to create, and ryOS Chat will generate the code for you.</li></ul>
+<ul><li><strong>Sharing Applets:</strong> To share an applet you enjoy, select it within the Applet Store and then use the "Share Applet" option available in the "File" menu.</li></ul>
+<ul><li><strong>Opening Local Applets:</strong> If you have applet files saved on your system, use the "File" menu's "Open from Finder" option to browse your file system and open them directly in the Applet Store.</li></ul>
+<ul><li><strong>Checking for Updates:</strong> To ensure your installed applets are current, select "Check for Updates" from the "Store" menu.</li></ul>
+<h3>Tips & Shortcuts</h3>
+The Applet Store utilizes standard ryOS window controls for resizing and closing. For quick assistance, look for a "Help" option in the menu bar which provides details about the app's features. The "About" dialog offers version information. Some applets may require user authentication, which will be handled through a dedicated login dialog.
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 320×450px</li></ul>
+<ul><li>Minimum size: 300×200px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 4 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/AppletViewerAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AppletViewerAppComponent.tsx</a></code>: The main application component, responsible for orchestrating the overall Applet Store functionality, managing state, and integrating various sub-components.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/AppStore.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AppStore.tsx</a></code>: Handles the core logic and UI for browsing, displaying, and interacting with the applet catalog.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/AppStoreFeed.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AppStoreFeed.tsx</a></code>: Focuses on rendering the list or grid of available applets, likely including filtering and sorting capabilities.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/AppletViewerMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AppletViewerMenuBar.tsx</a></code>: Manages the application's menu bar, providing access to file operations, store options, and help dialogs.</li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useAppletUpdates.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useAppletUpdates.ts</a></code>: Manages the logic and state related to checking for, downloading, and applying updates to installed applets.</li></ul>
+<strong>Utilities:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/appletActions.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">utils/appletActions.ts</a></code>: Provides a collection of functions to perform various actions on applets, such as loading, saving, and interacting with their content.</li></ul>
+<h3>State Management</h3>
+The Applet Store extensively uses Zustand stores for managing global application state, including <code>useThemeStore</code> for theme preferences, <code>useAppletStore</code> for the collection of installed and available applets, <code>useAppStore</code> for general ryOS application state, <code>useChatsStore</code> for integration with chat functionalities (e.g., <code>ryOS Chat</code>), and <code>useFilesStore</code> for interacting with the ryOS file system. Local component state is also utilized for UI-specific elements and temporary data.
+<h2>Related Apps</h2>
+<ul><li><strong>ryOS Chat:</strong> Integrates directly with the Applet Store, allowing users to generate custom HTML applets through conversational prompts.</li></ul>
+<ul><li><strong>Finder:</strong> Enables users to manage and open applet files directly from their ryOS file system, complementing the Applet Store's browsing and installation capabilities.</li></ul>
+
       </article>
       
       <nav class="nav">
-        <a href="/docs/overview">← Overview</a>
-        <a href="/docs/ai-integration">AI Integration →</a>
+        <a href="/docs/admin">← Admin</a>
+        <a href="/docs/storage-file-system">File System →</a>
       </nav>
       
     </main>

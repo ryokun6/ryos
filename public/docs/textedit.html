@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Integration - ryOS Docs</title>
+  <title>TextEdit - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -186,7 +186,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="active">3. AI Integration</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -202,19 +202,19 @@
     <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/core-applications" class="">5. Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
     <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
-    <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
+    <a href="/docs/textedit" class="nav-child active">5.5 TextEdit</a>
     <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
     <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
     <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
@@ -257,17 +257,67 @@
     
     <main class="content">
       <article>
-        <h1>AI Integration</h1>
-<p>Multi-provider AI with tool calling support.</p>
-<h2>Providers</h2>
-<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td>gpt-5, gpt-5.1, gpt-4o</td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td>claude-4.5, claude-4, claude-3.7</td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td>gemini-2.5-pro, gemini-2.5-flash</td></tr></tbody></table>
-<h2>Available Tools</h2>
-<table><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody><tr><td><code>launchApp</code></td><td>Open applications</td></tr><tr><td><code>closeApp</code></td><td>Close applications</td></tr><tr><td><code>ipodControl</code></td><td>Music playback control</td></tr><tr><td><code>karaokeControl</code></td><td>Karaoke playback</td></tr><tr><td><code>generateHtml</code></td><td>Create HTML applets</td></tr><tr><td><code>list</code></td><td>List VFS items</td></tr><tr><td><code>open</code></td><td>Open files/apps</td></tr><tr><td><code>read</code></td><td>Read file contents</td></tr><tr><td><code>write</code></td><td>Create/modify documents</td></tr><tr><td><code>edit</code></td><td>Edit existing files</td></tr><tr><td><code>searchSongs</code></td><td>YouTube music search</td></tr><tr><td><code>settings</code></td><td>System settings</td></tr></tbody></table>
+        <h1>TextEdit</h1>
+<p>TextEdit is a versatile rich text editor for ryOS, designed for creating and managing documents with advanced formatting, markdown support, and smart productivity features like slash commands and speech-to-text. It serves as the primary tool for text and document creation within the ryOS environment.</p>
+<h2>Overview</h2>
+<p>TextEdit provides a robust platform for everything from quick notes to detailed reports. It caters to users who need rich text capabilities, markdown flexibility, and modern productivity enhancements in a web-based desktop environment. Whether drafting an email, writing code snippets, or composing a detailed article, TextEdit offers a streamlined experience with a focus on ease of use and powerful features.</p>
+<p>The application's intuitive interface combines traditional editing tools with innovative functionalities such as hands-free voice dictation and AI-powered slash commands. This blend makes document creation efficient and accessible for a wide range of tasks, empowering users to produce high-quality content with minimal effort.</p>
+<h2>Features</h2>
+<ul><li><strong>Comprehensive Text Editing:</strong> Perform fundamental editing actions including typing, selecting, copying, cutting, pasting, undoing, and redoing text with ease.</li></ul>
+<ul><li><strong>Rich Formatting Options:</strong> Style your documents effectively with options for bold, italic, and underline text, various heading levels (H1-H6), and text alignment (left, center, right, justify).</li></ul>
+<ul><li><strong>Structured Content Creation:</strong> Organize information clearly using bulleted lists, numbered lists, and interactive check-box task lists to track progress.</li></ul>
+<ul><li><strong>Flexible File Management:</strong> Create new documents, open existing files from your ryOS storage, save your current work, and export documents in multiple formats including HTML, Markdown (MD), and plain text (TXT).</li></ul>
+<ul><li><strong>Hands-Free Voice Dictation:</strong> Leverage integrated speech-to-text functionality to dictate content directly into your document, enhancing productivity and accessibility for hands-free input.</li></ul>
+<ul><li><strong>Efficient Slash Commands:</strong> Access quick actions and commands by typing <code>/</code> anywhere in your document, enabling rapid formatting, insertions, or even remote editing suggestions and content generation from Ryo AI.</li></ul>
+<ul><li><strong>Markdown Support:</strong> Write and preview content using standard Markdown syntax, blending the simplicity of plain text with the power of rich formatting.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch TextEdit, locate its icon in the ryOS application launcher or dock and click it. A new, blank document will open, ready for you to start typing immediately. You can begin entering text, or use the menu bar and toolbar options to format your document.
+<h3>Key Actions</h3>
+<ul><li><strong>Typing and Basic Editing:</strong> Simply place your cursor in the editor and begin typing. Standard keyboard shortcuts are supported for copying (<code>Ctrl/Cmd+C</code>), cutting (<code>Ctrl/Cmd+X</code>), pasting (<code>Ctrl/Cmd+V</code>), undoing (<code>Ctrl/Cmd+Z</code>), and redoing (<code>Ctrl/Cmd+Y</code>).</li></ul>
+<ul><li><strong>Applying Formatting:</strong> Select the text you wish to format, then use the icons in the <code>EditorToolbar</code> for options like bold, italic, underline, headings, or alignment.</li></ul>
+<ul><li><strong>Creating Lists:</strong> Click the respective icons in the toolbar to start a bulleted, numbered, or task list. Press Enter to add new list items.</li></ul>
+<ul><li><strong>Saving and Opening Files:</strong> Use the "File" menu in the <code>TextEditMenuBar</code> to "Save" your current document, "Save As..." to choose a new name or format, or "Open..." to load an existing file from your ryOS file system.</li></ul>
+<ul><li><strong>Exporting Documents:</strong> From the "File" menu, select "Export As..." to save your document in different formats like HTML, Markdown, or plain text.</li></ul>
+<ul><li><strong>Using Voice Dictation:</strong> Click the microphone icon in the toolbar or select the "Start Dictation" option (if available) to begin speaking your text. Click the icon again to stop dictation.</li></ul>
+<ul><li><strong>Executing Slash Commands:</strong> Type <code>/</code> anywhere in your document to bring up a list of available commands. Select a command from the <code>SlashCommandsList</code> or type to filter. These commands can perform actions like inserting elements, applying specific formatting, or leveraging Ryo AI for content suggestions and edits.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li><strong>Markdown Shortcuts:</strong> TextEdit intelligently recognizes common Markdown syntax. For example, typing <code>#</code> followed by a space will create a heading, <code>*</code> or <code>-</code> for bullet points, and <code><strong>text</strong></code> for bold.</li></ul>
+<ul><li><strong>Drag & Drop:</strong> You can often drag and drop text or compatible files (like <code>.txt</code>, <code>.md</code>) directly into the TextEdit window to insert their content.</li></ul>
+<ul><li><strong>Ryo AI Integration:</strong> Explore the capabilities of Ryo AI through slash commands. Use commands like <code>/summarize</code> or <code>/rewrite</code> on selected text for quick content generation or modification.</li></ul>
+<ul><li><strong>Window Resizing:</strong> Adjust the TextEdit window to your preferred working size by dragging its edges. The application will remember your last used size for convenience in subsequent sessions.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li><strong>Default size:</strong> 430×475px</li></ul>
+<ul><li><strong>Minimum size:</strong> 430×200px</li></ul>
+<h3>Component Architecture</h3>
+The TextEdit application is built using a modular component architecture, facilitating maintainability and scalability within the ryOS framework. It comprises the following primary component files:
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/TextEditMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TextEditMenuBar.tsx</a></code>: Manages the application's top-level menu options, including File, Edit, and View actions.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/EditorToolbar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/EditorToolbar.tsx</a></code>: Provides quick access to common formatting and editing tools, displayed above the text editor.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/TextEditAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TextEditAppComponent.tsx</a></code>: The main application wrapper component, orchestrating other components and managing app-level logic and lifecycle.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/SpeechManager.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/SpeechManager.tsx</a></code>: Handles the integration and control of speech-to-text dictation functionality.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/SlashCommandsList.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/SlashCommandsList.tsx</a></code>: Displays and manages the interactive list of available slash commands triggered by typing <code>/</code>.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/EditorProvider.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/EditorProvider.tsx</a></code>: Provides a React Context for sharing editor-specific state and functions across child components, ensuring consistent editor behavior.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/DialogManager.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/DialogManager.tsx</a></code>: Manages and displays various application dialogs, such as "Save As," "Open File," or confirmation prompts.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/TextEditor.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TextEditor.tsx</a></code>: The core component responsible for rendering and managing the rich text editing area where users type and format content.</li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong> These hooks encapsulate reusable logic for specific TextEdit functionalities:
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useDragAndDrop.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useDragAndDrop.ts</a></code>: Manages drag-and-drop interactions within the editor, allowing users to move content or open files.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useTextEditState.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useTextEditState.ts</a></code>: Handles the complex local state management for the editor's content, selection, and UI-specific flags.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useFileOperations.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useFileOperations.ts</a></code>: Provides abstracted functions for creating, opening, saving, and exporting files, integrating with ryOS's file system.</li></ul>
+<strong>Utilities:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/textEditUtils.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">utils/textEditUtils.ts</a></code>: Contains various helper functions and constants specific to TextEdit's operations, such as file extension handling and initial data parsing.</li></ul>
+<h3>State Management</h3>
+TextEdit employs a hybrid approach to state management. Core editor content, selection, and UI-specific states (e.g., whether a dialog is open, transcription status) are managed locally within the <code>TextEditAppComponent</code> and its children, often facilitated by the <code>useTextEditState</code> hook and the <code>EditorProvider</code> context. For global ryOS settings and application-wide data, TextEdit integrates with Zustand stores, specifically <code>useAppStore</code> for application instance management, <code>useAudioSettingsStore</code> for speech-to-text preferences, and <code>useThemeStore</code> for theme-related styling.
+<h2>Related Apps</h2>
+<ul><li><strong>Notepad:</strong> For simpler, plain text editing tasks without the need for rich formatting, markdown, or advanced features.</li></ul>
+<ul><li><strong>Ryo AI:</strong> TextEdit leverages Ryo AI's capabilities directly through its slash command interface for intelligent content assistance and generation.</li></ul>
+
       </article>
       
       <nav class="nav">
-        <a href="/docs/utility-apis">← Utility APIs</a>
-        <a href="/docs/application-framework">Application Framework →</a>
+        <a href="/docs/karaoke">← Karaoke</a>
+        <a href="/docs/finder">Finder →</a>
       </nav>
       
     </main>

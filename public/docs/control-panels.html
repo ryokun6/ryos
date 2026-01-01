@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build System - ryOS Docs</title>
+  <title>Control Panels - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -155,15 +156,15 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
-    <a href="/docs/build-system" class="nav-child active">1.1 Build System</a>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -171,34 +172,21 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ai-integration" class="">2. AI Integration</a>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
-    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
-    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
-    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
-    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
-    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/application-framework" class="">3. Application Framework</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
-    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
-    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
   </div>
 </div>
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/storage-file-system" class="">4. File System</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -206,9 +194,22 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/core-applications" class="">5. Apps</a>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
   </button>
   <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
+  </div>
+</div>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
@@ -218,7 +219,7 @@
     <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
     <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
     <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
-    <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
+    <a href="/docs/control-panels" class="nav-child active">5.10 Control Panels</a>
     <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
     <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
     <a href="/docs/videos" class="nav-child ">5.13 Videos</a>
@@ -231,7 +232,13 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/audio-system" class="">6. Audio System</a>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -239,49 +246,68 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/real-time-communication" class="">7. Chat System</a>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
   </button>
   <div class="nav-children" style="display: none;">
-    <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
-    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>Build System</h1>
-<p>Vite + Bun build system with multiple deployment targets.</p>
-<h2>Deployment Targets</h2>
-<ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
-<ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
-<ul><li><strong>Development:</strong> Local with HMR</li></ul>
-<h2>Chunk Splitting</h2>
-<strong>Core Chunks (Immediate):</strong>
-<pre><code>react: ["react", "react-dom"]
-"ui-core": ["@radix-ui/react-dialog", ...]
-zustand: ["zustand"]
-motion: ["framer-motion"]</code></pre>
-<strong>Deferred Chunks:</strong>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
-<h2>PWA Caching</h2>
-<table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
+        <h1>Control Panels</h1>
+<p>The Control Panels app in ryOS serves as the central hub for customizing your desktop environment and system preferences. It provides intuitive access to personalize your experience, from visual aesthetics to crucial system behaviors, ensuring ryOS adapts to your unique workflow and style.</p>
+<h2>Overview</h2>
+<p>Control Panels is the primary application for managing and personalizing your ryOS experience. Users can fine-tune various aspects of the desktop environment, including its visual presentation, audio feedback, and underlying system configurations. This app is designed for both casual users looking to customize their workspace and advanced users needing to adjust core system settings or perform maintenance tasks like data backup and restoration. Its intuitive tabbed interface ensures that all settings are easily discoverable and manageable, providing a comprehensive solution for tailoring ryOS to individual preferences and operational requirements.</p>
+<h2>Features</h2>
+<p>The Control Panels app offers a comprehensive suite of features to personalize and manage your ryOS environment:</p>
+<ul><li><strong>Personalization & Appearance:</strong><ul><li><strong>Desktop Wallpaper:</strong> Choose from a selection of photos, patterns, or dynamic shader effects to customize your desktop background.</li><li><strong>Shader Effects:</strong> Apply unique visual enhancements like CRT, Galaxy, or Aurora effects to the ryOS interface for a distinct look.</li><li><strong>Screen Savers:</strong> Configure and enable various screen savers to engage when your system is idle, adding both aesthetics and privacy.</li></ul></li></ul>
+<ul><li><strong>Audio & Sound Management:</strong><ul><li><strong>Volume Mixer:</strong> Adjust overall system volume and fine-tune specific audio outputs for a balanced sound experience.</li><li><strong>Sound Toggles:</strong> Enable or disable various sound effects, including general UI sounds, typing synthesizer effects, and distinct audio cues for the Terminal and Internet Explorer apps.</li></ul></li></ul>
+<ul><li><strong>AI Integration:</strong><ul><li><strong>AI Model Selection:</strong> Choose the preferred AI model that powers intelligent features within other ryOS applications, such as Chats and the Terminal assistant.</li></ul></li></ul>
+<ul><li><strong>System Management & Maintenance:</strong><ul><li><strong>Backup & Restore:</strong> Securely export all ryOS settings and user files for backup purposes, and easily restore them from a previously saved backup.</li><li><strong>Language Settings:</strong> Select your preferred language for the entire ryOS interface to ensure a localized and comfortable user experience.</li><li><strong>System Reset:</strong> Access options to reset individual application preferences to their default state or perform a complete format of the virtual file system, effectively wiping user data and resetting the system to a clean slate.</li></ul></li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch the Control Panels app, locate its icon in the ryOS Start Menu or Taskbar. Once open, navigate through the various settings categories using the tabs provided at the top of the window, each dedicated to a specific area of system configuration.
+<h3>Key Actions</h3>
+<ul><li><strong>Customize Appearance:</strong> Navigate to the "Appearance" or "Display" tab to modify your wallpaper, apply shader effects, or configure screen savers. You can select from predefined options or, where available, upload your own assets.</li></ul>
+<ul><li><strong>Manage Sounds:</strong> In the "Sounds" tab, use the volume mixer to adjust audio levels. Toggle switches allow you to enable or disable specific sound effects like UI feedback, typing sounds, and application-specific audio.</li></ul>
+<ul><li><strong>Select AI Model:</strong> Access the "AI Model" section to choose the intelligence engine that best suits your needs for AI-powered features across ryOS applications.</li></ul>
+<ul><li><strong>Backup/Restore Settings:</strong> Utilize the "Backup & Restore" options to export your current ryOS configuration and files, or import a previously saved backup to restore your settings.</li></ul>
+<ul><li><strong>Change Language:</strong> Go to the "Language" settings to switch the ryOS interface to your desired language, providing a localized experience.</li></ul>
+<ul><li><strong>Perform System Actions:</strong> Under the "System" tab, you can reset individual app preferences to their defaults or, with caution, initiate a format of the virtual file system to clear all user data.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>The Control Panels app uses a clear, tabbed interface for easy navigation between different categories of settings. Click on a tab (e.g., "Appearance", "Sounds") to quickly jump to that specific section.</li></ul>
+<ul><li>Many settings, such as sound toggles, utilize simple on/off switches for quick and intuitive adjustments.</li></ul>
+<ul><li>For complex settings like wallpaper selection, dedicated pickers (<code>WallpaperPicker</code>, <code>ScreenSaverPicker</code>) provide visual previews and a range of options for easy customization.</li></ul>
+<ul><li>System-level actions, such as "Format File System," typically require confirmation dialogs to prevent accidental data loss and ensure user intent.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 365×415px</li></ul>
+<ul><li>Minimum size: 320×415px</li></ul>
+<ul><li>Maximum size: 365×600px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 5 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/VolumeMixer.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/VolumeMixer.tsx</a></code>: Manages audio output levels and sound effect toggles for the ryOS environment.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/WallpaperPicker.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/WallpaperPicker.tsx</a></code>: Provides an interactive interface for selecting and applying desktop wallpapers.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/ControlPanelsAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ControlPanelsAppComponent.tsx</a></code>: The main application component, orchestrating various settings tabs, dialogs, and core logic.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/ScreenSaverPicker.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ScreenSaverPicker.tsx</a></code>: Handles the selection and configuration of screen savers for the desktop.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/ControlPanelsMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ControlPanelsMenuBar.tsx</a></code>: Implements the application's menu bar, offering access to app-level actions like Help and About.</li></ul>
+<h3>Hooks & Utilities</h3>
+No custom hooks or utilities are directly associated with the core Control Panels app component.
+<h3>State Management</h3>
+The Control Panels app primarily manages its state using Zustand stores. It leverages <code>useAppStoreShallow</code>, <code>useAudioSettingsStoreShallow</code>, and <code>useDisplaySettingsStoreShallow</code> to interact with and persist global application, audio, and display settings across the ryOS environment, ensuring changes are saved and reflected system-wide.
+<h2>Related Apps</h2>
+<ul><li><strong>Terminal:</strong> The AI Model selection within Control Panels directly impacts the behavior and capabilities of the Terminal's integrated assistant features.</li></ul>
+<ul><li><strong>Chats:</strong> The chosen AI Model also dictates the intelligence behind AI interactions and responses within the Chats application.</li></ul>
+<ul><li><strong>Finder:</strong> System actions like formatting the virtual file system directly affect the files and directories managed by the Finder app, requiring careful consideration.</li></ul>
+
       </article>
       
       <nav class="nav">
-        <a href="/docs/overview">← Overview</a>
-        <a href="/docs/ai-integration">AI Integration →</a>
+        <a href="/docs/terminal">← Terminal</a>
+        <a href="/docs/soundboard">Soundboard →</a>
       </nav>
       
     </main>

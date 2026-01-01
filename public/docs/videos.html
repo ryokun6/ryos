@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build System - ryOS Docs</title>
+  <title>Videos - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -155,15 +156,15 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
-    <a href="/docs/build-system" class="nav-child active">1.1 Build System</a>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -171,34 +172,21 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ai-integration" class="">2. AI Integration</a>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
-    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
-    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
-    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
-    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
-    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/application-framework" class="">3. Application Framework</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
-    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
-    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
   </div>
 </div>
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/storage-file-system" class="">4. File System</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -206,9 +194,22 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/core-applications" class="">5. Apps</a>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
   </button>
   <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
+  </div>
+</div>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
@@ -221,7 +222,7 @@
     <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
     <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
     <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
-    <a href="/docs/videos" class="nav-child ">5.13 Videos</a>
+    <a href="/docs/videos" class="nav-child active">5.13 Videos</a>
     <a href="/docs/minesweeper" class="nav-child ">5.14 Minesweeper</a>
     <a href="/docs/virtual-pc" class="nav-child ">5.15 Virtual PC</a>
     <a href="/docs/admin" class="nav-child ">5.16 Admin</a>
@@ -231,7 +232,13 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/audio-system" class="">6. Audio System</a>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -239,49 +246,61 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/real-time-communication" class="">7. Chat System</a>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
   </button>
   <div class="nav-children" style="display: none;">
-    <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
-    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>Build System</h1>
-<p>Vite + Bun build system with multiple deployment targets.</p>
-<h2>Deployment Targets</h2>
-<ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
-<ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
-<ul><li><strong>Development:</strong> Local with HMR</li></ul>
-<h2>Chunk Splitting</h2>
-<strong>Core Chunks (Immediate):</strong>
-<pre><code>react: ["react", "react-dom"]
-"ui-core": ["@radix-ui/react-dialog", ...]
-zustand: ["zustand"]
-motion: ["framer-motion"]</code></pre>
-<strong>Deferred Chunks:</strong>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
-<h2>PWA Caching</h2>
-<table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
+        <h1>Videos</h1>
+<p>The Videos app for ryOS provides a dedicated platform for watching online and local video content, featuring a classic, retro-inspired interface. It's designed to offer a straightforward and enjoyable multimedia experience directly within your desktop environment.</p>
+<h2>Overview</h2>
+<p>The Videos app serves as ryOS's primary multimedia player for video content. Users can seamlessly stream videos from popular platforms like YouTube by simply pasting a URL, or play local video files directly within the desktop environment. This makes it a versatile tool for entertainment, educational content, or simply having background video content while working in other ryOS apps.</p>
+<p>Designed with a nostalgic QuickTime player aesthetic, the app blends modern functionality with a unique, retro user interface. It focuses on delivering a smooth playback experience with essential controls and robust playlist management capabilities, allowing users to curate their viewing experience.</p>
+<h2>Features</h2>
+<p>The Videos app comes packed with features to enhance your video playback experience:</p>
+<ul><li><strong>Flexible Video Sources:</strong> Easily add videos to your playlist by pasting any YouTube URL, or play local video files stored on your system.</li></ul>
+<ul><li><strong>Comprehensive Playback Controls:</strong> Navigate your content with intuitive controls for play, pause, next, and previous video selection.</li></ul>
+<ul><li><strong>Advanced Playback Options:</strong> Customize your viewing with options to loop the current video, loop the entire playlist, or shuffle the playlist order for a randomized experience.</li></ul>
+<ul><li><strong>Robust Playlist Management:</strong> Organize and manage your video collection efficiently with a dedicated playlist interface, allowing you to reorder or remove videos as needed.</li></ul>
+<ul><li><strong>Retro User Interface (UI):</strong> Enjoy a unique and nostalgic visual experience with a design inspired by classic QuickTime players, offering a distinctive aesthetic within ryOS.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+<p>To launch the Videos app, locate its icon in the ryOS application launcher and click on it. The app will open in its default window size, presenting you with a retro-themed player ready for you to add and play videos.</p>
+<h3>Key Actions</h3>
+<ul><li><strong>Add Video:</strong> To add a new video, locate the "Add Video" option (likely in a menu or as a button). A dialog will appear where you can paste a YouTube URL. Once added, the video will appear in your playlist.</li></ul>
+<ul><li><strong>Playback Controls:</strong> Use the familiar play/pause, next, and previous buttons located in the player controls to navigate through your videos.</li></ul>
+<ul><li><strong>Manage Playlist:</strong> Access the playlist view to see all your added videos. From here, you can select a specific video to play, reorder the list, or remove videos.</li></ul>
+<ul><li><strong>Loop & Shuffle:</strong> Toggle the "Loop" button to repeat the current video or the entire playlist. Activate the "Shuffle" button to randomize the playback order of your playlist.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>The app's interface is designed for simplicity, echoing classic media players. Look for familiar icons for immediate understanding of controls.</li></ul>
+<ul><li>Keep a list of your favorite YouTube URLs handy for quick playlist additions.</li></ul>
+<ul><li>Utilize the loop and shuffle features to create a continuous background video experience tailored to your mood.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 400×420px</li></ul>
+<ul><li>Minimum size: 400×340px</li></ul>
+<h3>Component Architecture</h3>
+<p>The app consists of 3 component file(s):</p>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/SeekBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/SeekBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/VideosAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/VideosAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/VideosMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/VideosMenuBar.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<p>No custom hooks or utilities are explicitly defined within the app's specific directories. However, the application leverages common ryOS platform hooks and utility functions for various functionalities like sound effects, theming, and internationalization.</p>
+<h3>State Management</h3>
+<p>The Videos app primarily manages its state using Zustand stores. Specifically, <code>useVideoStore</code> is utilized for handling the video playlist data, current playback status, and related settings. Additionally, it integrates with <code>useAppStore</code> for general application-level state and <code>useThemeStore</code> for theme-related preferences, ensuring a consistent and efficient state management approach across the ryOS environment.</p>
+<h2>Related Apps</h2>
+<p>The Videos app complements other media-focused applications in ryOS, such as the "Music" app for audio playback or the "Browser" app for discovering new content and fetching video URLs.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/overview">← Overview</a>
-        <a href="/docs/ai-integration">AI Integration →</a>
+        <a href="/docs/synth">← Synth</a>
+        <a href="/docs/minesweeper">Minesweeper →</a>
       </nav>
       
     </main>

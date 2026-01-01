@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Build System - ryOS Docs</title>
+  <title>Audio System - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -155,15 +156,15 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
-    <a href="/docs/build-system" class="nav-child active">1.1 Build System</a>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -171,34 +172,34 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ai-integration" class="">2. AI Integration</a>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
-    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
-    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
-    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
-    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
-    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/application-framework" class="">3. Application Framework</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
-    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
-    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
   </div>
 </div>
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/storage-file-system" class="">4. File System</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -231,7 +232,13 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/audio-system" class="">6. Audio System</a>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="active">7. Audio System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -239,49 +246,64 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/real-time-communication" class="">7. Chat System</a>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
   </button>
   <div class="nav-children" style="display: none;">
-    <a href="/docs/chat-rooms-api" class="nav-child ">7.1 Chat Rooms API</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
-    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>Build System</h1>
-<p>Vite + Bun build system with multiple deployment targets.</p>
-<h2>Deployment Targets</h2>
-<ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
-<ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
-<ul><li><strong>Development:</strong> Local with HMR</li></ul>
-<h2>Chunk Splitting</h2>
-<strong>Core Chunks (Immediate):</strong>
-<pre><code>react: ["react", "react-dom"]
-"ui-core": ["@radix-ui/react-dialog", ...]
-zustand: ["zustand"]
-motion: ["framer-motion"]</code></pre>
-<strong>Deferred Chunks:</strong>
-<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
-<h2>PWA Caching</h2>
-<table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
+        <h1>Audio System</h1>
+<p>Overview of ryOS audio capabilities and architecture.</p>
+<h2>Technologies</h2>
+<table><thead><tr><th>Technology</th><th>Usage</th></tr></thead><tbody><tr><td>Web Audio API</td><td>Core audio processing, centralized AudioContext management, UI sound playback</td></tr><tr><td>Tone.js</td><td>Synthesizer app with polyphonic synthesis, effects chain, and real-time audio generation</td></tr><tr><td>WaveSurfer.js</td><td>Waveform visualization for recorded sounds in Soundboard app</td></tr><tr><td>MediaRecorder API</td><td>Audio recording functionality for Soundboard app</td></tr><tr><td>ReactPlayer</td><td>YouTube video/audio playback in iPod app</td></tr></tbody></table>
+<h2>Audio Playback</h2>
+<p>ryOS provides multiple audio playback mechanisms:</p>
+<ul><li><strong>iPod App</strong>: Uses ReactPlayer for YouTube video/audio playback with volume control, seeking, and playback state management. Supports fullscreen playback with synchronized lyrics display.</li></ul>
+<ul><li><strong>Soundboard App</strong>: Plays recorded audio clips using HTMLAudioElement. Supports multiple audio formats (WebM, MP4, WAV, MPEG) with base64-encoded storage. Includes waveform visualization using WaveSurfer.js.</li></ul>
+<ul><li><strong>UI Sounds</strong>: The <code>useSound</code> hook provides Web Audio API-based playback for interface feedback sounds (window operations, button clicks, menu interactions). Features include:<ul><li>AudioBuffer caching for performance</li><li>Concurrent source limiting (16 on mobile, 32 on desktop)</li><li>Volume control with master and UI volume multipliers</li><li>Fade in/out capabilities</li><li>Automatic AudioContext resumption</li></ul></li></ul>
+<h2>Synthesizer</h2>
+<p>The Synthesizer app (<code>src/apps/synth/</code>) provides a full-featured music synthesizer built with Tone.js:</p>
+<ul><li><strong>Oscillators</strong>: Supports sine, square, triangle, and sawtooth waveforms</li></ul>
+<ul><li><strong>Polyphonic Synthesis</strong>: Tone.PolySynth enables multiple simultaneous notes</li></ul>
+<ul><li><strong>Effects Chain</strong>: <ul><li>Reverb (decay, wet mix)</li><li>Feedback Delay</li><li>Distortion</li><li>Chorus</li><li>Phaser</li><li>BitCrusher</li><li>Gain control</li></ul></li></ul>
+<ul><li><strong>ADSR Envelope</strong>: Attack, Decay, Sustain, Release controls for note shaping</li></ul>
+<ul><li><strong>Preset System</strong>: Save and load custom synthesizer configurations</li></ul>
+<ul><li><strong>Keyboard Support</strong>: Virtual piano keyboard with octave shifting, keyboard mapping, and touch/mouse support</li></ul>
+<ul><li><strong>Visualization</strong>: 3D waveform visualization using Tone.Analyser</li></ul>
+<p>The synthesizer uses a simplified effects chain on mobile Safari to avoid audio blocking issues, while desktop uses the full effects chain.</p>
+<h2>Sound Recording</h2>
+<p>The Soundboard app (<code>src/apps/soundboard/</code>) provides audio recording capabilities:</p>
+<ul><li><strong>MediaRecorder API</strong>: Records audio from user's microphone</li></ul>
+<ul><li><strong>Format Support</strong>: Automatically detects and uses browser-supported formats (WebM for Chrome/Firefox, MP4 for Safari)</li></ul>
+<ul><li><strong>Device Selection</strong>: Supports selecting specific audio input devices</li></ul>
+<ul><li><strong>Base64 Storage</strong>: Recorded audio is stored as base64-encoded data in the app's state</li></ul>
+<ul><li><strong>Waveform Visualization</strong>: Uses WaveSurfer.js to display audio waveforms for recorded clips</li></ul>
+<ul><li><strong>Recording State Management</strong>: Tracks recording state per sound slot with visual feedback</li></ul>
+<p>The <code>useAudioRecorder</code> hook manages recording lifecycle, permission handling, and format conversion.</p>
+<h2>Audio Settings</h2>
+<p>Audio settings are managed centrally via <code>useAudioSettingsStore</code>:</p>
+<ul><li><strong>Volume Controls</strong>:<ul><li>Master volume (global multiplier)</li><li>UI volume (interface sounds)</li><li>Chat synth volume (text-to-speech synthesis)</li><li>Speech volume (voice input/output)</li><li>iPod volume (music player)</li></ul></li></ul>
+<ul><li><strong>Feature Toggles</strong>:<ul><li>UI sounds enabled/disabled</li><li>Terminal sounds enabled/disabled</li><li>Typing synthesis enabled/disabled</li><li>Speech enabled/disabled</li><li>Keep talking mode</li></ul></li></ul>
+<ul><li><strong>TTS Settings</strong>:<ul><li>TTS model selection (OpenAI, ElevenLabs, or null)</li><li>Voice selection</li><li>Synthesizer preset</li></ul></li></ul>
+<p>All settings are persisted to localStorage via Zustand's persist middleware.</p>
+<h2>Audio Context Management</h2>
+<p>The audio system uses a centralized AudioContext (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioContext.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/audioContext.ts</a></code>) to:</p>
+<ul><li><strong>Single Context</strong>: Maintains one shared AudioContext instance across the application</li></ul>
+<ul><li><strong>Auto-Resume</strong>: Automatically resumes suspended contexts on user interaction, tab focus, or device changes</li></ul>
+<ul><li><strong>Context Recreation</strong>: Recreates closed contexts (e.g., after iOS Safari backgrounding)</li></ul>
+<ul><li><strong>State Management</strong>: Tracks context state and notifies listeners of context changes</li></ul>
+<ul><li><strong>Mobile Optimization</strong>: Handles iOS Safari quirks including suspended/interrupted states</li></ul>
+<p>This centralized approach prevents AudioContext limit issues and ensures consistent audio behavior across all apps.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/overview">← Overview</a>
-        <a href="/docs/ai-integration">AI Integration →</a>
+        <a href="/docs/storage-file-system">← File System</a>
+        <a href="/docs/ui-components">UI Components and Shared Systems →</a>
       </nav>
       
     </main>

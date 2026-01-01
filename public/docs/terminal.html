@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Integration - ryOS Docs</title>
+  <title>Terminal - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -186,7 +186,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="active">3. AI Integration</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -202,14 +202,14 @@
     <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/core-applications" class="">5. Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
@@ -218,7 +218,7 @@
     <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
     <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
     <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
-    <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
+    <a href="/docs/terminal" class="nav-child active">5.9 Terminal</a>
     <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
     <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
     <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
@@ -257,17 +257,76 @@
     
     <main class="content">
       <article>
-        <h1>AI Integration</h1>
-<p>Multi-provider AI with tool calling support.</p>
-<h2>Providers</h2>
-<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td>gpt-5, gpt-5.1, gpt-4o</td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td>claude-4.5, claude-4, claude-3.7</td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td>gemini-2.5-pro, gemini-2.5-flash</td></tr></tbody></table>
-<h2>Available Tools</h2>
-<table><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody><tr><td><code>launchApp</code></td><td>Open applications</td></tr><tr><td><code>closeApp</code></td><td>Close applications</td></tr><tr><td><code>ipodControl</code></td><td>Music playback control</td></tr><tr><td><code>karaokeControl</code></td><td>Karaoke playback</td></tr><tr><td><code>generateHtml</code></td><td>Create HTML applets</td></tr><tr><td><code>list</code></td><td>List VFS items</td></tr><tr><td><code>open</code></td><td>Open files/apps</td></tr><tr><td><code>read</code></td><td>Read file contents</td></tr><tr><td><code>write</code></td><td>Create/modify documents</td></tr><tr><td><code>edit</code></td><td>Edit existing files</td></tr><tr><td><code>searchSongs</code></td><td>YouTube music search</td></tr><tr><td><code>settings</code></td><td>System settings</td></tr></tbody></table>
+        <h1>Terminal</h1>
+<p>The Terminal app in ryOS provides a powerful command-line interface for interacting with the system. It combines traditional Unix-like commands with modern AI assistance, offering a versatile tool for both developers and advanced users to manage files, execute commands, and automate tasks.</p>
+<h2>Overview</h2>
+<p>Terminal serves as the primary command-line interface within the ryOS desktop environment, allowing users to execute commands, navigate the file system, and manage files directly from a textual prompt. Its core functionality mirrors familiar Unix-like environments, providing a robust platform for system interaction and scripting. Beyond basic operations, Terminal is designed to enhance productivity with integrated AI capabilities, offering intelligent assistance for complex tasks or information retrieval. It's an essential tool for those who prefer precision and speed over graphical interfaces, enabling deep control and automation within ryOS.</p>
+<h2>Features</h2>
+<ul><li><strong>Command-Line Interface:</strong> Execute a wide range of commands including <code>ls</code>, <code>cd</code>, <code>cat</code>, <code>pwd</code>, <code>clear</code>, <code>touch</code>, <code>mkdir</code>, <code>rm</code>, <code>echo</code>, <code>date</code>, <code>whoami</code>, <code>open</code>, <code>cowsay</code>, and <code>about</code> for system interaction and file management.</li></ul>
+<ul><li><strong>Virtual File System Navigation:</strong> Seamlessly navigate the same virtual file system as the Finder app using standard Unix commands, ensuring consistency across the ryOS environment.</li></ul>
+<ul><li><strong>AI Assistant Integration:</strong> Leverage an integrated AI assistant by typing commands like <code>ai <your_query></code>, providing intelligent help, code suggestions, or information directly within the terminal.</li></ul>
+<ul><li><strong>In-Terminal File Editing:</strong> Directly open and edit text documents using the <code>edit <filename></code> command (launching TextEdit) or the <code>vim <filename></code> command for a Vim-style editor, streamlining workflow without leaving the terminal.</li></ul>
+<ul><li><strong>Command History:</strong> Easily recall and re-execute previous commands using the <code>↑</code> (Up Arrow) and <code>↓</code> (Down Arrow) keys, enhancing productivity and reducing repetitive typing.</li></ul>
+<ul><li><strong>Auditory Feedback:</strong> Provides distinct sound cues for successful command output, errors, and AI assistant replies, which can be toggled via the <code>View ▸ Sounds</code> menu option for a more engaging experience.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch the Terminal app, locate its icon in the Dock or through the Applications folder. Upon opening, you'll be presented with a command prompt where you can begin typing commands.
+<h3>Key Actions</h3>
+<ul><li><strong>Navigating the File System:</strong> Use <code>ls</code> to list contents of the current directory, <code>cd <directory></code> to change directories, and <code>pwd</code> to print the current working directory.</li></ul>
+<ul><li><strong>Managing Files:</strong> Create new files with <code>touch <filename></code>, create directories with <code>mkdir <directoryname></code>, and remove files with <code>rm <filename></code>.</li></ul>
+<ul><li><strong>Viewing Content:</strong> Display the content of text files using <code>cat <filename></code>.</li></ul>
+<ul><li><strong>Getting Help:</strong> Type <code>help</code> to view a list of available commands and their basic usage.</li></ul>
+<ul><li><strong>Using the AI Assistant:</strong> Initiate a query or task for the AI assistant through the <code>ai <your_query></code> command.</li></ul>
+<ul><li><strong>Editing Files:</strong> Open a file in the graphical TextEdit app using <code>edit <filename></code> or launch the in-terminal Vim-style editor with <code>vim <filename></code>.</li></ul>
+<ul><li><strong>Clearing the Screen:</strong> Use the <code>clear</code> command to wipe the terminal screen clean.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>Press the <code>↑</code> (Up Arrow) and <code>↓</code> (Down Arrow) keys to quickly cycle through your command history, making it easy to re-run or modify previous commands.</li></ul>
+<ul><li>Terminal sounds provide useful auditory feedback; if they become distracting, you can toggle them off in the <code>View</code> menu under <code>Sounds</code>.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 600×400px</li></ul>
+<ul><li>Minimum size: 400×300px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 7 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/AnimatedEllipsis.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AnimatedEllipsis.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/UrgentMessageAnimation.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/UrgentMessageAnimation.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/TerminalAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TerminalAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/VimEditor.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/VimEditor.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/TerminalToolInvocation.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TerminalToolInvocation.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/TerminalMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TerminalMenuBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/TypewriterText.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TypewriterText.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Utilities:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/commandParser.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">utils/commandParser.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/cd.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/cd.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/date.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/date.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/echo.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/echo.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/help.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/help.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/vim.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/vim.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/touch.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/touch.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/open.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/open.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/whoami.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/whoami.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/pwd.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/pwd.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/mkdir.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/mkdir.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/rm.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/rm.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/about.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/about.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/ls.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/ls.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/ai.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/ai.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/cowsay.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/cowsay.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/index.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/index.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/commands/clear.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">commands/clear.ts</a></code></li></ul>
+<h3>State Management</h3>
+The Terminal app utilizes Zustand stores, specifically <code>useTerminalStore</code>, to manage its global state, including command history, current directory, and terminal output. It also interacts with other stores like <code>useFileSystem</code> for file system operations, <code>useAiChat</code> for AI interactions, and <code>useTextEditStore</code> for file editing.
+<h2>Related Apps</h2>
+<ul><li><strong>Finder:</strong> Terminal interacts directly with the same virtual file system as Finder, allowing seamless navigation and file management between the graphical and command-line interfaces.</li></ul>
+<ul><li><strong>TextEdit:</strong> The <code>edit</code> command in Terminal directly launches files into the TextEdit app for graphical document editing.</li></ul>
+<ul><li><strong>Chats:</strong> The AI assistant feature in Terminal leverages the same underlying AI capabilities found in the dedicated Chats app.</li></ul>
+
       </article>
       
       <nav class="nav">
-        <a href="/docs/utility-apis">← Utility APIs</a>
-        <a href="/docs/application-framework">Application Framework →</a>
+        <a href="/docs/photo-booth">← Photo Booth</a>
+        <a href="/docs/control-panels">Control Panels →</a>
       </nav>
       
     </main>

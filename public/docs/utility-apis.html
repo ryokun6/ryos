@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Utility APIs - ryOS Docs</title>
+  <link rel="icon" href="/icons/mac-192.png">
+  <style>
+    @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
+    @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geneva", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #fff;
+      color: #000;
+    }
+    a { color: #00f; }
+    a:hover { text-decoration: none; }
+    code, pre { font-family: "Monaco", monospace; font-size: 11px; }
+    code { background: #f0f0f0; padding: 1px 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    
+    /* Layout */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0 16px; height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; display: block; }
+    .header-left span { font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right a { text-decoration: none; color: #333; }
+    .header-right a:hover { color: #000; }
+    .header-right .github { display: flex; align-items: center; gap: 4px; }
+    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
+    
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      border-right: 1px solid #ccc;
+      padding: 12px;
+      position: sticky; top: 40px;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block; padding: 4px 8px; margin: 2px 0;
+      text-decoration: none; color: #333;
+      font-size: 11px;
+    }
+    .sidebar a:hover { background: #f0f0f0; }
+    .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-spacer { width: 8px; flex-shrink: 0; } /* Same width as toggle arrow */
+    .nav-no-toggle { cursor: default; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
+    
+    .content { flex: 1; padding: 24px 32px; min-width: 0; }
+    
+    /* Typography */
+    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    h2 { font-size: 14px; margin: 24px 0 12px; }
+    h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    
+    /* Navigation */
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .nav a { text-decoration: none; color: #333; }
+    .nav a:hover { color: #000; }
+    
+    /* Mobile menu button */
+    .menu-btn { 
+      display: none; 
+      background: transparent; 
+      border: 0; 
+      padding: 4px; 
+      cursor: pointer; 
+      line-height: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      color: inherit;
+    }
+    .menu-btn svg { display: block; width: 18px; height: 18px; pointer-events: none; }
+    @media screen and (max-width: 768px) {
+      .menu-btn { 
+        display: -webkit-flex !important;
+        display: flex !important; 
+        -webkit-align-items: center;
+        align-items: center; 
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+      .header-left img { display: none !important; }
+      .sidebar { 
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
+        background: #fff; z-index: 20;
+        transition: left 0.2s;
+      }
+      .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+        <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
+        <span>ryOS</span>
+      </a>
+      <span style="color:#999">/</span>
+      <span style="color:#666">Docs</span>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="/" class="launch">Launch</a>
+    </div>
+  </header>
+  
+  <div class="container">
+    <nav class="sidebar">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/overview" class="">1. Overview</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+  </div>
+</div>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
+  </button>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child active">2.6 Utility APIs</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
+    <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
+    <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
+    <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
+    <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
+    <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
+    <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
+    <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
+    <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
+    <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
+    <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
+    <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
+    <a href="/docs/videos" class="nav-child ">5.13 Videos</a>
+    <a href="/docs/minesweeper" class="nav-child ">5.14 Minesweeper</a>
+    <a href="/docs/virtual-pc" class="nav-child ">5.15 Virtual PC</a>
+    <a href="/docs/admin" class="nav-child ">5.16 Admin</a>
+    <a href="/docs/applet-store" class="nav-child ">5.17 Applet Store</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
+  </div>
+</div>
+    </nav>
+    
+    <main class="content">
+      <article>
+        <h1>Utility APIs</h1>
+<p>ryOS provides several utility API endpoints for common operations like fetching link previews, checking iframe embeddability, sharing applets, and admin operations. These endpoints are implemented as Vercel Edge Functions for optimal performance.</p>
+<h2>Link Preview</h2>
+<p>Fetches metadata from URLs for rich link previews. Supports Open Graph, Twitter Cards, and standard meta tags with special handling for YouTube URLs.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/link-preview</code></td><td>Fetch URL metadata for previews</td></tr></tbody></table>
+<h3>Request</h3>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>Yes</td><td>The URL to fetch metadata from (must be HTTP or HTTPS)</td></tr></tbody></table>
+<h3>Response</h3>
+<strong>Success Response (200):</strong>
+<pre><code>{
+  "url": "https://example.com/page",
+  "title": "Page Title",
+  "description": "Page description from meta tags",
+  "image": "https://example.com/og-image.jpg",
+  "siteName": "Example Site"
+}</code></pre>
+<strong>Response Fields:</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>The original URL</td></tr><tr><td><code>title</code></td><td>string?</td><td>Page title (from <code><title></code>, og:title, or twitter:title)</td></tr><tr><td><code>description</code></td><td>string?</td><td>Page description (from og:description, twitter:description, or meta description)</td></tr><tr><td><code>image</code></td><td>string?</td><td>Preview image URL (from og:image or twitter:image)</td></tr><tr><td><code>siteName</code></td><td>string?</td><td>Site name (from og:site_name or hostname)</td></tr></tbody></table>
+<strong>Error Responses:</strong>
+<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td>Missing or invalid URL</td></tr><tr><td>403</td><td>Unauthorized origin</td></tr><tr><td>405</td><td>Method not allowed</td></tr><tr><td>408</td><td>Request timeout</td></tr><tr><td>429</td><td>Rate limit exceeded</td></tr><tr><td>503</td><td>Network error</td></tr></tbody></table>
+<h3>Rate Limits</h3>
+<ul><li><strong>Global limit:</strong> 10 requests per minute per IP</li></ul>
+<ul><li><strong>Per-host limit:</strong> 5 requests per minute per IP per target hostname</li></ul>
+<h3>Example</h3>
+<pre><code>// Fetch link preview
+const response = await fetch('/api/link-preview?url=https://github.com');
+const metadata = await response.json();
+
+console.log(metadata);
+// {
+//   url: "https://github.com",
+//   title: "GitHub: Let's build from here",
+//   description: "GitHub is where over 100 million developers...",
+//   image: "https://github.githubassets.com/images/modules/site/social-cards/campaign-social.png",
+//   siteName: "GitHub"
+// }</code></pre>
+<h3>Notes</h3>
+<ul><li>YouTube URLs are handled specially using the oEmbed API for reliable metadata</li></ul>
+<ul><li>Responses are cached for 1 hour (<code>Cache-Control: public, max-age=3600</code>)</li></ul>
+<ul><li>HTML entities in metadata are automatically decoded</li></ul>
+<ul><li>Relative image URLs are converted to absolute URLs</li></ul>
+<hr>
+<h2>iFrame Check</h2>
+<p>Checks if a URL allows iframe embedding and optionally proxies content to bypass embedding restrictions. Also supports retrieving cached historical versions of pages.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/iframe-check</code></td><td>Check iframe embeddability or proxy content</td></tr></tbody></table>
+<h3>Request</h3>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>Yes</td><td>The URL to check or proxy</td></tr><tr><td><code>mode</code></td><td>string</td><td>No</td><td>Operation mode: <code>check</code>, <code>proxy</code>, <code>ai</code>, or <code>list-cache</code> (default: <code>proxy</code>)</td></tr><tr><td><code>year</code></td><td>string</td><td>No</td><td>Year for Wayback Machine or AI cache (e.g., "2020", "1000 BC")</td></tr><tr><td><code>month</code></td><td>string</td><td>No</td><td>Month for Wayback Machine (e.g., "01" for January)</td></tr><tr><td><code>theme</code></td><td>string</td><td>No</td><td>Theme name - font overrides are skipped for "macosx" theme</td></tr></tbody></table>
+<h3>Modes</h3>
+<h4><code>check</code> Mode</h4>
+<p>Performs a header-only check to determine if the URL allows iframe embedding.</p>
+<strong>Response (200):</strong>
+<pre><code>{
+  "allowed": true,
+  "reason": null,
+  "title": "Page Title"
+}</code></pre>
+<pre><code>{
+  "allowed": false,
+  "reason": "X-Frame-Options: DENY",
+  "title": "Page Title"
+}</code></pre>
+<h4><code>proxy</code> Mode (Default)</h4>
+<p>Proxies the content with embedding-blocking headers removed. Injects: <ul><li><code><base></code> tag for relative URL resolution</li></ul></p>
+<ul><li>Click interceptor script for navigation handling</li></ul>
+<ul><li>History API patch for cross-origin compatibility</li></ul>
+<ul><li>Font override styles (unless theme is "macosx")</li></ul>
+<strong>Response:</strong> The proxied HTML content with modified headers.
+<strong>Custom Response Headers:</strong>
+<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Proxied-Page-Title</code></td><td>URL-encoded page title (if available)</td></tr><tr><td><code>X-Wayback-Cache</code></td><td>"HIT" if content was served from Wayback cache</td></tr></tbody></table>
+<h4><code>ai</code> Mode</h4>
+<p>Retrieves AI-generated historical page versions from cache.</p>
+<strong>Additional Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>year</code></td><td>string</td><td>Yes</td><td>Historical year (e.g., "1995", "500 BC", "1 CE", "current")</td></tr></tbody></table>
+<strong>Response (200) - Cache Hit:</strong>
+<p>Returns the cached HTML content with header <code>X-AI-Cache: HIT</code>.</p>
+<strong>Response (404) - Cache Miss:</strong>
+<pre><code>{
+  "aiCache": false
+}</code></pre>
+<h4><code>list-cache</code> Mode</h4>
+<p>Lists all available cached years (both AI-generated and Wayback Machine) for a URL.</p>
+<strong>Response (200):</strong>
+<pre><code>{
+  "years": ["current", "2020", "2015", "2010", "1999", "500 BC"]
+}</code></pre>
+<h3>Auto-Proxy Domains</h3>
+<p>The following domains are automatically proxied regardless of mode: <ul><li><code>wikipedia.org</code> (and subdomains)</li></ul></p>
+<ul><li><code>wikimedia.org</code> (and subdomains)</li></ul>
+<ul><li><code>wikipedia.com</code></li></ul>
+<ul><li><code>cursor.com</code></li></ul>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>Mode</th><th>Global Limit</th><th>Per-Host Limit</th></tr></thead><tbody><tr><td><code>check</code> / <code>proxy</code></td><td>300/min per IP</td><td>100/min per IP per host</td></tr><tr><td><code>ai</code> / <code>list-cache</code></td><td>120/min per IP</td><td>N/A</td></tr></tbody></table>
+<h3>Example</h3>
+<pre><code>// Check if URL can be embedded
+const checkResponse = await fetch('/api/iframe-check?url=https://example.com&amp;mode=check');
+const { allowed, reason } = await checkResponse.json();
+
+if (!allowed) {
+  // Use proxy mode instead
+  const iframeSrc = `/api/iframe-check?url=https://example.com&amp;mode=proxy`;
+  iframe.src = iframeSrc;
+}
+
+// List cached historical versions
+const cacheResponse = await fetch('/api/iframe-check?url=https://example.com&amp;mode=list-cache');
+const { years } = await cacheResponse.json();
+// years: ["2020", "2015", "2010"]
+
+// Load Wayback Machine version
+const waybackSrc = `/api/iframe-check?url=https://example.com&amp;mode=proxy&amp;year=2015&amp;month=06`;</code></pre>
+<hr>
+<h2>Share Applet</h2>
+<p>Manages sharing of user-created applets (mini HTML/JS applications). Supports creating, retrieving, updating, and deleting shared applets.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/share-applet</code></td><td>Retrieve applet by ID or list all applets</td></tr><tr><td>POST</td><td><code>/api/share-applet</code></td><td>Save or update an applet</td></tr><tr><td>DELETE</td><td><code>/api/share-applet</code></td><td>Delete an applet (admin only)</td></tr><tr><td>PATCH</td><td><code>/api/share-applet</code></td><td>Update applet metadata (admin only)</td></tr></tbody></table>
+<h3>Authentication</h3>
+<p>Most operations require authentication via headers:</p>
+<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Bearer token: <code>Bearer <token></code></td></tr><tr><td><code>X-Username</code></td><td>Username of the authenticated user</td></tr></tbody></table>
+<h3>GET - Retrieve Applet</h3>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>No<em></td><td>Applet ID to retrieve</td></tr><tr><td><code>list</code></td><td>string</td><td>No</em></td><td>Set to <code>"true"</code> to list all applets</td></tr></tbody></table>
+<p>*One of <code>id</code> or <code>list=true</code> is required.</p>
+<strong>Response - Single Applet (200):</strong>
+<pre><code>{
+  "content": "&lt;html&gt;...&lt;/html&gt;",
+  "title": "My Applet",
+  "name": "my-applet",
+  "icon": "🎮",
+  "windowWidth": 400,
+  "windowHeight": 300,
+  "createdAt": 1704067200000,
+  "createdBy": "username",
+  "featured": false
+}</code></pre>
+<strong>Response - List Applets (200):</strong>
+<pre><code>{
+  "applets": [
+    {
+      "id": "abc123...",
+      "title": "Featured Applet",
+      "name": "featured-applet",
+      "icon": "⭐",
+      "createdAt": 1704067200000,
+      "featured": true,
+      "createdBy": "ryo"
+    },
+    {
+      "id": "def456...",
+      "title": "My Applet",
+      "name": "my-applet",
+      "icon": "🎮",
+      "createdAt": 1704000000000,
+      "featured": false,
+      "createdBy": "user123"
+    }
+  ]
+}</code></pre>
+<h3>POST - Save Applet</h3>
+<p>Requires authentication.</p>
+<strong>Request Body:</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>content</code></td><td>string</td><td>Yes</td><td>HTML content of the applet</td></tr><tr><td><code>title</code></td><td>string</td><td>No</td><td>Display title</td></tr><tr><td><code>name</code></td><td>string</td><td>No</td><td>Applet name/slug</td></tr><tr><td><code>icon</code></td><td>string</td><td>No</td><td>Emoji or icon</td></tr><tr><td><code>windowWidth</code></td><td>number</td><td>No</td><td>Default window width</td></tr><tr><td><code>windowHeight</code></td><td>number</td><td>No</td><td>Default window height</td></tr><tr><td><code>shareId</code></td><td>string</td><td>No</td><td>Existing ID to update (author must match)</td></tr></tbody></table>
+<strong>Response (200):</strong>
+<pre><code>{
+  "id": "abc123def456...",
+  "shareUrl": "https://os.ryo.lu/applet-viewer/abc123def456...",
+  "updated": false,
+  "createdAt": 1704067200000
+}</code></pre>
+<strong>Response Fields:</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>Unique applet ID (32 characters)</td></tr><tr><td><code>shareUrl</code></td><td>string</td><td>Full URL to view the applet</td></tr><tr><td><code>updated</code></td><td>boolean</td><td>Whether an existing applet was updated</td></tr><tr><td><code>createdAt</code></td><td>number</td><td>Timestamp of creation/update</td></tr></tbody></table>
+<h3>DELETE - Delete Applet (Admin Only)</h3>
+<p>Requires admin authentication (user "ryo" with valid token).</p>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>Yes</td><td>Applet ID to delete</td></tr></tbody></table>
+<strong>Response (200):</strong>
+<pre><code>{
+  "success": true
+}</code></pre>
+<h3>PATCH - Update Applet (Admin Only)</h3>
+<p>Currently only supports updating the featured status.</p>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>Yes</td><td>Applet ID to update</td></tr></tbody></table>
+<strong>Request Body:</strong>
+<pre><code>{
+  "featured": true
+}</code></pre>
+<strong>Response (200):</strong>
+<pre><code>{
+  "success": true,
+  "featured": true
+}</code></pre>
+<h3>Example</h3>
+<pre><code>// Save a new applet
+const response = await fetch('/api/share-applet', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    'X-Username': username
+  },
+  body: JSON.stringify({
+    content: '&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hello World&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;',
+    title: 'Hello World Applet',
+    icon: '👋',
+    windowWidth: 400,
+    windowHeight: 300
+  })
+});
+
+const { id, shareUrl } = await response.json();
+console.log(`Applet shared at: ${shareUrl}`);
+
+// Retrieve an applet
+const applet = await fetch(`/api/share-applet?id=${id}`).then(r =&gt; r.json());
+
+// List all applets
+const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.json());</code></pre>
+<hr>
+<h2>Admin API</h2>
+<p>Administrative endpoints for user management in the chat system. All operations require admin authentication (user "ryo" with valid token).</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/admin</code></td><td>Query users and statistics</td></tr><tr><td>POST</td><td><code>/api/admin</code></td><td>Perform admin actions</td></tr></tbody></table>
+<h3>Authentication</h3>
+<p>All admin endpoints require:</p>
+<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Bearer token: <code>Bearer <token></code></td></tr><tr><td><code>X-Username</code></td><td>Must be <code>"ryo"</code></td></tr></tbody></table>
+<p>Unauthorized requests return <code>403 Forbidden</code>.</p>
+<h3>GET Operations</h3>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>username</code></td><td>string</td><td>For some actions</td><td>Target username</td></tr><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Result limit (default: 50)</td></tr></tbody></table>
+<h4><code>getStats</code> Action</h4>
+<p>Get system-wide statistics.</p>
+<strong>Response:</strong>
+<pre><code>{
+  "totalUsers": 150,
+  "totalRooms": 12,
+  "totalMessages": 5430
+}</code></pre>
+<h4><code>getAllUsers</code> Action</h4>
+<p>List all registered users.</p>
+<strong>Response:</strong>
+<pre><code>{
+  "users": [
+    {
+      "username": "alice",
+      "lastActive": 1704067200000,
+      "banned": false
+    },
+    {
+      "username": "bob",
+      "lastActive": 1704000000000,
+      "banned": true
+    }
+  ]
+}</code></pre>
+<h4><code>getUserProfile</code> Action</h4>
+<p>Get detailed profile for a specific user.</p>
+<strong>Additional Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>username</code></td><td>string</td><td>Yes</td><td>Target username</td></tr></tbody></table>
+<strong>Response:</strong>
+<pre><code>{
+  "username": "alice",
+  "lastActive": 1704067200000,
+  "banned": false,
+  "banReason": null,
+  "bannedAt": null,
+  "messageCount": 42,
+  "rooms": [
+    { "id": "general", "name": "General Chat" },
+    { "id": "random", "name": "Random" }
+  ]
+}</code></pre>
+<h4><code>getUserMessages</code> Action</h4>
+<p>Get recent messages from a specific user.</p>
+<strong>Additional Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>username</code></td><td>string</td><td>Yes</td><td>Target username</td></tr><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Maximum messages to return (default: 50)</td></tr></tbody></table>
+<strong>Response:</strong>
+<pre><code>{
+  "messages": [
+    {
+      "id": "msg123",
+      "roomId": "general",
+      "roomName": "General Chat",
+      "content": "Hello everyone!",
+      "timestamp": 1704067200000
+    }
+  ]
+}</code></pre>
+<h3>POST Operations</h3>
+<strong>Request Body:</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>targetUsername</code></td><td>string</td><td>Yes</td><td>User to act on</td></tr><tr><td><code>reason</code></td><td>string</td><td>No</td><td>Reason for action (for bans)</td></tr></tbody></table>
+<h4><code>deleteUser</code> Action</h4>
+<p>Permanently delete a user account (cannot delete admin "ryo").</p>
+<strong>Request:</strong>
+<pre><code>{
+  "action": "deleteUser",
+  "targetUsername": "spammer"
+}</code></pre>
+<strong>Response:</strong>
+<pre><code>{
+  "success": true
+}</code></pre>
+<strong>Effects:</strong>
+<ul><li>Deletes user record</li></ul>
+<ul><li>Deletes password hash</li></ul>
+<ul><li>Invalidates all authentication tokens</li></ul>
+<h4><code>banUser</code> Action</h4>
+<p>Ban a user from the chat system (cannot ban admin "ryo").</p>
+<strong>Request:</strong>
+<pre><code>{
+  "action": "banUser",
+  "targetUsername": "troublemaker",
+  "reason": "Spamming in chat"
+}</code></pre>
+<strong>Response:</strong>
+<pre><code>{
+  "success": true
+}</code></pre>
+<strong>Effects:</strong>
+<ul><li>Sets <code>banned: true</code> on user record</li></ul>
+<ul><li>Stores ban reason and timestamp</li></ul>
+<ul><li>Invalidates all authentication tokens (forces logout)</li></ul>
+<h4><code>unbanUser</code> Action</h4>
+<p>Remove ban from a user.</p>
+<strong>Request:</strong>
+<pre><code>{
+  "action": "unbanUser",
+  "targetUsername": "reformed-user"
+}</code></pre>
+<strong>Response:</strong>
+<pre><code>{
+  "success": true
+}</code></pre>
+<h3>Example</h3>
+<pre><code>const adminHeaders = {
+  'Authorization': `Bearer ${adminToken}`,
+  'X-Username': 'ryo'
+};
+
+// Get system statistics
+const stats = await fetch('/api/admin?action=getStats', {
+  headers: adminHeaders
+}).then(r =&gt; r.json());
+
+// Get all users
+const { users } = await fetch('/api/admin?action=getAllUsers', {
+  headers: adminHeaders
+}).then(r =&gt; r.json());
+
+// Get user profile
+const profile = await fetch('/api/admin?action=getUserProfile&amp;username=alice', {
+  headers: adminHeaders
+}).then(r =&gt; r.json());
+
+// Ban a user
+await fetch('/api/admin', {
+  method: 'POST',
+  headers: {
+    ...adminHeaders,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    action: 'banUser',
+    targetUsername: 'spammer',
+    reason: 'Repeated spam violations'
+  })
+});</code></pre>
+<hr>
+<h2>Error Handling</h2>
+<p>All utility APIs return consistent error responses:</p>
+<pre><code>{
+  "error": "Error message description"
+}</code></pre>
+<strong>Common HTTP Status Codes:</strong>
+<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td>Bad request (missing/invalid parameters)</td></tr><tr><td>401</td><td>Unauthorized (authentication required)</td></tr><tr><td>403</td><td>Forbidden (insufficient permissions or blocked origin)</td></tr><tr><td>404</td><td>Not found</td></tr><tr><td>405</td><td>Method not allowed</td></tr><tr><td>408</td><td>Request timeout</td></tr><tr><td>429</td><td>Rate limit exceeded</td></tr><tr><td>500</td><td>Internal server error</td></tr><tr><td>503</td><td>Service unavailable</td></tr></tbody></table>
+<h2>CORS</h2>
+<p>All utility APIs implement CORS with origin validation. Allowed origins are configured server-side. Requests from unauthorized origins receive <code>403 Forbidden</code>.</p>
+<h2>Related</h2>
+<ul><li><a href="./04-api-layer.md">API Layer Overview</a> - General API architecture</li></ul>
+<ul><li><a href="./07-chat-system.md">Chat System</a> - Chat room APIs</li></ul>
+<ul><li><a href="./09-ai-integration.md">AI Integration</a> - AI-powered features</li></ul>
+
+      </article>
+      
+      <nav class="nav">
+        <a href="/docs/ai-generation-apis">← AI Endpoints</a>
+        <a href="/docs/ai-integration">AI Integration →</a>
+      </nav>
+      
+    </main>
+  </div>
+  
+  <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const menuBtn = document.querySelector('.menu-btn');
+      const clickedMenuBtn = menuBtn && menuBtn.contains(e.target);
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>
