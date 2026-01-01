@@ -213,6 +213,15 @@ export const storeDescriptors: StoreDescriptor[] = [
     notes: "Photo references only; image blobs managed elsewhere.",
   },
   {
+    key: "ryos:videos",
+    file: "src/stores/useVideoStore.ts",
+    version: 8,
+    storage: "localStorage",
+    category: "media",
+    sync: { eligible: true, defaultEnabled: false },
+    notes: "Video playlist metadata only; YouTube content streamed from network.",
+  },
+  {
     key: "ryos:paint",
     file: "src/stores/usePaintStore.ts",
     version: 1,
