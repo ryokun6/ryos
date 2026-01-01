@@ -19,6 +19,9 @@ export function useSyncController() {
     if (inFlight.current) return { ok: false, status: 0, error: "already_syncing" };
     if (!settings.enabled) return { ok: false, status: 0, error: "sync_disabled" };
     if (!authToken || !username) return { ok: false, status: 0, error: "no_auth" };
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return { ok: false, status: 0, error: "offline" };
+    }
 
     inFlight.current = true;
     setIsSyncing(true);
